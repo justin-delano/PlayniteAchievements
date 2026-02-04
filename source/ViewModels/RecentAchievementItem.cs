@@ -31,13 +31,13 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _gameName, value); 
         }
 
-        private string _unlockedIconUrl;
-        public string UnlockedIconUrl 
-        { 
-            get => _unlockedIconUrl; 
+        private string _iconUrl;
+        public string IconUrl
+        {
+            get => _iconUrl;
             set
             {
-                if (SetValueAndReturn(ref _unlockedIconUrl, value))
+                if (SetValueAndReturn(ref _iconUrl, value))
                 {
                     OnPropertyChanged(nameof(DisplayIcon));
                 }
@@ -48,12 +48,12 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (string.IsNullOrWhiteSpace(UnlockedIconUrl))
+                if (string.IsNullOrWhiteSpace(IconUrl))
                 {
                     return DefaultIconPackUri;
                 }
 
-                return UnlockedIconUrl;
+                return IconUrl;
             }
         }
 
@@ -120,7 +120,7 @@ namespace PlayniteAchievements.ViewModels
             Name = other.Name;
             Description = other.Description;
             GameName = other.GameName;
-            UnlockedIconUrl = other.UnlockedIconUrl;
+            IconUrl = other.IconUrl;
             UnlockTime = other.UnlockTime;
             GlobalPercent = other.GlobalPercent;
             GameIconPath = other.GameIconPath;

@@ -20,6 +20,27 @@ namespace PlayniteAchievements.Models.Achievements
         [IgnoreDataMember]
         public string IconDisplay => IconUrl ?? AchievementIconResolver.GetDefaultIcon();
 
+        /// <summary>
+        /// SuccessStory-compatible property for unlocked (color) icon display.
+        /// Returns the icon URL without grayscale prefix.
+        /// </summary>
+        [IgnoreDataMember]
+        public string UnlockedIconDisplay => IconUrl ?? AchievementIconResolver.GetDefaultIcon();
+
+        /// <summary>
+        /// SuccessStory-compatible property for locked (grayscale) icon display.
+        /// Returns the icon URL with grayscale prefix applied.
+        /// </summary>
+        [IgnoreDataMember]
+        public string LockedIconDisplay
+        {
+            get
+            {
+                var icon = IconUrl ?? AchievementIconResolver.GetDefaultIcon();
+                return AchievementIconResolver.ApplyGrayPrefix(icon);
+            }
+        }
+
         public bool Hidden { get; set; }
 
         public DateTime? UnlockTimeUtc { get; set; }
