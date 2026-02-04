@@ -11,14 +11,16 @@ using Playnite.SDK;
 namespace PlayniteAchievements.Services.Images
 {
     /// <summary>
-    /// Memory-only image loader with bounded LRU caching.
-    /// Designed for UI virtualization: only realized controls request images.
+    /// Hybrid image loader with memory LRU cache and persistent disk backing.
+    /// Memory cache provides fast access for recently used icons.
+    /// Disk cache provides persistent storage across sessions.
     /// </summary>
     public sealed class MemoryImageService : IDisposable
     {
         private static readonly ILogger StaticLogger = LogManager.GetLogger(nameof(MemoryImageService));
 
         private readonly ILogger _logger;
+        private readonly DiskImageService _diskService;
         private readonly SemaphoreSlim _downloadGate;
         private readonly HttpClient _http;
 
@@ -38,9 +40,14 @@ namespace PlayniteAchievements.Services.Images
             public LinkedListNode<string> Node { get; set; }
         }
 
-        public MemoryImageService(ILogger logger, int maxItems = 512, int downloadConcurrency = 8)
+        public MemoryImageService(
+            ILogger logger,
+            DiskImageService diskService,
+            int maxItems = 512,
+            int downloadConcurrency = 8)
         {
             _logger = logger ?? StaticLogger;
+            _diskService = diskService ?? throw new ArgumentNullException(nameof(diskService));
             _maxItems = Math.Max(64, maxItems);
             _downloadGate = new SemaphoreSlim(Math.Max(1, downloadConcurrency), Math.Max(1, downloadConcurrency));
 

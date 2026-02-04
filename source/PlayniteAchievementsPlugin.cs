@@ -44,6 +44,7 @@ namespace PlayniteAchievements
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly AchievementManager _achievementService;
         private readonly MemoryImageService _imageService;
+        private readonly DiskImageService _diskImageService;
         private readonly NotificationPublisher _notifications;
         private readonly SteamHTTPClient _steamClient;
         private readonly SteamSessionManager _sessionManager;
@@ -136,7 +137,8 @@ namespace PlayniteAchievements
                     GetPluginUserDataPath())
             };
 
-            _imageService = new MemoryImageService(_logger);
+            _diskImageService = new DiskImageService(_logger, GetPluginUserDataPath());
+            _imageService = new MemoryImageService(_logger, _diskImageService);
             _achievementService = new AchievementManager(api, _settingsViewModel.Settings, _logger, this, providers);
             _notifications = new NotificationPublisher(api, _settingsViewModel.Settings, _logger);
             _backgroundUpdates = new BackgroundUpdater(_achievementService, _settingsViewModel.Settings, _logger, _notifications, null);
@@ -369,6 +371,7 @@ namespace PlayniteAchievements
             _backgroundUpdates.Stop();
 
             try { _imageService?.Dispose(); } catch { }
+            try { _diskImageService?.Dispose(); } catch { }
             try { _themeUpdateService?.Dispose(); } catch { }
             try { _fullscreenThemeIntegration?.Dispose(); } catch { }
         }
