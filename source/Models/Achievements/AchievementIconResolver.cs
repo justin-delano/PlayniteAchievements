@@ -13,15 +13,12 @@ namespace PlayniteAchievements.Models.Achievements
         /// <summary>
         /// Resolve the display icon for an achievement based on its unlock state.
         /// Theme-facing icon must be cheap to evaluate (WPF may call it frequently).
+        /// Always uses the same icon URL; grayscale is applied by AsyncImage when needed.
         /// </summary>
-        public static string GetDisplayIcon(
-            bool unlocked,
-            string unlockedIconUrl,
-            string lockedIconUrl)
+        public static string GetDisplayIcon(bool unlocked, string iconUrl)
         {
-            var candidate = unlocked ? unlockedIconUrl : lockedIconUrl;
-
-            if (!unlocked && AreSameIcon(unlockedIconUrl, lockedIconUrl))
+            var candidate = iconUrl;
+            if (!unlocked && !string.IsNullOrWhiteSpace(candidate))
             {
                 candidate = ApplyGrayPrefix(candidate);
             }
@@ -31,12 +28,13 @@ namespace PlayniteAchievements.Models.Achievements
 
         /// <summary>
         /// True if two icon identifiers are the same (case-insensitive, trimmed).
+        /// Kept for compatibility with existing code.
         /// </summary>
         public static bool AreSameIcon(string left, string right)
         {
             if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
             {
-                return false;
+                return true;
             }
 
             return string.Equals(NormalizeIcon(left), NormalizeIcon(right), StringComparison.OrdinalIgnoreCase);

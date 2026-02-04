@@ -15,26 +15,10 @@ namespace PlayniteAchievements.Models.Achievements
 
         public string Description { get; set; }
 
-        public string UnlockedIconUrl { get; set; }
-
-        public string LockedIconUrl { get; set; }
+        public string IconUrl { get; set; }
 
         [IgnoreDataMember]
-        public string UnlockedIconDisplay => UnlockedIconUrl ?? AchievementIconResolver.GetDefaultIcon();
-
-        [IgnoreDataMember]
-        public string LockedIconDisplay
-        {
-            get
-            {
-                var icon = LockedIconUrl ?? AchievementIconResolver.GetDefaultIcon();
-                if (AchievementIconResolver.AreSameIcon(LockedIconUrl, UnlockedIconUrl))
-                {
-                    icon = AchievementIconResolver.ApplyGrayPrefix(icon);
-                }
-                return icon;
-            }
-        }
+        public string IconDisplay => IconUrl ?? AchievementIconResolver.GetDefaultIcon();
 
         public bool Hidden { get; set; }
 
@@ -55,7 +39,7 @@ namespace PlayniteAchievements.Models.Achievements
         public string Name => DisplayName;
 
         [IgnoreDataMember]
-        public string Icon => AchievementIconResolver.GetDisplayIcon(Unlocked, UnlockedIconUrl, LockedIconUrl);
+        public string Icon => AchievementIconResolver.GetDisplayIcon(Unlocked, IconUrl);
 
         /// <summary>
         /// Global unlock percent (0..100). Some providers may return 0..1.

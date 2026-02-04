@@ -47,27 +47,13 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private string _unlockedIconUrl;
-        public string UnlockedIconUrl
+        private string _iconUrl;
+        public string IconUrl
         {
-            get => _unlockedIconUrl;
+            get => _iconUrl;
             set
             {
-                if (SetValueAndReturn(ref _unlockedIconUrl, value))
-                {
-                    OnPropertyChanged(nameof(DisplayIcon));
-                    OnPropertyChanged(nameof(Icon));
-                }
-            }
-        }
-
-        private string _lockedIconUrl;
-        public string LockedIconUrl
-        {
-            get => _lockedIconUrl;
-            set
-            {
-                if (SetValueAndReturn(ref _lockedIconUrl, value))
+                if (SetValueAndReturn(ref _iconUrl, value))
                 {
                     OnPropertyChanged(nameof(DisplayIcon));
                     OnPropertyChanged(nameof(Icon));
@@ -231,8 +217,7 @@ namespace PlayniteAchievements.ViewModels
             PlayniteGameId = playniteGameId;
             DisplayName = source.DisplayName ?? source.ApiName ?? "Unknown Achievement";
             Description = source.Description ?? "No description";
-            UnlockedIconUrl = source.UnlockedIconUrl;
-            LockedIconUrl = source.LockedIconUrl;
+            IconUrl = source.IconUrl;
             UnlockTimeUtc = source.UnlockTimeUtc;
             GlobalPercentUnlocked = source.GlobalPercentUnlocked;
             Unlocked = source.Unlocked;
@@ -254,21 +239,19 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// Returns the appropriate icon based on unlock state and hide settings.
         /// When hiding is enabled and achievement is locked and not revealed, shows the gray/hidden icon.
+        /// Otherwise, uses IconUrl with grayscale prefix when locked.
         /// </summary>
         public string DisplayIcon
         {
             get
             {
-                // If hiding locked achievements and this one is locked and not yet revealed, show placeholder icon
                 if (IsHidden)
                 {
                     return DefaultIcon;
                 }
 
-                // Normal logic: unlocked shows full icon, locked shows locked icon (grayscaled if identical).
-                var candidate = Unlocked ? UnlockedIconUrl : LockedIconUrl;
-
-                if (!Unlocked && AchievementIconResolver.AreSameIcon(LockedIconUrl, UnlockedIconUrl))
+                var candidate = IconUrl;
+                if (!Unlocked && !string.IsNullOrWhiteSpace(candidate))
                 {
                     candidate = AchievementIconResolver.ApplyGrayPrefix(candidate);
                 }
@@ -346,12 +329,13 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Alias for themes expecting ImageUnlocked field (SuccessStory compatibility).
+        /// Always returns IconUrl (unlocked state uses the color icon).
         /// </summary>
         public string ImageUnlocked
         {
             get
             {
-                var candidate = UnlockedIconUrl;
+                var candidate = IconUrl;
                 if (string.IsNullOrWhiteSpace(candidate))
                 {
                     return DefaultIcon;
@@ -363,23 +347,19 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Alias for themes expecting ImageLocked field (SuccessStory compatibility).
+        /// Returns IconUrl with grayscale prefix for locked state.
         /// </summary>
         public string ImageLocked
         {
             get
             {
-                var candidate = LockedIconUrl;
+                var candidate = IconUrl;
                 if (string.IsNullOrWhiteSpace(candidate))
                 {
                     return DefaultIcon;
                 }
 
-                if (AchievementIconResolver.AreSameIcon(LockedIconUrl, UnlockedIconUrl))
-                {
-                    candidate = AchievementIconResolver.ApplyGrayPrefix(candidate);
-                }
-
-                return candidate;
+                return AchievementIconResolver.ApplyGrayPrefix(candidate);
             }
         }
     }
