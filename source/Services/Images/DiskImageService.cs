@@ -117,11 +117,11 @@ namespace PlayniteAchievements.Services.Images
         public async Task<string> GetOrDownloadIconAsync(
             Guid gameId,
             string achievementId,
-            string uri,
+            string iconPath,
             int decodeSize,
             CancellationToken cancel)
         {
-            if (string.IsNullOrWhiteSpace(uri))
+            if (string.IsNullOrWhiteSpace(iconPath))
             {
                 return null;
             }
@@ -143,7 +143,7 @@ namespace PlayniteAchievements.Services.Images
                     return cachePath;
                 }
 
-                var bytes = await DownloadBytesAsync(uri, cancel).ConfigureAwait(false);
+                var bytes = await DownloadBytesAsync(iconPath, cancel).ConfigureAwait(false);
                 if (bytes == null || bytes.Length == 0)
                 {
                     return null;
@@ -177,7 +177,7 @@ namespace PlayniteAchievements.Services.Images
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Failed to download/cache icon from {uri}");
+                _logger?.Warn(ex, $"Failed to download/cache icon from {iconPath}");
                 return null;
             }
             finally

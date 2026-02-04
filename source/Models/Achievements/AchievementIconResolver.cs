@@ -15,9 +15,9 @@ namespace PlayniteAchievements.Models.Achievements
         /// Theme-facing icon must be cheap to evaluate (WPF may call it frequently).
         /// Always uses the same icon URL; grayscale is applied by AsyncImage when needed.
         /// </summary>
-        public static string GetDisplayIcon(bool unlocked, string iconUrl)
+        public static string GetDisplayIcon(bool unlocked, string iconPath)
         {
-            var candidate = iconUrl;
+            var candidate = iconPath;
             if (!unlocked && !string.IsNullOrWhiteSpace(candidate))
             {
                 candidate = ApplyGrayPrefix(candidate);

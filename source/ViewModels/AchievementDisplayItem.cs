@@ -47,13 +47,13 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private string _iconUrl;
-        public string IconUrl
+        private string _iconPath;
+        public string IconPath
         {
-            get => _iconUrl;
+            get => _iconPath;
             set
             {
-                if (SetValueAndReturn(ref _iconUrl, value))
+                if (SetValueAndReturn(ref _iconPath, value))
                 {
                     OnPropertyChanged(nameof(DisplayIcon));
                     OnPropertyChanged(nameof(Icon));
@@ -217,7 +217,7 @@ namespace PlayniteAchievements.ViewModels
             PlayniteGameId = playniteGameId;
             DisplayName = source.DisplayName ?? source.ApiName ?? "Unknown Achievement";
             Description = source.Description ?? "No description";
-            IconUrl = source.IconUrl;
+            IconPath = source.IconPath;
             UnlockTimeUtc = source.UnlockTimeUtc;
             GlobalPercentUnlocked = source.GlobalPercentUnlocked;
             Unlocked = source.Unlocked;
@@ -239,7 +239,7 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// Returns the appropriate icon based on unlock state and hide settings.
         /// When hiding is enabled and achievement is locked and not revealed, shows the gray/hidden icon.
-        /// Otherwise, uses IconUrl with grayscale prefix when locked.
+        /// Otherwise, uses IconPath with grayscale prefix when locked.
         /// </summary>
         public string DisplayIcon
         {
@@ -250,7 +250,7 @@ namespace PlayniteAchievements.ViewModels
                     return DefaultIcon;
                 }
 
-                var candidate = IconUrl;
+                var candidate = IconPath;
                 if (!Unlocked && !string.IsNullOrWhiteSpace(candidate))
                 {
                     candidate = AchievementIconResolver.ApplyGrayPrefix(candidate);
@@ -329,13 +329,13 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Alias for themes expecting ImageUnlocked field (SuccessStory compatibility).
-        /// Always returns IconUrl (unlocked state uses the color icon).
+        /// Always returns IconPath (unlocked state uses the color icon).
         /// </summary>
         public string ImageUnlocked
         {
             get
             {
-                var candidate = IconUrl;
+                var candidate = IconPath;
                 if (string.IsNullOrWhiteSpace(candidate))
                 {
                     return DefaultIcon;
@@ -347,13 +347,13 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Alias for themes expecting ImageLocked field (SuccessStory compatibility).
-        /// Returns IconUrl with grayscale prefix for locked state.
+        /// Returns IconPath with grayscale prefix for locked state.
         /// </summary>
         public string ImageLocked
         {
             get
             {
-                var candidate = IconUrl;
+                var candidate = IconPath;
                 if (string.IsNullOrWhiteSpace(candidate))
                 {
                     return DefaultIcon;

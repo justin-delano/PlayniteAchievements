@@ -284,7 +284,7 @@ namespace PlayniteAchievements.Providers.Steam
                             ? schemaAch.DisplayName
                             : schemaAch.Name,
                         Description = schemaAch.Description ?? string.Empty,
-                        IconUrl = schemaAch.Icon,
+                        IconPath = schemaAch.Icon,
                         Hidden = schemaAch.Hidden == 1,
                         GlobalPercentUnlocked = globalPercent,
                         UnlockTimeUtc = unlockTime

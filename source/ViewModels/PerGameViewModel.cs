@@ -362,7 +362,7 @@ namespace PlayniteAchievements.ViewModels
                         PlayniteGameId = _gameId,
                         DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
                         Description = ach.Description ?? "",
-                        IconUrl = ach.IconUrl,
+                        IconPath = ach.IconPath,
                         UnlockTimeUtc = ach.UnlockTimeUtc,
                         GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
                         Unlocked = ach.Unlocked,

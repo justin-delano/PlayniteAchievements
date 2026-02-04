@@ -5,6 +5,7 @@ using System.Threading;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievement;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 using Playnite.SDK;
 
@@ -93,7 +94,7 @@ namespace PlayniteAchievements.Services.Sidebar
                         PlayniteGameId = gameData.PlayniteGameId,
                         DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
                         Description = ach.Description ?? string.Empty,
-                        IconUrl = ach.IconUrl,
+                        IconPath = ach.IconPath,
                         UnlockTimeUtc = ach.UnlockTimeUtc,
                         GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
                         Unlocked = ach.Unlocked,
@@ -141,7 +142,7 @@ namespace PlayniteAchievements.Services.Sidebar
                                     Name = ach.DisplayName ?? ach.ApiName ?? "Unknown",
                                     Description = ach.Description ?? string.Empty,
                                     GameName = gameData.GameName ?? "Unknown",
-                                    IconUrl = ach.IconUrl,
+                                    IconPath = ach.IconPath,
                                     UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
                                     GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
                                     GameIconPath = !string.IsNullOrEmpty(playniteGame?.Icon) ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon) : null,
