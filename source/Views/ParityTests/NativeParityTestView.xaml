@@ -1,0 +1,74 @@
+<UserControl x:Class="PlayniteAchievements.Views.ParityTests.NativeParityTestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:PlayniteAchievements.Views.ParityTests"
+             mc:Ignorable="d"
+             d:DesignHeight="700"
+             d:DesignWidth="900">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Padding="10" CornerRadius="6" Background="#11000000" BorderThickness="1" BorderBrush="#22000000">
+            <StackPanel>
+                <TextBlock FontSize="18" FontWeight="SemiBold" Text="PlayniteAchievements UI Parity Test — Native" />
+                <TextBlock Margin="0,4,0,0" Opacity="0.85">
+                    <Run Text="Game: " />
+                    <Run Text="{Binding GameName, Mode=OneWay}" FontWeight="SemiBold" />
+                    <Run Text="  (" />
+                    <Run Text="{Binding GameId, Mode=OneWay}" />
+                    <Run Text=")" />
+                </TextBlock>
+                <TextBlock Margin="0,6,0,0" Opacity="0.85">
+                    <Run Text="HasAchievements=" />
+                    <Run Text="{Binding Settings.HasAchievements}" />
+                    <Run Text="  Unlocked=" />
+                    <Run Text="{Binding Settings.UnlockedCount}" />
+                    <Run Text="/" />
+                    <Run Text="{Binding Settings.AchievementCount}" />
+                    <Run Text="  Progress=" />
+                    <Run Text="{Binding Settings.ProgressPercentage, StringFormat={}{0:0.#}}" />
+                    <Run Text="%" />
+                </TextBlock>
+                <TextBlock Margin="0,4,0,0" Opacity="0.75" TextWrapping="Wrap">
+                    This window renders all Native theme-integration controls side-by-side for quick visual checks.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+
+                <GroupBox Header="AchievementButton" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="AchievementButton" />
+                </GroupBox>
+
+                <GroupBox Header="AchievementProgressBar" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="AchievementProgressBar" />
+                </GroupBox>
+
+                <GroupBox Header="AchievementStats" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="AchievementStats" />
+                </GroupBox>
+
+                <GroupBox Header="AchievementChart" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="AchievementChart" Height="260" />
+                </GroupBox>
+
+                <GroupBox Header="AchievementCompactList" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="AchievementCompactList" Height="260" />
+                </GroupBox>
+
+                <GroupBox Header="AchievementList" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="AchievementList" Height="420" />
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -1,0 +1,1392 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using PlayniteAchievements.Common;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Sidebar;
+using PlayniteAchievements.Services;
+using PlayniteAchievements.Views.Helpers;
+using Playnite.SDK;
+using ObservableObject = PlayniteAchievements.Common.ObservableObject;
+using RelayCommand = PlayniteAchievements.Common.RelayCommand;
+
+namespace PlayniteAchievements.ViewModels
+{
+    public class SidebarViewModel : ObservableObject, IDisposable
+    {
+        /// <summary>
+        /// Returns true if IgnoreUnplayedGames is enabled in settings.
+        /// </summary>
+        public bool IgnoreUnplayedGames => _settings?.Persisted?.IgnoreUnplayedGames ?? false;
+
+        private readonly AchievementManager _achievementManager;
+        private readonly IPlayniteAPI _playniteApi;
+        private readonly ILogger _logger;
+        private readonly PlayniteAchievementsSettings _settings;
+
+        private readonly SidebarDataBuilder _dataBuilder;
+
+        private readonly SemaphoreSlim _refreshLock = new SemaphoreSlim(1, 1);
+        private CancellationTokenSource _refreshCts;
+        private volatile bool _isActive;
+        private int _refreshVersion;
+        private bool _disposed;
+
+        private readonly HashSet<string> _revealedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private SidebarDataSnapshot _latestSnapshot;
+
+        private readonly object _progressLock = new object();
+        private DateTime _lastProgressUpdate = DateTime.MinValue;
+        private static readonly TimeSpan ProgressMinInterval = TimeSpan.FromMilliseconds(50);
+        private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
+
+        private readonly PaginationManager<AchievementDisplayItem> _achievementsPager;
+        private readonly PaginationManager<GameOverviewItem> _overviewPager;
+        private readonly PaginationManager<RecentAchievementItem> _recentPager;
+        private readonly PaginationManager<AchievementDisplayItem> _selectedGameAchievementsPager;
+
+
+        public SidebarViewModel(AchievementManager achievementManager, IPlayniteAPI playniteApi, ILogger logger, PlayniteAchievementsSettings settings)
+        {
+            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _playniteApi = playniteApi;
+            _logger = logger;
+            _settings = settings;
+            _dataBuilder = new SidebarDataBuilder(_achievementManager, _playniteApi, _logger);
+
+            // Initialize debounce timer
+            _refreshDebounceTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(500)
+            };
+            _refreshDebounceTimer.Tick += OnRefreshDebounceTimerTick;
+
+            // Initialize collections
+            AllAchievements = new BulkObservableCollection<AchievementDisplayItem>();
+            PagedAchievements = new BulkObservableCollection<AchievementDisplayItem>();
+            GamesOverview = new BulkObservableCollection<GameOverviewItem>();
+            RecentAchievements = new BulkObservableCollection<RecentAchievementItem>();
+            SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
+
+            _achievementsPager = new PaginationManager<AchievementDisplayItem>(
+                DefaultPageSize,
+                PagedAchievements,
+                OnPropertyChanged,
+                RaisePaginationChanged,
+                useDispatcherInvoke: false,
+                propertyNames: new PaginationPropertyNames
+                {
+                    CurrentPage = nameof(CurrentPage),
+                    TotalPages = nameof(TotalPages),
+                    CanGoNext = nameof(CanGoNext),
+                    CanGoPrevious = nameof(CanGoPrevious),
+                    HasMultiplePages = nameof(HasMultiplePages),
+                    TotalItems = nameof(FilteredCount)
+                });
+
+            _overviewPager = new PaginationManager<GameOverviewItem>(
+                OverviewPageSize,
+                GamesOverview,
+                OnPropertyChanged,
+                RaiseOverviewPaginationChanged,
+                useDispatcherInvoke: false,
+                propertyNames: new PaginationPropertyNames
+                {
+                    CurrentPage = nameof(OverviewCurrentPage),
+                    TotalPages = nameof(OverviewTotalPages),
+                    CanGoNext = nameof(CanGoOverviewNext),
+                    CanGoPrevious = nameof(CanGoOverviewPrevious),
+                    HasMultiplePages = nameof(OverviewHasMultiplePages),
+                    TotalItems = nameof(TotalGamesOverview)
+                });
+
+            _recentPager = new PaginationManager<RecentAchievementItem>(
+                RecentPageSize,
+                RecentAchievements,
+                OnPropertyChanged,
+                RaiseRecentPaginationChanged,
+                useDispatcherInvoke: false,
+                propertyNames: new PaginationPropertyNames
+                {
+                    CurrentPage = nameof(RecentCurrentPage),
+                    TotalPages = nameof(RecentTotalPages),
+                    CanGoNext = nameof(CanGoRecentNext),
+                    CanGoPrevious = nameof(CanGoRecentPrevious),
+                    HasMultiplePages = nameof(RecentHasMultiplePages),
+                    TotalItems = nameof(RecentTotalItems)
+                });
+
+            _selectedGameAchievementsPager = new PaginationManager<AchievementDisplayItem>(
+                SelectedGameAchievementsPageSize,
+                SelectedGameAchievements,
+                OnPropertyChanged,
+                RaiseSelectedGameAchievementsPaginationChanged,
+                useDispatcherInvoke: false,
+                propertyNames: new PaginationPropertyNames
+                {
+                    CurrentPage = nameof(SelectedGameAchievementsCurrentPage),
+                    TotalPages = nameof(SelectedGameAchievementsTotalPages),
+                    CanGoNext = nameof(CanGoSelectedGameAchievementsNext),
+                    CanGoPrevious = nameof(CanGoSelectedGameAchievementsPrevious),
+                    HasMultiplePages = nameof(SelectedGameAchievementsHasMultiplePages),
+                    TotalItems = nameof(SelectedGameAchievementsTotalItems)
+                });
+
+            GlobalTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
+            SelectedGameTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
+
+            // Set defaults: Unlocked Only, sorted by Unlock Date
+            _showUnlockedOnly = true;
+            _sortIndex = 2; // Unlock Date
+
+            // Initialize commands
+            RefreshViewCommand = new AsyncCommand(_ => RefreshViewAsync());
+            ScanAllCommand = new AsyncCommand(_ => ScanAllAsync(), _ => !IsScanning);
+            QuickScanCommand = new AsyncCommand(_ => QuickScanAsync(), _ => !IsScanning);
+            CancelScanCommand = new RelayCommand(_ => CancelScan(), _ => IsScanning);
+            NextPageCommand = new RelayCommand(_ => GoToNextPage(), _ => CanGoNext);
+            PreviousPageCommand = new RelayCommand(_ => GoToPreviousPage(), _ => CanGoPrevious);
+            FirstPageCommand = new RelayCommand(_ => GoToFirstPage(), _ => CanGoPrevious);
+            LastPageCommand = new RelayCommand(_ => GoToLastPage(), _ => CanGoNext);
+            OverviewNextPageCommand = new RelayCommand(_ => GoToOverviewNextPage(), _ => CanGoOverviewNext);
+            OverviewPreviousPageCommand = new RelayCommand(_ => GoToOverviewPreviousPage(), _ => CanGoOverviewPrevious);
+            OverviewFirstPageCommand = new RelayCommand(_ => GoToOverviewFirstPage(), _ => CanGoOverviewPrevious);
+            OverviewLastPageCommand = new RelayCommand(_ => GoToOverviewLastPage(), _ => CanGoOverviewNext);
+            RecentNextPageCommand = new RelayCommand(_ => GoToRecentNextPage(), _ => CanGoRecentNext);
+            RecentPreviousPageCommand = new RelayCommand(_ => GoToRecentPreviousPage(), _ => CanGoRecentPrevious);
+            RecentFirstPageCommand = new RelayCommand(_ => GoToRecentFirstPage(), _ => CanGoRecentPrevious);
+            RecentLastPageCommand = new RelayCommand(_ => GoToRecentLastPage(), _ => CanGoRecentNext);
+            SelectedGameAchievementsNextPageCommand = new RelayCommand(_ => GoToSelectedGameAchievementsNextPage(), _ => CanGoSelectedGameAchievementsNext);
+            SelectedGameAchievementsPreviousPageCommand = new RelayCommand(_ => GoToSelectedGameAchievementsPreviousPage(), _ => CanGoSelectedGameAchievementsPrevious);
+            SelectedGameAchievementsFirstPageCommand = new RelayCommand(_ => GoToSelectedGameAchievementsFirstPage(), _ => CanGoSelectedGameAchievementsPrevious);
+            SelectedGameAchievementsLastPageCommand = new RelayCommand(_ => GoToSelectedGameAchievementsLastPage(), _ => CanGoSelectedGameAchievementsNext);
+            RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
+            CloseViewCommand = new RelayCommand(_ => PlayniteUiProvider.RestoreMainView());
+            ClearGameSelectionCommand = new RelayCommand(_ => ClearGameSelection());
+
+            // Subscribe to progress events
+            _achievementManager.RebuildProgress += OnRebuildProgress;
+            _achievementManager.CacheInvalidated += OnCacheInvalidated;
+            if (_settings != null)
+            {
+                _settings.PropertyChanged += OnSettingsChanged;
+            }
+
+            if (_settings?.Persisted?.IgnoreUnplayedGames == true)
+            {
+                _hideUnplayedGames = true;
+            }
+        }
+
+        #region Collections
+
+        public ObservableCollection<AchievementDisplayItem> AllAchievements { get; }
+        public ObservableCollection<AchievementDisplayItem> PagedAchievements { get; }
+
+        // Overview tab collections
+        public ObservableCollection<GameOverviewItem> GamesOverview { get; }
+        public ObservableCollection<RecentAchievementItem> RecentAchievements { get; }
+
+        private List<GameOverviewItem> _allGamesOverview = new List<GameOverviewItem>();
+        private List<GameOverviewItem> _filteredGamesOverview = new List<GameOverviewItem>();
+
+        private List<RecentAchievementItem> _allRecentAchievements = new List<RecentAchievementItem>();
+        private List<AchievementDisplayItem> _allSelectedGameAchievements = new List<AchievementDisplayItem>();
+
+        #endregion
+
+        #region Overview Tab Properties
+
+        private string _overviewSearchText = string.Empty;
+        public string OverviewSearchText
+        {
+            get => _overviewSearchText;
+            set
+            {
+                if (SetValueAndReturn(ref _overviewSearchText, value ?? string.Empty))
+                {
+                    OverviewCurrentPage = 1;
+                    ApplyOverviewFilters();
+                }
+            }
+        }
+
+        private bool _hideGamesWithNoUnlocked = true;
+        public bool HideGamesWithNoUnlocked
+        {
+            get => _hideGamesWithNoUnlocked;
+            set
+            {
+                if (SetValueAndReturn(ref _hideGamesWithNoUnlocked, value))
+                {
+                    OverviewCurrentPage = 1;
+                    ApplyOverviewFilters();
+                }
+            }
+        }
+
+        private bool _hideUnplayedGames = true;
+        public bool HideUnplayedGames
+        {
+            get => _hideUnplayedGames;
+            set
+            {
+                if (SetValueAndReturn(ref _hideUnplayedGames, value))
+                {
+                    OverviewCurrentPage = 1;
+                    ApplyOverviewFilters();
+                }
+            }
+        }
+
+        public bool UseCoverImages => _settings?.Persisted?.UseCoverImages ?? false;
+
+        private int _totalGamesOverview;
+        public int TotalGamesOverview
+        {
+            get => _totalGamesOverview;
+            private set => SetValue(ref _totalGamesOverview, value);
+        }
+
+        private int _totalAchievementsOverview;
+        public int TotalAchievementsOverview
+        {
+            get => _totalAchievementsOverview;
+            private set => SetValue(ref _totalAchievementsOverview, value);
+        }
+
+        private int _totalUnlockedOverview;
+        public int TotalUnlockedOverview
+        {
+            get => _totalUnlockedOverview;
+            private set => SetValue(ref _totalUnlockedOverview, value);
+        }
+
+        private int _perfectGames;
+        public int PerfectGames
+        {
+            get => _perfectGames;
+            private set => SetValue(ref _perfectGames, value);
+        }
+
+        private int _totalCommon;
+        public int TotalCommon
+        {
+            get => _totalCommon;
+            private set => SetValue(ref _totalCommon, value);
+        }
+
+        private int _totalUncommon;
+        public int TotalUncommon
+        {
+            get => _totalUncommon;
+            private set => SetValue(ref _totalUncommon, value);
+        }
+
+        private int _totalRare;
+        public int TotalRare
+        {
+            get => _totalRare;
+            private set => SetValue(ref _totalRare, value);
+        }
+
+        private int _totalUltraRare;
+        public int TotalUltraRare
+        {
+            get => _totalUltraRare;
+            private set => SetValue(ref _totalUltraRare, value);
+        }
+
+        private double _globalProgression;
+        public double GlobalProgression
+        {
+            get => _globalProgression;
+            private set => SetValue(ref _globalProgression, value);
+        }
+
+        private double _launchedProgression;
+        public double LaunchedProgression
+        {
+            get => _launchedProgression;
+            private set => SetValue(ref _launchedProgression, value);
+        }
+
+        private GameOverviewItem _selectedGame;
+        public GameOverviewItem SelectedGame
+        {
+            get => _selectedGame;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedGame, value))
+                {
+                    OnPropertyChanged(nameof(IsGameSelected));
+                    LoadSelectedGameAchievements();
+                }
+            }
+        }
+
+        public bool IsGameSelected => SelectedGame != null;
+
+        public ObservableCollection<AchievementDisplayItem> SelectedGameAchievements { get; }
+
+        public ObservableCollection<ChartDataPoint> SelectedGameDailyUnlocks { get; } = new ObservableCollection<ChartDataPoint>();
+
+        #endregion
+
+        #region Timeline Properties
+
+        public TimelineViewModel GlobalTimeline { get; private set; }
+        public TimelineViewModel SelectedGameTimeline { get; private set; }
+
+        // Rarity percentage properties for distribution bars
+        public double CommonPercentage => TotalUnlockedOverview > 0
+            ? (double)TotalCommon / TotalUnlockedOverview * 100 : 0;
+
+        public double UncommonPercentage => TotalUnlockedOverview > 0
+            ? (double)TotalUncommon / TotalUnlockedOverview * 100 : 0;
+
+        public double RarePercentage => TotalUnlockedOverview > 0
+            ? (double)TotalRare / TotalUnlockedOverview * 100 : 0;
+
+        public double UltraRarePercentage => TotalUnlockedOverview > 0
+            ? (double)TotalUltraRare / TotalUnlockedOverview * 100 : 0;
+
+        #endregion
+
+        #region Pagination Properties
+
+        private const int DefaultPageSize = 100;
+
+        public int CurrentPage
+        {
+            get => _achievementsPager.CurrentPage;
+            set => _achievementsPager.CurrentPage = value;
+        }
+
+        public int TotalPages => _achievementsPager.TotalPages;
+
+        public int FilteredCount => _achievementsPager.TotalItems;
+
+        public bool CanGoNext => _achievementsPager.CanGoNext;
+        public bool CanGoPrevious => _achievementsPager.CanGoPrevious;
+        public bool HasMultiplePages => _achievementsPager.HasMultiplePages;
+
+        public string PageInfo => string.Format(
+            Playnite.SDK.ResourceProvider.GetString("LOCPlayAch_Achievements_PageInfo"),
+            CurrentPage,
+            TotalPages);
+
+        #endregion
+
+        #region Overview Pagination Properties
+
+        private const int OverviewPageSize = 100;
+
+        public int OverviewCurrentPage
+        {
+            get => _overviewPager.CurrentPage;
+            set => _overviewPager.CurrentPage = value;
+        }
+
+        public int OverviewTotalPages => _overviewPager.TotalPages;
+
+        public bool CanGoOverviewNext => _overviewPager.CanGoNext;
+        public bool CanGoOverviewPrevious => _overviewPager.CanGoPrevious;
+
+        public bool OverviewHasMultiplePages => _overviewPager.HasMultiplePages;
+
+        public string OverviewPageInfo => string.Format(
+            Playnite.SDK.ResourceProvider.GetString("LOCPlayAch_Achievements_PageInfo"),
+            OverviewCurrentPage,
+            OverviewTotalPages);
+
+        #endregion
+
+        #region Recent Achievements Pagination Properties
+
+        private const int RecentPageSize = 100;
+
+        public int RecentCurrentPage
+        {
+            get => _recentPager.CurrentPage;
+            set => _recentPager.CurrentPage = value;
+        }
+
+        public int RecentTotalPages => _recentPager.TotalPages;
+
+        public int RecentTotalItems => _recentPager.TotalItems;
+
+        public bool CanGoRecentNext => _recentPager.CanGoNext;
+        public bool CanGoRecentPrevious => _recentPager.CanGoPrevious;
+
+        public bool RecentHasMultiplePages => _recentPager.HasMultiplePages;
+
+        public string RecentPageInfo => string.Format(
+            Playnite.SDK.ResourceProvider.GetString("LOCPlayAch_Achievements_PageInfo"),
+            RecentCurrentPage,
+            RecentTotalPages);
+
+        #endregion
+
+        #region Selected Game Achievements Pagination Properties
+
+        private const int SelectedGameAchievementsPageSize = 100;
+
+        public int SelectedGameAchievementsCurrentPage
+        {
+            get => _selectedGameAchievementsPager.CurrentPage;
+            set => _selectedGameAchievementsPager.CurrentPage = value;
+        }
+
+        public int SelectedGameAchievementsTotalPages => _selectedGameAchievementsPager.TotalPages;
+
+        public int SelectedGameAchievementsTotalItems => _selectedGameAchievementsPager.TotalItems;
+
+        public bool CanGoSelectedGameAchievementsNext => _selectedGameAchievementsPager.CanGoNext;
+        public bool CanGoSelectedGameAchievementsPrevious => _selectedGameAchievementsPager.CanGoPrevious;
+
+        public bool SelectedGameAchievementsHasMultiplePages => _selectedGameAchievementsPager.HasMultiplePages;
+
+        public string SelectedGameAchievementsPageInfo => string.Format(
+            ResourceProvider.GetString("LOCPlayAch_Achievements_PageInfo"),
+            SelectedGameAchievementsCurrentPage,
+            SelectedGameAchievementsTotalPages);
+
+        #endregion
+
+        #region Progress Properties
+
+        private bool _isScanning;
+        public bool IsScanning
+        {
+            get => _isScanning;
+            set
+            {
+                if (SetValueAndReturn(ref _isScanning, value))
+                {
+                    OnPropertyChanged(nameof(ShowProgress));
+                    RaiseCommandsChanged();
+                }
+            }
+        }
+
+        private double _progressPercent;
+        public double ProgressPercent
+        {
+            get => _progressPercent;
+            set => SetValue(ref _progressPercent, value);
+        }
+
+        private string _progressMessage;
+        public string ProgressMessage
+        {
+            get => _progressMessage;
+            set => SetValue(ref _progressMessage, value);
+        }
+
+        public bool ShowProgress => IsScanning;
+
+        #endregion
+
+        #region Filter Properties
+
+        private string _searchText = string.Empty;
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                if (SetValueAndReturn(ref _searchText, value ?? string.Empty))
+                {
+                    CurrentPage = 1;
+                    RefreshFilter();
+                }
+            }
+        }
+
+        private bool _showUnlockedOnly;
+        public bool ShowUnlockedOnly
+        {
+            get => _showUnlockedOnly;
+            set
+            {
+                if (SetValueAndReturn(ref _showUnlockedOnly, value))
+                {
+                    if (value) _showLockedOnly = false;
+                    OnPropertyChanged(nameof(ShowLockedOnly));
+                    CurrentPage = 1;
+                    RefreshFilter();
+                }
+            }
+        }
+
+        private bool _showLockedOnly;
+        public bool ShowLockedOnly
+        {
+            get => _showLockedOnly;
+            set
+            {
+                if (SetValueAndReturn(ref _showLockedOnly, value))
+                {
+                    if (value) _showUnlockedOnly = false;
+                    OnPropertyChanged(nameof(ShowUnlockedOnly));
+                    CurrentPage = 1;
+                    RefreshFilter();
+                }
+            }
+        }
+
+        private int _sortIndex = 2; // Default to Unlock Date
+        public int SortIndex
+        {
+            get => _sortIndex;
+            set
+            {
+                if (SetValueAndReturn(ref _sortIndex, value))
+                {
+                    CurrentPage = 1;
+                    RefreshFilter();
+                }
+            }
+        }
+
+        #endregion
+
+        #region Status Properties
+
+        private string _statusText;
+        public string StatusText
+        {
+            get => _statusText;
+            set => SetValue(ref _statusText, value);
+        }
+
+        private int _totalCount;
+        private int _unlockedCount;
+        private int _gamesCount;
+
+        #endregion
+
+        #region Commands
+
+        public ICommand RefreshViewCommand { get; }
+        public ICommand ScanAllCommand { get; }
+        public ICommand QuickScanCommand { get; }
+        public ICommand CancelScanCommand { get; }
+        public ICommand NextPageCommand { get; }
+        public ICommand PreviousPageCommand { get; }
+        public ICommand FirstPageCommand { get; }
+        public ICommand LastPageCommand { get; }
+        public ICommand OverviewNextPageCommand { get; }
+        public ICommand OverviewPreviousPageCommand { get; }
+        public ICommand OverviewFirstPageCommand { get; }
+        public ICommand OverviewLastPageCommand { get; }
+        public ICommand RecentNextPageCommand { get; }
+        public ICommand RecentPreviousPageCommand { get; }
+        public ICommand RecentFirstPageCommand { get; }
+        public ICommand RecentLastPageCommand { get; }
+        public ICommand SelectedGameAchievementsNextPageCommand { get; }
+        public ICommand SelectedGameAchievementsPreviousPageCommand { get; }
+        public ICommand SelectedGameAchievementsFirstPageCommand { get; }
+        public ICommand SelectedGameAchievementsLastPageCommand { get; }
+        public ICommand RevealAchievementCommand { get; }
+        public ICommand CloseViewCommand { get; }
+        public ICommand ClearGameSelectionCommand { get; }
+
+        #endregion
+
+        #region Public Methods
+
+        public void SetActive(bool isActive)
+        {
+            _isActive = isActive;
+            if (!isActive)
+            {
+                CancelPendingRefresh();
+            }
+        }
+
+        public async System.Threading.Tasks.Task RefreshViewAsync()
+        {
+            if (!_isActive)
+            {
+                return;
+            }
+
+            // Ensure the UI gets a chance to paint before we begin heavy work.
+            await Task.Yield();
+
+            var version = Interlocked.Increment(ref _refreshVersion);
+
+            var newCts = new CancellationTokenSource();
+            var oldCts = Interlocked.Exchange(ref _refreshCts, newCts);
+            try { oldCts?.Cancel(); } catch { }
+            try { oldCts?.Dispose(); } catch { }
+
+            var cancel = newCts.Token;
+
+            try
+            {
+                StatusText = ResourceProvider.GetString("LOCPlayAch_Status_LoadingAchievements");
+
+                await _refreshLock.WaitAsync(cancel).ConfigureAwait(false);
+                try
+                {
+                    HashSet<string> revealedCopy;
+                    lock (_revealedKeys)
+                    {
+                        revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
+                    }
+                    var diagnostics = _settings?.Persisted?.EnableDiagnostics == true;
+
+                    SidebarDataSnapshot snapshot;
+                    using (PerfTrace.Measure("SidebarViewModel.BuildSnapshot", _logger, diagnostics))
+                    {
+                        snapshot = await Task.Run(
+                            () => _dataBuilder.Build(_settings, revealedCopy, cancel),
+                            cancel).ConfigureAwait(false);
+                    }
+
+                    System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
+                    {
+                        if (_disposed || !_isActive)
+                        {
+                            return;
+                        }
+
+                        if (version != _refreshVersion)
+                        {
+                            return;
+                        }
+
+                        using (PerfTrace.Measure("SidebarViewModel.ApplySnapshot", _logger, diagnostics))
+                        {
+                            ApplySnapshot(snapshot);
+                        }
+                    });
+                }
+                finally
+                {
+                    _refreshLock.Release();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when new refresh starts.
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to refresh sidebar achievements");
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
+            }
+        }
+
+        public async System.Threading.Tasks.Task ScanAllAsync()
+        {
+            if (IsScanning) return;
+
+            try
+            {
+                IsScanning = true;
+                ProgressPercent = 0;
+                ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
+
+                await _achievementManager.StartManagedRebuildAsync();
+                await RefreshViewAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Scan all failed");
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
+            }
+            finally
+            {
+                IsScanning = false;
+                ProgressPercent = 0;
+            }
+        }
+
+        public async System.Threading.Tasks.Task QuickScanAsync()
+        {
+            if (IsScanning) return;
+
+            try
+            {
+                IsScanning = true;
+                ProgressPercent = 0;
+                ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
+
+                await _achievementManager.StartManagedQuickRefreshAsync();
+                await RefreshViewAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Quick scan failed");
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_QuickScanFailed"), ex.Message);
+            }
+            finally
+            {
+                IsScanning = false;
+                ProgressPercent = 0;
+            }
+        }
+
+        public void CancelScan()
+        {
+            _achievementManager.CancelCurrentRebuild();
+        }
+
+        public void ClearSearch()
+        {
+            SearchText = string.Empty;
+        }
+
+        public void ClearOverviewSearch()
+        {
+            OverviewSearchText = string.Empty;
+        }
+
+        #endregion
+
+        #region Private Methods
+
+        private void CancelPendingRefresh()
+        {
+            var cts = Interlocked.Exchange(ref _refreshCts, null);
+            try { cts?.Cancel(); } catch { }
+            try { cts?.Dispose(); } catch { }
+        }
+
+        private void ApplySnapshot(SidebarDataSnapshot snapshot)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _latestSnapshot = snapshot;
+
+            if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulkAll)
+            {
+                bulkAll.ReplaceAll(snapshot.Achievements);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(AllAchievements, snapshot.Achievements);
+            }
+
+            _allGamesOverview = snapshot.GamesOverview ?? new List<GameOverviewItem>();
+            _allRecentAchievements = snapshot.RecentAchievements ?? new List<RecentAchievementItem>();
+
+            _totalCount = snapshot.TotalAchievements;
+            _unlockedCount = snapshot.TotalUnlocked;
+            _gamesCount = snapshot.TotalGames;
+
+            TotalGamesOverview = snapshot.TotalGames;
+            TotalAchievementsOverview = snapshot.TotalAchievements;
+            TotalUnlockedOverview = snapshot.TotalUnlocked;
+            TotalCommon = snapshot.TotalCommon;
+            TotalUncommon = snapshot.TotalUncommon;
+            TotalRare = snapshot.TotalRare;
+            TotalUltraRare = snapshot.TotalUltraRare;
+            PerfectGames = snapshot.PerfectGames;
+            GlobalProgression = snapshot.GlobalProgressionPercent;
+            LaunchedProgression = snapshot.LaunchedProgressionPercent;
+
+            OnPropertyChanged(nameof(CommonPercentage));
+            OnPropertyChanged(nameof(UncommonPercentage));
+            OnPropertyChanged(nameof(RarePercentage));
+            OnPropertyChanged(nameof(UltraRarePercentage));
+
+            GlobalTimeline.SetCounts(snapshot.GlobalUnlockCountsByDate);
+
+            if (SelectedGame?.PlayniteGameId.HasValue == true &&
+                snapshot.UnlockCountsByDateByGame != null &&
+                snapshot.UnlockCountsByDateByGame.TryGetValue(SelectedGame.PlayniteGameId.Value, out var selectedCounts))
+            {
+                SelectedGameTimeline.SetCounts(selectedCounts);
+            }
+            else
+            {
+                SelectedGameTimeline.SetCounts(null);
+            }
+
+            RefreshFilter();
+            ApplyOverviewFilters();
+
+            _recentPager.SetSourceItems(_allRecentAchievements);
+            _recentPager.GoToFirstPage();
+            UpdateFilteredStatus();
+        }
+
+        private static string MakeRevealKey(Guid? playniteGameId, string apiName, string gameName)
+        {
+            var gamePart = playniteGameId?.ToString() ?? (gameName ?? string.Empty);
+            return $"{gamePart}\u001f{apiName ?? string.Empty}";
+        }
+
+        private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == "Persisted.UseCoverImages")
+            {
+                OnPropertyChanged(nameof(UseCoverImages));
+            }
+            else if (e.PropertyName == "Persisted.IgnoreUnplayedGames")
+            {
+                OnPropertyChanged(nameof(IgnoreUnplayedGames));
+                if (IgnoreUnplayedGames)
+                {
+                    HideUnplayedGames = true;
+                }
+            }
+        }
+
+        private void RevealAchievement(AchievementDisplayItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            var key = MakeRevealKey(item.PlayniteGameId, item.ApiName, item.GameName);
+
+            item.ToggleReveal();
+
+            lock (_revealedKeys)
+            {
+                if (item.IsRevealed)
+                {
+                    _revealedKeys.Add(key);
+                }
+                else
+                {
+                    _revealedKeys.Remove(key);
+                }
+            }
+        }
+
+        private void OnRebuildProgress(object sender, ProgressReport report)
+        {
+            if (report == null) return;
+
+            var now = DateTime.UtcNow;
+
+            lock (_progressLock)
+            {
+                var pct = CalculatePercent(report);
+                var isFinal = pct >= 100 || report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps);
+
+                if (!isFinal && (now - _lastProgressUpdate) < ProgressMinInterval)
+                {
+                    return;
+                }
+
+                _lastProgressUpdate = now;
+            }
+
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    IsScanning = _achievementManager.IsRebuilding;
+                    ProgressPercent = CalculatePercent(report);
+                    ProgressMessage = report.Message ?? string.Empty;
+
+                    if (report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps))
+                    {
+                        IsScanning = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug($"Progress UI update error: {ex.Message}");
+                }
+            }));
+        }
+
+        private void OnCacheInvalidated(object sender, EventArgs e)
+        {
+            if (!_isActive)
+            {
+                return;
+            }
+
+            System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
+            {
+                _refreshDebounceTimer.Stop();
+                _refreshDebounceTimer.Start();
+            });
+        }
+
+        private async void OnRefreshDebounceTimerTick(object sender, EventArgs e)
+        {
+            _refreshDebounceTimer.Stop();
+            try
+            {
+                await RefreshViewAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to auto-refresh sidebar on cache change");
+            }
+        }
+
+        private static double CalculatePercent(ProgressReport report)
+        {
+            if (report == null) return 0;
+
+            var pct = report.PercentComplete;
+            if ((pct <= 0 || double.IsNaN(pct)) && report.TotalSteps > 0)
+            {
+                pct = Math.Max(0, Math.Min(100, (report.CurrentStep * 100.0) / report.TotalSteps));
+            }
+            return pct;
+        }
+
+        private bool FilterAchievement(AchievementDisplayItem item)
+        {
+            if (item == null) return false;
+
+            // Search filter
+            if (!string.IsNullOrEmpty(SearchText))
+            {
+                var matchesSearch =
+                    (item.GameName?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                    (item.DisplayName?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                    (item.Description?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                if (!matchesSearch) return false;
+            }
+
+            // Unlocked/Locked filters
+            if (ShowUnlockedOnly && !item.Unlocked) return false;
+            if (ShowLockedOnly && item.Unlocked) return false;
+
+            return true;
+        }
+
+        public void RefreshFilter()
+        {
+            var diagnostics = _settings?.Persisted?.EnableDiagnostics == true;
+            using (PerfTrace.Measure("SidebarViewModel.RefreshFilter", _logger, diagnostics))
+            {
+                var filtered = ApplySort(AllAchievements.Where(FilterAchievement)).ToList();
+                _achievementsPager.SetSourceItems(filtered);
+
+                OnPropertyChanged(nameof(PageInfo));
+                UpdateFilteredStatus();
+            }
+        }
+
+        private IEnumerable<AchievementDisplayItem> ApplySort(IEnumerable<AchievementDisplayItem> items)
+        {
+            switch (SortIndex)
+            {
+                case 0: // Game Name
+                    return items.OrderBy(a => a.GameName).ThenBy(a => a.DisplayName);
+                case 1: // Achievement Name
+                    return items.OrderBy(a => a.DisplayName);
+                case 2: // Unlock Date (most recent first)
+                    return items.OrderByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue);
+                case 3: // Rarity (rarest first)
+                    return items.OrderBy(a => a.GlobalPercentUnlocked ?? 100);
+                default:
+                    return items;
+            }
+        }
+
+
+
+        private void GoToNextPage()
+        {
+            if (CanGoNext) CurrentPage++;
+        }
+
+        private void GoToPreviousPage()
+        {
+            if (CanGoPrevious) CurrentPage--;
+        }
+
+        private void GoToFirstPage()
+        {
+            CurrentPage = 1;
+        }
+
+        private void GoToLastPage()
+        {
+            CurrentPage = TotalPages;
+        }
+
+        private void GoToOverviewNextPage()
+        {
+            if (CanGoOverviewNext) OverviewCurrentPage++;
+        }
+
+        private void GoToOverviewPreviousPage()
+        {
+            if (CanGoOverviewPrevious) OverviewCurrentPage--;
+        }
+
+        private void GoToOverviewFirstPage()
+        {
+            OverviewCurrentPage = 1;
+        }
+
+        private void GoToOverviewLastPage()
+        {
+            OverviewCurrentPage = OverviewTotalPages;
+        }
+
+        private void GoToRecentNextPage()
+        {
+            if (CanGoRecentNext) RecentCurrentPage++;
+        }
+
+        private void GoToRecentPreviousPage()
+        {
+            if (CanGoRecentPrevious) RecentCurrentPage--;
+        }
+
+        private void GoToRecentFirstPage()
+        {
+            RecentCurrentPage = 1;
+        }
+
+        private void GoToRecentLastPage()
+        {
+            RecentCurrentPage = RecentTotalPages;
+        }
+
+        private void GoToSelectedGameAchievementsNextPage()
+        {
+            if (CanGoSelectedGameAchievementsNext) SelectedGameAchievementsCurrentPage++;
+        }
+
+        private void GoToSelectedGameAchievementsPreviousPage()
+        {
+            if (CanGoSelectedGameAchievementsPrevious) SelectedGameAchievementsCurrentPage--;
+        }
+
+        private void GoToSelectedGameAchievementsFirstPage()
+        {
+            SelectedGameAchievementsCurrentPage = 1;
+        }
+
+        private void GoToSelectedGameAchievementsLastPage()
+        {
+            SelectedGameAchievementsCurrentPage = SelectedGameAchievementsTotalPages;
+        }
+
+        private void RaisePaginationChanged()
+        {
+            OnPropertyChanged(nameof(PageInfo));
+            OnPropertyChanged(nameof(HasMultiplePages));
+            (NextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (PreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (FirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (LastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private void RaiseOverviewPaginationChanged()
+        {
+            OnPropertyChanged(nameof(OverviewPageInfo));
+            OnPropertyChanged(nameof(OverviewHasMultiplePages));
+            (OverviewNextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (OverviewPreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (OverviewFirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (OverviewLastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private void RaiseRecentPaginationChanged()
+        {
+            OnPropertyChanged(nameof(RecentPageInfo));
+            OnPropertyChanged(nameof(RecentHasMultiplePages));
+            (RecentNextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (RecentPreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (RecentFirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (RecentLastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private void RaiseSelectedGameAchievementsPaginationChanged()
+        {
+            OnPropertyChanged(nameof(SelectedGameAchievementsPageInfo));
+            OnPropertyChanged(nameof(SelectedGameAchievementsHasMultiplePages));
+            (SelectedGameAchievementsNextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (SelectedGameAchievementsPreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (SelectedGameAchievementsFirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (SelectedGameAchievementsLastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private void UpdateStats()
+        {
+            _totalCount = AllAchievements.Count;
+            _unlockedCount = AllAchievements.Count(a => a.Unlocked);
+            _gamesCount = AllAchievements.Select(a => a.GameName).Distinct().Count();
+
+            UpdateFilteredStatus();
+        }
+
+        private void UpdateFilteredStatus()
+        {
+            if (_totalCount == 0)
+            {
+                StatusText = ResourceProvider.GetString("LOCPlayAch_Status_NoAchievementsCached");
+            }
+            else if (FilteredCount < _totalCount)
+            {
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_FilteredCounts"), FilteredCount, _totalCount, _unlockedCount, _gamesCount);
+            }
+            else
+            {
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_TotalCounts"), _totalCount, _unlockedCount, _gamesCount);
+            }
+        }
+
+        private void UpdateGameInView(string gameId)
+        {
+            // This method is intentionally left empty.
+            // The debounced OnCacheInvalidated handler now manages all UI refreshes
+            // to prevent flickering from partial or redundant updates.
+        }
+
+        private void RecalculateOverviewStats()
+        {
+            // This now calculates from the filtered view
+            var sourceList = _filteredGamesOverview;
+
+            TotalGamesOverview = sourceList.Count;
+            TotalAchievementsOverview = sourceList.Sum(g => g.TotalAchievements);
+            TotalUnlockedOverview = sourceList.Sum(g => g.UnlockedAchievements);
+            TotalCommon = sourceList.Sum(g => g.CommonCount);
+            TotalUncommon = sourceList.Sum(g => g.UncommonCount);
+            TotalRare = sourceList.Sum(g => g.RareCount);
+            TotalUltraRare = sourceList.Sum(g => g.UltraRareCount);
+            PerfectGames = sourceList.Count(g => g.IsPerfect);
+
+            GlobalProgression = TotalAchievementsOverview > 0 ? (double)TotalUnlockedOverview / TotalAchievementsOverview * 100 : 0;
+
+            var launchedGames = sourceList.Where(g => g.UnlockedAchievements > 0).ToList();
+            if (launchedGames.Any())
+            {
+                var launchedTotal = launchedGames.Sum(g => g.TotalAchievements);
+                var launchedUnlocked = launchedGames.Sum(g => g.UnlockedAchievements);
+                LaunchedProgression = launchedTotal > 0 ? (double)launchedUnlocked / launchedTotal * 100 : 0;
+            }
+            else
+            {
+                LaunchedProgression = 0;
+            }
+        }
+
+        private void RaiseCommandsChanged()
+        {
+            (ScanAllCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+            (QuickScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+            (CancelScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (NextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (PreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (FirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (LastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        #endregion
+
+        #region Overview Methods
+
+        // LoadOverviewData removed: overview and recent lists are built via SidebarDataBuilder snapshots.
+
+        private void ApplyOverviewFilters()
+        {
+            var filtered = _allGamesOverview.AsEnumerable();
+
+            // Search filter
+            if (!string.IsNullOrEmpty(OverviewSearchText))
+            {
+                filtered = filtered.Where(g =>
+                    g.GameName?.IndexOf(OverviewSearchText, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            // Hide games with no unlocked
+            if (HideGamesWithNoUnlocked)
+            {
+                filtered = filtered.Where(g => g.UnlockedAchievements > 0);
+            }
+
+            // Hide unplayed games, but show them if they have achievements
+            if (HideUnplayedGames)
+            {
+                filtered = filtered.Where(g => g.LastPlayed.HasValue || g.UnlockedAchievements > 0);
+            }
+
+            _filteredGamesOverview = filtered.ToList();
+            _overviewPager.SetSourceItems(_filteredGamesOverview);
+            RecalculateOverviewStats();
+        }
+
+        private async void LoadSelectedGameAchievements()
+        {
+            if (SelectedGame == null)
+            {
+                _allSelectedGameAchievements = new List<AchievementDisplayItem>();
+                _selectedGameAchievementsPager.SetSourceItems(_allSelectedGameAchievements);
+                _selectedGameAchievementsPager.GoToFirstPage();
+                SelectedGameTimeline.SetCounts(null);
+                return;
+            }
+
+            try
+            {
+                if (!SelectedGame.PlayniteGameId.HasValue)
+                    return;
+
+                var gameId = SelectedGame.PlayniteGameId.Value;
+                var hideLocked = _settings?.Persisted?.HideAchievementsLockedForSelf ?? false;
+                HashSet<string> revealedCopy;
+                lock (_revealedKeys)
+                {
+                    revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
+                }
+
+                (List<AchievementDisplayItem> items, Dictionary<DateTime, int> counts) result = await Task.Run(() =>
+                {
+                    var counts = new Dictionary<DateTime, int>();
+
+                    var gameData = _achievementManager.GetGameAchievementData(gameId);
+                    if (gameData == null || gameData.Achievements == null)
+                    {
+                        return (new List<AchievementDisplayItem>(), counts);
+                    }
+
+                    var achievements = new List<AchievementDisplayItem>(gameData.Achievements.Count);
+                    foreach (var ach in gameData.Achievements)
+                    {
+                        var item = new AchievementDisplayItem
+                        {
+                            GameName = gameData.GameName ?? "Unknown",
+                            PlayniteGameId = gameId,
+                            DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
+                            Description = ach.Description ?? string.Empty,
+                            UnlockedIconUrl = ach.UnlockedIconUrl,
+                            LockedIconUrl = ach.LockedIconUrl,
+                            UnlockTimeUtc = ach.UnlockTimeUtc,
+                            GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
+                            Unlocked = ach.Unlocked,
+                            Hidden = ach.Hidden,
+                            ApiName = ach.ApiName,
+                            HideAchievementsLockedForSelf = hideLocked
+                        };
+
+                        item.IsRevealed = revealedCopy.Contains(MakeRevealKey(gameId, ach.ApiName, gameData.GameName));
+                        achievements.Add(item);
+
+                        if (ach.Unlocked && ach.UnlockTimeUtc.HasValue)
+                        {
+                            var date = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value).Date;
+                            if (counts.TryGetValue(date, out var existing))
+                            {
+                                counts[date] = existing + 1;
+                            }
+                            else
+                            {
+                                counts[date] = 1;
+                            }
+                        }
+                    }
+
+                    var sorted = achievements
+                        .OrderByDescending(a => a.Unlocked)
+                        .ThenByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue)
+                        .ThenBy(a => a.GlobalPercentUnlocked ?? 100)
+                        .ToList();
+
+                    return (sorted, counts);
+                }).ConfigureAwait(true);
+
+                _allSelectedGameAchievements = result.items;
+                _selectedGameAchievementsPager.SetSourceItems(_allSelectedGameAchievements);
+                _selectedGameAchievementsPager.GoToFirstPage();
+
+                // Prefer snapshot-derived counts if available.
+                if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
+                    _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var snapshotCounts))
+                {
+                    SelectedGameTimeline.SetCounts(snapshotCounts);
+                }
+                else
+                {
+                    SelectedGameTimeline.SetCounts(result.counts);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to load achievements for game {SelectedGame?.AppId}");
+            }
+        }
+
+        public void ClearGameSelection()
+        {
+            SelectedGame = null;
+        }
+
+        private Dictionary<DateTime, int> GetAchievementCountsByDate(DateTime startDate, DateTime endDate, Guid? gameId)
+        {
+            var result = new Dictionary<DateTime, int>();
+
+            try
+            {
+                var gameIds = gameId.HasValue
+                    ? new List<string> { gameId.Value.ToString() }
+                    : _achievementManager.Cache.GetCachedGameIds();
+
+                if (gameIds == null) return result;
+
+                foreach (var gid in gameIds)
+                {
+                    var gameData = _achievementManager.GetGameAchievementData(gid);
+                    if (gameData?.Achievements == null) continue;
+
+                    foreach (var ach in gameData.Achievements.Where(a => a.Unlocked && a.UnlockTimeUtc.HasValue))
+                    {
+                        var unlockDate = ach.UnlockTimeUtc.Value.Date;
+                        if (unlockDate >= startDate.Date && unlockDate <= endDate.Date)
+                        {
+                            if (!result.ContainsKey(unlockDate))
+                                result[unlockDate] = 0;
+                            result[unlockDate]++;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to get achievement counts by date");
+            }
+
+            return result;
+        }
+
+        #endregion
+
+        public void Dispose()
+        {
+            _disposed = true;
+            SetActive(false);
+            _refreshDebounceTimer?.Stop();
+            CancelPendingRefresh();
+            if (_achievementManager != null)
+            {
+                _achievementManager.RebuildProgress -= OnRebuildProgress;
+                _achievementManager.CacheInvalidated -= OnCacheInvalidated;
+            }
+            if (_settings != null)
+            {
+                _settings.PropertyChanged -= OnSettingsChanged;
+            }
+        }
+    }
+}

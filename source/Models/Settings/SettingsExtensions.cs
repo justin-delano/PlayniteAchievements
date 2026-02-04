@@ -1,0 +1,148 @@
+using System;
+
+namespace PlayniteAchievements.Models.Settings
+{
+    /// <summary>
+    /// Extension methods for settings operations including copying, cloning, and migration.
+    /// </summary>
+    public static class SettingsExtensions
+    {
+        /// <summary>
+        /// Copies all persisted settings from one PersistedSettings instance to another.
+        /// This includes Steam settings, update settings, notifications, display preferences,
+        /// theme integration settings, RetroAchievements settings, and rarity thresholds.
+        /// </summary>
+        /// <param name="target">The target settings instance to copy to.</param>
+        /// <param name="source">The source settings instance to copy from.</param>
+        /// <exception cref="ArgumentNullException">Thrown when target is null.</exception>
+        public static void CopyFrom(this PersistedSettings target, PersistedSettings source)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            if (source == null)
+            {
+                return;
+            }
+
+            // Steam Settings
+            target.SteamUserId = source.SteamUserId;
+            target.SteamApiKey = source.SteamApiKey;
+            target.SteamLanguage = source.SteamLanguage;
+
+            // Update and Refresh Settings
+            target.EnablePeriodicUpdates = source.EnablePeriodicUpdates;
+            target.PeriodicUpdateHours = source.PeriodicUpdateHours;
+            target.QuickRefreshRecentGamesCount = source.QuickRefreshRecentGamesCount;
+
+            // Notification Settings
+            target.EnableNotifications = source.EnableNotifications;
+            target.NotifyPeriodicUpdates = source.NotifyPeriodicUpdates;
+            target.NotifyOnRebuild = source.NotifyOnRebuild;
+
+            // Display Preferences
+            target.HideAchievementsLockedForSelf = source.HideAchievementsLockedForSelf;
+            target.UseCoverImages = source.UseCoverImages;
+            target.IgnoreUnplayedGames = source.IgnoreUnplayedGames;
+            target.EnableDiagnostics = source.EnableDiagnostics;
+
+            // RetroAchievements Settings
+            target.RaUsername = source.RaUsername;
+            target.RaWebApiKey = source.RaWebApiKey;
+            target.RaRarityStats = source.RaRarityStats;
+            target.HashIndexMaxAgeDays = source.HashIndexMaxAgeDays;
+            target.EnableArchiveScanning = source.EnableArchiveScanning;
+            target.EnableDiscHashing = source.EnableDiscHashing;
+            target.EnableRaNameFallback = source.EnableRaNameFallback;
+
+            // Rarity Threshold Settings (order matters due to cross-property validation)
+            target.UncommonThreshold = source.UncommonThreshold;
+            target.RareThreshold = source.RareThreshold;
+            target.UltraRareThreshold = source.UltraRareThreshold;
+        }
+
+        /// <summary>
+        /// Creates a deep copy of a PersistedSettings instance.
+        /// All property values are copied to a new instance.
+        /// </summary>
+        /// <param name="source">The source settings to clone.</param>
+        /// <returns>A new PersistedSettings instance with copied values, or null if source is null.</returns>
+        public static PersistedSettings Clone(this PersistedSettings source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            var clone = new PersistedSettings
+            {
+                // Steam Settings
+                SteamUserId = source.SteamUserId,
+                SteamApiKey = source.SteamApiKey,
+                SteamLanguage = source.SteamLanguage,
+
+                // Update and Refresh Settings
+                EnablePeriodicUpdates = source.EnablePeriodicUpdates,
+                PeriodicUpdateHours = source.PeriodicUpdateHours,
+                QuickRefreshRecentGamesCount = source.QuickRefreshRecentGamesCount,
+
+                // Notification Settings
+                EnableNotifications = source.EnableNotifications,
+                NotifyPeriodicUpdates = source.NotifyPeriodicUpdates,
+                NotifyOnRebuild = source.NotifyOnRebuild,
+
+                // Display Preferences
+                HideAchievementsLockedForSelf = source.HideAchievementsLockedForSelf,
+                UseCoverImages = source.UseCoverImages,
+                IgnoreUnplayedGames = source.IgnoreUnplayedGames,
+                EnableDiagnostics = source.EnableDiagnostics,
+
+                // RetroAchievements Settings
+                RaUsername = source.RaUsername,
+                RaWebApiKey = source.RaWebApiKey,
+                RaRarityStats = source.RaRarityStats,
+                HashIndexMaxAgeDays = source.HashIndexMaxAgeDays,
+                EnableArchiveScanning = source.EnableArchiveScanning,
+                EnableDiscHashing = source.EnableDiscHashing,
+                EnableRaNameFallback = source.EnableRaNameFallback,
+
+                // Rarity Threshold Settings (order matters due to cross-property validation)
+                UncommonThreshold = source.UncommonThreshold,
+                RareThreshold = source.RareThreshold,
+                UltraRareThreshold = source.UltraRareThreshold
+            };
+
+            return clone;
+        }
+
+        /// <summary>
+        /// Migrates settings from an old format to a new format.
+        /// This method can be used to handle settings migration when the settings structure changes.
+        /// Currently a no-op placeholder for future migration needs.
+        /// </summary>
+        /// <param name="settings">The settings instance to migrate.</param>
+        /// <param name="oldVersion">The old settings version (if applicable).</param>
+        /// <returns>The same settings instance with migrated values, for method chaining.</returns>
+        public static PersistedSettings Migrate(
+            this PersistedSettings settings,
+            int? oldVersion = null)
+        {
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
+
+            // Future migration logic can be added here based on oldVersion
+            // For example:
+            // if (oldVersion < 2)
+            // {
+            //     // Migrate from version 1 to 2
+            //     settings.NewProperty = GetDefaultValueForNewProperty();
+            // }
+
+            return settings;
+        }
+    }
+}

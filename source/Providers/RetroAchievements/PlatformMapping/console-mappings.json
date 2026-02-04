@@ -1,0 +1,506 @@
+{
+  "consoles": [
+    {
+      "id": 81,
+      "name": "Famicom Disk System",
+      "keywords": ["famicomdisksystem", "famicomdisk", "fds"],
+      "category": "nintendo"
+    },
+    {
+      "id": 78,
+      "name": "Nintendo DSi",
+      "keywords": ["nintendodsi", "dsi"],
+      "category": "nintendo"
+    },
+    {
+      "id": 62,
+      "name": "Nintendo 3DS",
+      "keywords": ["nintendo3ds", "3ds"],
+      "category": "nintendo"
+    },
+    {
+      "id": 18,
+      "name": "Nintendo DS",
+      "keywords": ["nintendods", "nds", "ds"],
+      "category": "nintendo"
+    },
+    {
+      "id": 28,
+      "name": "Virtual Boy",
+      "keywords": ["virtualboy", "vb"],
+      "category": "nintendo"
+    },
+    {
+      "id": 24,
+      "name": "Pokemon Mini",
+      "keywords": ["pokemonmini"],
+      "category": "nintendo"
+    },
+    {
+      "id": 2,
+      "name": "Nintendo 64",
+      "keywords": ["nintendo64", "n64"],
+      "category": "nintendo"
+    },
+    {
+      "id": 3,
+      "name": "Super Nintendo Entertainment System",
+      "keywords": ["supernintendo", "snes", "supernes", "superfamicom", "sfc"],
+      "category": "nintendo"
+    },
+    {
+      "id": 5,
+      "name": "Game Boy Advance",
+      "keywords": ["gameboyadvance", "gba"],
+      "category": "nintendo"
+    },
+    {
+      "id": 6,
+      "name": "Game Boy Color",
+      "keywords": ["gameboycolor", "gbc"],
+      "category": "nintendo"
+    },
+    {
+      "id": 4,
+      "name": "Game Boy",
+      "keywords": ["gameboy", "gb"],
+      "category": "nintendo"
+    },
+    {
+      "id": 60,
+      "name": "Game & Watch",
+      "keywords": ["gameandwatch", "game&watch", "g&w"],
+      "category": "nintendo"
+    },
+    {
+      "id": 7,
+      "name": "Nintendo Entertainment System",
+      "keywords": ["nintendoentertainmentsystem", "nes", "famicom"],
+      "category": "nintendo"
+    },
+    {
+      "id": 9,
+      "name": "Sega CD",
+      "keywords": ["segacd", "megacd", "mega-cd", "sega-cd"],
+      "category": "sega"
+    },
+    {
+      "id": 10,
+      "name": "Sega 32X",
+      "keywords": ["sega32x", "32x"],
+      "category": "sega"
+    },
+    {
+      "id": 11,
+      "name": "Master System",
+      "keywords": ["mastersystem", "sms"],
+      "category": "sega"
+    },
+    {
+      "id": 15,
+      "name": "Game Gear",
+      "keywords": ["gamegear", "gg"],
+      "category": "sega"
+    },
+    {
+      "id": 39,
+      "name": "Saturn",
+      "keywords": ["saturn"],
+      "category": "sega"
+    },
+    {
+      "id": 40,
+      "name": "Dreamcast",
+      "keywords": ["dreamcast", "dc"],
+      "category": "sega"
+    },
+    {
+      "id": 1,
+      "name": "Mega Drive",
+      "keywords": ["megadrive", "megadrv", "genesis", "md"],
+      "category": "sega"
+    },
+    {
+      "id": 68,
+      "name": "Pico",
+      "keywords": ["pico"],
+      "category": "sega"
+    },
+    {
+      "id": 21,
+      "name": "PlayStation 2",
+      "keywords": ["playstation2", "ps2"],
+      "category": "sony"
+    },
+    {
+      "id": 41,
+      "name": "PlayStation Portable",
+      "keywords": ["playstationportable", "psp"],
+      "category": "sony"
+    },
+    {
+      "id": 12,
+      "name": "PlayStation",
+      "keywords": ["playstation", "psx", "ps1"],
+      "category": "sony"
+    },
+    {
+      "id": 16,
+      "name": "GameCube",
+      "keywords": ["gamecube", "ngc", "gcn"],
+      "category": "nintendo-optical"
+    },
+    {
+      "id": 20,
+      "name": "Wii U",
+      "keywords": ["wiiu", "wii-u"],
+      "category": "nintendo-optical"
+    },
+    {
+      "id": 19,
+      "name": "Wii",
+      "keywords": ["wii"],
+      "category": "nintendo-optical"
+    },
+    {
+      "id": 76,
+      "name": "PC Engine CD",
+      "keywords": ["pcenginecd", "pcecd", "turbografxcd", "tgcd"],
+      "category": "nec"
+    },
+    {
+      "id": 8,
+      "name": "PC Engine",
+      "keywords": ["pcengine", "pce", "turbografx16", "turbografx", "tg16", "supergrafx", "sgx"],
+      "category": "nec"
+    },
+    {
+      "id": 49,
+      "name": "PC-FX",
+      "keywords": ["pcfx", "pc-fx"],
+      "category": "nec"
+    },
+    {
+      "id": 56,
+      "name": "Neo Geo CD",
+      "keywords": ["neogeocd", "neo geo cd"],
+      "category": "snk"
+    },
+    {
+      "id": 14,
+      "name": "Neo Geo Pocket",
+      "keywords": ["neogeopocket", "ngp"],
+      "category": "snk"
+    },
+    {
+      "id": 27,
+      "name": "Arcade",
+      "keywords": ["arcade", "mame", "fbneo", "finalburn", "neogeo"],
+      "category": "arcade"
+    },
+    {
+      "id": 26,
+      "name": "MS-DOS",
+      "keywords": ["msdos", "ms-dos", "pcdos", "pc-dos"],
+      "category": "computer"
+    },
+    {
+      "id": 29,
+      "name": "MSX",
+      "keywords": ["msx"],
+      "category": "computer"
+    },
+    {
+      "id": 30,
+      "name": "Commodore 64",
+      "keywords": ["commodore64", "c64"],
+      "category": "computer"
+    },
+    {
+      "id": 35,
+      "name": "Amiga",
+      "keywords": ["amiga"],
+      "category": "computer"
+    },
+    {
+      "id": 36,
+      "name": "Atari ST",
+      "keywords": ["atarist"],
+      "category": "computer"
+    },
+    {
+      "id": 37,
+      "name": "Amstrad CPC",
+      "keywords": ["amstradcpc", "amstrad", "cpc"],
+      "category": "computer"
+    },
+    {
+      "id": 38,
+      "name": "Apple II",
+      "keywords": ["appleii", "apple2"],
+      "category": "computer"
+    },
+    {
+      "id": 47,
+      "name": "PC-8800",
+      "keywords": ["pc8800", "pc-8800", "pc88"],
+      "category": "computer"
+    },
+    {
+      "id": 48,
+      "name": "PC-9800",
+      "keywords": ["pc9800", "pc-9800", "pc98"],
+      "category": "computer"
+    },
+    {
+      "id": 52,
+      "name": "X68000",
+      "keywords": ["x68000", "x68k"],
+      "category": "computer"
+    },
+    {
+      "id": 58,
+      "name": "FM Towns",
+      "keywords": ["fms", "fmtowns", "fm towns"],
+      "category": "computer"
+    },
+    {
+      "id": 59,
+      "name": "ZX Spectrum",
+      "keywords": ["zxspectrum", "zxs", "spectrum"],
+      "category": "computer"
+    },
+    {
+      "id": 31,
+      "name": "ZX81",
+      "keywords": ["zx81"],
+      "category": "computer"
+    },
+    {
+      "id": 32,
+      "name": "Oric",
+      "keywords": ["oric"],
+      "category": "computer"
+    },
+    {
+      "id": 33,
+      "name": "SG-1000",
+      "keywords": ["sg1000", "sg-1000"],
+      "category": "computer"
+    },
+    {
+      "id": 34,
+      "name": "VIC-20",
+      "keywords": ["vic20", "vic-20"],
+      "category": "computer"
+    },
+    {
+      "id": 64,
+      "name": "Sharp X1",
+      "keywords": ["sharpx1", "x1"],
+      "category": "computer"
+    },
+    {
+      "id": 65,
+      "name": "TIC-80",
+      "keywords": ["tic80", "tic-80"],
+      "category": "computer"
+    },
+    {
+      "id": 66,
+      "name": "Thomson TO8",
+      "keywords": ["thomsonto8", "to8"],
+      "category": "computer"
+    },
+    {
+      "id": 67,
+      "name": "PC-6000",
+      "keywords": ["pc6000", "pc-6000"],
+      "category": "computer"
+    },
+    {
+      "id": 77,
+      "name": "Atari Jaguar CD",
+      "keywords": ["atarijaguarcd", "jaguarcd", "jaguar cd"],
+      "category": "atari"
+    },
+    {
+      "id": 17,
+      "name": "Atari Jaguar",
+      "keywords": ["atarijaguar", "jaguar"],
+      "category": "atari"
+    },
+    {
+      "id": 51,
+      "name": "Atari 7800",
+      "keywords": ["atari7800"],
+      "category": "atari"
+    },
+    {
+      "id": 50,
+      "name": "Atari 5200",
+      "keywords": ["atari5200"],
+      "category": "atari"
+    },
+    {
+      "id": 25,
+      "name": "Atari 2600",
+      "keywords": ["atari2600"],
+      "category": "atari"
+    },
+    {
+      "id": 13,
+      "name": "Atari Lynx",
+      "keywords": ["atarilynx", "lynx"],
+      "category": "atari"
+    },
+    {
+      "id": 53,
+      "name": "WonderSwan",
+      "keywords": ["wonderswan", "ws"],
+      "category": "other"
+    },
+    {
+      "id": 43,
+      "name": "3DO",
+      "keywords": ["3do"],
+      "category": "other"
+    },
+    {
+      "id": 42,
+      "name": "CD-i",
+      "keywords": ["cdi", "cd-i"],
+      "category": "other"
+    },
+    {
+      "id": 44,
+      "name": "ColecoVision",
+      "keywords": ["colecovision"],
+      "category": "other"
+    },
+    {
+      "id": 45,
+      "name": "Intellivision",
+      "keywords": ["intellivision"],
+      "category": "other"
+    },
+    {
+      "id": 46,
+      "name": "Vectrex",
+      "keywords": ["vectrex"],
+      "category": "other"
+    },
+    {
+      "id": 23,
+      "name": "Magnavox Odyssey 2",
+      "keywords": ["odyssey2", "odyssey 2", "magnavox"],
+      "category": "other"
+    },
+    {
+      "id": 57,
+      "name": "Fairchild Channel F",
+      "keywords": ["channelf", "fairchild"],
+      "category": "other"
+    },
+    {
+      "id": 61,
+      "name": "N-Gage",
+      "keywords": ["ngage", "n-gage"],
+      "category": "other"
+    },
+    {
+      "id": 63,
+      "name": "SuperVision",
+      "keywords": ["supervision"],
+      "category": "other"
+    },
+    {
+      "id": 80,
+      "name": "Uzebox",
+      "keywords": ["uzebox"],
+      "category": "other"
+    },
+    {
+      "id": 71,
+      "name": "Arduboy",
+      "keywords": ["arduboy"],
+      "category": "other"
+    },
+    {
+      "id": 72,
+      "name": "WASM-4",
+      "keywords": ["wasm4", "wasm-4"],
+      "category": "other"
+    },
+    {
+      "id": 55,
+      "name": "Super Cassette Vision",
+      "keywords": ["supercassettevision", "super cassettevision"],
+      "category": "other",
+      "priority": 1
+    },
+    {
+      "id": 54,
+      "name": "Cassette Vision",
+      "keywords": ["cassettevision"],
+      "category": "other",
+      "requiresExclusionCheck": true
+    },
+    {
+      "id": 69,
+      "name": "Mega Duck",
+      "keywords": ["megaduck"],
+      "category": "other"
+    },
+    {
+      "id": 70,
+      "name": "Zeebo",
+      "keywords": ["zeebo"],
+      "category": "other"
+    },
+    {
+      "id": 73,
+      "name": "Arcadia 2001",
+      "keywords": ["arcadia2001", "arcadia 2001"],
+      "category": "other"
+    },
+    {
+      "id": 74,
+      "name": "VC 4000",
+      "keywords": ["vc4000", "vc-4000", "interton"],
+      "category": "other"
+    },
+    {
+      "id": 75,
+      "name": "Elektor TV Games Computer",
+      "keywords": ["elektor"],
+      "category": "other"
+    },
+    {
+      "id": 79,
+      "name": "TI-83",
+      "keywords": ["ti83", "ti-83"],
+      "category": "other"
+    },
+    {
+      "id": 22,
+      "name": "Xbox",
+      "keywords": ["xbox"],
+      "category": "microsoft"
+    }
+  ],
+  "excludedPlatforms": [
+    "xbox360",
+    "xboxone",
+    "xboxseries",
+    "playstation3",
+    "ps3",
+    "playstation4",
+    "ps4",
+    "playstation5",
+    "ps5",
+    "psvita",
+    "playstationvita",
+    "vita"
+  ]
+}

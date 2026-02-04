@@ -1,0 +1,158 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Optional: one shared shadow you can apply to any Image -->
+  <DropShadowEffect x:Key="BadgeShadow" BlurRadius="6" ShadowDepth="3" Opacity="0.35"/>
+
+  <!-- =======================
+       SHAPES (128x128)
+       ======================= -->
+  <Geometry x:Key="GeoTriangle">M 64,12 L 116,110 12,110 Z</Geometry>
+  <Geometry x:Key="GeoSquareDiamond">M 64,10 L 118,64 64,118 10,64 Z</Geometry>
+  <Geometry x:Key="GeoPentagon">M 64,12 L 112,44 94,106 34,106 16,44 Z</Geometry>
+  <Geometry x:Key="GeoHexagon">M 64,10 L 110,37 110,91 64,118 18,91 18,37 Z</Geometry>
+
+  <!-- Sparkle “glints” -->
+  <Geometry x:Key="GeoGlint1">M96,28 L99,36 L107,39 L99,42 L96,50 L93,42 L85,39 L93,36 Z</Geometry>
+  <Geometry x:Key="GeoGlint2">M84,44 L86,50 L92,52 L86,54 L84,60 L82,54 L76,52 L82,50 Z</Geometry>
+  <Geometry x:Key="GeoGlint3">M104,52 L106,57 L112,59 L106,61 L104,66 L102,61 L96,59 L102,57 Z</Geometry>
+
+  <!-- =======================
+       METAL FILLS
+       ======================= -->
+  <LinearGradientBrush x:Key="FillBronze" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Offset="0.00" Color="#3B231A"/>
+    <GradientStop Offset="0.35" Color="#B56A37"/>
+    <GradientStop Offset="0.55" Color="#F2C08C"/>
+    <GradientStop Offset="1.00" Color="#6A3A25"/>
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="FillSilver" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Offset="0.00" Color="#222831"/>
+    <GradientStop Offset="0.35" Color="#A6B1BF"/>
+    <GradientStop Offset="0.55" Color="#F7F9FF"/>
+    <GradientStop Offset="1.00" Color="#46505C"/>
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="FillGold" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Offset="0.00" Color="#2F2106"/>
+    <GradientStop Offset="0.35" Color="#CF9B1F"/>
+    <GradientStop Offset="0.55" Color="#FFF2A8"/>
+    <GradientStop Offset="1.00" Color="#6F4C06"/>
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="FillPlatinum" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Offset="0.00" Color="#1B2632"/>
+    <GradientStop Offset="0.35" Color="#86C8FF"/>
+    <GradientStop Offset="0.55" Color="#FFFFFF"/>
+    <GradientStop Offset="1.00" Color="#56697A"/>
+  </LinearGradientBrush>
+
+  <!-- Rim strokes -->
+  <SolidColorBrush x:Key="RimBronze" Color="#B3FFEBDC"/>
+  <SolidColorBrush x:Key="RimSilver" Color="#B3FFFFFF"/>
+  <SolidColorBrush x:Key="RimGold" Color="#B3FFFAD2"/>
+  <SolidColorBrush x:Key="RimPlatinum" Color="#B3EBFAFF"/>
+
+  <!-- Static “shine band” overlay (painted on top of the shape) -->
+  <LinearGradientBrush x:Key="ShineOverlay" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Offset="0.00" Color="#00FFFFFF"/>
+    <GradientStop Offset="0.45" Color="#00FFFFFF"/>
+    <GradientStop Offset="0.55" Color="#66FFFFFF"/>
+    <GradientStop Offset="0.70" Color="#00FFFFFF"/>
+    <GradientStop Offset="1.00" Color="#00FFFFFF"/>
+  </LinearGradientBrush>
+
+  <!-- Optional facets for platinum/diamond -->
+  <DrawingBrush x:Key="FacetBrush" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,24,24" Viewbox="0,0,24,24">
+    <DrawingBrush.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Brush="#1AFFFFFF" Geometry="M 0,0 L 24,0 L 0,24 Z"/>
+        <GeometryDrawing Brush="#1480C8FF" Geometry="M 24,24 L 24,0 L 0,24 Z"/>
+      </DrawingGroup>
+    </DrawingBrush.Drawing>
+  </DrawingBrush>
+
+  <!-- =======================
+       BADGE IMAGES (use with <Image Source="{StaticResource ...}" />)
+       ======================= -->
+    <Style x:Key="RarityIcon" TargetType="Image">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
+    </Style>
+
+  <!-- Bronze triangle -->
+  <DrawingImage x:Key="BadgeBronzeTriangle">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Geometry="{StaticResource GeoTriangle}" Brush="{StaticResource FillBronze}">
+          <GeometryDrawing.Pen>
+            <Pen Brush="{StaticResource RimBronze}" Thickness="3" LineJoin="Round"/>
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+
+        <!-- Shine overlay -->
+        <GeometryDrawing Geometry="{StaticResource GeoTriangle}" Brush="{StaticResource ShineOverlay}"/>
+
+        <!-- Glint -->
+        <!-- <GeometryDrawing Geometry="{StaticResource GeoGlint1}" Brush="#73FFFFFF"/> -->
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+
+  <!-- Silver square (diamond) -->
+  <DrawingImage x:Key="BadgeSilverSquare">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Geometry="{StaticResource GeoSquareDiamond}" Brush="{StaticResource FillSilver}">
+          <GeometryDrawing.Pen>
+            <Pen Brush="{StaticResource RimSilver}" Thickness="3" LineJoin="Round"/>
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+
+        <GeometryDrawing Geometry="{StaticResource GeoSquareDiamond}" Brush="{StaticResource ShineOverlay}"/>
+        <!-- <GeometryDrawing Geometry="{StaticResource GeoGlint1}" Brush="#8CFFFFFF"/> -->
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+
+  <!-- Gold pentagon -->
+  <DrawingImage x:Key="BadgeGoldPentagon">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Geometry="{StaticResource GeoPentagon}" Brush="{StaticResource FillGold}">
+          <GeometryDrawing.Pen>
+            <Pen Brush="{StaticResource RimGold}" Thickness="3" LineJoin="Round"/>
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+
+        <GeometryDrawing Geometry="{StaticResource GeoPentagon}" Brush="{StaticResource ShineOverlay}"/>
+        <!-- <GeometryDrawing Geometry="{StaticResource GeoGlint1}" Brush="#A6FFFFFF"/> -->
+        <!-- <GeometryDrawing Geometry="{StaticResource GeoGlint2}" Brush="#8CFFFFFF"/> -->
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+
+  <!-- Platinum / diamond hexagon -->
+  <DrawingImage x:Key="BadgePlatinumHexagon">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource FillPlatinum}">
+          <GeometryDrawing.Pen>
+            <Pen Brush="{StaticResource RimPlatinum}" Thickness="3" LineJoin="Round"/>
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+
+        <!-- Facets -->
+        <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource FacetBrush}"/>
+
+        <!-- Shine + extra glints -->
+        <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource ShineOverlay}"/>
+          <!-- <GeometryDrawing Geometry="{StaticResource GeoGlint1}" Brush="#BFFFFFFF"/>
+          <GeometryDrawing Geometry="{StaticResource GeoGlint2}" Brush="#9FFFFFFF"/>
+          <GeometryDrawing Geometry="{StaticResource GeoGlint3}" Brush="#8CFFFFFF"/> -->
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+
+</ResourceDictionary>

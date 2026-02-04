@@ -1,0 +1,8 @@
+AddonId: PlayniteAchievements
+Packages:
+  - Version: 1.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2025-12-18
+    PackageUrl: 
+    Changelog:
+      - First release

@@ -1,0 +1,797 @@
+<!-- SettingsControl.xaml -->
+<UserControl x:Class="PlayniteAchievements.Views.SettingsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:conv="clr-namespace:PlayniteAchievements.Views.Converters"
+             mc:Ignorable="d"
+             d:DesignHeight="600"
+             d:DesignWidth="700">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Disable Steam auth buttons while busy -->
+            <Style x:Key="SteamAuthActionButtonStyle"
+                   TargetType="Button"
+                   BasedOn="{StaticResource {x:Type Button}}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding SteamAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                 Value="True">
+                        <Setter Property="IsEnabled" Value="False"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- Section header style -->
+            <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Margin" Value="0,0,0,12"/>
+            </Style>
+
+            <!-- Section container style -->
+            <Style x:Key="SectionBorderStyle" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
+                <Setter Property="CornerRadius" Value="6"/>
+                <Setter Property="Padding" Value="16"/>
+                <Setter Property="Margin" Value="0,0,0,16"/>
+            </Style>
+
+            <!-- Setting row style -->
+            <Style x:Key="SettingRowStyle" TargetType="Grid">
+                <Setter Property="Margin" Value="0,0,0,12"/>
+            </Style>
+
+            <!-- Muted text style -->
+            <Style x:Key="MutedTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Opacity" Value="0.6"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <TabControl x:Name="SettingsTabControl" SelectionChanged="TabControl_SelectionChanged">
+            <!-- ================== TAB: GENERAL SETTINGS ================== -->
+            <TabItem x:Name="GeneralTab" Header="{DynamicResource LOCPlayAch_Settings_TabGeneral}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <!-- Plugin Header -->
+                        <StackPanel Margin="0,0,0,20">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       Margin="0,0,0,4" />
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Description}"
+                                       Style="{DynamicResource MutedTextStyle}"
+                                       />
+                        </StackPanel>
+
+                        <!-- ================== RARITY THRESHOLDS ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Section_RarityThresholds}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <TextBlock Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,16">
+                                    Configure the global unlock percentage cutoffs that determine achievement rarity tiers.
+                                    Achievements are categorized based on what percentage of players have unlocked them.
+                                </TextBlock>
+
+                                <!-- Threshold settings grid -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Ultra Rare -->
+                                    <Border Grid.Row="0" Grid.Column="0"
+                                            Background="#20E91E63"
+                                            CornerRadius="4"
+                                            Padding="12"
+                                            Margin="0,0,8,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Image Grid.Column="0"
+                                                   Source="{StaticResource BadgePlatinumHexagon}"
+                                                   Width="28" Height="28"
+                                                   Margin="0,0,10,0"
+                                                   VerticalAlignment="Center"
+                                                   Effect="{StaticResource BadgeShadow}"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Rarity_UltraRare}"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#E91E63"
+                                                           Margin="0,0,0,2"/>
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_RarityThreshold_LTE}"
+                                                           Style="{StaticResource MutedTextStyle}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBox Text="{Binding Persisted.UltraRareThreshold, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}"
+                                                         Width="50"
+                                                         TextAlignment="Right"
+                                                         VerticalAlignment="Center"/>
+                                                <TextBlock Text="%"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="4,0,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Rare -->
+                                    <Border Grid.Row="0" Grid.Column="1"
+                                            Background="#20FF9800"
+                                            CornerRadius="4"
+                                            Padding="12"
+                                            Margin="8,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Image Grid.Column="0"
+                                                   Source="{StaticResource BadgeGoldPentagon}"
+                                                   Width="28" Height="28"
+                                                   Margin="0,0,10,0"
+                                                   VerticalAlignment="Center"
+                                                   Effect="{StaticResource BadgeShadow}"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Rarity_Rare}"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FF9800"
+                                                           Margin="0,0,0,2"/>
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_RarityThreshold_LTE}"
+                                                           Style="{StaticResource MutedTextStyle}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBox Text="{Binding Persisted.RareThreshold, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}"
+                                                         Width="50"
+                                                         TextAlignment="Right"
+                                                         VerticalAlignment="Center"/>
+                                                <TextBlock Text="%"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="4,0,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Uncommon -->
+                                    <Border Grid.Row="1" Grid.Column="0"
+                                            Background="#2003A9F4"
+                                            CornerRadius="4"
+                                            Padding="12"
+                                            Margin="0,0,8,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Image Grid.Column="0"
+                                                   Source="{StaticResource BadgeSilverSquare}"
+                                                   Width="28" Height="28"
+                                                   Margin="0,0,10,0"
+                                                   VerticalAlignment="Center"
+                                                   Effect="{StaticResource BadgeShadow}"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Rarity_Uncommon}"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#03A9F4"
+                                                           Margin="0,0,0,2"/>
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_RarityThreshold_LTE}"
+                                                           Style="{StaticResource MutedTextStyle}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBox Text="{Binding Persisted.UncommonThreshold, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}"
+                                                         Width="50"
+                                                         TextAlignment="Right"
+                                                         VerticalAlignment="Center"/>
+                                                <TextBlock Text="%"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="4,0,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- Common -->
+                                    <Border Grid.Row="1" Grid.Column="1"
+                                            Background="#208BC34A"
+                                            CornerRadius="4"
+                                            Padding="12"
+                                            Margin="8,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Image Grid.Column="0"
+                                                   Source="{StaticResource BadgeBronzeTriangle}"
+                                                   Width="28" Height="28"
+                                                   Margin="0,0,10,0"
+                                                   VerticalAlignment="Center"
+                                                   Effect="{StaticResource BadgeShadow}"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Rarity_Common}"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#8BC34A"
+                                                           Margin="0,0,0,2"/>
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_RarityThreshold_GT}"
+                                                           Style="{StaticResource MutedTextStyle}"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="—"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.4"
+                                                       VerticalAlignment="Center"
+                                                       />
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== SYNC & UPDATES ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Section_SyncUpdates}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <!-- Periodic Updates -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnablePeriodicUpdates}"
+                                                          IsChecked="{Binding Persisted.EnablePeriodicUpdates}"
+                                                  VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HoursBetweenUpdates}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0"/>
+                                            <TextBox Text="{Binding Persisted.PeriodicUpdateHours, UpdateSourceTrigger=PropertyChanged}"
+                                                 Width="50"
+                                                     IsEnabled="{Binding Persisted.EnablePeriodicUpdates}"
+                                                 TextAlignment="Right"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Quick Refresh -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_QuickRefresh_Title}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,2"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_QuickRefresh_Description}"
+                                                   Style="{StaticResource MutedTextStyle}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_QuickRefresh_RecentGames}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0"/>
+                                            <TextBox Text="{Binding Persisted.QuickRefreshRecentGamesCount, UpdateSourceTrigger=PropertyChanged}"
+                                                 Width="50"
+                                                 TextAlignment="Right"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Ignore Unplayed Games -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                            <CheckBox Content="{DynamicResource LOCPlayAch_IgnoreUnplayedGames}"
+                                                          IsChecked="{Binding Persisted.IgnoreUnplayedGames}"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_IgnoreUnplayedGames_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="20,4,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== NOTIFICATIONS ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Section_Notifications}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <StackPanel>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableNotifications}"
+                                                  IsChecked="{Binding Persisted.EnableNotifications}"
+                                              Margin="0,0,0,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_NotifyPeriodicUpdates}"
+                                                  IsChecked="{Binding Persisted.NotifyPeriodicUpdates}"
+                                              Margin="16,0,0,8"
+                                                  IsEnabled="{Binding Persisted.EnableNotifications}"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_NotifyOnRebuild}"
+                                                  IsChecked="{Binding Persisted.NotifyOnRebuild}"
+                                              Margin="16,0,0,0"
+                                                  IsEnabled="{Binding Persisted.EnableNotifications}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== APPEARANCE ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <!-- Checkboxes -->
+                                <StackPanel>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideLocked}"
+                                                  IsChecked="{Binding Persisted.HideAchievementsLockedForSelf}"
+                                              Margin="0,0,0,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
+                                                  IsChecked="{Binding Persisted.UseCoverImages}"
+                                              Margin="0,0,0,8"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== THEME INTEGRATION ================== -->
+                        <!-- <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Theme Integration"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <TextBlock Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,16">
+                                    PlayniteAchievements is the single source for both Desktop and Fullscreen themes.
+                                    Both native and SuccessStory-compatible properties are always populated so themes can bind to either surface.
+                                </TextBlock>
+
+                                 <Separator Margin="0,16,0,16" />
+
+                                <TextBlock Text="Native PlayniteAchievements theme integration"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,8" />
+
+                                <TextBlock Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,0">
+                                    Native controls and properties (prefixed differently) are always available to themes.
+                                    Theme authors should use the native PlayniteAchievements prefix for new themes.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border> -->
+
+                        <!-- ================== DATA MANAGEMENT ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Cache_Title}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Settings_Cache_Description}"
+                                               Style="{StaticResource MutedTextStyle}"
+                                               VerticalAlignment="Center"/>
+
+                                    <Button Grid.Row="0" Grid.Column="1"
+                                            Content="{DynamicResource LOCPlayAch_Settings_WipeCache_All}"
+                                            Click="WipeCache_Click"
+                                            Margin="16,0,0,0"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Settings_ImageCache_Description}"
+                                               Style="{StaticResource MutedTextStyle}"
+                                               Margin="0,10,0,0"
+                                               VerticalAlignment="Top"/>
+
+                                    <Button Grid.Row="1" Grid.Column="1"
+                                            Content="{DynamicResource LOCPlayAch_Settings_ImageCache_Clear}"
+                                            Click="ClearImageCache_Click"
+                                            Margin="16,10,0,0"/>
+
+                                    <CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                              Content="{DynamicResource LOCPlayAch_Settings_EnableDiagnostics}"
+                                              IsChecked="{Binding Persisted.EnableDiagnostics}"
+                                              Margin="0,10,0,0"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ================== TAB: STEAM SETTINGS ================== -->
+            <TabItem x:Name="SteamTab" Header="{DynamicResource LOCPlayAch_Settings_TabSteam}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <!-- ================== STEAM CONNECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SteamConnection}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <!-- Steam Web API Key -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Settings_SteamApiKey}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 Text="{Binding Persisted.SteamApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                             VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Margin="0,6,0,0"
+                                               Style="{StaticResource MutedTextStyle}">
+                                        <Run Text="{DynamicResource LOCPlayAch_Settings_SteamApiKeyHint}" />
+                                        <Run Text=" " />
+                                        <Hyperlink NavigateUri="https://steamcommunity.com/dev/apikey"
+                                                   RequestNavigate="Hyperlink_RequestNavigate">
+                                            <Run Text="steamcommunity.com/dev/apikey" />
+                                        </Hyperlink>
+                                    </TextBlock>
+                                </Grid>
+
+                                <!-- Steam Language -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Settings_SteamLanguage}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                        <ComboBox Grid.Column="1"
+                                                  SelectedValue="{Binding Persisted.SteamLanguage}"
+                                              SelectedValuePath="Tag"
+                                              VerticalAlignment="Center"
+                                              MinWidth="150"
+                                              HorizontalAlignment="Left">
+                                        <ComboBoxItem Content="English" Tag="english"/>
+                                        <ComboBoxItem Content="German (Deutsch)" Tag="german"/>
+                                        <ComboBoxItem Content="French (Français)" Tag="french"/>
+                                        <ComboBoxItem Content="Spanish (Español)" Tag="spanish"/>
+                                        <ComboBoxItem Content="Italian (Italiano)" Tag="italian"/>
+                                        <ComboBoxItem Content="Portuguese" Tag="portuguese"/>
+                                        <ComboBoxItem Content="Brazilian Portuguese" Tag="brazilian"/>
+                                        <ComboBoxItem Content="Russian (Русский)" Tag="russian"/>
+                                        <ComboBoxItem Content="Polish (Polski)" Tag="polish"/>
+                                        <ComboBoxItem Content="Dutch (Nederlands)" Tag="dutch"/>
+                                        <ComboBoxItem Content="Swedish (Svenska)" Tag="swedish"/>
+                                        <ComboBoxItem Content="Finnish (Suomi)" Tag="finnish"/>
+                                        <ComboBoxItem Content="Danish (Dansk)" Tag="danish"/>
+                                        <ComboBoxItem Content="Norwegian (Norsk)" Tag="norwegian"/>
+                                        <ComboBoxItem Content="Hungarian (Magyar)" Tag="hungarian"/>
+                                        <ComboBoxItem Content="Czech (Čeština)" Tag="czech"/>
+                                        <ComboBoxItem Content="Romanian (Română)" Tag="romanian"/>
+                                        <ComboBoxItem Content="Turkish (Türkçe)" Tag="turkish"/>
+                                        <ComboBoxItem Content="Greek (Ελληνικά)" Tag="greek"/>
+                                        <ComboBoxItem Content="Bulgarian (Български)" Tag="bulgarian"/>
+                                        <ComboBoxItem Content="Ukrainian (Українська)" Tag="ukrainian"/>
+                                        <ComboBoxItem Content="Thai (ไทย)" Tag="thai"/>
+                                        <ComboBoxItem Content="Vietnamese (Tiếng Việt)" Tag="vietnamese"/>
+                                        <ComboBoxItem Content="Japanese (日本語)" Tag="japanese"/>
+                                        <ComboBoxItem Content="Korean (한국어)" Tag="koreana"/>
+                                        <ComboBoxItem Content="Simplified Chinese (简体中文)" Tag="schinese"/>
+                                        <ComboBoxItem Content="Traditional Chinese (繁體中文)" Tag="tchinese"/>
+                                        <ComboBoxItem Content="Arabic (العربية)" Tag="arabic"/>
+                                    </ComboBox>
+                                </Grid>
+
+                                <!-- Steam Authentication Status -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Label_SteamAuth}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Top"
+                                               Margin="0,12,0,0"/>
+
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource PanelBackgroundBrush}"
+                                            CornerRadius="4"
+                                            Padding="12">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Grid.Row="0"
+                                                       Text="{Binding SteamAuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       TextWrapping="Wrap"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center"
+                                                       TextAlignment="Center"
+                                                       Margin="0,0,0,8"/>
+
+                                            <StackPanel Grid.Row="1"
+                                                        Orientation="Vertical"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center">
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_CheckSteamAuth}"
+                                                        Style="{StaticResource SteamAuthActionButtonStyle}"
+                                                        Click="SteamAuth_Check_Click"
+                                                        MinWidth="220"
+                                                        Margin="0,0,0,8"/>
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_ReauthSteam}"
+                                                        Style="{StaticResource SteamAuthActionButtonStyle}"
+                                                        Click="SteamAuth_Authenticate_Click"
+                                                        MinWidth="220"
+                                                        Margin="0,0,0,8"/>
+                                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                                        ToolTip="{DynamicResource LOCPlayAch_Tooltip_Clear}"
+                                                        Style="{StaticResource SteamAuthActionButtonStyle}"
+                                                        Click="SteamAuth_Clear_Click"
+                                                        MinWidth="220"/>
+                                            </StackPanel>
+
+                                            <ProgressBar Grid.Row="2"
+                                                         Height="4"
+                                                         Margin="0,10,0,0"
+                                                         IsIndeterminate="True">
+                                                <ProgressBar.Style>
+                                                    <Style TargetType="ProgressBar">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding SteamAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                         Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ProgressBar.Style>
+                                            </ProgressBar>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Steam User ID -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Label_SteamUserId}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 Text="{Binding Persisted.SteamUserId, UpdateSourceTrigger=PropertyChanged}"
+                                             IsReadOnly="True"
+                                             VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Margin="0,6,0,0"
+                                               Style="{StaticResource MutedTextStyle}">
+                                        <Run Text="{DynamicResource LOCPlayAch_Label_SteamUserId_Help}" />
+                                    </TextBlock>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ================== TAB: RETROACHIEVEMENTS SETTINGS ================== -->
+            <TabItem x:Name="RetroAchievementsTab" Header="{DynamicResource LOCPlayAch_Settings_TabRetroAchievements}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Section_RetroAchievements}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <!-- RetroAchievements Username -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Label_Username}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 Text="{Binding Persisted.RaUsername, UpdateSourceTrigger=PropertyChanged}"
+                                             VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Margin="0,6,0,0"
+                                               Style="{StaticResource MutedTextStyle}">
+                                        <Run Text="{DynamicResource LOCPlayAch_Label_Username_Help}" />
+                                    </TextBlock>
+                                </Grid>
+
+                                <!-- RetroAchievements Web API Key -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Label_WebApiKey}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                        <TextBox Grid.Row="0" Grid.Column="1"
+                                                 Text="{Binding Persisted.RaWebApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                             VerticalAlignment="Center"/>
+
+                                 <TextBlock Grid.Row="1" Grid.Column="1"
+                                            Margin="0,6,0,0"
+                                            Style="{StaticResource MutedTextStyle}">
+                                     <Run Text="{DynamicResource LOCPlayAch_Label_WebApiKey_Help}" />
+                                     <Run Text=" " />
+                                     <Hyperlink NavigateUri="https://retroachievements.org/controlpanel.php"
+                                                RequestNavigate="Hyperlink_RequestNavigate">
+                                         <Run Text="retroachievements.org/controlpanel.php" />
+                                     </Hyperlink>
+                                 </TextBlock>
+                             </Grid>
+
+                                <!-- RetroAchievements Rarity Stats -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="Rarity stats"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                                  SelectedValue="{Binding Persisted.RaRarityStats}"
+                                              SelectedValuePath="Tag"
+                                              VerticalAlignment="Center"
+                                              MinWidth="160"
+                                              HorizontalAlignment="Left">
+                                        <ComboBoxItem Content="Casual (Softcore)" Tag="casual"/>
+                                        <ComboBoxItem Content="Hardcore" Tag="hardcore"/>
+                                        <ComboBoxItem Content="Overall (Casual + Hardcore)" Tag="combined"/>
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Margin="0,6,0,0"
+                                               Style="{StaticResource MutedTextStyle}">
+                                        <Run Text="Controls how rarity percentages are calculated. Changing this requires a rescan to update cached values." />
+                                    </TextBlock>
+                                </Grid>
+
+                                 <!-- Scanning options -->
+                                 <TextBlock Text="Scanning &amp; Hashing"
+                                            Style="{StaticResource SectionHeaderStyle}"
+                                            Margin="0,8,0,12"/>
+
+                                <StackPanel>
+                                        <CheckBox Content="Enable archive scanning (.zip/.7z)"
+                                                  IsChecked="{Binding Persisted.EnableArchiveScanning}"
+                                              Margin="0,0,0,8"/>
+                                    <CheckBox Content="Enable disc hashing (for disc-based consoles)"
+                                                  IsChecked="{Binding Persisted.EnableDiscHashing}"
+                                              Margin="0,0,0,8"/>
+                                </StackPanel>
+
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="Hash index max age (days)"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                        <TextBox Grid.Column="1"
+                                                 Text="{Binding Persisted.HashIndexMaxAgeDays, UpdateSourceTrigger=PropertyChanged}"
+                                             Width="60"
+                                             TextAlignment="Right"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

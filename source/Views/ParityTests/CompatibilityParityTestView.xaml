@@ -1,0 +1,86 @@
+<UserControl x:Class="PlayniteAchievements.Views.ParityTests.CompatibilityParityTestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:PlayniteAchievements.Views.ParityTests"
+             mc:Ignorable="d"
+             d:DesignHeight="700"
+             d:DesignWidth="900">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Padding="10" CornerRadius="6" Background="#11000000" BorderThickness="1" BorderBrush="#22000000">
+            <StackPanel>
+                <TextBlock FontSize="18" FontWeight="SemiBold" Text="PlayniteAchievements UI Parity Test — SuccessStory Compatibility" />
+                <TextBlock Margin="0,4,0,0" Opacity="0.85">
+                    <Run Text="Game: " />
+                    <Run Text="{Binding GameName, Mode=OneWay}" FontWeight="SemiBold" />
+                    <Run Text="  (" />
+                    <Run Text="{Binding GameId, Mode=OneWay}" />
+                    <Run Text=")" />
+                </TextBlock>
+                <TextBlock Margin="0,6,0,0" Opacity="0.85">
+                    <Run Text="HasData=" />
+                    <Run Text="{Binding Settings.HasData}" />
+                    <Run Text="  Unlocked=" />
+                    <Run Text="{Binding Settings.Unlocked}" />
+                    <Run Text="/" />
+                    <Run Text="{Binding Settings.Total}" />
+                    <Run Text="  Percent=" />
+                    <Run Text="{Binding Settings.Percent, StringFormat={}{0:0.#}}" />
+                    <Run Text="%" />
+                </TextBlock>
+                <TextBlock Margin="0,4,0,0" Opacity="0.75" TextWrapping="Wrap">
+                    This window renders all SuccessStory-compatible theme controls provided by PlayniteAchievements.
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+
+                <GroupBox Header="PluginButton" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="PluginButton" />
+                </GroupBox>
+
+                <GroupBox Header="PluginProgressBar" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="PluginProgressBar" />
+                </GroupBox>
+
+                <GroupBox Header="PluginUserStats" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="PluginUserStats" />
+                </GroupBox>
+
+                <GroupBox Header="PluginChart" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="PluginChart" Height="260" />
+                </GroupBox>
+
+                <GroupBox Header="PluginCompactList" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="PluginCompactList" Height="260" />
+                </GroupBox>
+
+                <GroupBox Header="PluginCompactLocked" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="PluginCompactLocked" Height="180" />
+                </GroupBox>
+
+                <GroupBox Header="PluginCompactUnlocked" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="PluginCompactUnlocked" Height="180" />
+                </GroupBox>
+
+                <GroupBox Header="PluginList" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="PluginList" Height="420" />
+                </GroupBox>
+
+                <GroupBox Header="PluginViewItem" Margin="0,10,0,0">
+                    <local:GameViewControlHost ControlName="PluginViewItem" Height="240" />
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -1,0 +1,234 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using PlayniteAchievements.Common;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievement;
+using PlayniteAchievements.ViewModels;
+using Playnite.SDK;
+
+namespace PlayniteAchievements.Services.Sidebar
+{
+    public sealed class SidebarDataBuilder
+    {
+        private readonly AchievementManager _achievementManager;
+        private readonly IPlayniteAPI _playniteApi;
+        private readonly ILogger _logger;
+
+        public SidebarDataBuilder(AchievementManager achievementManager, IPlayniteAPI playniteApi, ILogger logger)
+        {
+            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _playniteApi = playniteApi;
+            _logger = logger;
+        }
+
+        public SidebarDataSnapshot Build(
+            PlayniteAchievementsSettings settings,
+            ISet<string> revealedKeys,
+            CancellationToken cancel)
+        {
+            settings ??= new PlayniteAchievementsSettings();
+            revealedKeys ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var diagnostics = settings.Persisted?.EnableDiagnostics == true;
+            using (PerfTrace.Measure("SidebarDataBuilder.Build", _logger, diagnostics))
+            {
+            var snapshot = new SidebarDataSnapshot();
+
+            var allAchievements = new List<AchievementDisplayItem>();
+            var gamesOverview = new List<GameOverviewItem>();
+            var recentAchievements = new List<RecentAchievementItem>();
+
+            var globalCounts = new Dictionary<DateTime, int>();
+            var perGameCounts = new Dictionary<Guid, Dictionary<DateTime, int>>();
+
+            int totalAchievements = 0;
+            int totalUnlocked = 0;
+            int commonCount = 0;
+            int uncommonCount = 0;
+            int rareCount = 0;
+            int ultraRareCount = 0;
+            int perfectGames = 0;
+
+            List<string> cachedIds;
+            using (PerfTrace.Measure("SidebarDataBuilder.GetCachedGameIds", _logger, diagnostics))
+            {
+                cachedIds = _achievementManager.Cache.GetCachedGameIds() ?? new List<string>();
+            }
+
+            foreach (var cacheKey in cachedIds)
+            {
+                cancel.ThrowIfCancellationRequested();
+
+                var gameData = _achievementManager.GetGameAchievementData(cacheKey);
+                if (gameData?.Achievements == null || gameData.NoAchievements || gameData.Achievements.Count == 0)
+                {
+                    continue;
+                }
+
+                var playniteGame = gameData.PlayniteGameId.HasValue
+                    ? _playniteApi?.Database?.Games?.Get(gameData.PlayniteGameId.Value)
+                    : null;
+
+                // Build overview stats for this game.
+                var achievements = gameData.Achievements;
+                int gameTotal = achievements.Count;
+                int gameUnlocked = 0;
+                int gameCommon = 0, gameUncommon = 0, gameRare = 0, gameUltraRare = 0;
+
+                for (int i = 0; i < achievements.Count; i++)
+                {
+                    cancel.ThrowIfCancellationRequested();
+
+                    var ach = achievements[i];
+                    if (ach == null)
+                    {
+                        continue;
+                    }
+
+                    var item = new AchievementDisplayItem
+                    {
+                        GameName = gameData.GameName ?? "Unknown",
+                        PlayniteGameId = gameData.PlayniteGameId,
+                        DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
+                        Description = ach.Description ?? string.Empty,
+                        UnlockedIconUrl = ach.UnlockedIconUrl,
+                        LockedIconUrl = ach.LockedIconUrl,
+                        UnlockTimeUtc = ach.UnlockTimeUtc,
+                        GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
+                        Unlocked = ach.Unlocked,
+                        Hidden = ach.Hidden,
+                        ApiName = ach.ApiName,
+                        HideAchievementsLockedForSelf = settings.Persisted?.HideAchievementsLockedForSelf ?? false
+                    };
+
+                    var revealKey = MakeRevealKey(gameData.PlayniteGameId, ach.ApiName, gameData.GameName);
+                    item.IsRevealed = revealedKeys.Contains(revealKey);
+
+                    allAchievements.Add(item);
+
+                    if (ach.Unlocked)
+                    {
+                        gameUnlocked++;
+
+                        var pct = ach.GlobalPercentUnlocked ?? 100;
+                        var tier = RarityHelper.GetRarityTier(pct);
+                        switch (tier)
+                        {
+                            case RarityTier.UltraRare: ultraRareCount++; gameUltraRare++; break;
+                            case RarityTier.Rare: rareCount++; gameRare++; break;
+                            case RarityTier.Uncommon: uncommonCount++; gameUncommon++; break;
+                            default: commonCount++; gameCommon++; break;
+                        }
+
+                        if (ach.UnlockTimeUtc.HasValue)
+                        {
+                            var unlockDate = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value).Date;
+                            Increment(globalCounts, unlockDate);
+
+                            if (gameData.PlayniteGameId.HasValue)
+                            {
+                                if (!perGameCounts.TryGetValue(gameData.PlayniteGameId.Value, out var dict))
+                                {
+                                    dict = new Dictionary<DateTime, int>();
+                                    perGameCounts[gameData.PlayniteGameId.Value] = dict;
+                                }
+                                Increment(dict, unlockDate);
+
+                                recentAchievements.Add(new RecentAchievementItem
+                                {
+                                    ApiName = ach.ApiName,
+                                    Name = ach.DisplayName ?? ach.ApiName ?? "Unknown",
+                                    Description = ach.Description ?? string.Empty,
+                                    GameName = gameData.GameName ?? "Unknown",
+                                    UnlockedIconUrl = ach.UnlockedIconUrl,
+                                    UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
+                                    GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
+                                    GameIconPath = !string.IsNullOrEmpty(playniteGame?.Icon) ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon) : null,
+                                    GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage) ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage) : null
+                                });
+                            }
+                        }
+                    }
+                }
+
+                totalAchievements += gameTotal;
+                totalUnlocked += gameUnlocked;
+
+                if (gameUnlocked == gameTotal && gameTotal > 0)
+                {
+                    perfectGames++;
+                }
+
+                gamesOverview.Add(new GameOverviewItem
+                {
+                    GameName = gameData.GameName ?? "Unknown",
+                    GameLogo = !string.IsNullOrEmpty(playniteGame?.Icon) ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon) : null,
+                    GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage) ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage) : null,
+                    AppId = gameData.AppId,
+                    PlayniteGameId = gameData.PlayniteGameId,
+                    TotalAchievements = gameTotal,
+                    UnlockedAchievements = gameUnlocked,
+                    CommonCount = gameCommon,
+                    UncommonCount = gameUncommon,
+                    RareCount = gameRare,
+                    UltraRareCount = gameUltraRare,
+                    LastPlayed = playniteGame?.LastActivity,
+                    IsPerfect = gameUnlocked == gameTotal && gameTotal > 0
+                });
+            }
+
+            // Sort stable outputs once so UI work is minimal.
+            gamesOverview = gamesOverview
+                .OrderByDescending(g => g.LastPlayed ?? DateTime.MinValue)
+                .ToList();
+
+            recentAchievements = recentAchievements
+                .OrderByDescending(a => a.UnlockTime)
+                .ToList();
+
+            snapshot.Achievements = allAchievements;
+            snapshot.GamesOverview = gamesOverview;
+            snapshot.RecentAchievements = recentAchievements;
+            snapshot.GlobalUnlockCountsByDate = globalCounts;
+            snapshot.UnlockCountsByDateByGame = perGameCounts;
+
+            snapshot.TotalGames = gamesOverview.Count;
+            snapshot.TotalAchievements = totalAchievements;
+            snapshot.TotalUnlocked = totalUnlocked;
+            snapshot.TotalCommon = commonCount;
+            snapshot.TotalUncommon = uncommonCount;
+            snapshot.TotalRare = rareCount;
+            snapshot.TotalUltraRare = ultraRareCount;
+            snapshot.PerfectGames = perfectGames;
+            snapshot.GlobalProgressionPercent = totalAchievements > 0 ? (double)totalUnlocked / totalAchievements * 100 : 0;
+
+            var launchedGames = gamesOverview.Where(g => g.UnlockedAchievements > 0).ToList();
+            var launchedTotal = launchedGames.Sum(g => g.TotalAchievements);
+            var launchedUnlocked = launchedGames.Sum(g => g.UnlockedAchievements);
+            snapshot.LaunchedProgressionPercent = launchedTotal > 0 ? (double)launchedUnlocked / launchedTotal * 100 : 0;
+
+            return snapshot;
+            }
+        }
+
+        private static void Increment(Dictionary<DateTime, int> dict, DateTime date)
+        {
+            if (dict.TryGetValue(date, out var existing))
+            {
+                dict[date] = existing + 1;
+            }
+            else
+            {
+                dict[date] = 1;
+            }
+        }
+
+        private static string MakeRevealKey(Guid? playniteGameId, string apiName, string gameName)
+        {
+            var gamePart = playniteGameId?.ToString() ?? (gameName ?? string.Empty);
+            return $"{gamePart}\u001f{apiName ?? string.Empty}";
+        }
+    }
+}

@@ -1,0 +1,1617 @@
+<UserControl x:Class="PlayniteAchievements.Views.SidebarControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="900">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
+            <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility"/>
+            <converters:EnumToBoolConverter x:Key="EnumToBool"/>
+            <converters:IntToVisibilityConverter x:Key="IntToVis"/>
+
+            <Style x:Key="NavigationButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="17"
+                                    Width="34" Height="34">
+                                <TextBlock Text="{TemplateBinding Content}"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontFamily="{TemplateBinding FontFamily}"
+                                           FontSize="{TemplateBinding FontSize}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource HighlightGlyphBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Invisible button style for click areas -->
+            <Style x:Key="InvisibleButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Cursor" Value="Arrow"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding CanReveal}" Value="True">
+                        <Setter Property="Cursor" Value="Hand"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="ColumnHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridColumnHeader">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <ContentPresenter Grid.Column="0"
+                                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                            VerticalAlignment="Center"
+                                            Margin="{TemplateBinding Padding}"/>
+
+                            <Path x:Name="SortArrow"
+                                Grid.Column="1"
+                                Fill="{DynamicResource TextBrush}"
+                                Width="8" Height="6"
+                                Data="M 0,0 L 4,6 L 8,0"
+                                VerticalAlignment="Center"
+                                Margin="4,0,10,0"
+                                RenderTransformOrigin="0.5,0.5"
+                                Visibility="Collapsed"/>
+
+                            <!-- REQUIRED for resizing -->
+                            <Thumb x:Name="PART_LeftHeaderGripper"
+                                Width="0"
+                                Background="Transparent"
+                                IsHitTestVisible="False"
+                                Focusable="False"/>
+
+                            <Thumb x:Name="PART_RightHeaderGripper"
+                                HorizontalAlignment="Right"
+                                Width="4"
+                                Cursor="SizeWE"
+                                Background="Transparent"/>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#18FFFFFF"/>
+                            </Trigger>
+
+                            <Trigger Property="SortDirection" Value="Ascending">
+                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="SortArrow" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleY="-1"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+
+                            <Trigger Property="SortDirection" Value="Descending">
+                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
+            <!-- Tab button style -->
+            <Style x:Key="TabButtonStyle" TargetType="RadioButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Padding" Value="16,10"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    Padding="{TemplateBinding Padding}">
+                                <Grid>
+                                    <ContentPresenter HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
+                                    <Border x:Name="indicator"
+                                            Height="3"
+                                            Background="#2196F3"
+                                            VerticalAlignment="Bottom"
+                                            Margin="0,0,0,-10"
+                                            Visibility="Collapsed"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="indicator" Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="False">
+                                    <Setter Property="Opacity" Value="0.6"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                    <Setter TargetName="border" Property="Background" Value="#10FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Button style that disables during scan -->
+            <Style x:Key="ScanButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Padding" Value="12,6"/>
+                <Setter Property="MinWidth" Value="80"/>
+                <Setter Property="Margin" Value="0,0,6,0"/>
+            </Style>
+
+            <!-- Progress bar style for games -->
+            <Style x:Key="GameProgressBar" TargetType="ProgressBar">
+                <Setter Property="Height" Value="16"/>
+                <Setter Property="Minimum" Value="0"/>
+                <Setter Property="Maximum" Value="100"/>
+                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ProgressBar">
+                            <Grid>
+                                <Border Background="{TemplateBinding Background}" CornerRadius="2"/>
+                                <Border x:Name="PART_Track"/>
+                                <Border x:Name="PART_Indicator"
+                                        Background="{TemplateBinding Foreground}"
+                                        HorizontalAlignment="Left"
+                                        CornerRadius="2"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Time range button style for timeline controls -->
+            <Style x:Key="TimeRangeButtonStyle" TargetType="RadioButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="Margin" Value="0,0,4,0"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{DynamicResource NormalBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="3"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#2196F3"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="RevealButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <ContentPresenter />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Cursor" Value="Arrow"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                        <Setter Property="Cursor" Value="Hand"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- Style for Game Icon/Cover in Grid -->
+            <Style x:Key="GameImageBorderStyle" TargetType="Border">
+                <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+                <Setter Property="Width" Value="64"/>
+                <Setter Property="Height" Value="64"/>
+                    <Setter Property="Background">
+                        <Setter.Value>
+                        <ImageBrush Stretch="Uniform"
+                                    helpers:AsyncImage.Uri="{Binding GameLogo}"
+                                    helpers:AsyncImage.DecodePixel="96"/>
+                        </Setter.Value>
+                    </Setter>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding DataContext.UseCoverImages, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
+                        <Setter Property="Width" Value="64"/>
+                        <Setter Property="Height" Value="96"/>
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <ImageBrush Stretch="Uniform"
+                                            helpers:AsyncImage.Uri="{Binding GameCoverPath}"
+                                            helpers:AsyncImage.DecodePixel="128"/>
+                            </Setter.Value>
+                        </Setter>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="CenterLineSplitterStyle" TargetType="GridSplitter">
+                <Setter Property="Width" Value="14"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="ResizeDirection" Value="Columns"/>
+                <Setter Property="ResizeBehavior" Value="PreviousAndNext"/>
+                <Setter Property="ShowsPreview" Value="True"/>
+                <Setter Property="Cursor" Value="SizeWE"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="GridSplitter">
+                            <Grid Background="{TemplateBinding Background}"
+                                SnapsToDevicePixels="True"
+                                UseLayoutRounding="True">
+                                <!-- Visible divider line -->
+                                <Border x:Name="Line"
+                                        Width="2"
+                                        HorizontalAlignment="Center"
+                                        Background="{DynamicResource NormalBorderBrush}"
+                                        Opacity="1"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Line" Property="Opacity" Value="1"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ROW 0: Header with Tabs -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource ControlBackgroundBrush}"
+                BorderBrush="{DynamicResource NormalBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,12,16,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0"
+                            Command="{Binding CloseViewCommand}"
+                            Content="&#xE72B;"
+                            Style="{StaticResource NavigationButtonStyle}"
+                            ToolTip="Back to Library"/>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{DynamicResource LOCPlayAch_Title_PluginName}"
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               FontWeight="Bold"
+                               FontSize="20"
+                               Foreground="{DynamicResource TextBrush}"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0"/>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ROW 1: Action Buttons -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource ControlBackgroundBrush}"
+                BorderBrush="{DynamicResource NormalBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,10">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="{DynamicResource LOCPlayAch_Button_QuickScan}"
+                        Command="{Binding QuickScanCommand}"
+                        Style="{StaticResource ScanButtonStyle}"/>
+
+                <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                        Command="{Binding CancelScanCommand}"
+                        Style="{StaticResource ScanButtonStyle}"
+                        Margin="0"
+                        Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ROW 2: Progress Bar -->
+        <Border Grid.Row="2"
+                Padding="16,8"
+                Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <TextBlock Text="{Binding ProgressMessage}"
+                           Style="{DynamicResource BaseTextBlockStyle}"
+                           Foreground="{DynamicResource TextBrush}"
+                           Opacity="0.8"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="0,0,0,6"/>
+                <ProgressBar Value="{Binding ProgressPercent}"
+                             Height="6"
+                             Minimum="0"
+                             Maximum="100"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ROW 3: Tab Content -->
+        <Grid Grid.Row="3">
+            <!-- Overview Tab Content -->
+            <Grid x:Name="OverviewContent" Visibility="Visible">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Filters -->
+                <Border Grid.Row="0"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderBrush="{DynamicResource NormalBorderBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="16,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Search -->
+                        <Grid Grid.Column="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       Text="{DynamicResource LOCPlayAch_Overview_Search}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.7"/>
+
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding OverviewSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalContentAlignment="Center"
+                                     Padding="6,4"/>
+
+                            <Button Grid.Column="2"
+                                    Content="x"
+                                    Click="ClearOverviewSearch_Click"
+                                    Width="24"
+                                    Margin="4,0,0,0"
+                                    Padding="0">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding OverviewSearchText}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding OverviewSearchText}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
+
+                        <!-- Filter checkboxes -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Overview_HideNoUnlocks}"
+                                      IsChecked="{Binding HideGamesWithNoUnlocked}"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,16,0"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Overview_HideUnplayed}"
+                                      IsChecked="{Binding HideUnplayedGames}"
+                                      VerticalAlignment="Center"
+                                      Visibility="{Binding IgnoreUnplayedGames, Converter={StaticResource InverseBoolToVis}}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="300"/>
+                        <ColumnDefinition Width="4"/>   <!-- splitter hit area -->
+                        <ColumnDefinition Width="*" MinWidth="300"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- LEFT: Header -->
+                    <Border Grid.Row="0" Grid.Column="0" 
+                            Background="{DynamicResource ControlBackgroundBrush}" 
+                            Padding="16,10,16,10" 
+                            BorderBrush="{DynamicResource NormalBorderBrush}" 
+                            BorderThickness="0,0,1,1">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_GamesOverview}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource TextBrush}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- LEFT: Games List -->
+                    <Border Grid.Row="1" Grid.Column="0"
+                            BorderBrush="{DynamicResource NormalBorderBrush}"
+                            BorderThickness="0,0,1,0">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                        <DataGrid Grid.Row="0"
+                            ItemsSource="{Binding GamesOverview}"
+                            SelectedItem="{Binding SelectedGame, Mode=OneWay}"
+                            SelectionChanged="GamesOverview_SelectionChanged"
+                            AutoGenerateColumns="False"
+                            IsReadOnly="True"
+                            SelectionMode="Single"
+                            GridLinesVisibility="None"
+                            HeadersVisibility="Column"
+                            BorderThickness="0"
+                            CanUserResizeColumns="True"
+                            CanUserResizeRows="False"
+                            CanUserReorderColumns="False"
+                            Background="Transparent"
+                            RowBackground="Transparent"
+                            CanUserSortColumns="True"
+                            EnableRowVirtualization="True"
+                            VirtualizingStackPanel.IsVirtualizing="True"
+                            VirtualizingStackPanel.VirtualizationMode="Recycling"
+                            ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+                            VirtualizingStackPanel.ScrollUnit="Pixel"
+                            ScrollViewer.CanContentScroll="True"
+                            ScrollViewer.IsDeferredScrollingEnabled="False">
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
+                                            <Setter Property="Background" Value="#30FFFFFF"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
+                                            <Setter Property="Background" Value="#40FFFFFF"/>
+                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
+                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Background" Value="#50FFFFFF"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.CellStyle>
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
+                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Setter Property="Height" Value="112"/>
+                                </Style>
+                            </DataGrid.RowStyle>
+                           <DataGrid.Columns>
+                            <!-- Perfect indicator (slightly larger) -->
+                            <DataGridTemplateColumn Width="34" Header="">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Image Source="{StaticResource BadgePlatinumHexagon}"
+                                            Style="{StaticResource RarityIcon}"
+                                            Effect="{StaticResource BadgeShadow}"
+                                            Width="20" Height="20"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            ToolTip="Perfect Game"
+                                            Visibility="{Binding IsPerfect, Converter={StaticResource BoolToVis}}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Game Icon/Cover (BIGGER) -->
+                            <DataGridTemplateColumn Width="92"> <!-- was 56 -->
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="6" Margin="6,8" VerticalAlignment="Center"
+                                                Style="{StaticResource GameImageBorderStyle}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Game Name (a bit larger) -->
+                            <DataGridTemplateColumn Width="2*" Header="Game" SortMemberPath="GameName" MinWidth="160">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding GameName}"
+                                                VerticalAlignment="Center"
+                                                Margin="6,0"
+                                                Style="{DynamicResource BaseTextBlockStyle}"
+                                                FontWeight="SemiBold"
+                                                Foreground="{DynamicResource TextBrush}"
+                                                TextTrimming="CharacterEllipsis"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Last Played (slightly larger) -->
+                            <DataGridTemplateColumn Width="2*" Header="Last Played" SortMemberPath="LastPlayed">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding LastPlayedText}"
+                                                VerticalAlignment="Center"
+                                                Style="{DynamicResource BaseTextBlockStyle}"          
+                                                Foreground="{DynamicResource TextBrush}"
+                                                Opacity="0.7"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                                <!-- Progression with Rarity UNDER the bar -->
+                                <DataGridTemplateColumn Width="2*" Header="Progress" SortMemberPath="Progression">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="2,6,10,6" VerticalAlignment="Center">
+
+                                                <!-- Row 1: Progress bar with % text -->
+                                                <Grid>
+                                                    <ProgressBar Value="{Binding Progression, Mode=OneWay}"
+                                                                Style="{StaticResource GameProgressBar}"
+                                                                Height="22"/>
+
+                                                    <!-- Percentage text (left) -->
+                                                    <TextBlock Text="{Binding ProgressionText}"
+                                                            Style="{DynamicResource BaseTextBlockStyle}"
+                                                            FontWeight="SemiBold"
+                                                            Foreground="White"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Left"
+                                                            Margin="6,0,0,0"/>
+                                                </Grid>
+
+                                                <!-- Row 2: Rarity mini-badges (right, under bar) -->
+                                                <StackPanel Orientation="Horizontal"
+                                                            HorizontalAlignment="Right"
+                                                            VerticalAlignment="Center"
+                                                            Margin="0,6,4,0">
+
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}"
+                                                                ToolTip="Ultra Rare"
+                                                                Margin="4,0">
+                                                        <Image Source="{StaticResource BadgePlatinumHexagon}"
+                                                            Style="{StaticResource RarityIcon}"
+                                                            Effect="{StaticResource BadgeShadow}"
+                                                            Width="18" Height="18"/>
+                                                        <TextBlock Text="{Binding UltraRareCount}"
+                                                                FontSize="{DynamicResource FontSizeSmall}"
+                                                                FontWeight="Bold"
+                                                                Foreground="White"
+                                                                VerticalAlignment="Center"
+                                                                Margin="3,0,0,0"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}"
+                                                                ToolTip="Rare"
+                                                                Margin="4,0">
+                                                        <Image Source="{StaticResource BadgeGoldPentagon}"
+                                                            Style="{StaticResource RarityIcon}"
+                                                            Effect="{StaticResource BadgeShadow}"
+                                                            Width="18" Height="18"/>
+                                                        <TextBlock Text="{Binding RareCount}"
+                                                                FontSize="{DynamicResource FontSizeSmall}"
+                                                                FontWeight="Bold"
+                                                                Foreground="White"
+                                                                VerticalAlignment="Center"
+                                                                Margin="3,0,0,0"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}"
+                                                                ToolTip="Uncommon"
+                                                                Margin="4,0">
+                                                        <Image Source="{StaticResource BadgeSilverSquare}"
+                                                            Style="{StaticResource RarityIcon}"
+                                                            Effect="{StaticResource BadgeShadow}"
+                                                            Width="18" Height="18"/>
+                                                        <TextBlock Text="{Binding UncommonCount}"
+                                                                FontSize="{DynamicResource FontSizeSmall}"
+                                                                FontWeight="Bold"
+                                                                Foreground="White"
+                                                                VerticalAlignment="Center"
+                                                                Margin="3,0,0,0"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}"
+                                                                ToolTip="Common"
+                                                                Margin="4,0">
+                                                        <Image Source="{StaticResource BadgeBronzeTriangle}"
+                                                            Style="{StaticResource RarityIcon}"
+                                                            Effect="{StaticResource BadgeShadow}"
+                                                            Width="18" Height="18"/>
+                                                        <TextBlock Text="{Binding CommonCount}"
+                                                                FontSize="{DynamicResource FontSizeSmall}"
+                                                                FontWeight="Bold"
+                                                                Foreground="White"
+                                                                VerticalAlignment="Center"
+                                                                Margin="3,0,0,0"/>
+                                                    </StackPanel>
+
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Achievement Count -->
+                                <DataGridTemplateColumn Width="*" Header="Total" SortMemberPath="TotalAchievements">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" Foreground="{DynamicResource TextBrush}">
+                                                <Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/>
+                                                <Run Text="/" Foreground="{DynamicResource TextBrush}"/>
+                                                <Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <StackPanel Grid.Row="1"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,6"
+                                    Visibility="{Binding OverviewHasMultiplePages, Converter={StaticResource BoolToVis}}">
+                            <Button Content="&lt;&lt;"
+                                    Command="{Binding OverviewFirstPageCommand}"
+                                    Padding="8,4"
+                                    MinWidth="40"
+                                    Margin="0,0,8,0"
+                                    ToolTip="{DynamicResource LOCPlayAch_Pagination_First}"/>
+
+                            <Button Content="&lt;"
+                                    Command="{Binding OverviewPreviousPageCommand}"
+                                    Padding="8,4"
+                                    MinWidth="32"
+                                    Margin="0,0,8,0"
+                                    ToolTip="{DynamicResource LOCPlayAch_Pagination_Previous}"/>
+
+                            <TextBlock Text="{Binding OverviewPageInfo}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       VerticalAlignment="Center"/>
+
+                            <Button Content="&gt;"
+                                    Command="{Binding OverviewNextPageCommand}"
+                                    Padding="8,4"
+                                    MinWidth="32"
+                                    Margin="8,0,8,0"
+                                    ToolTip="{DynamicResource LOCPlayAch_Pagination_Next}"/>
+
+                            <Button Content="&gt;&gt;"
+                                    Command="{Binding OverviewLastPageCommand}"
+                                    Padding="8,4"
+                                    MinWidth="40"
+                                    ToolTip="{DynamicResource LOCPlayAch_Pagination_Last}"/>
+                        </StackPanel>
+                        </Grid>
+                    </Border>
+                    
+                    <!-- LEFT: Global Stats -->
+                    <Border Grid.Row="2" Grid.Column="0"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            BorderBrush="{DynamicResource NormalBorderBrush}"
+                            BorderThickness="0,1,1,0"
+                            Padding="16,10">
+                        <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="8"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="8"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="12"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="120"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Summary stats -->
+                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                            <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.7" Margin="0,0,12,0" Style="{DynamicResource BaseTextBlockStyle}">
+                                <Run Text="{DynamicResource LOCPlayAch_Games}"/><Run Text=":"/>
+                                <Run Text="{Binding TotalGamesOverview, Mode=OneWay}" FontWeight="Bold"/>
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.7" Margin="0,0,12,0" Style="{DynamicResource BaseTextBlockStyle}">
+                                <Run Text="{DynamicResource LOCPlayAch_Perfect}"/><Run Text=":"/>
+                                <Run Text="{Binding PerfectGames, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"/>
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.7" Margin="0,0,12,0" Style="{DynamicResource BaseTextBlockStyle}">
+                                <Run Text="{DynamicResource LOCPlayAch_Total}"/><Run Text=":"/>
+                                <Run Text="{Binding TotalUnlockedOverview, Mode=OneWay}" FontWeight="Bold"/>
+                                <Run Text="/" Foreground="{DynamicResource TextBrush}"/>
+                                <Run Text="{Binding TotalAchievementsOverview, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
+                            </TextBlock>
+                            <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.7" Style="{DynamicResource BaseTextBlockStyle}" VerticalAlignment="Center">
+                                <Run Text="{DynamicResource LOCPlayAch_Rarity}"/>
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_UltraRare}" Margin="6,0,4,0" VerticalAlignment="Center">
+                                <Image Source="{StaticResource BadgePlatinumHexagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding TotalUltraRare}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Rare}" Margin="0,0,4,0" VerticalAlignment="Center">
+                                <Image Source="{StaticResource BadgeGoldPentagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding TotalRare}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Uncommon}" Margin="0,0,4,0" VerticalAlignment="Center">
+                                <Image Source="{StaticResource BadgeSilverSquare}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding TotalUncommon}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Common}" Margin="0,0,4,0" VerticalAlignment="Center">
+                                <Image Source="{StaticResource BadgeBronzeTriangle}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                                <TextBlock Text="{Binding TotalCommon}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Global Progression -->
+                        <StackPanel Grid.Row="2">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_GlobalProgression}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.7"
+                                       Margin="0,0,0,4"/>
+                            <Grid>
+                                <ProgressBar Value="{Binding GlobalProgression, Mode=OneWay}"
+                                             Height="18"
+                                             Minimum="0"
+                                             Maximum="100"
+                                             Background="{DynamicResource ControlBackgroundBrush}"
+                                             Foreground="{DynamicResource HighlightGlyphBrush}"/>
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"
+                                           Text="{Binding GlobalProgression, StringFormat={}{0:F1}%, Mode=OneWay}"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Launched Games Progression -->
+                        <StackPanel Grid.Row="4" Visibility="{Binding IgnoreUnplayedGames, Converter={StaticResource InverseBoolToVis}}">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_LaunchedProgression}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.7"
+                                       Margin="0,0,0,4"/>
+                            <Grid>
+                                <ProgressBar Value="{Binding LaunchedProgression, Mode=OneWay}"
+                                             Height="18"
+                                             Minimum="0"
+                                             Maximum="100"
+                                             Background="{DynamicResource ControlBackgroundBrush}"
+                                             Foreground="{DynamicResource HighlightGlyphBrush}"/>
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"
+                                           Text="{Binding LaunchedProgression, StringFormat={}{0:F1}%, Mode=OneWay}"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Global Timeline Header -->
+                        <TextBlock Grid.Row="6"
+                                   Text="{DynamicResource LOCPlayAch_AchievementsOverTime}"
+                                    Style="{DynamicResource BaseTextBlockStyle}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Opacity="0.7"/>
+
+                        <!-- Global Time Range Buttons -->
+                        <StackPanel Grid.Row="7" Orientation="Horizontal" Margin="0,6,0,8">
+                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_7D}" GroupName="GlobalTimeRange"
+                                         Style="{StaticResource TimeRangeButtonStyle}"
+                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=SevenDays}"
+                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="SevenDays"/>
+                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_14D}" GroupName="GlobalTimeRange"
+                                         Style="{StaticResource TimeRangeButtonStyle}"
+                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=FourteenDays}"
+                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="FourteenDays"/>
+                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1M}" GroupName="GlobalTimeRange"
+                                         Style="{StaticResource TimeRangeButtonStyle}"
+                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneMonth}"
+                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="OneMonth"/>
+                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_3M}" GroupName="GlobalTimeRange"
+                                         Style="{StaticResource TimeRangeButtonStyle}"
+                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=ThreeMonths}"
+                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="ThreeMonths"/>
+                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1Y}" GroupName="GlobalTimeRange"
+                                         Style="{StaticResource TimeRangeButtonStyle}"
+                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneYear}"
+                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="OneYear"/>
+                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_All}" GroupName="GlobalTimeRange"
+                                         Style="{StaticResource TimeRangeButtonStyle}"
+                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=All}"
+                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="All"/>
+                        </StackPanel>
+
+                        <!-- Global LiveCharts Timeline -->
+                        <lvc:CartesianChart Grid.Row="8"
+                                            Series="{Binding GlobalTimeline.TimelineSeries}"
+                                            LegendLocation="None"
+                                            Hoverable="True"
+                                            DisableAnimations="True">
+                            <lvc:CartesianChart.Resources>
+                                <Style TargetType="lvc:ColumnSeries">
+                                    <Setter Property="Fill" Value="{DynamicResource HighlightGlyphBrush}" />
+                                </Style>
+                            </lvc:CartesianChart.Resources>
+                            <lvc:CartesianChart.AxisX>
+                                <lvc:Axis Labels="{Binding GlobalTimeline.TimelineLabels}"
+                                          ShowLabels="True"
+                                          LabelsRotation="45"
+                                          FontSize="{DynamicResource FontSizeSmall}"
+                                          Foreground="{DynamicResource TextBrush}">
+                                    <lvc:Axis.Separator>
+                                        <lvc:Separator Step="1" IsEnabled="False"/>
+                                    </lvc:Axis.Separator>
+                                </lvc:Axis>
+                            </lvc:CartesianChart.AxisX>
+                            <lvc:CartesianChart.AxisY>
+                                <lvc:Axis MinValue="0"
+                                          LabelFormatter="{Binding YAxisFormatter}"
+                                          FontSize="{DynamicResource FontSizeSmall}"
+                                          Foreground="{DynamicResource TextBrush}">
+                                    <lvc:Axis.Separator>
+                                        <lvc:Separator Stroke="{DynamicResource NormalBorderBrush}" Opacity="0.2"/>
+                                    </lvc:Axis.Separator>
+                                </lvc:Axis>
+                            </lvc:CartesianChart.AxisY>
+                        </lvc:CartesianChart>
+                    </Grid>
+                    </Border>
+
+                    <!-- RIGHT: Header -->
+                    <Grid Grid.Row="0" Grid.Column="2">
+                        <!-- Header for when NO game is selected -->
+                        <Border Background="{DynamicResource ControlBackgroundBrush}"
+                                Padding="16,10,16,10"
+                                BorderBrush="{DynamicResource NormalBorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Visibility="{Binding IsGameSelected, Converter={StaticResource InverseBoolToVis}}">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource TextBrush}"/>
+                        </Border>
+
+                        <!-- Header for when a game IS selected -->
+                        <Border Background="{DynamicResource ControlBackgroundBrush}"
+                                BorderBrush="{DynamicResource NormalBorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="12,10"
+                                Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding SelectedGame.GameName}"
+                                               FontSize="{DynamicResource FontSize}"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               TextTrimming="CharacterEllipsis"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock FontSize="{DynamicResource FontSizeSmall}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               Opacity="0.7"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center">
+                                        <Run Text="("/>
+                                        <Run Text="{Binding SelectedGame.UnlockedAchievements, Mode=OneWay}"/>
+                                        <Run Text="/"/>
+                                        <Run Text="{Binding SelectedGame.TotalAchievements, Mode=OneWay}"/>
+                                        <Run Text=" achievements)"/>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <Button Grid.Column="1"
+                                        Content="✕"
+                                        Click="ClearGameSelection_Click"
+                                        Padding="6,2"
+                                        FontSize="{DynamicResource FontSizeSmall}"
+                                        VerticalAlignment="Top"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                    
+                    <!-- RIGHT: Content (Recent List OR Game Details) -->
+                    <Grid Grid.Row="1" Grid.Column="2" Grid.RowSpan="2">
+                        <!-- Default Panel: When no game selected -->
+                        <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource InverseBoolToVis}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <DataGrid Grid.Row="0"
+                                      ItemsSource="{Binding RecentAchievements}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      SelectionMode="Single"
+                                      SelectionUnit="FullRow"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="None"
+                                      RowBackground="Transparent"
+                                      BorderThickness="0"
+                                      Background="Transparent"
+                                      CanUserResizeColumns="True"
+                                      CanUserResizeRows="False"
+                                      CanUserReorderColumns="False"
+                                      CanUserSortColumns="True"
+                                      EnableRowVirtualization="True"
+                                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                      VirtualizingStackPanel.ScrollUnit="Pixel"
+                                      ScrollViewer.CanContentScroll="True"
+                                      Padding="0"
+                                      ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+                                      ScrollViewer.IsDeferredScrollingEnabled="False">
+
+                                <DataGrid.CellStyle>
+                                    <Style TargetType="DataGridCell">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                        <Setter Property="Focusable" Value="False"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
+                                                <Setter Property="Background" Value="#30FFFFFF"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
+                                                <Setter Property="Background" Value="#40FFFFFF"/>
+                                            </DataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Background" Value="#50FFFFFF"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGrid.CellStyle>
+
+                               <!-- Make rows taller -->
+                                <DataGrid.RowStyle>
+                                    <Style TargetType="DataGridRow">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
+                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                        <Setter Property="Height" Value="76"/>
+                                    </Style>
+                                </DataGrid.RowStyle>
+
+                                <DataGrid.Columns>
+                                    <!-- Achievement Icon (bigger) -->
+                                    <DataGridTemplateColumn Width="78"> <!-- was 56 -->
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Width="56" Height="56" CornerRadius="6"
+                                                        VerticalAlignment="Center"
+                                                        Margin="12,10,0,10"
+                                                        RenderOptions.BitmapScalingMode="HighQuality"> <!-- was 8,8,0,8 -->
+                                                    <Border.Background>
+                                                        <ImageBrush Stretch="UniformToFill"
+                                                                    helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                                                                    helpers:AsyncImage.DecodePixel="64"/>
+                                                    </Border.Background>
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <!-- Achievement Info (give a bit more vertical breathing room) -->
+                                    <DataGridTemplateColumn Width="2*" Header="Achievement" SortMemberPath="Name">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="2*"/>
+                                                        <ColumnDefinition Width="1*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0" Margin="12,10" VerticalAlignment="Center"> <!-- was 8,8 -->
+                                                        <TextBlock Text="{Binding Name}"
+                                                                Style="{DynamicResource BaseTextBlockStyle}"
+                                                                Foreground="{DynamicResource TextBrush}"
+                                                                TextTrimming="CharacterEllipsis"/>
+
+                                                        <TextBlock Text="{Binding Description}"
+                                                                FontSize="{DynamicResource FontSizeSmall}"
+                                                                Foreground="{DynamicResource TextBrush}"
+                                                                Opacity="0.5"
+                                                                TextWrapping="Wrap"
+                                                                MaxHeight="44" 
+                                                                TextTrimming="CharacterEllipsis"
+                                                                Margin="0,3,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <!-- Game Icon/Cover (bigger) -->
+                                    <DataGridTemplateColumn Width="64" Header="Game" SortMemberPath="GameName"> <!-- was 40 -->
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="6"
+                                                        VerticalAlignment="Center"
+                                                        ToolTip="{Binding GameName}">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+                                                            <!-- default: icon -->
+                                                            <Setter Property="Width" Value="44"/>   <!-- was 32 -->
+                                                            <Setter Property="Height" Value="44"/>  <!-- was 32 -->
+                                                            <Setter Property="Background">
+                                                                <Setter.Value>
+                                                                    <ImageBrush Stretch="UniformToFill"
+                                                                                helpers:AsyncImage.Uri="{Binding GameIconPath}"
+                                                                                helpers:AsyncImage.DecodePixel="96"/>
+                                                                </Setter.Value>
+                                                            </Setter>
+
+                                                            <Style.Triggers>
+                                                                <!-- cover mode -->
+                                                                <DataTrigger Binding="{Binding DataContext.UseCoverImages, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                                            Value="True">
+                                                                    <Setter Property="Width" Value="40"/>   <!-- was 28 -->
+                                                                    <Setter Property="Height" Value="60"/>  <!-- was 42 -->
+                                                                    <Setter Property="Background">
+                                                                        <Setter.Value>
+                                                                            <ImageBrush Stretch="UniformToFill"
+                                                                                        helpers:AsyncImage.Uri="{Binding GameCoverPath}"
+                                                                                        helpers:AsyncImage.DecodePixel="128"/>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <!-- Date -->
+                                    <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding UnlockTimeText}"
+                                                        VerticalAlignment="Center"
+                                                        Style="{DynamicResource BaseTextBlockStyle}"
+                                                        Foreground="{DynamicResource TextBrush}"
+                                                        Opacity="0.7"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <!-- Rarity -->
+                                    <DataGridTemplateColumn Width="*" Header="Rarity" SortMemberPath="GlobalPercent"> <!-- was 72 -->
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Image Width="18" Height="18" Margin="0,0,6,0"
+                                                        Effect="{StaticResource BadgeShadow}"
+                                                        VerticalAlignment="Center">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgePlatinumHexagon">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgeGoldPentagon">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgeSilverSquare">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgeBronzeTriangle">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
+
+                                                    <TextBlock Text="{Binding GlobalPercentText}"
+                                                            FontSize="{DynamicResource FontSizeSmall}"
+                                                            FontWeight="SemiBold"
+                                                            Foreground="{DynamicResource TextBrush}"
+                                                            Opacity="0.8"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <StackPanel Grid.Row="1"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Margin="0,6"
+                                        Visibility="{Binding RecentHasMultiplePages, Converter={StaticResource BoolToVis}}">
+                                <Button Content="&lt;&lt;"
+                                        Command="{Binding RecentFirstPageCommand}"
+                                        Padding="8,4"
+                                        MinWidth="40"
+                                        Margin="0,0,8,0"
+                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_First}"/>
+
+                                <Button Content="&lt;"
+                                        Command="{Binding RecentPreviousPageCommand}"
+                                        Padding="8,4"
+                                        MinWidth="32"
+                                        Margin="0,0,8,0"
+                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Previous}"/>
+
+                                <TextBlock Text="{Binding RecentPageInfo}"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           VerticalAlignment="Center"/>
+
+                                <Button Content="&gt;"
+                                        Command="{Binding RecentNextPageCommand}"
+                                        Padding="8,4"
+                                        MinWidth="32"
+                                        Margin="8,0,8,0"
+                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Next}"/>
+
+                                <Button Content="&gt;&gt;"
+                                        Command="{Binding RecentLastPageCommand}"
+                                        Padding="8,4"
+                                        MinWidth="40"
+                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Last}"/>
+                            </StackPanel>
+                        </Grid>
+                        
+                        <!-- Game Detail Panel: When a game is selected -->
+                        <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Game Achievements List -->
+                            <DataGrid Grid.Row="0"
+                                      ItemsSource="{Binding SelectedGameAchievements}"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      SelectionMode="Single"
+                                      SelectionUnit="FullRow"
+                                      HeadersVisibility="Column"
+                                      GridLinesVisibility="None"
+                                      RowBackground="Transparent"
+                                      BorderThickness="0"
+                                      Background="Transparent"
+                                      CanUserAddRows="False"
+                                      CanUserResizeColumns="True"
+                                      CanUserResizeRows="False"
+                                      CanUserReorderColumns="False"
+                                      CanUserSortColumns="True"
+                                      EnableRowVirtualization="True"
+                                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                                      VirtualizingStackPanel.ScrollUnit="Pixel"
+                                      ScrollViewer.CanContentScroll="True"
+                                      ScrollViewer.IsDeferredScrollingEnabled="False"
+                                      Padding="0"
+                                      ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
+
+                                <DataGrid.CellStyle>
+                                    <Style TargetType="DataGridCell">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                        <Setter Property="Focusable" Value="False"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
+                                                <Setter Property="Background" Value="#30FFFFFF"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
+                                                <Setter Property="Background" Value="#40FFFFFF"/>
+                                            </DataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Background" Value="#50FFFFFF"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGrid.CellStyle>
+
+                                <DataGrid.RowStyle>
+                                    <Style TargetType="DataGridRow">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
+                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                        <Setter Property="Height" Value="76"/>
+                                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="AchievementRow_PreviewMouseLeftButtonDown"/>
+                                    </Style>
+                                </DataGrid.RowStyle>
+
+                                <DataGrid.Columns>
+                                    <!-- Achievement Icon -->
+                                    <DataGridTemplateColumn Width="78">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border Width="56" Height="56" CornerRadius="6" VerticalAlignment="Center" Margin="12,10,0,10" RenderOptions.BitmapScalingMode="HighQuality">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Opacity" Value="0.5"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                                                    <Setter Property="Opacity" Value="1"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                    <Setter Property="Opacity" Value="1"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                <Border.Background>
+                                    <ImageBrush Stretch="UniformToFill"
+                                                helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                                                helpers:AsyncImage.DecodePixel="64"/>
+                                </Border.Background>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                                    <!-- Achievement Info -->
+                                    <DataGridTemplateColumn Width="2*" Header="Achievement" SortMemberPath="DisplayName">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="12,10" VerticalAlignment="Center" Background="Transparent">
+                                                    <TextBlock Text="{Binding DisplayNameResolved}"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               TextTrimming="CharacterEllipsis">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                                                                <Setter Property="Opacity" Value="0.7"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                                                        <Setter Property="Opacity" Value="1"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                        <Setter Property="FontStyle" Value="Italic"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+
+                                                    <TextBlock Text="{Binding DescriptionResolved}"
+                                                               FontSize="{DynamicResource FontSizeSmall}"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               Opacity="0.5"
+                                                               TextWrapping="Wrap"
+                                                               MaxHeight="44"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Margin="0,3,0,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                        <Setter Property="FontStyle" Value="Italic"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <!-- Date -->
+                                    <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding UnlockTimeText}"
+                                                           VerticalAlignment="Center"
+                                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           Opacity="0.7"
+                                                           Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <!-- Rarity -->
+                                    <DataGridTemplateColumn Width="*" Header="Rarity" SortMemberPath="GlobalPercent">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Image Width="16" Height="16" Margin="0,0,4,0" Effect="{StaticResource BadgeShadow}" VerticalAlignment="Center">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgePlatinumHexagon">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgeGoldPentagon">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgeSilverSquare">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgeBronzeTriangle">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
+
+                                                    <TextBlock Text="{Binding GlobalPercentText}"
+                                                               FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               Opacity="0.8"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <!-- Game Timeline Chart with Range Buttons -->
+                            <StackPanel Grid.Row="1"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Margin="0,6"
+                                        Visibility="{Binding SelectedGameAchievementsHasMultiplePages, Converter={StaticResource BoolToVis}}">
+                                <Button Content="&lt;&lt;"
+                                        Command="{Binding SelectedGameAchievementsFirstPageCommand}"
+                                        Padding="8,4"
+                                        MinWidth="40"
+                                        Margin="0,0,8,0"
+                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_First}"/>
+
+                                <Button Content="&lt;"
+                                        Command="{Binding SelectedGameAchievementsPreviousPageCommand}"
+                                        Padding="8,4"
+                                        MinWidth="32"
+                                        Margin="0,0,8,0"
+                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Previous}"/>
+
+                                <TextBlock Text="{Binding SelectedGameAchievementsPageInfo}"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           VerticalAlignment="Center"/>
+
+                                <Button Content="&gt;"
+                                        Command="{Binding SelectedGameAchievementsNextPageCommand}"
+                                        Padding="8,4"
+                                        MinWidth="32"
+                                        Margin="8,0,8,0"
+                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Next}"/>
+
+                                <Button Content="&gt;&gt;"
+                                        Command="{Binding SelectedGameAchievementsLastPageCommand}"
+                                        Padding="8,4"
+                                        MinWidth="40"
+                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Last}"/>
+                            </StackPanel>
+
+                            <Border Grid.Row="2"
+                                    Background="{DynamicResource ControlBackgroundBrush}"
+                                    BorderBrush="{DynamicResource NormalBorderBrush}"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="12,8">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="120"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0"
+                                               Text="{DynamicResource LOCPlayAch_Section_Timeline}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                               Margin="0,0,0,6"/>
+
+                                    <!-- Time Range Buttons -->
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_7D}" GroupName="GameTimeRange"
+                                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                                     IsChecked="{Binding SelectedGameTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=SevenDays}"
+                                                     Command="{Binding SelectedGameTimeline.SetTimeRangeCommand}" CommandParameter="SevenDays"/>
+                                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_14D}" GroupName="GameTimeRange"
+                                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                                     IsChecked="{Binding SelectedGameTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=FourteenDays}"
+                                                     Command="{Binding SelectedGameTimeline.SetTimeRangeCommand}" CommandParameter="FourteenDays"/>
+                                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1M}" GroupName="GameTimeRange"
+                                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                                     IsChecked="{Binding SelectedGameTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneMonth}"
+                                                     Command="{Binding SelectedGameTimeline.SetTimeRangeCommand}" CommandParameter="OneMonth"/>
+                                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_3M}" GroupName="GameTimeRange"
+                                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                                     IsChecked="{Binding SelectedGameTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=ThreeMonths}"
+                                                     Command="{Binding SelectedGameTimeline.SetTimeRangeCommand}" CommandParameter="ThreeMonths"/>
+                                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1Y}" GroupName="GameTimeRange"
+                                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                                     IsChecked="{Binding SelectedGameTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneYear}"
+                                                     Command="{Binding SelectedGameTimeline.SetTimeRangeCommand}" CommandParameter="OneYear"/>
+                                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_All}" GroupName="GameTimeRange"
+                                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                                     IsChecked="{Binding SelectedGameTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=All}"
+                                                     Command="{Binding SelectedGameTimeline.SetTimeRangeCommand}" CommandParameter="All"/>
+                                    </StackPanel>
+
+                                    <!-- LiveCharts Timeline -->
+                                    <lvc:CartesianChart Grid.Row="2"
+                                                        Series="{Binding SelectedGameTimeline.TimelineSeries}"
+                                                        LegendLocation="None"
+                                                        Hoverable="True"
+                                                        DisableAnimations="True">
+                                        <lvc:CartesianChart.Resources>
+                                            <Style TargetType="lvc:ColumnSeries">
+                                                <Setter Property="Fill" Value="{DynamicResource HighlightGlyphBrush}" />
+                                            </Style>
+                                        </lvc:CartesianChart.Resources>
+                                        <lvc:CartesianChart.AxisX>
+                                            <lvc:Axis Labels="{Binding SelectedGameTimeline.TimelineLabels}"
+                                                      ShowLabels="True"
+                                                      LabelsRotation="45"
+                                                      FontSize="{DynamicResource FontSizeSmall}"
+                                                      Foreground="{DynamicResource TextBrush}">
+                                                <lvc:Axis.Separator>
+                                                    <lvc:Separator Step="1" IsEnabled="False"/>
+                                                </lvc:Axis.Separator>
+                                            </lvc:Axis>
+                                        </lvc:CartesianChart.AxisX>
+                                        <lvc:CartesianChart.AxisY>
+                                            <lvc:Axis MinValue="0"
+                                                      LabelFormatter="{Binding YAxisFormatter}"
+                                                      FontSize="{DynamicResource FontSizeSmall}"
+                                                      Foreground="{DynamicResource TextBrush}">
+                                                <lvc:Axis.Separator>
+                                                    <lvc:Separator Stroke="{DynamicResource NormalBorderBrush}" Opacity="0.2"/>
+                                                </lvc:Axis.Separator>
+                                            </lvc:Axis>
+                                        </lvc:CartesianChart.AxisY>
+                                    </lvc:CartesianChart>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Visible divider line (always shows) -->
+                    <Border Grid.Column="1"
+                        Grid.RowSpan="3"
+                        Width="2"
+                        HorizontalAlignment="Center"
+                        Background="{DynamicResource PanelSeparatorBrush}"
+                        Opacity="0.35"
+                        IsHitTestVisible="False"/>
+                    <GridSplitter Grid.Column="1"
+                        Grid.RowSpan="3"
+                        Style="{StaticResource CenterLineSplitterStyle}"
+                        Panel.ZIndex="100"/>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
