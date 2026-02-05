@@ -240,7 +240,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             // Immediately populate all-games data on UI thread before opening window
             PopulateAllGamesDataSync();
 
-            ShowAchievementsWindow(styleKey: "AchievementsWindowStyle", preselectGameId: null);
+            ShowAchievementsWindow(styleKey: "AchievementsWindow", preselectGameId: null);
         }
 
         private void PopulateAllGamesDataSync()
@@ -298,7 +298,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
             }
 
-            ShowAchievementsWindow(styleKey: "GameAchievementsWindowStyle", preselectGameId: id);
+            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: id);
         }
 
         private void OpenGameAchievementsWindow(Guid gameId)
@@ -322,7 +322,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
             }
 
-            ShowAchievementsWindow(styleKey: "GameAchievementsWindowStyle", preselectGameId: gameId);
+            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: gameId);
         }
 
         private void ShowAchievementsWindow(string styleKey, Guid? preselectGameId)
