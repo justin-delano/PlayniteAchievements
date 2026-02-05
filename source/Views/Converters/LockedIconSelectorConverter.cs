@@ -7,29 +7,32 @@ namespace PlayniteAchievements.Views.Converters
 {
     /// <summary>
     /// Selects which icon URI to display based on the locked state.
-    /// Values: [0]=IsLocked (bool), [1]=IconPath (string).
-    /// Applies grayscale prefix when locked.
+    /// Values: [0]=IsLocked (bool), [1]=IconCustom (string), [2]=Icon (string).
+    /// Returns IconCustom when locked, Icon when unlocked.
     /// </summary>
     public sealed class LockedIconSelectorConverter : IMultiValueConverter
     {
-        private const string GrayPrefix = "gray:";
-
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            if (values == null || values.Length < 2)
+            if (values == null || values.Length < 3)
             {
                 return DependencyProperty.UnsetValue;
             }
 
             bool isLocked = values[0] is bool b && b;
-            string iconPath = values[1] as string;
+            string iconCustom = values[1] as string;
+            string icon = values[2] as string;
 
-            if (string.IsNullOrWhiteSpace(iconPath))
+            // When locked, use IconCustom (gray-prefixed)
+            // When unlocked, use Icon (color)
+            string selected = isLocked ? iconCustom : icon;
+
+            if (string.IsNullOrWhiteSpace(selected))
             {
                 return DependencyProperty.UnsetValue;
             }
 
-            return isLocked ? GrayPrefix + iconPath : iconPath;
+            return selected;
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
