@@ -107,7 +107,7 @@ namespace PlayniteAchievements.Views
             try
             {
                 var (ok, msg) = await _sessionManager.AuthenticateInteractiveAsync(CancellationToken.None).ConfigureAwait(false);
-                SteamAuthStatus = msg;
+                Dispatcher.Invoke(() => SteamAuthStatus = msg);
             }
             finally
             {
@@ -129,17 +129,17 @@ namespace PlayniteAchievements.Views
                 var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(CancellationToken.None).ConfigureAwait(false);
                 if (isLoggedIn)
                 {
-                    SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_SteamAuth_OK");
+                    Dispatcher.Invoke(() => SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_SteamAuth_OK"));
                 }
                 else
                 {
-                    SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthInvalid");
+                    Dispatcher.Invoke(() => SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthInvalid"));
                 }
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Steam auth check failed.");
-                SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthError");
+                Dispatcher.Invoke(() => SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthError"));
             }
             finally
             {
