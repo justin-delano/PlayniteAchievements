@@ -130,11 +130,32 @@ namespace PlayniteAchievements.Services.Images
                 EnsureGameIconDirectory(gameId);
             }
 
-            // Check if already cached on disk
+            // Check if already cached on disk (new per-game location)
             var cachePath = GetIconCachePathFromUri(uri, decodeSize, gameId);
             if (File.Exists(cachePath))
             {
                 return cachePath;
+            }
+
+            // Fallback: check old flat cache location and migrate if found
+            if (!string.IsNullOrEmpty(gameId))
+            {
+                var oldFlatPath = GetIconCachePathFromUri(uri, decodeSize, null);
+                if (File.Exists(oldFlatPath))
+                {
+                    // Migrate to new per-game location
+                    try
+                    {
+                        File.Move(oldFlatPath, cachePath);
+                        _logger?.Debug($"Migrated cached icon: {oldFlatPath} -> {cachePath}");
+                        return cachePath;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Warn(ex, $"Failed to migrate cached icon, using old location: {oldFlatPath}");
+                        return oldFlatPath;
+                    }
+                }
             }
 
             // Download and cache
