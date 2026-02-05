@@ -66,8 +66,9 @@ namespace PlayniteAchievements.Services.Images
 
         /// <summary>
         /// Generate cache filename from URI using SHA256 hash.
+        /// If gameId is provided, creates per-game subfolder structure.
         /// </summary>
-        private string GetIconCachePathFromUri(string uri, int decodeSize)
+        private string GetIconCachePathFromUri(string uri, int decodeSize, string gameId = null)
         {
             // Create hash-based filename from the URI
             using (var sha = SHA256.Create())
@@ -75,35 +76,62 @@ namespace PlayniteAchievements.Services.Images
                 var hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(uri));
                 var hashHex = BitConverter.ToString(hashBytes).Replace("-", "").Substring(0, 16);
                 var sizeSuffix = decodeSize > 0 ? $"_{decodeSize}" : "";
-                return Path.Combine(IconCacheDirectory, $"{hashHex}{sizeSuffix}.png");
+
+                // Use per-game subfolder if gameId is provided
+                var cacheDir = string.IsNullOrEmpty(gameId)
+                    ? IconCacheDirectory
+                    : Path.Combine(IconCacheDirectory, gameId);
+
+                return Path.Combine(cacheDir, $"{hashHex}{sizeSuffix}.png");
+            }
+        }
+
+        private void EnsureGameIconDirectory(string gameId)
+        {
+            if (string.IsNullOrEmpty(gameId))
+                return;
+
+            var gameDir = Path.Combine(IconCacheDirectory, gameId);
+            if (!Directory.Exists(gameDir))
+            {
+                Directory.CreateDirectory(gameDir);
+                _logger?.Debug($"Created game icon directory: {gameDir}");
             }
         }
 
         /// <summary>
         /// Check if an icon is cached on disk by URI.
         /// </summary>
-        public bool IsIconCached(string uri, int decodeSize)
+        public bool IsIconCached(string uri, int decodeSize, string gameId = null)
         {
-            var cachePath = GetIconCachePathFromUri(uri, decodeSize);
+            var cachePath = GetIconCachePathFromUri(uri, decodeSize, gameId);
             return File.Exists(cachePath);
         }
 
         /// <summary>
         /// Get or download an icon by URI, caching to disk by URI hash.
+        /// If gameId is provided, stores in per-game subfolder.
         /// Returns the file path to the cached PNG file, or null on failure.
         /// </summary>
         public async Task<string> GetOrDownloadIconAsync(
             string uri,
             int decodeSize,
-            CancellationToken cancel)
+            CancellationToken cancel,
+            string gameId = null)
         {
             if (string.IsNullOrWhiteSpace(uri))
             {
                 return null;
             }
 
+            // Ensure game directory exists if gameId provided
+            if (!string.IsNullOrEmpty(gameId))
+            {
+                EnsureGameIconDirectory(gameId);
+            }
+
             // Check if already cached on disk
-            var cachePath = GetIconCachePathFromUri(uri, decodeSize);
+            var cachePath = GetIconCachePathFromUri(uri, decodeSize, gameId);
             if (File.Exists(cachePath))
             {
                 return cachePath;
