@@ -688,6 +688,13 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             // Remove common edition suffixes and trim
             var normalized = name.Trim();
 
+            // Handle RetroAchievements homebrew prefix convention: "~Homebrew~ Game Name"
+            // Remove the "~Homebrew~" prefix entirely for matching purposes
+            if (normalized.StartsWith("~Homebrew~", StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = normalized.Substring("~Homebrew~".Length).Trim();
+            }
+
             // Remove text in parentheses (like "(USA)", "(Europe)", etc.)
             var parenIndex = normalized.IndexOf('(');
             if (parenIndex > 0)
