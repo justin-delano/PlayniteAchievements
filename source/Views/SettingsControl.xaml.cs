@@ -149,7 +149,7 @@ namespace PlayniteAchievements.Views
 
         private void SetSteamAuthBusy(bool busy)
         {
-            SteamAuthBusy = busy;
+            Dispatcher.Invoke(() => SteamAuthBusy = busy);
         }
 
         // -----------------------------
