@@ -42,6 +42,20 @@ namespace PlayniteAchievements.Models.Achievements
         public string Icon => AchievementIconResolver.GetDisplayIcon(Unlocked, IconPath);
 
         /// <summary>
+        /// SuccessStory-compatible unlocked icon display property.
+        /// Returns the color icon for unlocked state.
+        /// </summary>
+        [IgnoreDataMember]
+        public string UnlockedIconDisplay => IconDisplay;
+
+        /// <summary>
+        /// SuccessStory-compatible locked icon display property.
+        /// Returns the gray-prefixed icon for locked state.
+        /// </summary>
+        [IgnoreDataMember]
+        public string LockedIconDisplay => AchievementIconResolver.ApplyGrayPrefix(IconDisplay);
+
+        /// <summary>
         /// Global unlock percent (0..100). Some providers may return 0..1.
         /// </summary>
         [IgnoreDataMember]
