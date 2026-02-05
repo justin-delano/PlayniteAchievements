@@ -34,6 +34,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private readonly ICommand _openOverviewCmd;
         private readonly ICommand _openSelectedGameCmd;
+        private readonly ICommand _refreshSelectedGameCmd;
 
         private readonly object _refreshLock = new object();
         private CancellationTokenSource _refreshCts;
@@ -59,11 +60,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             _openOverviewCmd = new RelayCommand(_ => OpenOverviewAchievementsWindow());
             _openSelectedGameCmd = new RelayCommand(_ => OpenSelectedGameAchievementsWindow());
+            _refreshSelectedGameCmd = new RelayCommand(_ => RefreshSelectedGameAchievements());
 
             // Command surfaces referenced by themes.
             _settings.OpenFullscreenAchievementWindow = _openSelectedGameCmd;
             _settings.OpenAchievementWindow = _openOverviewCmd;
             _settings.OpenGameAchievementWindow = _openSelectedGameCmd;
+            _settings.RefreshSelectedGameCommand = _refreshSelectedGameCmd;
+            _settings.RefreshCommand = _refreshSelectedGameCmd;
 
             _settings.PropertyChanged += Settings_PropertyChanged;
             _achievementService.CacheInvalidated += AchievementService_CacheInvalidated;
@@ -323,6 +327,24 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: gameId);
+        }
+
+        private void RefreshSelectedGameAchievements()
+        {
+            var id = GetSingleSelectedGameId();
+            if (!id.HasValue)
+            {
+                return;
+            }
+
+            EnsureFullscreenInitialized();
+
+            var scanTask = _achievementService.StartManagedSingleGameScanAsync(id.Value);
+            _ = scanTask?.ContinueWith(_ =>
+            {
+                try { _requestPerGameThemeUpdate(id); } catch { }
+                try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+            });
         }
 
         private void ShowAchievementsWindow(string styleKey, Guid? preselectGameId)
@@ -695,6 +717,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             _settings.OpenAchievementWindow = _openOverviewCmd;
             _settings.OpenGameAchievementWindow = _openSelectedGameCmd;
+            _settings.RefreshSelectedGameCommand = _refreshSelectedGameCmd;
 
             _settings.AllGamesWithAchievements = new ObservableCollection<FullscreenAchievementGameItem>(snapshot.All ?? new List<FullscreenAchievementGameItem>());
             _settings.PlatinumGames = new ObservableCollection<FullscreenAchievementGameItem>(snapshot.Platinum ?? new List<FullscreenAchievementGameItem>());
@@ -715,6 +738,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void ApplyNativeSurface(Snapshot snapshot)
         {
             _settings.OpenFullscreenAchievementWindow = _openSelectedGameCmd;
+            _settings.RefreshCommand = _refreshSelectedGameCmd;
 
             _settings.FullscreenHasData = snapshot.TotalCount > 0;
             _settings.FullscreenGamesWithAchievements = new ObservableCollection<FullscreenAchievementGameItem>(snapshot.All ?? new List<FullscreenAchievementGameItem>());

@@ -174,6 +174,8 @@ namespace PlayniteAchievements.Models
         private ICommand _openAchievementWindow;
         [DontSerialize]
         private ICommand _openGameAchievementWindow;
+        [DontSerialize]
+        private ICommand _refreshSelectedGameCommand;
 
         [DontSerialize]
         public ObservableCollection<FullscreenAchievementGameItem> AllGamesWithAchievements
@@ -273,6 +275,13 @@ namespace PlayniteAchievements.Models
             set => SetValue(ref _openGameAchievementWindow, value);
         }
 
+        [DontSerialize]
+        public ICommand RefreshSelectedGameCommand
+        {
+            get => _refreshSelectedGameCommand;
+            set => SetValue(ref _refreshSelectedGameCommand, value);
+        }
+
         #endregion
 
         #region Fullscreen Theme Integration (Native)
@@ -307,6 +316,8 @@ namespace PlayniteAchievements.Models
         private string _fullscreenRank = "Bronze1";
         [DontSerialize]
         private ICommand _openFullscreenAchievementWindow;
+        [DontSerialize]
+        private ICommand _refreshCommand;
 
         [DontSerialize]
         public bool FullscreenHasData
@@ -390,6 +401,13 @@ namespace PlayniteAchievements.Models
         {
             get => _openFullscreenAchievementWindow;
             set => SetValue(ref _openFullscreenAchievementWindow, value);
+        }
+
+        [DontSerialize]
+        public ICommand RefreshCommand
+        {
+            get => _refreshCommand;
+            set => SetValue(ref _refreshCommand, value);
         }
 
         #endregion
