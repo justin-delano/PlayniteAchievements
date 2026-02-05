@@ -164,63 +164,81 @@ namespace PlayniteAchievements.Providers.Steam
                 bool loggedIn = false;
                 string extractedId = null;
 
-                await _api.MainView.UIDispatcher.InvokeAsync(async () =>
+                // Use TaskCompletionSource to ensure we wait for the UI thread logic to actually FINISH
+                var tcs = new TaskCompletionSource<bool>();
+
+                await _api.MainView.UIDispatcher.InvokeAsync(() =>
                 {
-                    using (var view = _api.WebViews.CreateView(1000, 800))
+                    try
                     {
-                        view.DeleteDomainCookies(".steamcommunity.com");
-                        view.DeleteDomainCookies("steamcommunity.com");
-                        view.DeleteDomainCookies(".steampowered.com");
-                        view.DeleteDomainCookies("steampowered.com");
-
-                        view.Navigate("https://steamcommunity.com/login/home/?goto=" +
-                                      Uri.EscapeDataString("https://steamcommunity.com/my/"));
-
-                        view.LoadingChanged += (s, e) =>
+                        using (var view = _api.WebViews.CreateView(1000, 800))
                         {
-                            if (e.IsLoading) return;
-                            var address = view.GetCurrentAddress();
-                            if (string.IsNullOrWhiteSpace(address)) return;
+                            view.DeleteDomainCookies(".steamcommunity.com");
+                            view.DeleteDomainCookies("steamcommunity.com");
+                            view.DeleteDomainCookies(".steampowered.com");
+                            view.DeleteDomainCookies("steampowered.com");
 
-                            // Check if we're on a logged-in page: profile pages or /my/ endpoint
-                            bool isOnLoggedInPage =
-                                address.IndexOf("steamcommunity.com/id/", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                address.IndexOf("steamcommunity.com/profiles/", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                address.IndexOf("steamcommunity.com/my/", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                address.IndexOf("steamcommunity.com/my", StringComparison.OrdinalIgnoreCase) >= 0;
+                            view.Navigate("https://steamcommunity.com/login/home/?goto=" +
+                                          Uri.EscapeDataString("https://steamcommunity.com/my/"));
 
-                            if (isOnLoggedInPage)
+                            view.LoadingChanged += (s, e) =>
                             {
-                                var cookies = view.GetCookies();
-                                var authCookie = cookies?.FirstOrDefault(c =>
+                                if (e.IsLoading) return;
+                                var address = view.GetCurrentAddress();
+                                if (string.IsNullOrWhiteSpace(address)) return;
+
+                                // Check if we're on a logged-in page: profile pages or /my/ endpoint
+                                bool isOnLoggedInPage =
+                                    address.IndexOf("steamcommunity.com/id/", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    address.IndexOf("steamcommunity.com/profiles/", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    address.IndexOf("steamcommunity.com/my/", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                    address.IndexOf("steamcommunity.com/my", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                                if (isOnLoggedInPage)
+                                {
+                                    var cookies = view.GetCookies();
+                                    var authCookie = cookies?.FirstOrDefault(c =>
+                                        c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
+
+                                    if (authCookie != null)
+                                    {
+                                        // Schedule close on next message pump cycle to avoid reentrancy deadlock
+                                        _api.MainView.UIDispatcher.BeginInvoke(new Action(() => view.Close()),
+                                            System.Windows.Threading.DispatcherPriority.Background);
+                                    }
+                                }
+                            };
+
+                            view.OpenDialog();
+
+                            // Small delay to ensure cookies are committed after close
+                            System.Threading.Thread.Sleep(500);
+
+                            var cookies = view.GetCookies();
+                            if (cookies != null)
+                            {
+                                var authCookie = cookies.FirstOrDefault(c =>
                                     c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
 
                                 if (authCookie != null)
                                 {
-                                    // Schedule close on next message pump cycle to avoid reentrancy deadlock
-                                    _api.MainView.UIDispatcher.BeginInvoke(new Action(() => view.Close()),
-                                        System.Windows.Threading.DispatcherPriority.Background);
+                                    extractedId = TryExtractSteamId64FromSteamLoginSecure(authCookie.Value);
+                                    loggedIn = !string.IsNullOrWhiteSpace(extractedId);
                                 }
                             }
-                        };
-
-                        view.OpenDialog();
-                        await Task.Delay(500);
-
-                        var cookies = view.GetCookies();
-                        if (cookies != null)
-                        {
-                            var authCookie = cookies.FirstOrDefault(c => 
-                                c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
-
-                            if (authCookie != null)
-                            {
-                                extractedId = TryExtractSteamId64FromSteamLoginSecure(authCookie.Value);
-                                loggedIn = !string.IsNullOrWhiteSpace(extractedId);
-                            }
                         }
+
+                        tcs.TrySetResult(true);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Error(ex, "AuthenticateInteractiveAsync UI thread logic failed.");
+                        tcs.TrySetResult(false);
                     }
                 });
+
+                // Wait here until the UI thread is actually done
+                await tcs.Task;
 
                 if (!loggedIn)
                     return (false, "Steam session cookies not found. Please ensure login completed.");
