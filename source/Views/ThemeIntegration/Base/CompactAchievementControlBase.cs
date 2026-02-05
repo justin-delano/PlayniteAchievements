@@ -93,8 +93,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 Height = IconHeight,
                 Margin = new Thickness(4),
                 ToolTip = achievement.DisplayName,
-                Icon = achievement.IconDisplay,
-                IconCustom = achievement.IconDisplay,
+                // Icon is for unlocked state, IconCustom is for locked state
+                Icon = achievement.UnlockedIconDisplay,
+                IconCustom = achievement.LockedIconDisplay,
                 IsLocked = false,
                 Percent = achievement.GlobalPercentUnlocked ?? 0,
                 EnableRaretyIndicator = true,
