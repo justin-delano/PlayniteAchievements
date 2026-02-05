@@ -107,7 +107,7 @@ namespace PlayniteAchievements.Views
             try
             {
                 var (ok, msg) = await _sessionManager.AuthenticateInteractiveAsync(CancellationToken.None).ConfigureAwait(false);
-                Dispatcher.Invoke(() => SteamAuthStatus = msg);
+                SetSteamAuthStatus(msg);
             }
             finally
             {
@@ -129,17 +129,17 @@ namespace PlayniteAchievements.Views
                 var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(CancellationToken.None).ConfigureAwait(false);
                 if (isLoggedIn)
                 {
-                    Dispatcher.Invoke(() => SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_SteamAuth_OK"));
+                    SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_SteamAuth_OK"));
                 }
                 else
                 {
-                    Dispatcher.Invoke(() => SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthInvalid"));
+                    SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthInvalid"));
                 }
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Steam auth check failed.");
-                Dispatcher.Invoke(() => SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthError"));
+                SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthError"));
             }
             finally
             {
@@ -147,9 +147,28 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void SetSteamAuthStatus(string status)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                SteamAuthStatus = status;
+            }
+            else
+            {
+                Dispatcher.Invoke(() => SteamAuthStatus = status);
+            }
+        }
+
         private void SetSteamAuthBusy(bool busy)
         {
-            Dispatcher.Invoke(() => SteamAuthBusy = busy);
+            if (Dispatcher.CheckAccess())
+            {
+                SteamAuthBusy = busy;
+            }
+            else
+            {
+                Dispatcher.Invoke(() => SteamAuthBusy = busy);
+            }
         }
 
         // -----------------------------
