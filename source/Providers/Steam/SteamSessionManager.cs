@@ -182,8 +182,14 @@ namespace PlayniteAchievements.Providers.Steam
                             var address = view.GetCurrentAddress();
                             if (string.IsNullOrWhiteSpace(address)) return;
 
-                            if (address.IndexOf("steamcommunity.com/id/", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                address.IndexOf("steamcommunity.com/profiles/", StringComparison.OrdinalIgnoreCase) >= 0)
+                            // Check if we're on a logged-in page: profile pages or /my/ endpoint
+                            bool isOnLoggedInPage =
+                                address.IndexOf("steamcommunity.com/id/", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                address.IndexOf("steamcommunity.com/profiles/", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                address.IndexOf("steamcommunity.com/my/", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                address.IndexOf("steamcommunity.com/my", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                            if (isOnLoggedInPage)
                             {
                                 var cookies = view.GetCookies();
                                 var authCookie = cookies?.FirstOrDefault(c =>
