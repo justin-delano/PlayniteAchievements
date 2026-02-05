@@ -75,9 +75,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
                 Height = IconHeight,
                 Margin = new System.Windows.Thickness(4),
                 ToolTip = achievement.DisplayName,
-                // Use IconDisplay; grayscale prefix is handled by the icon loading logic.
-                Icon = achievement.IconDisplay,
-                IconCustom = string.Empty,
+                // Icon is for unlocked state, IconCustom is for locked state
+                Icon = achievement.UnlockedIconDisplay,
+                IconCustom = achievement.LockedIconDisplay,
                 IsLocked = true,
                 Percent = achievement.GlobalPercentUnlocked ?? 0,
                 EnableRaretyIndicator = true,
