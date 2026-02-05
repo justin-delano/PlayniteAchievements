@@ -81,7 +81,7 @@ namespace PlayniteAchievements.Models
 
         #endregion
 
-        #region Legacy Theme Properties (Runtime, Inline)
+        #region Legacy Theme Properties
 
         /// <summary>
         /// Basic theme properties kept inline for backward compatibility.
@@ -138,7 +138,7 @@ namespace PlayniteAchievements.Models
 
         #endregion
 
-        #region Fullscreen Theme Compatibility (Aniki ReMake, Runtime)
+        #region Fullscreen Theme Compatibility (SuccessStory Fullscreen Helper)
 
         /// <summary>
         /// Fullscreen theme compatibility surface expected by older fullscreen themes (e.g. Aniki ReMake).
@@ -275,7 +275,7 @@ namespace PlayniteAchievements.Models
 
         #endregion
 
-        #region Fullscreen Theme Integration (Native, Runtime)
+        #region Fullscreen Theme Integration (Native)
 
         /// <summary>
         /// Native fullscreen theme integration properties.
@@ -487,7 +487,19 @@ namespace PlayniteAchievements.Models
 
         #endregion
 
-        #region Success Story Integration (Pass-through)
+        #region Game Context
+
+        /// <summary>
+        /// The currently selected game in Playnite's main view.
+        /// Exposed for fullscreen themes to bind backgrounds, covers, logos, etc.
+        /// Similar to SuccessStory's GameContext property.
+        /// </summary>
+        [DontSerialize]
+        public Game SelectedGame => _plugin?.PlayniteApi?.MainView?.SelectedGames?.FirstOrDefault();
+
+        #endregion
+
+        #region  Additional SuccessStory Integration
 
         /// <summary>
         /// Whether to show compact unlocked achievements list (SuccessStory-compatible view).
