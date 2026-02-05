@@ -1,0 +1,37 @@
+# Auto detect text files and normalize line endings to LF
+* text=auto
+
+# Source code files
+*.cs text diff=csharp
+*.csproj text diff=xml
+*.sln text diff=xml
+*.xaml text diff=xml
+*.json text
+*.yaml text
+*.yml text
+*.md text
+*.txt text
+
+# Windows shell scripts - must use CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Files that should always have LF line endings
+*.sh text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.dll binary
+*.exe binary
+*.pdb binary
+*.zip binary
+*.7z binary
+*.rar binary
+
+# Ensure normalization happens on checkout
+# This prevents mixed line endings in the repo
