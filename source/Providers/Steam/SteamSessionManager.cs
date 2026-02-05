@@ -167,7 +167,7 @@ namespace PlayniteAchievements.Providers.Steam
                 // Use TaskCompletionSource to ensure we wait for the UI thread logic to actually FINISH
                 var tcs = new TaskCompletionSource<bool>();
 
-                await _api.MainView.UIDispatcher.InvokeAsync(() =>
+                await _api.MainView.UIDispatcher.InvokeAsync(async () =>
                 {
                     try
                     {
@@ -187,14 +187,10 @@ namespace PlayniteAchievements.Providers.Steam
                                 var address = view.GetCurrentAddress();
                                 if (string.IsNullOrWhiteSpace(address)) return;
 
-                                // Check if we're on a logged-in page: profile pages or /my/ endpoint
-                                bool isOnLoggedInPage =
-                                    address.IndexOf("steamcommunity.com/id/", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                // Check for logged-in pages: /id/, /profiles/, or /my/
+                                if (address.IndexOf("steamcommunity.com/id/", StringComparison.OrdinalIgnoreCase) >= 0 ||
                                     address.IndexOf("steamcommunity.com/profiles/", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                    address.IndexOf("steamcommunity.com/my/", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                    address.IndexOf("steamcommunity.com/my", StringComparison.OrdinalIgnoreCase) >= 0;
-
-                                if (isOnLoggedInPage)
+                                    address.IndexOf("steamcommunity.com/my", StringComparison.OrdinalIgnoreCase) >= 0)
                                 {
                                     var cookies = view.GetCookies();
                                     var authCookie = cookies?.FirstOrDefault(c =>
@@ -210,9 +206,7 @@ namespace PlayniteAchievements.Providers.Steam
                             };
 
                             view.OpenDialog();
-
-                            // Small delay to ensure cookies are committed after close
-                            System.Threading.Thread.Sleep(500);
+                            await Task.Delay(500);
 
                             var cookies = view.GetCookies();
                             if (cookies != null)
@@ -233,7 +227,7 @@ namespace PlayniteAchievements.Providers.Steam
                     catch (Exception ex)
                     {
                         _logger?.Error(ex, "AuthenticateInteractiveAsync UI thread logic failed.");
-                        tcs.TrySetResult(false);
+                        tcs.TrySetException(ex);
                     }
                 });
 
