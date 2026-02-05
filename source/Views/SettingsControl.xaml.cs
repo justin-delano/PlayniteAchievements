@@ -87,7 +87,7 @@ namespace PlayniteAchievements.Views
                 {
                     _logger?.Info($"DataContext verified correct in Loaded event: {DataContext?.GetType().Name}");
                 }
-                await CheckSteamAuthAsync().ConfigureAwait(false);
+                await CheckSteamAuthAsync();
             };
         }
 
@@ -97,7 +97,7 @@ namespace PlayniteAchievements.Views
 
         private async void SteamAuth_Check_Click(object sender, RoutedEventArgs e)
         {
-            await CheckSteamAuthAsync().ConfigureAwait(false);
+            await CheckSteamAuthAsync();
         }
 
         private async void SteamAuth_Authenticate_Click(object sender, RoutedEventArgs e)
@@ -106,7 +106,7 @@ namespace PlayniteAchievements.Views
 
             try
             {
-                var (ok, msg) = await _sessionManager.AuthenticateInteractiveAsync(CancellationToken.None).ConfigureAwait(false);
+                var (ok, msg) = await _sessionManager.AuthenticateInteractiveAsync(CancellationToken.None);
                 SetSteamAuthStatus(msg);
             }
             finally
@@ -126,7 +126,7 @@ namespace PlayniteAchievements.Views
             SetSteamAuthBusy(true);
             try
             {
-                var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(CancellationToken.None).ConfigureAwait(false);
+                var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(CancellationToken.None);
                 if (isLoggedIn)
                 {
                     SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_SteamAuth_OK"));
@@ -231,7 +231,7 @@ namespace PlayniteAchievements.Views
             var name = selected.Name ?? string.Empty;
             if (string.Equals(name, "SteamTab", StringComparison.OrdinalIgnoreCase))
             {
-                await CheckSteamAuthAsync().ConfigureAwait(false);
+                await CheckSteamAuthAsync();
                 _logger?.Info("Checked Steam auth for Steam tab.");
             }
         }
