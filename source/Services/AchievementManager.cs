@@ -400,13 +400,15 @@ namespace PlayniteAchievements.Services
             // Download achievement icons and update IconPath to local file paths
             if (data.Achievements != null)
             {
+                var gameIdStr = data.PlayniteGameId?.ToString();
                 foreach (var achievement in data.Achievements)
                 {
                     if (!string.IsNullOrWhiteSpace(achievement.IconPath) &&
                         (achievement.IconPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                          achievement.IconPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
                     {
-                        var localPath = await _diskImageService.GetOrDownloadIconAsync(achievement.IconPath, 0, CancellationToken.None).ConfigureAwait(false);
+                        var localPath = await _diskImageService.GetOrDownloadIconAsync(
+                            achievement.IconPath, 0, CancellationToken.None, gameIdStr).ConfigureAwait(false);
                         if (!string.IsNullOrWhiteSpace(localPath))
                         {
                             achievement.IconPath = localPath;
