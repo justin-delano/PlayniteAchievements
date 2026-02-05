@@ -171,6 +171,29 @@ namespace PlayniteAchievements.Providers.Steam
                 {
                     try
                     {
+                        // First check if already authenticated (without opening dialog)
+                        var alreadyAuthed = false;
+                        using (var quickCheck = _api.WebViews.CreateOffscreenView())
+                        {
+                            await quickCheck.NavigateAndWaitAsync("https://steamcommunity.com/my/");
+                            var checkCookies = quickCheck.GetCookies();
+                            var checkAuth = checkCookies?.FirstOrDefault(c =>
+                                c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
+                            if (checkAuth != null)
+                            {
+                                extractedId = TryExtractSteamId64FromSteamLoginSecure(checkAuth.Value);
+                                alreadyAuthed = !string.IsNullOrWhiteSpace(extractedId);
+                            }
+                        }
+
+                        if (alreadyAuthed)
+                        {
+                            loggedIn = true;
+                            tcs.TrySetResult(true);
+                            return;
+                        }
+
+                        // Not authenticated, show interactive login window
                         using (var view = _api.WebViews.CreateView(1000, 800))
                         {
                             view.DeleteDomainCookies(".steamcommunity.com");
