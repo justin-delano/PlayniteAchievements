@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfect Game Badge Options</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 40px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid #0f3460;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            border-color: #533483;
+        }
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #aaa;
+            text-align: center;
+            margin: 0;
+        }
+        .badge-container {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+        }
+        .badge-container svg {
+            width: 100%;
+            height: 100%;
+        }
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 18px;
+            color: #e94560;
+            margin: 20px 0 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .current-badge {
+            border-color: #e94560;
+            background: #1f1f3a;
+        }
+        .note {
+            grid-column: 1 / -1;
+            background: #0f3460;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        /* Animation for the recommended badge */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .recommended {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <h1>Perfect Game Badge Options</h1>
+    <p class="subtitle">Visual comparison of badge ideas (128x128 scale)</p>
+
+    <div class="grid">
+        <p class="note">
+            <strong>Reference:</strong> The current Ultra Rare / Platinum badge (hexagon with blue-white gradient).
+            Perfect Game should be visually distinct from this.
+        </p>
+
+        <!-- CURRENT BADGE (REFERENCE) -->
+        <div class="card current-badge">
+            <h3 class="card-title">CURRENT: Platinum Hexagon</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="platinumGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#1B2632"/>
+                            <stop offset="35%" style="stop-color:#86C8FF"/>
+                            <stop offset="55%" style="stop-color:#FFFFFF"/>
+                            <stop offset="100%" style="stop-color:#56697A"/>
+                        </linearGradient>
+                        <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+                            <stop offset="55%" style="stop-color:#FFFFFF;stop-opacity:0.4"/>
+                            <stop offset="70%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon points="64,10 110,37 110,91 64,118 18,91 18,37" fill="url(#platinumGrad)" stroke="#EBFAFF" stroke-width="3"/>
+                    <polygon points="64,10 110,37 110,91 64,118 18,91 18,37" fill="url(#shine)"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="section-title">1. Crown / Trophy Theme</div>
+
+        <!-- Simple Crown -->
+        <div class="card">
+            <h3 class="card-title">Crown (Gold)</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#2F2106"/>
+                            <stop offset="35%" style="stop-color:#CF9B1F"/>
+                            <stop offset="55%" style="stop-color:#FFF2A8"/>
+                            <stop offset="100%" style="stop-color:#6F4C06"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M20,90 L20,40 L40,55 L64,25 L88,55 L108,40 L108,90 Z" fill="url(#goldGrad)" stroke="#FFFAD2" stroke-width="3" stroke-linejoin="round"/>
+                    <rect x="20" y="90" width="88" height="12" rx="3" fill="url(#goldGrad)" stroke="#FFFAD2" stroke-width="2"/>
+                    <circle cx="64" cy="25" r="8" fill="#FFFAD2"/>
+                    <circle cx="40" cy="55" r="6" fill="#FFFAD2"/>
+                    <circle cx="88" cy="55" r="6" fill="#FFFAD2"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Trophy Cup -->
+        <div class="card">
+            <h3 class="card-title">Trophy Cup</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="trophyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#B8860B"/>
+                            <stop offset="50%" style="stop-color:#FFD700"/>
+                            <stop offset="100%" style="stop-color:#DAA520"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M30,35 Q30,15 64,15 Q98,15 98,35 L98,50 Q98,70 64,75 Q30,70 30,50 Z" fill="url(#trophyGrad)" stroke="#FFFAD2" stroke-width="2"/>
+                    <ellipse cx="64" cy="15" rx="34" ry="8" fill="#FFFAD2" opacity="0.5"/>
+                    <rect x="56" y="75" width="16" height="20" fill="url(#trophyGrad)" stroke="#FFFAD2" stroke-width="2"/>
+                    <rect x="40" y="95" width="48" height="10" rx="3" fill="url(#trophyGrad)" stroke="#FFFAD2" stroke-width="2"/>
+                    <ellipse cx="64" cy="50" rx="20" ry="18" fill="#FFFAD2" opacity="0.2"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Regal Crown -->
+        <div class="card">
+            <h3 class="card-title">Regal Crown (Purple)</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#4A148C"/>
+                            <stop offset="40%" style="stop-color:#9C27B0"/>
+                            <stop offset="60%" style="stop-color:#E1BEE7"/>
+                            <stop offset="100%" style="stop-color:#6A1B9A"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M15,95 L15,35 L25,35 L40,50 L64,20 L88,50 L103,35 L113,35 L113,95 Z" fill="url(#purpleGrad)" stroke="#E1BEE7" stroke-width="3" stroke-linejoin="round"/>
+                    <rect x="15" y="95" width="98" height="10" rx="3" fill="url(#purpleGrad)" stroke="#E1BEE7" stroke-width="2"/>
+                    <circle cx="64" cy="25" r="10" fill="#E1BEE7"/>
+                    <circle cx="25" cy="40" r="7" fill="#E1BEE7"/>
+                    <circle cx="103" cy="40" r="7" fill="#E1BEE7"/>
+                    <rect x="40" y="55" width="48" height="25" rx="5" fill="#7B1FA2" opacity="0.5"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="section-title">2. Star Theme</div>
+
+        <!-- Five Point Star -->
+        <div class="card recommended">
+            <h3 class="card-title">Gold Star ⭐</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="starGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FF8C00"/>
+                            <stop offset="30%" style="stop-color:#FFD700"/>
+                            <stop offset="50%" style="stop-color:#FFFFA0"/>
+                            <stop offset="100%" style="stop-color:#FFA500"/>
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <polygon points="64,8 77,50 122,50 86,78 99,122 64,95 29,122 42,78 6,50 51,50" fill="url(#starGold)" stroke="#FFFFA0" stroke-width="2" stroke-linejoin="round" filter="url(#glow)"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Sparkle Starburst -->
+        <div class="card">
+            <h3 class="card-title">Sparkle Burst</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="sparkleGrad" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" style="stop-color:#FFFFFF"/>
+                            <stop offset="30%" style="stop-color:#FFD700"/>
+                            <stop offset="100%" style="stop-color:#FF8C00;stop-opacity:0"/>
+                        </radialGradient>
+                    </defs>
+                    <polygon points="64,12 70,55 115,55 78,82 94,122 64,95 34,122 50,82 13,55 58,55" fill="url(#sparkleGrad)" stroke="#FFD700" stroke-width="2"/>
+                    <line x1="64" y1="5" x2="64" y2="18" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="64" y1="110" x2="64" y2="123" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="5" y1="64" x2="18" y2="64" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="110" y1="64" x2="123" y2="64" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="22" y1="22" x2="32" y2="32" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="96" y1="96" x2="106" y2="106" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="106" y1="22" x2="96" y2="32" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="32" y1="96" x2="22" y2="106" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Double Star -->
+        <div class="card">
+            <h3 class="card-title">Double Star</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="outerStar" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FFD700"/>
+                            <stop offset="100%" style="stop-color:#FF8C00"/>
+                        </linearGradient>
+                        <linearGradient id="innerStar" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FFFFA0"/>
+                            <stop offset="100%" style="stop-color:#FFD700"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon points="64,5 76,48 120,48 85,76 97,120 64,94 31,120 43,76 8,48 52,48" fill="url(#outerStar)" stroke="#FFFFA0" stroke-width="2" stroke-linejoin="round"/>
+                    <polygon points="64,35 70,58 95,58 75,74 83,98 64,83 45,98 53,74 33,58 58,58" fill="url(#innerStar)" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="section-title">3. Checkmark / Complete Theme</div>
+
+        <!-- Circular Checkmark -->
+        <div class="card">
+            <h3 class="card-title">Check Circle (Green)</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#1B5E20"/>
+                            <stop offset="40%" style="stop-color:#4CAF50"/>
+                            <stop offset="60%" style="stop-color:#81C784"/>
+                            <stop offset="100%" style="stop-color:#2E7D32"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="64" cy="64" r="55" fill="url(#greenGrad)" stroke="#A5D6A7" stroke-width="3"/>
+                    <polyline points="40,65 55,80 88,45" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- 100% Badge -->
+        <div class="card">
+            <h3 class="card-title">100% Badge</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="hundredGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#006064"/>
+                            <stop offset="40%" style="stop-color:#00BCD4"/>
+                            <stop offset="60%" style="stop-color:#80DEEA"/>
+                            <stop offset="100%" style="stop-color:#00838F"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="64" cy="64" r="55" fill="url(#hundredGrad)" stroke="#B2EBF2" stroke-width="3"/>
+                    <text x="64" y="78" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#FFFFFF">100%</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Stamp Seal -->
+        <div class="card">
+            <h3 class="card-title">Stamp Seal</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="sealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#BF360C"/>
+                            <stop offset="40%" style="stop-color:#FF5722"/>
+                            <stop offset="60%" style="stop-color:#FF8A65"/>
+                            <stop offset="100%" style="stop-color:#D84315"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="64" cy="64" r="48" fill="url(#sealGrad)" stroke="#FFCCBC" stroke-width="3"/>
+                    <circle cx="64" cy="64" r="40" fill="none" stroke="#FFCCBC" stroke-width="2" stroke-dasharray="8,4"/>
+                    <text x="64" y="72" text-anchor="middle" font-family="Georgia, serif" font-size="24" font-weight="bold" fill="#FFFFFF">✓</text>
+                </svg>
+            </div>
+        </div>
+
+        <div class="section-title">4. Medal / Ribbon Theme</div>
+
+        <!-- Circular Medal -->
+        <div class="card">
+            <h3 class="card-title">Gold Medal</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="medalGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#B8860B"/>
+                            <stop offset="50%" style="stop-color:#FFD700"/>
+                            <stop offset="100%" style="stop-color:#DAA520"/>
+                        </linearGradient>
+                        <linearGradient id="ribbonGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#C62828"/>
+                            <stop offset="100%" style="stop-color:#E53935"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M45,0 L45,45 L64,60 L83,45 L83,0 Z" fill="url(#ribbonGrad)"/>
+                    <circle cx="64" cy="75" r="40" fill="url(#medalGold)" stroke="#FFFAD2" stroke-width="3"/>
+                    <text x="64" y="85" text-anchor="middle" font-family="Georgia, serif" font-size="28" font-weight="bold" fill="#B8860B">1</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Diamond Medal -->
+        <div class="card">
+            <h3 class="card-title">Diamond Medal</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="blueRibbon" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#1565C0"/>
+                            <stop offset="100%" style="stop-color:#1976D2"/>
+                        </linearGradient>
+                        <radialGradient id="diamondGrad" cx="50%" cy="30%" r="70%">
+                            <stop offset="0%" style="stop-color:#E3F2FD"/>
+                            <stop offset="50%" style="stop-color:#90CAF9"/>
+                            <stop offset="100%" style="stop-color:#42A5F5"/>
+                        </radialGradient>
+                    </defs>
+                    <path d="M48,0 L48,40 L64,55 L80,40 L80,0 Z" fill="url(#blueRibbon)"/>
+                    <circle cx="64" cy="75" r="38" fill="url(#diamondGrad)" stroke="#BBDEFB" stroke-width="3"/>
+                    <path d="M64,55 L50,75 L64,95 L78,75 Z" fill="#E3F2FD" opacity="0.6"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="section-title">5. Gemstone / Jewel Theme</div>
+
+        <!-- Ruby Circle -->
+        <div class="card">
+            <h3 class="card-title">Ruby Gem</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="rubyGrad" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" style="stop-color:#FFCDD2"/>
+                            <stop offset="40%" style="stop-color:#E53935"/>
+                            <stop offset="100%" style="stop-color:#B71C1C"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="64" cy="64" r="50" fill="url(#rubyGrad)" stroke="#FFCDD2" stroke-width="2"/>
+                    <ellipse cx="50" cy="45" rx="15" ry="20" fill="#FFCDD2" opacity="0.4" transform="rotate(-30, 50, 45)"/>
+                    <path d="M64,25 L80,50 L64,85 L48,50 Z" fill="#B71C1C" opacity="0.3"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Rainbow Iridescent -->
+        <div class="card recommended">
+            <h3 class="card-title">Irisdescent Rainbow</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="rainbowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#E91E63"/>
+                            <stop offset="20%" style="stop-color:#9C27B0"/>
+                            <stop offset="40%" style="stop-color:#3F51B5"/>
+                            <stop offset="60%" style="stop-color:#2196F3"/>
+                            <stop offset="80%" style="stop-color:#00BCD4"/>
+                            <stop offset="100%" style="stop-color:#4CAF50"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon points="64,10 110,37 110,91 64,118 18,91 18,37" fill="url(#rainbowGrad)" stroke="#FFFFFF" stroke-width="3"/>
+                    <polygon points="64,30 90,47 90,83 64,100 38,83 38,47" fill="#FFFFFF" opacity="0.2"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Heart Gem -->
+        <div class="card">
+            <h3 class="card-title">Heart Gem</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#F48FB1"/>
+                            <stop offset="50%" style="stop-color:#E91E63"/>
+                            <stop offset="100%" style="stop-color:#AD1457"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M64,115 C20,80 10,50 30,35 C45,23 55,30 64,45 C73,30 83,23 98,35 C118,50 108,80 64,115 Z" fill="url(#heartGrad)" stroke="#F8BBD0" stroke-width="3"/>
+                    <ellipse cx="45" cy="50" rx="12" ry="15" fill="#F8BBD0" opacity="0.4"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Purple Diamond -->
+        <div class="card recommended">
+            <h3 class="card-title">Purple Diamond</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="purpleDiamond" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#4A148C"/>
+                            <stop offset="40%" style="stop-color:#AB47BC"/>
+                            <stop offset="60%" style="stop-color:#E1BEE7"/>
+                            <stop offset="100%" style="stop-color:#7B1FA2"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon points="64,10 118,64 64,118 10,64" fill="url(#purpleDiamond)" stroke="#E1BEE7" stroke-width="3"/>
+                    <polygon points="64,30 94,64 64,98 34,64" fill="#FFFFFF" opacity="0.2"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="section-title">6. Alternative Shapes</div>
+
+        <!-- Octagon -->
+        <div class="card">
+            <h3 class="card-title">Green Octagon</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="greenOct" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#1B5E20"/>
+                            <stop offset="40%" style="stop-color:#66BB6A"/>
+                            <stop offset="60%" style="stop-color:#A5D6A7"/>
+                            <stop offset="100%" style="stop-color:#2E7D32"/>
+                        </linearGradient>
+                    </defs>
+                    <polygon points="44,10 84,10 110,36 110,64 110,92 84,118 44,118 18,92 18,64 18,36" fill="url(#greenOct)" stroke="#C8E6C9" stroke-width="3"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Emerald Cut -->
+        <div class="card">
+            <h3 class="card-title">Emerald Cut</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#004D40"/>
+                            <stop offset="40%" style="stop-color:#26A69A"/>
+                            <stop offset="60%" style="stop-color:#80CBC4"/>
+                            <stop offset="100%" style="stop-color:#00796B"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="28" y="20" width="72" height="88" rx="4" fill="url(#emeraldGrad)" stroke="#B2DFDB" stroke-width="3"/>
+                    <polygon points="64,20 90,50 90,78 64,108 38,78 38,50" fill="#B2DFDB" opacity="0.2"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Shield -->
+        <div class="card">
+            <h3 class="card-title">Shield</h3>
+            <div class="badge-container">
+                <svg viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#0D47A1"/>
+                            <stop offset="40%" style="stop-color:#42A5F5"/>
+                            <stop offset="60%" style="stop-color:#90CAF9"/>
+                            <stop offset="100%" style="stop-color:#1976D2"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M64,115 C64,115 110,95 110,40 L110,20 L64,10 L18,20 L18,40 C18,95 64,115 64,115 Z" fill="url(#shieldGrad)" stroke="#BBDEFB" stroke-width="3"/>
+                    <polyline points="40,65 55,80 88,45" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+
+    </div>
+
+    <p style="text-align: center; margin-top: 40px; color: #666; font-size: 14px;">
+        ⭐ indicates personal recommendations
+    </p>
+</body>
+</html>
