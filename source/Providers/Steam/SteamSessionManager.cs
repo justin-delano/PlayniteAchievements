@@ -191,7 +191,9 @@ namespace PlayniteAchievements.Providers.Steam
 
                                 if (authCookie != null)
                                 {
-                                    view.Close();
+                                    // Schedule close on next message pump cycle to avoid reentrancy deadlock
+                                    _api.MainView.UIDispatcher.BeginInvoke(new Action(() => view.Close()),
+                                        System.Windows.Threading.DispatcherPriority.Background);
                                 }
                             }
                         };
