@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Playnite.SDK;
 using Playnite.SDK.Data;
+using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
@@ -513,7 +515,7 @@ namespace PlayniteAchievements.Models
         /// Similar to SuccessStory's GameContext property.
         /// </summary>
         [DontSerialize]
-        public Game SelectedGame => _plugin?.PlayniteApi?.MainView?.SelectedGames?.FirstOrDefault();
+        public Game? SelectedGame => _plugin?.PlayniteApi?.MainView?.SelectedGames?.FirstOrDefault();
 
         #endregion
 
