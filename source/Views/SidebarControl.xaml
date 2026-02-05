@@ -594,7 +594,7 @@
                             <DataGridTemplateColumn Width="34" Header="">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Image Source="{StaticResource BadgePlatinumHexagon}"
+                                        <Image Source="{StaticResource BadgePerfectGame}"
                                             Style="{StaticResource RarityIcon}"
                                             Effect="{StaticResource BadgeShadow}"
                                             Width="20" Height="20"
