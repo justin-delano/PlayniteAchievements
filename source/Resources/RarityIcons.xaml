@@ -73,6 +73,18 @@
     </DrawingBrush.Drawing>
   </DrawingBrush>
 
+  <!-- Iridescent rainbow gradient for Perfect Game badge -->
+  <LinearGradientBrush x:Key="FillRainbow" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Offset="0.00" Color="#E91E63"/>
+    <GradientStop Offset="0.20" Color="#9C27B0"/>
+    <GradientStop Offset="0.40" Color="#3F51B5"/>
+    <GradientStop Offset="0.60" Color="#2196F3"/>
+    <GradientStop Offset="0.80" Color="#00BCD4"/>
+    <GradientStop Offset="1.00" Color="#4CAF50"/>
+  </LinearGradientBrush>
+
+  <SolidColorBrush x:Key="RimRainbow" Color="#B3FFFFFF"/>
+
   <!-- =======================
        BADGE IMAGES (use with <Image Source="{StaticResource ...}" />)
        ======================= -->
@@ -151,6 +163,25 @@
           <!-- <GeometryDrawing Geometry="{StaticResource GeoGlint1}" Brush="#BFFFFFFF"/>
           <GeometryDrawing Geometry="{StaticResource GeoGlint2}" Brush="#9FFFFFFF"/>
           <GeometryDrawing Geometry="{StaticResource GeoGlint3}" Brush="#8CFFFFFF"/> -->
+      </DrawingGroup>
+    </DrawingImage.Drawing>
+  </DrawingImage>
+
+  <!-- Perfect Game iridescent rainbow hexagon -->
+  <DrawingImage x:Key="BadgePerfectGame">
+    <DrawingImage.Drawing>
+      <DrawingGroup>
+        <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource FillRainbow}">
+          <GeometryDrawing.Pen>
+            <Pen Brush="{StaticResource RimRainbow}" Thickness="3" LineJoin="Round"/>
+          </GeometryDrawing.Pen>
+        </GeometryDrawing>
+
+        <!-- Inner highlight hexagon for depth -->
+        <GeometryDrawing Geometry="M 64,30 L 90,47 90,83 64,100 38,83 38,47 Z" Brush="#33FFFFFF"/>
+
+        <!-- Shine overlay -->
+        <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource ShineOverlay}"/>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
