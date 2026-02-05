@@ -1,6 +1,9 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
@@ -9,7 +12,7 @@ using Playnite.SDK;
 namespace PlayniteAchievements.Services.Images
 {
     /// <summary>
-    /// Persistent disk-based icon cache with game ID subfolder organization.
+    /// Persistent disk-based icon cache with URI-based organization.
     /// Downloads icons, converts to PNG, and stores on disk for fast retrieval.
     /// </summary>
     public sealed class DiskImageService : IDisposable
@@ -61,73 +64,46 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
-        private string GetGameIconDirectory(Guid gameId)
+        /// <summary>
+        /// Generate cache filename from URI using SHA256 hash.
+        /// </summary>
+        private string GetIconCachePathFromUri(string uri, int decodeSize)
         {
-            var gameDir = Path.Combine(IconCacheDirectory, gameId.ToString("N"));
-            if (!Directory.Exists(gameDir))
+            // Create hash-based filename from the URI
+            using (var sha = SHA256.Create())
             {
-                Directory.CreateDirectory(gameDir);
+                var hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(uri));
+                var hashHex = BitConverter.ToString(hashBytes).Replace("-", "").Substring(0, 16);
+                var sizeSuffix = decodeSize > 0 ? $"_{decodeSize}" : "";
+                return Path.Combine(IconCacheDirectory, $"{hashHex}{sizeSuffix}.png");
             }
-            return gameDir;
         }
 
-        private string GetIconCachePath(Guid gameId, string achievementId, int decodeSize)
+        /// <summary>
+        /// Check if an icon is cached on disk by URI.
+        /// </summary>
+        public bool IsIconCached(string uri, int decodeSize)
         {
-            var gameDir = GetGameIconDirectory(gameId);
-            var safeId = SanitizeAchievementId(achievementId);
-            var sizeSuffix = decodeSize > 0 ? $"_{decodeSize}" : "";
-            return Path.Combine(gameDir, $"{safeId}{sizeSuffix}.png");
-        }
-
-        private static string SanitizeAchievementId(string achievementId)
-        {
-            if (string.IsNullOrWhiteSpace(achievementId))
-            {
-                return "unknown";
-            }
-
-            // Replace invalid filename characters with underscore
-            var invalidChars = new char[]
-            {
-                '<', '>', ':', '"', '/', '\\', '|', '?', '*',
-                ' ', '\t', '\r', '\n', '\0'
-            };
-
-            var safe = achievementId;
-            foreach (var c in invalidChars)
-            {
-                safe = safe.Replace(c, '_');
-            }
-
-            // Limit length
-            if (safe.Length > 100)
-            {
-                safe = safe.Substring(0, 100);
-            }
-
-            return safe;
-        }
-
-        public bool IsIconCached(Guid gameId, string achievementId, int decodeSize)
-        {
-            var cachePath = GetIconCachePath(gameId, achievementId, decodeSize);
+            var cachePath = GetIconCachePathFromUri(uri, decodeSize);
             return File.Exists(cachePath);
         }
 
+        /// <summary>
+        /// Get or download an icon by URI, caching to disk by URI hash.
+        /// Returns the file path to the cached PNG file, or null on failure.
+        /// </summary>
         public async Task<string> GetOrDownloadIconAsync(
-            Guid gameId,
-            string achievementId,
-            string iconPath,
+            string uri,
             int decodeSize,
             CancellationToken cancel)
         {
-            if (string.IsNullOrWhiteSpace(iconPath))
+            if (string.IsNullOrWhiteSpace(uri))
             {
                 return null;
             }
 
             // Check if already cached on disk
-            var cachePath = GetIconCachePath(gameId, achievementId, decodeSize);
+            var cachePath = GetIconCachePathFromUri(uri, decodeSize);
             if (File.Exists(cachePath))
             {
                 return cachePath;
@@ -143,7 +119,7 @@ namespace PlayniteAchievements.Services.Images
                     return cachePath;
                 }
 
-                var bytes = await DownloadBytesAsync(iconPath, cancel).ConfigureAwait(false);
+                var bytes = await DownloadBytesAsync(uri, cancel).ConfigureAwait(false);
                 if (bytes == null || bytes.Length == 0)
                 {
                     return null;
@@ -177,7 +153,7 @@ namespace PlayniteAchievements.Services.Images
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Failed to download/cache icon from {iconPath}");
+                _logger?.Warn(ex, $"Failed to download/cache icon from {uri}");
                 return null;
             }
             finally
@@ -214,20 +190,28 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
-        public void ClearGameCache(Guid gameId)
+        /// <summary>
+        /// Load a BitmapSource from a cached file path.
+        /// </summary>
+        public BitmapSource LoadCachedImage(string cachePath, int decodePixel)
         {
             try
             {
-                var gameDir = GetGameIconDirectory(gameId);
-                if (Directory.Exists(gameDir))
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                if (decodePixel > 0)
                 {
-                    Directory.Delete(gameDir, recursive: true);
-                    _logger?.Info($"Cleared icon cache for game {gameId}");
+                    bitmap.DecodePixelWidth = decodePixel;
                 }
+                bitmap.UriSource = new Uri(cachePath, UriKind.RelativeOrAbsolute);
+                bitmap.EndInit();
+                return bitmap;
             }
-            catch (Exception ex)
+            catch
             {
-                _logger?.Warn(ex, $"Failed to clear icon cache for game {gameId}");
+                return null;
             }
         }
 
@@ -269,5 +253,7 @@ namespace PlayniteAchievements.Services.Images
                 return 0;
             }
         }
+
+        public string GetCacheDirectoryPath() => IconCacheDirectory;
     }
 }

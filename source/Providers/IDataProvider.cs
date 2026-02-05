@@ -15,7 +15,7 @@ namespace PlayniteAchievements.Providers
         Task<RebuildPayload> ScanAsync(
             List<Game> gamesToScan,
             Action<ProviderScanUpdate> progressCallback,
-            Action<GameAchievementData> onGameScanned,
+            Func<GameAchievementData, Task> onGameScanned,
             CancellationToken cancel);
     }
 }

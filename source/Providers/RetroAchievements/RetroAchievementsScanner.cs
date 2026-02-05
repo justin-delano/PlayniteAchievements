@@ -40,7 +40,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         public async Task<RebuildPayload> ScanAsync(
             List<Game> gamesToScan,
             Action<ProviderScanUpdate> progressCallback,
-            Action<GameAchievementData> onGameScanned,
+            Func<GameAchievementData, Task> onGameScanned,
             CancellationToken cancel)
         {
             if (string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername) || string.IsNullOrWhiteSpace(_settings.Persisted.RaWebApiKey))
@@ -97,7 +97,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                         IsTransientError,
                         cancel).ConfigureAwait(false);
 
-                    onGameScanned?.Invoke(data);
+                    if (onGameScanned != null && data != null)
+                    {
+                        await onGameScanned(data).ConfigureAwait(false);
+                    }
 
                     summary.GamesScanned++;
                     if (data != null && !data.NoAchievements)

@@ -139,7 +139,7 @@ namespace PlayniteAchievements
 
             _diskImageService = new DiskImageService(_logger, GetPluginUserDataPath());
             _imageService = new MemoryImageService(_logger, _diskImageService);
-            _achievementService = new AchievementManager(api, _settingsViewModel.Settings, _logger, this, providers);
+            _achievementService = new AchievementManager(api, _settingsViewModel.Settings, _logger, this, providers, _diskImageService);
             _notifications = new NotificationPublisher(api, _settingsViewModel.Settings, _logger);
             _backgroundUpdates = new BackgroundUpdater(_achievementService, _settingsViewModel.Settings, _logger, _notifications, null);
             _themeAdapter = new ThemeIntegrationAdapter(_settingsViewModel.Settings);

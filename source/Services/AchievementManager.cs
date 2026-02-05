@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Services.Images;
 using Playnite.SDK.Models;
 
 namespace PlayniteAchievements.Services
@@ -39,6 +40,7 @@ namespace PlayniteAchievements.Services
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ICacheManager _cacheService;
+        private readonly DiskImageService _diskImageService;
 
         // Dependencies that need disposal
         private readonly IReadOnlyList<IDataProvider> _providers;
@@ -63,13 +65,15 @@ namespace PlayniteAchievements.Services
             PlayniteAchievementsSettings settings,
             ILogger logger,
             PlayniteAchievementsPlugin plugin,
-            IEnumerable<IDataProvider> providers)
+            IEnumerable<IDataProvider> providers,
+            DiskImageService diskImageService)
         {
             _api = api;
             _settings = settings;
             _logger = logger;
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             if (providers == null) throw new ArgumentNullException(nameof(providers));
+            _diskImageService = diskImageService ?? throw new ArgumentNullException(nameof(diskImageService));
 
             _cacheService = new CacheManager(api, logger, _plugin);
             _providers = providers.ToList();
@@ -377,7 +381,7 @@ namespace PlayniteAchievements.Services
             return new RebuildPayload { Summary = summary };
         }
 
-        private void OnGameScanned(IDataProvider provider, GameAchievementData data)
+        private async Task OnGameScanned(IDataProvider provider, GameAchievementData data)
         {
             if (data?.PlayniteGameId == null) return;
 
@@ -391,6 +395,24 @@ namespace PlayniteAchievements.Services
             }
             catch
             {
+            }
+
+            // Download achievement icons and update IconPath to local file paths
+            if (data.Achievements != null)
+            {
+                foreach (var achievement in data.Achievements)
+                {
+                    if (!string.IsNullOrWhiteSpace(achievement.IconPath) &&
+                        (achievement.IconPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                         achievement.IconPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        var localPath = await _diskImageService.GetOrDownloadIconAsync(achievement.IconPath, 0, CancellationToken.None).ConfigureAwait(false);
+                        if (!string.IsNullOrWhiteSpace(localPath))
+                        {
+                            achievement.IconPath = localPath;
+                        }
+                    }
+                }
             }
 
             var key = data.PlayniteGameId.Value.ToString();

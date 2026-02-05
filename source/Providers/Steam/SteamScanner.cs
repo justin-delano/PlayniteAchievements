@@ -46,7 +46,7 @@ namespace PlayniteAchievements.Providers.Steam
         public async Task<RebuildPayload> ScanAsync(
             List<Game> gamesToScan,
             Action<ProviderScanUpdate> progressCallback,
-            Action<GameAchievementData> onGameScanned,
+            Func<GameAchievementData, Task> onGameScanned,
             CancellationToken cancel)
         {
             if (string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) || string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey))
@@ -111,7 +111,10 @@ namespace PlayniteAchievements.Providers.Steam
                         IsTransientError,
                         cancel).ConfigureAwait(false);
 
-                    onGameScanned?.Invoke(data);
+                    if (onGameScanned != null && data != null)
+                    {
+                        await onGameScanned(data).ConfigureAwait(false);
+                    }
 
                     summary.GamesScanned++;
 

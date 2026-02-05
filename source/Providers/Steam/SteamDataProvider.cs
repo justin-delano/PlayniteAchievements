@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Providers.Steam
         public Task<RebuildPayload> ScanAsync(
             List<Game> gamesToScan,
             Action<ProviderScanUpdate> progressCallback,
-            Action<GameAchievementData> onGameScanned,
+            Func<GameAchievementData, Task> onGameScanned,
             CancellationToken cancel)
         {
             return _scanner.ScanAsync(gamesToScan, progressCallback, onGameScanned, cancel);
