@@ -248,7 +248,7 @@
                             Orientation="Horizontal"
                             VerticalAlignment="Center"
                             Visibility="{Binding IsPerfect, Converter={StaticResource BoolToVis}}">
-                    <Image Source="{StaticResource BadgePlatinumHexagon}"
+                    <Image Source="{StaticResource BadgePerfectGame}"
                            Style="{StaticResource RarityIcon}"
                            Effect="{StaticResource BadgeShadow}"
                            Width="24" Height="24"/>
