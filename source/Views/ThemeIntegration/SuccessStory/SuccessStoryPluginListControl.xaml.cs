@@ -47,7 +47,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
             nameof(DisplayFilter),
             typeof(bool),
             typeof(SuccessStoryPluginListControl),
-            new FrameworkPropertyMetadata(false));
+            new FrameworkPropertyMetadata(true));
 
         public bool DisplayFilter
         {
