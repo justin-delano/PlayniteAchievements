@@ -225,8 +225,10 @@ namespace PlayniteAchievements.Views
         {
             try
             {
+                _logger.Info("Resetting FirstTimeSetupCompleted flag.");
                 _settingsViewModel.Settings.Persisted.FirstTimeSetupCompleted = false;
                 _plugin.SavePluginSettings(_settingsViewModel.Settings);
+                _logger.Info($"FirstTimeSetupCompleted is now: {_settingsViewModel.Settings.Persisted.FirstTimeSetupCompleted}");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
                     ResourceProvider.GetString("LOCPlayAch_Settings_ResetFirstTimeSetupDone"),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
@@ -235,6 +237,7 @@ namespace PlayniteAchievements.Views
             }
             catch (Exception ex)
             {
+                _logger.Error(ex, "Failed to reset first-time setup.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
                     "Failed to reset first-time setup: " + ex.Message,
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
