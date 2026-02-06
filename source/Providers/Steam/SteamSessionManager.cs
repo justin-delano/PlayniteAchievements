@@ -225,7 +225,7 @@ namespace PlayniteAchievements.Providers.Steam
                 // Use TaskCompletionSource to properly coordinate the UI dialog work
                 var loginTcs = new TaskCompletionSource<string>();
 
-                _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
+                _ = _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
                 {
                     try
                     {
@@ -357,7 +357,7 @@ namespace PlayniteAchievements.Providers.Steam
                     {
                         _authResult = (true, extractedId);
                         // Close on the UI thread to avoid threading issues
-                        _api.MainView.UIDispatcher.BeginInvoke(new Action(() => view.Close()));
+                        _ = _api.MainView.UIDispatcher.BeginInvoke(new Action(() => view.Close()));
                     }
                 }
             }
