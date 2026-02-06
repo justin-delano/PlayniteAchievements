@@ -22,7 +22,7 @@ namespace PlayniteAchievements.Views
         private readonly bool _enableDiagnostics;
         private readonly IPlayniteAPI _api;
         private readonly AchievementManager _achievementManager;
-        private readonly PlayniteAchievementsSettings _settings;
+        private readonly PlayniteAchievementsPlugin _plugin;
 
         private SidebarControl _sidebar;
         private FirstTimeLandingPage _landingPage;
@@ -34,14 +34,14 @@ namespace PlayniteAchievements.Views
             bool enableDiagnostics,
             IPlayniteAPI api,
             AchievementManager achievementManager,
-            PlayniteAchievementsSettings settings)
+            PlayniteAchievementsPlugin plugin)
         {
             _createView = createView ?? throw new ArgumentNullException(nameof(createView));
             _logger = logger;
             _enableDiagnostics = enableDiagnostics;
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
 
             InitializeComponent();
 
@@ -51,7 +51,8 @@ namespace PlayniteAchievements.Views
 
         private void SidebarHostControl_Loaded(object sender, RoutedEventArgs e)
         {
-            EnsureContentCreated();
+            // Always recreate content when loaded (handles sidebar reopen)
+            RecreateContent();
             _sidebar?.Activate();
         }
 
@@ -72,12 +73,26 @@ namespace PlayniteAchievements.Views
                 _sidebar = null;
                 _landingPage = null;
                 _createScheduled = false;
+                // Clear content to allow recreation on next load
+                PART_Content.Content = null;
             }
+        }
+
+        private void RecreateContent()
+        {
+            // Clear existing content first
+            _sidebar?.Dispose();
+            _landingPage?.Dispose();
+            _sidebar = null;
+            _landingPage = null;
+            PART_Content.Content = null;
+
+            EnsureContentCreated();
         }
 
         private void EnsureContentCreated()
         {
-            if ((_sidebar != null || _landingPage != null) || _createScheduled)
+            if (_createScheduled)
             {
                 return;
             }
@@ -95,10 +110,14 @@ namespace PlayniteAchievements.Views
                 {
                     try
                     {
+                        // Get fresh settings from the plugin to ensure we have the latest state
+                        var settings = _plugin.Settings;
+                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={settings?.Persisted?.FirstTimeSetupCompleted}");
+
                         // Check if first-time setup is needed
-                        if (!_settings.Persisted.FirstTimeSetupCompleted)
+                        if (settings != null && !settings.Persisted.FirstTimeSetupCompleted)
                         {
-                            CreateLandingPage();
+                            CreateLandingPage(settings);
                         }
                         else
                         {
@@ -116,7 +135,7 @@ namespace PlayniteAchievements.Views
             }), DispatcherPriority.Background);
         }
 
-        private void CreateLandingPage()
+        private void CreateLandingPage(PlayniteAchievementsSettings settings)
         {
             _logger.Info("Showing first-time landing page.");
 
@@ -124,7 +143,7 @@ namespace PlayniteAchievements.Views
                 _api,
                 _logger,
                 _achievementManager,
-                _settings);
+                settings);
 
             _landingPage.SetupComplete += LandingPage_SetupComplete;
 

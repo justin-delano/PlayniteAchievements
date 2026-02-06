@@ -314,7 +314,7 @@ namespace PlayniteAchievements
                             _settingsViewModel?.Settings?.Persisted?.EnableDiagnostics == true,
                             PlayniteApi,
                             _achievementService,
-                            _settingsViewModel.Settings);
+                            this);
                     }
                 }
             };
