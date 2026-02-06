@@ -6,7 +6,7 @@
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              mc:Ignorable="d"
              d:DesignHeight="700"
-             d:DesignWidth="400">
+             d:DesignWidth="420">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -16,112 +16,114 @@
 
             <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
 
-            <!-- Trophy icon style -->
-            <Style x:Key="TrophyIconStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                <Setter Property="FontSize" Value="48"/>
+            <!-- Rarity icon container style -->
+            <Style x:Key="RarityIconContainer" TargetType="Border">
+                <Setter Property="Width" Value="48"/>
+                <Setter Property="Height" Value="48"/>
+                <Setter Property="RenderTransform" Value="{StaticResource BadgeShadow}"/>
+                <Setter Property="Margin" Value="8"/>
+            </Style>
+
+            <!-- Rarity icon image style -->
+            <Style x:Key="RarityImage" TargetType="Image">
+                <Setter Property="Style" Value="{StaticResource RarityIcon}"/>
+                <Setter Property="Stretch" Value="Uniform"/>
+                <Setter Property="Width" Value="40"/>
+                <Setter Property="Height" Value="40"/>
                 <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Margin" Value="0,0,0,16"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
             </Style>
 
-            <!-- Title style -->
-            <Style x:Key="TitleStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="24"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="TextAlignment" Value="Center"/>
-                <Setter Property="Margin" Value="0,0,0,8"/>
-            </Style>
-
-            <!-- Subtitle style -->
-            <Style x:Key="SubtitleStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="18"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Margin" Value="0,16,0,8"/>
-            </Style>
-
-            <!-- Message style -->
-            <Style x:Key="MessageStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="14"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="TextWrapping" Value="Wrap"/>
-                <Setter Property="Margin" Value="0,0,0,16"/>
-            </Style>
-
-            <!-- Step box style -->
-            <Style x:Key="StepBoxStyle" TargetType="Border">
+            <!-- Content card style -->
+            <Style x:Key="ContentCardStyle" TargetType="Border">
                 <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
-                <Setter Property="CornerRadius" Value="4"/>
-                <Setter Property="Padding" Value="12"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="24"/>
                 <Setter Property="Margin" Value="0,8,0,0"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="BorderBrush">
                     <Setter.Value>
-                        <SolidColorBrush Color="{DynamicResource TextColor}" Opacity="0.2"/>
+                        <SolidColorBrush Color="{DynamicResource TextColor}" Opacity="0.1"/>
                     </Setter.Value>
                 </Setter>
             </Style>
 
+            <!-- Step card style -->
+            <Style x:Key="StepCardStyle" TargetType="Border" BasedOn="{StaticResource ContentCardStyle}">
+                <Setter Property="Padding" Value="16,20"/>
+                <Setter Property="Margin" Value="0,12,0,0"/>
+            </Style>
+
+            <!-- Primary button style using Playnite button as base -->
+            <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Padding" Value="32,12"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="MinWidth" Value="140"/>
+            </Style>
+
+            <!-- Trophy icon style -->
+            <Style x:Key="TrophyIconStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                <Setter Property="FontSize" Value="64"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Opacity" Value="0.9"/>
+                <Setter Property="Margin" Value="0,0,0,8"/>
+            </Style>
+
+            <!-- Title style -->
+            <Style x:Key="TitleStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                <Setter Property="FontSize" Value="28"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="TextAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="0,8,0,4"/>
+            </Style>
+
+            <!-- Subtitle style -->
+            <Style x:Key="SubtitleStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                <Setter Property="FontSize" Value="18"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Margin" Value="0,12,0,8"/>
+            </Style>
+
+            <!-- Body text style -->
+            <Style x:Key="BodyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+                <Setter Property="Opacity" Value="0.85"/>
+                <Setter Property="Margin" Value="0,0,0,8"/>
+            </Style>
+
             <!-- Step text style -->
-            <Style x:Key="StepTextStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="13"/>
+            <Style x:Key="StepTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                <Setter Property="FontSize" Value="14"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
                 <Setter Property="Margin" Value="0,4,0,0"/>
             </Style>
 
-            <!-- Primary button style -->
-            <Style x:Key="PrimaryButtonStyle" TargetType="Button">
-                <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
-                <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Padding" Value="24,10"/>
-                <Setter Property="FontSize" Value="14"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="Border"
-                                    Background="{TemplateBinding Background}"
-                                    Padding="{TemplateBinding Padding}"
-                                    CornerRadius="4"
-                                    BorderThickness="0">
-                                <ContentPresenter HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Border" Property="Opacity" Value="0.8"/>
-                                </Trigger>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <!-- Arrow icon style -->
-            <Style x:Key="ArrowIconStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                <Setter Property="FontSize" Value="20"/>
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
+            <!-- Hint text style -->
+            <Style x:Key="HintTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                <Setter Property="FontSize" Value="12"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
                 <Setter Property="Opacity" Value="0.6"/>
+                <Setter Property="Margin" Value="0,8,0,0"/>
+                <Setter Property="FontStyle" Value="Italic"/>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="32" MaxWidth="380">
+                  HorizontalScrollBarVisibility="Disabled"
+                  Padding="0">
+        <StackPanel Margin="32,24,32,32" MaxWidth="400">
 
             <!-- Trophy Icon -->
             <TextBlock Text="&#xEDD7;"
@@ -131,89 +133,208 @@
             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Title}"
                        Style="{StaticResource TitleStyle}"/>
 
+            <!-- Rarity Icons Decoration -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Margin="0,16,0,24">
+                <Border Style="{StaticResource RarityIconContainer}">
+                    <Image Source="{StaticResource BadgeBronzeTriangle}"
+                           Style="{StaticResource RarityImage}"/>
+                </Border>
+                <Border Style="{StaticResource RarityIconContainer}">
+                    <Image Source="{StaticResource BadgeSilverSquare}"
+                           Style="{StaticResource RarityImage}"/>
+                </Border>
+                <Border Style="{StaticResource RarityIconContainer}">
+                    <Image Source="{StaticResource BadgeGoldPentagon}"
+                           Style="{StaticResource RarityImage}"/>
+                </Border>
+                <Border Style="{StaticResource RarityIconContainer}">
+                    <Image Source="{StaticResource BadgePlatinumHexagon}"
+                           Style="{StaticResource RarityImage}"/>
+                </Border>
+            </StackPanel>
+
             <!-- Content states switched via visibility bindings -->
             <Grid>
 
                 <!-- State 1: No Auth Configured -->
                 <StackPanel x:Name="NoAuthPanel"
                             Visibility="{Binding ShowNoAuthPanel, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NoAuthTitle}"
-                               Style="{StaticResource SubtitleStyle}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NoAuthMessage}"
-                               Style="{StaticResource MessageStyle}"/>
+
+                    <Border Style="{StaticResource ContentCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NoAuthTitle}"
+                                       Style="{StaticResource SubtitleStyle}"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NoAuthMessage}"
+                                       Style="{StaticResource BodyTextStyle}"/>
+                        </StackPanel>
+                    </Border>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Landing_SettingsDiagramTitle}"
-                               Style="{StaticResource SubtitleStyle}"/>
+                               Style="{StaticResource SubtitleStyle}"
+                               Margin="0,24,0,0"/>
 
-                    <!-- Settings Navigation Diagram -->
-                    <Border Style="{StaticResource StepBoxStyle}">
+                    <!-- Step 1 -->
+                    <Border Style="{StaticResource StepCardStyle}">
                         <StackPanel>
-                            <TextBlock Text="&#xE8B7;  {DynamicResource LOCPlayAch_Landing_Step1}"
-                                       Style="{StaticResource StepTextStyle}"
-                                       FontFamily="Segoe MDL2 Assets"/>
-                            <TextBlock Text="     &#xE972;  &#xE8B7;"
-                                       Style="{StaticResource ArrowIconStyle}"
-                                       Margin="0,4,0,0"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="&#xE8B7;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="24"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Opacity="0.7"
+                                           VerticalAlignment="Top"
+                                           Margin="0,0,12,0"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{DynamicResource LOCPlayAch_Landing_Step1}"
+                                           Style="{StaticResource StepTextStyle}"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
 
-                    <Border Style="{StaticResource StepBoxStyle}">
+                    <!-- Step 2 -->
+                    <Border Style="{StaticResource StepCardStyle}">
                         <StackPanel>
-                            <TextBlock Text="&#xE8B7;  {DynamicResource LOCPlayAch_Landing_Step2}"
-                                       Style="{StaticResource StepTextStyle}"
-                                       FontFamily="Segoe MDL2 Assets"/>
-                            <TextBlock Text="     &#xE972;  &#xE8B7;"
-                                       Style="{StaticResource ArrowIconStyle}"
-                                       Margin="0,4,0,0"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="&#xE8B7;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="24"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Opacity="0.7"
+                                           VerticalAlignment="Top"
+                                           Margin="0,0,12,0"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{DynamicResource LOCPlayAch_Landing_Step2}"
+                                           Style="{StaticResource StepTextStyle}"/>
+                            </Grid>
                         </StackPanel>
                     </Border>
 
-                    <Border Style="{StaticResource StepBoxStyle}">
+                    <!-- Step 3 -->
+                    <Border Style="{StaticResource StepCardStyle}">
                         <StackPanel>
-                            <TextBlock Text="&#xE8B7;  {DynamicResource LOCPlayAch_Landing_Step3}"
-                                       Style="{StaticResource StepTextStyle}"
-                                       FontFamily="Segoe MDL2 Assets"/>
-                            <TextBlock Margin="0,8,0,0"
-                                       Text="{DynamicResource LOCPlayAch_Landing_SettingsFinalHint}"
-                                       Style="{StaticResource MessageStyle}"
-                                       FontSize="12"
-                                       Opacity="0.7"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="&#xE8B7;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="24"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Opacity="0.7"
+                                           VerticalAlignment="Top"
+                                           Margin="0,0,12,0"/>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Step3}"
+                                               Style="{StaticResource StepTextStyle}"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_SettingsFinalHint}"
+                                               Style="{StaticResource HintTextStyle}"/>
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </Border>
 
-                    <TextBlock Margin="0,16,0,0"
-                               Text="{DynamicResource LOCPlayAch_Landing_RefreshAfterConfig}"
-                               Style="{StaticResource MessageStyle}"
-                               FontSize="12"
-                               Opacity="0.7"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_RefreshAfterConfig}"
+                               Style="{StaticResource HintTextStyle}"
+                               Margin="0,20,0,0"/>
                 </StackPanel>
 
                 <!-- State 2: Has Auth, No Cache (Needs Scan) -->
                 <StackPanel x:Name="NeedsScanPanel"
                             Visibility="{Binding ShowNeedsScanPanel, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanTitle}"
-                               Style="{StaticResource SubtitleStyle}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanMessage}"
-                               Style="{StaticResource MessageStyle}"/>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Landing_BeginScan}"
-                            Command="{Binding BeginScanCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Margin="0,16,0,0"/>
+                    <Border Style="{StaticResource ContentCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanTitle}"
+                                       Style="{StaticResource SubtitleStyle}"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanMessage}"
+                                       Style="{StaticResource BodyTextStyle}"/>
+                            <Button Content="{DynamicResource LOCPlayAch_Landing_BeginScan}"
+                                    Command="{Binding BeginScanCommand}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Margin="0,16,0,0"
+                                    HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Decoration: show you're ready -->
+                    <Border Style="{StaticResource ContentCardStyle}"
+                            Margin="0,24,0,0">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE8FB;"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="48"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.5"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,8"/>
+                            <TextBlock Text="Your accounts are ready!"
+                                       Style="{StaticResource BodyTextStyle}"
+                                       HorizontalAlignment="Center"
+                                       Opacity="0.6"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
                 <!-- State 3: Has Auth + Cache (Existing User) -->
                 <StackPanel x:Name="HasDataPanel"
                             Visibility="{Binding ShowHasDataPanel, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataTitle}"
-                               Style="{StaticResource SubtitleStyle}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataMessage}"
-                               Style="{StaticResource MessageStyle}"/>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Landing_Continue}"
-                            Command="{Binding ContinueCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Margin="0,16,0,0"/>
+                    <Border Style="{StaticResource ContentCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataTitle}"
+                                       Style="{StaticResource SubtitleStyle}"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataMessage}"
+                                       Style="{StaticResource BodyTextStyle}"/>
+                            <Button Content="{DynamicResource LOCPlayAch_Landing_Continue}"
+                                    Command="{Binding ContinueCommand}"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Margin="0,16,0,0"
+                                    HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Decoration: show existing data found -->
+                    <Border Style="{StaticResource ContentCardStyle}"
+                            Margin="0,24,0,0">
+                        <StackPanel HorizontalAlignment="Center">
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Margin="0,0,0,12">
+                                <Image Source="{StaticResource BadgePlatinumHexagon}"
+                                       Style="{StaticResource RarityImage}"
+                                       Width="32"
+                                       Height="32"
+                                       Margin="0,0,8,0"/>
+                                <Image Source="{StaticResource BadgeGoldPentagon}"
+                                       Style="{StaticResource RarityImage}"
+                                       Width="32"
+                                       Height="32"
+                                       Margin="0,0,8,0"/>
+                                <Image Source="{StaticResource BadgeSilverSquare}"
+                                       Style="{StaticResource RarityImage}"
+                                       Width="32"
+                                       Height="32"/>
+                            </StackPanel>
+                            <TextBlock Text="Found your existing achievement data"
+                                       Style="{StaticResource BodyTextStyle}"
+                                       HorizontalAlignment="Center"
+                                       Opacity="0.6"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
             </Grid>
