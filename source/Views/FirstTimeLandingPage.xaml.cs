@@ -42,10 +42,9 @@ namespace PlayniteAchievements.Views
 
         /// <summary>
         /// Gets whether any provider authentication is configured.
+        /// Delegates to AchievementManager to check if any provider is authenticated.
         /// </summary>
-        public bool HasAnyProviderAuth =>
-            !string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) ||
-            !string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername);
+        public bool HasAnyProviderAuth => _achievementManager.HasAnyAuthenticatedProvider();
 
         /// <summary>
         /// Gets the settings for checking if setup is complete.

@@ -33,6 +33,15 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
         }
         public string ProviderName => "RetroAchievements";
+
+        /// <summary>
+        /// Checks if RetroAchievements authentication is properly configured.
+        /// Requires both RaUsername and RaWebApiKey to be present.
+        /// </summary>
+        public bool IsAuthenticated =>
+            !string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername) &&
+            !string.IsNullOrWhiteSpace(_settings.Persisted.RaWebApiKey);
+
         public bool IsCapable(Game game)
         {
             if (game == null) return false;

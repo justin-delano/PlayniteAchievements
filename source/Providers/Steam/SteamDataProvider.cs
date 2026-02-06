@@ -47,6 +47,14 @@ namespace PlayniteAchievements.Providers.Steam
 
         public Guid PlatformPluginId => SteamPluginId;
 
+        /// <summary>
+        /// Checks if Steam authentication is properly configured.
+        /// Requires both SteamUserId and SteamApiKey to be present.
+        /// </summary>
+        public bool IsAuthenticated =>
+            !string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) &&
+            !string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey);
+
         public bool IsCapable(Game game) =>
             IsSteamCapable(game);
 

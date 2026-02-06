@@ -48,6 +48,11 @@ namespace PlayniteAchievements.Services
 
         public ICacheManager Cache => _cacheService;
 
+        /// <summary>
+        /// Checks if at least one provider has valid authentication credentials configured.
+        /// </summary>
+        public bool HasAnyAuthenticatedProvider() => _providers.Any(p => p.IsAuthenticated);
+
         public event EventHandler<GameCacheUpdatedEventArgs> GameCacheUpdated
         {
             add => _cacheService.GameCacheUpdated += value;

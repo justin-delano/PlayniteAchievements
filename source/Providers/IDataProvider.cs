@@ -12,6 +12,12 @@ namespace PlayniteAchievements.Providers
         string ProviderName { get; }
         bool IsCapable(Game game);
 
+        /// <summary>
+        /// Gets whether this provider has valid authentication credentials configured.
+        /// Each provider implements its own validation logic appropriate to its auth requirements.
+        /// </summary>
+        bool IsAuthenticated { get; }
+
         Task<RebuildPayload> ScanAsync(
             List<Game> gamesToScan,
             Action<ProviderScanUpdate> progressCallback,
