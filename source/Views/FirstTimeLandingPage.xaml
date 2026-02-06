@@ -78,72 +78,164 @@
             </StackPanel>
 
             <!-- Provider Status List - Always Visible -->
-            <Border Background="{DynamicResource ControlBackgroundBrush}"
-                    CornerRadius="4"
-                    Padding="16,14"
-                    Margin="0,0,0,16">
-                <StackPanel>
+            <StackPanel Margin="0,0,0,16">
+                <!-- Section Header -->
+                <Grid Margin="0,0,0,10">
                     <TextBlock Text="Provider Status"
-                               FontSize="13"
+                               FontSize="11"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TextBrush}"
-                               Margin="0,0,0,10"/>
+                               Opacity="0.7"
+                               TextTransform="Uppercase"
+                               CharacterSpacing="50"/>
+                </Grid>
 
-                    <ItemsControl ItemsSource="{Binding Providers}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,0,0,8">
+                <!-- Provider Cards -->
+                <ItemsControl ItemsSource="{Binding Providers}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,8"
+                                    Background="{DynamicResource ControlBackgroundBrush}"
+                                    CornerRadius="6"
+                                    Padding="14,12">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#000000"
+                                                    BlurRadius="8"
+                                                    Opacity="0.08"
+                                                    OffsetX="0"
+                                                    OffsetY="2"/>
+                                </Border.Effect>
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                                                <Setter Property="BorderBrush" Value="#06FFA5"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+
+                                <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Status Icon -->
-                                    <TextBlock Grid.Column="0"
-                                               Text="{Binding StatusIcon}"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="16"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,12,0">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Opacity" Value="0.5"/>
+                                    <!-- Status Icon with Circle Background -->
+                                    <Grid Grid.Column="0" Width="32" Height="32" Margin="0,0,12,0">
+                                        <Ellipse Fill="{DynamicResource ControlBackgroundBrush}">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                                                            <Setter Property="Fill" Value="#06FFA5"/>
+                                                            <Setter Property="Opacity" Value="0.15"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
+                                                            <Setter Property="Fill" Value="#F72585"/>
+                                                            <Setter Property="Opacity" Value="0.12"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <TextBlock Text="{Binding StatusIcon}"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="16"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                                                            <Setter Property="Foreground" Value="#06FFA5"/>
+                                                            <Setter Property="FontWeight" Value="Bold"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
+                                                            <Setter Property="Foreground" Value="#F72585"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+
+                                    <!-- Provider Info -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="13"
+                                                   FontWeight="Medium"
+                                                   Foreground="{DynamicResource TextBrush}"/>
+                                        <TextBlock FontSize="10"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Opacity="0.55"
+                                                   Margin="0,2,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                                                            <Setter Property="Text" Value="Ready to scan"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
+                                                            <Setter Property="Text" Value="Configure in settings"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <!-- Status Badge -->
+                                    <Border Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            CornerRadius="10"
+                                            Padding="10,4"
+                                            Margin="8,0,0,0">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
-                                                        <Setter Property="Foreground" Value="#4CC9F0"/>
-                                                        <Setter Property="Opacity" Value="1"/>
+                                                        <Setter Property="Background" Value="#06FFA5"/>
+                                                        <Setter Property="Opacity" Value="0.2"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
-                                                        <Setter Property="Foreground" Value="#F72585"/>
-                                                        <Setter Property="Opacity" Value="0.8"/>
+                                                        <Setter Property="Background" Value="#3A3A3A"/>
+                                                        <Setter Property="Opacity" Value="0.5"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
-
-                                    <!-- Provider Name -->
-                                    <TextBlock Grid.Column="1"
-                                               Text="{Binding Name}"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"/>
-
-                                    <!-- Status Text -->
-                                    <TextBlock Grid.Column="2"
-                                               Text="{Binding StatusText}"
-                                               FontSize="11"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"
-                                               Opacity="0.65"/>
+                                        </Border.Style>
+                                        <TextBlock FontSize="9"
+                                                   FontWeight="SemiBold"
+                                                   TextTransform="Uppercase"
+                                                   CharacterSpacing="30"
+                                                   Padding="4,1">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                                                            <Setter Property="Foreground" Value="#06FFA5"/>
+                                                            <Setter Property="Text" Value="Ready"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
+                                                            <Setter Property="Foreground" Value="#888888"/>
+                                                            <Setter Property="Text" Value="Setup"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
                                 </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
 
             <!-- Content states switched via visibility bindings -->
             <Grid>

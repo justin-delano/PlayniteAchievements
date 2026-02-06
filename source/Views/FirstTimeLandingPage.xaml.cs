@@ -36,7 +36,6 @@ namespace PlayniteAchievements.Views
             private bool _isAuthenticated;
 
             public string Name { get; set; }
-            public string StatusText { get; set; }
 
             public bool IsAuthenticated
             {
@@ -94,10 +93,7 @@ namespace PlayniteAchievements.Views
                 var status = new ProviderStatus
                 {
                     Name = provider.ProviderName,
-                    IsAuthenticated = provider.IsAuthenticated,
-                    StatusText = provider.IsAuthenticated
-                        ? "Configured"
-                        : "Not configured"
+                    IsAuthenticated = provider.IsAuthenticated
                 };
                 _providers.Add(status);
             }
