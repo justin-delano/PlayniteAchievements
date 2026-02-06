@@ -40,6 +40,7 @@ namespace PlayniteAchievements.Models.Settings
         private double _ultraRareThreshold = 5;
         private double _rareThreshold = 20;
         private double _uncommonThreshold = 50;
+        private bool _firstTimeSetupCompleted = false;
 
         #endregion
 
@@ -288,6 +289,16 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _uncommonThreshold, Math.Max(RareThreshold + 0.1, Math.Min(value, 99.9)));
         }
 
+        /// <summary>
+        /// Indicates whether the user has completed the first-time setup flow.
+        /// When false, the sidebar shows a landing page guiding users through initial configuration.
+        /// </summary>
+        public bool FirstTimeSetupCompleted
+        {
+            get => _firstTimeSetupCompleted;
+            set => SetValue(ref _firstTimeSetupCompleted, value);
+        }
+
         #endregion
 
         #region Clone Method
@@ -323,7 +334,8 @@ namespace PlayniteAchievements.Models.Settings
                 EnableRaNameFallback = this.EnableRaNameFallback,
                 UltraRareThreshold = this.UltraRareThreshold,
                 RareThreshold = this.RareThreshold,
-                UncommonThreshold = this.UncommonThreshold
+                UncommonThreshold = this.UncommonThreshold,
+                FirstTimeSetupCompleted = this.FirstTimeSetupCompleted
             };
         }
 

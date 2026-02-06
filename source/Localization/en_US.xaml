@@ -275,4 +275,23 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayniteAchievementsAchievements">Achievements</sys:String>
 
+    <!-- ================================================================= -->
+    <!-- FIRST-TIME LANDING PAGE                                           -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Landing_Title">Welcome to Playnite Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configure Your Accounts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to Steam or RetroAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_SettingsDiagramTitle">How to Configure:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Step1">1. Open Settings from the sidebar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Step2">2. Select Plugins</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Step3">3. Find Playnite Achievements and click Settings</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_SettingsFinalHint">Then configure Steam or RetroAchievements credentials in the settings tabs.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_RefreshAfterConfig">Close and reopen this sidebar after configuring your accounts.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NeedsScanTitle">Ready to Scan</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NeedsScanMessage">Your credentials are configured. Begin your first scan to track achievements across your library.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_BeginScan">Begin Scan</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">Welcome Back</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">We found your existing achievement data. Continue to the achievements view to start tracking.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Continue">Continue</sys:String>
+
 </ResourceDictionary>

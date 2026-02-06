@@ -311,7 +311,10 @@ namespace PlayniteAchievements
                         return new SidebarHostControl(
                             () => new SidebarControl(PlayniteApi, _logger, _achievementService, _settingsViewModel.Settings),
                             _logger,
-                            _settingsViewModel?.Settings?.Persisted?.EnableDiagnostics == true);
+                            _settingsViewModel?.Settings?.Persisted?.EnableDiagnostics == true,
+                            PlayniteApi,
+                            _achievementService,
+                            _settingsViewModel.Settings);
                     }
                 }
             };
