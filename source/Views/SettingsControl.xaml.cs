@@ -221,6 +221,27 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void ResetFirstTimeSetup_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ViewModel.Settings.Persisted.FirstTimeSetupCompleted = false;
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_ResetFirstTimeSetupDone"),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    "Failed to reset first-time setup: " + ex.Message,
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var tc = sender as TabControl;

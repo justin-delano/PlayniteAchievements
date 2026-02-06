@@ -411,6 +411,7 @@
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -438,7 +439,18 @@
                                             Click="ClearImageCache_Click"
                                             Margin="16,10,0,0"/>
 
-                                    <CheckBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                    <TextBlock Grid.Row="2" Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Settings_ResetFirstTimeSetup}"
+                                               Style="{StaticResource MutedTextStyle}"
+                                               Margin="0,10,0,0"
+                                               VerticalAlignment="Top"/>
+
+                                    <Button Grid.Row="2" Grid.Column="1"
+                                            Content="{DynamicResource LOCPlayAch_Settings_ResetFirstTimeSetupButton}"
+                                            Click="ResetFirstTimeSetup_Click"
+                                            Margin="16,10,0,0"/>
+
+                                    <CheckBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
                                               Content="{DynamicResource LOCPlayAch_Settings_EnableDiagnostics}"
                                               IsChecked="{Binding Persisted.EnableDiagnostics}"
                                               Margin="0,10,0,0"/>

@@ -125,6 +125,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Clear">Clear Image Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Cleared">Image cache cleared.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_ClearFailed">Failed to clear image cache</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next sidebar open.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Reset Landing Page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupDone">First-time setup has been reset. Close and reopen the sidebar to see the landing page.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiagnostics">Enable diagnostics logging (perf timings)</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_ClearingCache">Clearing cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingFromCache">Loading from cache...</sys:String>
