@@ -55,8 +55,7 @@
                 <Setter Property="Padding" Value="12"/>
                 <Setter Property="Margin" Value="0,8,0,0"/>
                 <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource TextBrush}" >
+                <Setter Property="BorderBrush">
                     <Setter.Value>
                         <SolidColorBrush Color="{DynamicResource TextColor}" Opacity="0.2"/>
                     </Setter.Value>
