@@ -195,6 +195,25 @@ namespace PlayniteAchievements.Providers.Steam
                 var primaryKeyPart = !string.IsNullOrWhiteSpace(title) ? title : iconUrl;
                 var secondaryKeyPart = !string.IsNullOrWhiteSpace(desc) ? desc : (unlockUtc.HasValue ? unlockUtc.Value.ToString("O") : "");
 
+                int? progressNum = null;
+                int? progressDenom = null;
+
+                var progressBar = row.SelectSingleNode(".//div[contains(@class,'achievementProgressBar')]");
+                if (progressBar != null)
+                {
+                    var progressText = progressBar.SelectSingleNode(".//div[contains(@class,'progressText')]");
+                    if (progressText != null)
+                    {
+                        var text = WebUtility.HtmlDecode(progressText.InnerText).Trim();
+                        var match = Regex.Match(text, @"^(\d+)\s*/\s*(\d+)$");
+                        if (match.Success)
+                        {
+                            progressNum = int.Parse(match.Groups[1].Value);
+                            progressDenom = int.Parse(match.Groups[2].Value);
+                        }
+                    }
+                }
+
                 results.Add(new ScrapedAchievement
                 {
                     Key = (primaryKeyPart + "|" + secondaryKeyPart).Trim(),
@@ -202,7 +221,9 @@ namespace PlayniteAchievements.Providers.Steam
                     Description = desc,
                     IconUrl = iconUrl,
                     UnlockTimeUtc = unlockUtc,
-                    IsUnlocked = isUnlocked
+                    IsUnlocked = isUnlocked,
+                    ProgressNum = progressNum,
+                    ProgressDenom = progressDenom
                 });
             }
             return results;

@@ -26,6 +26,18 @@ namespace PlayniteAchievements.Models.Achievements
 
         public double? GlobalPercentUnlocked { get; set; }
 
+        /// <summary>
+        /// Current progress value for achievements with partial completion (e.g., 25 out of 100).
+        /// Null when the provider doesn't support progress or the achievement is all-or-nothing.
+        /// </summary>
+        public int? ProgressNum { get; set; }
+
+        /// <summary>
+        /// Total required value for progress tracking (e.g., 100 for "Kill 100 enemies").
+        /// Null when the provider doesn't support progress or the achievement is all-or-nothing.
+        /// </summary>
+        public int? ProgressDenom { get; set; }
+
         [IgnoreDataMember]
         public bool Unlocked => UnlockTimeUtc.HasValue;
 

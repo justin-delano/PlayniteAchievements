@@ -262,6 +262,8 @@ namespace PlayniteAchievements.Providers.Steam
             if (!gameData.NoAchievements)
             {
                 var unlockedDict = unlocked?.UnlockTimesUtc ?? new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+                var progressNumDict = unlocked?.ProgressNum ?? new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);
+                var progressDenomDict = unlocked?.ProgressDenom ?? new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var schemaAch in schema.Achievements)
                 {
@@ -280,6 +282,9 @@ namespace PlayniteAchievements.Providers.Steam
                         globalPercent = percent;
                     }
 
+                    progressNumDict.TryGetValue(schemaAch.Name, out var progressNum);
+                    progressDenomDict.TryGetValue(schemaAch.Name, out var progressDenom);
+
                     var detail = new AchievementDetail
                     {
                         ApiName = schemaAch.Name,
@@ -290,7 +295,9 @@ namespace PlayniteAchievements.Providers.Steam
                         IconPath = schemaAch.Icon,
                         Hidden = schemaAch.Hidden == 1,
                         GlobalPercentUnlocked = globalPercent,
-                        UnlockTimeUtc = unlockTime
+                        UnlockTimeUtc = unlockTime,
+                        ProgressNum = progressNum,
+                        ProgressDenom = progressDenom
                     };
 
                     gameData.Achievements.Add(detail);
@@ -377,28 +384,31 @@ namespace PlayniteAchievements.Providers.Steam
                 LastUpdatedUtc = DateTime.UtcNow,
                 PlaytimeSeconds = (ulong)playtimeMinutes * 60,
                 AppId = appId,
-                UnlockTimesUtc = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase)
+                UnlockTimesUtc = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase),
+                ProgressNum = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase),
+                ProgressDenom = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase)
             };
 
             if (scraped.Rows != null)
             {
                 // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Scraped {scraped.Rows.Count} rows for appId={appId}");
                 int withTime = 0, withoutTime = 0, matched = 0;
+
                 foreach (var row in scraped.Rows)
                 {
-                    if (!row.IsUnlocked)
-                    {
-                        continue;
-                    }
-
-                    var unlockTime = row.UnlockTimeUtc ?? DateTime.MinValue;
-                    if (row.UnlockTimeUtc.HasValue) withTime++; else withoutTime++;
-
                     var iconFile = ExtractIconFilename(row.IconUrl);
                     if (!string.IsNullOrWhiteSpace(iconFile) && iconFileToApiName.TryGetValue(iconFile, out var apiName))
                     {
-                        data.UnlockTimesUtc[apiName] = unlockTime;
-                        matched++;
+                        data.ProgressNum[apiName] = row.ProgressNum;
+                        data.ProgressDenom[apiName] = row.ProgressDenom;
+
+                        if (row.IsUnlocked)
+                        {
+                            var unlockTime = row.UnlockTimeUtc ?? DateTime.MinValue;
+                            data.UnlockTimesUtc[apiName] = unlockTime;
+                            matched++;
+                            if (row.UnlockTimeUtc.HasValue) withTime++; else withoutTime++;
+                        }
                     }
                 }
                 // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Processed rows - withTime={withTime}, withoutTime={withoutTime}, matched={matched}");

@@ -83,6 +83,18 @@ namespace PlayniteAchievements.Providers.Steam.Models
         public string IconUrl { get; set; }
         public DateTime? UnlockTimeUtc { get; set; }
         public bool IsUnlocked { get; set; }
+
+        /// <summary>
+        /// Current progress value for achievements with partial completion (e.g., 25 out of 100).
+        /// Null when the achievement doesn't have a progress bar.
+        /// </summary>
+        public int? ProgressNum { get; set; }
+
+        /// <summary>
+        /// Total required value for progress tracking (e.g., 100 for "Kill 100 enemies").
+        /// Null when the achievement doesn't have a progress bar.
+        /// </summary>
+        public int? ProgressDenom { get; set; }
     }
 
     /// <summary>
