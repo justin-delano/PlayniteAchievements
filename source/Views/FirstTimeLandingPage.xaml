@@ -85,8 +85,7 @@
                                FontSize="11"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.7"
-                               CharacterSpacing="50"/>
+                               Opacity="0.7"/>
                 </Grid>
 
                 <!-- Provider Cards -->
@@ -210,7 +209,6 @@
                                         </Border.Style>
                                         <TextBlock FontSize="9"
                                                    FontWeight="SemiBold"
-                                                   CharacterSpacing="30"
                                                    Padding="4,1">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
