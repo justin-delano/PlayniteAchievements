@@ -20,7 +20,7 @@
             <Style x:Key="RarityIconContainer" TargetType="Border">
                 <Setter Property="Width" Value="48"/>
                 <Setter Property="Height" Value="48"/>
-                <Setter Property="RenderTransform" Value="{StaticResource BadgeShadow}"/>
+                <Setter Property="Effect" Value="{StaticResource BadgeShadow}"/>
                 <Setter Property="Margin" Value="8"/>
             </Style>
 
@@ -49,18 +49,54 @@
             </Style>
 
             <!-- Step card style -->
-            <Style x:Key="StepCardStyle" TargetType="Border" BasedOn="{StaticResource ContentCardStyle}">
+            <Style x:Key="StepCardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
+                <Setter Property="CornerRadius" Value="8"/>
                 <Setter Property="Padding" Value="16,20"/>
                 <Setter Property="Margin" Value="0,12,0,0"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="BorderBrush">
+                    <Setter.Value>
+                        <SolidColorBrush Color="{DynamicResource TextColor}" Opacity="0.1"/>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
-            <!-- Primary button style using Playnite button as base -->
-            <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <!-- Primary button style -->
+            <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="{DynamicResource ButtonBackgroundBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ButtonForegroundBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
                 <Setter Property="Padding" Value="32,12"/>
                 <Setter Property="FontSize" Value="14"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="MinWidth" Value="140"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Padding="{TemplateBinding Padding}"
+                                    CornerRadius="4">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="Opacity" Value="0.8"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Border" Property="Opacity" Value="0.5"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <!-- Trophy icon style -->
@@ -74,7 +110,7 @@
             </Style>
 
             <!-- Title style -->
-            <Style x:Key="TitleStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+            <Style x:Key="TitleStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="28"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -84,7 +120,7 @@
             </Style>
 
             <!-- Subtitle style -->
-            <Style x:Key="SubtitleStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+            <Style x:Key="SubtitleStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="18"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -92,7 +128,7 @@
             </Style>
 
             <!-- Body text style -->
-            <Style x:Key="BodyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+            <Style x:Key="BodyTextStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
@@ -101,7 +137,7 @@
             </Style>
 
             <!-- Step text style -->
-            <Style x:Key="StepTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+            <Style x:Key="StepTextStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
@@ -109,7 +145,7 @@
             </Style>
 
             <!-- Hint text style -->
-            <Style x:Key="HintTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+            <Style x:Key="HintTextStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
