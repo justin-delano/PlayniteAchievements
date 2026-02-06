@@ -77,6 +77,74 @@
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
             </StackPanel>
 
+            <!-- Provider Status List - Always Visible -->
+            <Border Background="{DynamicResource ControlBackgroundBrush}"
+                    CornerRadius="4"
+                    Padding="16,14"
+                    Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Provider Status"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextBrush}"
+                               Margin="0,0,0,10"/>
+
+                    <ItemsControl ItemsSource="{Binding Providers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Status Icon -->
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding StatusIcon}"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="16"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,12,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Opacity" Value="0.5"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                                                        <Setter Property="Foreground" Value="#4CC9F0"/>
+                                                        <Setter Property="Opacity" Value="1"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
+                                                        <Setter Property="Foreground" Value="#F72585"/>
+                                                        <Setter Property="Opacity" Value="0.8"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+
+                                    <!-- Provider Name -->
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding Name}"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                    <!-- Status Text -->
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding StatusText}"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"
+                                               Opacity="0.65"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- Content states switched via visibility bindings -->
             <Grid>
 

@@ -53,6 +53,11 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public bool HasAnyAuthenticatedProvider() => _providers.Any(p => p.IsAuthenticated);
 
+        /// <summary>
+        /// Gets the list of available data providers.
+        /// </summary>
+        public IReadOnlyList<IDataProvider> GetProviders() => _providers;
+
         public event EventHandler<GameCacheUpdatedEventArgs> GameCacheUpdated
         {
             add => _cacheService.GameCacheUpdated += value;

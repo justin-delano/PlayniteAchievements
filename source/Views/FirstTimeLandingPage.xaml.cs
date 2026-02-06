@@ -1,4 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using PlayniteAchievements.Models;
@@ -12,12 +16,45 @@ namespace PlayniteAchievements.Views
     /// Landing page shown to users on first plugin open to guide them through initial setup.
     /// Shows different content based on whether they have configured auth and have cached data.
     /// </summary>
-    public partial class FirstTimeLandingPage : IDisposable
+    public partial class FirstTimeLandingPage : IDisposable, INotifyPropertyChanged
     {
         private readonly ILogger _logger;
         private readonly AchievementManager _achievementManager;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly IPlayniteAPI _api;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string propertyName) =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        /// <summary>
+        /// View model for provider authentication status display.
+        /// </summary>
+        public class ProviderStatus : ObservableObject
+        {
+            private bool _isAuthenticated;
+
+            public string Name { get; set; }
+            public string StatusText { get; set; }
+
+            public bool IsAuthenticated
+            {
+                get => _isAuthenticated;
+                set
+                {
+                    _isAuthenticated = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(StatusIcon));
+                }
+            }
+
+            public string StatusIcon => IsAuthenticated ? "\uE73E" : "\uE711"; // Checkmark / Cancel
+        }
+
+        private readonly ObservableCollection<ProviderStatus> _providers;
+
+        public ObservableCollection<ProviderStatus> Providers => _providers;
 
         /// <summary>
         /// Event raised when setup is complete and the sidebar should be shown.
@@ -35,9 +72,37 @@ namespace PlayniteAchievements.Views
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
+            _providers = new ObservableCollection<ProviderStatus>();
+
             InitializeComponent();
 
             DataContext = this;
+
+            RefreshProviderStatuses();
+        }
+
+        /// <summary>
+        /// Refreshes the authentication status for all providers.
+        /// </summary>
+        private void RefreshProviderStatuses()
+        {
+            var providers = _achievementManager.GetProviders();
+            _providers.Clear();
+
+            foreach (var provider in providers.OrderBy(p => p.ProviderName))
+            {
+                var status = new ProviderStatus
+                {
+                    Name = provider.ProviderName,
+                    IsAuthenticated = provider.IsAuthenticated,
+                    StatusText = provider.IsAuthenticated
+                        ? "Configured"
+                        : "Not configured"
+                };
+                _providers.Add(status);
+            }
+
+            OnPropertyChanged(nameof(HasAnyProviderAuth));
         }
 
         /// <summary>
