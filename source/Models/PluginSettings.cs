@@ -515,7 +515,7 @@ namespace PlayniteAchievements.Models
         /// Similar to SuccessStory's GameContext property.
         /// </summary>
         [DontSerialize]
-        public Game? SelectedGame => _plugin?.PlayniteApi?.MainView?.SelectedGames?.FirstOrDefault();
+        public Game SelectedGame => _plugin?.PlayniteApi?.MainView?.SelectedGames?.FirstOrDefault();
 
         #endregion
 

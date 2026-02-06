@@ -90,6 +90,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         public void NotifySelectionChanged(Guid? selectedGameId)
         {
+            // Raise PropertyChanged for SelectedGame so themes get notified of selection changes
+            // This is important for fullscreen themes that bind to PluginSettings.SelectedGame
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.SelectedGame));
+
             if (!selectedGameId.HasValue)
             {
                 return;
