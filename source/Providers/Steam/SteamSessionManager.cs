@@ -222,8 +222,24 @@ namespace PlayniteAchievements.Providers.Steam
                 }
 
                 // Not authenticated, show interactive login window
-                // Run the synchronous dialog on the UI thread
-                extractedId = _api.MainView.UIDispatcher.Invoke(() => LoginInteractively());
+                // Use TaskCompletionSource to properly coordinate the UI dialog work
+                var loginTcs = new TaskCompletionSource<string>();
+
+                _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        var result = LoginInteractively();
+                        loginTcs.TrySetResult(result ?? "");
+                    }
+                    catch (Exception ex)
+                    {
+                        loginTcs.TrySetException(ex);
+                    }
+                }));
+
+                // Wait for the login to complete
+                extractedId = await loginTcs.Task;
 
                 // Fallback: if event handler didn't capture it, check cookies directly
                 if (string.IsNullOrWhiteSpace(extractedId))
@@ -315,7 +331,7 @@ namespace PlayniteAchievements.Providers.Steam
                 || url.IndexOf("login.steampowered.com", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        private void CloseWhenLoggedIn(object sender, WebViewLoadingChangedEventArgs e)
+        private async void CloseWhenLoggedIn(object sender, WebViewLoadingChangedEventArgs e)
         {
             try
             {
@@ -329,8 +345,8 @@ namespace PlayniteAchievements.Providers.Steam
                 if (IsLoginPageUrl(address))
                     return;
 
-                // Check for auth cookie
-                var cookies = view.GetCookies();
+                // Check for auth cookie - do this asynchronously to avoid blocking
+                var cookies = await Task.Run(() => view.GetCookies()).ConfigureAwait(false);
                 var authCookie = cookies?.FirstOrDefault(c =>
                     c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
 
@@ -340,7 +356,8 @@ namespace PlayniteAchievements.Providers.Steam
                     if (!string.IsNullOrWhiteSpace(extractedId))
                     {
                         _authResult = (true, extractedId);
-                        view.Close();
+                        // Close on the UI thread to avoid threading issues
+                        _api.MainView.UIDispatcher.BeginInvoke(new Action(() => view.Close()));
                     }
                 }
             }
