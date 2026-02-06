@@ -162,11 +162,7 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 ct.ThrowIfCancellationRequested();
 
-                // Reset auth result
-                _authResult = (false, null);
-
                 // First check if already authenticated (without opening dialog)
-                var alreadyAuthed = false;
                 string extractedId = null;
 
                 await _api.MainView.UIDispatcher.InvokeAsync(async () =>
@@ -180,12 +176,11 @@ namespace PlayniteAchievements.Providers.Steam
                         if (checkAuth != null)
                         {
                             extractedId = TryExtractSteamId64FromSteamLoginSecure(checkAuth.Value);
-                            alreadyAuthed = !string.IsNullOrWhiteSpace(extractedId);
                         }
                     }
                 });
 
-                if (alreadyAuthed)
+                if (!string.IsNullOrWhiteSpace(extractedId))
                 {
                     _selfSteamId64 = extractedId;
                     _lastCookieRefreshUtc = DateTime.UtcNow;
@@ -194,10 +189,15 @@ namespace PlayniteAchievements.Providers.Steam
                 }
 
                 // Not authenticated, show interactive login window
+                // Reset auth result before showing dialog
+                _authResult = (false, null);
+
                 IWebView view = null;
                 try
                 {
-                    await _api.MainView.UIDispatcher.InvokeAsync(() =>
+                    // Use synchronous Invoke (not InvokeAsync) for the dialog work
+                    // This matches the Steam library plugin pattern
+                    _api.MainView.UIDispatcher.Invoke(() =>
                     {
                         view = _api.WebViews.CreateView(1000, 800);
                         view.DeleteDomainCookies(".steamcommunity.com");
@@ -208,6 +208,8 @@ namespace PlayniteAchievements.Providers.Steam
                         view.LoadingChanged += CloseWhenLoggedIn;
                         view.Navigate("https://steamcommunity.com/login/home/?goto=" +
                                       Uri.EscapeDataString("https://steamcommunity.com/my/"));
+
+                        // This blocks until CloseWhenLoggedIn calls view.Close()
                         view.OpenDialog();
                     });
 
@@ -218,7 +220,7 @@ namespace PlayniteAchievements.Providers.Steam
                 {
                     if (view != null)
                     {
-                        await _api.MainView.UIDispatcher.InvokeAsync(() =>
+                        _api.MainView.UIDispatcher.Invoke(() =>
                         {
                             view.LoadingChanged -= CloseWhenLoggedIn;
                             view.Dispose();
