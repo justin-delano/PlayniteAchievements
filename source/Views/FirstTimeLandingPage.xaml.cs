@@ -148,6 +148,9 @@ namespace PlayniteAchievements.Views
         {
             _settings.Persisted.FirstTimeSetupCompleted = true;
 
+            // Save the settings to persist FirstTimeSetupCompleted
+            _settings._plugin?.SavePluginSettings(_settings);
+
             SetupComplete?.Invoke(this, EventArgs.Empty);
         }
 
