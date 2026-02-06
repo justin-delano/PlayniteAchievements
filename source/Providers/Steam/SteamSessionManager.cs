@@ -27,6 +27,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         private string _selfSteamId64;
         private DateTime _lastCookieRefreshUtc = DateTime.MinValue;
+        private (bool Success, string SteamId) _authResult;
 
         public SteamSessionManager(IPlayniteAPI api, ILogger logger, string pluginUserDataPath, PlayniteAchievementsSettings settings)
         {
@@ -161,103 +162,94 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 ct.ThrowIfCancellationRequested();
 
-                bool loggedIn = false;
-                string extractedId = null;
+                // Reset auth result
+                _authResult = (false, null);
 
-                // Use TaskCompletionSource to ensure we wait for the UI thread logic to actually FINISH
-                var tcs = new TaskCompletionSource<bool>();
+                // First check if already authenticated (without opening dialog)
+                var alreadyAuthed = false;
+                string extractedId = null;
 
                 await _api.MainView.UIDispatcher.InvokeAsync(async () =>
                 {
-                    try
+                    using (var quickCheck = _api.WebViews.CreateOffscreenView())
                     {
-                        // First check if already authenticated (without opening dialog)
-                        var alreadyAuthed = false;
-                        using (var quickCheck = _api.WebViews.CreateOffscreenView())
+                        await quickCheck.NavigateAndWaitAsync("https://steamcommunity.com/my/");
+                        var checkCookies = quickCheck.GetCookies();
+                        var checkAuth = checkCookies?.FirstOrDefault(c =>
+                            c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
+                        if (checkAuth != null)
                         {
-                            await quickCheck.NavigateAndWaitAsync("https://steamcommunity.com/my/");
-                            var checkCookies = quickCheck.GetCookies();
-                            var checkAuth = checkCookies?.FirstOrDefault(c =>
-                                c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
-                            if (checkAuth != null)
-                            {
-                                extractedId = TryExtractSteamId64FromSteamLoginSecure(checkAuth.Value);
-                                alreadyAuthed = !string.IsNullOrWhiteSpace(extractedId);
-                            }
+                            extractedId = TryExtractSteamId64FromSteamLoginSecure(checkAuth.Value);
+                            alreadyAuthed = !string.IsNullOrWhiteSpace(extractedId);
                         }
-
-                        if (alreadyAuthed)
-                        {
-                            loggedIn = true;
-                            tcs.TrySetResult(true);
-                            return;
-                        }
-
-                        // Not authenticated, show interactive login window
-                        using (var view = _api.WebViews.CreateView(1000, 800))
-                        {
-                            view.DeleteDomainCookies(".steamcommunity.com");
-                            view.DeleteDomainCookies("steamcommunity.com");
-                            view.DeleteDomainCookies(".steampowered.com");
-                            view.DeleteDomainCookies("steampowered.com");
-
-                            view.Navigate("https://steamcommunity.com/login/home/?goto=" +
-                                          Uri.EscapeDataString("https://steamcommunity.com/my/"));
-
-                            view.LoadingChanged += (s, e) =>
-                            {
-                                if (e.IsLoading) return;
-                                var address = view.GetCurrentAddress();
-                                if (string.IsNullOrWhiteSpace(address)) return;
-
-                                // Check for logged-in pages: /id/, /profiles/, or /my/
-                                if (address.IndexOf("steamcommunity.com/id/", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                    address.IndexOf("steamcommunity.com/profiles/", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                    address.IndexOf("steamcommunity.com/my", StringComparison.OrdinalIgnoreCase) >= 0)
-                                {
-                                    var cookies = view.GetCookies();
-                                    var authCookie = cookies?.FirstOrDefault(c =>
-                                        c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
-
-                                    if (authCookie != null)
-                                    {
-                                        // Schedule close on next message pump cycle to avoid reentrancy deadlock
-                                        _api.MainView.UIDispatcher.BeginInvoke(new Action(() => view.Close()),
-                                            System.Windows.Threading.DispatcherPriority.Background);
-                                    }
-                                }
-                            };
-
-                            view.OpenDialog();
-                            await Task.Delay(500);
-
-                            var cookies = view.GetCookies();
-                            if (cookies != null)
-                            {
-                                var authCookie = cookies.FirstOrDefault(c =>
-                                    c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
-
-                                if (authCookie != null)
-                                {
-                                    extractedId = TryExtractSteamId64FromSteamLoginSecure(authCookie.Value);
-                                    loggedIn = !string.IsNullOrWhiteSpace(extractedId);
-                                }
-                            }
-                        }
-
-                        tcs.TrySetResult(true);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Error(ex, "AuthenticateInteractiveAsync UI thread logic failed.");
-                        tcs.TrySetException(ex);
                     }
                 });
 
-                // Wait here until the UI thread is actually done
-                await tcs.Task;
+                if (alreadyAuthed)
+                {
+                    _selfSteamId64 = extractedId;
+                    _lastCookieRefreshUtc = DateTime.UtcNow;
+                    _settings.Persisted.SteamUserId = extractedId;
+                    return (true, "Steam authentication saved.");
+                }
 
-                if (!loggedIn)
+                // Not authenticated, show interactive login window
+                IWebView view = null;
+                try
+                {
+                    await _api.MainView.UIDispatcher.InvokeAsync(() =>
+                    {
+                        view = _api.WebViews.CreateView(1000, 800);
+                        view.DeleteDomainCookies(".steamcommunity.com");
+                        view.DeleteDomainCookies("steamcommunity.com");
+                        view.DeleteDomainCookies(".steampowered.com");
+                        view.DeleteDomainCookies("steampowered.com");
+
+                        view.LoadingChanged += CloseWhenLoggedIn;
+                        view.Navigate("https://steamcommunity.com/login/home/?goto=" +
+                                      Uri.EscapeDataString("https://steamcommunity.com/my/"));
+                        view.OpenDialog();
+                    });
+
+                    // Small delay to let cookies settle after close
+                    await Task.Delay(500);
+                }
+                finally
+                {
+                    if (view != null)
+                    {
+                        await _api.MainView.UIDispatcher.InvokeAsync(() =>
+                        {
+                            view.LoadingChanged -= CloseWhenLoggedIn;
+                            view.Dispose();
+                        });
+                    }
+                }
+
+                // Check result from event handler
+                if (_authResult.Success)
+                {
+                    extractedId = _authResult.SteamId;
+                }
+                else
+                {
+                    // Fallback: check cookies directly
+                    await _api.MainView.UIDispatcher.InvokeAsync(() =>
+                    {
+                        using (var cookieCheck = _api.WebViews.CreateOffscreenView())
+                        {
+                            var cookies = cookieCheck.GetCookies();
+                            var authCookie = cookies?.FirstOrDefault(c =>
+                                c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
+                            if (authCookie != null)
+                            {
+                                extractedId = TryExtractSteamId64FromSteamLoginSecure(authCookie.Value);
+                            }
+                        }
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(extractedId))
                     return (false, "Steam session cookies not found. Please ensure login completed.");
 
                 _selfSteamId64 = extractedId;
@@ -327,6 +319,41 @@ namespace PlayniteAchievements.Providers.Steam
             return url.IndexOf("/login", StringComparison.OrdinalIgnoreCase) >= 0
                 || url.IndexOf("openid", StringComparison.OrdinalIgnoreCase) >= 0
                 || url.IndexOf("login.steampowered.com", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private void CloseWhenLoggedIn(object sender, WebViewLoadingChangedEventArgs e)
+        {
+            try
+            {
+                if (e.IsLoading)
+                    return;
+
+                var view = (IWebView)sender;
+                var address = view.GetCurrentAddress();
+
+                // Skip if still on login pages
+                if (IsLoginPageUrl(address))
+                    return;
+
+                // Check for auth cookie
+                var cookies = view.GetCookies();
+                var authCookie = cookies?.FirstOrDefault(c =>
+                    c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
+
+                if (authCookie != null)
+                {
+                    var extractedId = TryExtractSteamId64FromSteamLoginSecure(authCookie.Value);
+                    if (!string.IsNullOrWhiteSpace(extractedId))
+                    {
+                        _authResult = (true, extractedId);
+                        view.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to check authentication status");
+            }
         }
 
         public void ClearSession()
