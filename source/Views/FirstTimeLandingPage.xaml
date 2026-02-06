@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              mc:Ignorable="d"
              d:DesignHeight="700"
              d:DesignWidth="400">
@@ -12,6 +13,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
 
             <!-- Trophy icon style -->
             <Style x:Key="TrophyIconStyle" TargetType="TextBlock">
