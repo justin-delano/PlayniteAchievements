@@ -156,6 +156,39 @@ namespace PlayniteAchievements.Providers.Steam
             return false;
         }
 
+        // Synchronous login method matching Steam library plugin pattern
+        private string LoginInteractively()
+        {
+            _authResult = (false, null);
+
+            IWebView view = null;
+            try
+            {
+                view = _api.WebViews.CreateView(1000, 800);
+                view.DeleteDomainCookies(".steamcommunity.com");
+                view.DeleteDomainCookies("steamcommunity.com");
+                view.DeleteDomainCookies(".steampowered.com");
+                view.DeleteDomainCookies("steampowered.com");
+
+                view.LoadingChanged += CloseWhenLoggedIn;
+                view.Navigate("https://steamcommunity.com/login/home/?goto=" +
+                              Uri.EscapeDataString("https://steamcommunity.com/my/"));
+
+                // This blocks until CloseWhenLoggedIn calls view.Close()
+                view.OpenDialog();
+
+                return _authResult.Success ? _authResult.SteamId : null;
+            }
+            finally
+            {
+                if (view != null)
+                {
+                    view.LoadingChanged -= CloseWhenLoggedIn;
+                    view.Dispose();
+                }
+            }
+        }
+
         public async Task<(bool Success, string Message)> AuthenticateInteractiveAsync(CancellationToken ct)
         {
             try
@@ -189,53 +222,12 @@ namespace PlayniteAchievements.Providers.Steam
                 }
 
                 // Not authenticated, show interactive login window
-                // Reset auth result before showing dialog
-                _authResult = (false, null);
+                // Run the synchronous dialog on the UI thread
+                extractedId = _api.MainView.UIDispatcher.Invoke(() => LoginInteractively());
 
-                IWebView view = null;
-                try
+                // Fallback: if event handler didn't capture it, check cookies directly
+                if (string.IsNullOrWhiteSpace(extractedId))
                 {
-                    // Use synchronous Invoke (not InvokeAsync) for the dialog work
-                    // This matches the Steam library plugin pattern
-                    _api.MainView.UIDispatcher.Invoke(() =>
-                    {
-                        view = _api.WebViews.CreateView(1000, 800);
-                        view.DeleteDomainCookies(".steamcommunity.com");
-                        view.DeleteDomainCookies("steamcommunity.com");
-                        view.DeleteDomainCookies(".steampowered.com");
-                        view.DeleteDomainCookies("steampowered.com");
-
-                        view.LoadingChanged += CloseWhenLoggedIn;
-                        view.Navigate("https://steamcommunity.com/login/home/?goto=" +
-                                      Uri.EscapeDataString("https://steamcommunity.com/my/"));
-
-                        // This blocks until CloseWhenLoggedIn calls view.Close()
-                        view.OpenDialog();
-                    });
-
-                    // Small delay to let cookies settle after close
-                    await Task.Delay(500);
-                }
-                finally
-                {
-                    if (view != null)
-                    {
-                        _api.MainView.UIDispatcher.Invoke(() =>
-                        {
-                            view.LoadingChanged -= CloseWhenLoggedIn;
-                            view.Dispose();
-                        });
-                    }
-                }
-
-                // Check result from event handler
-                if (_authResult.Success)
-                {
-                    extractedId = _authResult.SteamId;
-                }
-                else
-                {
-                    // Fallback: check cookies directly
                     await _api.MainView.UIDispatcher.InvokeAsync(() =>
                     {
                         using (var cookieCheck = _api.WebViews.CreateOffscreenView())
