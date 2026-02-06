@@ -19,6 +19,8 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamAPIClient _apiHelper;
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
+        private readonly PlayniteAchievementsSettings _settings;
+        private readonly SteamSessionManager _sessionManager;
 
         public SteamDataProvider(
             ILogger logger,
@@ -39,6 +41,8 @@ namespace PlayniteAchievements.Providers.Steam
             _apiHelper = apiHelper;
             _api = api;
             _logger = logger;
+            _settings = settings;
+            _sessionManager = sessionManager;
 
             _scanner = new SteamScanner(settings, steamClient, sessionManager, apiHelper, api, logger);
         }
@@ -49,11 +53,12 @@ namespace PlayniteAchievements.Providers.Steam
 
         /// <summary>
         /// Checks if Steam authentication is properly configured.
-        /// Requires both SteamUserId and SteamApiKey to be present.
+        /// Requires SteamUserId, SteamApiKey, and web session auth (cached SteamId64).
         /// </summary>
         public bool IsAuthenticated =>
             !string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) &&
-            !string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey);
+            !string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey) &&
+            !string.IsNullOrWhiteSpace(_sessionManager.GetCachedSteamId64());
 
         public bool IsCapable(Game game) =>
             IsSteamCapable(game);
