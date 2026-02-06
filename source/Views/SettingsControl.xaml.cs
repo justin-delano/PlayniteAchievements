@@ -225,7 +225,7 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                ViewModel.Settings.Persisted.FirstTimeSetupCompleted = false;
+                _settingsViewModel.Settings.Persisted.FirstTimeSetupCompleted = false;
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
                     ResourceProvider.GetString("LOCPlayAch_Settings_ResetFirstTimeSetupDone"),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
