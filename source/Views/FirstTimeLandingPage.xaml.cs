@@ -82,8 +82,9 @@ namespace PlayniteAchievements.Views
 
         /// <summary>
         /// Refreshes the authentication status for all providers.
+        /// Called when settings are updated to reflect credential changes.
         /// </summary>
-        private void RefreshProviderStatuses()
+        public void RefreshProviderStatuses()
         {
             var providers = _achievementManager.GetProviders();
             _providers.Clear();

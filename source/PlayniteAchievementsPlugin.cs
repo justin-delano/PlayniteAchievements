@@ -90,6 +90,17 @@ namespace PlayniteAchievements
         public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;
         public static PlayniteAchievementsPlugin Instance { get; private set; }
 
+        /// <summary>
+        /// Event raised when plugin settings are saved. Used to refresh UI components
+        /// that display authentication status or other settings-dependent information.
+        /// </summary>
+        public static event EventHandler SettingsSaved;
+
+        /// <summary>
+        /// Raises the SettingsSaved event to notify listeners that settings have changed.
+        /// </summary>
+        public static void NotifySettingsSaved() => SettingsSaved?.Invoke(null, EventArgs.Empty);
+
         // Public bridge method for external helpers/themes that used to target SuccessStory via reflection.
         // AnikiHelper (PlayniteAchievements-based) will call this when available.
         public Task RequestSingleGameScanAsync(Guid playniteGameId)

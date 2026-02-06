@@ -47,6 +47,9 @@ namespace PlayniteAchievements.Views
 
             Loaded += SidebarHostControl_Loaded;
             Unloaded += SidebarHostControl_Unloaded;
+
+            // Subscribe to settings saved event to refresh provider status
+            PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
         }
 
         private void SidebarHostControl_Loaded(object sender, RoutedEventArgs e)
@@ -61,6 +64,19 @@ namespace PlayniteAchievements.Views
         {
             _logger.Info("RefreshContent called - forcing content refresh");
             RecreateContent();
+        }
+
+        /// <summary>
+        /// Refreshes the provider status on the landing page if it's currently visible.
+        /// Called when settings are saved to update authentication status display.
+        /// </summary>
+        public void RefreshProviderStatus()
+        {
+            if (_landingPage != null)
+            {
+                _logger.Info("RefreshProviderStatus called - updating landing page provider status");
+                _landingPage.RefreshProviderStatuses();
+            }
         }
 
         private void SidebarHostControl_Unloaded(object sender, RoutedEventArgs e)
@@ -82,7 +98,16 @@ namespace PlayniteAchievements.Views
                 _createScheduled = false;
                 // Clear content to allow recreation on next load
                 PART_Content.Content = null;
+
+                // Unsubscribe from settings saved event
+                PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
             }
+        }
+
+        private void Plugin_SettingsSaved(object sender, EventArgs e)
+        {
+            _logger.Info("Settings saved - refreshing provider status on landing page");
+            RefreshProviderStatus();
         }
 
         private void RecreateContent()
@@ -125,8 +150,19 @@ namespace PlayniteAchievements.Views
                 {
                     try
                     {
-                        // Get fresh settings from the plugin to ensure we have the latest state
-                        var settings = _plugin.Settings;
+                        // Force reload from disk to get latest settings (e.g., after reset in settings UI)
+                        var settings = _plugin.LoadPluginSettings<PlayniteAchievementsSettings>();
+                        if (settings != null)
+                        {
+                            // Set plugin reference on loaded settings for ISettings methods (SavePluginSettings)
+                            settings._plugin = _plugin;
+                        }
+                        else
+                        {
+                            // Fallback to cached settings if load fails
+                            settings = _plugin.Settings;
+                        }
+
                         var firstTimeCompleted = settings?.Persisted?.FirstTimeSetupCompleted ?? true;
                         _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
 

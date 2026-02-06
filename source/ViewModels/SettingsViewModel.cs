@@ -75,6 +75,9 @@ namespace PlayniteAchievements.ViewModels
         {
             // Save the settings via the plugin
             _plugin.SavePluginSettings(Settings);
+
+            // Notify listeners that settings have been saved (e.g., to refresh provider status in landing page)
+            PlayniteAchievementsPlugin.NotifySettingsSaved();
         }
 
         public bool VerifySettings(out List<string> errors)
