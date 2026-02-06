@@ -48,6 +48,11 @@ namespace PlayniteAchievements.Views
             !string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername);
 
         /// <summary>
+        /// Gets the settings for checking if setup is complete.
+        /// </summary>
+        private PlayniteAchievementsSettings CurrentSettings => _settings._plugin?.Settings ?? _settings;
+
+        /// <summary>
         /// Gets whether cached achievement data exists.
         /// </summary>
         public bool HasCachedData

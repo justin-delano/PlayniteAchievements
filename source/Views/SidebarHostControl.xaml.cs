@@ -51,9 +51,16 @@ namespace PlayniteAchievements.Views
 
         private void SidebarHostControl_Loaded(object sender, RoutedEventArgs e)
         {
+            _logger.Info("SidebarHostControl_Loaded called");
             // Always recreate content when loaded (handles sidebar reopen)
             RecreateContent();
             _sidebar?.Activate();
+        }
+
+        public void RefreshContent()
+        {
+            _logger.Info("RefreshContent called - forcing content refresh");
+            RecreateContent();
         }
 
         private void SidebarHostControl_Unloaded(object sender, RoutedEventArgs e)
@@ -80,13 +87,19 @@ namespace PlayniteAchievements.Views
 
         private void RecreateContent()
         {
-            // Clear existing content first
+            _logger.Info("RecreateContent called - clearing existing content");
+
+            // Dispose existing content
             _sidebar?.Dispose();
             _landingPage?.Dispose();
             _sidebar = null;
             _landingPage = null;
             PART_Content.Content = null;
 
+            // Reset the flag to allow recreation
+            _createScheduled = false;
+
+            // Now recreate content
             EnsureContentCreated();
         }
 
@@ -94,6 +107,7 @@ namespace PlayniteAchievements.Views
         {
             if (_createScheduled)
             {
+                _logger.Info("EnsureContentCreate: already scheduled, skipping");
                 return;
             }
 
@@ -103,6 +117,7 @@ namespace PlayniteAchievements.Views
                 if (!IsLoaded)
                 {
                     _createScheduled = false;
+                    _logger.Info("EnsureContentCreate: not loaded, canceling");
                     return;
                 }
 
@@ -112,15 +127,18 @@ namespace PlayniteAchievements.Views
                     {
                         // Get fresh settings from the plugin to ensure we have the latest state
                         var settings = _plugin.Settings;
-                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={settings?.Persisted?.FirstTimeSetupCompleted}");
+                        var firstTimeCompleted = settings?.Persisted?.FirstTimeSetupCompleted ?? true;
+                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
 
                         // Check if first-time setup is needed
-                        if (settings != null && !settings.Persisted.FirstTimeSetupCompleted)
+                        if (settings != null && !firstTimeCompleted)
                         {
+                            _logger.Info("Creating landing page");
                             CreateLandingPage(settings);
                         }
                         else
                         {
+                            _logger.Info("Creating sidebar directly");
                             CreateSidebar();
                         }
 
@@ -130,6 +148,10 @@ namespace PlayniteAchievements.Views
                     {
                         _logger?.Error(ex, "Failed to create sidebar content.");
                         PART_Loading.Visibility = Visibility.Visible;
+                    }
+                    finally
+                    {
+                        _createScheduled = false;
                     }
                 }
             }), DispatcherPriority.Background);
