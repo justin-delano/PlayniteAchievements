@@ -106,8 +106,19 @@ namespace PlayniteAchievements.Views
 
         private void Plugin_SettingsSaved(object sender, EventArgs e)
         {
-            _logger.Info("Settings saved - refreshing provider status on landing page");
-            RefreshProviderStatus();
+            _logger.Info("Settings saved - refreshing views");
+
+            // Refresh landing page provider status if visible
+            if (_landingPage != null)
+            {
+                _landingPage.RefreshProviderStatuses();
+            }
+
+            // Refresh sidebar if visible
+            if (_sidebar != null)
+            {
+                _sidebar.RefreshView();
+            }
         }
 
         private void RecreateContent()

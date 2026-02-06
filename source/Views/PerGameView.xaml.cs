@@ -26,6 +26,14 @@ namespace PlayniteAchievements.Views
             InitializeComponent();
 
             DataContext = new PerGameViewModel(gameId, achievementManager, playniteApi, logger, settings);
+
+            // Subscribe to settings saved event to refresh when credentials change
+            PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
+        }
+
+        private void Plugin_SettingsSaved(object sender, EventArgs e)
+        {
+            RefreshView();
         }
 
         private PerGameViewModel ViewModel => DataContext as PerGameViewModel;
@@ -34,8 +42,17 @@ namespace PlayniteAchievements.Views
             ? $"{ViewModel.GameName} - Achievements"
             : "Achievements";
 
+        /// <summary>
+        /// Refreshes the game data display. Called when settings are saved.
+        /// </summary>
+        public void RefreshView()
+        {
+            ViewModel?.RefreshView();
+        }
+
         public void Cleanup()
         {
+            PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
             ViewModel?.Dispose();
         }
 

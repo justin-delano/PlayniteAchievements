@@ -65,6 +65,14 @@ namespace PlayniteAchievements.Views
             _viewModel?.SetActive(false);
         }
 
+        /// <summary>
+        /// Refreshes the view data. Called when settings are saved or when manual refresh is needed.
+        /// </summary>
+        public void RefreshView()
+        {
+            _ = _viewModel?.RefreshViewAsync();
+        }
+
         public void Dispose()
         {
             try

@@ -442,6 +442,18 @@ namespace PlayniteAchievements.ViewModels
 
         #endregion
 
+        #region Public Methods
+
+        /// <summary>
+        /// Refreshes the game data display. Called when settings are saved or when cache is updated.
+        /// </summary>
+        public void RefreshView()
+        {
+            System.Windows.Application.Current?.Dispatcher?.Invoke(LoadGameData);
+        }
+
+        #endregion
+
         #region IDisposable
 
         public void Dispose()
