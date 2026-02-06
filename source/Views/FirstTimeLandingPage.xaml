@@ -6,7 +6,7 @@
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              mc:Ignorable="d"
              d:DesignHeight="700"
-             d:DesignWidth="380">
+             d:DesignWidth="360">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -20,53 +20,59 @@
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="24,20,24,32">
+        <StackPanel Margin="20,16,20,24">
 
             <!-- Plugin Icon -->
             <Image x:Name="PluginIcon"
                    Source="pack://application:,,,/icon.png"
-                   Width="64"
-                   Height="64"
+                   Width="56"
+                   Height="56"
                    HorizontalAlignment="Center"
-                   Margin="0,0,0,16"
+                   Margin="0,0,0,12"
                    RenderOptions.BitmapScalingMode="HighQuality"/>
 
             <!-- Main Title -->
             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Title}"
-                       FontSize="22"
+                       FontSize="20"
                        FontWeight="SemiBold"
                        Foreground="{DynamicResource TextBrush}"
                        HorizontalAlignment="Center"
                        TextAlignment="Center"
                        TextWrapping="Wrap"
-                       Margin="0,0,0,8"/>
+                       Margin="0,0,0,6"/>
 
             <!-- Rarity Icons Decoration -->
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Center"
-                        Margin="0,8,0,24">
+                        Margin="0,4,0,20">
                 <Image Source="{StaticResource BadgeBronzeTriangle}"
-                       Width="32"
-                       Height="32"
-                       Margin="4"
+                       Width="28"
+                       Height="28"
+                       Margin="3"
                        SnapsToDevicePixels="True"
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                 <Image Source="{StaticResource BadgeSilverSquare}"
-                       Width="32"
-                       Height="32"
-                       Margin="4"
+                       Width="28"
+                       Height="28"
+                       Margin="3"
                        SnapsToDevicePixels="True"
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                 <Image Source="{StaticResource BadgeGoldPentagon}"
-                       Width="32"
-                       Height="32"
-                       Margin="4"
+                       Width="28"
+                       Height="28"
+                       Margin="3"
                        SnapsToDevicePixels="True"
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                 <Image Source="{StaticResource BadgePlatinumHexagon}"
-                       Width="32"
-                       Height="32"
-                       Margin="4"
+                       Width="28"
+                       Height="28"
+                       Margin="3"
+                       SnapsToDevicePixels="True"
+                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                <Image Source="{StaticResource BadgePerfectGame}"
+                       Width="28"
+                       Height="28"
+                       Margin="3"
                        SnapsToDevicePixels="True"
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
             </StackPanel>
@@ -80,19 +86,17 @@
 
                     <!-- Config Card -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            BorderBrush="{DynamicResource TextBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="20"
-                            Margin="0,0,0,16">
+                            CornerRadius="4"
+                            Padding="18"
+                            Margin="0,0,0,14">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NoAuthTitle}"
-                                       FontSize="16"
+                                       FontSize="15"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
-                                       Margin="0,0,0,8"/>
+                                       Margin="0,0,0,6"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NoAuthMessage}"
-                                       FontSize="13"
+                                       FontSize="12"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.85"/>
@@ -100,51 +104,41 @@
                     </Border>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Landing_SettingsDiagramTitle}"
-                               FontSize="14"
+                               FontSize="13"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TextBrush}"
-                               Margin="0,16,0,12"/>
+                               Margin="0,12,0,10"/>
 
                     <!-- Step 1 -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            BorderBrush="{DynamicResource TextBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="16,14"
+                            CornerRadius="4"
+                            Padding="14,12"
                             Margin="0,0,0,8">
-                        <StackPanel>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Step1}"
-                                       FontSize="13"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Step1}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   TextWrapping="Wrap"/>
                     </Border>
 
                     <!-- Step 2 -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            BorderBrush="{DynamicResource TextBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="16,14"
+                            CornerRadius="4"
+                            Padding="14,12"
                             Margin="0,0,0,8">
-                        <StackPanel>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Step2}"
-                                       FontSize="13"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Step2}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   TextWrapping="Wrap"/>
                     </Border>
 
                     <!-- Step 3 -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            BorderBrush="{DynamicResource TextBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="16,14"
+                            CornerRadius="4"
+                            Padding="14,12"
                             Margin="0,0,0,8">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Step3}"
-                                       FontSize="13"
+                                       FontSize="12"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Margin="0,0,0,4"/>
@@ -163,7 +157,7 @@
                                TextWrapping="Wrap"
                                Opacity="0.65"
                                FontStyle="Italic"
-                               Margin="0,12,0,0"/>
+                               Margin="0,10,0,0"/>
                 </StackPanel>
 
                 <!-- State 2: Has Auth, No Cache (Needs Scan) -->
@@ -171,48 +165,44 @@
                             Visibility="{Binding ShowNeedsScanPanel, Converter={StaticResource BoolToVis}}">
 
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            BorderBrush="{DynamicResource TextBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="20"
-                            Margin="0,0,0,16">
+                            CornerRadius="4"
+                            Padding="18"
+                            Margin="0,0,0,14">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanTitle}"
-                                       FontSize="16"
+                                       FontSize="15"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
-                                       Margin="0,0,0,8"/>
+                                       Margin="0,0,0,6"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanMessage}"
-                                       FontSize="13"
+                                       FontSize="12"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.85"
-                                       Margin="0,0,0,16"/>
+                                       Margin="0,0,0,14"/>
                             <Button Content="{DynamicResource LOCPlayAch_Landing_BeginScan}"
                                     Command="{Binding BeginScanCommand}"
                                     HorizontalAlignment="Center"
-                                    Padding="24,10"
-                                    MinWidth="140"/>
+                                    Padding="20,8"
+                                    MinWidth="130"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Ready indicator -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            BorderBrush="{DynamicResource TextBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="20"
+                            CornerRadius="4"
+                            Padding="18"
                             HorizontalAlignment="Center">
                         <StackPanel>
                             <TextBlock Text="&#xE8FB;"
                                        FontFamily="Segoe MDL2 Assets"
-                                       FontSize="36"
+                                       FontSize="32"
                                        Foreground="{DynamicResource TextBrush}"
                                        Opacity="0.6"
                                        HorizontalAlignment="Center"
-                                       Margin="0,0,0,8"/>
+                                       Margin="0,0,0,6"/>
                             <TextBlock Text="Your accounts are ready!"
-                                       FontSize="12"
+                                       FontSize="11"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.65"
@@ -226,63 +216,59 @@
                             Visibility="{Binding ShowHasDataPanel, Converter={StaticResource BoolToVis}}">
 
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            BorderBrush="{DynamicResource TextBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="20"
-                            Margin="0,0,0,16">
+                            CornerRadius="4"
+                            Padding="18"
+                            Margin="0,0,0,14">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataTitle}"
-                                       FontSize="16"
+                                       FontSize="15"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
-                                       Margin="0,0,0,8"/>
+                                       Margin="0,0,0,6"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataMessage}"
-                                       FontSize="13"
+                                       FontSize="12"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.85"
-                                       Margin="0,0,0,16"/>
+                                       Margin="0,0,0,14"/>
                             <Button Content="{DynamicResource LOCPlayAch_Landing_Continue}"
                                     Command="{Binding ContinueCommand}"
                                     HorizontalAlignment="Center"
-                                    Padding="24,10"
-                                    MinWidth="140"/>
+                                    Padding="20,8"
+                                    MinWidth="130"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Existing data indicator -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            BorderBrush="{DynamicResource TextBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            Padding="20"
+                            CornerRadius="4"
+                            Padding="18"
                             HorizontalAlignment="Center">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Center"
                                         Margin="0,0,0,8">
+                                <Image Source="{StaticResource BadgePerfectGame}"
+                                       Width="24"
+                                       Height="24"
+                                       Margin="2"
+                                       SnapsToDevicePixels="True"
+                                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                                 <Image Source="{StaticResource BadgePlatinumHexagon}"
-                                       Width="28"
-                                       Height="28"
+                                       Width="24"
+                                       Height="24"
                                        Margin="2"
                                        SnapsToDevicePixels="True"
                                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                                 <Image Source="{StaticResource BadgeGoldPentagon}"
-                                       Width="28"
-                                       Height="28"
-                                       Margin="2"
-                                       SnapsToDevicePixels="True"
-                                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
-                                <Image Source="{StaticResource BadgeSilverSquare}"
-                                       Width="28"
-                                       Height="28"
+                                       Width="24"
+                                       Height="24"
                                        Margin="2"
                                        SnapsToDevicePixels="True"
                                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                             </StackPanel>
                             <TextBlock Text="Found your existing achievement data"
-                                       FontSize="12"
+                                       FontSize="11"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.65"
