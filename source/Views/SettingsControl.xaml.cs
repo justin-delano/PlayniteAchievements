@@ -225,15 +225,37 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                _logger.Info("Resetting FirstTimeSetupCompleted flag.");
+                _logger.Info($"Resetting FirstTimeSetupCompleted. Current value before: {_settingsViewModel.Settings.Persisted.FirstTimeSetupCompleted}");
+
                 _settingsViewModel.Settings.Persisted.FirstTimeSetupCompleted = false;
+
+                _logger.Info($"Value after setting to false: {_settingsViewModel.Settings.Persisted.FirstTimeSetupCompleted}");
+
                 _plugin.SavePluginSettings(_settingsViewModel.Settings);
-                _logger.Info($"FirstTimeSetupCompleted is now: {_settingsViewModel.Settings.Persisted.FirstTimeSetupCompleted}");
-                _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_ResetFirstTimeSetupDone"),
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+
+                _logger.Info("Settings saved. Verifying save...");
+
+                // Verify the save worked by re-loading
+                var reloaded = _plugin.LoadPluginSettings<PlayniteAchievementsSettings>();
+                var reloadedValue = reloaded?.Persisted.FirstTimeSetupCompleted ?? true;
+                _logger.Info($"Value after reload: {reloadedValue}");
+
+                if (!reloadedValue)
+                {
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        "First-time setup has been reset!\n\nClose and reopen the sidebar to see the landing page.",
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else
+                {
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        "Failed to verify reset. The settings may not have been saved correctly.",
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                }
             }
             catch (Exception ex)
             {
