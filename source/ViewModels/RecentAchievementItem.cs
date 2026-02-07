@@ -1,6 +1,6 @@
 using System;
 using PlayniteAchievements.Common;
-using PlayniteAchievements.Models.Achievement;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.ViewModels
 {

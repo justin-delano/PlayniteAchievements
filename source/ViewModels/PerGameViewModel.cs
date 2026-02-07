@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Models.Achievement;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
 using Playnite.SDK;
 

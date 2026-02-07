@@ -149,9 +149,9 @@ namespace PlayniteAchievements.ViewModels
             GlobalTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
             SelectedGameTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
 
-            ProviderDistribution = new ProviderDistributionViewModel();
             GamesPieChart = new PieChartViewModel();
             RarityPieChart = new PieChartViewModel();
+            ProviderPieChart = new PieChartViewModel();
 
             // Set defaults: Unlocked Only, sorted by Unlock Date
             _showUnlockedOnly = true;
@@ -400,9 +400,9 @@ namespace PlayniteAchievements.ViewModels
         public TimelineViewModel GlobalTimeline { get; private set; }
         public TimelineViewModel SelectedGameTimeline { get; private set; }
 
-        public ProviderDistributionViewModel ProviderDistribution { get; private set; }
         public PieChartViewModel GamesPieChart { get; private set; }
         public PieChartViewModel RarityPieChart { get; private set; }
+        public PieChartViewModel ProviderPieChart { get; private set; }
 
         // Rarity percentage properties for distribution bars
         public double CommonPercentage => TotalUnlockedOverview > 0
@@ -933,8 +933,12 @@ namespace PlayniteAchievements.ViewModels
             PerfectGames = snapshot.PerfectGames;
             GlobalProgression = snapshot.GlobalProgressionPercent;
 
-            // Update new charts
-            ProviderDistribution.SetProviderData(snapshot.AchievementsByProvider);
+            // Build provider lookup dictionary from AchievementManager
+            var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
+            foreach (var provider in _achievementManager.GetProviders())
+            {
+                providerLookup[provider.ProviderName] = (provider.ProviderIconKey, provider.ProviderColorHex);
+            }
 
             // Get localized strings
             var perfectLabel = ResourceProvider.GetString("LOCPlayAch_Perfect");
@@ -944,6 +948,9 @@ namespace PlayniteAchievements.ViewModels
             var rareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Rare");
             var ultraRareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_UltraRare");
             var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Locked");
+
+            // Update charts
+            ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
 
             GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.PerfectGames, perfectLabel, incompleteLabel);
             RarityPieChart.SetRarityData(
@@ -1435,7 +1442,6 @@ namespace PlayniteAchievements.ViewModels
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
                 _selectedGameAchievementsPager.SetSourceItems(_allSelectedGameAchievements);
                 _selectedGameAchievementsPager.GoToFirstPage();
-                SelectedGameTimeline.SetCounts(null);
                 // Restore global timeline to show all games
                 GlobalTimeline.SetCounts(_latestSnapshot?.GlobalUnlockCountsByDate);
                 return;
@@ -1515,26 +1521,15 @@ namespace PlayniteAchievements.ViewModels
                 _selectedGameAchievementsPager.SetSourceItems(_filteredSelectedGameAchievements);
                 _selectedGameAchievementsPager.GoToFirstPage();
 
-                // Prefer snapshot-derived counts if available.
+                // Filter global timeline to show only this game's achievements
                 if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
                     _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var snapshotCounts))
                 {
-                    SelectedGameTimeline.SetCounts(snapshotCounts);
+                    GlobalTimeline.SetCounts(snapshotCounts);
                 }
                 else
                 {
-                    SelectedGameTimeline.SetCounts(result.counts);
-                }
-
-                // Filter global timeline when game is selected
-                if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
-                    _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var gameCounts))
-                {
-                    GlobalTimeline.SetCounts(gameCounts);
-                }
-                else
-                {
-                    GlobalTimeline.SetCounts(_latestSnapshot?.GlobalUnlockCountsByDate);
+                    GlobalTimeline.SetCounts(result.counts);
                 }
             }
             catch (Exception ex)
