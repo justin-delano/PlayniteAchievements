@@ -124,16 +124,10 @@
                                 </Style>
                             </Image.Style>
                         </Image>
-                        <!-- Provider icons (color dynamically applied from ProviderColorHex) -->
-                        <Image Width="18" Height="18"
+                        <!-- Provider: Steam -->
+                        <Image Source="{StaticResource ProviderIconSteam}"
                                SnapsToDevicePixels="True"
                                RenderOptions.BitmapScalingMode="NearestNeighbor">
-                            <Image.Source>
-                                <MultiBinding Converter="{StaticResource ProviderIconConverter}">
-                                    <Binding Path="IconKey"/>
-                                    <Binding Path="ColorHex"/>
-                                </MultiBinding>
-                            </Image.Source>
                             <Image.Style>
                                 <Style TargetType="Image">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -141,6 +135,18 @@
                                         <DataTrigger Binding="{Binding IconKey}" Value="ProviderIconSteam">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                        <!-- Provider: RetroAchievements -->
+                        <Image Source="{StaticResource ProviderIconRetroAchievements}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
                                         <DataTrigger Binding="{Binding IconKey}" Value="ProviderIconRetroAchievements">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
