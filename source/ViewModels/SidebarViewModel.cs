@@ -78,9 +78,9 @@ namespace PlayniteAchievements.ViewModels
             RecentAchievements = new BulkObservableCollection<RecentAchievementItem>();
             SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
 
-            // Initialize scan mode options from service
+            // Initialize scan mode options from service (exclude LibrarySelected - context menu only)
             var scanModes = _achievementManager.GetScanModes();
-            ScanModes = new ObservableCollection<ScanMode>(scanModes);
+            ScanModes = new ObservableCollection<ScanMode>(scanModes.Where(m => m.Type != ScanModeType.LibrarySelected));
 
             _achievementsPager = new PaginationManager<AchievementDisplayItem>(
                 DefaultPageSize,
