@@ -4,10 +4,16 @@ obj/
 out/
 build.txt
 
+# Playnite plugin packages
+*.pext
+*.zip
+
 # NuGet packages
 packages/
 *.nupkg
 *.snupkg
+project.lock.json
+project.fragment.lock.json
 
 # Visual Studio
 .vs/
@@ -16,6 +22,7 @@ packages/
 *.userosscache
 *.sln.docstates
 .vscode/
+
 # ReSharper
 _ReSharper*/
 *.[Rr]e[Ss]harper
@@ -27,13 +34,6 @@ _ReSharper*/
 x64/
 x86/
 bld/
-
-# Visual Studio cache/options
-.vs/
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
 
 # Test results
 [Tt]est[Rr]esult*/
@@ -66,5 +66,7 @@ bld/
 *.pidb
 *.svclog
 *.scc
+
+# Claude Code
 .claude/
-.trees
+memory/
