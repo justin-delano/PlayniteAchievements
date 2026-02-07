@@ -375,7 +375,7 @@ namespace PlayniteAchievements.Services
 
                 cancel.ThrowIfCancellationRequested();
                 var payload = await provider
-                    .ScanAsync(games, wrappedCallback, data => OnGameScanned(provider, data), cancel)
+                    .ScanAsync(games, wrappedCallback, data => OnGameScanned(provider, data, cancel), cancel)
                     .ConfigureAwait(false);
 
                 scannedSoFar += games.Count;
@@ -391,7 +391,7 @@ namespace PlayniteAchievements.Services
             return new RebuildPayload { Summary = summary };
         }
 
-        private async Task OnGameScanned(IDataProvider provider, GameAchievementData data)
+        private async Task OnGameScanned(IDataProvider provider, GameAchievementData data, CancellationToken cancel = default)
         {
             if (data?.PlayniteGameId == null) return;
 
@@ -418,7 +418,7 @@ namespace PlayniteAchievements.Services
                          achievement.IconPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
                     {
                         var localPath = await _diskImageService.GetOrDownloadIconAsync(
-                            achievement.IconPath, 0, CancellationToken.None, gameIdStr).ConfigureAwait(false);
+                            achievement.IconPath, 0, cancel, gameIdStr).ConfigureAwait(false);
                         if (!string.IsNullOrWhiteSpace(localPath))
                         {
                             achievement.IconPath = localPath;
