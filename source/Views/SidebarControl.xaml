@@ -923,8 +923,6 @@
                         <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="8"/>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="12"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="100"/>
@@ -933,75 +931,15 @@
                             <RowDefinition Height="140"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Summary stats -->
-                        <StackPanel Grid.Row="0" Orientation="Horizontal">
-                            <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.7" Margin="0,0,12,0" Style="{DynamicResource BaseTextBlockStyle}">
-                                <Run Text="{DynamicResource LOCPlayAch_Games}"/><Run Text=":"/>
-                                <Run Text="{Binding TotalGamesOverview, Mode=OneWay}" FontWeight="Bold"/>
-                            </TextBlock>
-                            <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.7" Margin="0,0,12,0" Style="{DynamicResource BaseTextBlockStyle}">
-                                <Run Text="{DynamicResource LOCPlayAch_Perfect}"/><Run Text=":"/>
-                                <Run Text="{Binding PerfectGames, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"/>
-                            </TextBlock>
-                            <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.7" Margin="0,0,12,0" Style="{DynamicResource BaseTextBlockStyle}">
-                                <Run Text="{DynamicResource LOCPlayAch_Total}"/><Run Text=":"/>
-                                <Run Text="{Binding TotalUnlockedOverview, Mode=OneWay}" FontWeight="Bold"/>
-                                <Run Text="/" Foreground="{DynamicResource TextBrush}"/>
-                                <Run Text="{Binding TotalAchievementsOverview, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
-                            </TextBlock>
-                            <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.7" Style="{DynamicResource BaseTextBlockStyle}" VerticalAlignment="Center">
-                                <Run Text="{DynamicResource LOCPlayAch_Rarity}"/>
-                            </TextBlock>
-                            <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_UltraRare}" Margin="6,0,4,0" VerticalAlignment="Center">
-                                <Image Source="{StaticResource BadgePlatinumHexagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                                <TextBlock Text="{Binding TotalUltraRare}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Rare}" Margin="0,0,4,0" VerticalAlignment="Center">
-                                <Image Source="{StaticResource BadgeGoldPentagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                                <TextBlock Text="{Binding TotalRare}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Uncommon}" Margin="0,0,4,0" VerticalAlignment="Center">
-                                <Image Source="{StaticResource BadgeSilverSquare}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                                <TextBlock Text="{Binding TotalUncommon}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Common}" Margin="0,0,4,0" VerticalAlignment="Center">
-                                <Image Source="{StaticResource BadgeBronzeTriangle}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                                <TextBlock Text="{Binding TotalCommon}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
-                            </StackPanel>
-                        </StackPanel>
-
-                        <!-- Global Progression -->
-                        <StackPanel Grid.Row="2">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_GlobalProgression}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Opacity="0.7"
-                                       Margin="0,0,0,4"/>
-                            <Grid>
-                                <ProgressBar Value="{Binding GlobalProgression, Mode=OneWay}"
-                                             Height="18"
-                                             Minimum="0"
-                                             Maximum="100"
-                                             Background="{DynamicResource ControlBackgroundBrush}"
-                                             Foreground="{DynamicResource HighlightGlyphBrush}"/>
-                                <TextBlock HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                           FontWeight="SemiBold"
-                                           Foreground="White"
-                                           Text="{Binding GlobalProgression, StringFormat={}{0:F1}%, Mode=OneWay}"/>
-                            </Grid>
-                        </StackPanel>
-
                         <!-- Provider Distribution Header -->
-                        <TextBlock Grid.Row="4"
+                        <TextBlock Grid.Row="0"
                                    Text="{DynamicResource LOCPlayAch_Sidebar_ProviderDistribution}"
                                    Style="{DynamicResource BaseTextBlockStyle}"
                                    Foreground="{DynamicResource TextBrush}"
                                    Opacity="0.7"/>
 
                         <!-- Provider Distribution Chart -->
-                        <lvc:CartesianChart Grid.Row="5"
+                        <lvc:CartesianChart Grid.Row="2"
                                             Series="{Binding ProviderDistribution.ProviderSeries}"
                                             LegendLocation="None"
                                             Hoverable="True"
@@ -1031,7 +969,7 @@
                         </lvc:CartesianChart>
 
                         <!-- Pie Charts Section -->
-                        <Grid Grid.Row="8">
+                        <Grid Grid.Row="4">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="16"/>
@@ -1039,30 +977,126 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- Games Pie Chart -->
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_GamesPieChart}"
+                            <Grid Grid.Column="0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                           Text="{DynamicResource LOCPlayAch_Sidebar_GamesPieChart}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
-                                           HorizontalAlignment="Center"/>
-                                <lvc:PieChart LegendLocation="Bottom"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,4"/>
+                                <lvc:PieChart Grid.Row="1"
+                                              LegendLocation="Right"
                                               InnerRadius="30"
                                               Margin="4"
                                               Series="{Binding GamesPieChart.PieSeries}"/>
-                            </StackPanel>
+                            </Grid>
 
-                            <!-- Rarity Pie Chart -->
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_RarityPieChart}"
+                            <!-- Rarity Pie Chart with Custom Legend -->
+                            <Grid Grid.Column="2">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0"
+                                           Text="{DynamicResource LOCPlayAch_Sidebar_RarityPieChart}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
-                                           HorizontalAlignment="Center"/>
-                                <lvc:PieChart LegendLocation="Bottom"
-                                              InnerRadius="30"
-                                              Margin="4"
-                                              Series="{Binding RarityPieChart.PieSeries}"/>
-                            </StackPanel>
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,4"/>
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <lvc:PieChart Grid.Column="0"
+                                                  LegendLocation="None"
+                                                  InnerRadius="30"
+                                                  Margin="4"
+                                                  Series="{Binding RarityPieChart.PieSeries}"/>
+                                    <!-- Custom Rarity Legend with icons -->
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0" Orientation="Vertical">
+                                        <!-- Ultra Rare -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,2"
+                                                    Visibility="{Binding RarityPieChart.ShowUltraRare, Converter={StaticResource BoolToVis}}">
+                                            <Image Source="{StaticResource BadgePlatinumHexagon}"
+                                                   Style="{StaticResource RarityIcon}"
+                                                   Effect="{StaticResource BadgeShadow}"
+                                                   Width="18" Height="18"
+                                                   Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding RarityPieChart.UltraRareCount}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <!-- Rare -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,2"
+                                                    Visibility="{Binding RarityPieChart.ShowRare, Converter={StaticResource BoolToVis}}">
+                                            <Image Source="{StaticResource BadgeGoldPentagon}"
+                                                   Style="{StaticResource RarityIcon}"
+                                                   Effect="{StaticResource BadgeShadow}"
+                                                   Width="18" Height="18"
+                                                   Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding RarityPieChart.RareCount}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <!-- Uncommon -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,2"
+                                                    Visibility="{Binding RarityPieChart.ShowUncommon, Converter={StaticResource BoolToVis}}">
+                                            <Image Source="{StaticResource BadgeSilverSquare}"
+                                                   Style="{StaticResource RarityIcon}"
+                                                   Effect="{StaticResource BadgeShadow}"
+                                                   Width="18" Height="18"
+                                                   Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding RarityPieChart.UncommonCount}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <!-- Common -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,2"
+                                                    Visibility="{Binding RarityPieChart.ShowCommon, Converter={StaticResource BoolToVis}}">
+                                            <Image Source="{StaticResource BadgeBronzeTriangle}"
+                                                   Style="{StaticResource RarityIcon}"
+                                                   Effect="{StaticResource BadgeShadow}"
+                                                   Width="18" Height="18"
+                                                   Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding RarityPieChart.CommonCount}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <!-- Locked -->
+                                        <StackPanel Orientation="Horizontal" Margin="0,2"
+                                                    Visibility="{Binding RarityPieChart.ShowLocked, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="🔒"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.5"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       Margin="0,0,6,0"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding RarityPieChart.LockedCount}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.5"
+                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
                         </Grid>
                     </Grid>
                     </Border>
