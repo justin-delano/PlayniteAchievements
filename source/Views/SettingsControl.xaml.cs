@@ -121,6 +121,17 @@ namespace PlayniteAchievements.Views
             {
                 var (ok, msg) = await _sessionManager.AuthenticateInteractiveAsync(CancellationToken.None).ConfigureAwait(false);
                 SetSteamAuthStatus(msg);
+
+                // Update auth state after authentication attempt
+                if (ok)
+                {
+                    SetSteamAuthenticated(true);
+                }
+                else
+                {
+                    // Verify actual login state even if auth reported failure
+                    await CheckSteamAuthAsync().ConfigureAwait(false);
+                }
             }
             finally
             {
