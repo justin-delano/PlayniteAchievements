@@ -1,6 +1,6 @@
 using System;
 using System.Runtime.Serialization;
-using PlayniteAchievements.Models.Achievement;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Models.Achievements
 {

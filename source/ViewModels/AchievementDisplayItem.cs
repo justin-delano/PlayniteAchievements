@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using PlayniteAchievements.Common;
-using PlayniteAchievements.Models.Achievement;
 using PlayniteAchievements.Models.Achievements;
 using Playnite.SDK;
 
