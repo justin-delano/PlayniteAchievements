@@ -18,6 +18,7 @@
             <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
             <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility"/>
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>
+            <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
 
             <!-- Style for Expander Header ToggleButton -->
             <Style x:Key="ExpanderHeaderStyle" TargetType="ToggleButton">
@@ -215,7 +216,7 @@
                         Margin="0,0,12,0">
                 <Border.Background>
                         <ImageBrush Stretch="UniformToFill"
-                                    helpers:AsyncImage.Uri="{Binding GameIconPath}"
+                                    helpers:AsyncImage.Uri="{Binding GameIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
                                     helpers:AsyncImage.DecodePixel="96"/>
                 </Border.Background>
             </Border>

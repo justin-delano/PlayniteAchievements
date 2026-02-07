@@ -17,12 +17,12 @@ namespace PlayniteAchievements.Views.Helpers
 
         public static readonly DependencyProperty UriProperty = DependencyProperty.RegisterAttached(
             "Uri",
-            typeof(string),
+            typeof(object),
             typeof(AsyncImage),
             new PropertyMetadata(null, OnUriChanged));
 
-        public static void SetUri(DependencyObject element, string value) => element.SetValue(UriProperty, value);
-        public static string GetUri(DependencyObject element) => (string)element.GetValue(UriProperty);
+        public static void SetUri(DependencyObject element, object value) => element.SetValue(UriProperty, value);
+        public static object GetUri(DependencyObject element) => element.GetValue(UriProperty);
 
         public static readonly DependencyProperty DecodePixelProperty = DependencyProperty.RegisterAttached(
             "DecodePixel",
@@ -63,6 +63,13 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             CancelExisting(d);
+
+            // If the new value is already an ImageSource, apply it directly
+            if (e.NewValue is ImageSource imageSource)
+            {
+                ApplySource(d, imageSource);
+                return;
+            }
 
             if (d is FrameworkElement fe)
             {
@@ -123,15 +130,24 @@ namespace PlayniteAchievements.Views.Helpers
         private static async Task StartLoadAsync(DependencyObject d)
         {
             var uri = GetUri(d);
-            if (string.IsNullOrWhiteSpace(uri))
+
+            // If already an ImageSource, apply directly (fallback path from converter)
+            if (uri is ImageSource imageSource)
+            {
+                ApplySource(d, imageSource);
+                return;
+            }
+
+            var uriString = uri as string;
+            if (string.IsNullOrWhiteSpace(uriString))
             {
                 ApplySource(d, null);
                 return;
             }
 
-            if (GetGray(d) && !uri.StartsWith(GrayPrefix, StringComparison.OrdinalIgnoreCase))
+            if (GetGray(d) && !uriString.StartsWith(GrayPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                uri = GrayPrefix + uri;
+                uriString = GrayPrefix + uriString;
             }
 
             // blank while loading
@@ -158,7 +174,7 @@ namespace PlayniteAchievements.Views.Helpers
                     decode = double.IsNaN(max) || max <= 0 ? 64 : (int)Math.Ceiling(max);
                 }
 
-                BitmapSource bmp = await service.GetAsync(uri, decode, cts.Token).ConfigureAwait(false);
+                BitmapSource bmp = await service.GetAsync(uriString, decode, cts.Token).ConfigureAwait(false);
                 if (cts.IsCancellationRequested)
                 {
                     return;

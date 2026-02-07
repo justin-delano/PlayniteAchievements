@@ -23,6 +23,7 @@
             <converters:IntToVisibilityConverter x:Key="IntToVis"/>
             <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
             <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
+            <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
 
             <!-- Shared LegendItem DataTemplate for all pie charts -->
             <DataTemplate x:Key="LegendItemTemplate">
@@ -463,7 +464,7 @@
                     <Setter Property="Background">
                         <Setter.Value>
                         <ImageBrush Stretch="Uniform"
-                                    helpers:AsyncImage.Uri="{Binding GameLogo}"
+                                    helpers:AsyncImage.Uri="{Binding GameLogo, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
                                     helpers:AsyncImage.DecodePixel="96"/>
                         </Setter.Value>
                     </Setter>
@@ -474,7 +475,7 @@
                         <Setter Property="Background">
                             <Setter.Value>
                                 <ImageBrush Stretch="Uniform"
-                                            helpers:AsyncImage.Uri="{Binding GameCoverPath}"
+                                            helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
                                             helpers:AsyncImage.DecodePixel="128"/>
                             </Setter.Value>
                         </Setter>
@@ -1368,7 +1369,7 @@
                                                             <Setter Property="Background">
                                                                 <Setter.Value>
                                                                     <ImageBrush Stretch="UniformToFill"
-                                                                                helpers:AsyncImage.Uri="{Binding GameIconPath}"
+                                                                                helpers:AsyncImage.Uri="{Binding GameIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
                                                                                 helpers:AsyncImage.DecodePixel="96"/>
                                                                 </Setter.Value>
                                                             </Setter>
@@ -1382,7 +1383,7 @@
                                                                     <Setter Property="Background">
                                                                         <Setter.Value>
                                                                             <ImageBrush Stretch="UniformToFill"
-                                                                                        helpers:AsyncImage.Uri="{Binding GameCoverPath}"
+                                                                                        helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
                                                                                         helpers:AsyncImage.DecodePixel="128"/>
                                                                         </Setter.Value>
                                                                     </Setter>
