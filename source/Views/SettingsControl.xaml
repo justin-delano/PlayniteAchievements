@@ -96,7 +96,7 @@
                         <StackPanel Margin="0,0,0,24">
                             <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
                                        Foreground="{DynamicResource TextBrush}"
-                                       FontSize="18"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,6" />
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Description}"
@@ -598,7 +598,7 @@
                                                 <!-- Section Label -->
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SteamWebAuth}"
                                                            Foreground="{DynamicResource TextBrush}"
-                                                           FontSize="12"
+                                                           FontSize="{DynamicResource FontSizeSmall}"
                                                            FontWeight="SemiBold"
                                                            Opacity="0.8"
                                                            Margin="0,0,0,8"/>
@@ -613,9 +613,12 @@
                                                     <!-- Status Icon -->
                                                     <TextBlock Grid.Column="0"
                                                                FontFamily="Segoe MDL2 Assets"
-                                                               FontSize="24"
+                                                               FontSize="{DynamicResource FontSize}"
                                                                Margin="0,0,12,0"
                                                                VerticalAlignment="Center">
+                                                        <TextBlock.RenderTransform>
+                                                            <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                                        </TextBlock.RenderTransform>
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
                                                                 <Style.Triggers>
@@ -642,7 +645,7 @@
                                                                Foreground="{DynamicResource TextBrush}"
                                                                TextWrapping="Wrap"
                                                                VerticalAlignment="Center"
-                                                               FontSize="13"
+                                                               FontSize="{DynamicResource FontSize}"
                                                                FontWeight="SemiBold"/>
                                                 </Grid>
 
