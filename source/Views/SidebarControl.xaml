@@ -955,6 +955,7 @@
                                                   Margin="4"
                                                   Hoverable="False"
                                                   DataTooltip="{x:Null}"
+                                                  IsHitTestVisible="False"
                                                   Series="{Binding GamesPieChart.PieSeries}"/>
                                     <!-- Custom Games Legend with icons -->
                                     <StackPanel Grid.Column="1" Margin="6,0,0,0" Orientation="Vertical">
@@ -1018,6 +1019,7 @@
                                                   Margin="4"
                                                   Hoverable="False"
                                                   DataTooltip="{x:Null}"
+                                                  IsHitTestVisible="False"
                                                   Series="{Binding ProviderDistribution.ProviderSeries}"/>
                                     <!-- Custom Provider Legend with icons -->
                                     <ItemsControl Grid.Column="1" Margin="6,0,0,0"
@@ -1097,6 +1099,7 @@
                                                   Margin="4"
                                                   Hoverable="False"
                                                   DataTooltip="{x:Null}"
+                                                  IsHitTestVisible="False"
                                                   Series="{Binding RarityPieChart.PieSeries}"/>
                                     <!-- Custom Rarity Legend with icons -->
                                     <StackPanel Grid.Column="1" Margin="6,0,0,0" Orientation="Vertical">
