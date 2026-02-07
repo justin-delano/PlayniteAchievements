@@ -953,13 +953,8 @@
                                                   LegendLocation="None"
                                                   InnerRadius="30"
                                                   Margin="4"
-                                                  Series="{Binding GamesPieChart.PieSeries}">
-                                        <lvc:PieChart.DataTooltip>
-                                            <DataTemplate>
-                                                <TextBlock Text=""/>
-                                            </DataTemplate>
-                                        </lvc:PieChart.DataTooltip>
-                                    </lvc:PieChart>
+                                                  Series="{Binding GamesPieChart.PieSeries}"
+                                                  DataTooltip="{x:Null}"/>
                                     <!-- Custom Games Legend with icons -->
                                     <StackPanel Grid.Column="1" Margin="6,0,0,0" Orientation="Vertical">
                                         <!-- Perfect Games -->
@@ -979,12 +974,14 @@
                                         <!-- Incomplete -->
                                         <StackPanel Orientation="Horizontal" Margin="0,2"
                                                     Visibility="{Binding GamesPieChart.ShowIncomplete, Converter={StaticResource BoolToVis}}">
-                                            <Image Source="{StaticResource ProviderIconLocked}"
-                                                   Width="18" Height="18"
-                                                   Margin="0,0,6,0"
-                                                   VerticalAlignment="Center"
-                                                   Opacity="0.5"
-                                                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                            <TextBlock Text="&#xE1FE;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="14"
+                                                       Width="18"
+                                                       TextAlignment="Center"
+                                                       Margin="0,0,6,0"
+                                                       VerticalAlignment="Center"
+                                                       Opacity="0.5"/>
                                             <TextBlock Text="{Binding GamesPieChart.IncompleteCount}"
                                                        Style="{DynamicResource BaseTextBlockStyle}"
                                                        Foreground="{DynamicResource TextBrush}"
@@ -1018,24 +1015,50 @@
                                                   LegendLocation="None"
                                                   InnerRadius="30"
                                                   Margin="4"
-                                                  Series="{Binding ProviderDistribution.ProviderSeries}">
-                                        <lvc:PieChart.DataTooltip>
-                                            <DataTemplate>
-                                                <TextBlock Text=""/>
-                                            </DataTemplate>
-                                        </lvc:PieChart.DataTooltip>
-                                    </lvc:PieChart>
+                                                  Series="{Binding ProviderDistribution.ProviderSeries}"
+                                                  DataTooltip="{x:Null}"/>
                                     <!-- Custom Provider Legend with icons -->
                                     <ItemsControl Grid.Column="1" Margin="6,0,0,0"
                                                   ItemsSource="{Binding ProviderDistribution.LegendItems}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" Margin="0,2">
+                                                    <!-- Provider icon -->
                                                     <Image Width="18" Height="18"
                                                            Source="{Binding IconKey, Converter={StaticResource ResourceKeyToImage}}"
                                                            Margin="0,0,6,0"
                                                            VerticalAlignment="Center"
-                                                           RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                                           RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IconKey}" Value="ProviderIconLocked">
+                                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
+                                                    <!-- Lock icon for Locked provider -->
+                                                    <TextBlock Text="&#xE1FE;"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="14"
+                                                               Width="18"
+                                                               TextAlignment="Center"
+                                                               Margin="0,0,6,0"
+                                                               VerticalAlignment="Center"
+                                                               Opacity="0.5">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IconKey}" Value="ProviderIconLocked">
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
                                                     <TextBlock Text="{Binding Count}"
                                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                                Foreground="{DynamicResource TextBrush}"
@@ -1070,13 +1093,8 @@
                                                   LegendLocation="None"
                                                   InnerRadius="30"
                                                   Margin="4"
-                                                  Series="{Binding RarityPieChart.PieSeries}">
-                                        <lvc:PieChart.DataTooltip>
-                                            <DataTemplate>
-                                                <TextBlock Text=""/>
-                                            </DataTemplate>
-                                        </lvc:PieChart.DataTooltip>
-                                    </lvc:PieChart>
+                                                  Series="{Binding RarityPieChart.PieSeries}"
+                                                  DataTooltip="{x:Null}"/>
                                     <!-- Custom Rarity Legend with icons -->
                                     <StackPanel Grid.Column="1" Margin="6,0,0,0" Orientation="Vertical">
                                         <!-- Ultra Rare -->
@@ -1138,12 +1156,14 @@
                                         <!-- Locked -->
                                         <StackPanel Orientation="Horizontal" Margin="0,2"
                                                     Visibility="{Binding RarityPieChart.ShowLocked, Converter={StaticResource BoolToVis}}">
-                                            <Image Source="{StaticResource ProviderIconLocked}"
-                                                   Width="18" Height="18"
-                                                   Margin="0,0,6,0"
-                                                   VerticalAlignment="Center"
-                                                   Opacity="0.5"
-                                                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                            <TextBlock Text="&#xE1FE;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="14"
+                                                       Width="18"
+                                                       TextAlignment="Center"
+                                                       Margin="0,0,6,0"
+                                                       VerticalAlignment="Center"
+                                                       Opacity="0.5"/>
                                             <TextBlock Text="{Binding RarityPieChart.LockedCount}"
                                                        Style="{DynamicResource BaseTextBlockStyle}"
                                                        Foreground="{DynamicResource TextBrush}"
