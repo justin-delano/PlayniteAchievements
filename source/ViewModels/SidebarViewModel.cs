@@ -1573,9 +1573,6 @@ namespace PlayniteAchievements.ViewModels
             RightSearchText = string.Empty;
             SelectedGame = null;
         }
-        {
-            SelectedGame = null;
-        }
 
         private Dictionary<DateTime, int> GetAchievementCountsByDate(DateTime startDate, DateTime endDate, Guid? gameId)
         {
