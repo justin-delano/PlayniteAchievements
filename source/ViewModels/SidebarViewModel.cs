@@ -523,19 +523,7 @@ namespace PlayniteAchievements.ViewModels
 
         #region Progress Properties
 
-        private bool _isScanning;
-        public bool IsScanning
-        {
-            get => _isScanning;
-            set
-            {
-                if (SetValueAndReturn(ref _isScanning, value))
-                {
-                    OnPropertyChanged(nameof(ShowProgress));
-                    RaiseCommandsChanged();
-                }
-            }
-        }
+        public bool IsScanning => _achievementManager.IsRebuilding;
 
         private double _progressPercent;
         public double ProgressPercent
@@ -675,9 +663,6 @@ namespace PlayniteAchievements.ViewModels
             }
             else
             {
-                // Sync scan state when becoming active
-                IsScanning = _achievementManager.IsRebuilding;
-
                 // Restore progress UI state from AchievementManager
                 if (IsScanning)
                 {
@@ -690,6 +675,7 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 // Ensure progress UI shows correct state
+                OnPropertyChanged(nameof(IsScanning));
                 OnPropertyChanged(nameof(ShowProgress));
                 RaiseCommandsChanged();
             }
@@ -776,7 +762,6 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                IsScanning = true;
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
@@ -790,7 +775,6 @@ namespace PlayniteAchievements.ViewModels
             }
             finally
             {
-                IsScanning = false;
                 ProgressPercent = 0;
             }
         }
@@ -801,7 +785,6 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                IsScanning = true;
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
@@ -815,7 +798,6 @@ namespace PlayniteAchievements.ViewModels
             }
             finally
             {
-                IsScanning = false;
                 ProgressPercent = 0;
             }
         }
@@ -846,7 +828,6 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                IsScanning = true;
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
@@ -874,7 +855,6 @@ namespace PlayniteAchievements.ViewModels
             }
             finally
             {
-                IsScanning = false;
                 ProgressPercent = 0;
             }
         }
@@ -1051,14 +1031,11 @@ namespace PlayniteAchievements.ViewModels
             {
                 try
                 {
-                    IsScanning = _achievementManager.IsRebuilding;
+                    OnPropertyChanged(nameof(IsScanning));
+                    OnPropertyChanged(nameof(ShowProgress));
+                    RaiseCommandsChanged();
                     ProgressPercent = CalculatePercent(report);
                     ProgressMessage = report.Message ?? string.Empty;
-
-                    if (report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps))
-                    {
-                        IsScanning = false;
-                    }
                 }
                 catch (Exception ex)
                 {
