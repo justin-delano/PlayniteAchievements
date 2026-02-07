@@ -193,7 +193,6 @@
     <sys:String x:Key="LOCPlayAch_Overview_HideNoUnlocks">Masquer sans succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_HideUnplayed">Masquer non joués</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_PerfectGame">Jeu parfait</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_LaunchedProgression">Jeux lancés</sys:String>
 
     <!-- ================================================================= -->
     <!-- ACHIEVEMENTS TAB                                                   -->
@@ -279,7 +278,11 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Sidebar_GamesOverview">Aperçu des jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_GlobalProgression">Progression globale des succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_LaunchedProgression">Progression des jeux lancés</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">Succès par fournisseur</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">Complétion des jeux</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_RarityPieChart">Succès par rareté</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_Locked">Verrouillé</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_Incomplete">Incomplet</sys:String>
 
     <!-- ================================================================= -->
     <!-- FORMATTING                                                         -->
