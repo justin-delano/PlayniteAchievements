@@ -291,6 +291,7 @@
     <sys:String x:Key="LOCPlayAch_Landing_Title">Welcome to Playnite Achievements!</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configure Your Accounts</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your providers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Open Plugin Settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_SettingsDiagramTitle">How to Configure Providers:</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavInstructions">Navigate to the plugin settings:</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavSettings">Settings</sys:String>

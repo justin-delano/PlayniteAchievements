@@ -256,6 +256,31 @@ namespace PlayniteAchievements.Views
             }
         });
 
+        /// <summary>
+        /// Command to open the plugin settings window.
+        /// </summary>
+        public ICommand OpenPluginSettingsCommand => new RelayCommand(() =>
+        {
+            try
+            {
+                _logger.Info("User clicked Open Plugin Settings from first-time landing page.");
+
+                var pluginId = _settings._plugin?.Id;
+                if (pluginId.HasValue)
+                {
+                    _api.MainView.OpenPluginSettings(pluginId.Value);
+                }
+                else
+                {
+                    _logger.Warning("Cannot open plugin settings: plugin ID is not available.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to open plugin settings from first-time landing page.");
+            }
+        });
+
         private void MarkSetupComplete()
         {
             _settings.Persisted.FirstTimeSetupCompleted = true;

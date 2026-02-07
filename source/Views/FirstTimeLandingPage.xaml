@@ -204,73 +204,13 @@
                         </StackPanel>
                     </Border>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_SettingsDiagramTitle}"
-                               Style="{DynamicResource BaseTextBlockStyle}"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextBrush}"
-                               Margin="0,10,0,8"/>
-
-                    <!-- Navigation Tree - Simple indented list with arrows -->
-                    <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            CornerRadius="4"
-                            Padding="14,12"
-                            Margin="0,0,0,6">
-                        <StackPanel>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavInstructions}"
-                                       FontSize="{DynamicResource FontSize}"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Opacity="0.8"
-                                       Margin="0,0,0,10"/>
-
-                            <!-- Navigation tree items -->
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                                    <TextBlock Text="→"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavAddons}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="16,0,0,3">
-                                    <TextBlock Text="→"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="32,0,0,3">
-                                    <TextBlock Text="→"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavGeneric}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="48,0,0,0">
-                                    <TextBlock Text="→"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="#4CC9F0"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavPluginName}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               FontWeight="SemiBold" Foreground="#4CC9F0"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Configuration hint -->
-                    <Border Background="{DynamicResource ControlBackgroundBrush}"
-                            CornerRadius="4"
-                            Padding="12,10"
-                            Margin="0,0,0,6">
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavThenConfigure}"
-                                   FontSize="{DynamicResource FontSize}"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   TextWrapping="Wrap"
-                                   Opacity="0.7"/>
-                    </Border>
+                    <!-- Open Settings Button -->
+                    <Button Content="{DynamicResource LOCPlayAch_Landing_OpenSettings}"
+                            Command="{Binding OpenPluginSettingsCommand}"
+                            HorizontalAlignment="Center"
+                            Padding="16,6"
+                            MinWidth="150"
+                            Margin="0,10,0,12"/>
 
                 </StackPanel>
 

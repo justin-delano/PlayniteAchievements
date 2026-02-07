@@ -282,6 +282,7 @@
     <sys:String x:Key="LOCPlayAch_Landing_Title">Bienvenue dans Playnite Achievements !</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configurez vos comptes</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">Pour suivre vos succès, connectez-vous à l'un de vos fournisseurs.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Ouvrir les paramètres du plugin</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_SettingsDiagramTitle">Comment configurer les fournisseurs :</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavInstructions">Accédez aux paramètres du plugin :</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavSettings">Paramètres</sys:String>
