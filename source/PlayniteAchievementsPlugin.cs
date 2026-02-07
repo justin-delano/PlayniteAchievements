@@ -497,10 +497,44 @@ namespace PlayniteAchievements
 
                 var progressWindow = new ScanProgressWindow(_achievementService, _logger);
 
-                progressWindow.Owner = PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true,
+                    CanBeResizable = false,
+                    Width = 400,
+                    Height = 280
+                };
 
-                progressWindow.Show();
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    string.Empty,
+                    progressWindow,
+                    windowOptions
+                );
 
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch { }
+
+                // Wire up close button from UserControl
+                progressWindow.RequestClose += (s, ev) => window.Close();
+
+                window.Closed += (s, ev) => { };
+
+                var isFullscreen = false;
+                try
+                {
+                    isFullscreen = PlayniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+                }
+                catch { }
+
+                // Start the scan task after setting up window
                 Task.Run(async () =>
                 {
                     try
@@ -512,6 +546,22 @@ namespace PlayniteAchievements
                         _logger.Error(ex, "Scan task failed");
                     }
                 });
+
+                if (isFullscreen)
+                {
+                    window.Show();
+                    try
+                    {
+                        window.Topmost = true;
+                        window.Activate();
+                        window.Topmost = false;
+                    }
+                    catch { }
+                }
+                else
+                {
+                    window.ShowDialog();
+                }
             }
             catch (Exception ex)
             {
