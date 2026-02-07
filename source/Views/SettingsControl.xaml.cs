@@ -213,43 +213,46 @@ namespace PlayniteAchievements.Views
         }
 
         // -----------------------------
-        // Credential text box handlers (triggers auth state update on Enter)
+        // Credential text box handlers (Enter key commits entry)
         // -----------------------------
 
-        private void CredentialTextBox_KeyDown(object sender, KeyEventArgs e)
+        private async void SteamApiKey_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
                 e.Handled = true;
-
-                // Determine which textbox and update the appropriate auth state
-                if (sender is TextBox textBox)
-                {
-                    // Force binding update
-                    var bindingExpression = textBox.GetBindingExpression(TextBox.TextProperty);
-                    bindingExpression?.UpdateSource();
-
-                    // Check which property was bound and update auth state
-                    if (textBox.GetBindingExpression(TextBox.TextProperty)?.Path.Path == "SteamApiKey")
-                    {
-                        // Update Steam auth state (API key changed, need to recheck web auth too)
-                        _ = Task.Run(async () => await Dispatcher.BeginInvoke(new Action(async () =>
-                        {
-                            await CheckSteamAuthAsync().ConfigureAwait(false);
-                        })));
-                    }
-                    else if (textBox.GetBindingExpression(TextBox.TextProperty)?.Path.Path == "RaUsername" ||
-                             textBox.GetBindingExpression(TextBox.TextProperty)?.Path.Path == "RaWebApiKey")
-                    {
-                        // Update RA auth state
-                        UpdateRaAuthState();
-                    }
-                }
-
-                // Move focus away from textbox to "commit" the entry
-                var parent = (sender as FrameworkElement)?.Parent as FrameworkElement;
-                parent?.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                await CheckSteamAuthAsync().ConfigureAwait(false);
+                MoveFocusFrom((TextBox)sender);
             }
+        }
+
+        private void RaUsername_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                UpdateRaAuthState();
+                MoveFocusFrom((TextBox)sender);
+            }
+        }
+
+        private void RaApiKey_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                UpdateRaAuthState();
+                MoveFocusFrom((TextBox)sender);
+            }
+        }
+
+        private void MoveFocusFrom(TextBox textBox)
+        {
+            var parent = textBox?.Parent as FrameworkElement;
+            parent?.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
         }
 
         // -----------------------------
