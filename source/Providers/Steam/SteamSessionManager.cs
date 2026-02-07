@@ -96,7 +96,7 @@ namespace PlayniteAchievements.Providers.Steam
                         // Navigating to root is safer than /my/profile to avoid redirects confusing the cookie jar.
                         var targetUrl = "https://steamcommunity.com/";
 
-                        _logger?.Debug("Navigating to {0} to refresh session...", targetUrl);
+                        _logger?.Debug($"Navigating to {targetUrl} to refresh session...");
                         await view.NavigateAndWaitAsync(targetUrl, timeoutMs: 15000);
 
                         // Give the browser a moment to commit cookies to storage
@@ -326,12 +326,12 @@ namespace PlayniteAchievements.Providers.Steam
                 }
                 catch (TimeoutException ex)
                 {
-                    _logger?.Warn(ex, "Offscreen navigation timed out for {0}", url);
+                    _logger?.Warn(ex, $"Offscreen navigation timed out for {url}");
                     tcs.TrySetResult((finalUrl, ""));
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Error(ex, "Offscreen navigation failed for {0}", url);
+                    _logger?.Error(ex, $"Offscreen navigation failed for {url}");
                     tcs.TrySetResult((finalUrl, ""));
                 }
             });

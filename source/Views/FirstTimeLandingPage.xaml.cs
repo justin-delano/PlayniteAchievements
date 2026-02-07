@@ -272,7 +272,7 @@ namespace PlayniteAchievements.Views
                 }
                 else
                 {
-                    _logger.Warning("Cannot open plugin settings: plugin ID is not available.");
+                    _logger.Warn("Cannot open plugin settings: plugin ID is not available.");
                 }
             }
             catch (Exception ex)
