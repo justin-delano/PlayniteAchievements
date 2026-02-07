@@ -143,22 +143,7 @@ namespace PlayniteAchievements.Views
                 }
                 await CheckSteamAuthAsync().ConfigureAwait(false);
                 UpdateRaAuthState();
-
-                // Subscribe to RA credential changes
-                if (_settingsViewModel.Settings.Persisted is PlayniteAchievementsSettingsPersisted persisted)
-                {
-                    PropertyChangedEventManager.AddHandler(persisted, OnRaCredentialChanged, nameof(RaUsername));
-                    PropertyChangedEventManager.AddHandler(persisted, OnRaCredentialChanged, nameof(RaWebApiKey));
-                }
             };
-        }
-
-        private void OnRaCredentialChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(RaUsername) || e.PropertyName == nameof(RaWebApiKey))
-            {
-                UpdateRaAuthState();
-            }
         }
 
         private void UpdateRaAuthState()
