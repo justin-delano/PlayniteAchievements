@@ -395,6 +395,7 @@
 
         <!-- ROW 1: Progress Bar -->
         <Border Grid.Row="1"
+                Background="Transparent"
                 Padding="16,8"
                 Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}">
             <StackPanel>
