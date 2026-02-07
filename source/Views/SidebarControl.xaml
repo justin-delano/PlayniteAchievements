@@ -342,68 +342,63 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ROW 0: Header with Tabs -->
+        <!-- ROW 0: Header with Title and Scan Buttons -->
         <Border Grid.Row="0"
                 Background="{DynamicResource ControlBackgroundBrush}"
                 BorderBrush="{DynamicResource NormalBorderBrush}"
                 BorderThickness="0,0,0,1"
-                Padding="16,12,16,0">
+                Padding="16,12,16,12">
             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-                <Grid Grid.Row="0" Margin="0,0,0,12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                <!-- Left: Back button -->
+                <Button Grid.Column="0"
+                        Command="{Binding CloseViewCommand}"
+                        Content="&#xE72B;"
+                        Style="{StaticResource NavigationButtonStyle}"
+                        ToolTip="Back to Library"/>
 
-                    <Button Grid.Column="0"
-                            Command="{Binding CloseViewCommand}"
-                            Content="&#xE72B;"
-                            Style="{StaticResource NavigationButtonStyle}"
-                            ToolTip="Back to Library"/>
-
-                    <TextBlock Grid.Column="1"
-                               Text="{DynamicResource LOCPlayAch_Title_PluginName}"
+                <!-- Center: Title and scan buttons -->
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center">
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
                                Style="{DynamicResource BaseTextBlockStyle}"
                                FontWeight="Bold"
                                FontSize="20"
                                Foreground="{DynamicResource TextBrush}"
-                               VerticalAlignment="Center"
-                               Margin="12,0,0,0"/>
-                </Grid>
+                               VerticalAlignment="Center"/>
+
+                    <Button Content="{DynamicResource LOCPlayAch_Button_QuickScan}"
+                            Command="{Binding QuickScanCommand}"
+                            Style="{StaticResource ScanButtonStyle}"
+                            Margin="12,0,0,0"/>
+
+                    <Button Content="{DynamicResource LOCPlayAch_Button_FullScan}"
+                            Command="{Binding ScanAllCommand}"
+                            Style="{StaticResource ScanButtonStyle}"/>
+
+                    <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                            Command="{Binding CancelScanCommand}"
+                            Style="{StaticResource ScanButtonStyle}"
+                            Margin="0"
+                            Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}"/>
+                </StackPanel>
+
+                <!-- Right: Empty for balance -->
+                <Grid Grid.Column="2" Width="34"/>
             </Grid>
         </Border>
 
-        <!-- ROW 1: Action Buttons -->
+        <!-- ROW 1: Progress Bar -->
         <Border Grid.Row="1"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="16,10">
-            <StackPanel Orientation="Horizontal">
-                <Button Content="{DynamicResource LOCPlayAch_Button_QuickScan}"
-                        Command="{Binding QuickScanCommand}"
-                        Style="{StaticResource ScanButtonStyle}"/>
-
-                <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
-                        Command="{Binding CancelScanCommand}"
-                        Style="{StaticResource ScanButtonStyle}"
-                        Margin="0"
-                        Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}"/>
-            </StackPanel>
-        </Border>
-
-        <!-- ROW 2: Progress Bar -->
-        <Border Grid.Row="2"
                 Padding="16,8"
                 Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}">
             <StackPanel>
@@ -420,8 +415,8 @@
             </StackPanel>
         </Border>
 
-        <!-- ROW 3: Tab Content -->
-        <Grid Grid.Row="3">
+        <!-- ROW 2: Tab Content -->
+        <Grid Grid.Row="2">
             <!-- Overview Tab Content -->
             <Grid x:Name="OverviewContent" Visibility="Visible">
                 <Grid.RowDefinitions>
