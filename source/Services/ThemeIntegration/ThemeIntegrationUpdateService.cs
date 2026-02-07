@@ -8,7 +8,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Models.Achievement;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Services.ThemeIntegration
 {

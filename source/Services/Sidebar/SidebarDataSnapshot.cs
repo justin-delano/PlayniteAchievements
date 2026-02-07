@@ -25,7 +25,15 @@ namespace PlayniteAchievements.Services.Sidebar
         public int TotalUltraRare { get; set; }
         public int PerfectGames { get; set; }
         public double GlobalProgressionPercent { get; set; }
-        public Dictionary<string, int> AchievementsByProvider { get; set; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Unlocked achievements per provider (for provider distribution pie chart).
+        /// </summary>
+        public Dictionary<string, int> UnlockedByProvider { get; set; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Total locked achievements across all providers (for the locked section of provider pie chart).
+        /// </summary>
         public int TotalLocked { get; set; }
     }
 }

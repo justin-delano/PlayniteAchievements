@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Models.Achievement;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 using Playnite.SDK;
@@ -52,8 +51,7 @@ namespace PlayniteAchievements.Services.Sidebar
             int ultraRareCount = 0;
             int perfectGames = 0;
 
-            var achievementsByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            int totalLocked = 0;
+            var unlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             List<string> cachedIds;
             using (PerfTrace.Measure("SidebarDataBuilder.GetCachedGameIds", _logger, diagnostics))
@@ -161,14 +159,11 @@ namespace PlayniteAchievements.Services.Sidebar
                 totalAchievements += gameTotal;
                 totalUnlocked += gameUnlocked;
 
-                // Track by provider
+                // Track unlocked achievements by provider
                 var provider = gameData.ProviderName ?? "Unknown";
-                if (!achievementsByProvider.ContainsKey(provider))
-                    achievementsByProvider[provider] = 0;
-                achievementsByProvider[provider] += gameTotal;
-
-                // Count locked achievements
-                totalLocked += (gameTotal - gameUnlocked);
+                if (!unlockedByProvider.ContainsKey(provider))
+                    unlockedByProvider[provider] = 0;
+                unlockedByProvider[provider] += gameUnlocked;
 
                 if (gameUnlocked == gameTotal && gameTotal > 0)
                 {
@@ -218,8 +213,10 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.TotalUltraRare = ultraRareCount;
             snapshot.PerfectGames = perfectGames;
             snapshot.GlobalProgressionPercent = totalAchievements > 0 ? (double)totalUnlocked / totalAchievements * 100 : 0;
-            snapshot.AchievementsByProvider = achievementsByProvider;
-            snapshot.TotalLocked = totalLocked;
+
+            // Calculate total locked as difference between total and unlocked
+            snapshot.TotalLocked = totalAchievements - totalUnlocked;
+            snapshot.UnlockedByProvider = unlockedByProvider;
 
             return snapshot;
             }
