@@ -41,6 +41,32 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
+
+            <!-- Progress indicator style -->
+            <Style x:Key="ProgressIndicatorStyle" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Opacity" Value="0.8"/>
+                <Setter Property="Text" Value="{Binding ProgressPercent, StringFormat={}{0:F0}%}"/>
+                <Style.Triggers>
+                    <!-- Complete: show checkmark -->
+                    <DataTrigger Binding="{Binding IsComplete}" Value="True">
+                        <Setter Property="Text" Value="&#xE73E;"/>
+                        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                        <Setter Property="Foreground" Value="#06FFA5"/>
+                        <Setter Property="FontSize" Value="14"/>
+                    </DataTrigger>
+                    <!-- Not scanning and not complete: show X -->
+                    <DataTrigger Binding="{Binding IsScanning}" Value="False">
+                        <Setter Property="Text" Value="&#xE711;"/>
+                        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                        <Setter Property="Foreground" Value="#F72585"/>
+                        <Setter Property="FontSize" Value="14"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </Window.Resources>
 
@@ -108,33 +134,7 @@
                         </ProgressBar>
 
                         <!-- Scanning indicator -->
-                        <TextBlock HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   FontSize="{DynamicResource FontSizeSmall}"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   Opacity="0.8">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="{Binding ProgressPercent, StringFormat={}{0:F0}%}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsComplete}" Value="True">
-                                            <Setter Property="Text" Value="&#xE73E;"/>
-                                            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                                            <Setter Property="Foreground" Value="#06FFA5"/>
-                                            <Setter Property="FontSize" Value="12"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsScanning}" Value="False">
-                                            <DataTrigger Binding="{Binding IsComplete}" Value="False">
-                                                <Setter Property="Text" Value="&#xE711;"/>
-                                                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                                                <Setter Property="Foreground" Value="#F72585"/>
-                                                <Setter Property="FontSize" Value="12"/>
-                                            </DataTrigger>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <TextBlock Style="{StaticResource ProgressIndicatorStyle}"/>
                     </Grid>
                 </StackPanel>
             </Border>
