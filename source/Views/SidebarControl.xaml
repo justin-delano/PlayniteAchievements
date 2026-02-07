@@ -925,12 +925,12 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="8"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="8"/>
-                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="12"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="100"/>
+                            <RowDefinition Height="12"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="120"/>
+                            <RowDefinition Height="140"/>
                         </Grid.RowDefinitions>
 
                         <!-- Summary stats -->
@@ -993,79 +993,24 @@
                             </Grid>
                         </StackPanel>
 
-                        <!-- Launched Games Progression -->
-                        <StackPanel Grid.Row="4" Visibility="{Binding IgnoreUnplayedGames, Converter={StaticResource InverseBoolToVis}}">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_LaunchedProgression}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Opacity="0.7"
-                                       Margin="0,0,0,4"/>
-                            <Grid>
-                                <ProgressBar Value="{Binding LaunchedProgression, Mode=OneWay}"
-                                             Height="18"
-                                             Minimum="0"
-                                             Maximum="100"
-                                             Background="{DynamicResource ControlBackgroundBrush}"
-                                             Foreground="{DynamicResource HighlightGlyphBrush}"/>
-                                <TextBlock HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                           FontWeight="SemiBold"
-                                           Foreground="White"
-                                           Text="{Binding LaunchedProgression, StringFormat={}{0:F1}%, Mode=OneWay}"/>
-                            </Grid>
-                        </StackPanel>
-
-                        <!-- Global Timeline Header -->
-                        <TextBlock Grid.Row="6"
-                                   Text="{DynamicResource LOCPlayAch_AchievementsOverTime}"
-                                    Style="{DynamicResource BaseTextBlockStyle}"
+                        <!-- Provider Distribution Header -->
+                        <TextBlock Grid.Row="4"
+                                   Text="{DynamicResource LOCPlayAch_Sidebar_ProviderDistribution}"
+                                   Style="{DynamicResource BaseTextBlockStyle}"
                                    Foreground="{DynamicResource TextBrush}"
                                    Opacity="0.7"/>
 
-                        <!-- Global Time Range Buttons -->
-                        <StackPanel Grid.Row="7" Orientation="Horizontal" Margin="0,6,0,8">
-                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_7D}" GroupName="GlobalTimeRange"
-                                         Style="{StaticResource TimeRangeButtonStyle}"
-                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=SevenDays}"
-                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="SevenDays"/>
-                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_14D}" GroupName="GlobalTimeRange"
-                                         Style="{StaticResource TimeRangeButtonStyle}"
-                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=FourteenDays}"
-                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="FourteenDays"/>
-                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1M}" GroupName="GlobalTimeRange"
-                                         Style="{StaticResource TimeRangeButtonStyle}"
-                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneMonth}"
-                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="OneMonth"/>
-                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_3M}" GroupName="GlobalTimeRange"
-                                         Style="{StaticResource TimeRangeButtonStyle}"
-                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=ThreeMonths}"
-                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="ThreeMonths"/>
-                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1Y}" GroupName="GlobalTimeRange"
-                                         Style="{StaticResource TimeRangeButtonStyle}"
-                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneYear}"
-                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="OneYear"/>
-                            <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_All}" GroupName="GlobalTimeRange"
-                                         Style="{StaticResource TimeRangeButtonStyle}"
-                                         IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=All}"
-                                         Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="All"/>
-                        </StackPanel>
-
-                        <!-- Global LiveCharts Timeline -->
-                        <lvc:CartesianChart Grid.Row="8"
-                                            Series="{Binding GlobalTimeline.TimelineSeries}"
+                        <!-- Provider Distribution Chart -->
+                        <lvc:CartesianChart Grid.Row="5"
+                                            Series="{Binding ProviderDistribution.ProviderSeries}"
                                             LegendLocation="None"
                                             Hoverable="True"
-                                            DisableAnimations="True">
-                            <lvc:CartesianChart.Resources>
-                                <Style TargetType="lvc:ColumnSeries">
-                                    <Setter Property="Fill" Value="{DynamicResource HighlightGlyphBrush}" />
-                                </Style>
-                            </lvc:CartesianChart.Resources>
+                                            DisableAnimations="True"
+                                            Margin="0,4,0,0">
                             <lvc:CartesianChart.AxisX>
-                                <lvc:Axis Labels="{Binding GlobalTimeline.TimelineLabels}"
+                                <lvc:Axis Labels="{Binding ProviderDistribution.ProviderLabels}"
                                           ShowLabels="True"
-                                          LabelsRotation="45"
+                                          LabelsRotation="-30"
                                           FontSize="{DynamicResource FontSizeSmall}"
                                           Foreground="{DynamicResource TextBrush}">
                                     <lvc:Axis.Separator>
@@ -1075,7 +1020,7 @@
                             </lvc:CartesianChart.AxisX>
                             <lvc:CartesianChart.AxisY>
                                 <lvc:Axis MinValue="0"
-                                          LabelFormatter="{Binding YAxisFormatter}"
+                                          LabelFormatter="{Binding GlobalTimeline.YAxisFormatter}"
                                           FontSize="{DynamicResource FontSizeSmall}"
                                           Foreground="{DynamicResource TextBrush}">
                                     <lvc:Axis.Separator>
@@ -1084,6 +1029,47 @@
                                 </lvc:Axis>
                             </lvc:CartesianChart.AxisY>
                         </lvc:CartesianChart>
+
+                        <!-- Pie Charts Section -->
+                        <Grid Grid.Row="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="16"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Games Pie Chart -->
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_GamesPieChart}"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Opacity="0.7"
+                                           HorizontalAlignment="Center"/>
+                                <lvc:PieChart LegendLocation="Bottom"
+                                              InnerRadius="30"
+                                              Margin="4">
+                                    <lvc:PieChart.Series>
+                                        <lvc:SeriesCollection Source="{Binding GamesPieChart.PieSeries}"/>
+                                    </lvc:PieChart.Series>
+                                </lvc:PieChart>
+                            </StackPanel>
+
+                            <!-- Rarity Pie Chart -->
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_RarityPieChart}"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Opacity="0.7"
+                                           HorizontalAlignment="Center"/>
+                                <lvc:PieChart LegendLocation="Bottom"
+                                              InnerRadius="30"
+                                              Margin="4">
+                                    <lvc:PieChart.Series>
+                                        <lvc:SeriesCollection Source="{Binding RarityPieChart.PieSeries}"/>
+                                    </lvc:PieChart.Series>
+                                </lvc:PieChart>
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                     </Border>
 
@@ -1143,14 +1129,105 @@
                         </Border>
                     </Grid>
                     
-                    <!-- RIGHT: Content (Recent List OR Game Details) -->
+                    <!-- RIGHT: Content (Timeline + Recent List OR Game Details) -->
                     <Grid Grid.Row="1" Grid.Column="2" Grid.RowSpan="2">
-                        <!-- Default Panel: When no game selected -->
-                        <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource InverseBoolToVis}}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Global Timeline for all games (shown in both default and game-selected views) -->
+                        <Border Grid.Row="0"
+                                Background="{DynamicResource ControlBackgroundBrush}"
+                                BorderBrush="{DynamicResource NormalBorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="12,8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="120"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0"
+                                           Text="{DynamicResource LOCPlayAch_AchievementsOverTime}"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Opacity="0.7"
+                                           Margin="0,0,0,6"/>
+
+                                <!-- Global Time Range Buttons -->
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                    <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_7D}" GroupName="GlobalTimeRange"
+                                                 Style="{StaticResource TimeRangeButtonStyle}"
+                                                 IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=SevenDays}"
+                                                 Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="SevenDays"/>
+                                    <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_14D}" GroupName="GlobalTimeRange"
+                                                 Style="{StaticResource TimeRangeButtonStyle}"
+                                                 IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=FourteenDays}"
+                                                 Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="FourteenDays"/>
+                                    <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1M}" GroupName="GlobalTimeRange"
+                                                 Style="{StaticResource TimeRangeButtonStyle}"
+                                                 IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneMonth}"
+                                                 Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="OneMonth"/>
+                                    <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_3M}" GroupName="GlobalTimeRange"
+                                                 Style="{StaticResource TimeRangeButtonStyle}"
+                                                 IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=ThreeMonths}"
+                                                 Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="ThreeMonths"/>
+                                    <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1Y}" GroupName="GlobalTimeRange"
+                                                 Style="{StaticResource TimeRangeButtonStyle}"
+                                                 IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneYear}"
+                                                 Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="OneYear"/>
+                                    <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_All}" GroupName="GlobalTimeRange"
+                                                 Style="{StaticResource TimeRangeButtonStyle}"
+                                                 IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=All}"
+                                                 Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="All"/>
+                                </StackPanel>
+
+                                <!-- Global LiveCharts Timeline -->
+                                <lvc:CartesianChart Grid.Row="2"
+                                                    Series="{Binding GlobalTimeline.TimelineSeries}"
+                                                    LegendLocation="None"
+                                                    Hoverable="True"
+                                                    DisableAnimations="True">
+                                    <lvc:CartesianChart.Resources>
+                                        <Style TargetType="lvc:ColumnSeries">
+                                            <Setter Property="Fill" Value="{DynamicResource HighlightGlyphBrush}" />
+                                        </Style>
+                                    </lvc:CartesianChart.Resources>
+                                    <lvc:CartesianChart.AxisX>
+                                        <lvc:Axis Labels="{Binding GlobalTimeline.TimelineLabels}"
+                                                  ShowLabels="True"
+                                                  LabelsRotation="45"
+                                                  FontSize="{DynamicResource FontSizeSmall}"
+                                                  Foreground="{DynamicResource TextBrush}">
+                                            <lvc:Axis.Separator>
+                                                <lvc:Separator Step="1" IsEnabled="False"/>
+                                            </lvc:Axis.Separator>
+                                        </lvc:Axis>
+                                    </lvc:CartesianChart.AxisX>
+                                    <lvc:CartesianChart.AxisY>
+                                        <lvc:Axis MinValue="0"
+                                                  LabelFormatter="{Binding GlobalTimeline.YAxisFormatter}"
+                                                  FontSize="{DynamicResource FontSizeSmall}"
+                                                  Foreground="{DynamicResource TextBrush}">
+                                            <lvc:Axis.Separator>
+                                                <lvc:Separator Stroke="{DynamicResource NormalBorderBrush}" Opacity="0.2"/>
+                                            </lvc:Axis.Separator>
+                                        </lvc:Axis>
+                                    </lvc:CartesianChart.AxisY>
+                                </lvc:CartesianChart>
+                            </Grid>
+                        </Border>
+
+                        <!-- Content Area: Recent List OR Game Details -->
+                        <Grid Grid.Row="1">
+                            <!-- Default Panel: When no game selected -->
+                            <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource InverseBoolToVis}}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
                             <DataGrid Grid.Row="0"
                                       ItemsSource="{Binding RecentAchievements}"
@@ -1396,6 +1473,7 @@
                         </Grid>
                         
                         <!-- Game Detail Panel: When a game is selected -->
+                        <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
                         <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
@@ -1731,6 +1809,7 @@
                                     </lvc:CartesianChart>
                                 </Grid>
                             </Border>
+                        </Grid>
                         </Grid>
                     </Grid>
 
