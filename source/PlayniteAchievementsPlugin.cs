@@ -7,7 +7,7 @@ using System.Windows.Media;
 using System.Windows;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.ThemeIntegration;
-using PlayniteAchievements.Models.Achievement;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
