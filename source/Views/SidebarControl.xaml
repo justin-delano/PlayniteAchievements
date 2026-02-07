@@ -358,28 +358,31 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Left: Back button -->
-                <Button Grid.Column="0"
-                        Command="{Binding CloseViewCommand}"
-                        Content="&#xE72B;"
-                        Style="{StaticResource NavigationButtonStyle}"
-                        ToolTip="Back to Library"/>
-
-                <!-- Center: Title and scan buttons -->
-                <StackPanel Grid.Column="1"
+                <!-- Left: Back button and title -->
+                <StackPanel Grid.Column="0"
                             Orientation="Horizontal"
-                            HorizontalAlignment="Center">
+                            VerticalAlignment="Center">
+                    <Button Command="{Binding CloseViewCommand}"
+                            Content="&#xE72B;"
+                            Style="{StaticResource NavigationButtonStyle}"
+                            ToolTip="Back to Library"/>
+
                     <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
                                Style="{DynamicResource BaseTextBlockStyle}"
                                FontWeight="Bold"
                                FontSize="20"
                                Foreground="{DynamicResource TextBrush}"
-                               VerticalAlignment="Center"/>
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0"/>
+                </StackPanel>
 
+                <!-- Center: Scan buttons -->
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center">
                     <Button Content="{DynamicResource LOCPlayAch_Button_QuickScan}"
                             Command="{Binding QuickScanCommand}"
-                            Style="{StaticResource ScanButtonStyle}"
-                            Margin="12,0,0,0"/>
+                            Style="{StaticResource ScanButtonStyle}"/>
 
                     <Button Content="{DynamicResource LOCPlayAch_Button_FullScan}"
                             Command="{Binding ScanAllCommand}"
