@@ -95,17 +95,17 @@ namespace PlayniteAchievements.Providers.Steam
                         // Mimic Playnite Steam Library: Check Community primarily.
                         // Navigating to root is safer than /my/profile to avoid redirects confusing the cookie jar.
                         var targetUrl = "https://steamcommunity.com/";
-                        
-                        _logger?.Debug("Navigating to {targetUrl} to refresh session...");
-                        await view.NavigateAndWaitAsync(targetUrl);
-                        
+
+                        _logger?.Debug("Navigating to {0} to refresh session...", targetUrl);
+                        await view.NavigateAndWaitAsync(targetUrl, timeoutMs: 15000);
+
                         // Give the browser a moment to commit cookies to storage
                         await Task.Delay(1000);
 
                         var cookies = view.GetCookies();
-                        
+
                         // Look for the auth cookie
-                        var authCookie = cookies?.FirstOrDefault(c => 
+                        var authCookie = cookies?.FirstOrDefault(c =>
                             c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
 
                         if (authCookie != null)
@@ -119,7 +119,7 @@ namespace PlayniteAchievements.Providers.Steam
                             {
                                 success = true;
                             }
-                            // B) Extraction failed (weird format), but we have a cached ID. 
+                            // B) Extraction failed (weird format), but we have a cached ID.
                             //    Since the cookie EXISTS, we assume the session is valid.
                             else if (!string.IsNullOrEmpty(_selfSteamId64))
                             {
@@ -130,9 +130,14 @@ namespace PlayniteAchievements.Providers.Steam
                     }
                     tcs.TrySetResult(true);
                 }
+                catch (TimeoutException ex)
+                {
+                    _logger?.Warn(ex, "Offscreen navigation timed out during cookie refresh.");
+                    tcs.TrySetResult(false);
+                }
                 catch (Exception ex)
                 {
-                    _logger?.Error(ex, "Offscreen navigation failed.");
+                    _logger?.Error(ex, "Offscreen navigation failed during cookie refresh.");
                     tcs.TrySetResult(false);
                 }
             });
@@ -147,7 +152,7 @@ namespace PlayniteAchievements.Providers.Steam
                     _selfSteamId64 = extractedId;
                     _settings.Persisted.SteamUserId = extractedId;
                 }
-                
+
                 _logger?.Info("Session refreshed successfully.");
                 return true;
             }
@@ -200,16 +205,23 @@ namespace PlayniteAchievements.Providers.Steam
 
                 await _api.MainView.UIDispatcher.InvokeAsync(async () =>
                 {
-                    using (var quickCheck = _api.WebViews.CreateOffscreenView())
+                    try
                     {
-                        await quickCheck.NavigateAndWaitAsync("https://steamcommunity.com/my/");
-                        var checkCookies = quickCheck.GetCookies();
-                        var checkAuth = checkCookies?.FirstOrDefault(c =>
-                            c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
-                        if (checkAuth != null)
+                        using (var quickCheck = _api.WebViews.CreateOffscreenView())
                         {
-                            extractedId = TryExtractSteamId64FromSteamLoginSecure(checkAuth.Value);
+                            await quickCheck.NavigateAndWaitAsync("https://steamcommunity.com/my/", timeoutMs: 10000);
+                            var checkCookies = quickCheck.GetCookies();
+                            var checkAuth = checkCookies?.FirstOrDefault(c =>
+                                c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
+                            if (checkAuth != null)
+                            {
+                                extractedId = TryExtractSteamId64FromSteamLoginSecure(checkAuth.Value);
+                            }
                         }
+                    }
+                    catch (TimeoutException)
+                    {
+                        // Timeout means we couldn't verify, continue to interactive login
                     }
                 });
 
@@ -306,15 +318,20 @@ namespace PlayniteAchievements.Providers.Steam
                     ct.ThrowIfCancellationRequested();
                     using (var view = _api.WebViews.CreateOffscreenView())
                     {
-                        await view.NavigateAndWaitAsync(url);
+                        await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
                         finalUrl = view.GetCurrentAddress();
                         html = await view.GetPageTextAsync();
                         tcs.TrySetResult((finalUrl, html));
                     }
                 }
+                catch (TimeoutException ex)
+                {
+                    _logger?.Warn(ex, "Offscreen navigation timed out for {0}", url);
+                    tcs.TrySetResult((finalUrl, ""));
+                }
                 catch (Exception ex)
                 {
-                    _logger?.Error(ex, "Offscreen navigation failed for {url}.");
+                    _logger?.Error(ex, "Offscreen navigation failed for {0}", url);
                     tcs.TrySetResult((finalUrl, ""));
                 }
             });

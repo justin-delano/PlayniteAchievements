@@ -1,12 +1,15 @@
 using Playnite.SDK;
 using Playnite.SDK.Events; // Required for WebViewLoadingChangedEventArgs
+using System;
 using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Extensions
 {
     public static class WebViewExtensions
     {
-        public static async Task NavigateAndWaitAsync(this IWebView webView, string url)
+        private const int DefaultNavigationTimeoutMs = 20000;
+
+        public static async Task NavigateAndWaitAsync(this IWebView webView, string url, int timeoutMs = DefaultNavigationTimeoutMs)
         {
             var tcs = new TaskCompletionSource<bool>();
 
@@ -24,7 +27,12 @@ namespace PlayniteAchievements.Extensions
             try
             {
                 webView.Navigate(url);
-                await Task.WhenAny(tcs.Task, Task.Delay(15000));
+                var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(timeoutMs));
+
+                if (completedTask != tcs.Task)
+                {
+                    tcs.TrySetException(new TimeoutException($"WebView navigation to '{url}' timed out after {timeoutMs}ms"));
+                }
             }
             finally
             {
