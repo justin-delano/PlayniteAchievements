@@ -953,8 +953,8 @@
                                                   LegendLocation="None"
                                                   InnerRadius="30"
                                                   Margin="4"
-                                                  Series="{Binding GamesPieChart.PieSeries}"
-                                                  DataTooltip="{x:Null}"/>
+                                                  Hoverable="False"
+                                                  Series="{Binding GamesPieChart.PieSeries}"/>
                                     <!-- Custom Games Legend with icons -->
                                     <StackPanel Grid.Column="1" Margin="6,0,0,0" Orientation="Vertical">
                                         <!-- Perfect Games -->
@@ -1015,8 +1015,8 @@
                                                   LegendLocation="None"
                                                   InnerRadius="30"
                                                   Margin="4"
-                                                  Series="{Binding ProviderDistribution.ProviderSeries}"
-                                                  DataTooltip="{x:Null}"/>
+                                                  Hoverable="False"
+                                                  Series="{Binding ProviderDistribution.ProviderSeries}"/>
                                     <!-- Custom Provider Legend with icons -->
                                     <ItemsControl Grid.Column="1" Margin="6,0,0,0"
                                                   ItemsSource="{Binding ProviderDistribution.LegendItems}">
@@ -1093,8 +1093,8 @@
                                                   LegendLocation="None"
                                                   InnerRadius="30"
                                                   Margin="4"
-                                                  Series="{Binding RarityPieChart.PieSeries}"
-                                                  DataTooltip="{x:Null}"/>
+                                                  Hoverable="False"
+                                                  Series="{Binding RarityPieChart.PieSeries}"/>
                                     <!-- Custom Rarity Legend with icons -->
                                     <StackPanel Grid.Column="1" Margin="6,0,0,0" Orientation="Vertical">
                                         <!-- Ultra Rare -->
