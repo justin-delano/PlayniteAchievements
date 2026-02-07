@@ -123,5 +123,11 @@ namespace PlayniteAchievements.Views
                 _viewModel?.RevealAchievementCommand?.Execute(item);
             }
         }
+
+        private void GameNameButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Stop event from bubbling to DataGrid row to prevent selection change
+            e.Handled = true;
+        }
     }
 }

@@ -698,6 +698,7 @@
                                         <Button Content="{Binding GameName}"
                                                 Command="{Binding DataContext.NavigateToGameCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                 CommandParameter="{Binding}"
+                                                Click="GameNameButton_Click"
                                                 Style="{StaticResource GameNameButtonStyle}">
                                             <Button.ToolTip>
                                                 <ToolTip Content="Open game in library"/>
