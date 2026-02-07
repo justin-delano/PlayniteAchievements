@@ -168,6 +168,52 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private int? _progressNum;
+        public int? ProgressNum
+        {
+            get => _progressNum;
+            set
+            {
+                if (SetValueAndReturn(ref _progressNum, value))
+                {
+                    OnPropertyChanged(nameof(HasProgress));
+                    OnPropertyChanged(nameof(ProgressText));
+                    OnPropertyChanged(nameof(ProgressPercent));
+                }
+            }
+        }
+
+        private int? _progressDenom;
+        public int? ProgressDenom
+        {
+            get => _progressDenom;
+            set
+            {
+                if (SetValueAndReturn(ref _progressDenom, value))
+                {
+                    OnPropertyChanged(nameof(HasProgress));
+                    OnPropertyChanged(nameof(ProgressText));
+                    OnPropertyChanged(nameof(ProgressPercent));
+                }
+            }
+        }
+
+        /// <summary>
+        /// True if this achievement has progress data (both numerator and denominator are set).
+        /// </summary>
+        public bool HasProgress => ProgressNum.HasValue && ProgressDenom.HasValue && ProgressDenom.Value > 0;
+
+        /// <summary>
+        /// Text representation of progress as "ProgressNum / ProgressDenom".
+        /// </summary>
+        public string ProgressText => HasProgress ? $"{ProgressNum.Value} / {ProgressDenom.Value}" : string.Empty;
+
+        /// <summary>
+        /// Progress percentage (0-100) for progress bar binding.
+        /// Returns 0 when no progress data exists.
+        /// </summary>
+        public double ProgressPercent => HasProgress ? (ProgressNum.Value * 100.0 / ProgressDenom.Value) : 0;
+
         /// <summary>
         /// True if the achievement can be revealed (is locked and hiding is enabled).
         /// </summary>
@@ -224,6 +270,8 @@ namespace PlayniteAchievements.ViewModels
             Hidden = source.Hidden;
             ApiName = source.ApiName;
             HideAchievementsLockedForSelf = hideLockedSetting;
+            ProgressNum = source.ProgressNum;
+            ProgressDenom = source.ProgressDenom;
         }
 
         public string UnlockTimeText =>
