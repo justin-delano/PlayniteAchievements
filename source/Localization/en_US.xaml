@@ -38,15 +38,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements Settings</sys:String>
 
     <!-- ================================================================= -->
-    <!-- TABS                                                               -->
-    <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Tab_Overview">Overview</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tab_Achievements">Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_TabGeneral">General</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_TabSteam">Steam</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_TabRetroAchievements">RetroAchievements</sys:String>
-
-    <!-- ================================================================= -->
     <!-- PROVIDERS                                                          -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
@@ -94,7 +85,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_CheckSteamAuth">Check Steam Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">Authenticate via Browser</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CheckingSteamAuth">Checking Steam authentication...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SteamAuth_OK">Steam Auth OK</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamAuth_OK">Steam Authenticated</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamAuth_WebAuthUnavailable">Steam web authentication is not available.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_NotChecked">Steam: Not checked</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_CookiesCleared">Steam session cookies cleared.</sys:String>
@@ -108,6 +99,7 @@
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->
     <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Settings_TabGeneral">General</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Advanced">Advanced and Performance</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance and Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Sync &amp; Updates</sys:String>
@@ -287,7 +279,7 @@
     <!-- ================================================================= -->
     <!-- FIRST-TIME LANDING PAGE                                           -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Landing_Title">Welcome to Playnite Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Title">Welcome to Playnite Achievements!</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configure Your Accounts</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your providers.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_SettingsDiagramTitle">How to Configure Providers:</sys:String>

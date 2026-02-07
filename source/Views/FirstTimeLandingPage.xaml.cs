@@ -130,7 +130,7 @@ namespace PlayniteAchievements.Views
             var providers = _achievementManager.GetProviders();
             _providers.Clear();
 
-            foreach (var provider in providers.OrderBy(p => p.ProviderName))
+            foreach (var provider in providers)
             {
                 var status = new ProviderStatus
                 {

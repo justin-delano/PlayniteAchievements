@@ -50,6 +50,19 @@ namespace PlayniteAchievements.Views
             set => SetValue(SteamAuthBusyProperty, value);
         }
 
+        public static readonly DependencyProperty SteamAuthenticatedProperty =
+            DependencyProperty.Register(
+                nameof(SteamAuthenticated),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool SteamAuthenticated
+        {
+            get => (bool)GetValue(SteamAuthenticatedProperty);
+            set => SetValue(SteamAuthenticatedProperty, value);
+        }
+
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly SteamHTTPClient _steam;
@@ -118,6 +131,7 @@ namespace PlayniteAchievements.Views
         private void SteamAuth_Clear_Click(object sender, RoutedEventArgs e)
         {
             _sessionManager.ClearSession();
+            SteamAuthenticated = false;
             SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Status_CookiesCleared");
         }
 
@@ -127,6 +141,7 @@ namespace PlayniteAchievements.Views
             try
             {
                 var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(CancellationToken.None).ConfigureAwait(false);
+                SteamAuthenticated = isLoggedIn;
                 if (isLoggedIn)
                 {
                     SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_SteamAuth_OK"));
@@ -139,6 +154,7 @@ namespace PlayniteAchievements.Views
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Steam auth check failed.");
+                SteamAuthenticated = false;
                 SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthError"));
             }
             finally
