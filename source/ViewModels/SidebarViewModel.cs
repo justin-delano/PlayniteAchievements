@@ -78,8 +78,10 @@ namespace PlayniteAchievements.ViewModels
             RecentAchievements = new BulkObservableCollection<RecentAchievementItem>();
             SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
 
-            // Initialize scan mode options
-            ScanModeOptions = new ObservableCollection<string> { "Quick", "Full", "Installed", "Favorites", "Selected" };
+            // Initialize scan mode options from service
+            var scanModes = _achievementManager.GetScanModes();
+            ScanModeOptions = new ObservableCollection<string>(scanModes.Select(m => m.Key));
+            ScanModeDisplayNames = new ObservableCollection<string>(scanModes.Select(m => m.DisplayName));
 
             _achievementsPager = new PaginationManager<AchievementDisplayItem>(
                 DefaultPageSize,
@@ -261,8 +263,9 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public ObservableCollection<string> ScanModeOptions { get; }
+        public ObservableCollection<string> ScanModeDisplayNames { get; }
 
-        private string _selectedScanMode = "Quick";
+        private string _selectedScanMode = ScanModeKeys.Single;
         public string SelectedScanMode
         {
             get => _selectedScanMode;
@@ -847,25 +850,21 @@ namespace PlayniteAchievements.ViewModels
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
-                switch (SelectedScanMode)
+                Guid? singleGameId = null;
+                if (SelectedScanMode == ScanModeKeys.Single)
                 {
-                    case "Quick":
-                        await _achievementManager.StartManagedQuickRefreshAsync();
-                        break;
-                    case "Full":
-                        await _achievementManager.StartManagedRebuildAsync();
-                        break;
-                    case "Installed":
-                        await ScanGamesAsync(g => g.IsInstalled == true);
-                        break;
-                    case "Favorites":
-                        await ScanGamesAsync(g => g.Favorite);
-                        break;
-                    case "Selected":
-                        await ScanSelectedGamesAsync();
-                        break;
+                    if (SelectedGame?.PlayniteGameId.HasValue == true)
+                    {
+                        singleGameId = SelectedGame.PlayniteGameId.Value;
+                    }
+                    else
+                    {
+                        StatusText = "No game selected in the overview.";
+                        return;
+                    }
                 }
 
+                await _achievementManager.ExecuteScanAsync(SelectedScanMode, singleGameId);
                 await RefreshViewAsync();
             }
             catch (Exception ex)
@@ -878,43 +877,6 @@ namespace PlayniteAchievements.ViewModels
                 IsScanning = false;
                 ProgressPercent = 0;
             }
-        }
-
-        private async System.Threading.Tasks.Task ScanGamesAsync(Func<Game, bool> predicate)
-        {
-            var providers = _achievementManager.GetProviders();
-            var games = _playniteApi.Database.Games
-                .Where(g => g != null)
-                .Where(predicate)
-                .Where(g => providers.Any(p => p.IsCapable(g)))
-                .ToList();
-
-            if (games.Count == 0)
-            {
-                StatusText = "No games found matching the criteria.";
-                return;
-            }
-
-            var gameIds = games.Select(g => g.Id).ToList();
-            await _achievementManager.StartManagedScanAsync(gameIds);
-        }
-
-        private async System.Threading.Tasks.Task ScanSelectedGamesAsync()
-        {
-            var providers = _achievementManager.GetProviders();
-            var selectedGames = _playniteApi.MainView.SelectedGames?
-                .Where(g => g != null)
-                .Where(g => providers.Any(p => p.IsCapable(g)))
-                .ToList();
-
-            if (selectedGames == null || selectedGames.Count == 0)
-            {
-                StatusText = "No games selected in Playnite.";
-                return;
-            }
-
-            var gameIds = selectedGames.Select(g => g.Id).ToList();
-            await _achievementManager.StartManagedScanAsync(gameIds);
         }
 
         private void NavigateToGame(GameOverviewItem game)
@@ -1398,6 +1360,9 @@ namespace PlayniteAchievements.ViewModels
 
         private void ApplyLeftFilters()
         {
+            // Preserve selection across filter updates
+            Guid? selectedGameId = SelectedGame?.PlayniteGameId;
+
             var filtered = _allGamesOverview.AsEnumerable();
 
             // Search filter
@@ -1428,6 +1393,16 @@ namespace PlayniteAchievements.ViewModels
             _filteredGamesOverview = filtered.ToList();
             _overviewPager.SetSourceItems(_filteredGamesOverview);
             RecalculateOverviewStats();
+
+            // Restore selection by finding the game with matching PlayniteGameId
+            if (selectedGameId.HasValue)
+            {
+                var restored = GamesOverview.FirstOrDefault(g => g.PlayniteGameId == selectedGameId.Value);
+                if (restored != null)
+                {
+                    SelectedGame = restored;
+                }
+            }
         }
 
         private void ApplyRightFilters()
