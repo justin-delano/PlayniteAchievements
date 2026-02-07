@@ -51,7 +51,7 @@ namespace PlayniteAchievements.ViewModels
             UpdateTimelineData();
         }
 
-        private TimelineRange _timelineRange = TimelineRange.FourteenDays;
+        private TimelineRange _timelineRange = TimelineRange.OneYear;
         public TimelineRange TimelineRange
         {
             get => _timelineRange;
