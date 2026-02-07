@@ -1415,16 +1415,36 @@
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
 
-                                    <!-- Date -->
+                                    <!-- Date / Progress -->
                                     <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding UnlockTimeText}"
-                                                           VerticalAlignment="Center"
-                                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                                           Foreground="{DynamicResource TextBrush}"
-                                                           Opacity="0.7"
-                                                           Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
+                                                <Grid>
+                                                    <!-- Unlock time for unlocked achievements -->
+                                                    <TextBlock Text="{Binding UnlockTimeText}"
+                                                               VerticalAlignment="Center"
+                                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               Opacity="0.7"
+                                                               Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
+                                                    <!-- Progress bar for locked achievements with progress -->
+                                                    <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}">
+                                                        <Grid Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}">
+                                                            <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
+                                                                         Minimum="0" Maximum="100"
+                                                                         Height="18"
+                                                                         Background="{DynamicResource ControlBackgroundBrush}"
+                                                                         Foreground="{DynamicResource HighlightGlyphBrush}"/>
+                                                            <TextBlock Text="{Binding ProgressText, Mode=OneWay}"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"
+                                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                                       FontSize="{DynamicResource FontSizeSmall}"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="White"/>
+                                                        </Grid>
+                                                    </Grid>
+                                                </Grid>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
