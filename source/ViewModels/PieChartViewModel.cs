@@ -15,6 +15,10 @@ namespace PlayniteAchievements.ViewModels
         public SeriesCollection PieSeries { get; } = new SeriesCollection();
         public ObservableCollection<LegendItem> LegendItems { get; } = new ObservableCollection<LegendItem>();
 
+        // Consistent transparent locked color for all pie charts
+        private static readonly Color LockedTransparent = Color.FromArgb(0, 102, 102, 102);
+        private const string LockedLegendColor = "#666666";
+
         /// <summary>
         /// Sets the pie chart data for Games completion (Perfect vs Incomplete).
         /// </summary>
@@ -29,21 +33,10 @@ namespace PlayniteAchievements.ViewModels
 
             var dataPoints = new List<(string Label, int Count, string IconKey, Color Color)>();
             dataPoints.Add((perfectLabel, perfectGames, "BadgePerfectGame", Color.FromRgb(33, 150, 243)));
-            // Incomplete/locked not shown in pie chart (transparent), but added to legend below
+            if (incomplete > 0)
+                dataPoints.Add((incompleteLabel, incomplete, "BadgeLocked", LockedTransparent));
 
             ApplyMinimumVisibilityRule(dataPoints);
-
-            // Add incomplete/locked to legend only (not shown in pie chart)
-            if (incomplete > 0)
-            {
-                LegendItems.Add(new LegendItem
-                {
-                    Label = incompleteLabel,
-                    Count = incomplete,
-                    IconKey = "BadgeLocked",
-                    ColorHex = "#666666"
-                });
-            }
         }
 
         /// <summary>
@@ -60,24 +53,13 @@ namespace PlayniteAchievements.ViewModels
             dataPoints.Add((rareLabel, rare, "BadgeGoldPentagon", Color.FromRgb(255, 193, 7)));
             dataPoints.Add((uncommonLabel, uncommon, "BadgeSilverSquare", Color.FromRgb(158, 158, 158)));
             dataPoints.Add((commonLabel, common, "BadgeBronzeTriangle", Color.FromRgb(139, 69, 19)));
-            // Locked not shown in pie chart (transparent), but added to legend below
+            if (locked > 0)
+                dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent));
 
             // Filter to only include non-zero values
             dataPoints = dataPoints.Where(d => d.Count > 0).ToList();
 
             ApplyMinimumVisibilityRule(dataPoints);
-
-            // Add locked to legend only (not shown in pie chart)
-            if (locked > 0)
-            {
-                LegendItems.Add(new LegendItem
-                {
-                    Label = lockedLabel,
-                    Count = locked,
-                    IconKey = "BadgeLocked",
-                    ColorHex = "#616161"
-                });
-            }
         }
 
         /// <summary>
@@ -126,21 +108,10 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            // Locked is not shown in pie chart (transparent), but added to legend below
+            if (totalLocked > 0)
+                dataPoints.Add((lockedLabel, totalLocked, "BadgeLocked", LockedTransparent));
 
             ApplyMinimumVisibilityRule(dataPoints);
-
-            // Add locked to legend only (not shown in pie chart)
-            if (totalLocked > 0)
-            {
-                LegendItems.Add(new LegendItem
-                {
-                    Label = lockedLabel,
-                    Count = totalLocked,
-                    IconKey = "BadgeLocked",
-                    ColorHex = "#616161"
-                });
-            }
         }
 
         private void ApplyMinimumVisibilityRule(List<(string Label, int Count, string IconKey, Color Color)> dataPoints)
@@ -198,12 +169,17 @@ namespace PlayniteAchievements.ViewModels
                 });
 
                 // Add to legend (always show, even if count is 0)
+                // Use consistent legend color for locked items ( BadgeLocked icon)
+                string legendColor = dataPoints[i].IconKey == "BadgeLocked"
+                    ? LockedLegendColor
+                    : $"#{dataPoints[i].Color.R:X2}{dataPoints[i].Color.G:X2}{dataPoints[i].Color.B:X2}";
+
                 LegendItems.Add(new LegendItem
                 {
                     Label = dataPoints[i].Label,
                     Count = dataPoints[i].Count,
                     IconKey = dataPoints[i].IconKey,
-                    ColorHex = $"#{dataPoints[i].Color.R:X2}{dataPoints[i].Color.G:X2}{dataPoints[i].Color.B:X2}"
+                    ColorHex = legendColor
                 });
             }
         }
