@@ -13,16 +13,11 @@ namespace PlayniteAchievements.ViewModels
         private readonly AchievementManager _achievementManager;
         private readonly ILogger _logger;
 
-        private bool _isScanning;
         private double _progressPercent;
         private string _progressMessage;
         private bool _isComplete;
 
-        public bool IsScanning
-        {
-            get => _isScanning;
-            set => SetValue(ref _isScanning, value);
-        }
+        public bool IsScanning => _achievementManager.IsRebuilding;
 
         public double ProgressPercent
         {
@@ -54,6 +49,8 @@ namespace PlayniteAchievements.ViewModels
 
         public string ScanRunningNote => ResourceProvider.GetString("LOCPlayAch_Progress_ScanRunningNote");
 
+        public string WindowTitle => ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
+
         public ICommand HideCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand ContinueCommand { get; }
@@ -64,10 +61,9 @@ namespace PlayniteAchievements.ViewModels
             _logger = logger;
 
             HideCommand = new RelayCommand(_ => HideWindow());
-            CancelCommand = new RelayCommand(_ => CancelScan(), _ => IsScanning);
+            CancelCommand = new RelayCommand(_ => CancelScan(), _ => _achievementManager.IsRebuilding);
             ContinueCommand = new RelayCommand(_ => Continue());
 
-            IsScanning = _achievementManager.IsRebuilding;
             IsComplete = false;
 
             var lastReport = _achievementManager.GetLastRebuildProgress();
@@ -87,13 +83,16 @@ namespace PlayniteAchievements.ViewModels
         {
             if (report == null) return;
 
-            IsScanning = _achievementManager.IsRebuilding;
             ProgressPercent = CalculatePercent(report);
             ProgressMessage = report.Message ?? string.Empty;
 
+            // Raise property change for IsScanning to update button visibility
+            OnPropertyChanged(nameof(IsScanning));
+            OnPropertyChanged(nameof(ShowInProgressButtons));
+            OnPropertyChanged(nameof(ShowCompleteButtons));
+
             if (report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps))
             {
-                IsScanning = false;
                 IsComplete = true;
             }
             else if (ProgressPercent >= 100)
