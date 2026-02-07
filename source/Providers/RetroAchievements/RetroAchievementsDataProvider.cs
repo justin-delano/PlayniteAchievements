@@ -32,7 +32,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
         }
-        public string ProviderName => "RetroAchievements";
+        public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_RetroAchievements");
 
         /// <summary>
         /// Checks if RetroAchievements authentication is properly configured.

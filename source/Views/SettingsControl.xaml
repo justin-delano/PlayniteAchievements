@@ -463,7 +463,7 @@
             </TabItem>
 
             <!-- ================== TAB: STEAM SETTINGS ================== -->
-            <TabItem x:Name="SteamTab" Header="{DynamicResource LOCPlayAch_Settings_TabSteam}">
+            <TabItem x:Name="SteamTab" Header="{DynamicResource LOCPlayAch_Provider_Steam}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">
@@ -664,7 +664,7 @@
             </TabItem>
 
             <!-- ================== TAB: RETROACHIEVEMENTS SETTINGS ================== -->
-            <TabItem x:Name="RetroAchievementsTab" Header="{DynamicResource LOCPlayAch_Settings_TabRetroAchievements}">
+            <TabItem x:Name="RetroAchievementsTab" Header="{DynamicResource LOCPlayAch_Provider_RetroAchievements}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">

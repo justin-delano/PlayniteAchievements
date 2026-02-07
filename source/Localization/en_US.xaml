@@ -47,6 +47,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_TabRetroAchievements">RetroAchievements</sys:String>
 
     <!-- ================================================================= -->
+    <!-- PROVIDERS                                                          -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
+
+    <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
@@ -283,16 +289,15 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Landing_Title">Welcome to Playnite Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configure Your Accounts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to Steam or RetroAchievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_SettingsDiagramTitle">How to Configure:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your providers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_SettingsDiagramTitle">How to Configure Providers:</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavInstructions">Navigate to the plugin settings:</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavSettings">Settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavAddons">Addons</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavExtensionSettings">Extension Settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavGeneric">Generic</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NavPluginName">Playnite Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NavThenConfigure">Then configure Steam or RetroAchievements credentials in the settings tabs.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_RefreshAfterConfig">Save your settings and the status will update below.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NavThenConfigure">Then configure credentials in the settings tabs.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsScanTitle">Ready to Scan</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsScanMessage">Your credentials are configured. Begin your first scan to track achievements across your library.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_BeginScan">Begin Scan</sys:String>

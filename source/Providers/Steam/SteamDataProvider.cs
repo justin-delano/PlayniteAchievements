@@ -47,7 +47,7 @@ namespace PlayniteAchievements.Providers.Steam
             _scanner = new SteamScanner(settings, steamClient, sessionManager, apiHelper, api, logger);
         }
 
-        public string ProviderName => "Steam";
+        public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
 
         public Guid PlatformPluginId => SteamPluginId;
 
