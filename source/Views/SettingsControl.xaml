@@ -594,14 +594,17 @@
 
                                         <StackPanel>
                                             <!-- Web Auth Section -->
-                                            <Grid Margin="0,0,0,14">
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
+                                            <StackPanel Margin="0,0,0,14">
+                                                <!-- Section Label -->
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SteamWebAuth}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Opacity="0.8"
+                                                           Margin="0,0,0,8"/>
 
                                                 <!-- Status Row -->
-                                                <Grid Grid.Row="0" Margin="0,0,0,10">
+                                                <Grid Margin="0,0,0,10">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="*"/>
@@ -644,7 +647,7 @@
                                                 </Grid>
 
                                                 <!-- Buttons Row (left-aligned) -->
-                                                <StackPanel Grid.Row="1" Orientation="Horizontal">
+                                                <StackPanel Orientation="Horizontal">
                                                     <Button Content="{DynamicResource LOCPlayAch_Settings_CheckSteamAuth}"
                                                             Style="{StaticResource SteamAuthActionButtonStyle}"
                                                             Click="SteamAuth_Check_Click"
@@ -661,7 +664,25 @@
                                                             Click="SteamAuth_Clear_Click"
                                                             Padding="14,6"/>
                                                 </StackPanel>
-                                            </Grid>
+
+                                                <!-- Progress bar under buttons -->
+                                                <ProgressBar Height="3"
+                                                             Margin="0,8,0,0"
+                                                             IsIndeterminate="True"
+                                                             Foreground="#06FFA5">
+                                                    <ProgressBar.Style>
+                                                        <Style TargetType="ProgressBar">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding SteamAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                             Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ProgressBar.Style>
+                                                </ProgressBar>
+                                            </StackPanel>
 
                                             <!-- Separator -->
                                             <Border Height="1"
@@ -670,24 +691,15 @@
                                                     Margin="0,0,0,14"/>
 
                                             <!-- API Key Section -->
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-
-                                                <TextBlock Grid.Row="0"
-                                                           Text="{DynamicResource LOCPlayAch_Settings_SteamApiKey}"
+                                            <StackPanel>
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SteamApiKey}"
                                                            Foreground="{DynamicResource TextBrush}"
                                                            Margin="0,0,0,6"/>
 
-                                                <TextBox Grid.Row="1"
-                                                         Text="{Binding Persisted.SteamApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                                <TextBox Text="{Binding Persisted.SteamApiKey, UpdateSourceTrigger=PropertyChanged}"
                                                          Margin="0,0,0,6"/>
 
-                                                <TextBlock Grid.Row="1"
-                                                           Margin="0,26,0,0"
-                                                           Style="{StaticResource MutedTextStyle}">
+                                                <TextBlock Style="{StaticResource MutedTextStyle}">
                                                     <Run Text="{DynamicResource LOCPlayAch_Settings_SteamApiKeyHint}" />
                                                     <Run Text=" " />
                                                     <Hyperlink NavigateUri="https://steamcommunity.com/dev/apikey"
@@ -695,57 +707,49 @@
                                                         <Run Text="steamcommunity.com/dev/apikey" />
                                                     </Hyperlink>
                                                 </TextBlock>
-                                            </Grid>
+                                            </StackPanel>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
 
-                                <!-- Progress bar below unified box -->
-                                <Grid Margin="180,6,0,0">
-                                    <ProgressBar Height="3"
-                                                 IsIndeterminate="True"
-                                                 Foreground="#06FFA5">
-                                        <ProgressBar.Style>
-                                            <Style TargetType="ProgressBar">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding SteamAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                 Value="True">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </ProgressBar.Style>
-                                    </ProgressBar>
-                                </Grid>
+                                <!-- Steam User ID (at bottom, read-only tint) -->
+                                <Border Background="#10000000"
+                                        CornerRadius="6"
+                                        Padding="12"
+                                        Margin="0,0,0,0">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="168"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
 
-                                <!-- Steam User ID (at bottom) -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="180"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                                   Text="{DynamicResource LOCPlayAch_Label_SteamUserId}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   VerticalAlignment="Center"
+                                                   Opacity="0.7"/>
 
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Label_SteamUserId}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"/>
+                                            <TextBox Grid.Row="0" Grid.Column="1"
+                                                     Text="{Binding Persisted.SteamUserId, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsReadOnly="True"
+                                                 VerticalAlignment="Center"
+                                                 BorderThickness="0"
+                                                 Background="Transparent"
+                                                 Foreground="{DynamicResource TextBrush}"
+                                                 Opacity="0.6"/>
 
-                                        <TextBox Grid.Row="0" Grid.Column="1"
-                                                 Text="{Binding Persisted.SteamUserId, UpdateSourceTrigger=PropertyChanged}"
-                                             IsReadOnly="True"
-                                             VerticalAlignment="Center"/>
-
-                                    <TextBlock Grid.Row="1" Grid.Column="1"
-                                               Margin="0,6,0,0"
-                                               Style="{StaticResource MutedTextStyle}">
-                                        <Run Text="{DynamicResource LOCPlayAch_Label_SteamUserId_Help}" />
-                                    </TextBlock>
-                                </Grid>
+                                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                                   Margin="0,6,0,0"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Opacity="0.5">
+                                            <Run Text="{DynamicResource LOCPlayAch_Label_SteamUserId_Help}" />
+                                        </TextBlock>
+                                    </Grid>
+                                </Border>
                             </StackPanel>
                         </Border>
 

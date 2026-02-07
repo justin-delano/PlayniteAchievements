@@ -95,6 +95,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Status_ApiKeyNeeded">Steam Web API key required</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_WebAuthNeeded">Web authentication required</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamAuth">Steam Authentication</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamWebAuth">Steam Web Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId">Steam User ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId_Help">Your 64-bit Steam ID. This is automatically detected when you authenticate.</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
