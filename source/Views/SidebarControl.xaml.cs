@@ -2,7 +2,6 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
@@ -16,6 +15,7 @@ namespace PlayniteAchievements.Views
         private readonly ILogger _logger;
         private readonly AchievementManager _achievementManager;
         private bool _isActive;
+        private bool _ignoreNextSelectionChange;
 
         public SidebarControl()
         {
@@ -111,7 +111,17 @@ namespace PlayniteAchievements.Views
         {
             if (_viewModel == null) return;
 
-            if (sender is DataGrid grid && grid.SelectedItem is GameOverviewItem item)
+            if (!(sender is DataGrid grid)) return;
+
+            // Skip selection update if navigating via game name button
+            if (_ignoreNextSelectionChange)
+            {
+                _ignoreNextSelectionChange = false;
+                grid.SelectedItem = null;
+                return;
+            }
+
+            if (grid.SelectedItem is GameOverviewItem item)
             {
                 _viewModel.SelectedGame = item;
             }
@@ -129,33 +139,12 @@ namespace PlayniteAchievements.Views
         {
             // Stop event from bubbling to DataGrid row
             e.Handled = true;
-
-            // Clear the DataGrid selection to cancel the filter after navigation completes
-            if (sender is Button button)
-            {
-                var dataGrid = FindParent<DataGrid>(button);
-                if (dataGrid != null)
-                {
-                    // Use Dispatcher to ensure selection clears after command executes
-                    Dispatcher.BeginInvoke(new Action(() =>
-                    {
-                        dataGrid.SelectedItem = null;
-                    }), System.Windows.Threading.DispatcherPriority.Input);
-                }
-            }
         }
 
-        // Helper to find parent visual element
-        private static T FindParent<T>(DependencyObject child) where T : DependencyObject
+        private void GameNameButton_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            DependencyObject parent = VisualTreeHelper.GetParent(child);
-            while (parent != null)
-            {
-                if (parent is T result)
-                    return result;
-                parent = VisualTreeHelper.GetParent(parent);
-            }
-            return null;
+            // Set flag to prevent SelectionChanged from updating the view
+            _ignoreNextSelectionChange = true;
         }
     }
 }
