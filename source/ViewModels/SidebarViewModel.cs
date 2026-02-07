@@ -80,8 +80,7 @@ namespace PlayniteAchievements.ViewModels
 
             // Initialize scan mode options from service
             var scanModes = _achievementManager.GetScanModes();
-            ScanModeOptions = new ObservableCollection<string>(scanModes.Select(m => m.Key));
-            ScanModeDisplayNames = new ObservableCollection<string>(scanModes.Select(m => m.DisplayName));
+            ScanModes = new ObservableCollection<ScanMode>(scanModes);
 
             _achievementsPager = new PaginationManager<AchievementDisplayItem>(
                 DefaultPageSize,
@@ -262,8 +261,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public ObservableCollection<string> ScanModeOptions { get; }
-        public ObservableCollection<string> ScanModeDisplayNames { get; }
+        public ObservableCollection<ScanMode> ScanModes { get; }
 
         private string _selectedScanMode = ScanModeKeys.Single;
         public string SelectedScanMode

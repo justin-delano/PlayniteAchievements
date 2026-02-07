@@ -411,8 +411,10 @@
                 <StackPanel Orientation="Horizontal"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center">
-                    <ComboBox ItemsSource="{Binding ScanModeOptions}"
-                              SelectedItem="{Binding SelectedScanMode}"
+                    <ComboBox ItemsSource="{Binding ScanModes}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="Key"
+                              SelectedValue="{Binding SelectedScanMode}"
                               Width="100"
                               Margin="0,0,8,0"
                               VerticalContentAlignment="Center"/>
