@@ -611,7 +611,7 @@
 
                         <DataGrid Grid.Row="0"
                             ItemsSource="{Binding GamesOverview}"
-                            SelectedItem="{Binding SelectedGame}"
+                            SelectedItem="{Binding SelectedGame, Mode=OneWay}"
                             SelectionChanged="GamesOverview_SelectionChanged"
                             AutoGenerateColumns="False"
                             IsReadOnly="True"
