@@ -91,9 +91,14 @@ namespace PlayniteAchievements.Views
             _viewModel?.ClearSearch();
         }
 
-        private void ClearOverviewSearch_Click(object sender, RoutedEventArgs e)
+        private void ClearLeftSearch_Click(object sender, RoutedEventArgs e)
         {
-            _viewModel?.ClearOverviewSearch();
+            _viewModel?.ClearLeftSearch();
+        }
+
+        private void ClearRightSearch_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel?.ClearRightSearch();
         }
 
         private void ClearGameSelection_Click(object sender, RoutedEventArgs e)

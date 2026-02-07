@@ -200,6 +200,43 @@
                 <Setter Property="Margin" Value="0,0,6,0"/>
             </Style>
 
+            <!-- Game name button style with hover effect -->
+            <Style x:Key="GameNameButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="6,0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <TextBlock Text="{TemplateBinding Content}"
+                                       VerticalAlignment="Center"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <TextBlock Text="{TemplateBinding Content}"
+                                               VerticalAlignment="Center"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource HighlightGlyphBrush}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
             <!-- Progress bar style for games -->
             <Style x:Key="GameProgressBar" TargetType="ProgressBar">
                 <Setter Property="Height" Value="16"/>
@@ -370,16 +407,18 @@
                                Margin="12,0,0,0"/>
                 </StackPanel>
 
-                <!-- Center: Scan buttons -->
+                <!-- Center: Scan controls -->
                 <StackPanel Orientation="Horizontal"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center">
-                    <Button Content="{DynamicResource LOCPlayAch_Button_QuickScan}"
-                            Command="{Binding QuickScanCommand}"
-                            Style="{StaticResource ScanButtonStyle}"/>
+                    <ComboBox ItemsSource="{Binding ScanModeOptions}"
+                              SelectedItem="{Binding SelectedScanMode}"
+                              Width="100"
+                              Margin="0,0,8,0"
+                              VerticalContentAlignment="Center"/>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Button_ScanAll}"
-                            Command="{Binding ScanAllCommand}"
+                    <Button Content="{DynamicResource LOCPlayAch_Button_Scan}"
+                            Command="{Binding ScanCommand}"
                             Style="{StaticResource ScanButtonStyle}"/>
 
                     <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
@@ -430,32 +469,47 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Search -->
+                        <!-- Left Search: Games Overview -->
                         <Grid Grid.Column="0">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Column="0"
-                                       Text="{DynamicResource LOCPlayAch_Overview_Search}"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,8,0"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Opacity="0.7"/>
-
-                            <TextBox Grid.Column="1"
-                                     Text="{Binding OverviewSearchText, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
                                      VerticalContentAlignment="Center"
-                                     Padding="6,4"/>
+                                     Padding="6,4"
+                                     Watermark="Search games..."/>
 
-                            <Button Grid.Column="2"
+                            <ComboBox Grid.Column="1"
+                                      ItemsSource="{Binding ProviderFilterOptions}"
+                                      SelectedItem="{Binding SelectedProviderFilter}"
+                                      Width="100"
+                                      Margin="4,0,0,0"
+                                      VerticalContentAlignment="Center"/>
+
+                            <CheckBox Grid.Column="2" Content="Hide No Unlocks"
+                                      IsChecked="{Binding HideGamesWithNoUnlocked}"
+                                      VerticalAlignment="Center"
+                                      Margin="8,0,0,0"/>
+
+                            <CheckBox Grid.Column="3" Content="Hide Unplayed"
+                                      IsChecked="{Binding HideUnplayedGames}"
+                                      VerticalAlignment="Center"
+                                      Margin="8,0,0,0"
+                                      Visibility="{Binding IgnoreUnplayedGames, Converter={StaticResource InverseBoolToVis}}"/>
+
+                            <Button Grid.Column="4"
                                     Content="x"
-                                    Click="ClearOverviewSearch_Click"
+                                    Click="ClearLeftSearch_Click"
                                     Width="24"
                                     Margin="4,0,0,0"
                                     Padding="0">
@@ -463,10 +517,10 @@
                                     <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                         <Setter Property="Visibility" Value="Visible"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding OverviewSearchText}" Value="">
+                                            <DataTrigger Binding="{Binding LeftSearchText}" Value="">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding OverviewSearchText}" Value="{x:Null}">
+                                            <DataTrigger Binding="{Binding LeftSearchText}" Value="{x:Null}">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -475,17 +529,48 @@
                             </Button>
                         </Grid>
 
-                        <!-- Filter checkboxes -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Overview_HideNoUnlocks}"
-                                      IsChecked="{Binding HideGamesWithNoUnlocked}"
-                                      VerticalAlignment="Center"
-                                      Margin="0,0,16,0"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Overview_HideUnplayed}"
-                                      IsChecked="{Binding HideUnplayedGames}"
-                                      VerticalAlignment="Center"
-                                      Visibility="{Binding IgnoreUnplayedGames, Converter={StaticResource InverseBoolToVis}}"/>
-                        </StackPanel>
+                        <!-- Right Search: Achievements (contextual) -->
+                        <Grid Grid.Column="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       Text="Search:"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.7"/>
+
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalContentAlignment="Center"
+                                     Padding="6,4"
+                                     Watermark="Search achievements..."/>
+
+                            <Button Grid.Column="2"
+                                    Content="x"
+                                    Click="ClearRightSearch_Click"
+                                    Width="24"
+                                    Margin="4,0,0,0"
+                                    Padding="0">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RightSearchText}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RightSearchText}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
                     </Grid>
                 </Border>
 
@@ -612,13 +697,14 @@
                             <DataGridTemplateColumn Width="2*" Header="Game" SortMemberPath="GameName" MinWidth="160">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding GameName}"
-                                                VerticalAlignment="Center"
-                                                Margin="6,0"
-                                                Style="{DynamicResource BaseTextBlockStyle}"
-                                                FontWeight="SemiBold"
-                                                Foreground="{DynamicResource TextBrush}"
-                                                TextTrimming="CharacterEllipsis"/>
+                                        <Button Content="{Binding GameName}"
+                                                Command="{Binding DataContext.NavigateToGameCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource GameNameButtonStyle}">
+                                            <Button.ToolTip>
+                                                <ToolTip Content="Open game in library"/>
+                                            </Button.ToolTip>
+                                        </Button>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>

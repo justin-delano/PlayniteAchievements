@@ -485,6 +485,15 @@ namespace PlayniteAchievements.Services
             );
         }
 
+        public Task StartManagedScanAsync(List<Guid> gameIds)
+        {
+            return RunManagedAsync(
+                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
+                payload => ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
+                "Game list scan failed."
+            );
+        }
+
         public void CancelCurrentRebuild()
         {
             _logger.Info($"CancelCurrentRebuild requested.");

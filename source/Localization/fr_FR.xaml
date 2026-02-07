@@ -61,6 +61,16 @@
     <sys:String x:Key="LOCPlayAch_Button_ScanAll">Analyser tout</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Annuler</sys:String>
 
+    <!-- Scan Modes -->
+    <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Rapide</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Full">Complet</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Installé</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Favoris</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Sélectionné</sys:String>
+
+    <!-- Provider Filters -->
+    <sys:String x:Key="LOCPlayAch_Provider_All">Tous</sys:String>
+
     <!-- ================================================================= -->
     <!-- COLUMNS (using common strings)                                    -->
     <!-- ================================================================= -->

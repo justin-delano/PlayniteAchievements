@@ -177,7 +177,8 @@ namespace PlayniteAchievements.Services.Sidebar
                     RareCount = gameRare,
                     UltraRareCount = gameUltraRare,
                     LastPlayed = playniteGame?.LastActivity,
-                    IsPerfect = gameUnlocked == gameTotal && gameTotal > 0
+                    IsPerfect = gameUnlocked == gameTotal && gameTotal > 0,
+                    Provider = gameData.ProviderName ?? "Unknown"
                 });
             }
 

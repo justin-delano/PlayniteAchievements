@@ -12,6 +12,7 @@ using PlayniteAchievements.Services.Sidebar;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
+using Playnite.SDK.Models;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
@@ -50,6 +51,10 @@ namespace PlayniteAchievements.ViewModels
         private readonly PaginationManager<RecentAchievementItem> _recentPager;
         private readonly PaginationManager<AchievementDisplayItem> _selectedGameAchievementsPager;
 
+        private readonly List<RecentAchievementItem> _filteredRecentAchievements = new List<RecentAchievementItem>();
+        private readonly List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
+        private List<string> _availableProviders = new List<string>();
+
 
         public SidebarViewModel(AchievementManager achievementManager, IPlayniteAPI playniteApi, ILogger logger, PlayniteAchievementsSettings settings)
         {
@@ -72,6 +77,9 @@ namespace PlayniteAchievements.ViewModels
             GamesOverview = new BulkObservableCollection<GameOverviewItem>();
             RecentAchievements = new BulkObservableCollection<RecentAchievementItem>();
             SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
+
+            // Initialize scan mode options
+            ScanModeOptions = new ObservableCollection<string> { "Quick", "Full", "Installed", "Favorites", "Selected" };
 
             _achievementsPager = new PaginationManager<AchievementDisplayItem>(
                 DefaultPageSize,
@@ -168,6 +176,8 @@ namespace PlayniteAchievements.ViewModels
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
             CloseViewCommand = new RelayCommand(_ => PlayniteUiProvider.RestoreMainView());
             ClearGameSelectionCommand = new RelayCommand(_ => ClearGameSelection());
+            NavigateToGameCommand = new RelayCommand(param => NavigateToGame(param as GameOverviewItem));
+            ScanCommand = new AsyncCommand(_ => ExecuteScanAsync(), _ => !IsScanning);
 
             // Subscribe to progress events
             _achievementManager.RebuildProgress += OnRebuildProgress;
@@ -202,16 +212,65 @@ namespace PlayniteAchievements.ViewModels
 
         #region Overview Tab Properties
 
-        private string _overviewSearchText = string.Empty;
-        public string OverviewSearchText
+        private string _leftSearchText = string.Empty;
+        public string LeftSearchText
         {
-            get => _overviewSearchText;
+            get => _leftSearchText;
             set
             {
-                if (SetValueAndReturn(ref _overviewSearchText, value ?? string.Empty))
+                if (SetValueAndReturn(ref _leftSearchText, value ?? string.Empty))
                 {
                     OverviewCurrentPage = 1;
-                    ApplyOverviewFilters();
+                    ApplyLeftFilters();
+                }
+            }
+        }
+
+        private string _rightSearchText = string.Empty;
+        public string RightSearchText
+        {
+            get => _rightSearchText;
+            set
+            {
+                if (SetValueAndReturn(ref _rightSearchText, value ?? string.Empty))
+                {
+                    ApplyRightFilters();
+                }
+            }
+        }
+
+        private ObservableCollection<string> _providerFilterOptions;
+        public ObservableCollection<string> ProviderFilterOptions
+        {
+            get => _providerFilterOptions;
+            private set => SetValue(ref _providerFilterOptions, value);
+        }
+
+        private string _selectedProviderFilter = "All";
+        public string SelectedProviderFilter
+        {
+            get => _selectedProviderFilter;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedProviderFilter, value))
+                {
+                    OverviewCurrentPage = 1;
+                    ApplyLeftFilters();
+                }
+            }
+        }
+
+        public ObservableCollection<string> ScanModeOptions { get; }
+
+        private string _selectedScanMode = "Quick";
+        public string SelectedScanMode
+        {
+            get => _selectedScanMode;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedScanMode, value))
+                {
+                    (ScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -597,6 +656,8 @@ namespace PlayniteAchievements.ViewModels
         public ICommand RevealAchievementCommand { get; }
         public ICommand CloseViewCommand { get; }
         public ICommand ClearGameSelectionCommand { get; }
+        public ICommand NavigateToGameCommand { get; }
+        public ICommand ScanCommand { get; }
 
         #endregion
 
@@ -766,9 +827,109 @@ namespace PlayniteAchievements.ViewModels
             SearchText = string.Empty;
         }
 
-        public void ClearOverviewSearch()
+        public void ClearLeftSearch()
         {
-            OverviewSearchText = string.Empty;
+            LeftSearchText = string.Empty;
+        }
+
+        public void ClearRightSearch()
+        {
+            RightSearchText = string.Empty;
+        }
+
+        public async System.Threading.Tasks.Task ExecuteScanAsync()
+        {
+            if (IsScanning) return;
+
+            try
+            {
+                IsScanning = true;
+                ProgressPercent = 0;
+                ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
+
+                switch (SelectedScanMode)
+                {
+                    case "Quick":
+                        await _achievementManager.StartManagedQuickRefreshAsync();
+                        break;
+                    case "Full":
+                        await _achievementManager.StartManagedRebuildAsync();
+                        break;
+                    case "Installed":
+                        await ScanGamesAsync(g => g.IsInstalled == true);
+                        break;
+                    case "Favorites":
+                        await ScanGamesAsync(g => g.IsFavorite == true);
+                        break;
+                    case "Selected":
+                        await ScanSelectedGamesAsync();
+                        break;
+                }
+
+                await RefreshViewAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"{SelectedScanMode} scan failed");
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
+            }
+            finally
+            {
+                IsScanning = false;
+                ProgressPercent = 0;
+            }
+        }
+
+        private async System.Threading.Tasks.Task ScanGamesAsync(Func<Game, bool> predicate)
+        {
+            var providers = _achievementManager.GetProviders();
+            var games = _playniteApi.Database.Games
+                .Where(g => g != null)
+                .Where(predicate)
+                .Where(g => providers.Any(p => p.IsCapable(g)))
+                .ToList();
+
+            if (games.Count == 0)
+            {
+                StatusText = "No games found matching the criteria.";
+                return;
+            }
+
+            var gameIds = games.Select(g => g.Id).ToList();
+            await _achievementManager.StartManagedScanAsync(gameIds);
+        }
+
+        private async System.Threading.Tasks.Task ScanSelectedGamesAsync()
+        {
+            var providers = _achievementManager.GetProviders();
+            var selectedGames = _playniteApi.MainView.SelectedGames?
+                .Where(g => g != null)
+                .Where(g => providers.Any(p => p.IsCapable(g)))
+                .ToList();
+
+            if (selectedGames == null || selectedGames.Count == 0)
+            {
+                StatusText = "No games selected in Playnite.";
+                return;
+            }
+
+            var gameIds = selectedGames.Select(g => g.Id).ToList();
+            await _achievementManager.StartManagedScanAsync(gameIds);
+        }
+
+        private void NavigateToGame(GameOverviewItem game)
+        {
+            if (game == null || !game.PlayniteGameId.HasValue) return;
+
+            try
+            {
+                PlayniteUiProvider.RestoreMainView();
+                _playniteApi.MainView.SelectGame(game.PlayniteGameId.Value);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to navigate to game {game.GameName}");
+            }
         }
 
         #endregion
@@ -802,6 +963,21 @@ namespace PlayniteAchievements.ViewModels
 
             _allGamesOverview = snapshot.GamesOverview ?? new List<GameOverviewItem>();
             _allRecentAchievements = snapshot.RecentAchievements ?? new List<RecentAchievementItem>();
+
+            // Build provider filter options from unique providers
+            var providers = _allGamesOverview
+                .Select(g => g.Provider)
+                .Where(p => !string.IsNullOrEmpty(p))
+                .Distinct()
+                .OrderBy(p => p)
+                .ToList();
+            var providerOptions = new List<string> { "All" };
+            providerOptions.AddRange(providers);
+            ProviderFilterOptions = new ObservableCollection<string>(providerOptions);
+
+            // Initialize filtered lists
+            _filteredRecentAchievements = new List<RecentAchievementItem>(_allRecentAchievements);
+            _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
 
             _totalCount = snapshot.TotalAchievements;
             _unlockedCount = snapshot.TotalUnlocked;
@@ -837,9 +1013,9 @@ namespace PlayniteAchievements.ViewModels
             }
 
             RefreshFilter();
-            ApplyOverviewFilters();
+            ApplyLeftFilters();
 
-            _recentPager.SetSourceItems(_allRecentAchievements);
+            _recentPager.SetSourceItems(_filteredRecentAchievements);
             _recentPager.GoToFirstPage();
             UpdateFilteredStatus();
         }
@@ -1220,15 +1396,21 @@ namespace PlayniteAchievements.ViewModels
 
         // LoadOverviewData removed: overview and recent lists are built via SidebarDataBuilder snapshots.
 
-        private void ApplyOverviewFilters()
+        private void ApplyLeftFilters()
         {
             var filtered = _allGamesOverview.AsEnumerable();
 
             // Search filter
-            if (!string.IsNullOrEmpty(OverviewSearchText))
+            if (!string.IsNullOrEmpty(LeftSearchText))
             {
                 filtered = filtered.Where(g =>
-                    g.GameName?.IndexOf(OverviewSearchText, StringComparison.OrdinalIgnoreCase) >= 0);
+                    g.GameName?.IndexOf(LeftSearchText, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            // Provider filter
+            if (SelectedProviderFilter != "All")
+            {
+                filtered = filtered.Where(g => g.Provider == SelectedProviderFilter);
             }
 
             // Hide games with no unlocked
@@ -1248,11 +1430,46 @@ namespace PlayniteAchievements.ViewModels
             RecalculateOverviewStats();
         }
 
+        private void ApplyRightFilters()
+        {
+            // Contextually filter based on IsGameSelected
+            if (IsGameSelected)
+            {
+                // Filter SelectedGameAchievements
+                var filtered = _allSelectedGameAchievements.AsEnumerable();
+                if (!string.IsNullOrEmpty(RightSearchText))
+                {
+                    filtered = filtered.Where(a =>
+                        (a.DisplayName?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                        (a.Description?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0));
+                }
+                _filteredSelectedGameAchievements = filtered.ToList();
+                _selectedGameAchievementsPager.SetSourceItems(_filteredSelectedGameAchievements);
+            }
+            else
+            {
+                // Filter RecentAchievements
+                var filtered = _allRecentAchievements.AsEnumerable();
+                if (!string.IsNullOrEmpty(RightSearchText))
+                {
+                    filtered = filtered.Where(r =>
+                        (r.GameName?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                        (r.Name?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0));
+                }
+                _filteredRecentAchievements = filtered.ToList();
+                _recentPager.SetSourceItems(_filteredRecentAchievements);
+            }
+        }
+
         private async void LoadSelectedGameAchievements()
         {
+            // Reset right search when selecting a game
+            RightSearchText = string.Empty;
+
             if (SelectedGame == null)
             {
                 _allSelectedGameAchievements = new List<AchievementDisplayItem>();
+                _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
                 _selectedGameAchievementsPager.SetSourceItems(_allSelectedGameAchievements);
                 _selectedGameAchievementsPager.GoToFirstPage();
                 SelectedGameTimeline.SetCounts(null);
@@ -1329,7 +1546,8 @@ namespace PlayniteAchievements.ViewModels
                 }).ConfigureAwait(true);
 
                 _allSelectedGameAchievements = result.items;
-                _selectedGameAchievementsPager.SetSourceItems(_allSelectedGameAchievements);
+                _filteredSelectedGameAchievements = new List<AchievementDisplayItem>(_allSelectedGameAchievements);
+                _selectedGameAchievementsPager.SetSourceItems(_filteredSelectedGameAchievements);
                 _selectedGameAchievementsPager.GoToFirstPage();
 
                 // Prefer snapshot-derived counts if available.
@@ -1350,6 +1568,11 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public void ClearGameSelection()
+        {
+            // Reset right search when clearing selection
+            RightSearchText = string.Empty;
+            SelectedGame = null;
+        }
         {
             SelectedGame = null;
         }
