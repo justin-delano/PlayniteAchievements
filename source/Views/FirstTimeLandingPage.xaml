@@ -33,7 +33,7 @@
 
             <!-- Main Title -->
             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Title}"
-                       FontSize="20"
+                       Style="{DynamicResource BaseTextBlockStyle}"
                        FontWeight="SemiBold"
                        Foreground="{DynamicResource TextBrush}"
                        HorizontalAlignment="Center"
@@ -77,11 +77,14 @@
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
             </StackPanel>
 
+            <!-- Constrained Content Container (middle 50%) -->
+            <StackPanel MaxWidth="180" HorizontalAlignment="Center">
+
             <!-- Provider Status List - Always Visible -->
             <StackPanel Margin="0,0,0,16">
                 <!-- Section Header -->
                 <TextBlock Text="{DynamicResource LOCPlayAch_Landing_ProviderStatus}"
-                           FontSize="11"
+                           FontSize="{DynamicResource FontSizeSmall}"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextBrush}"
                            Opacity="0.7"
@@ -94,7 +97,7 @@
                             <Border Margin="0,0,0,8"
                                     Background="{DynamicResource ControlBackgroundBrush}"
                                     CornerRadius="6"
-                                    Padding="14,12">
+                                    Padding="12,10">
                                 <Border.Effect>
                                     <DropShadowEffect BlurRadius="8"
                                                     ShadowDepth="2"
@@ -124,8 +127,8 @@
                                     <!-- Status Icon -->
                                     <TextBlock Grid.Column="0" Text="{Binding StatusIcon}"
                                                FontFamily="Segoe MDL2 Assets"
-                                               FontSize="18"
-                                               Margin="0,0,12,0"
+                                               FontSize="{DynamicResource FontSize}"
+                                               Margin="0,0,10,0"
                                                VerticalAlignment="Center">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
@@ -145,11 +148,11 @@
                                     <!-- Provider Info -->
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Name}"
-                                                   FontSize="13"
+                                                   Style="{DynamicResource BaseTextBlockStyle}"
                                                    FontWeight="Medium"
                                                    Foreground="{DynamicResource TextBrush}"/>
                                         <TextBlock Text="{Binding StatusSubtitle}"
-                                                   FontSize="10"
+                                                   FontSize="{DynamicResource FontSizeSmall}"
                                                    Foreground="{DynamicResource TextBrush}"
                                                    Opacity="0.6"
                                                    Margin="0,2,0,0"/>
@@ -157,11 +160,11 @@
 
                                     <!-- Status Badge -->
                                     <TextBlock Grid.Column="2" Text="{Binding StatusBadgeText}"
-                                               FontSize="8"
+                                               FontSize="{DynamicResource FontSizeSmall}"
                                                FontWeight="SemiBold"
-                                               Padding="8,3"
+                                               Padding="6,2"
                                                VerticalAlignment="Center"
-                                               Margin="8,0,0,0">
+                                               Margin="6,0,0,0">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
                                                 <Setter Property="Foreground" Value="#666666"/>
@@ -192,16 +195,16 @@
                     <!-- Config Card -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="4"
-                            Padding="18"
-                            Margin="0,0,0,14">
+                            Padding="16"
+                            Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NoAuthTitle}"
-                                       FontSize="15"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
-                                       Margin="0,0,0,6"/>
+                                       Margin="0,0,0,4"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NoAuthMessage}"
-                                       FontSize="12"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.85"/>
@@ -209,19 +212,19 @@
                     </Border>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Landing_SettingsDiagramTitle}"
-                               FontSize="13"
+                               Style="{DynamicResource BaseTextBlockStyle}"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TextBrush}"
-                               Margin="0,12,0,10"/>
+                               Margin="0,10,0,8"/>
 
                     <!-- Navigation Tree - Simple indented list with arrows -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="4"
-                            Padding="16,14"
-                            Margin="0,0,0,8">
+                            Padding="14,12"
+                            Margin="0,0,0,6">
                         <StackPanel>
                             <!-- Playnite icon with arrow pointing down -->
-                            <Grid Margin="0,0,0,12">
+                            <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -229,11 +232,11 @@
                                 </Grid.ColumnDefinitions>
                                 <!-- Playnite icon from executable -->
                                 <Image Grid.Column="0" Source="{Binding PlayniteIconPath}"
-                                       Width="28"
-                                       Height="28"
+                                       Width="24"
+                                       Height="24"
                                        RenderOptions.BitmapScalingMode="HighQuality"
                                        VerticalAlignment="Center"
-                                       Margin="0,0,12,0">
+                                       Margin="0,0,10,0">
                                     <Image.Style>
                                         <Style TargetType="Image">
                                             <Style.Triggers>
@@ -247,11 +250,11 @@
                                 <!-- Fallback: IcoFont Playnite icon if executable icon not available -->
                                 <TextBlock Grid.Column="0" Text="&#xf0a2;"
                                            FontFamily="{DynamicResource FontIcoFont}"
-                                           FontSize="24"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
                                            VerticalAlignment="Center"
-                                           Margin="0,0,12,0">
+                                           Margin="0,0,10,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
                                             <Style.Triggers>
@@ -265,53 +268,59 @@
                                 <!-- Down arrow from IcoFont -->
                                 <TextBlock Grid.Column="1" Text="&#xf0ab;"
                                            FontFamily="{DynamicResource FontIcoFont}"
-                                           FontSize="14"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.5"
                                            VerticalAlignment="Center"
-                                           Margin="0,2,0,0"/>
+                                           Margin="0,0,0,0"/>
                             </Grid>
 
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavInstructions}"
-                                       FontSize="11"
+                                       FontSize="{DynamicResource FontSizeSmall}"
                                        Foreground="{DynamicResource TextBrush}"
                                        Opacity="0.8"
-                                       Margin="0,0,0,12"/>
+                                       Margin="0,0,0,10"/>
 
                             <!-- Navigation tree items -->
                             <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}" FontSize="12"
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavSettings}" FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavSettings}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"/>
                                 </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="20,0,0,4">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}" FontSize="12"
+                                <StackPanel Orientation="Horizontal" Margin="16,0,0,3">
+                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavAddons}" FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavAddons}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"/>
                                 </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="40,0,0,4">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}" FontSize="12"
+                                <StackPanel Orientation="Horizontal" Margin="32,0,0,3">
+                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}" FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"/>
                                 </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="60,0,0,4">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}" FontSize="12"
+                                <StackPanel Orientation="Horizontal" Margin="48,0,0,3">
+                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavGeneric}" FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavGeneric}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"/>
                                 </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="80,0,0,0">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}" FontSize="12"
+                                <StackPanel Orientation="Horizontal" Margin="64,0,0,0">
+                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="#4CC9F0"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavPluginName}" FontSize="12"
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavPluginName}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
                                                FontWeight="SemiBold" Foreground="#4CC9F0"/>
                                 </StackPanel>
                             </StackPanel>
@@ -321,22 +330,15 @@
                     <!-- Configuration hint -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="4"
-                            Padding="14,12"
-                            Margin="0,0,0,8">
+                            Padding="12,10"
+                            Margin="0,0,0,6">
                         <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavThenConfigure}"
-                                   FontSize="11"
+                                   FontSize="{DynamicResource FontSizeSmall}"
                                    Foreground="{DynamicResource TextBrush}"
                                    TextWrapping="Wrap"
                                    Opacity="0.7"/>
                     </Border>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_RefreshAfterConfig}"
-                               FontSize="11"
-                               Foreground="{DynamicResource TextBrush}"
-                               TextWrapping="Wrap"
-                               Opacity="0.65"
-                               FontStyle="Italic"
-                               Margin="0,10,0,0"/>
                 </StackPanel>
 
                 <!-- State 2: Has Auth, No Cache (Needs Scan) -->
@@ -345,42 +347,42 @@
 
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="4"
-                            Padding="18"
-                            Margin="0,0,0,14">
+                            Padding="16"
+                            Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanTitle}"
-                                       FontSize="15"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
-                                       Margin="0,0,0,6"/>
+                                       Margin="0,0,0,4"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanMessage}"
-                                       FontSize="12"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.85"
-                                       Margin="0,0,0,14"/>
+                                       Margin="0,0,0,12"/>
                             <Button Content="{DynamicResource LOCPlayAch_Landing_BeginScan}"
                                     Command="{Binding BeginScanCommand}"
                                     HorizontalAlignment="Center"
-                                    Padding="20,8"
-                                    MinWidth="130"/>
+                                    Padding="16,6"
+                                    MinWidth="110"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Ready indicator -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="4"
-                            Padding="18"
+                            Padding="16"
                             HorizontalAlignment="Center">
                         <StackPanel>
                             <TextBlock Text="&#xE8FB;"
                                        FontFamily="Segoe MDL2 Assets"
-                                       FontSize="32"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
                                        Foreground="#06FFA5"
                                        HorizontalAlignment="Center"
-                                       Margin="0,0,0,6"/>
+                                       Margin="0,0,0,4"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Status_ReadyToScan}"
-                                       FontSize="11"
+                                       FontSize="{DynamicResource FontSizeSmall}"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.65"
@@ -395,58 +397,58 @@
 
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="4"
-                            Padding="18"
-                            Margin="0,0,0,14">
+                            Padding="16"
+                            Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataTitle}"
-                                       FontSize="15"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
-                                       Margin="0,0,0,6"/>
+                                       Margin="0,0,0,4"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataMessage}"
-                                       FontSize="12"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.85"
-                                       Margin="0,0,0,14"/>
+                                       Margin="0,0,0,12"/>
                             <Button Content="{DynamicResource LOCPlayAch_Landing_Continue}"
                                     Command="{Binding ContinueCommand}"
                                     HorizontalAlignment="Center"
-                                    Padding="20,8"
-                                    MinWidth="130"/>
+                                    Padding="16,6"
+                                    MinWidth="110"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Existing data indicator -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="4"
-                            Padding="18"
+                            Padding="16"
                             HorizontalAlignment="Center">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Center"
-                                        Margin="0,0,0,8">
+                                        Margin="0,0,0,6">
                                 <Image Source="{StaticResource BadgePerfectGame}"
-                                       Width="24"
-                                       Height="24"
-                                       Margin="2"
+                                       Width="20"
+                                       Height="20"
+                                       Margin="1"
                                        SnapsToDevicePixels="True"
                                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                                 <Image Source="{StaticResource BadgePlatinumHexagon}"
-                                       Width="24"
-                                       Height="24"
-                                       Margin="2"
+                                       Width="20"
+                                       Height="20"
+                                       Margin="1"
                                        SnapsToDevicePixels="True"
                                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                                 <Image Source="{StaticResource BadgeGoldPentagon}"
-                                       Width="24"
-                                       Height="24"
-                                       Margin="2"
+                                       Width="20"
+                                       Height="20"
+                                       Margin="1"
                                        SnapsToDevicePixels="True"
                                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                             </StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataFound}"
-                                       FontSize="11"
+                                       FontSize="{DynamicResource FontSizeSmall}"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.65"
@@ -454,6 +456,9 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
+
+            <!-- End constrained content container -->
+            </StackPanel>
 
             </Grid>
         </StackPanel>
