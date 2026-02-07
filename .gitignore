@@ -70,3 +70,4 @@ bld/
 # Claude Code
 .claude/
 memory/
+CLAUDE.md
