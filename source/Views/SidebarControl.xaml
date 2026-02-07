@@ -352,16 +352,10 @@
                 BorderThickness="0,0,0,1"
                 Padding="16,12,16,12">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
                 <!-- Left: Back button and title -->
-                <StackPanel Grid.Column="0"
-                            Orientation="Horizontal"
-                            VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left">
                     <Button Command="{Binding CloseViewCommand}"
                             Content="&#xE72B;"
                             Style="{StaticResource NavigationButtonStyle}"
@@ -377,26 +371,25 @@
                 </StackPanel>
 
                 <!-- Center: Scan buttons -->
-                <StackPanel Grid.Column="1"
-                            Orientation="Horizontal"
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center"
                             HorizontalAlignment="Center">
                     <Button Content="{DynamicResource LOCPlayAch_Button_QuickScan}"
                             Command="{Binding QuickScanCommand}"
                             Style="{StaticResource ScanButtonStyle}"/>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Button_FullScan}"
+                    <Button Content="{DynamicResource LOCPlayAch_Button_ScanAll}"
                             Command="{Binding ScanAllCommand}"
                             Style="{StaticResource ScanButtonStyle}"/>
 
                     <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                             Command="{Binding CancelScanCommand}"
                             Style="{StaticResource ScanButtonStyle}"
-                            Margin="0"
-                            Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}"/>
+                            Margin="0"/>
                 </StackPanel>
 
-                <!-- Right: Empty for balance -->
-                <Grid Grid.Column="2" Width="34"/>
+                <!-- Right: Empty for balance (same width as back button) -->
+                <Grid Width="34" HorizontalAlignment="Right"/>
             </Grid>
         </Border>
 
