@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
@@ -8,7 +9,7 @@ using Playnite.SDK;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class ScanProgressWindow : Window
+    public partial class ScanProgressWindow : UserControl
     {
         private readonly ScanProgressWindowViewModel _viewModel;
         private readonly AchievementManager _achievementManager;
@@ -24,10 +25,15 @@ namespace PlayniteAchievements.Views
 
             InitializeComponent();
 
-            _viewModel.RequestClose += (s, e) => Close();
+            _viewModel.RequestClose += (s, e) => RequestClose?.Invoke(this, EventArgs.Empty);
 
             _achievementManager.RebuildProgress += OnRebuildProgress;
+            Unloaded += (s, e) => _achievementManager.RebuildProgress -= OnRebuildProgress;
         }
+
+        public string WindowTitle => _viewModel.WindowTitle;
+
+        public event EventHandler RequestClose;
 
         private void OnRebuildProgress(object sender, ProgressReport report)
         {
@@ -42,12 +48,6 @@ namespace PlayniteAchievements.Views
                     _logger?.Debug($"Progress UI update error: {ex.Message}");
                 }
             });
-        }
-
-        protected override void OnClosed(EventArgs e)
-        {
-            _achievementManager.RebuildProgress -= OnRebuildProgress;
-            base.OnClosed(e);
         }
     }
 }
