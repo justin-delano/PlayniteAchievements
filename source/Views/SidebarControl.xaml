@@ -23,6 +23,145 @@
             <converters:IntToVisibilityConverter x:Key="IntToVis"/>
             <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
 
+            <!-- Shared LegendItem DataTemplate for all pie charts -->
+            <DataTemplate x:Key="LegendItemTemplate">
+                <StackPanel Orientation="Horizontal" Margin="0,2">
+                    <!-- Badge Icons (stacked, only one visible at a time) -->
+                    <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center">
+                        <!-- Ultra Rare / Platinum -->
+                        <Image Source="{StaticResource BadgePlatinumHexagon}"
+                               Effect="{StaticResource BadgeShadow}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IconKey}" Value="BadgePlatinumHexagon">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                        <!-- Rare / Gold -->
+                        <Image Source="{StaticResource BadgeGoldPentagon}"
+                               Effect="{StaticResource BadgeShadow}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IconKey}" Value="BadgeGoldPentagon">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                        <!-- Uncommon / Silver -->
+                        <Image Source="{StaticResource BadgeSilverSquare}"
+                               Effect="{StaticResource BadgeShadow}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IconKey}" Value="BadgeSilverSquare">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                        <!-- Common / Bronze -->
+                        <Image Source="{StaticResource BadgeBronzeTriangle}"
+                               Effect="{StaticResource BadgeShadow}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IconKey}" Value="BadgeBronzeTriangle">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                        <!-- Perfect Game -->
+                        <Image Source="{StaticResource BadgePerfectGame}"
+                               Effect="{StaticResource BadgeShadow}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IconKey}" Value="BadgePerfectGame">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                        <!-- Locked -->
+                        <Image Source="{StaticResource BadgeLocked}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IconKey}" Value="BadgeLocked">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                        <!-- Provider: Steam -->
+                        <Image Source="{StaticResource ProviderIconSteam}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IconKey}" Value="ProviderIconSteam">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                        <!-- Provider: RetroAchievements -->
+                        <Image Source="{StaticResource ProviderIconRetroAchievements}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IconKey}" Value="ProviderIconRetroAchievements">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
+                    </Grid>
+                    <TextBlock Text="{Binding Count}"
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontSize="{DynamicResource FontSizeSmall}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </DataTemplate>
+
             <Style x:Key="NavigationButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -958,40 +1097,9 @@
                                                   IsHitTestVisible="False"
                                                   Series="{Binding GamesPieChart.PieSeries}"/>
                                     <!-- Custom Games Legend with icons -->
-                                    <StackPanel Grid.Column="1" Margin="6,0,0,0" Orientation="Vertical">
-                                        <!-- Perfect Games -->
-                                        <StackPanel Orientation="Horizontal" Margin="0,2"
-                                                    Visibility="{Binding GamesPieChart.ShowPerfectGames, Converter={StaticResource BoolToVis}}">
-                                            <Image Source="{StaticResource BadgePerfectGame}"
-                                                   Style="{StaticResource RarityIcon}"
-                                                   Effect="{StaticResource BadgeShadow}"
-                                                   Width="18" Height="18"
-                                                   Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding GamesPieChart.PerfectGamesCount}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        <!-- Incomplete -->
-                                        <StackPanel Orientation="Horizontal" Margin="0,2"
-                                                    Visibility="{Binding GamesPieChart.ShowIncomplete, Converter={StaticResource BoolToVis}}">
-                                            <TextBlock Text="&#xef7a;"
-                                                       FontFamily="{DynamicResource FontIcoFont}"
-                                                       FontSize="14"
-                                                       Width="18"
-                                                       TextAlignment="Center"
-                                                       Margin="0,0,6,0"
-                                                       VerticalAlignment="Center"
-                                                       Opacity="0.5"/>
-                                            <TextBlock Text="{Binding GamesPieChart.IncompleteCount}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       Opacity="0.5"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </StackPanel>
+                                    <ItemsControl Grid.Column="1" Margin="6,0,0,0"
+                                                  ItemsSource="{Binding GamesPieChart.LegendItems}"
+                                                  ItemTemplate="{StaticResource LegendItemTemplate}"/>
                                 </Grid>
                             </Grid>
 
@@ -1020,58 +1128,11 @@
                                                   Hoverable="False"
                                                   DataTooltip="{x:Null}"
                                                   IsHitTestVisible="False"
-                                                  Series="{Binding ProviderDistribution.ProviderSeries}"/>
+                                                  Series="{Binding ProviderPieChart.PieSeries}"/>
                                     <!-- Custom Provider Legend with icons -->
                                     <ItemsControl Grid.Column="1" Margin="6,0,0,0"
-                                                  ItemsSource="{Binding ProviderDistribution.LegendItems}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal" Margin="0,2">
-                                                    <!-- Provider icon -->
-                                                    <Image Width="18" Height="18"
-                                                           Source="{Binding IconKey, Converter={StaticResource ResourceKeyToImage}}"
-                                                           Margin="0,0,6,0"
-                                                           VerticalAlignment="Center"
-                                                           RenderOptions.BitmapScalingMode="NearestNeighbor">
-                                                        <Image.Style>
-                                                            <Style TargetType="Image">
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IconKey}" Value="ProviderIconLocked">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Image.Style>
-                                                    </Image>
-                                                    <!-- Lock icon for Locked provider -->
-                                                    <TextBlock Text="&#xef7a;"
-                                                               FontFamily="{DynamicResource FontIcoFont}"
-                                                               FontSize="14"
-                                                               Width="18"
-                                                               TextAlignment="Center"
-                                                               Margin="0,0,6,0"
-                                                               VerticalAlignment="Center"
-                                                               Opacity="0.5">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IconKey}" Value="ProviderIconLocked">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                    <TextBlock Text="{Binding Count}"
-                                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                                               Foreground="{DynamicResource TextBrush}"
-                                                               FontSize="{DynamicResource FontSizeSmall}"
-                                                               VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                                  ItemsSource="{Binding ProviderPieChart.LegendItems}"
+                                                  ItemTemplate="{StaticResource LegendItemTemplate}"/>
                                 </Grid>
                             </Grid>
 
@@ -1102,82 +1163,9 @@
                                                   IsHitTestVisible="False"
                                                   Series="{Binding RarityPieChart.PieSeries}"/>
                                     <!-- Custom Rarity Legend with icons -->
-                                    <StackPanel Grid.Column="1" Margin="6,0,0,0" Orientation="Vertical">
-                                        <!-- Ultra Rare -->
-                                        <StackPanel Orientation="Horizontal" Margin="0,2"
-                                                    Visibility="{Binding RarityPieChart.ShowUltraRare, Converter={StaticResource BoolToVis}}">
-                                            <Image Source="{StaticResource BadgePlatinumHexagon}"
-                                                   Style="{StaticResource RarityIcon}"
-                                                   Effect="{StaticResource BadgeShadow}"
-                                                   Width="18" Height="18"
-                                                   Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding RarityPieChart.UltraRareCount}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        <!-- Rare -->
-                                        <StackPanel Orientation="Horizontal" Margin="0,2"
-                                                    Visibility="{Binding RarityPieChart.ShowRare, Converter={StaticResource BoolToVis}}">
-                                            <Image Source="{StaticResource BadgeGoldPentagon}"
-                                                   Style="{StaticResource RarityIcon}"
-                                                   Effect="{StaticResource BadgeShadow}"
-                                                   Width="18" Height="18"
-                                                   Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding RarityPieChart.RareCount}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        <!-- Uncommon -->
-                                        <StackPanel Orientation="Horizontal" Margin="0,2"
-                                                    Visibility="{Binding RarityPieChart.ShowUncommon, Converter={StaticResource BoolToVis}}">
-                                            <Image Source="{StaticResource BadgeSilverSquare}"
-                                                   Style="{StaticResource RarityIcon}"
-                                                   Effect="{StaticResource BadgeShadow}"
-                                                   Width="18" Height="18"
-                                                   Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding RarityPieChart.UncommonCount}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        <!-- Common -->
-                                        <StackPanel Orientation="Horizontal" Margin="0,2"
-                                                    Visibility="{Binding RarityPieChart.ShowCommon, Converter={StaticResource BoolToVis}}">
-                                            <Image Source="{StaticResource BadgeBronzeTriangle}"
-                                                   Style="{StaticResource RarityIcon}"
-                                                   Effect="{StaticResource BadgeShadow}"
-                                                   Width="18" Height="18"
-                                                   Margin="0,0,6,0"/>
-                                            <TextBlock Text="{Binding RarityPieChart.CommonCount}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                        <!-- Locked -->
-                                        <StackPanel Orientation="Horizontal" Margin="0,2"
-                                                    Visibility="{Binding RarityPieChart.ShowLocked, Converter={StaticResource BoolToVis}}">
-                                            <TextBlock Text="&#xef7a;"
-                                                       FontFamily="{DynamicResource FontIcoFont}"
-                                                       FontSize="14"
-                                                       Width="18"
-                                                       TextAlignment="Center"
-                                                       Margin="0,0,6,0"
-                                                       VerticalAlignment="Center"
-                                                       Opacity="0.5"/>
-                                            <TextBlock Text="{Binding RarityPieChart.LockedCount}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       Opacity="0.5"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </StackPanel>
+                                    <ItemsControl Grid.Column="1" Margin="6,0,0,0"
+                                                  ItemsSource="{Binding RarityPieChart.LegendItems}"
+                                                  ItemTemplate="{StaticResource LegendItemTemplate}"/>
                                 </Grid>
                             </Grid>
                         </Grid>
