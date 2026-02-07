@@ -25,6 +25,7 @@ namespace PlayniteAchievements.Services.Sidebar
         public int TotalUltraRare { get; set; }
         public int PerfectGames { get; set; }
         public double GlobalProgressionPercent { get; set; }
-        public double LaunchedProgressionPercent { get; set; }
+        public Dictionary<string, int> AchievementsByProvider { get; set; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        public int TotalLocked { get; set; }
     }
 }
