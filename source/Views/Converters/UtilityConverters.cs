@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
+using System.Windows;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace PlayniteAchievements.Views.Converters
 {
@@ -51,6 +53,84 @@ namespace PlayniteAchievements.Views.Converters
             }
 
             return values[0];
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converts a resource key string to the actual resource (DrawingImage) from application resources.
+    /// Used for dynamically loading icons based on data binding.
+    /// </summary>
+    public class ResourceKeyToImageSourceConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string resourceKey && !string.IsNullOrEmpty(resourceKey))
+            {
+                try
+                {
+                    return Application.Current.FindResource(resourceKey);
+                }
+                catch
+                {
+                    // Resource not found, return null
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Converts a provider icon key and color hex to a colored DrawingImage.
+    /// Takes IconKey as the binding value and ColorHex as the converter parameter.
+    /// </summary>
+    public class ProviderIconConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values.Length >= 2 &&
+                values[0] is string iconKey &&
+                values[1] is string colorHex &&
+                !string.IsNullOrEmpty(iconKey) &&
+                !string.IsNullOrEmpty(colorHex))
+            {
+                try
+                {
+                    // Try to find a "Geo" + iconName resource (e.g., GeoSteam for ProviderIconSteam)
+                    string geoKey = "Geo" + iconKey.Replace("ProviderIcon", "");
+                    if (Application.Current.FindResource(geoKey) is Geometry geometry)
+                    {
+                        // Parse the color
+                        if (ColorConverter.ConvertFromString(colorHex) is Color color)
+                        {
+                            // Create a new DrawingImage with the color applied
+                            var drawingImage = new DrawingImage();
+                            drawingImage.Drawing = new GeometryDrawing
+                            {
+                                Geometry = geometry,
+                                Brush = new SolidColorBrush(color)
+                            };
+                            drawingImage.Freeze();
+                            return drawingImage;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Fall through to null
+                }
+            }
+            return null;
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

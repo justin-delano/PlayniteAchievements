@@ -48,6 +48,8 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
+        public string ProviderIconKey => "ProviderIconSteam";
+        public string ProviderColorHex => "#B0B0B0";
 
         public Guid PlatformPluginId => SteamPluginId;
 
