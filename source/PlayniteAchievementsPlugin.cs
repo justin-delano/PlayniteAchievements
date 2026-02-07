@@ -105,7 +105,7 @@ namespace PlayniteAchievements
         // AnikiHelper (PlayniteAchievements-based) will call this when available.
         public Task RequestSingleGameScanAsync(Guid playniteGameId)
         {
-            return _achievementService?.StartManagedSingleGameScanAsync(playniteGameId) ?? Task.CompletedTask;
+            return _achievementService?.ExecuteScanAsync(Models.ScanModeKeys.Single, playniteGameId) ?? Task.CompletedTask;
         }
 
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
@@ -274,39 +274,79 @@ namespace PlayniteAchievements
             //     }
             // };
 
-            yield return new GameMenuItem
+            // yield return new GameMenuItem
+            // {
+            //     Description = ResourceProvider.GetString("LOCPlayAch_Menu_ParityTest_Native"),
+            //     MenuSection = "Playnite Achievements",
+            //     Action = (a) =>
+            //     {
+            //         OpenParityTestView(game.Id, ParityTestMode.Native);
+            //     }
+            // };
+
+            // yield return new GameMenuItem
+            // {
+            //     Description = ResourceProvider.GetString("LOCPlayAch_Menu_ParityTest_Compatibility"),
+            //     MenuSection = "Playnite Achievements",
+            //     Action = (a) =>
+            //     {
+            //         OpenParityTestView(game.Id, ParityTestMode.Compatibility);
+            //     }
+            // };
+        }
+
+        public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
+        {
+            yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ParityTest_Native"),
-                MenuSection = "Playnite Achievements",
+                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Quick"),
+                MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    OpenParityTestView(game.Id, ParityTestMode.Native);
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Quick));
                 }
             };
 
-            yield return new GameMenuItem
+            yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ParityTest_Compatibility"),
-                MenuSection = "Playnite Achievements",
+                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Full"),
+                MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    OpenParityTestView(game.Id, ParityTestMode.Compatibility);
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Full));
+                }
+            };
+
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Installed"),
+                MenuSection = "@Playnite Achievements",
+                Action = (a) =>
+                {
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Installed));
+                }
+            };
+
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Favorites"),
+                MenuSection = "@Playnite Achievements",
+                Action = (a) =>
+                {
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Favorites));
+                }
+            };
+
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Selected"),
+                MenuSection = "@Playnite Achievements",
+                Action = (a) =>
+                {
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.LibrarySelected));
                 }
             };
         }
-
-        // public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
-        // {
-        //     yield return new MainMenuItem
-        //     {
-        //         Description = ResourceProvider.GetString("LOCPlayAch_Menu_FullAchievementScan"),
-        //         MenuSection = "@Playnite Achievements",
-        //         Action = (a) =>
-        //         {
-        //             _ = _achievementService.StartManagedRebuildAsync();
-        //         }
-        //     };
-        // }
 
         // === Sidebar ===
 
@@ -354,7 +394,7 @@ namespace PlayniteAchievements
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
             _logger.Info($"Game stopped: {args.Game.Name}. Triggering achievement scan.");
-            _ = _achievementService.StartManagedSingleGameScanAsync(args.Game.Id);
+            _ = _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Single, args.Game.Id);
         }
 
         // === Lifecycle ===
@@ -447,6 +487,36 @@ namespace PlayniteAchievements
         internal void RequestThemeUpdate(Game gameContext)
         {
             _themeUpdateService?.RequestUpdate(gameContext?.Id);
+        }
+
+        private void ShowScanProgressWindowAndRun(Func<Task> scanTask)
+        {
+            try
+            {
+                EnsureWpfFallbackResources();
+
+                var progressWindow = new ScanProgressWindow(_achievementService, _logger);
+
+                progressWindow.Owner = PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+
+                progressWindow.Show();
+
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await scanTask().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex, "Scan task failed");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to show scan progress window");
+            }
         }
 
         public override Control GetGameViewControl(GetGameViewControlArgs args)
@@ -664,7 +734,7 @@ namespace PlayniteAchievements
                 try
                 {
                     _logger.Info($"Detected new game '{game?.Name}' ({game?.GameId}); starting single-game scan.");
-                    await _achievementService.StartManagedSingleGameScanAsync(game.Id).ConfigureAwait(false);
+                    await _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Single, game.Id).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

@@ -66,6 +66,7 @@
     <sys:String x:Key="LOCPlayAch_ScanMode_Full">Complet</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Installé</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Favoris</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Single">Unique</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Sélectionné</sys:String>
 
     <!-- Provider Filters -->
@@ -177,6 +178,8 @@
     <!-- OVERVIEW TAB                                                       -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Overview_Search">Rechercher</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Games">Filtrer les jeux</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Achievements">Filtrer les succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_HideNoUnlocks">Masquer sans succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_HideUnplayed">Masquer non joués</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_PerfectGame">Jeu parfait</sys:String>
@@ -213,7 +216,7 @@
     <sys:String x:Key="LOCPlayAch_Status_LoadingAchievements">Chargement des succès...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Canceled">Analyse annulée.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RebuildComplete">Analyse terminée : {0} jeux analysés</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_SingleGameComplete">Analyse du jeu terminée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_SingleGameComplete">{0}/{1} succès débloqués ({2}%)</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_QuickRefreshComplete">Actualisation rapide terminée : {0} jeux analysés</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_ScanComplete">Analyse terminée !</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_ScanFailed">Échec de l'analyse.</sys:String>
@@ -317,5 +320,12 @@
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configurer dans les paramètres</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeReady">PRÊT</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">CONFIGURATION</sys:String>
+
+    <!-- ================================================================= -->
+    <!-- SCAN PROGRESS WINDOW                                               -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Progress_ScanRunningNote">Vous pouvez toujours consulter la progression dans la barre latérale.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress_ButtonHide">Masquer</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress_ButtonContinue">Continuer</sys:String>
 
 </ResourceDictionary>
