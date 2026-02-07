@@ -89,22 +89,23 @@ namespace PlayniteAchievements.ViewModels
                 var providerName = provider.Key;
                 var count = provider.Value;
 
-                // Look up provider color (no icons yet, so we use empty string)
+                // Look up provider icon and color
                 string colorHex = "#888888";
+                string iconKey = string.Empty;
                 if (providerLookup != null && providerLookup.TryGetValue(providerName, out var metadata))
                 {
                     colorHex = metadata.colorHex;
+                    iconKey = metadata.iconKey ?? string.Empty;
                 }
 
                 // Parse color hex to Color
                 if (ColorConverter.ConvertFromString(colorHex) is Color color)
                 {
-                    // Use empty icon key - no provider icons until you add them
-                    dataPoints.Add((providerName, count, string.Empty, color));
+                    dataPoints.Add((providerName, count, iconKey, color));
                 }
                 else
                 {
-                    dataPoints.Add((providerName, count, string.Empty, Colors.Gray));
+                    dataPoints.Add((providerName, count, iconKey, Colors.Gray));
                 }
             }
 
