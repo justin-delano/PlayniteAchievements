@@ -1,6 +1,6 @@
 using System.Windows.Media;
 
-namespace PlayniteAchievements.Models.Achievement
+namespace PlayniteAchievements.Models.Achievements
 {
     /// <summary>
     /// Helper for determining achievement rarity based on configurable thresholds.
