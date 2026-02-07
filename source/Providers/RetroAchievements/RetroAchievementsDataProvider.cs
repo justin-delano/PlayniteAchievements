@@ -33,6 +33,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
         }
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_RetroAchievements");
+        public string ProviderIconKey => "ProviderIconRetroAchievements";
+        public string ProviderColorHex => "#FFD700";
 
         /// <summary>
         /// Checks if RetroAchievements authentication is properly configured.

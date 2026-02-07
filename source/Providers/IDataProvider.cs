@@ -10,6 +10,8 @@ namespace PlayniteAchievements.Providers
     public interface IDataProvider
     {
         string ProviderName { get; }
+        string ProviderIconKey { get; }
+        string ProviderColorHex { get; }
         bool IsCapable(Game game);
 
         /// <summary>
