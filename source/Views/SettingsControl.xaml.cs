@@ -387,7 +387,7 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                _plugin.ImageService?.Clear();
+                _plugin.ImageService?.ClearDiskCache();
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
                     ResourceProvider.GetString("LOCPlayAch_Settings_ImageCache_Cleared"),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),

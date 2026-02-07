@@ -73,6 +73,11 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
+        public void ClearDiskCache()
+        {
+            _diskService.ClearAllCache();
+        }
+
         private const string GrayPrefix = "gray:";
 
         public Task<BitmapSource> GetAsync(string uri, int decodePixel, CancellationToken cancel)
