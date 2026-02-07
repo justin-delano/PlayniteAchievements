@@ -10,7 +10,7 @@
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource WindowBackgroundBrush}"
-        d:DesignWidth="420">
+        d:DesignWidth="400">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -18,68 +18,52 @@
                 <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Muted text style -->
-            <Style x:Key="MutedTextStyle" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Opacity" Value="0.6"/>
-                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                <Setter Property="TextWrapping" Value="Wrap"/>
+            <!-- Progress bar style matching PerGameControl -->
+            <Style x:Key="GameProgressBar" TargetType="ProgressBar">
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Minimum" Value="0"/>
+                <Setter Property="Maximum" Value="100"/>
+                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ProgressBar">
+                            <Grid>
+                                <Border Background="{TemplateBinding Background}" CornerRadius="2"/>
+                                <Border x:Name="PART_Track"/>
+                                <Border x:Name="PART_Indicator"
+                                        Background="{TemplateBinding Foreground}"
+                                        HorizontalAlignment="Left"
+                                        CornerRadius="2"/>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
-            <!-- Modern button style -->
-            <Style x:Key="ModernActionButton" TargetType="Button"
-                   BasedOn="{StaticResource {x:Type Button}}">
-                <Setter Property="Padding" Value="18,8"/>
-                <Setter Property="MinWidth" Value="90"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Opacity" Value="0.85"/>
-                    </Trigger>
-                    <Trigger Property="IsPressed" Value="True">
-                        <Setter Property="Opacity" Value="0.7"/>
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Progress indicator style -->
-            <Style x:Key="ProgressIndicatorStyle" TargetType="TextBlock">
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Opacity" Value="0.8"/>
-                <Setter Property="Text" Value="{Binding ProgressPercent, StringFormat={}{0:F0}%}"/>
-                <Style.Triggers>
-                    <!-- Complete: show checkmark -->
-                    <DataTrigger Binding="{Binding IsComplete}" Value="True">
-                        <Setter Property="Text" Value="&#xE73E;"/>
-                        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                        <Setter Property="Foreground" Value="#06FFA5"/>
-                        <Setter Property="FontSize" Value="14"/>
-                    </DataTrigger>
-                    <!-- Not scanning and not complete: show X -->
-                    <DataTrigger Binding="{Binding IsScanning}" Value="False">
-                        <Setter Property="Text" Value="&#xE711;"/>
-                        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                        <Setter Property="Foreground" Value="#F72585"/>
-                        <Setter Property="FontSize" Value="14"/>
-                    </DataTrigger>
-                </Style.Triggers>
+            <!-- Scan button style matching SidebarControl -->
+            <Style x:Key="ScanButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Padding" Value="14,6"/>
+                <Setter Property="MinWidth" Value="80"/>
+                <Setter Property="Margin" Value="0,0,6,0"/>
             </Style>
         </ResourceDictionary>
     </Window.Resources>
 
-    <Border Padding="24" Width="420">
+    <Border Background="{DynamicResource ControlBackgroundBrush}"
+            BorderBrush="{DynamicResource NormalBorderBrush}"
+            BorderThickness="1"
+            Padding="20"
+            Width="380">
         <StackPanel>
-            <!-- Header with icon and title -->
-            <Grid Margin="0,0,0,20">
+            <!-- Header -->
+            <Grid Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Trophy Icon -->
+                <!-- Badge Icon -->
                 <Image Grid.Column="0"
                        Source="{StaticResource BadgePlatinumHexagon}"
                        Width="32"
@@ -87,63 +71,53 @@
                        Margin="0,0,12,0"
                        VerticalAlignment="Center"
                        SnapsToDevicePixels="True"
-                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                       RenderOptions.BitmapScalingMode="NearestNeighbor"
+                       Effect="{StaticResource BadgeShadow}"/>
 
                 <!-- Title -->
-                <TextBlock Grid.Column="1"
-                           Text="{DynamicResource LOCPlayAch_Title_PluginName}"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextBrush}"
-                           VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource TextBrush}"/>
+                </StackPanel>
             </Grid>
 
-            <!-- Decorative accent line -->
-            <Border Height="2"
-                    Width="50"
-                    HorizontalAlignment="Left"
-                    Background="#4CC9F0"
-                    CornerRadius="1"
-                    Margin="0,0,0,20"/>
+            <!-- Separator -->
+            <Border Height="1"
+                    Background="{DynamicResource NormalBorderBrush}"
+                    Margin="0,0,0,16"
+                    Opacity="0.5"/>
 
-            <!-- Progress Card -->
-            <Border Background="{DynamicResource ControlBackgroundBrush}"
-                    CornerRadius="8"
-                    Padding="18"
-                    Margin="0,0,0,16">
-                <StackPanel>
-                    <!-- Progress Message -->
-                    <TextBlock Text="{Binding ProgressMessage}"
+            <!-- Progress Section -->
+            <StackPanel Margin="0,0,0,16">
+                <!-- Progress Message -->
+                <TextBlock Text="{Binding ProgressMessage}"
+                           Style="{DynamicResource BaseTextBlockStyle}"
+                           Foreground="{DynamicResource TextBrush}"
+                           Opacity="0.8"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="0,0,0,10"
+                           MinHeight="38"/>
+
+                <!-- Progress Bar with Percentage -->
+                <Grid>
+                    <ProgressBar Value="{Binding ProgressPercent}"
+                                 Style="{StaticResource GameProgressBar}"/>
+                    <TextBlock Text="{Binding ProgressPercent, StringFormat={}{0:F0}%}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
                                Style="{DynamicResource BaseTextBlockStyle}"
-                               Foreground="{DynamicResource TextBrush}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,14"
-                               MinHeight="40"/>
-
-                    <!-- Progress Bar -->
-                    <Grid>
-                        <ProgressBar Value="{Binding ProgressPercent}"
-                                     Maximum="100"
-                                     Height="6"
-                                     Minimum="0">
-                            <ProgressBar.Style>
-                                <Style TargetType="ProgressBar">
-                                    <Setter Property="Foreground" Value="#4CC9F0"/>
-                                </Style>
-                            </ProgressBar.Style>
-                        </ProgressBar>
-
-                        <!-- Scanning indicator -->
-                        <TextBlock Style="{StaticResource ProgressIndicatorStyle}"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
+                               FontWeight="SemiBold"
+                               Foreground="White"/>
+                </Grid>
+            </StackPanel>
 
             <!-- Info Note -->
-            <Border Background="#10000000"
-                    CornerRadius="6"
-                    Padding="12"
-                    Margin="0,0,0,20">
+            <Border Background="{DynamicResource PanelBackgroundBrush}"
+                    CornerRadius="3"
+                    Padding="12,8"
+                    Margin="0,0,0,16">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -154,35 +128,37 @@
                                Text="&#xE897;"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="12"
-                               Foreground="#4CC9F0"
+                               Foreground="{DynamicResource TextBrush}"
+                               Opacity="0.6"
                                VerticalAlignment="Top"
                                Margin="0,0,10,0"/>
 
                     <TextBlock Grid.Column="1"
                                Text="{Binding ScanRunningNote}"
-                               Style="{StaticResource MutedTextStyle}"
-                               VerticalAlignment="Center"/>
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               FontSize="{DynamicResource FontSizeSmall}"
+                               Foreground="{DynamicResource TextBrush}"
+                               Opacity="0.6"
+                               TextWrapping="Wrap"/>
                 </Grid>
             </Border>
 
             <!-- Buttons -->
             <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        Margin="0,8,0,0">
+                        HorizontalAlignment="Right">
                 <Button Content="{DynamicResource LOCPlayAch_Progress_ButtonHide}"
                         Command="{Binding HideCommand}"
-                        Style="{StaticResource ModernActionButton}"
-                        Margin="0,0,8,0"
+                        Style="{StaticResource ScanButtonStyle}"
                         Visibility="{Binding ShowInProgressButtons, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                 <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                         Command="{Binding CancelCommand}"
-                        Style="{StaticResource ModernActionButton}"
+                        Style="{StaticResource ScanButtonStyle}"
                         Visibility="{Binding ShowInProgressButtons, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                 <Button Content="{DynamicResource LOCPlayAch_Progress_ButtonContinue}"
                         Command="{Binding ContinueCommand}"
-                        Style="{StaticResource ModernActionButton}"
+                        Style="{StaticResource ScanButtonStyle}"
                         IsDefault="True"
                         Visibility="{Binding ShowCompleteButtons, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </StackPanel>
