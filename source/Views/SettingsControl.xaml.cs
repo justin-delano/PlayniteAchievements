@@ -76,19 +76,6 @@ namespace PlayniteAchievements.Views
             set => SetValue(SteamFullyConfiguredProperty, value);
         }
 
-        public static readonly DependencyProperty SteamAuthRequirementsProperty =
-            DependencyProperty.Register(
-                nameof(SteamAuthRequirements),
-                typeof(string),
-                typeof(SettingsControl),
-                new PropertyMetadata("Requires: Steam Web API key and web authentication"));
-
-        public string SteamAuthRequirements
-        {
-            get => (string)GetValue(SteamAuthRequirementsProperty);
-            set => SetValue(SteamAuthRequirementsProperty, value);
-        }
-
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly SteamHTTPClient _steam;
@@ -204,7 +191,6 @@ namespace PlayniteAchievements.Views
             var fullyConfigured = hasApiKey && webAuthSuccessful;
 
             SetSteamFullyConfigured(fullyConfigured);
-            SetSteamAuthRequirements(GetAuthRequirementsText(hasApiKey, webAuthSuccessful));
 
             // Set status message based on combined state
             if (fullyConfigured)
@@ -222,26 +208,6 @@ namespace PlayniteAchievements.Views
             else
             {
                 SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_WebAuthNeeded"));
-            }
-        }
-
-        private string GetAuthRequirementsText(bool hasApiKey, bool webAuthSuccessful)
-        {
-            if (hasApiKey && webAuthSuccessful)
-            {
-                return string.Empty; // No requirements to show when fully configured
-            }
-            else if (!hasApiKey && !webAuthSuccessful)
-            {
-                return "Requires: Steam Web API key and web authentication";
-            }
-            else if (!hasApiKey)
-            {
-                return "Requires: Steam Web API key";
-            }
-            else
-            {
-                return "Requires: Web authentication";
             }
         }
 
@@ -266,18 +232,6 @@ namespace PlayniteAchievements.Views
             else
             {
                 Dispatcher.BeginInvoke(new Action(() => SteamFullyConfigured = fullyConfigured));
-            }
-        }
-
-        private void SetSteamAuthRequirements(string requirements)
-        {
-            if (Dispatcher.CheckAccess())
-            {
-                SteamAuthRequirements = requirements;
-            }
-            else
-            {
-                Dispatcher.BeginInvoke(new Action(() => SteamAuthRequirements = requirements));
             }
         }
 

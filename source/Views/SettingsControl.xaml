@@ -634,20 +634,14 @@
                                                     </TextBlock.Style>
                                                 </TextBlock>
 
-                                                <!-- Status Text with requirement details -->
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding SteamAuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                               Foreground="{DynamicResource TextBrush}"
-                                                               TextWrapping="Wrap"
-                                                               FontSize="13"
-                                                               FontWeight="SemiBold"
-                                                               Margin="0,0,0,4"/>
-                                                    <TextBlock Text="{Binding SteamAuthRequirements, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                               Foreground="{DynamicResource TextBrush}"
-                                                               TextWrapping="Wrap"
-                                                               FontSize="12"
-                                                               Opacity="0.7"/>
-                                                </StackPanel>
+                                                <!-- Status Text -->
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding SteamAuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           VerticalAlignment="Center"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"/>
                                             </Grid>
 
                                             <!-- Buttons Row -->
