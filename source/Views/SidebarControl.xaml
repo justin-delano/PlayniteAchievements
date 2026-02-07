@@ -974,8 +974,8 @@
                                         <!-- Incomplete -->
                                         <StackPanel Orientation="Horizontal" Margin="0,2"
                                                     Visibility="{Binding GamesPieChart.ShowIncomplete, Converter={StaticResource BoolToVis}}">
-                                            <TextBlock Text="&#xE1FE;"
-                                                       FontFamily="Segoe MDL2 Assets"
+                                            <TextBlock Text="&#xef7a;"
+                                                       FontFamily="{DynamicResource FontIcoFont}"
                                                        FontSize="14"
                                                        Width="18"
                                                        TextAlignment="Center"
@@ -1040,8 +1040,8 @@
                                                         </Image.Style>
                                                     </Image>
                                                     <!-- Lock icon for Locked provider -->
-                                                    <TextBlock Text="&#xE1FE;"
-                                                               FontFamily="Segoe MDL2 Assets"
+                                                    <TextBlock Text="&#xef7a;"
+                                                               FontFamily="{DynamicResource FontIcoFont}"
                                                                FontSize="14"
                                                                Width="18"
                                                                TextAlignment="Center"
@@ -1156,8 +1156,8 @@
                                         <!-- Locked -->
                                         <StackPanel Orientation="Horizontal" Margin="0,2"
                                                     Visibility="{Binding RarityPieChart.ShowLocked, Converter={StaticResource BoolToVis}}">
-                                            <TextBlock Text="&#xE1FE;"
-                                                       FontFamily="Segoe MDL2 Assets"
+                                            <TextBlock Text="&#xef7a;"
+                                                       FontFamily="{DynamicResource FontIcoFont}"
                                                        FontSize="14"
                                                        Width="18"
                                                        TextAlignment="Center"
