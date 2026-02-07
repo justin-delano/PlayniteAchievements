@@ -64,12 +64,20 @@
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Annuler</sys:String>
 
     <!-- Scan Modes -->
-    <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Rapide</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Full">Complet</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Installé</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Favoris</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Single">Unique</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Sélectionné</sys:String>
+    <!-- Short versions for sidebar dropdown -->
+    <sys:String x:Key="LOCPlayAch_ScanModeShort_Quick">Rapide</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanModeShort_Full">Complet</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanModeShort_Installed">Installé</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanModeShort_Favorites">Favoris</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanModeShort_Single">Unique</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanModeShort_Selected">Sélection</sys:String>
+    <!-- Long versions for menus -->
+    <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Analyse rapide</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Full">Analyse complète</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Analyse installés</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Analyse favoris</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Single">Analyse jeu unique</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Analyse sélection</sys:String>
 
     <!-- Provider Filters -->
     <sys:String x:Key="LOCPlayAch_Provider_All">Tous</sys:String>

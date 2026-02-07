@@ -54,12 +54,12 @@ namespace PlayniteAchievements.Services
         /// </summary>
         private static readonly ScanMode[] PredefinedScanModes = new[]
         {
-            new ScanMode(ScanModeKeys.Quick, "LOCPlayAch_ScanMode_Quick"),
-            new ScanMode(ScanModeKeys.Full, "LOCPlayAch_ScanMode_Full"),
-            new ScanMode(ScanModeKeys.Installed, "LOCPlayAch_ScanMode_Installed"),
-            new ScanMode(ScanModeKeys.Favorites, "LOCPlayAch_ScanMode_Favorites"),
-            new ScanMode(ScanModeKeys.Single, "LOCPlayAch_ScanMode_Single"),
-            new ScanMode(ScanModeKeys.LibrarySelected, "LOCPlayAch_ScanMode_Selected")
+            new ScanMode(ScanModeKeys.Quick, "LOCPlayAch_ScanMode_Quick", "LOCPlayAch_ScanModeShort_Quick"),
+            new ScanMode(ScanModeKeys.Full, "LOCPlayAch_ScanMode_Full", "LOCPlayAch_ScanModeShort_Full"),
+            new ScanMode(ScanModeKeys.Installed, "LOCPlayAch_ScanMode_Installed", "LOCPlayAch_ScanModeShort_Installed"),
+            new ScanMode(ScanModeKeys.Favorites, "LOCPlayAch_ScanMode_Favorites", "LOCPlayAch_ScanModeShort_Favorites"),
+            new ScanMode(ScanModeKeys.Single, "LOCPlayAch_ScanMode_Single", "LOCPlayAch_ScanModeShort_Single"),
+            new ScanMode(ScanModeKeys.LibrarySelected, "LOCPlayAch_ScanMode_Selected", "LOCPlayAch_ScanModeShort_Selected")
         };
 
         /// <summary>
@@ -80,6 +80,7 @@ namespace PlayniteAchievements.Services
             foreach (var mode in PredefinedScanModes)
             {
                 mode.DisplayName = ResourceProvider.GetString(mode.DisplayNameResourceKey) ?? mode.Key;
+                mode.ShortDisplayName = ResourceProvider.GetString(mode.ShortDisplayNameResourceKey) ?? mode.Key;
             }
             return PredefinedScanModes;
         }

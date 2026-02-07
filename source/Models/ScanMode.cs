@@ -17,9 +17,14 @@ namespace PlayniteAchievements.Models
         public string Key { get; set; }
 
         /// <summary>
-        /// Localized display name for this scan mode.
+        /// Localized display name for this scan mode (long version for menus).
         /// </summary>
         public string DisplayName { get; set; }
+
+        /// <summary>
+        /// Localized short display name for this scan mode (for sidebar dropdown).
+        /// </summary>
+        public string ShortDisplayName { get; set; }
 
         /// <summary>
         /// Description of what this scan mode does.
@@ -27,14 +32,20 @@ namespace PlayniteAchievements.Models
         public string Description { get; set; }
 
         /// <summary>
-        /// Resource key for localized display name.
+        /// Resource key for localized display name (long version).
         /// </summary>
         public string DisplayNameResourceKey { get; set; }
 
-        public ScanMode(string key, string displayNameResourceKey, string description = null)
+        /// <summary>
+        /// Resource key for localized short display name (for sidebar).
+        /// </summary>
+        public string ShortDisplayNameResourceKey { get; set; }
+
+        public ScanMode(string key, string displayNameResourceKey, string shortDisplayNameResourceKey = null, string description = null)
         {
             Key = key;
             DisplayNameResourceKey = displayNameResourceKey;
+            ShortDisplayNameResourceKey = shortDisplayNameResourceKey ?? displayNameResourceKey;
             Description = description;
         }
     }

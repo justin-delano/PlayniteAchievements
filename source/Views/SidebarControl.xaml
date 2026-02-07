@@ -412,7 +412,7 @@
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center">
                     <ComboBox ItemsSource="{Binding ScanModes}"
-                              DisplayMemberPath="DisplayName"
+                              DisplayMemberPath="ShortDisplayName"
                               SelectedValuePath="Key"
                               SelectedValue="{Binding SelectedScanMode}"
                               Width="100"
