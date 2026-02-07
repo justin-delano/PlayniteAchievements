@@ -45,10 +45,26 @@ namespace PlayniteAchievements.Views
                     _isAuthenticated = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(StatusIcon));
+                    OnPropertyChanged(nameof(StatusSubtitle));
+                    OnPropertyChanged(nameof(StatusBadgeText));
                 }
             }
 
             public string StatusIcon => IsAuthenticated ? "\uE73E" : "\uE711"; // Checkmark / Cancel
+
+            /// <summary>
+            /// Gets the localized subtitle text based on authentication status.
+            /// </summary>
+            public string StatusSubtitle => IsAuthenticated
+                ? ResourceProvider.GetString("LOCPlayAch_Landing_Status_ReadyToScan")
+                : ResourceProvider.GetString("LOCPlayAch_Landing_Status_ConfigureInSettings");
+
+            /// <summary>
+            /// Gets the localized badge text based on authentication status.
+            /// </summary>
+            public string StatusBadgeText => IsAuthenticated
+                ? ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeReady")
+                : ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeSetup");
         }
 
         private readonly ObservableCollection<ProviderStatus> _providers;
@@ -83,6 +99,7 @@ namespace PlayniteAchievements.Views
         /// <summary>
         /// Refreshes the authentication status for all providers.
         /// Called when settings are updated to reflect credential changes.
+        /// Also triggers a full state refresh to update panel visibility.
         /// </summary>
         public void RefreshProviderStatuses()
         {
@@ -99,7 +116,12 @@ namespace PlayniteAchievements.Views
                 _providers.Add(status);
             }
 
+            // Raise PropertyChanged for all state-dependent properties to refresh UI
             OnPropertyChanged(nameof(HasAnyProviderAuth));
+            OnPropertyChanged(nameof(CurrentState));
+            OnPropertyChanged(nameof(ShowNoAuthPanel));
+            OnPropertyChanged(nameof(ShowNeedsScanPanel));
+            OnPropertyChanged(nameof(ShowHasDataPanel));
         }
 
         /// <summary>
