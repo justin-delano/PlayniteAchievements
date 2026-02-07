@@ -197,8 +197,8 @@
     <!-- OVERVIEW TAB                                                       -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Overview_Search">Search</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_Games">Filter Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_Achievements">Filter Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Games">Search Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Achievements">Search Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_HideNoUnlocks">Hide no unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_HideUnplayed">Hide unplayed</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_PerfectGame">Perfect Game</sys:String>

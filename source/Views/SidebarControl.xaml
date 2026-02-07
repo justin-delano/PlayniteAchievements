@@ -1047,11 +1047,8 @@
                                            HorizontalAlignment="Center"/>
                                 <lvc:PieChart LegendLocation="Bottom"
                                               InnerRadius="30"
-                                              Margin="4">
-                                    <lvc:PieChart.Series>
-                                        <lvc:SeriesCollection Source="{Binding GamesPieChart.PieSeries}"/>
-                                    </lvc:PieChart.Series>
-                                </lvc:PieChart>
+                                              Margin="4"
+                                              Series="{Binding GamesPieChart.PieSeries}"/>
                             </StackPanel>
 
                             <!-- Rarity Pie Chart -->
@@ -1063,11 +1060,8 @@
                                            HorizontalAlignment="Center"/>
                                 <lvc:PieChart LegendLocation="Bottom"
                                               InnerRadius="30"
-                                              Margin="4">
-                                    <lvc:PieChart.Series>
-                                        <lvc:SeriesCollection Source="{Binding RarityPieChart.PieSeries}"/>
-                                    </lvc:PieChart.Series>
-                                </lvc:PieChart>
+                                              Margin="4"
+                                              Series="{Binding RarityPieChart.PieSeries}"/>
                             </StackPanel>
                         </Grid>
                     </Grid>
@@ -1473,7 +1467,6 @@
                         </Grid>
                         
                         <!-- Game Detail Panel: When a game is selected -->
-                        <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
                         <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
