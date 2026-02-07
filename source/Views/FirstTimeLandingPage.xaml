@@ -33,7 +33,7 @@
 
             <!-- Main Title -->
             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Title}"
-                       Style="{DynamicResource BaseTextBlockStyle}"
+                       FontSize="22"
                        FontWeight="SemiBold"
                        Foreground="{DynamicResource TextBrush}"
                        HorizontalAlignment="Center"
@@ -77,13 +77,13 @@
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
             </StackPanel>
 
-            <StackPanel MinWidth="400" MaxWidth="800" HorizontalAlignment="Center">
+            <StackPanel MinWidth="800" HorizontalAlignment="Center">
 
             <!-- Provider Status List - Always Visible -->
             <StackPanel Margin="0,0,0,16">
                 <!-- Section Header -->
                 <TextBlock Text="{DynamicResource LOCPlayAch_Landing_ProviderStatus}"
-                           FontSize="{DynamicResource FontSizeSmall}"
+                           FontSize="{DynamicResource FontSize}"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextBrush}"
                            Opacity="0.7"
@@ -151,7 +151,7 @@
                                                    FontWeight="Medium"
                                                    Foreground="{DynamicResource TextBrush}"/>
                                         <TextBlock Text="{Binding StatusSubtitle}"
-                                                   FontSize="{DynamicResource FontSizeSmall}"
+                                                   FontSize="{DynamicResource FontSize}"
                                                    Foreground="{DynamicResource TextBrush}"
                                                    Opacity="0.6"
                                                    Margin="0,2,0,0"/>
@@ -159,7 +159,7 @@
 
                                     <!-- Status Badge -->
                                     <TextBlock Grid.Column="2" Text="{Binding StatusBadgeText}"
-                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               FontSize="{DynamicResource FontSize}"
                                                FontWeight="SemiBold"
                                                Padding="6,2"
                                                VerticalAlignment="Center"
@@ -222,59 +222,8 @@
                             Padding="14,12"
                             Margin="0,0,0,6">
                         <StackPanel>
-                            <!-- Playnite icon with arrow pointing down -->
-                            <Grid Margin="0,0,0,10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <!-- Playnite icon from executable -->
-                                <Image Grid.Column="0" Source="{Binding PlayniteIconPath}"
-                                       Width="24"
-                                       Height="24"
-                                       RenderOptions.BitmapScalingMode="HighQuality"
-                                       VerticalAlignment="Center"
-                                       Margin="0,0,10,0">
-                                    <Image.Style>
-                                        <Style TargetType="Image">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding PlayniteIconPath}" Value="{x:Null}">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
-                                <!-- Fallback: Playnite icon if executable icon not available -->
-                                <TextBlock Grid.Column="0" Text="♦"
-                                           FontSize="20"
-                                           Foreground="{DynamicResource TextBrush}"
-                                           Opacity="0.7"
-                                           VerticalAlignment="Center"
-                                           Margin="0,0,10,0"
-                                           Visibility="Collapsed">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding PlayniteIconPath}" Value="{x:Null}">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <!-- Down arrow -->
-                                <TextBlock Grid.Column="1" Text="▼"
-                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                           Foreground="{DynamicResource TextBrush}"
-                                           Opacity="0.5"
-                                           VerticalAlignment="Center"
-                                           Margin="4,0,0,0"/>
-                            </Grid>
-
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavInstructions}"
-                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       FontSize="{DynamicResource FontSize}"
                                        Foreground="{DynamicResource TextBrush}"
                                        Opacity="0.8"
                                        Margin="0,0,0,10"/>
@@ -285,7 +234,7 @@
                                     <TextBlock Text="→"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavSettings}"
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavAddons}"
                                                Style="{DynamicResource BaseTextBlockStyle}"/>
                                 </StackPanel>
 
@@ -293,7 +242,7 @@
                                     <TextBlock Text="→"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavAddons}"
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}"
                                                Style="{DynamicResource BaseTextBlockStyle}"/>
                                 </StackPanel>
 
@@ -301,19 +250,11 @@
                                     <TextBlock Text="→"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"/>
-                                </StackPanel>
-
-                                <StackPanel Orientation="Horizontal" Margin="48,0,0,3">
-                                    <TextBlock Text="→"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavGeneric}"
                                                Style="{DynamicResource BaseTextBlockStyle}"/>
                                 </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="64,0,0,0">
+                                <StackPanel Orientation="Horizontal" Margin="48,0,0,0">
                                     <TextBlock Text="→"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="#4CC9F0"/>
@@ -331,7 +272,7 @@
                             Padding="12,10"
                             Margin="0,0,0,6">
                         <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavThenConfigure}"
-                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   FontSize="{DynamicResource FontSize}"
                                    Foreground="{DynamicResource TextBrush}"
                                    TextWrapping="Wrap"
                                    Opacity="0.7"/>
@@ -380,7 +321,7 @@
                                        HorizontalAlignment="Center"
                                        Margin="0,0,0,4"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Status_ReadyToScan}"
-                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       FontSize="{DynamicResource FontSize}"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.65"
@@ -446,7 +387,7 @@
                                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                             </StackPanel>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataFound}"
-                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       FontSize="{DynamicResource FontSize}"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
                                        Opacity="0.65"
