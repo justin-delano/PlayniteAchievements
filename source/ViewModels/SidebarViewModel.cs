@@ -263,7 +263,7 @@ namespace PlayniteAchievements.ViewModels
 
         public ObservableCollection<ScanMode> ScanModes { get; }
 
-        private string _selectedScanMode = ScanModeKeys.Single;
+        private string _selectedScanMode = ScanModeType.Single.GetKey();
         public string SelectedScanMode
         {
             get => _selectedScanMode;
@@ -830,7 +830,7 @@ namespace PlayniteAchievements.ViewModels
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
                 Guid? singleGameId = null;
-                if (SelectedScanMode == ScanModeKeys.Single)
+                if (SelectedScanMode == ScanModeType.Single.GetKey())
                 {
                     if (SelectedGame?.PlayniteGameId.HasValue == true)
                     {

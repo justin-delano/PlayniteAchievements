@@ -63,7 +63,7 @@ namespace PlayniteAchievements.ViewModels
 
                     try
                     {
-                        await _achievementManager.ExecuteScanAsync(ScanModeKeys.Single, _gameId);
+                        await _achievementManager.ExecuteScanAsync(ScanModeType.Single.GetKey(), _gameId);
 
                         // Load updated data
                         LoadGameData();

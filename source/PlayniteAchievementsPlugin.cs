@@ -105,7 +105,7 @@ namespace PlayniteAchievements
         // AnikiHelper (PlayniteAchievements-based) will call this when available.
         public Task RequestSingleGameScanAsync(Guid playniteGameId)
         {
-            return _achievementService?.ExecuteScanAsync(Models.ScanModeKeys.Single, playniteGameId) ?? Task.CompletedTask;
+            return _achievementService?.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), playniteGameId) ?? Task.CompletedTask;
         }
 
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
@@ -251,7 +251,7 @@ namespace PlayniteAchievements
                     MenuSection = "Playnite Achievements",
                     Action = (a) =>
                     {
-                        ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.LibrarySelected));
+                        ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
                     }
                 };
                 yield break;
@@ -280,7 +280,7 @@ namespace PlayniteAchievements
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Single, game.Id));
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id));
                 }
             };
         }
@@ -293,7 +293,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Quick));
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Quick.GetKey()));
                 }
             };
 
@@ -303,7 +303,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Full));
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Full.GetKey()));
                 }
             };
 
@@ -313,7 +313,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Installed));
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Installed.GetKey()));
                 }
             };
 
@@ -323,7 +323,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Favorites));
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Favorites.GetKey()));
                 }
             };
 
@@ -333,7 +333,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.LibrarySelected));
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
                 }
             };
         }
@@ -384,7 +384,7 @@ namespace PlayniteAchievements
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
             _logger.Info($"Game stopped: {args.Game.Name}. Triggering achievement scan.");
-            _ = _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Single, args.Game.Id);
+            _ = _achievementService.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), args.Game.Id);
         }
 
         // === Lifecycle ===
@@ -774,7 +774,7 @@ namespace PlayniteAchievements
                 try
                 {
                     _logger.Info($"Detected new game '{game?.Name}' ({game?.GameId}); starting single-game scan.");
-                    await _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Single, game.Id).ConfigureAwait(false);
+                    await _achievementService.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

@@ -51,16 +51,11 @@ namespace PlayniteAchievements.Services
 
         /// <summary>
         /// Predefined scan modes available in the plugin.
+        /// Generated automatically from ScanModeType enum.
         /// </summary>
-        private static readonly ScanMode[] PredefinedScanModes = new[]
-        {
-            new ScanMode(ScanModeKeys.Quick, "LOCPlayAch_ScanMode_Quick", "LOCPlayAch_ScanModeShort_Quick"),
-            new ScanMode(ScanModeKeys.Full, "LOCPlayAch_ScanMode_Full", "LOCPlayAch_ScanModeShort_Full"),
-            new ScanMode(ScanModeKeys.Installed, "LOCPlayAch_ScanMode_Installed", "LOCPlayAch_ScanModeShort_Installed"),
-            new ScanMode(ScanModeKeys.Favorites, "LOCPlayAch_ScanMode_Favorites", "LOCPlayAch_ScanModeShort_Favorites"),
-            new ScanMode(ScanModeKeys.Single, "LOCPlayAch_ScanMode_Single", "LOCPlayAch_ScanModeShort_Single"),
-            new ScanMode(ScanModeKeys.LibrarySelected, "LOCPlayAch_ScanMode_Selected", "LOCPlayAch_ScanModeShort_Selected")
-        };
+        private static readonly ScanMode[] PredefinedScanModes = ((ScanModeType[])Enum.GetValues(typeof(ScanModeType)))
+            .Select(m => new ScanMode(m, m.GetResourceKey(), m.GetShortResourceKey()))
+            .ToArray();
 
         /// <summary>
         /// Checks if at least one provider has valid authentication credentials configured.
@@ -510,36 +505,46 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public Task ExecuteScanAsync(string modeKey, Guid? singleGameId = null)
         {
-            if (string.IsNullOrWhiteSpace(modeKey))
+            // Parse string to enum, default to Quick if invalid
+            if (!Enum.TryParse<ScanModeType>(modeKey, out var mode))
             {
-                modeKey = ScanModeKeys.Quick;
+                _logger.Warn($"Unknown scan mode: {modeKey}, falling back to Quick.");
+                mode = ScanModeType.Quick;
             }
 
-            switch (modeKey)
+            return ExecuteScanAsync(mode, singleGameId);
+        }
+
+        /// <summary>
+        /// Executes a scan based on the specified scan mode type.
+        /// </summary>
+        public Task ExecuteScanAsync(ScanModeType mode, Guid? singleGameId = null)
+        {
+            switch (mode)
             {
-                case ScanModeKeys.Quick:
+                case ScanModeType.Quick:
                     return StartManagedQuickRefreshAsync();
 
-                case ScanModeKeys.Full:
+                case ScanModeType.Full:
                     return StartManagedRebuildAsync();
 
-                case ScanModeKeys.Installed:
+                case ScanModeType.Installed:
                     return StartManagedInstalledGamesScanAsync();
 
-                case ScanModeKeys.Favorites:
+                case ScanModeType.Favorites:
                     return StartManagedFavoritesScanAsync();
 
-                case ScanModeKeys.Single:
+                case ScanModeType.Single:
                     if (singleGameId.HasValue)
                         return StartManagedSingleGameScanAsync(singleGameId.Value);
                     _logger.Info("Single scan mode requested but no game ID provided.");
                     return Task.CompletedTask;
 
-                case ScanModeKeys.LibrarySelected:
+                case ScanModeType.LibrarySelected:
                     return StartManagedLibrarySelectedGamesScanAsync();
 
                 default:
-                    _logger.Warn($"Unknown scan mode: {modeKey}, falling back to Quick.");
+                    _logger.Warn($"Unknown scan mode: {mode}, falling back to Quick.");
                     return StartManagedQuickRefreshAsync();
             }
         }
