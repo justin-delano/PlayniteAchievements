@@ -512,9 +512,6 @@
                         <!-- ================== STEAM CONNECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SteamConnection}"
-                                           Style="{StaticResource SectionHeaderStyle}"/>
-
                                 <!-- Steam Language (moved to top) -->
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
@@ -564,8 +561,8 @@
                                     </ComboBox>
                                 </Grid>
 
-                                <!-- Steam Authentication Status (covers API key + web auth) -->
-                                <Grid Style="{StaticResource SettingRowStyle}" Margin="0,0,0,16">
+                                <!-- Steam Authentication (unified box for API key + web auth) -->
+                                <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="180"/>
                                         <ColumnDefinition Width="*"/>
@@ -577,7 +574,7 @@
                                                VerticalAlignment="Top"
                                                Margin="0,8,0,0"/>
 
-                                    <!-- Auth Status Card (green if BOTH api key + web auth, red otherwise) -->
+                                    <!-- Unified Auth Card (green if BOTH api key + web auth, red otherwise) -->
                                     <Border Grid.Column="1"
                                             Background="{DynamicResource PanelBackgroundBrush}"
                                             CornerRadius="8"
@@ -595,58 +592,59 @@
                                             </Style>
                                         </Border.Style>
 
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
+                                        <StackPanel>
+                                            <!-- Web Auth Section -->
+                                            <Grid Margin="0,0,0,14">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
 
-                                            <!-- Status Row -->
-                                            <Grid Grid.Row="0" Margin="0,0,0,12">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
+                                                <!-- Status Row -->
+                                                <Grid Grid.Row="0" Margin="0,0,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
 
-                                                <!-- Status Icon -->
-                                                <TextBlock Grid.Column="0"
-                                                           FontFamily="Segoe MDL2 Assets"
-                                                           FontSize="24"
-                                                           Margin="0,0,12,0"
-                                                           VerticalAlignment="Center">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding SteamFullyConfigured, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                             Value="True">
-                                                                    <Setter Property="Text" Value="&#xE73E;"/>
-                                                                    <Setter Property="Foreground" Value="#06FFA5"/>
-                                                                    <Setter Property="FontWeight" Value="Bold"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding SteamFullyConfigured, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                                             Value="False">
-                                                                    <Setter Property="Text" Value="&#xE711;"/>
-                                                                    <Setter Property="Foreground" Value="#F72585"/>
-                                                                    <Setter Property="FontWeight" Value="Bold"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
+                                                    <!-- Status Icon -->
+                                                    <TextBlock Grid.Column="0"
+                                                               FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="24"
+                                                               Margin="0,0,12,0"
+                                                               VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding SteamFullyConfigured, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                                 Value="True">
+                                                                        <Setter Property="Text" Value="&#xE73E;"/>
+                                                                        <Setter Property="Foreground" Value="#06FFA5"/>
+                                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding SteamFullyConfigured, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                                 Value="False">
+                                                                        <Setter Property="Text" Value="&#xE711;"/>
+                                                                        <Setter Property="Foreground" Value="#F72585"/>
+                                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
 
-                                                <!-- Status Text -->
-                                                <TextBlock Grid.Column="1"
-                                                           Text="{Binding SteamAuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                           Foreground="{DynamicResource TextBrush}"
-                                                           TextWrapping="Wrap"
-                                                           VerticalAlignment="Center"
-                                                           FontSize="13"
-                                                           FontWeight="SemiBold"/>
-                                            </Grid>
+                                                    <!-- Status Text -->
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding SteamAuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               TextWrapping="Wrap"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="13"
+                                                               FontWeight="SemiBold"/>
+                                                </Grid>
 
-                                            <!-- Buttons Row -->
-                                            <StackPanel Grid.Row="1" Orientation="Horizontal"
-                                                        HorizontalAlignment="Center">
+                                                <!-- Buttons Row (left-aligned) -->
+                                                <StackPanel Grid.Row="1" Orientation="Horizontal">
                                                     <Button Content="{DynamicResource LOCPlayAch_Settings_CheckSteamAuth}"
                                                             Style="{StaticResource SteamAuthActionButtonStyle}"
                                                             Click="SteamAuth_Check_Click"
@@ -662,14 +660,49 @@
                                                             Style="{StaticResource SteamAuthActionButtonStyle}"
                                                             Click="SteamAuth_Clear_Click"
                                                             Padding="14,6"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
+                                                </StackPanel>
+                                            </Grid>
 
-                                    <!-- Progress overlay at bottom -->
-                                    <ProgressBar Grid.Column="1"
-                                                 Height="3"
-                                                 Margin="0,6,0,0"
+                                            <!-- Separator -->
+                                            <Border Height="1"
+                                                    Background="{DynamicResource ControlBorderBrush}"
+                                                    Opacity="0.5"
+                                                    Margin="0,0,0,14"/>
+
+                                            <!-- API Key Section -->
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <TextBlock Grid.Row="0"
+                                                           Text="{DynamicResource LOCPlayAch_Settings_SteamApiKey}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           Margin="0,0,0,6"/>
+
+                                                <TextBox Grid.Row="1"
+                                                         Text="{Binding Persisted.SteamApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                                         Margin="0,0,0,6"/>
+
+                                                <TextBlock Grid.Row="1"
+                                                           Margin="0,26,0,0"
+                                                           Style="{StaticResource MutedTextStyle}">
+                                                    <Run Text="{DynamicResource LOCPlayAch_Settings_SteamApiKeyHint}" />
+                                                    <Run Text=" " />
+                                                    <Hyperlink NavigateUri="https://steamcommunity.com/dev/apikey"
+                                                               RequestNavigate="Hyperlink_RequestNavigate">
+                                                        <Run Text="steamcommunity.com/dev/apikey" />
+                                                    </Hyperlink>
+                                                </TextBlock>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Progress bar below unified box -->
+                                <Grid Margin="180,6,0,0">
+                                    <ProgressBar Height="3"
                                                  IsIndeterminate="True"
                                                  Foreground="#06FFA5">
                                         <ProgressBar.Style>
@@ -684,38 +717,6 @@
                                             </Style>
                                         </ProgressBar.Style>
                                     </ProgressBar>
-                                </Grid>
-
-                                <!-- Steam Web API Key (below auth status) -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="180"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Settings_SteamApiKey}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"/>
-
-                                        <TextBox Grid.Row="0" Grid.Column="1"
-                                                 Text="{Binding Persisted.SteamApiKey, UpdateSourceTrigger=PropertyChanged}"
-                                             VerticalAlignment="Center"/>
-
-                                    <TextBlock Grid.Row="1" Grid.Column="1"
-                                               Margin="0,6,0,0"
-                                               Style="{StaticResource MutedTextStyle}">
-                                        <Run Text="{DynamicResource LOCPlayAch_Settings_SteamApiKeyHint}" />
-                                        <Run Text=" " />
-                                        <Hyperlink NavigateUri="https://steamcommunity.com/dev/apikey"
-                                                   RequestNavigate="Hyperlink_RequestNavigate">
-                                            <Run Text="steamcommunity.com/dev/apikey" />
-                                        </Hyperlink>
-                                    </TextBlock>
                                 </Grid>
 
                                 <!-- Steam User ID (at bottom) -->
