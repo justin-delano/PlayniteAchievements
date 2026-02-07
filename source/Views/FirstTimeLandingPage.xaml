@@ -226,35 +226,43 @@
                                        Opacity="0.8"
                                        Margin="0,0,0,12"/>
 
-                            <TextBlock FontSize="12" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
-                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                <Run Text=" " />
-                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavSettings}"/>
-                            </TextBlock>
+                            <!-- Navigation tree items -->
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <TextBlock Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavSettings}" FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
 
-                            <TextBlock FontSize="12" Foreground="{DynamicResource TextBrush}" Margin="20,0,0,4">
-                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                <Run Text=" " />
-                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavAddons}"/>
-                            </TextBlock>
+                                <StackPanel Orientation="Horizontal" Margin="20,0,0,4">
+                                    <TextBlock Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavAddons}" FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
 
-                            <TextBlock FontSize="12" Foreground="{DynamicResource TextBrush}" Margin="40,0,0,4">
-                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                <Run Text=" " />
-                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}"/>
-                            </TextBlock>
+                                <StackPanel Orientation="Horizontal" Margin="40,0,0,4">
+                                    <TextBlock Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}" FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
 
-                            <TextBlock FontSize="12" Foreground="{DynamicResource TextBrush}" Margin="60,0,0,4">
-                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
-                                <Run Text=" " />
-                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavGeneric}"/>
-                            </TextBlock>
+                                <StackPanel Orientation="Horizontal" Margin="60,0,0,4">
+                                    <TextBlock Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavGeneric}" FontSize="12"
+                                               Foreground="{DynamicResource TextBrush}"/>
+                                </StackPanel>
 
-                            <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#4CC9F0" Margin="80,0,0,0">
-                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets"/>
-                                <Run Text=" " />
-                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavPluginName}"/>
-                            </TextBlock>
+                                <StackPanel Orientation="Horizontal" Margin="80,0,0,0">
+                                    <TextBlock Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                               Foreground="#4CC9F0"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavPluginName}" FontSize="12"
+                                               FontWeight="SemiBold" Foreground="#4CC9F0"/>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
