@@ -149,6 +149,10 @@ namespace PlayniteAchievements.ViewModels
             GlobalTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
             SelectedGameTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
 
+            ProviderDistribution = new ProviderDistributionViewModel();
+            GamesPieChart = new PieChartViewModel();
+            RarityPieChart = new PieChartViewModel();
+
             // Set defaults: Unlocked Only, sorted by Unlock Date
             _showUnlockedOnly = true;
             _sortIndex = 2; // Unlock Date
@@ -369,13 +373,6 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _globalProgression, value);
         }
 
-        private double _launchedProgression;
-        public double LaunchedProgression
-        {
-            get => _launchedProgression;
-            private set => SetValue(ref _launchedProgression, value);
-        }
-
         private GameOverviewItem _selectedGame;
         public GameOverviewItem SelectedGame
         {
@@ -402,6 +399,10 @@ namespace PlayniteAchievements.ViewModels
 
         public TimelineViewModel GlobalTimeline { get; private set; }
         public TimelineViewModel SelectedGameTimeline { get; private set; }
+
+        public ProviderDistributionViewModel ProviderDistribution { get; private set; }
+        public PieChartViewModel GamesPieChart { get; private set; }
+        public PieChartViewModel RarityPieChart { get; private set; }
 
         // Rarity percentage properties for distribution bars
         public double CommonPercentage => TotalUnlockedOverview > 0
@@ -909,7 +910,6 @@ namespace PlayniteAchievements.ViewModels
                 .Select(g => g.Provider)
                 .Where(p => !string.IsNullOrEmpty(p))
                 .Distinct()
-                .OrderBy(p => p)
                 .ToList();
             var providerOptions = new List<string> { "All" };
             providerOptions.AddRange(providers);
@@ -932,7 +932,32 @@ namespace PlayniteAchievements.ViewModels
             TotalUltraRare = snapshot.TotalUltraRare;
             PerfectGames = snapshot.PerfectGames;
             GlobalProgression = snapshot.GlobalProgressionPercent;
-            LaunchedProgression = snapshot.LaunchedProgressionPercent;
+
+            // Update new charts
+            ProviderDistribution.SetProviderData(snapshot.AchievementsByProvider);
+
+            // Get localized strings
+            var perfectLabel = ResourceProvider.GetString("LOCPlayAch_Perfect");
+            var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Incomplete");
+            var commonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Common");
+            var uncommonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Uncommon");
+            var rareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Rare");
+            var ultraRareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_UltraRare");
+            var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Locked");
+
+            GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.PerfectGames, perfectLabel, incompleteLabel);
+            RarityPieChart.SetRarityData(
+                snapshot.TotalCommon,
+                snapshot.TotalUncommon,
+                snapshot.TotalRare,
+                snapshot.TotalUltraRare,
+                snapshot.TotalLocked,
+                commonLabel,
+                uncommonLabel,
+                rareLabel,
+                ultraRareLabel,
+                lockedLabel
+            );
 
             OnPropertyChanged(nameof(CommonPercentage));
             OnPropertyChanged(nameof(UncommonPercentage));
@@ -1302,18 +1327,6 @@ namespace PlayniteAchievements.ViewModels
             PerfectGames = sourceList.Count(g => g.IsPerfect);
 
             GlobalProgression = TotalAchievementsOverview > 0 ? (double)TotalUnlockedOverview / TotalAchievementsOverview * 100 : 0;
-
-            var launchedGames = sourceList.Where(g => g.UnlockedAchievements > 0).ToList();
-            if (launchedGames.Any())
-            {
-                var launchedTotal = launchedGames.Sum(g => g.TotalAchievements);
-                var launchedUnlocked = launchedGames.Sum(g => g.UnlockedAchievements);
-                LaunchedProgression = launchedTotal > 0 ? (double)launchedUnlocked / launchedTotal * 100 : 0;
-            }
-            else
-            {
-                LaunchedProgression = 0;
-            }
         }
 
         private void RaiseCommandsChanged()
@@ -1423,6 +1436,8 @@ namespace PlayniteAchievements.ViewModels
                 _selectedGameAchievementsPager.SetSourceItems(_allSelectedGameAchievements);
                 _selectedGameAchievementsPager.GoToFirstPage();
                 SelectedGameTimeline.SetCounts(null);
+                // Restore global timeline to show all games
+                GlobalTimeline.SetCounts(_latestSnapshot?.GlobalUnlockCountsByDate);
                 return;
             }
 
@@ -1510,6 +1525,17 @@ namespace PlayniteAchievements.ViewModels
                 {
                     SelectedGameTimeline.SetCounts(result.counts);
                 }
+
+                // Filter global timeline when game is selected
+                if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
+                    _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var gameCounts))
+                {
+                    GlobalTimeline.SetCounts(gameCounts);
+                }
+                else
+                {
+                    GlobalTimeline.SetCounts(_latestSnapshot?.GlobalUnlockCountsByDate);
+                }
             }
             catch (Exception ex)
             {
@@ -1522,43 +1548,6 @@ namespace PlayniteAchievements.ViewModels
             // Reset right search when clearing selection
             RightSearchText = string.Empty;
             SelectedGame = null;
-        }
-
-        private Dictionary<DateTime, int> GetAchievementCountsByDate(DateTime startDate, DateTime endDate, Guid? gameId)
-        {
-            var result = new Dictionary<DateTime, int>();
-
-            try
-            {
-                var gameIds = gameId.HasValue
-                    ? new List<string> { gameId.Value.ToString() }
-                    : _achievementManager.Cache.GetCachedGameIds();
-
-                if (gameIds == null) return result;
-
-                foreach (var gid in gameIds)
-                {
-                    var gameData = _achievementManager.GetGameAchievementData(gid);
-                    if (gameData?.Achievements == null) continue;
-
-                    foreach (var ach in gameData.Achievements.Where(a => a.Unlocked && a.UnlockTimeUtc.HasValue))
-                    {
-                        var unlockDate = ach.UnlockTimeUtc.Value.Date;
-                        if (unlockDate >= startDate.Date && unlockDate <= endDate.Date)
-                        {
-                            if (!result.ContainsKey(unlockDate))
-                                result[unlockDate] = 0;
-                            result[unlockDate]++;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "Failed to get achievement counts by date");
-            }
-
-            return result;
         }
 
         #endregion
