@@ -9,14 +9,14 @@ using Playnite.SDK;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class PerGameView : UserControl
+    public partial class PerGameControl : UserControl
     {
-        public PerGameView()
+        public PerGameControl()
         {
             InitializeComponent();
         }
 
-        public PerGameView(
+        public PerGameControl(
             Guid gameId,
             AchievementManager achievementManager,
             IPlayniteAPI playniteApi,
@@ -25,7 +25,7 @@ namespace PlayniteAchievements.Views
         {
             InitializeComponent();
 
-            DataContext = new PerGameViewModel(gameId, achievementManager, playniteApi, logger, settings);
+            DataContext = new PerGameControlModel(gameId, achievementManager, playniteApi, logger, settings);
 
             // Subscribe to settings saved event to refresh when credentials change
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
@@ -36,7 +36,7 @@ namespace PlayniteAchievements.Views
             RefreshView();
         }
 
-        private PerGameViewModel ViewModel => DataContext as PerGameViewModel;
+        private PerGameControlModel ViewModel => DataContext as PerGameControlModel;
 
         public string WindowTitle => ViewModel?.GameName != null
             ? $"{ViewModel.GameName} - Achievements"

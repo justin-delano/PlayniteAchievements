@@ -765,70 +765,138 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">
-
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Section_RetroAchievements}"
                                            Style="{StaticResource SectionHeaderStyle}"/>
 
-                                <!-- RetroAchievements Username -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
+                                <!-- RetroAchievements Authentication (unified box) -->
+                                <Grid Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="180"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Label_Username}"
+                                    <TextBlock Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Label_RaAuth}"
                                                Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"/>
+                                               VerticalAlignment="Top"
+                                               Margin="0,8,0,0"/>
 
-                                        <TextBox Grid.Row="0" Grid.Column="1"
-                                                 Text="{Binding Persisted.RaUsername, UpdateSourceTrigger=PropertyChanged}"
-                                             VerticalAlignment="Center"/>
+                                    <!-- Unified Auth Card (green if BOTH username + API key, red otherwise) -->
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource PanelBackgroundBrush}"
+                                            CornerRadius="8"
+                                            Padding="16"
+                                            BorderThickness="1">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="#F72585"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RaFullyConfigured, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                 Value="True">
+                                                        <Setter Property="BorderBrush" Value="#06FFA5"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
 
-                                    <TextBlock Grid.Row="1" Grid.Column="1"
-                                               Margin="0,6,0,0"
-                                               Style="{StaticResource MutedTextStyle}">
-                                        <Run Text="{DynamicResource LOCPlayAch_Label_Username_Help}" />
-                                    </TextBlock>
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Status Row -->
+                                            <Grid Grid.Row="0" Margin="0,0,0,14">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Status Icon -->
+                                                <TextBlock Grid.Column="0"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="{DynamicResource FontSize}"
+                                                           Margin="0,0,12,0"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RaFullyConfigured, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                             Value="True">
+                                                                    <Setter Property="Text" Value="&#xE73E;"/>
+                                                                    <Setter Property="Foreground" Value="#06FFA5"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding RaFullyConfigured, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                             Value="False">
+                                                                    <Setter Property="Text" Value="&#xE711;"/>
+                                                                    <Setter Property="Foreground" Value="#F72585"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                    <TextBlock.RenderTransform>
+                                                        <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                                    </TextBlock.RenderTransform>
+                                                </TextBlock>
+
+                                                <!-- Status Text -->
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding RaAuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           VerticalAlignment="Center"
+                                                           FontSize="{DynamicResource FontSize}"
+                                                           FontWeight="SemiBold"/>
+                                            </Grid>
+
+                                            <!-- Separator -->
+                                            <Border Grid.Row="0" Height="1"
+                                                    Background="{DynamicResource ControlBorderBrush}"
+                                                    Opacity="0.5"
+                                                    Margin="36,0,0,14"/>
+
+                                            <!-- Credentials Section -->
+                                            <StackPanel Grid.Row="1">
+                                                <!-- Username -->
+                                                <StackPanel Margin="0,0,0,12">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Label_Username}"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               FontSize="{DynamicResource FontSizeSmall}"
+                                                               Opacity="0.8"
+                                                               Margin="0,0,0,4"/>
+                                                    <TextBox Text="{Binding Persisted.RaUsername, UpdateSourceTrigger=PropertyChanged}"
+                                                             Margin="0,0,0,4"/>
+                                                    <TextBlock Style="{StaticResource MutedTextStyle}">
+                                                        <Run Text="{DynamicResource LOCPlayAch_Label_Username_Help}" />
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <!-- API Key -->
+                                                <StackPanel>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Label_WebApiKey}"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               FontSize="{DynamicResource FontSizeSmall}"
+                                                               Opacity="0.8"
+                                                               Margin="0,0,0,4"/>
+                                                    <TextBox Text="{Binding Persisted.RaWebApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                                             Margin="0,0,0,4"/>
+                                                    <TextBlock Style="{StaticResource MutedTextStyle}">
+                                                        <Run Text="{DynamicResource LOCPlayAch_Label_WebApiKey_Help}" />
+                                                        <Run Text=" " />
+                                                        <Hyperlink NavigateUri="https://retroachievements.org/controlpanel.php"
+                                                                   RequestNavigate="Hyperlink_RequestNavigate">
+                                                            <Run Text="retroachievements.org/controlpanel.php" />
+                                                        </Hyperlink>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
                                 </Grid>
-
-                                <!-- RetroAchievements Web API Key -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="180"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Label_WebApiKey}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"/>
-
-                                        <TextBox Grid.Row="0" Grid.Column="1"
-                                                 Text="{Binding Persisted.RaWebApiKey, UpdateSourceTrigger=PropertyChanged}"
-                                             VerticalAlignment="Center"/>
-
-                                 <TextBlock Grid.Row="1" Grid.Column="1"
-                                            Margin="0,6,0,0"
-                                            Style="{StaticResource MutedTextStyle}">
-                                     <Run Text="{DynamicResource LOCPlayAch_Label_WebApiKey_Help}" />
-                                     <Run Text=" " />
-                                     <Hyperlink NavigateUri="https://retroachievements.org/controlpanel.php"
-                                                RequestNavigate="Hyperlink_RequestNavigate">
-                                         <Run Text="retroachievements.org/controlpanel.php" />
-                                     </Hyperlink>
-                                 </TextBlock>
-                             </Grid>
 
                                 <!-- RetroAchievements Rarity Stats -->
                                 <Grid Style="{StaticResource SettingRowStyle}">

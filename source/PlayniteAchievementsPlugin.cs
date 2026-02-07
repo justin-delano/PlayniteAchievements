@@ -469,7 +469,7 @@ namespace PlayniteAchievements
             {
                 EnsureWpfFallbackResources();
 
-                var view = new PerGameView(
+                var view = new PerGameControl(
                     gameId,
                     _achievementService,
                     PlayniteApi,

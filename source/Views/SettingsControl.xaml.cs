@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Threading;
 using System.Threading.Tasks;
+using System.ComponentModel;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.ViewModels;
@@ -76,6 +77,32 @@ namespace PlayniteAchievements.Views
             set => SetValue(SteamFullyConfiguredProperty, value);
         }
 
+        public static readonly DependencyProperty RaFullyConfiguredProperty =
+            DependencyProperty.Register(
+                nameof(RaFullyConfigured),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool RaFullyConfigured
+        {
+            get => (bool)GetValue(RaFullyConfiguredProperty);
+            set => SetValue(RaFullyConfiguredProperty, value);
+        }
+
+        public static readonly DependencyProperty RaAuthStatusProperty =
+            DependencyProperty.Register(
+                nameof(RaAuthStatus),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_Status_NotChecked")));
+
+        public string RaAuthStatus
+        {
+            get => (string)GetValue(RaAuthStatusProperty);
+            set => SetValue(RaAuthStatusProperty, value);
+        }
+
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly SteamHTTPClient _steam;
@@ -114,7 +141,75 @@ namespace PlayniteAchievements.Views
                     _logger?.Info($"DataContext verified correct in Loaded event: {DataContext?.GetType().Name}");
                 }
                 await CheckSteamAuthAsync().ConfigureAwait(false);
+                UpdateRaAuthState();
+
+                // Subscribe to RA credential changes
+                if (_settingsViewModel.Settings.Persisted is PlayniteAchievementsSettingsPersisted persisted)
+                {
+                    PropertyChangedEventManager.AddHandler(persisted, OnRaCredentialChanged, nameof(RaUsername));
+                    PropertyChangedEventManager.AddHandler(persisted, OnRaCredentialChanged, nameof(RaWebApiKey));
+                }
             };
+        }
+
+        private void OnRaCredentialChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(RaUsername) || e.PropertyName == nameof(RaWebApiKey))
+            {
+                UpdateRaAuthState();
+            }
+        }
+
+        private void UpdateRaAuthState()
+        {
+            var settings = _settingsViewModel.Settings;
+            var hasUsername = !string.IsNullOrEmpty(settings?.Persisted?.RaUsername);
+            var hasApiKey = !string.IsNullOrEmpty(settings?.Persisted?.RaWebApiKey);
+            var fullyConfigured = hasUsername && hasApiKey;
+
+            SetRaFullyConfigured(fullyConfigured);
+
+            // Set status message based on combined state
+            if (fullyConfigured)
+            {
+                SetRaAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Ra_Configured"));
+            }
+            else if (!hasUsername && !hasApiKey)
+            {
+                SetRaAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Ra_BothNeeded"));
+            }
+            else if (!hasUsername)
+            {
+                SetRaAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Ra_UsernameNeeded"));
+            }
+            else
+            {
+                SetRaAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Ra_ApiKeyNeeded"));
+            }
+        }
+
+        private void SetRaFullyConfigured(bool fullyConfigured)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                RaFullyConfigured = fullyConfigured;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => RaFullyConfigured = fullyConfigured));
+            }
+        }
+
+        private void SetRaAuthStatus(string status)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                RaAuthStatus = status;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => RaAuthStatus = status));
+            }
         }
 
         // -----------------------------

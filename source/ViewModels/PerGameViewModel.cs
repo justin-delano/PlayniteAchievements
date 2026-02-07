@@ -15,7 +15,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public class PerGameViewModel : ObservableObject, IDisposable
+    public class PerGameControlModel : ObservableObject, IDisposable
     {
         private readonly AchievementManager _achievementManager;
         private readonly IPlayniteAPI _playniteApi;
@@ -27,7 +27,7 @@ namespace PlayniteAchievements.ViewModels
         private int _currentPage = 1;
         private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
 
-        public PerGameViewModel(
+        public PerGameControlModel(
             Guid gameId,
             AchievementManager achievementManager,
             IPlayniteAPI playniteApi,

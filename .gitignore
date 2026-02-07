@@ -67,3 +67,4 @@ bld/
 *.svclog
 *.scc
 .claude/
+.trees
