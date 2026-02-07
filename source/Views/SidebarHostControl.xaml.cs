@@ -175,10 +175,16 @@ namespace PlayniteAchievements.Views
                         }
 
                         var firstTimeCompleted = settings?.Persisted?.FirstTimeSetupCompleted ?? true;
-                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
+                        var cachedIds = _achievementManager.Cache.GetCachedGameIds();
+                        var hasCachedData = cachedIds != null && cachedIds.Count > 0;
+                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
 
-                        // Check if first-time setup is needed
-                        if (settings != null && !firstTimeCompleted)
+                        // Show landing page if:
+                        // 1. Haven't seen landing page before (!firstTimeCompleted)
+                        // 2. No data in achievements_cache (NO MATTER WHAT)
+                        bool showLandingPage = !firstTimeCompleted || !hasCachedData;
+
+                        if (settings != null && showLandingPage)
                         {
                             _logger.Info("Creating landing page");
                             CreateLandingPage(settings);
