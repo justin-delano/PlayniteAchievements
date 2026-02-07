@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
@@ -126,8 +127,35 @@ namespace PlayniteAchievements.Views
 
         private void GameNameButton_Click(object sender, RoutedEventArgs e)
         {
-            // Stop event from bubbling to DataGrid row to prevent selection change
+            // Stop event from bubbling to DataGrid row
             e.Handled = true;
+
+            // Clear the DataGrid selection to cancel the filter after navigation completes
+            if (sender is Button button)
+            {
+                var dataGrid = FindParent<DataGrid>(button);
+                if (dataGrid != null)
+                {
+                    // Use Dispatcher to ensure selection clears after command executes
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        dataGrid.SelectedItem = null;
+                    }), System.Windows.Threading.DispatcherPriority.Input);
+                }
+            }
+        }
+
+        // Helper to find parent visual element
+        private static T FindParent<T>(DependencyObject child) where T : DependencyObject
+        {
+            DependencyObject parent = VisualTreeHelper.GetParent(child);
+            while (parent != null)
+            {
+                if (parent is T result)
+                    return result;
+                parent = VisualTreeHelper.GetParent(parent);
+            }
+            return null;
         }
     }
 }
