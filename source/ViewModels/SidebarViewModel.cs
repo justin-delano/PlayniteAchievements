@@ -613,6 +613,18 @@ namespace PlayniteAchievements.ViewModels
             {
                 // Sync scan state when becoming active
                 IsScanning = _achievementManager.IsRebuilding;
+
+                // Restore progress UI state from AchievementManager
+                if (IsScanning)
+                {
+                    var lastReport = _achievementManager.GetLastRebuildProgress();
+                    if (lastReport != null)
+                    {
+                        ProgressPercent = CalculatePercent(lastReport);
+                        ProgressMessage = lastReport.Message ?? string.Empty;
+                    }
+                }
+
                 // Ensure progress UI shows correct state
                 OnPropertyChanged(nameof(ShowProgress));
                 RaiseCommandsChanged();

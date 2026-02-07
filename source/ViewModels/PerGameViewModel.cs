@@ -50,32 +50,34 @@ namespace PlayniteAchievements.ViewModels
             FirstPageCommand = new RelayCommand(_ => GoToFirstPage(), _ => CanGoPrevious);
             LastPageCommand = new RelayCommand(_ => GoToLastPage(), _ => CanGoNext);
 
-            ScanGameCommand = new RelayCommand(async (param) =>
-            {
-                if (IsScanning) return;
+            ScanGameCommand = new RelayCommand(
+                async (param) =>
+                {
+                    if (IsScanning) return;
 
-                IsScanning = true;
-                ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_Scanning");
-                IsStatusMessageVisible = true;
+                    IsScanning = true;
+                    ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_Scanning");
+                    IsStatusMessageVisible = true;
 
-                try
-                {
-                    await _achievementManager.StartManagedSingleGameScanAsync(_gameId);
-                    ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
-                    LoadGameData();
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error(ex, "Failed to scan game.");
-                    ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_ScanFailed");
-                }
-                finally
-                {
-                    await Task.Delay(3000);
-                    IsStatusMessageVisible = false;
-                    IsScanning = false;
-                }
-            });
+                    try
+                    {
+                        await _achievementManager.StartManagedSingleGameScanAsync(_gameId);
+                        ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+                        LoadGameData();
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex, "Failed to scan game.");
+                        ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_ScanFailed");
+                    }
+                    finally
+                    {
+                        await Task.Delay(3000);
+                        IsStatusMessageVisible = false;
+                        IsScanning = false;
+                    }
+                },
+                _ => !_achievementManager.IsRebuilding);
 
             // Subscribe to settings changes
             if (_settings != null)
@@ -84,6 +86,7 @@ namespace PlayniteAchievements.ViewModels
             }
             _achievementManager.GameCacheUpdated += OnGameCacheUpdated;
             _achievementManager.CacheInvalidated += OnCacheInvalidated;
+            _achievementManager.RebuildProgress += OnRebuildProgress;
 
             // Load data
             LoadGameData();
@@ -422,6 +425,11 @@ namespace PlayniteAchievements.ViewModels
             System.Windows.Application.Current?.Dispatcher?.Invoke(LoadGameData);
         }
 
+        private void OnRebuildProgress(object sender, ProgressReport report)
+        {
+            (ScanGameCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
         private void OnSettingsChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == "Persisted.HideAchievementsLockedForSelf"
@@ -464,6 +472,7 @@ namespace PlayniteAchievements.ViewModels
             }
             _achievementManager.GameCacheUpdated -= OnGameCacheUpdated;
             _achievementManager.CacheInvalidated -= OnCacheInvalidated;
+            _achievementManager.RebuildProgress -= OnRebuildProgress;
         }
 
         #endregion
