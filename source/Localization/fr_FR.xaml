@@ -17,8 +17,12 @@
 
     <!-- Settings Tabs -->
     <sys:String x:Key="LOCSteamAch_Settings_TabGeneral">Général</sys:String>
-    <sys:String x:Key="LOCSteamAch_Settings_TabSteam">Steam</sys:String>
-    <sys:String x:Key="LOCSteamAch_Settings_TabRetroAchievements">RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TabSteam">Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TabRetroAchievements">RetroAchievements</sys:String>
+
+    <!-- Providers -->
+    <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
 
     <!-- Steam auth -->
     <sys:String x:Key="LOCSteamAch_Settings_SteamConnection">Connexion Steam</sys:String>

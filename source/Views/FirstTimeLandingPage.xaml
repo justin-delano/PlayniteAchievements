@@ -250,13 +250,12 @@
                                 <!-- Fallback: IcoFont Playnite icon if executable icon not available -->
                                 <TextBlock Grid.Column="0" Text="&#xf0a2;"
                                            FontFamily="{DynamicResource FontIcoFont}"
-                                           Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
                                            VerticalAlignment="Center"
                                            Margin="0,0,10,0">
                                     <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding PlayniteIconPath}" Value="{x:Null}">
                                                     <Setter Property="Visibility" Value="Visible"/>
@@ -457,10 +456,11 @@
                     </Border>
                 </StackPanel>
 
+            </Grid>
+
             <!-- End constrained content container -->
             </StackPanel>
 
-            </Grid>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
