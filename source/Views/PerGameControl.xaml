@@ -558,7 +558,7 @@
                                            Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
                                 <!-- Progress bar for locked achievements with progress -->
                                 <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}">
-                                    <Grid Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}">
+                                    <Grid Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}" Margin="8,0">
                                         <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
                                                      Minimum="0" Maximum="100"
                                                      Height="18"
