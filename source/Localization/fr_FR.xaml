@@ -50,8 +50,6 @@
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">Voir les succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scanner un jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scan la sélection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ParityTest_Native">Test de parité UI (Natif)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ParityTest_Compatibility">Test de parité UI (Compatibilité)</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_FullAchievementScan">Analyse complète des succès</sys:String>
 
     <!-- ================================================================= -->
@@ -78,9 +76,6 @@
     <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Analyse favoris</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Single">Analyse jeu unique</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Analyse sélection</sys:String>
-
-    <!-- Provider Filters -->
-    <sys:String x:Key="LOCPlayAch_Provider_All">Tous</sys:String>
 
     <!-- ================================================================= -->
     <!-- COLUMNS (using common strings)                                    -->
@@ -113,6 +108,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_Status_AuthInvalid">La session Steam est invalide. Veuillez vous réauthentifier.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_AuthError">Erreur lors de la vérification du statut Steam.</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamAuth">Authentification Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamWebAuth">Authentification web Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_RaAuth">Authentification RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Ra_Configured">RetroAchievements configuré avec succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Ra_BothNeeded">Nom d'utilisateur et clé API requis</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Ra_UsernameNeeded">Nom d'utilisateur requis</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Ra_ApiKeyNeeded">Clé API requise</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId">ID utilisateur Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId_Help">Votre ID Steam 64 bits. Il est détecté automatiquement lors de l'authentification.</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
@@ -176,10 +177,7 @@
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Settings_AchievementIconSize">Taille des icônes de succès (px)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HideLocked">Masquer mes succès verrouillés</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSelfUnlockTime">Afficher ma date de déblocage</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowGamesWithoutPlaytime">Afficher les jeux auxquels je n'ai pas joué</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames">Ignorer les jeux non joués</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames_Help">Si coché, les jeux avec 0 temps de jeu seront ignorés lors des analyses.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Utiliser les images de couverture au lieu des icônes dans la liste des jeux</sys:String>
@@ -187,12 +185,8 @@
     <!-- ================================================================= -->
     <!-- OVERVIEW TAB                                                       -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Overview_Search">Rechercher</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Games">Filtrer les jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Filtrer les succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_HideNoUnlocks">Masquer sans succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_HideUnplayed">Masquer non joués</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_PerfectGame">Jeu parfait</sys:String>
 
     <!-- ================================================================= -->
     <!-- ACHIEVEMENTS TAB                                                   -->
@@ -295,7 +289,6 @@
     <!-- ================================================================= -->
     <!-- WINDOW TITLES                                                     -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Window_Achievements">Succès</sys:String>
 
     <!-- ================================================================= -->
     <!-- THEME INTEGRATION (CTRL-F Safe                                    -->

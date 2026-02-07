@@ -50,8 +50,6 @@
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scan Single Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scan Selected</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ParityTest_Native">UI Parity Test (Native)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ParityTest_Compatibility">UI Parity Test (Compatibility)</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_FullAchievementScan">Full Achievement Scan</sys:String>
 
     <!-- ================================================================= -->
@@ -78,9 +76,6 @@
     <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Scan Favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Single">Scan Game</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Scan Selected</sys:String>
-
-    <!-- Provider Filters -->
-    <sys:String x:Key="LOCPlayAch_Provider_All">All</sys:String>
 
     <!-- ================================================================= -->
     <!-- COLUMNS (using common strings)                                    -->
@@ -185,10 +180,7 @@
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Settings_AchievementIconSize">Achievement Icon Size (px)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HideLocked">Hide My Locked Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSelfUnlockTime">Show My Unlock Time</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowGamesWithoutPlaytime">Show games I have not played</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames">Ignore unplayed games</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames_Help">If checked, games with 0 playtime will be skipped during scans.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use cover images instead of icons in games list</sys:String>
@@ -196,12 +188,8 @@
     <!-- ================================================================= -->
     <!-- OVERVIEW TAB                                                       -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Overview_Search">Search</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Games">Search Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Search Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_HideNoUnlocks">Hide no unlocks</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_HideUnplayed">Hide unplayed</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_PerfectGame">Perfect Game</sys:String>
 
     <!-- ================================================================= -->
     <!-- ACHIEVEMENTS TAB                                                   -->
@@ -288,7 +276,7 @@
     <sys:String x:Key="LOCPlayAch_Sidebar_GamesOverview">Games Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_GlobalProgression">Global achievements progression</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">Achievements by Provider</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">Games Completion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">Perfect Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_RarityPieChart">Achievements by Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_Locked">Locked</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_Incomplete">Incomplete</sys:String>
@@ -304,7 +292,6 @@
     <!-- ================================================================= -->
     <!-- WINDOW TITLES                                                     -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Window_Achievements">Achievements</sys:String>
 
     <!-- ================================================================= -->
     <!-- THEME INTEGRATION (CTRL-F Safe                                    -->
