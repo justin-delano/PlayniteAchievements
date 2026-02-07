@@ -29,23 +29,49 @@
 
             <!-- Section header style -->
             <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="FontSize" Value="14"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Margin" Value="0,0,0,12"/>
+                <Setter Property="Margin" Value="0,0,0,14"/>
+                <Setter Property="Opacity" Value="0.9"/>
             </Style>
 
-            <!-- Section container style -->
+            <!-- Accent text style -->
+            <Style x:Key="AccentTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="FontWeight" Value="Medium"/>
+                <Setter Property="Foreground" Value="#4CC9F0"/>
+            </Style>
+
+            <!-- Modern button style -->
+            <Style x:Key="ModernActionButton" TargetType="Button"
+                   BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Padding" Value="18,8"/>
+                <Setter Property="MinWidth" Value="120"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Opacity" Value="0.85"/>
+                    </Trigger>
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter Property="Opacity" Value="0.7"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- Section container style with shadow -->
             <Style x:Key="SectionBorderStyle" TargetType="Border">
                 <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
-                <Setter Property="CornerRadius" Value="6"/>
-                <Setter Property="Padding" Value="16"/>
-                <Setter Property="Margin" Value="0,0,0,16"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="18"/>
+                <Setter Property="Margin" Value="0,0,0,20"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="1"/>
             </Style>
 
             <!-- Setting row style -->
             <Style x:Key="SettingRowStyle" TargetType="Grid">
-                <Setter Property="Margin" Value="0,0,0,12"/>
+                <Setter Property="Margin" Value="0,0,0,14"/>
             </Style>
 
             <!-- Muted text style -->
@@ -58,8 +84,8 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid Margin="20">
-        <TabControl x:Name="SettingsTabControl" SelectionChanged="TabControl_SelectionChanged">
+    <Grid Margin="24,20,24,24">
+        <TabControl x:Name="SettingsTabControl" SelectionChanged="TabControl_SelectionChanged" BorderThickness="0">
             <!-- ================== TAB: GENERAL SETTINGS ================== -->
             <TabItem x:Name="GeneralTab" Header="{DynamicResource LOCPlayAch_Settings_TabGeneral}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -67,21 +93,30 @@
                     <StackPanel Margin="20">
 
                         <!-- Plugin Header -->
-                        <StackPanel Margin="0,0,0,20">
+                        <StackPanel Margin="0,0,0,24">
                             <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
                                        Foreground="{DynamicResource TextBrush}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                       Margin="0,0,0,4" />
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6" />
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Description}"
                                        Style="{DynamicResource MutedTextStyle}"
-                                       />
+                                       Margin="0,0,0,8"/>
+                            <!-- Decorative accent line -->
+                            <Border Height="2"
+                                    Width="60"
+                                    HorizontalAlignment="Left"
+                                    Background="#4CC9F0"
+                                    CornerRadius="1"
+                                    Margin="0,8,0,0"/>
                         </StackPanel>
 
                         <!-- ================== RARITY THRESHOLDS ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Section_RarityThresholds}"
-                                           Style="{StaticResource SectionHeaderStyle}"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,12"/>
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,16">
@@ -104,10 +139,16 @@
 
                                     <!-- Ultra Rare -->
                                     <Border Grid.Row="0" Grid.Column="0"
-                                            Background="#20E91E63"
-                                            CornerRadius="4"
-                                            Padding="12"
+                                            Background="#22E91E63"
+                                            CornerRadius="8"
+                                            Padding="14"
                                             Margin="0,0,8,8">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="6"
+                                                            ShadowDepth="1"
+                                                            Opacity="0.15"
+                                                            Color="#000000"/>
+                                        </Border.Effect>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -143,10 +184,16 @@
 
                                     <!-- Rare -->
                                     <Border Grid.Row="0" Grid.Column="1"
-                                            Background="#20FF9800"
-                                            CornerRadius="4"
-                                            Padding="12"
+                                            Background="#22FF9800"
+                                            CornerRadius="8"
+                                            Padding="14"
                                             Margin="8,0,0,8">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="6"
+                                                            ShadowDepth="1"
+                                                            Opacity="0.15"
+                                                            Color="#000000"/>
+                                        </Border.Effect>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -182,10 +229,16 @@
 
                                     <!-- Uncommon -->
                                     <Border Grid.Row="1" Grid.Column="0"
-                                            Background="#2003A9F4"
-                                            CornerRadius="4"
-                                            Padding="12"
+                                            Background="#2203A9F4"
+                                            CornerRadius="8"
+                                            Padding="14"
                                             Margin="0,0,8,8">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="6"
+                                                            ShadowDepth="1"
+                                                            Opacity="0.15"
+                                                            Color="#000000"/>
+                                        </Border.Effect>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -221,10 +274,16 @@
 
                                     <!-- Common -->
                                     <Border Grid.Row="1" Grid.Column="1"
-                                            Background="#208BC34A"
-                                            CornerRadius="4"
-                                            Padding="12"
+                                            Background="#228BC34A"
+                                            CornerRadius="8"
+                                            Padding="14"
                                             Margin="8,0,0,8">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="6"
+                                                            ShadowDepth="1"
+                                                            Opacity="0.15"
+                                            Color="#000000"/>
+                                        </Border.Effect>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -264,7 +323,7 @@
                                            Style="{StaticResource SectionHeaderStyle}"/>
 
                                 <!-- Periodic Updates -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
+                                <Grid Style="{StaticResource SettingRowStyle}" Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -343,14 +402,14 @@
                                 <StackPanel>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableNotifications}"
                                                   IsChecked="{Binding Persisted.EnableNotifications}"
-                                              Margin="0,0,0,8"/>
+                                              Margin="0,0,0,10"/>
                                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_NotifyPeriodicUpdates}"
                                                   IsChecked="{Binding Persisted.NotifyPeriodicUpdates}"
-                                              Margin="16,0,0,8"
+                                              Margin="18,0,0,10"
                                                   IsEnabled="{Binding Persisted.EnableNotifications}"/>
                                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_NotifyOnRebuild}"
                                                   IsChecked="{Binding Persisted.NotifyOnRebuild}"
-                                              Margin="16,0,0,0"
+                                              Margin="18,0,0,0"
                                                   IsEnabled="{Binding Persisted.EnableNotifications}"/>
                                 </StackPanel>
                             </StackPanel>
@@ -366,10 +425,10 @@
                                 <StackPanel>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideLocked}"
                                                   IsChecked="{Binding Persisted.HideAchievementsLockedForSelf}"
-                                              Margin="0,0,0,8"/>
+                                              Margin="0,0,0,10"/>
                                     <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
                                                   IsChecked="{Binding Persisted.UseCoverImages}"
-                                              Margin="0,0,0,8"/>
+                                              Margin="0,0,0,10"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -426,7 +485,9 @@
                                     <Button Grid.Row="0" Grid.Column="1"
                                             Content="{DynamicResource LOCPlayAch_Settings_WipeCache_All}"
                                             Click="WipeCache_Click"
-                                            Margin="16,0,0,0"/>
+                                            Padding="14,6"
+                                            Margin="16,0,0,0"
+                                            MinWidth="90"/>
 
                                     <TextBlock Grid.Row="1" Grid.Column="0"
                                                Text="{DynamicResource LOCPlayAch_Settings_ImageCache_Description}"
@@ -437,7 +498,9 @@
                                     <Button Grid.Row="1" Grid.Column="1"
                                             Content="{DynamicResource LOCPlayAch_Settings_ImageCache_Clear}"
                                             Click="ClearImageCache_Click"
-                                            Margin="16,10,0,0"/>
+                                            Padding="14,6"
+                                            Margin="16,10,0,0"
+                                            MinWidth="90"/>
 
                                     <TextBlock Grid.Row="2" Grid.Column="0"
                                                Text="{DynamicResource LOCPlayAch_Settings_ResetFirstTimeSetup}"
@@ -448,7 +511,9 @@
                                     <Button Grid.Row="2" Grid.Column="1"
                                             Content="{DynamicResource LOCPlayAch_Settings_ResetFirstTimeSetupButton}"
                                             Click="ResetFirstTimeSetup_Click"
-                                            Margin="16,10,0,0"/>
+                                            Padding="14,6"
+                                            Margin="16,10,0,0"
+                                            MinWidth="90"/>
 
                                     <CheckBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
                                               Content="{DynamicResource LOCPlayAch_Settings_EnableDiagnostics}"
@@ -481,7 +546,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="180"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
@@ -509,7 +574,7 @@
                                 <!-- Steam Language -->
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="180"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
@@ -558,7 +623,7 @@
                                 <!-- Steam Authentication Status -->
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="180"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
@@ -570,8 +635,16 @@
 
                                     <Border Grid.Column="1"
                                             Background="{DynamicResource PanelBackgroundBrush}"
-                                            CornerRadius="4"
-                                            Padding="12">
+                                            CornerRadius="8"
+                                            Padding="16"
+                                            BorderBrush="{DynamicResource ControlBorderBrush}"
+                                            BorderThickness="1">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="8"
+                                                            ShadowDepth="2"
+                                                            Opacity="0.2"
+                                                            Color="#000000"/>
+                                        </Border.Effect>
                                         <Grid>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
@@ -595,18 +668,15 @@
                                                 <Button Content="{DynamicResource LOCPlayAch_Settings_CheckSteamAuth}"
                                                         Style="{StaticResource SteamAuthActionButtonStyle}"
                                                         Click="SteamAuth_Check_Click"
-                                                        MinWidth="220"
-                                                        Margin="0,0,0,8"/>
+                                                        Margin="0,0,0,10"/>
                                                 <Button Content="{DynamicResource LOCPlayAch_Settings_ReauthSteam}"
                                                         Style="{StaticResource SteamAuthActionButtonStyle}"
                                                         Click="SteamAuth_Authenticate_Click"
-                                                        MinWidth="220"
-                                                        Margin="0,0,0,8"/>
+                                                        Margin="0,0,0,10"/>
                                                 <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                         ToolTip="{DynamicResource LOCPlayAch_Tooltip_Clear}"
                                                         Style="{StaticResource SteamAuthActionButtonStyle}"
-                                                        Click="SteamAuth_Clear_Click"
-                                                        MinWidth="220"/>
+                                                        Click="SteamAuth_Clear_Click"/>
                                             </StackPanel>
 
                                             <ProgressBar Grid.Row="2"
@@ -636,7 +706,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="180"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
@@ -681,7 +751,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="180"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
@@ -708,7 +778,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="180"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
@@ -740,7 +810,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="180"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
@@ -775,10 +845,10 @@
                                 <StackPanel>
                                         <CheckBox Content="Enable archive scanning (.zip/.7z)"
                                                   IsChecked="{Binding Persisted.EnableArchiveScanning}"
-                                              Margin="0,0,0,8"/>
+                                              Margin="0,0,0,10"/>
                                     <CheckBox Content="Enable disc hashing (for disc-based consoles)"
                                                   IsChecked="{Binding Persisted.EnableDiscHashing}"
-                                              Margin="0,0,0,8"/>
+                                              Margin="0,0,0,10"/>
                                 </StackPanel>
 
                                 <Grid Style="{StaticResource SettingRowStyle}">
