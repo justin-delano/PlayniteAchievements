@@ -57,12 +57,13 @@ namespace PlayniteAchievements.ViewModels
             PieSeries.Clear();
             if (totalGames == 0) return;
 
+            // Perfect games - use rainbow gradient purple color (from FillRainbow gradient)
             PieSeries.Add(new PieSeries
             {
                 Title = perfectLabel,
                 Values = new ChartValues<double> { perfectGames },
-                Fill = new SolidColorBrush(Color.FromRgb(76, 175, 80)),
-                DataLabels = true
+                Fill = new SolidColorBrush(Color.FromRgb(156, 39, 176)),
+                DataLabels = false
             });
 
             var incomplete = totalGames - perfectGames;
@@ -72,8 +73,8 @@ namespace PlayniteAchievements.ViewModels
                 {
                     Title = incompleteLabel,
                     Values = new ChartValues<double> { incomplete },
-                    Fill = new SolidColorBrush(Color.FromArgb(100, 158, 158, 158)),
-                    DataLabels = true
+                    Fill = new SolidColorBrush(Color.FromArgb(60, 158, 158, 158)),
+                    DataLabels = false
                 });
             }
         }
@@ -101,7 +102,7 @@ namespace PlayniteAchievements.ViewModels
             AddPieSection(rareLabel, rare, Color.FromRgb(255, 193, 7));
             AddPieSection(uncommonLabel, uncommon, Color.FromRgb(158, 158, 158));
             AddPieSection(commonLabel, common, Color.FromRgb(139, 69, 19));
-            AddPieSection(lockedLabel, locked, Color.FromArgb(100, 97, 97, 97));
+            AddPieSection(lockedLabel, locked, Color.FromArgb(60, 97, 97, 97));
         }
 
         private void AddPieSection(string title, int value, Color color)
@@ -113,7 +114,7 @@ namespace PlayniteAchievements.ViewModels
                     Title = title,
                     Values = new ChartValues<double> { value },
                     Fill = new SolidColorBrush(color),
-                    DataLabels = true
+                    DataLabels = false
                 });
             }
         }
