@@ -108,7 +108,9 @@ namespace PlayniteAchievements.Views.Converters
                 {
                     // Try to find a "Geo" + iconName resource (e.g., GeoSteam for ProviderIconSteam)
                     string geoKey = "Geo" + iconKey.Replace("ProviderIcon", "");
-                    if (Application.Current.FindResource(geoKey) is Geometry geometry)
+
+                    var geometry = Application.Current.TryFindResource(geoKey) as Geometry;
+                    if (geometry != null)
                     {
                         // Parse the color
                         if (ColorConverter.ConvertFromString(colorHex) is Color color)

@@ -31,10 +31,10 @@ namespace PlayniteAchievements.ViewModels
 
             var incomplete = totalGames - perfectGames;
 
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color)>();
-            dataPoints.Add((perfectLabel, perfectGames, "BadgePerfectGame", Color.FromRgb(33, 150, 243)));
+            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex)>();
+            dataPoints.Add((perfectLabel, perfectGames, "BadgePerfectGame", Color.FromRgb(33, 150, 243), string.Empty));
             if (incomplete > 0)
-                dataPoints.Add((incompleteLabel, incomplete, "BadgeLocked", LockedTransparent));
+                dataPoints.Add((incompleteLabel, incomplete, "BadgeLocked", LockedTransparent, string.Empty));
 
             ApplyMinimumVisibilityRule(dataPoints);
         }
@@ -48,13 +48,13 @@ namespace PlayniteAchievements.ViewModels
             PieSeries.Clear();
             LegendItems.Clear();
 
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color)>();
-            dataPoints.Add((ultraRareLabel, ultraRare, "BadgePlatinumHexagon", Color.FromRgb(135, 206, 250)));
-            dataPoints.Add((rareLabel, rare, "BadgeGoldPentagon", Color.FromRgb(255, 193, 7)));
-            dataPoints.Add((uncommonLabel, uncommon, "BadgeSilverSquare", Color.FromRgb(158, 158, 158)));
-            dataPoints.Add((commonLabel, common, "BadgeBronzeTriangle", Color.FromRgb(139, 69, 19)));
+            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex)>();
+            dataPoints.Add((ultraRareLabel, ultraRare, "BadgePlatinumHexagon", Color.FromRgb(135, 206, 250), string.Empty));
+            dataPoints.Add((rareLabel, rare, "BadgeGoldPentagon", Color.FromRgb(255, 193, 7), string.Empty));
+            dataPoints.Add((uncommonLabel, uncommon, "BadgeSilverSquare", Color.FromRgb(158, 158, 158), string.Empty));
+            dataPoints.Add((commonLabel, common, "BadgeBronzeTriangle", Color.FromRgb(139, 69, 19), string.Empty));
             if (locked > 0)
-                dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent));
+                dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent, string.Empty));
 
             // Filter to only include non-zero values
             dataPoints = dataPoints.Where(d => d.Count > 0).ToList();
@@ -81,7 +81,7 @@ namespace PlayniteAchievements.ViewModels
             if (unlockedByProvider == null || !unlockedByProvider.Any())
                 return;
 
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color)>();
+            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex)>();
 
             // Sort providers by count descending
             foreach (var provider in unlockedByProvider.OrderByDescending(p => p.Value))
@@ -101,21 +101,21 @@ namespace PlayniteAchievements.ViewModels
                 // Parse color hex to Color
                 if (ColorConverter.ConvertFromString(colorHex) is Color color)
                 {
-                    dataPoints.Add((providerName, count, iconKey, color));
+                    dataPoints.Add((providerName, count, iconKey, color, colorHex));
                 }
                 else
                 {
-                    dataPoints.Add((providerName, count, iconKey, Colors.Gray));
+                    dataPoints.Add((providerName, count, iconKey, Colors.Gray, "#888888"));
                 }
             }
 
             if (totalLocked > 0)
-                dataPoints.Add((lockedLabel, totalLocked, "BadgeLocked", LockedTransparent));
+                dataPoints.Add((lockedLabel, totalLocked, "BadgeLocked", LockedTransparent, string.Empty));
 
             ApplyMinimumVisibilityRule(dataPoints);
         }
 
-        private void ApplyMinimumVisibilityRule(List<(string Label, int Count, string IconKey, Color Color)> dataPoints)
+        private void ApplyMinimumVisibilityRule(List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex)> dataPoints)
         {
             if (dataPoints.Count == 0) return;
 
@@ -169,11 +169,23 @@ namespace PlayniteAchievements.ViewModels
                     DataLabels = false
                 });
 
-                // Add to legend (always show, even if count is 0)
-                // Use consistent legend color for locked items ( BadgeLocked icon)
-                string legendColor = dataPoints[i].IconKey == "BadgeLocked"
-                    ? LockedLegendColor
-                    : $"#{dataPoints[i].Color.R:X2}{dataPoints[i].Color.G:X2}{dataPoints[i].Color.B:X2}";
+                // Determine legend color: use OriginalColorHex for providers, otherwise generate from Color
+                string legendColor;
+                if (!string.IsNullOrEmpty(dataPoints[i].OriginalColorHex))
+                {
+                    // Use original color hex from provider (e.g., "#B0B0B0")
+                    legendColor = dataPoints[i].OriginalColorHex;
+                }
+                else if (dataPoints[i].IconKey == "BadgeLocked")
+                {
+                    // Locked items use consistent color
+                    legendColor = LockedLegendColor;
+                }
+                else
+                {
+                    // Generate from Color (for badges)
+                    legendColor = $"#{dataPoints[i].Color.R:X2}{dataPoints[i].Color.G:X2}{dataPoints[i].Color.B:X2}";
+                }
 
                 LegendItems.Add(new LegendItem
                 {
