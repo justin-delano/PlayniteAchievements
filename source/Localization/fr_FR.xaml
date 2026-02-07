@@ -35,6 +35,7 @@
     <!-- PLUGIN                                                             -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Title_PluginName">Playnite Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_Scan">Analyse Playnite Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Paramètres Playnite Achievements</sys:String>
 
     <!-- ================================================================= -->

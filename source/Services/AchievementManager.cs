@@ -50,6 +50,18 @@ namespace PlayniteAchievements.Services
         public ICacheManager Cache => _cacheService;
 
         /// <summary>
+        /// Predefined scan modes available in the plugin.
+        /// </summary>
+        private static readonly ScanMode[] PredefinedScanModes = new[]
+        {
+            new ScanMode(ScanModeKeys.Quick, "LOCPlayAch_ScanMode_Quick"),
+            new ScanMode(ScanModeKeys.Full, "LOCPlayAch_ScanMode_Full"),
+            new ScanMode(ScanModeKeys.Installed, "LOCPlayAch_ScanMode_Installed"),
+            new ScanMode(ScanModeKeys.Favorites, "LOCPlayAch_ScanMode_Favorites"),
+            new ScanMode(ScanModeKeys.Single, "LOCPlayAch_ScanMode_Single")
+        };
+
+        /// <summary>
         /// Checks if at least one provider has valid authentication credentials configured.
         /// </summary>
         public bool HasAnyAuthenticatedProvider() => _providers.Any(p => p.IsAuthenticated);
@@ -58,6 +70,18 @@ namespace PlayniteAchievements.Services
         /// Gets the list of available data providers.
         /// </summary>
         public IReadOnlyList<IDataProvider> GetProviders() => _providers;
+
+        /// <summary>
+        /// Gets the list of available scan modes with localized display names.
+        /// </summary>
+        public IReadOnlyList<ScanMode> GetScanModes()
+        {
+            foreach (var mode in PredefinedScanModes)
+            {
+                mode.DisplayName = ResourceProvider.GetString(mode.DisplayNameResourceKey) ?? mode.Key;
+            }
+            return PredefinedScanModes;
+        }
 
         public event EventHandler<GameCacheUpdatedEventArgs> GameCacheUpdated
         {
@@ -231,14 +255,6 @@ namespace PlayniteAchievements.Services
 
                 var msg = finalMessage?.Invoke(payload) ?? ResourceProvider.GetString("LOCPlayAch_Status_Ready");
                 Report(msg, 1, 1);
-
-                PostToUi(() =>
-                {
-                    _api?.Notifications?.Add(new NotificationMessage(
-                        "SteamAch_RebuildComplete",
-                        msg,
-                        NotificationType.Info));
-                });
             }
             catch (OperationCanceledException)
             {
@@ -250,14 +266,6 @@ namespace PlayniteAchievements.Services
                 _logger.Error(ex, errorLogMessage);
                 var errorMsg = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
                 Report(errorMsg, 0, 1);
-
-                PostToUi(() =>
-                {
-                    _api?.Notifications?.Add(new NotificationMessage(
-                        "SteamAch_RebuildError",
-                        $"{errorMsg}: {ex.Message}",
-                        NotificationType.Error));
-                });
             }
             finally
             {
@@ -492,6 +500,117 @@ namespace PlayniteAchievements.Services
                 cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
                 payload => ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
                 "Game list scan failed."
+            );
+        }
+
+        /// <summary>
+        /// Executes a scan based on the specified scan mode key.
+        /// </summary>
+        public Task ExecuteScanAsync(string modeKey, Guid? singleGameId = null)
+        {
+            if (string.IsNullOrWhiteSpace(modeKey))
+            {
+                modeKey = ScanModeKeys.Quick;
+            }
+
+            switch (modeKey)
+            {
+                case ScanModeKeys.Quick:
+                    return StartManagedQuickRefreshAsync();
+
+                case ScanModeKeys.Full:
+                    return StartManagedRebuildAsync();
+
+                case ScanModeKeys.Installed:
+                    return StartManagedInstalledGamesScanAsync();
+
+                case ScanModeKeys.Favorites:
+                    return StartManagedFavoritesScanAsync();
+
+                case ScanModeKeys.Single:
+                    if (singleGameId.HasValue)
+                        return StartManagedSingleGameScanAsync(singleGameId.Value);
+                    _logger.Info("Single scan mode requested but no game ID provided.");
+                    return Task.CompletedTask;
+
+                case ScanModeKeys.LibrarySelected:
+                    return StartManagedLibrarySelectedGamesScanAsync();
+
+                default:
+                    _logger.Warn($"Unknown scan mode: {modeKey}, falling back to Quick.");
+                    return StartManagedQuickRefreshAsync();
+            }
+        }
+
+        private Task StartManagedInstalledGamesScanAsync()
+        {
+            var providers = GetProviders();
+            var gameIds = _api.Database.Games
+                .Where(g => g != null && g.IsInstalled)
+                .Where(g => providers.Any(p => p.IsCapable(g)))
+                .Select(g => g.Id)
+                .ToList();
+
+            if (gameIds.Count == 0)
+            {
+                _logger.Info("No installed games found for scan.");
+                return Task.CompletedTask;
+            }
+
+            return RunManagedAsync(
+                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
+                payload => string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
+                    gameIds.Count),
+                "Installed games scan failed."
+            );
+        }
+
+        private Task StartManagedFavoritesScanAsync()
+        {
+            var providers = GetProviders();
+            var gameIds = _api.Database.Games
+                .Where(g => g != null && g.Favorite)
+                .Where(g => providers.Any(p => p.IsCapable(g)))
+                .Select(g => g.Id)
+                .ToList();
+
+            if (gameIds.Count == 0)
+            {
+                _logger.Info("No favorite games found for scan.");
+                return Task.CompletedTask;
+            }
+
+            return RunManagedAsync(
+                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
+                payload => string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
+                    gameIds.Count),
+                "Favorites scan failed."
+            );
+        }
+
+        private Task StartManagedLibrarySelectedGamesScanAsync()
+        {
+            var providers = GetProviders();
+            var selectedGames = _api.MainView.SelectedGames?
+                .Where(g => g != null)
+                .Where(g => providers.Any(p => p.IsCapable(g)))
+                .ToList();
+
+            if (selectedGames == null || selectedGames.Count == 0)
+            {
+                _logger.Info("No games selected in Playnite library for scan.");
+                return Task.CompletedTask;
+            }
+
+            var gameIds = selectedGames.Select(g => g.Id).ToList();
+            return RunManagedAsync(
+                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
+                payload => string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
+                    gameIds.Count),
+                "Library selected games scan failed."
             );
         }
 

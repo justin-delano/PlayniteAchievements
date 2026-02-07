@@ -508,7 +508,7 @@ namespace PlayniteAchievements
                 };
 
                 var window = PlayniteUiProvider.CreateExtensionWindow(
-                    string.Empty,
+                    progressWindow.WindowTitle,
                     progressWindow,
                     windowOptions
                 );

@@ -768,9 +768,6 @@
                     <StackPanel Margin="20">
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Section_RetroAchievements}"
-                                           Style="{StaticResource SectionHeaderStyle}"/>
-
                                 <!-- RetroAchievements Authentication (unified box) -->
                                 <Grid Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions>
@@ -782,7 +779,8 @@
                                                Text="{DynamicResource LOCPlayAch_Label_RaAuth}"
                                                Foreground="{DynamicResource TextBrush}"
                                                VerticalAlignment="Top"
-                                               Margin="0,8,0,0"/>
+                                               Margin="0,8,0,0"
+                                               TextWrapping="Wrap"/>
 
                                     <!-- Unified Auth Card (green if BOTH username + API key, red otherwise) -->
                                     <Border Grid.Column="1"

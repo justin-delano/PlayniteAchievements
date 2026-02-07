@@ -12,6 +12,7 @@ using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
+using ScanModeKeys = PlayniteAchievements.Models.ScanModeKeys;
 
 namespace PlayniteAchievements.ViewModels
 {
@@ -45,6 +46,7 @@ namespace PlayniteAchievements.ViewModels
 
             // Initialize commands
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
+            DismissStatusCommand = new RelayCommand(_ => DismissStatus(), _ => CanDismissStatus);
             NextPageCommand = new RelayCommand(_ => GoToNextPage(), _ => CanGoNext);
             PreviousPageCommand = new RelayCommand(_ => GoToPreviousPage(), _ => CanGoPrevious);
             FirstPageCommand = new RelayCommand(_ => GoToFirstPage(), _ => CanGoPrevious);
@@ -61,20 +63,26 @@ namespace PlayniteAchievements.ViewModels
 
                     try
                     {
-                        await _achievementManager.StartManagedSingleGameScanAsync(_gameId);
-                        ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+                        await _achievementManager.ExecuteScanAsync(ScanModeKeys.Single, _gameId);
+
+                        // Load updated data
                         LoadGameData();
+
+                        // Simple success message
+                        ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error(ex, "Failed to scan game.");
-                        ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_ScanFailed");
+                        _logger.Error(ex, $"Failed to scan game {_gameId}.");
+                        ScanStatusMessage = string.Format(
+                            ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"),
+                            ex.Message);
                     }
                     finally
                     {
+                        IsScanning = false;
                         await Task.Delay(3000);
                         IsStatusMessageVisible = false;
-                        IsScanning = false;
                     }
                 },
                 _ => !_achievementManager.IsRebuilding);
@@ -211,8 +219,17 @@ namespace PlayniteAchievements.ViewModels
         public bool IsStatusMessageVisible
         {
             get => _isStatusMessageVisible;
-            private set => SetValue(ref _isStatusMessageVisible, value);
+            private set
+            {
+                if (SetValueAndReturn(ref _isStatusMessageVisible, value))
+                {
+                    OnPropertyChanged(nameof(CanDismissStatus));
+                    (DismissStatusCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                }
+            }
         }
+
+        public bool CanDismissStatus => IsStatusMessageVisible;
 
         private bool _isTimelineVisible = false;
         public bool IsTimelineVisible
@@ -227,6 +244,7 @@ namespace PlayniteAchievements.ViewModels
 
         public ICommand RevealAchievementCommand { get; }
         public ICommand ScanGameCommand { get; }
+        public ICommand DismissStatusCommand { get; }
         public ICommand NextPageCommand { get; }
         public ICommand PreviousPageCommand { get; }
         public ICommand FirstPageCommand { get; }
@@ -414,6 +432,11 @@ namespace PlayniteAchievements.ViewModels
             item?.ToggleReveal();
         }
 
+        private void DismissStatus()
+        {
+            IsStatusMessageVisible = false;
+        }
+
         private void OnGameCacheUpdated(object sender, GameCacheUpdatedEventArgs e)
         {
             if (e.GameId == _gameId.ToString())
@@ -429,6 +452,39 @@ namespace PlayniteAchievements.ViewModels
 
         private void OnRebuildProgress(object sender, ProgressReport report)
         {
+            if (report == null) return;
+
+            // Check if this progress is for our game
+            var isForOurGame = report.Message?.Contains(_gameId.ToString()) == true ||
+                               (GameName != null && report.Message?.Contains(GameName) == true);
+
+            if (!isForOurGame && IsScanning)
+            {
+                // If we're scanning and get progress not for our game, update generic status
+                ScanStatusMessage = report.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Scanning");
+                OnPropertyChanged(nameof(ScanStatusMessage));
+            }
+            else if (isForOurGame)
+            {
+                // Update with specific progress for our game
+                ScanStatusMessage = report.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Scanning");
+                OnPropertyChanged(nameof(ScanStatusMessage));
+            }
+
+            // Handle completion
+            if (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps)
+            {
+                IsScanning = false;
+                OnPropertyChanged(nameof(IsScanning));
+            }
+            else if (report.IsCanceled)
+            {
+                IsScanning = false;
+                ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
+                OnPropertyChanged(nameof(IsScanning));
+                OnPropertyChanged(nameof(ScanStatusMessage));
+            }
+
             (ScanGameCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 

@@ -49,10 +49,10 @@ namespace PlayniteAchievements.ViewModels
 
         public string ScanRunningNote => ResourceProvider.GetString("LOCPlayAch_Progress_ScanRunningNote");
 
-        public string WindowTitle => ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
+        public string WindowTitle => ResourceProvider.GetString("LOCPlayAch_Title_Scan");
 
         public ICommand HideCommand { get; }
-        public ICommand CancelCommand { get; }
+        public RelayCommand CancelCommand { get; }
         public ICommand ContinueCommand { get; }
 
         public ScanProgressWindowViewModel(AchievementManager achievementManager, ILogger logger)
@@ -90,6 +90,9 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(IsScanning));
             OnPropertyChanged(nameof(ShowInProgressButtons));
             OnPropertyChanged(nameof(ShowCompleteButtons));
+
+            // Update cancel button enabled state
+            CancelCommand?.RaiseCanExecuteChanged();
 
             if (report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps))
             {

@@ -175,7 +175,7 @@ namespace PlayniteAchievements.Services.Images
                         encoder.Save(fs);
                     }
 
-                    _logger?.Debug($"Cached icon: {cachePath}");
+                    // _logger?.Debug($"Cached icon: {cachePath}");
                     return cachePath;
                 }
             }
