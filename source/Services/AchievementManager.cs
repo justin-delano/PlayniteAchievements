@@ -475,7 +475,7 @@ namespace PlayniteAchievements.Services
         {
             return RunManagedAsync(
                 cancel => ScanAsync(SingleGameOptions(playniteGameId), HandleUpdate, cancel),
-                payload => ResourceProvider.GetString("LOCPlayAch_Status_SingleGameComplete"),
+                payload => ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
                 "Single game scan failed."
             );
         }
