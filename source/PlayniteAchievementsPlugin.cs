@@ -251,7 +251,7 @@ namespace PlayniteAchievements
                     MenuSection = "Playnite Achievements",
                     Action = (a) =>
                     {
-                        _ = _achievementService.ExecuteScanAsync(Models.ScanModeKeys.LibrarySelected);
+                        ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.LibrarySelected));
                     }
                 };
                 yield break;
@@ -280,7 +280,7 @@ namespace PlayniteAchievements
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
-                    _ = _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Single, game.Id);
+                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Single, game.Id));
                 }
             };
         }

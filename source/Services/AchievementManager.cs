@@ -58,7 +58,8 @@ namespace PlayniteAchievements.Services
             new ScanMode(ScanModeKeys.Full, "LOCPlayAch_ScanMode_Full"),
             new ScanMode(ScanModeKeys.Installed, "LOCPlayAch_ScanMode_Installed"),
             new ScanMode(ScanModeKeys.Favorites, "LOCPlayAch_ScanMode_Favorites"),
-            new ScanMode(ScanModeKeys.Single, "LOCPlayAch_ScanMode_Single")
+            new ScanMode(ScanModeKeys.Single, "LOCPlayAch_ScanMode_Single"),
+            new ScanMode(ScanModeKeys.LibrarySelected, "LOCPlayAch_ScanMode_Selected")
         };
 
         /// <summary>
