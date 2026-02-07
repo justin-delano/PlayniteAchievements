@@ -486,8 +486,7 @@
                             <TextBox Grid.Column="0"
                                      Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
                                      VerticalContentAlignment="Center"
-                                     Padding="6,4"
-                                     Watermark="Search games..."/>
+                                     Padding="6,4"/>
 
                             <ComboBox Grid.Column="1"
                                       ItemsSource="{Binding ProviderFilterOptions}"
@@ -547,8 +546,7 @@
                             <TextBox Grid.Column="1"
                                      Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
                                      VerticalContentAlignment="Center"
-                                     Padding="6,4"
-                                     Watermark="Search achievements..."/>
+                                     Padding="6,4"/>
 
                             <Button Grid.Column="2"
                                     Content="x"
