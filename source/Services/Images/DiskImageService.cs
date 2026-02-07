@@ -68,7 +68,7 @@ namespace PlayniteAchievements.Services.Images
         /// Generate cache filename from URI using SHA256 hash.
         /// If gameId is provided, creates per-game subfolder structure.
         /// </summary>
-        private string GetIconCachePathFromUri(string uri, int decodeSize, string gameId = null)
+        public string GetIconCachePathFromUri(string uri, int decodeSize, string gameId = null)
         {
             // Create hash-based filename from the URI
             using (var sha = SHA256.Create())

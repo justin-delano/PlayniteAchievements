@@ -413,16 +413,31 @@ namespace PlayniteAchievements.Services
                 var gameIdStr = data.PlayniteGameId?.ToString();
                 foreach (var achievement in data.Achievements)
                 {
-                    if (!string.IsNullOrWhiteSpace(achievement.IconPath) &&
-                        (achievement.IconPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                         achievement.IconPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
+                    if (string.IsNullOrWhiteSpace(achievement.IconPath))
+                        continue;
+
+                    bool isHttpUrl = achievement.IconPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                                    achievement.IconPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+
+                    if (!isHttpUrl)
+                        continue;
+
+                    // Skip async call if already cached
+                    if (_diskImageService.IsIconCached(achievement.IconPath, 0, gameIdStr))
                     {
-                        var localPath = await _diskImageService.GetOrDownloadIconAsync(
-                            achievement.IconPath, 0, cancel, gameIdStr).ConfigureAwait(false);
-                        if (!string.IsNullOrWhiteSpace(localPath))
+                        var cachedPath = _diskImageService.GetIconCachePathFromUri(achievement.IconPath, 0, gameIdStr);
+                        if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
                         {
-                            achievement.IconPath = localPath;
+                            achievement.IconPath = cachedPath;
+                            continue;
                         }
+                    }
+
+                    var localPath = await _diskImageService.GetOrDownloadIconAsync(
+                        achievement.IconPath, 0, cancel, gameIdStr).ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(localPath))
+                    {
+                        achievement.IconPath = localPath;
                     }
                 }
             }
