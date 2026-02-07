@@ -77,8 +77,7 @@
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
             </StackPanel>
 
-            <!-- Constrained Content Container (75% width, 25% margins) -->
-            <StackPanel MaxWidth="400" HorizontalAlignment="Center">
+            <StackPanel MinWidth="400" MaxWidth="800" HorizontalAlignment="Center">
 
             <!-- Provider Status List - Always Visible -->
             <StackPanel Margin="0,0,0,16">
@@ -253,9 +252,10 @@
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
                                            VerticalAlignment="Center"
-                                           Margin="0,0,10,0">
+                                           Margin="0,0,10,0"
+                                           Visibility="Collapsed">
                                     <TextBlock.Style>
-                                        <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                                        <Style TargetType="TextBlock">
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding PlayniteIconPath}" Value="{x:Null}">
                                                     <Setter Property="Visibility" Value="Visible"/>

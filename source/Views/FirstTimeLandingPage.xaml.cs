@@ -72,6 +72,30 @@ namespace PlayniteAchievements.Views
         public ObservableCollection<ProviderStatus> Providers => _providers;
 
         /// <summary>
+        /// Gets the Playnite application icon path for use in the UI.
+        /// Returns the Playnite executable path which can be used as an Image source.
+        /// </summary>
+        public string PlayniteIconPath
+        {
+            get
+            {
+                try
+                {
+                    var playnitePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+                    if (!string.IsNullOrEmpty(playnitePath) && System.IO.File.Exists(playnitePath))
+                    {
+                        return playnitePath;
+                    }
+                }
+                catch
+                {
+                    // Ignore errors
+                }
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Event raised when setup is complete and the sidebar should be shown.
         /// </summary>
         public event EventHandler SetupComplete;
