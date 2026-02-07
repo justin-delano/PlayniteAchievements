@@ -609,6 +609,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 CancelPendingRefresh();
             }
+            else
+            {
+                // Sync scan state when becoming active
+                IsScanning = _achievementManager.IsRebuilding;
+                // Ensure progress UI shows correct state
+                OnPropertyChanged(nameof(ShowProgress));
+                RaiseCommandsChanged();
+            }
         }
 
         public async System.Threading.Tasks.Task RefreshViewAsync()

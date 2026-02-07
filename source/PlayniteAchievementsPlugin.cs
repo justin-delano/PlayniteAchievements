@@ -265,6 +265,11 @@ namespace PlayniteAchievements
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
+                    // Prevent single game scan during full/quick scan
+                    if (_achievementService.IsRebuilding)
+                    {
+                        return;
+                    }
                     _ = _achievementService.StartManagedSingleGameScanAsync(game.Id);
                 }
             };
