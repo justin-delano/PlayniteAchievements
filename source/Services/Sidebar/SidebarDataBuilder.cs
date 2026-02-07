@@ -100,7 +100,9 @@ namespace PlayniteAchievements.Services.Sidebar
                         Unlocked = ach.Unlocked,
                         Hidden = ach.Hidden,
                         ApiName = ach.ApiName,
-                        HideAchievementsLockedForSelf = settings.Persisted?.HideAchievementsLockedForSelf ?? false
+                        HideAchievementsLockedForSelf = settings.Persisted?.HideAchievementsLockedForSelf ?? false,
+                        ProgressNum = ach.ProgressNum,
+                        ProgressDenom = ach.ProgressDenom
                     };
 
                     var revealKey = MakeRevealKey(gameData.PlayniteGameId, ach.ApiName, gameData.GameName);

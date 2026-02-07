@@ -371,7 +371,9 @@ namespace PlayniteAchievements.ViewModels
                         Unlocked = ach.Unlocked,
                         Hidden = ach.Hidden,
                         ApiName = ach.ApiName,
-                        HideAchievementsLockedForSelf = hideLocked
+                        HideAchievementsLockedForSelf = hideLocked,
+                        ProgressNum = ach.ProgressNum,
+                        ProgressDenom = ach.ProgressDenom
                     });
                 }
 
