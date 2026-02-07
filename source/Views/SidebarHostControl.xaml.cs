@@ -218,7 +218,8 @@ namespace PlayniteAchievements.Views
                 _api,
                 _logger,
                 _achievementManager,
-                settings);
+                settings,
+                _plugin);
 
             _landingPage.SetupComplete += LandingPage_SetupComplete;
 

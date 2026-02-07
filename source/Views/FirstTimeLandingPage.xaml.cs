@@ -20,7 +20,8 @@ namespace PlayniteAchievements.Views
     {
         private readonly ILogger _logger;
         private readonly AchievementManager _achievementManager;
-        private readonly PlayniteAchievementsSettings _settings;
+        private readonly PlayniteAchievementsPlugin _plugin;
+        private PlayniteAchievementsSettings _settings;
         private readonly IPlayniteAPI _api;
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -104,12 +105,14 @@ namespace PlayniteAchievements.Views
             IPlayniteAPI api,
             ILogger logger,
             AchievementManager achievementManager,
-            PlayniteAchievementsSettings settings)
+            PlayniteAchievementsSettings settings,
+            PlayniteAchievementsPlugin plugin)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
 
             _providers = new ObservableCollection<ProviderStatus>();
 
@@ -127,6 +130,9 @@ namespace PlayniteAchievements.Views
         /// </summary>
         public void RefreshProviderStatuses()
         {
+            // Reload settings from disk to get the latest persisted values
+            ReloadSettings();
+
             var providers = _achievementManager.GetProviders();
             _providers.Clear();
 
@@ -146,6 +152,29 @@ namespace PlayniteAchievements.Views
             OnPropertyChanged(nameof(ShowNoAuthPanel));
             OnPropertyChanged(nameof(ShowNeedsScanPanel));
             OnPropertyChanged(nameof(ShowHasDataPanel));
+        }
+
+        /// <summary>
+        /// Reloads the settings from disk to ensure we have the latest persisted values.
+        /// This is called when settings are saved externally (e.g., via the settings dialog).
+        /// </summary>
+        private void ReloadSettings()
+        {
+            try
+            {
+                var reloaded = _plugin.LoadPluginSettings<PlayniteAchievementsSettings>();
+                if (reloaded != null)
+                {
+                    // Preserve the plugin reference for ISettings methods
+                    reloaded._plugin = _plugin;
+                    _settings = reloaded;
+                    _logger.Info("Landing page settings reloaded from disk.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to reload settings in landing page.");
+            }
         }
 
         /// <summary>
