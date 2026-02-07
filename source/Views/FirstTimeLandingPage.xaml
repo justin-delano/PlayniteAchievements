@@ -77,8 +77,8 @@
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
             </StackPanel>
 
-            <!-- Constrained Content Container (middle 50%) -->
-            <StackPanel MaxWidth="180" HorizontalAlignment="Center">
+            <!-- Constrained Content Container (75% width, 25% margins) -->
+            <StackPanel MaxWidth="270" HorizontalAlignment="Center">
 
             <!-- Provider Status List - Always Visible -->
             <StackPanel Margin="0,0,0,16">
@@ -248,7 +248,7 @@
                                     </Image.Style>
                                 </Image>
                                 <!-- Fallback: IcoFont Playnite icon if executable icon not available -->
-                                <TextBlock Grid.Column="0" Text="&#xf0a2;"
+                                <TextBlock Grid.Column="0" Text="&#xf11b;"
                                            FontFamily="{DynamicResource FontIcoFont}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
@@ -265,7 +265,7 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                                 <!-- Down arrow from IcoFont -->
-                                <TextBlock Grid.Column="1" Text="&#xf0ab;"
+                                <TextBlock Grid.Column="1" Text="&#xf107;"
                                            FontFamily="{DynamicResource FontIcoFont}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
@@ -283,7 +283,7 @@
                             <!-- Navigation tree items -->
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                    <TextBlock Text="&#xf105;" FontFamily="{DynamicResource FontIcoFont}"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavSettings}"
@@ -291,7 +291,7 @@
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal" Margin="16,0,0,3">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                    <TextBlock Text="&#xf105;" FontFamily="{DynamicResource FontIcoFont}"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavAddons}"
@@ -299,7 +299,7 @@
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal" Margin="32,0,0,3">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                    <TextBlock Text="&#xf105;" FontFamily="{DynamicResource FontIcoFont}"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}"
@@ -307,7 +307,7 @@
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal" Margin="48,0,0,3">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                    <TextBlock Text="&#xf105;" FontFamily="{DynamicResource FontIcoFont}"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavGeneric}"
@@ -315,7 +315,7 @@
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal" Margin="64,0,0,0">
-                                    <TextBlock Text="&#xe949;" FontFamily="{DynamicResource FontIcoFont}"
+                                    <TextBlock Text="&#xf105;" FontFamily="{DynamicResource FontIcoFont}"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="#4CC9F0"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NavPluginName}"
