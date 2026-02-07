@@ -202,7 +202,6 @@
     <sys:String x:Key="LOCPlayAch_Overview_HideNoUnlocks">Hide no unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_HideUnplayed">Hide unplayed</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_PerfectGame">Perfect Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_LaunchedProgression">Launched Games</sys:String>
 
     <!-- ================================================================= -->
     <!-- ACHIEVEMENTS TAB                                                   -->
@@ -288,7 +287,11 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Sidebar_GamesOverview">Games Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_GlobalProgression">Global achievements progression</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_LaunchedProgression">Progression of launched games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">Achievements by Provider</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">Games Completion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_RarityPieChart">Achievements by Rarity</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_Locked">Locked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_Incomplete">Incomplete</sys:String>
 
     <!-- ================================================================= -->
     <!-- FORMATTING                                                         -->
