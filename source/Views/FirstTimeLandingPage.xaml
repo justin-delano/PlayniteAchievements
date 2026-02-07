@@ -97,12 +97,6 @@
                                     Background="{DynamicResource ControlBackgroundBrush}"
                                     CornerRadius="6"
                                     Padding="12,10">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="8"
-                                                    ShadowDepth="2"
-                                                    Opacity="0.25"
-                                                    Color="#000000"/>
-                                </Border.Effect>
                                 <Border.Style>
                                     <Style TargetType="Border">
                                         <Setter Property="BorderBrush" Value="Transparent"/>

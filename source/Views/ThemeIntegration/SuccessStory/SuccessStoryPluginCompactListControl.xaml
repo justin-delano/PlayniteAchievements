@@ -68,7 +68,11 @@
                                                 <Condition Binding="{Binding Hidden}" Value="True" />
                                                 <Condition Binding="{Binding Unlocked}" Value="False" />
                                             </MultiDataTrigger.Conditions>
-                                            <Setter Property="Opacity" Value="0.3" />
+                                            <Setter Property="Effect">
+                                                <Setter.Value>
+                                                    <BlurEffect Radius="4.0" KernelType="Box" />
+                                                </Setter.Value>
+                                            </Setter>
                                         </MultiDataTrigger>
                                     </Style.Triggers>
                                 </Style>

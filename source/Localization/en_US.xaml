@@ -58,7 +58,7 @@
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Scan">Scan</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_QuickScan">Quick Scan</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_ScanAll">Scan All</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_ScanAll">Full Scan</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
 
     <!-- ================================================================= -->

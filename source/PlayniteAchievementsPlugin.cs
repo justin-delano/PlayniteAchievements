@@ -259,20 +259,20 @@ namespace PlayniteAchievements
                 }
             };
 
-            yield return new GameMenuItem
-            {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ScanGame"),
-                MenuSection = "Playnite Achievements",
-                Action = (a) =>
-                {
-                    // Prevent single game scan during full/quick scan
-                    if (_achievementService.IsRebuilding)
-                    {
-                        return;
-                    }
-                    _ = _achievementService.StartManagedSingleGameScanAsync(game.Id);
-                }
-            };
+            // yield return new GameMenuItem
+            // {
+            //     Description = ResourceProvider.GetString("LOCPlayAch_Menu_ScanGame"),
+            //     MenuSection = "Playnite Achievements",
+            //     Action = (a) =>
+            //     {
+            //         // Prevent single game scan during full/quick scan
+            //         if (_achievementService.IsRebuilding)
+            //         {
+            //             return;
+            //         }
+            //         _ = _achievementService.StartManagedSingleGameScanAsync(game.Id);
+            //     }
+            // };
 
             yield return new GameMenuItem
             {
@@ -295,18 +295,18 @@ namespace PlayniteAchievements
             };
         }
 
-        public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
-        {
-            yield return new MainMenuItem
-            {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_FullAchievementScan"),
-                MenuSection = "@Playnite Achievements",
-                Action = (a) =>
-                {
-                    _ = _achievementService.StartManagedRebuildAsync();
-                }
-            };
-        }
+        // public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
+        // {
+        //     yield return new MainMenuItem
+        //     {
+        //         Description = ResourceProvider.GetString("LOCPlayAch_Menu_FullAchievementScan"),
+        //         MenuSection = "@Playnite Achievements",
+        //         Action = (a) =>
+        //         {
+        //             _ = _achievementService.StartManagedRebuildAsync();
+        //         }
+        //     };
+        // }
 
         // === Sidebar ===
 
