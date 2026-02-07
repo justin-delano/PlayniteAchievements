@@ -209,7 +209,7 @@ namespace PlayniteAchievements.Views
                 e.Handled = true;
                 (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
                 await CheckSteamAuthAsync().ConfigureAwait(false);
-                Dispatcher.BeginInvoke(new Action(() => MoveFocusFrom((TextBox)sender)));
+                _ = Dispatcher.BeginInvoke(new Action(() => MoveFocusFrom((TextBox)sender)));
             }
         }
 
