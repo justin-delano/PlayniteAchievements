@@ -52,6 +52,9 @@ namespace PlayniteAchievements.Services.Sidebar
             int ultraRareCount = 0;
             int perfectGames = 0;
 
+            var achievementsByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            int totalLocked = 0;
+
             List<string> cachedIds;
             using (PerfTrace.Measure("SidebarDataBuilder.GetCachedGameIds", _logger, diagnostics))
             {
@@ -158,6 +161,15 @@ namespace PlayniteAchievements.Services.Sidebar
                 totalAchievements += gameTotal;
                 totalUnlocked += gameUnlocked;
 
+                // Track by provider
+                var provider = gameData.ProviderName ?? "Unknown";
+                if (!achievementsByProvider.ContainsKey(provider))
+                    achievementsByProvider[provider] = 0;
+                achievementsByProvider[provider] += gameTotal;
+
+                // Count locked achievements
+                totalLocked += (gameTotal - gameUnlocked);
+
                 if (gameUnlocked == gameTotal && gameTotal > 0)
                 {
                     perfectGames++;
@@ -206,11 +218,8 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.TotalUltraRare = ultraRareCount;
             snapshot.PerfectGames = perfectGames;
             snapshot.GlobalProgressionPercent = totalAchievements > 0 ? (double)totalUnlocked / totalAchievements * 100 : 0;
-
-            var launchedGames = gamesOverview.Where(g => g.UnlockedAchievements > 0).ToList();
-            var launchedTotal = launchedGames.Sum(g => g.TotalAchievements);
-            var launchedUnlocked = launchedGames.Sum(g => g.UnlockedAchievements);
-            snapshot.LaunchedProgressionPercent = launchedTotal > 0 ? (double)launchedUnlocked / launchedTotal * 100 : 0;
+            snapshot.AchievementsByProvider = achievementsByProvider;
+            snapshot.TotalLocked = totalLocked;
 
             return snapshot;
             }
