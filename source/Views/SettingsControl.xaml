@@ -700,6 +700,7 @@
                                                            Margin="0,0,0,6"/>
 
                                                 <TextBox Text="{Binding Persisted.SteamApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                                         KeyDown="CredentialTextBox_KeyDown"
                                                          Margin="0,0,0,6"/>
 
                                                 <TextBlock Style="{StaticResource MutedTextStyle}">
@@ -869,6 +870,7 @@
                                                                Opacity="0.8"
                                                                Margin="0,0,0,4"/>
                                                     <TextBox Text="{Binding Persisted.RaUsername, UpdateSourceTrigger=PropertyChanged}"
+                                                             KeyDown="CredentialTextBox_KeyDown"
                                                              Margin="0,0,0,4"/>
                                                     <TextBlock Style="{StaticResource MutedTextStyle}">
                                                         <Run Text="{DynamicResource LOCPlayAch_Label_Username_Help}" />
@@ -883,6 +885,7 @@
                                                                Opacity="0.8"
                                                                Margin="0,0,0,4"/>
                                                     <TextBox Text="{Binding Persisted.RaWebApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                                             KeyDown="CredentialTextBox_KeyDown"
                                                              Margin="0,0,0,4"/>
                                                     <TextBlock Style="{StaticResource MutedTextStyle}">
                                                         <Run Text="{DynamicResource LOCPlayAch_Label_WebApiKey_Help}" />
