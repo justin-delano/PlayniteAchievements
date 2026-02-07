@@ -51,8 +51,8 @@ namespace PlayniteAchievements.ViewModels
         private readonly PaginationManager<RecentAchievementItem> _recentPager;
         private readonly PaginationManager<AchievementDisplayItem> _selectedGameAchievementsPager;
 
-        private readonly List<RecentAchievementItem> _filteredRecentAchievements = new List<RecentAchievementItem>();
-        private readonly List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
+        private List<RecentAchievementItem> _filteredRecentAchievements = new List<RecentAchievementItem>();
+        private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
         private List<string> _availableProviders = new List<string>();
 
 
@@ -284,7 +284,7 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _hideGamesWithNoUnlocked, value))
                 {
                     OverviewCurrentPage = 1;
-                    ApplyOverviewFilters();
+                    ApplyLeftFilters();
                 }
             }
         }
@@ -298,7 +298,7 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _hideUnplayedGames, value))
                 {
                     OverviewCurrentPage = 1;
-                    ApplyOverviewFilters();
+                    ApplyLeftFilters();
                 }
             }
         }
@@ -859,7 +859,7 @@ namespace PlayniteAchievements.ViewModels
                         await ScanGamesAsync(g => g.IsInstalled == true);
                         break;
                     case "Favorites":
-                        await ScanGamesAsync(g => g.IsFavorite == true);
+                        await ScanGamesAsync(g => g.Favorite);
                         break;
                     case "Selected":
                         await ScanSelectedGamesAsync();
