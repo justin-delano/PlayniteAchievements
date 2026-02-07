@@ -63,6 +63,32 @@ namespace PlayniteAchievements.Views
             set => SetValue(SteamAuthenticatedProperty, value);
         }
 
+        public static readonly DependencyProperty SteamFullyConfiguredProperty =
+            DependencyProperty.Register(
+                nameof(SteamFullyConfigured),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool SteamFullyConfigured
+        {
+            get => (bool)GetValue(SteamFullyConfiguredProperty);
+            set => SetValue(SteamFullyConfiguredProperty, value);
+        }
+
+        public static readonly DependencyProperty SteamAuthRequirementsProperty =
+            DependencyProperty.Register(
+                nameof(SteamAuthRequirements),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata("Requires: Steam Web API key and web authentication"));
+
+        public string SteamAuthRequirements
+        {
+            get => (string)GetValue(SteamAuthRequirementsProperty);
+            set => SetValue(SteamAuthRequirementsProperty, value);
+        }
+
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly SteamHTTPClient _steam;
@@ -143,7 +169,8 @@ namespace PlayniteAchievements.Views
         {
             _sessionManager.ClearSession();
             SetSteamAuthenticated(false);
-            SteamAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Status_CookiesCleared");
+            UpdateCombinedAuthState(false);
+            SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_CookiesCleared"));
         }
 
         private async Task CheckSteamAuthAsync()
@@ -153,24 +180,68 @@ namespace PlayniteAchievements.Views
             {
                 var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(CancellationToken.None).ConfigureAwait(false);
                 SetSteamAuthenticated(isLoggedIn);
-                if (isLoggedIn)
-                {
-                    SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_SteamAuth_OK"));
-                }
-                else
-                {
-                    SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthInvalid"));
-                }
+
+                // Update combined auth state
+                UpdateCombinedAuthState(isLoggedIn);
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Steam auth check failed.");
                 SetSteamAuthenticated(false);
                 SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_AuthError"));
+                UpdateCombinedAuthState(false);
             }
             finally
             {
                 SetSteamAuthBusy(false);
+            }
+        }
+
+        private void UpdateCombinedAuthState(bool webAuthSuccessful)
+        {
+            var settings = _settingsViewModel.Settings;
+            var hasApiKey = !string.IsNullOrEmpty(settings?.Persisted?.SteamApiKey);
+            var fullyConfigured = hasApiKey && webAuthSuccessful;
+
+            SetSteamFullyConfigured(fullyConfigured);
+            SetSteamAuthRequirements(GetAuthRequirementsText(hasApiKey, webAuthSuccessful));
+
+            // Set status message based on combined state
+            if (fullyConfigured)
+            {
+                SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_SteamAuth_OK"));
+            }
+            else if (!hasApiKey && !webAuthSuccessful)
+            {
+                SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_BothNeeded"));
+            }
+            else if (!hasApiKey)
+            {
+                SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_ApiKeyNeeded"));
+            }
+            else
+            {
+                SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_WebAuthNeeded"));
+            }
+        }
+
+        private string GetAuthRequirementsText(bool hasApiKey, bool webAuthSuccessful)
+        {
+            if (hasApiKey && webAuthSuccessful)
+            {
+                return string.Empty; // No requirements to show when fully configured
+            }
+            else if (!hasApiKey && !webAuthSuccessful)
+            {
+                return "Requires: Steam Web API key and web authentication";
+            }
+            else if (!hasApiKey)
+            {
+                return "Requires: Steam Web API key";
+            }
+            else
+            {
+                return "Requires: Web authentication";
             }
         }
 
@@ -183,6 +254,30 @@ namespace PlayniteAchievements.Views
             else
             {
                 Dispatcher.BeginInvoke(new Action(() => SteamAuthenticated = authenticated));
+            }
+        }
+
+        private void SetSteamFullyConfigured(bool fullyConfigured)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                SteamFullyConfigured = fullyConfigured;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => SteamFullyConfigured = fullyConfigured));
+            }
+        }
+
+        private void SetSteamAuthRequirements(string requirements)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                SteamAuthRequirements = requirements;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => SteamAuthRequirements = requirements));
             }
         }
 

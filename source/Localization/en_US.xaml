@@ -82,8 +82,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKey">Steam Web API Key</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKeyHint">Get your API key from</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage">Steam Language</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CheckSteamAuth">Check Steam Authentication</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">Authenticate via Browser</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CheckSteamAuth">Check</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">Authenticate</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CheckingSteamAuth">Checking Steam authentication...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamAuth_OK">Steam Authenticated</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamAuth_WebAuthUnavailable">Steam web authentication is not available.</sys:String>
@@ -91,6 +91,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_Status_CookiesCleared">Steam session cookies cleared.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_AuthInvalid">Steam session is invalid. Please re-authenticate.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_AuthError">Error checking Steam status.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Status_BothNeeded">Steam Web API key and web authentication required</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Status_ApiKeyNeeded">Steam Web API key required</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Status_WebAuthNeeded">Web authentication required</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamAuth">Steam Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId">Steam User ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId_Help">Your 64-bit Steam ID. This is automatically detected when you authenticate.</sys:String>
