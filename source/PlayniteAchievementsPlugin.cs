@@ -237,12 +237,27 @@ namespace PlayniteAchievements
 
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
-            // Show per-game view/scan for any single game. Provider selection is handled by AchievementManager.
-            if (args?.Games == null || args.Games.Count != 1)
+            if (args?.Games == null || args.Games.Count == 0)
             {
                 yield break;
             }
 
+            // Multiple games selected - offer "Scan Selected"
+            if (args.Games.Count > 1)
+            {
+                yield return new GameMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ScanSelected"),
+                    MenuSection = "Playnite Achievements",
+                    Action = (a) =>
+                    {
+                        _ = _achievementService.ExecuteScanAsync(Models.ScanModeKeys.LibrarySelected);
+                    }
+                };
+                yield break;
+            }
+
+            // Single game selected
             var game = args.Games[0];
             if (game == null)
             {
@@ -259,40 +274,15 @@ namespace PlayniteAchievements
                 }
             };
 
-            // yield return new GameMenuItem
-            // {
-            //     Description = ResourceProvider.GetString("LOCPlayAch_Menu_ScanGame"),
-            //     MenuSection = "Playnite Achievements",
-            //     Action = (a) =>
-            //     {
-            //         // Prevent single game scan during full/quick scan
-            //         if (_achievementService.IsRebuilding)
-            //         {
-            //             return;
-            //         }
-            //         _ = _achievementService.StartManagedSingleGameScanAsync(game.Id);
-            //     }
-            // };
-
-            // yield return new GameMenuItem
-            // {
-            //     Description = ResourceProvider.GetString("LOCPlayAch_Menu_ParityTest_Native"),
-            //     MenuSection = "Playnite Achievements",
-            //     Action = (a) =>
-            //     {
-            //         OpenParityTestView(game.Id, ParityTestMode.Native);
-            //     }
-            // };
-
-            // yield return new GameMenuItem
-            // {
-            //     Description = ResourceProvider.GetString("LOCPlayAch_Menu_ParityTest_Compatibility"),
-            //     MenuSection = "Playnite Achievements",
-            //     Action = (a) =>
-            //     {
-            //         OpenParityTestView(game.Id, ParityTestMode.Compatibility);
-            //     }
-            // };
+            yield return new GameMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ScanGame"),
+                MenuSection = "Playnite Achievements",
+                Action = (a) =>
+                {
+                    _ = _achievementService.ExecuteScanAsync(Models.ScanModeKeys.Single, game.Id);
+                }
+            };
         }
 
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)

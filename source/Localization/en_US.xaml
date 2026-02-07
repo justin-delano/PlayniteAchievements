@@ -48,7 +48,8 @@
     <!-- CONTEXT MENU                                                       -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scan for Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scan Single Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scan Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ParityTest_Native">UI Parity Test (Native)</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ParityTest_Compatibility">UI Parity Test (Compatibility)</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_FullAchievementScan">Full Achievement Scan</sys:String>
@@ -63,12 +64,12 @@
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
 
     <!-- Scan Modes -->
-    <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Quick</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Full">Full</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Installed</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Favorites</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Single">Single</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Quick Scan</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Full">Full Scan</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Scan Installed</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Scan Favorites</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Single">Scan Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Scan Selected</sys:String>
 
     <!-- Provider Filters -->
     <sys:String x:Key="LOCPlayAch_Provider_All">All</sys:String>

@@ -48,7 +48,8 @@
     <!-- CONTEXT MENU                                                       -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">Voir les succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Rechercher les succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scanner un jeu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scan la sélection</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ParityTest_Native">Test de parité UI (Natif)</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ParityTest_Compatibility">Test de parité UI (Compatibilité)</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_FullAchievementScan">Analyse complète des succès</sys:String>
