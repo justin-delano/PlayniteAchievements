@@ -8,7 +8,7 @@
 
     <DrawingImage x:Key="ProviderIconSteam">
         <DrawingImage.Drawing>
-            <GeometryDrawing Geometry="{StaticResource GeoSteam}" Brush="#171A21"/>
+            <GeometryDrawing Geometry="{StaticResource GeoSteam}" Brush="#B0B0B0"/>
         </DrawingImage.Drawing>
     </DrawingImage>
 
