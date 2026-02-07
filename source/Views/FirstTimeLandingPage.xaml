@@ -80,13 +80,12 @@
             <!-- Provider Status List - Always Visible -->
             <StackPanel Margin="0,0,0,16">
                 <!-- Section Header -->
-                <Grid Margin="0,0,0,10">
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Landing_ProviderStatus}"
-                               FontSize="11"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.7"/>
-                </Grid>
+                <TextBlock Text="{DynamicResource LOCPlayAch_Landing_ProviderStatus}"
+                           FontSize="11"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextBrush}"
+                           Opacity="0.7"
+                           Margin="0,0,0,10"/>
 
                 <!-- Provider Cards -->
                 <ItemsControl ItemsSource="{Binding Providers}">
@@ -122,44 +121,26 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Status Icon with Circle Background -->
-                                    <Grid Grid.Column="0" Width="32" Height="32" Margin="0,0,12,0">
-                                        <Ellipse Fill="{DynamicResource ControlBackgroundBrush}">
-                                            <Ellipse.Style>
-                                                <Style TargetType="Ellipse">
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
-                                                            <Setter Property="Fill" Value="#06FFA5"/>
-                                                            <Setter Property="Opacity" Value="0.15"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
-                                                            <Setter Property="Fill" Value="#F72585"/>
-                                                            <Setter Property="Opacity" Value="0.12"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Ellipse.Style>
-                                        </Ellipse>
-                                        <TextBlock Text="{Binding StatusIcon}"
-                                                   FontFamily="Segoe MDL2 Assets"
-                                                   FontSize="16"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
-                                                            <Setter Property="Foreground" Value="#06FFA5"/>
-                                                            <Setter Property="FontWeight" Value="Bold"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
-                                                            <Setter Property="Foreground" Value="#F72585"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </Grid>
+                                    <!-- Status Icon -->
+                                    <TextBlock Grid.Column="0" Text="{Binding StatusIcon}"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="18"
+                                               Margin="0,0,12,0"
+                                               VerticalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                                                        <Setter Property="Foreground" Value="#06FFA5"/>
+                                                        <Setter Property="FontWeight" Value="Bold"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
+                                                        <Setter Property="Foreground" Value="#F72585"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
 
                                     <!-- Provider Info -->
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -170,48 +151,30 @@
                                         <TextBlock Text="{Binding StatusSubtitle}"
                                                    FontSize="10"
                                                    Foreground="{DynamicResource TextBrush}"
-                                                   Opacity="0.55"
+                                                   Opacity="0.6"
                                                    Margin="0,2,0,0"/>
                                     </StackPanel>
 
                                     <!-- Status Badge -->
-                                    <Border Grid.Column="2"
-                                            VerticalAlignment="Center"
-                                            CornerRadius="10"
-                                            Padding="10,4"
-                                            Margin="8,0,0,0">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
+                                    <TextBlock Grid.Column="2" Text="{Binding StatusBadgeText}"
+                                               FontSize="8"
+                                               FontWeight="SemiBold"
+                                               Padding="8,3"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="#666666"/>
+                                                <Setter Property="Background" Value="#2A2A2A"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
+                                                        <Setter Property="Foreground" Value="#005533"/>
                                                         <Setter Property="Background" Value="#06FFA5"/>
-                                                        <Setter Property="Opacity" Value="0.2"/>
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
-                                                        <Setter Property="Background" Value="#3A3A3A"/>
-                                                        <Setter Property="Opacity" Value="0.5"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
-                                        </Border.Style>
-                                        <TextBlock Text="{Binding StatusBadgeText}"
-                                                   FontSize="9"
-                                                   FontWeight="SemiBold"
-                                                   Padding="4,1">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="True">
-                                                            <Setter Property="Foreground" Value="#06FFA5"/>
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding IsAuthenticated}" Value="False">
-                                                            <Setter Property="Foreground" Value="#888888"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </Border>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -251,7 +214,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Margin="0,12,0,10"/>
 
-                    <!-- Navigation Tree Diagram -->
+                    <!-- Navigation Tree - Simple indented list with arrows -->
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="4"
                             Padding="16,14"
@@ -261,145 +224,37 @@
                                        FontSize="11"
                                        Foreground="{DynamicResource TextBrush}"
                                        Opacity="0.8"
-                                       Margin="0,0,0,10"/>
+                                       Margin="0,0,0,12"/>
 
-                            <!-- Tree Structure -->
-                            <StackPanel Margin="4,0,0,0">
-                                <!-- Settings -->
-                                <Grid Margin="0,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="16"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="&#xE8A7;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.6"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,8,0"/>
-                                    <TextBlock Grid.Column="1" Text="{DynamicResource LOCPlayAch_Landing_NavSettings}"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <!-- Vertical line connector -->
-                                    <Border Grid.Column="2" Width="1"
-                                            Height="20"
-                                            Background="{DynamicResource TextBrush}"
-                                            Opacity="0.2"
-                                            Margin="8,0,0,0"
-                                            VerticalAlignment="Top"
-                                            HorizontalAlignment="Left"/>
-                                </Grid>
+                            <TextBlock FontSize="12" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
+                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
+                                <Run Text=" " />
+                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavSettings}"/>
+                            </TextBlock>
 
-                                <!-- Addons (indented) -->
-                                <Grid Margin="24,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="16"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="&#xE8A7;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.6"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,8,0"/>
-                                    <TextBlock Grid.Column="1" Text="{DynamicResource LOCPlayAch_Landing_NavAddons}"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <!-- Vertical line connector -->
-                                    <Border Grid.Column="2" Width="1"
-                                            Height="20"
-                                            Background="{DynamicResource TextBrush}"
-                                            Opacity="0.2"
-                                            Margin="8,0,0,0"
-                                            VerticalAlignment="Top"
-                                            HorizontalAlignment="Left"/>
-                                </Grid>
+                            <TextBlock FontSize="12" Foreground="{DynamicResource TextBrush}" Margin="20,0,0,4">
+                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
+                                <Run Text=" " />
+                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavAddons}"/>
+                            </TextBlock>
 
-                                <!-- Extension Settings (indented) -->
-                                <Grid Margin="48,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="16"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="&#xE8A7;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.6"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,8,0"/>
-                                    <TextBlock Grid.Column="1" Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <!-- Vertical line connector -->
-                                    <Border Grid.Column="2" Width="1"
-                                            Height="20"
-                                            Background="{DynamicResource TextBrush}"
-                                            Opacity="0.2"
-                                            Margin="8,0,0,0"
-                                            VerticalAlignment="Top"
-                                            HorizontalAlignment="Left"/>
-                                </Grid>
+                            <TextBlock FontSize="12" Foreground="{DynamicResource TextBrush}" Margin="40,0,0,4">
+                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
+                                <Run Text=" " />
+                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavExtensionSettings}"/>
+                            </TextBlock>
 
-                                <!-- Generic (indented) -->
-                                <Grid Margin="72,0,0,6">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="16"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="&#xE8A7;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.6"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,8,0"/>
-                                    <TextBlock Grid.Column="1" Text="{DynamicResource LOCPlayAch_Landing_NavGeneric}"
-                                               FontSize="12"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               VerticalAlignment="Center"/>
-                                    <!-- Vertical line connector -->
-                                    <Border Grid.Column="2" Width="1"
-                                            Height="20"
-                                            Background="{DynamicResource TextBrush}"
-                                            Opacity="0.2"
-                                            Margin="8,0,0,0"
-                                            VerticalAlignment="Top"
-                                            HorizontalAlignment="Left"/>
-                                </Grid>
+                            <TextBlock FontSize="12" Foreground="{DynamicResource TextBrush}" Margin="60,0,0,4">
+                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource TextBrush}" Opacity="0.5"/>
+                                <Run Text=" " />
+                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavGeneric}"/>
+                            </TextBlock>
 
-                                <!-- Plugin Name (indented, highlighted) -->
-                                <Grid Margin="96,0,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="16"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="&#xE8A7;"
-                                               FontFamily="Segoe MDL2 Assets"
-                                               FontSize="12"
-                                               Foreground="#4CC9F0"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,8,0"/>
-                                    <TextBlock Grid.Column="1" Text="{DynamicResource LOCPlayAch_Landing_NavPluginName}"
-                                               FontSize="12"
-                                               FontWeight="Bold"
-                                               Foreground="#4CC9F0"
-                                               VerticalAlignment="Center"/>
-                                </Grid>
-                            </StackPanel>
+                            <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#4CC9F0" Margin="80,0,0,0">
+                                <Run Text="&#xE97C;" FontFamily="Segoe MDL2 Assets"/>
+                                <Run Text=" " />
+                                <Run Text="{DynamicResource LOCPlayAch_Landing_NavPluginName}"/>
+                            </TextBlock>
                         </StackPanel>
                     </Border>
 
@@ -461,11 +316,10 @@
                             <TextBlock Text="&#xE8FB;"
                                        FontFamily="Segoe MDL2 Assets"
                                        FontSize="32"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Opacity="0.6"
+                                       Foreground="#06FFA5"
                                        HorizontalAlignment="Center"
                                        Margin="0,0,0,6"/>
-                            <TextBlock Text="Your accounts are ready!"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Status_ReadyToScan}"
                                        FontSize="11"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
@@ -531,7 +385,7 @@
                                        SnapsToDevicePixels="True"
                                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                             </StackPanel>
-                            <TextBlock Text="Found your existing achievement data"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_HasDataFound}"
                                        FontSize="11"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"

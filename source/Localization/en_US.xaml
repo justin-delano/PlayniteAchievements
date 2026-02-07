@@ -298,6 +298,7 @@
     <sys:String x:Key="LOCPlayAch_Landing_BeginScan">Begin Scan</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">Welcome Back</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">We found your existing achievement data. Continue to the achievements view to start tracking.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_HasDataFound">Found your existing achievement data</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Continue">Continue</sys:String>
 
     <!-- Provider Status Cards -->
