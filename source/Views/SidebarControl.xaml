@@ -1310,18 +1310,9 @@
                                     <DataGridTemplateColumn Width="78"> <!-- was 56 -->
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,10,0,10" ClipToBounds="False">
-                                                    <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
-                                                        <Border.Style>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="Effect" Value="{x:Null}"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                                                        <Setter Property="Effect" Value="{Binding Percent, Converter={StaticResource PercentToRarityGlow}}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Border.Style>
+                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,16,0,16" ClipToBounds="False">
+                                                    <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality"
+                                                            Effect="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlow}}">
                                                         <Border.Background>
                                                             <ImageBrush Stretch="UniformToFill"
                                                                         helpers:AsyncImage.Uri="{Binding DisplayIcon}"
@@ -1571,7 +1562,7 @@
                                     <DataGridTemplateColumn Width="78">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,10,0,10" ClipToBounds="False">
+                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,16,0,16" ClipToBounds="False">
                                                     <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
                                                         <Border.Style>
                                                             <Style TargetType="Border">
