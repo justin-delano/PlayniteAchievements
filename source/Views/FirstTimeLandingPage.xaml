@@ -234,11 +234,20 @@
                                        TextWrapping="Wrap"
                                        Opacity="0.85"
                                        Margin="0,0,0,12"/>
-                            <Button Content="{DynamicResource LOCPlayAch_Landing_BeginScan}"
-                                    Command="{Binding BeginScanCommand}"
-                                    HorizontalAlignment="Center"
-                                    Padding="16,6"
-                                    MinWidth="110"/>
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Center">
+                                <ComboBox ItemsSource="{Binding ScanModes}"
+                                          DisplayMemberPath="ShortDisplayName"
+                                          SelectedValuePath="Key"
+                                          SelectedValue="{Binding SelectedScanMode}"
+                                          Width="110"
+                                          Margin="0,0,8,0"
+                                          VerticalContentAlignment="Center"/>
+                                <Button Content="{DynamicResource LOCPlayAch_Landing_BeginScan}"
+                                        Command="{Binding BeginScanCommand}"
+                                        Padding="12,6"
+                                        MinWidth="100"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
