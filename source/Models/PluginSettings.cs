@@ -526,8 +526,17 @@ namespace PlayniteAchievements.Models
         public Game SelectedGame
         {
             get => _selectedGame;
-            set => SetValue(ref _selectedGame, value);
+            set => SetValue(ref _selectedGame, value, nameof(SelectedGame), nameof(SelectedGameCoverPath));
         }
+
+        /// <summary>
+        /// Full file path to the selected game's cover image.
+        /// Themes can bind to this property to get the cover image path.
+        /// </summary>
+        [DontSerialize]
+        public string SelectedGameCoverPath => _selectedGame != null && !string.IsNullOrWhiteSpace(_selectedGame.CoverImage)
+            ? _plugin?.PlayniteApi?.Database?.GetFullFilePath(_selectedGame.CoverImage)
+            : null;
 
         #endregion
 
