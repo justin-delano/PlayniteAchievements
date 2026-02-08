@@ -851,13 +851,12 @@
                             <DataGridTemplateColumn Width="34" Header="">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="#2196F3" BorderThickness="2,2,0,2" Padding="0">
+                                        <Border BorderBrush="Transparent" BorderThickness=2,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsPerfect}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                            <Setter Property="BorderBrush" Value="#2196F3"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -879,13 +878,12 @@
                             <DataGridTemplateColumn Width="92"> <!-- was 56 -->
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2" Padding="0">
+                                        <Border BorderBrush="Transparent" BorderThickness=0,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsPerfect}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                            <Setter Property="BorderBrush" Value="#2196F3"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -901,13 +899,12 @@
                             <DataGridTemplateColumn Width="2*" Header="Game" SortMemberPath="GameName" MinWidth="160">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2" Padding="0">
+                                        <Border BorderBrush="Transparent" BorderThickness=0,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsPerfect}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                            <Setter Property="BorderBrush" Value="#2196F3"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -931,13 +928,12 @@
                             <DataGridTemplateColumn Width="2*" Header="Last Played" SortMemberPath="LastPlayed">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2" Padding="0">
+                                        <Border BorderBrush="Transparent" BorderThickness=0,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
-                                                    <Setter Property="Visibility" Value="Collapsed"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsPerfect}" Value="True">
-                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                            <Setter Property="BorderBrush" Value="#2196F3"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -957,7 +953,7 @@
                                 <DataGridTemplateColumn Width="2*" Header="Progress" SortMemberPath="Progression">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2" Padding="0">
+                                            <Border BorderBrush="Transparent" BorderThickness=0,2,0,2" Padding="0">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -1067,7 +1063,7 @@
                                 <DataGridTemplateColumn Width="*" Header="Total" SortMemberPath="TotalAchievements">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Border BorderBrush="#2196F3" BorderThickness="0,2,2,2" Padding="0">
+                                            <Border BorderBrush="Transparent" BorderThickness=0,2,2,2" Padding="0">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
