@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -145,6 +146,33 @@ namespace PlayniteAchievements.Views
         {
             // Set flag to prevent SelectionChanged from updating the view
             _ignoreNextSelectionChange = true;
+        }
+
+        private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            if (_viewModel == null) return;
+
+            e.Handled = true;
+
+            var column = e.Column;
+            if (column == null || string.IsNullOrEmpty(column.SortMemberPath)) return;
+
+            var sortDirection = ListSortDirection.Ascending;
+            if (column.SortDirection != null && column.SortDirection == ListSortDirection.Ascending)
+            {
+                sortDirection = ListSortDirection.Descending;
+            }
+
+            _viewModel.SortDataGrid((sender as DataGrid), column.SortMemberPath, sortDirection);
+
+            foreach (var c in (sender as DataGrid).Columns)
+            {
+                if (c != column)
+                {
+                    c.SortDirection = null;
+                }
+            }
+            column.SortDirection = sortDirection;
         }
     }
 }
