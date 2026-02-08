@@ -813,8 +813,7 @@
                             ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
                             VirtualizingStackPanel.ScrollUnit="Pixel"
                             ScrollViewer.CanContentScroll="True"
-                            ScrollViewer.IsDeferredScrollingEnabled="False"
-                            Padding="0,0,2,0">
+                            ScrollViewer.IsDeferredScrollingEnabled="False">
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell">
                                     <Setter Property="Background" Value="Transparent"/>
@@ -845,13 +844,6 @@
                                     <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                                     <Setter Property="Cursor" Value="Hand"/>
                                     <Setter Property="Height" Value="112"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsPerfect}" Value="True">
-                                            <Setter Property="BorderBrush" Value="#4FC3F7"/>
-                                            <Setter Property="BorderThickness" Value="2,2,0,2"/>
-                                            <Setter Property="Margin" Value="0,0,-2,0"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
                                 </Style>
                             </DataGrid.RowStyle>
                            <DataGrid.Columns>
@@ -859,14 +851,26 @@
                             <DataGridTemplateColumn Width="34" Header="">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Image Source="{StaticResource BadgePerfectGame}"
-                                            Style="{StaticResource RarityIcon}"
-                                            Effect="{StaticResource BadgeShadow}"
-                                            Width="20" Height="20"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            ToolTip="Perfect Game"
-                                            Visibility="{Binding IsPerfect, Converter={StaticResource BoolToVis}}"/>
+                                        <Border BorderBrush="#4FC3F7" BorderThickness="2,2,0,2,2" Padding="0">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsPerfect}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Image Source="{StaticResource BadgePerfectGame}"
+                                                Style="{StaticResource RarityIcon}"
+                                                Effect="{StaticResource BadgeShadow}"
+                                                Width="20" Height="20"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                ToolTip="Perfect Game"
+                                                Visibility="{Binding IsPerfect, Converter={StaticResource BoolToVis}}"/>
+                                        </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -1015,11 +1019,23 @@
                                 <DataGridTemplateColumn Width="*" Header="Total" SortMemberPath="TotalAchievements">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" Foreground="{DynamicResource TextBrush}">
-                                                <Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/>
-                                                <Run Text="/" Foreground="{DynamicResource TextBrush}"/>
-                                                <Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
-                                            </TextBlock>
+                                            <Border BorderBrush="#4FC3F7" BorderThickness="0,2,2,2" Padding="0">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsPerfect}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" Foreground="{DynamicResource TextBrush}">
+                                                    <Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/>
+                                                    <Run Text="/" Foreground="{DynamicResource TextBrush}"/>
+                                                    <Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
+                                                </TextBlock>
+                                            </Border>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
