@@ -1301,7 +1301,7 @@
                                         <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                                         <Setter Property="Cursor" Value="Hand"/>
-                                        <Setter Property="Height" Value="76"/>
+                                        <Setter Property="MinHeight" Value="88"/>
                                     </Style>
                                 </DataGrid.RowStyle>
 
@@ -1310,7 +1310,7 @@
                                     <DataGridTemplateColumn Width="78"> <!-- was 56 -->
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,16,0,16" ClipToBounds="False">
+                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,14,0,14" ClipToBounds="False">
                                                     <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality"
                                                             Effect="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlow}}">
                                                         <Border.Background>
@@ -1552,7 +1552,7 @@
                                         <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                                         <Setter Property="Cursor" Value="Hand"/>
-                                        <Setter Property="Height" Value="76"/>
+                                        <Setter Property="MinHeight" Value="88"/>
                                         <EventSetter Event="PreviewMouseLeftButtonDown" Handler="AchievementRow_PreviewMouseLeftButtonDown"/>
                                     </Style>
                                 </DataGrid.RowStyle>
@@ -1562,7 +1562,7 @@
                                     <DataGridTemplateColumn Width="78">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,16,0,16" ClipToBounds="False">
+                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,14,0,14" ClipToBounds="False">
                                                     <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
                                                         <Border.Style>
                                                             <Style TargetType="Border">
