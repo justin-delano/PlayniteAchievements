@@ -814,7 +814,7 @@
                             VirtualizingStackPanel.ScrollUnit="Pixel"
                             ScrollViewer.CanContentScroll="True"
                             ScrollViewer.IsDeferredScrollingEnabled="False"
-                            Margin="0,0,2,0">
+                            Padding="0,0,2,0">
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell">
                                     <Setter Property="Background" Value="Transparent"/>
@@ -904,7 +904,8 @@
                                     <DataTemplate>
                                         <TextBlock Text="{Binding LastPlayedText}"
                                                 VerticalAlignment="Center"
-                                                Style="{DynamicResource BaseTextBlockStyle}"          
+                                                HorizontalAlignment="Center"
+                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                 Foreground="{DynamicResource TextBrush}"
                                                 Opacity="0.7"/>
                                     </DataTemplate>
@@ -1410,6 +1411,7 @@
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding UnlockTimeText}"
                                                         VerticalAlignment="Center"
+                                                        HorizontalAlignment="Center"
                                                         Style="{DynamicResource BaseTextBlockStyle}"
                                                         Foreground="{DynamicResource TextBrush}"
                                                         Opacity="0.7"/>
@@ -1421,7 +1423,7 @@
                                     <DataGridTemplateColumn Width="*" Header="Rarity" SortMemberPath="GlobalPercent"> <!-- was 72 -->
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                                                     <Image Width="18" Height="18" Margin="0,0,6,0"
                                                         Effect="{StaticResource BadgeShadow}"
                                                         VerticalAlignment="Center">
@@ -1648,7 +1650,7 @@
                                     <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Grid>
+                                                <Grid HorizontalAlignment="Center">
                                                     <!-- Unlock time for unlocked achievements -->
                                                     <TextBlock Text="{Binding UnlockTimeText}"
                                                                VerticalAlignment="Center"
@@ -1682,7 +1684,7 @@
                                     <DataGridTemplateColumn Width="*" Header="Rarity" SortMemberPath="GlobalPercent">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                                                     <Image Width="16" Height="16" Margin="0,0,4,0" Effect="{StaticResource BadgeShadow}" VerticalAlignment="Center">
                                                         <Image.Style>
                                                             <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
