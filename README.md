@@ -25,9 +25,10 @@ A modern Playnite extension plugin for aggregating achievement data from multipl
 
 | Traditional Approaches                | PlayniteAchievements                                     |
 | ------------------------------------- | -------------------------------------------------------- |
-| Limited platform support              | Modular architecture planning to support 10+ platforms            |
+| Limited platform support              | Modular architecture planning to support 10+ platforms   |
 | Basic visualization tools             | Rich charts with rarity breakdowns and progress tracking |
 | Single theme compatibility            | Dual integration: legacy and modern native controls      |
+| Fullscreen helper required            | Complete fullscreen integration included.                |
 | Manual profile configuration required | Compatible with existing Steam privacy settings          |
 
 ## Screenshots
@@ -136,10 +137,10 @@ PlayniteAchievements provides comprehensive integration options for theme develo
 
 Existing themes using SuccessStory controls work without modification. All familiar properties are supported:
 
-| SuccessStory Property                                       | PlayniteAchievements Property                                          |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `{PluginSettings Plugin=SuccessStory, Path=HasData}`      | `{PluginSettings Plugin=PlayniteAchievements, Path=HasData}` |
-| `<ContentControl x:Name="SuccessStory_PluginCompactList"/>` | `<ContentControl x:Name="PlayniteAchievements_PluginCompactList"/>`|
+| SuccessStory Property                                         | PlayniteAchievements Property                                         |
+| ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `{PluginSettings Plugin=SuccessStory, Path=HasData}`        | `{PluginSettings Plugin=PlayniteAchievements, Path=HasData}`        |
+| `<ContentControl x:Name="SuccessStory_PluginCompactList"/>` | `<ContentControl x:Name="PlayniteAchievements_PluginCompactList"/>` |
 
 Switching to Playnite Achievements is as easy as finding and replacing "SuccessStory" with "PlayniteAchievements" in your files.
 
@@ -169,4 +170,5 @@ For detailed integration guides, property references, and code examples, see the
 MIT License - see [LICENSE](LICENSE) for details.
 
 ## Credits
-Many thanks to everyone on the Playnite Discord for their expertise, feedback, and beta testing! 
+
+Many thanks to everyone on the Playnite Discord for their expertise, feedback, and beta testing!
