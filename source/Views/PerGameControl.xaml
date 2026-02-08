@@ -19,6 +19,7 @@
             <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility"/>
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
+            <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
 
             <!-- Style for Expander Header ToggleButton -->
             <Style x:Key="ExpanderHeaderStyle" TargetType="ToggleButton">
@@ -474,7 +475,8 @@
                 <DataGridTemplateColumn Width="78">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Border Width="56" Height="56" CornerRadius="6" VerticalAlignment="Center" Margin="12,10,0,10">
+                            <Border Width="56" Height="56" CornerRadius="6" VerticalAlignment="Center" Margin="12,10,0,10"
+                                    Effect="{Binding GlobalPercentUnlocked, Converter={StaticResource PercentToRarityGlow}}">
                                 <Border.Style>
                                     <Style TargetType="Border">
                                         <Setter Property="Opacity" Value="0.5"/>

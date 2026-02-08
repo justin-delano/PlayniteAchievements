@@ -24,6 +24,7 @@
             <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
             <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
+            <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
 
             <!-- Shared LegendItem DataTemplate for all pie charts -->
             <DataTemplate x:Key="LegendItemTemplate">
@@ -1312,7 +1313,8 @@
                                                 <Border Width="56" Height="56" CornerRadius="6"
                                                         VerticalAlignment="Center"
                                                         Margin="12,10,0,10"
-                                                        RenderOptions.BitmapScalingMode="HighQuality"> <!-- was 8,8,0,8 -->
+                                                        RenderOptions.BitmapScalingMode="HighQuality"
+                                                        Effect="{Binding GlobalPercentUnlocked, Converter={StaticResource PercentToRarityGlow}}"> <!-- was 8,8,0,8 -->
                                                     <Border.Background>
                                                         <ImageBrush Stretch="UniformToFill"
                                                                     helpers:AsyncImage.Uri="{Binding DisplayIcon}"
@@ -1561,7 +1563,8 @@
                                     <DataGridTemplateColumn Width="78">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Border Width="56" Height="56" CornerRadius="6" VerticalAlignment="Center" Margin="12,10,0,10" RenderOptions.BitmapScalingMode="HighQuality">
+                                                <Border Width="56" Height="56" CornerRadius="6" VerticalAlignment="Center" Margin="12,10,0,10" RenderOptions.BitmapScalingMode="HighQuality"
+                                                        Effect="{Binding GlobalPercentUnlocked, Converter={StaticResource PercentToRarityGlow}}">
                                                     <Border.Style>
                                                         <Style TargetType="Border">
                                                             <Setter Property="Opacity" Value="0.5"/>
