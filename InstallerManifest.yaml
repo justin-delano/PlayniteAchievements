@@ -1,8 +1,13 @@
 AddonId: PlayniteAchievements
 Packages:
-  - Version: 1.0
+  - Version: 1.0.0
     RequiredApiVersion: 6.14.0
-    ReleaseDate: 2025-12-18
-    PackageUrl: 
+    ReleaseDate: 2026-02-08
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.0.0/PlayniteAchievements_1_0_0.pext
     Changelog:
-      - First release
+      - First public release
+      - Multi-platform support: Steam, RetroAchievements
+      - Beautiful visualizations with achievement progression charts and rarity breakdowns
+      - Seamless theme integration: SuccessStory legacy compatibility and native controls
+      - Fast and reliable with intelligent caching and background updates
+      - Flexible scanning options: Quick Scan, Full Scan, favorites, single game, auto-scan
