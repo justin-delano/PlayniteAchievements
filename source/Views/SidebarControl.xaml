@@ -956,10 +956,9 @@
                                             <Border BorderBrush="Transparent" BorderThickness="0,2,0,2" Padding="0">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsPerfect}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Setter Property="BorderBrush" Value="#2196F3"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -1066,10 +1065,9 @@
                                             <Border BorderBrush="Transparent" BorderThickness="0,2,2,2" Padding="0">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsPerfect}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                                <Setter Property="BorderBrush" Value="#2196F3"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
