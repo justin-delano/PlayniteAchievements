@@ -38,6 +38,12 @@ namespace PlayniteAchievements.Models.Achievements
         /// </summary>
         public int? ProgressDenom { get; set; }
 
+
+        /// <summary>
+        /// Success Story-compatible properties
+        /// </summary>
+
+
         [IgnoreDataMember]
         public bool Unlocked => UnlockTimeUtc.HasValue;
 
@@ -51,25 +57,14 @@ namespace PlayniteAchievements.Models.Achievements
         public string Name => DisplayName;
 
         [IgnoreDataMember]
-        public string Icon => AchievementIconResolver.GetDisplayIcon(Unlocked, IconPath);
+        public string Icon => IconDisplay;
 
-        /// <summary>
-        /// SuccessStory-compatible unlocked icon display property.
-        /// Returns the color icon for unlocked state.
-        /// </summary>
         [IgnoreDataMember]
         public string UnlockedIconDisplay => IconDisplay;
 
-        /// <summary>
-        /// SuccessStory-compatible locked icon display property.
-        /// Returns the gray-prefixed icon for locked state.
-        /// </summary>
         [IgnoreDataMember]
         public string LockedIconDisplay => AchievementIconResolver.ApplyGrayPrefix(IconDisplay);
 
-        /// <summary>
-        /// Global unlock percent (0..100). Some providers may return 0..1.
-        /// </summary>
         [IgnoreDataMember]
         public double Percent
         {
@@ -106,10 +101,6 @@ namespace PlayniteAchievements.Models.Achievements
             }
         }
 
-        /// <summary>
-        /// SuccessStory/Aniki-compatible points field. Some themes use this to select trophy-tier art.
-        /// We don't have real gamerscore for most providers, so map rarity tiers to stable point buckets.
-        /// </summary>
         [IgnoreDataMember]
         public int GamerScore
         {

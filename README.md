@@ -35,19 +35,20 @@ A modern Playnite extension plugin for aggregating achievement data from multipl
 
 ### Sidebar View
 
-<img src="Images/sidebar-view.png" alt="Sidebar View" width="600">
+<img src="Images/sidebar-view1.png" alt="Sidebar Overview" width="600">
+<img src="Images/sidebar-view2.png" alt="Sidebar Single Game View" width="600">
 
-### Detail View
+### Single Game View
 
-<img src="Images/detail-view.png" alt="Detail View" width="600">
+<img src="Images/single-game-view.png" alt="Single Game View" width="600">
 
 ### Setup Page
 
-<img src="Images/setup-page.png" alt="Setup Page" width="600">
+<img src="Images/setup-view.png" alt="Setup Page" width="600">
 
 ### Theme Integration
 
-<img src="Images/anikiremake-integration.png" alt="AnikiRemake Integration" width="600">
+<img src="Images/aniki-remake1.png" alt="Aniki-Remake Integration" width="600">
 
 ## Features
 
@@ -84,7 +85,13 @@ Compatible with existing themes out of the box.
 
 **Native Controls**: Modern themes utilize native PlayniteAchievements controls for improved performance and integration.
 
-Currently integrated with AnikiRemake, with additional theme support planned. See the [Theme Integration Wiki](https://github.com/justindelano/PlayniteAchievements/wiki) for details.
+#### [Aniki-ReMake](https://github.com/Mike-Aniki/Aniki-ReMake/tree/main)
+
+<img src="Images/aniki-remake2.png" alt="Aniki-Remake Integration" width="600">
+<img src="Images/aniki-remake3.png" alt="Aniki-Remake Integration" width="600">
+
+
+Additional theme support planned. See the [Theme Integration Wiki](https://github.com/justindelano/PlayniteAchievements/wiki) for details.
 
 ### Fast & Reliable
 
