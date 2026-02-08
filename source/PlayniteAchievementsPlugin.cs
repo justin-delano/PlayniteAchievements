@@ -438,17 +438,20 @@ namespace PlayniteAchievements
                     {
                         _themeUpdateService.RequestUpdate(null);
                         _fullscreenThemeIntegration?.NotifySelectionChanged(null);
+                        _settingsViewModel.Settings.SelectedGame = null;
                         return;
                     }
 
                     _themeUpdateService.RequestUpdate(game.Id);
                     _fullscreenThemeIntegration?.NotifySelectionChanged(game.Id);
+                    _settingsViewModel.Settings.SelectedGame = game;
                 }
                 else
                 {
                     // Clear theme data when no game or multiple games selected
                     _themeUpdateService.RequestUpdate(null);
                     _fullscreenThemeIntegration?.NotifySelectionChanged(null);
+                    _settingsViewModel.Settings.SelectedGame = null;
                 }
             }
             catch (Exception ex)

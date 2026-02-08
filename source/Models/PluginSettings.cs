@@ -509,13 +509,25 @@ namespace PlayniteAchievements.Models
 
         #region Game Context
 
+        [DontSerialize]
+        private Game _selectedGame;
+
         /// <summary>
         /// The currently selected game in Playnite's main view.
         /// Exposed for fullscreen themes to bind backgrounds, covers, logos, etc.
         /// Similar to SuccessStory's GameContext property.
+        ///
+        /// IMPORTANT: This is a stored property that gets set when OnGameSelected is called,
+        /// not a computed property that queries MainView.SelectedGames. This ensures that
+        /// fullscreen themes receive the correct game context even when MainView.SelectedGames
+        /// may not be synchronized with the game context passed to GameContextChanged.
         /// </summary>
         [DontSerialize]
-        public Game SelectedGame => _plugin?.PlayniteApi?.MainView?.SelectedGames?.FirstOrDefault();
+        public Game SelectedGame
+        {
+            get => _selectedGame;
+            set => SetValue(ref _selectedGame, value);
+        }
 
         #endregion
 
