@@ -5,6 +5,9 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
@@ -1546,6 +1549,132 @@ namespace PlayniteAchievements.ViewModels
         }
 
         #endregion
+
+        public void SortDataGrid(DataGrid dataGrid, string sortMemberPath, ListSortDirection direction)
+        {
+            if (dataGrid == null || string.IsNullOrEmpty(sortMemberPath)) return;
+
+            // Identify which DataGrid is being sorted by checking ItemsSource
+            var itemsSource = dataGrid.ItemsSource;
+
+            if (itemsSource == GamesOverview)
+            {
+                SortGamesOverview(sortMemberPath, direction);
+            }
+            else if (itemsSource == RecentAchievements)
+            {
+                SortRecentAchievements(sortMemberPath, direction);
+            }
+            else if (itemsSource == SelectedGameAchievements)
+            {
+                SortSelectedGameAchievements(sortMemberPath, direction);
+            }
+        }
+
+        private void SortGamesOverview(string sortMemberPath, ListSortDirection direction)
+        {
+            IEnumerable<GameOverviewItem> sorted;
+
+            switch (sortMemberPath)
+            {
+                case nameof(GameOverviewItem.GameName):
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredGamesOverview.OrderBy(g => g.GameName)
+                        : _filteredGamesOverview.OrderByDescending(g => g.GameName);
+                    break;
+                case nameof(GameOverviewItem.LastPlayed):
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredGamesOverview.OrderBy(g => g.LastPlayed ?? DateTime.MinValue)
+                        : _filteredGamesOverview.OrderByDescending(g => g.LastPlayed ?? DateTime.MinValue);
+                    break;
+                case nameof(GameOverviewItem.Progression):
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredGamesOverview.OrderBy(g => g.Progression)
+                        : _filteredGamesOverview.OrderByDescending(g => g.Progression);
+                    break;
+                case nameof(GameOverviewItem.TotalAchievements):
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredGamesOverview.OrderBy(g => g.TotalAchievements)
+                        : _filteredGamesOverview.OrderByDescending(g => g.TotalAchievements);
+                    break;
+                case nameof(GameOverviewItem.UnlockedAchievements):
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredGamesOverview.OrderBy(g => g.UnlockedAchievements)
+                        : _filteredGamesOverview.OrderByDescending(g => g.UnlockedAchievements);
+                    break;
+                default:
+                    sorted = _filteredGamesOverview;
+                    break;
+            }
+
+            _filteredGamesOverview = sorted.ToList();
+            _overviewPager.SetSourceItems(_filteredGamesOverview);
+        }
+
+        private void SortRecentAchievements(string sortMemberPath, ListSortDirection direction)
+        {
+            IEnumerable<RecentAchievementItem> sorted;
+
+            switch (sortMemberPath)
+            {
+                case "Name":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredRecentAchievements.OrderBy(r => r.Name)
+                        : _filteredRecentAchievements.OrderByDescending(r => r.Name);
+                    break;
+                case "GameName":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredRecentAchievements.OrderBy(r => r.GameName)
+                        : _filteredRecentAchievements.OrderByDescending(r => r.GameName);
+                    break;
+                case "UnlockTime":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredRecentAchievements.OrderBy(r => r.UnlockTime)
+                        : _filteredRecentAchievements.OrderByDescending(r => r.UnlockTime);
+                    break;
+                case "GlobalPercent":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredRecentAchievements.OrderBy(r => r.GlobalPercent)
+                        : _filteredRecentAchievements.OrderByDescending(r => r.GlobalPercent);
+                    break;
+                default:
+                    sorted = _filteredRecentAchievements;
+                    break;
+            }
+
+            _filteredRecentAchievements = sorted.ToList();
+            _recentPager.SetSourceItems(_filteredRecentAchievements);
+        }
+
+        private void SortSelectedGameAchievements(string sortMemberPath, ListSortDirection direction)
+        {
+            IEnumerable<AchievementDisplayItem> sorted;
+
+            switch (sortMemberPath)
+            {
+                case "DisplayName":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredSelectedGameAchievements.OrderBy(a => a.DisplayName)
+                        : _filteredSelectedGameAchievements.OrderByDescending(a => a.DisplayName);
+                    break;
+                case "UnlockTime":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredSelectedGameAchievements.OrderBy(a => a.UnlockTimeUtc ?? DateTime.MinValue)
+                        : _filteredSelectedGameAchievements.OrderByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue);
+                    break;
+                case "GlobalPercent":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _filteredSelectedGameAchievements.OrderBy(a => a.GlobalPercentUnlocked ?? 100)
+                        : _filteredSelectedGameAchievements.OrderByDescending(a => a.GlobalPercentUnlocked ?? 100);
+                    break;
+                default:
+                    sorted = _filteredSelectedGameAchievements;
+                    break;
+            }
+
+            _filteredSelectedGameAchievements = sorted.ToList();
+            _selectedGameAchievementsPager.SetSourceItems(_filteredSelectedGameAchievements);
+        }
 
         public void Dispose()
         {
