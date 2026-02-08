@@ -407,6 +407,7 @@
         <!-- Achievements List -->
         <DataGrid Grid.Row="2"
                   ItemsSource="{Binding Achievements}"
+                  Sorting="DataGrid_Sorting"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   SelectionMode="Single"
