@@ -10,10 +10,12 @@
 
 <div align="center">
 
-[![Release](https://img.shields.io/github/v/release/justin-delano/PlayniteAchievements?logo=github)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.14.0-blue)](https://playnite.link/)
-[![Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/total)](https://github.com/justin-delano/PlayniteAchievements/releases)
+[![Release](https://img.shields.io/github/v/release/justin-delano/PlayniteAchievements?style=for-the-badge&logo=github)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.14.0-blue?style=for-the-badge)](https://playnite.link/)
+[![Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/latest/total?style=for-the-badge&label=Total%20Downloads%20for%20the%20Latest%20Release&color=blue&cacheSeconds=3600)](https://github.com/justin-delano/PlayniteAchievements/releases)
+[![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Support%20Me-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/justindelano)
+[![Sponsor](https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/justin-delano)
 
 </div>
 
@@ -89,7 +91,6 @@ Compatible with existing themes out of the box.
 
 <img src="Images/aniki-remake2.png" alt="Aniki-Remake Integration" width="600">
 <img src="Images/aniki-remake3.png" alt="Aniki-Remake Integration" width="600">
-
 
 Additional theme support planned. See the [Theme Integration Wiki](https://github.com/justindelano/PlayniteAchievements/wiki) for details.
 
@@ -178,4 +179,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Credits
 
-Many thanks to everyone on the Playnite Discord for their expertise, feedback, and beta testing!
+Many thanks to everyone on the Playnite Discord for their expertise, feedback, and beta testing! Especially MikeAniki, Sky, Vivi, Jeshibu, HerrKnarz, savantcz, and Crow.
