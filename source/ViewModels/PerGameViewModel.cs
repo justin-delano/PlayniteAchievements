@@ -29,6 +29,10 @@ namespace PlayniteAchievements.ViewModels
         private int _currentPage = 1;
         private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
 
+        // Sort state tracking for quick reverse
+        private string _currentSortPath;
+        private ListSortDirection _currentSortDirection;
+
         public PerGameControlModel(
             Guid gameId,
             AchievementManager achievementManager,
@@ -523,31 +527,42 @@ namespace PlayniteAchievements.ViewModels
 
         public void SortDataGrid(string sortMemberPath, ListSortDirection direction)
         {
-            IEnumerable<AchievementDisplayItem> sorted;
-
-            switch (sortMemberPath)
+            // Quick reverse if same column
+            if (_currentSortPath == sortMemberPath && _currentSortDirection == ListSortDirection.Ascending &&
+                direction == ListSortDirection.Descending)
             {
-                case "DisplayName":
-                    sorted = direction == ListSortDirection.Ascending
-                        ? _allAchievements.OrderBy(a => a.DisplayName)
-                        : _allAchievements.OrderByDescending(a => a.DisplayName);
-                    break;
-                case "UnlockTime":
-                    sorted = direction == ListSortDirection.Ascending
-                        ? _allAchievements.OrderBy(a => a.UnlockTimeUtc ?? DateTime.MinValue)
-                        : _allAchievements.OrderByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue);
-                    break;
-                case "GlobalPercent":
-                    sorted = direction == ListSortDirection.Ascending
-                        ? _allAchievements.OrderBy(a => a.GlobalPercentUnlocked ?? 100)
-                        : _allAchievements.OrderByDescending(a => a.GlobalPercentUnlocked ?? 100);
-                    break;
-                default:
-                    sorted = _allAchievements;
-                    break;
+                _allAchievements.Reverse();
+                _currentSortDirection = direction;
+                _currentPage = 1;
+                OnPropertyChanged(nameof(CurrentPage));
+                UpdatePagedAchievements();
+                RaisePaginationChanged();
+                return;
             }
 
-            _allAchievements = sorted.ToList();
+            _currentSortPath = sortMemberPath;
+            _currentSortDirection = direction;
+
+            Comparison<AchievementDisplayItem> comparison = sortMemberPath switch
+            {
+                "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
+                "UnlockTime" => (a, b) => (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue),
+                "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
+                _ => null
+            };
+
+            if (comparison != null)
+            {
+                if (direction == ListSortDirection.Descending)
+                {
+                    _allAchievements.Sort((a, b) => comparison(b, a));
+                }
+                else
+                {
+                    _allAchievements.Sort(comparison);
+                }
+            }
+
             _currentPage = 1;
             OnPropertyChanged(nameof(CurrentPage));
             UpdatePagedAchievements();
