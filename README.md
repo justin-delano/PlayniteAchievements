@@ -22,19 +22,19 @@ A modern Playnite extension plugin for aggregating achievement data from multipl
 
 ### Sidebar View
 
-![Sidebar View](Images/sidebar-view.png)
+<img src="Images/sidebar-view.png" alt="Sidebar View" width="600">
 
 ### Detail View
 
-![Detail View](Images/detail-view.png)
+<img src="Images/detail-view.png" alt="Detail View" width="600">
 
 ### Setup Page
 
-![Setup Page](Images/setup-page.png)
+<img src="Images/setup-page.png" alt="Setup Page" width="600">
 
 ### Theme Integration
 
-![Theme Integration](Images/anikiremake-integration.png)
+<img src="Images/anikiremake-integration.png" alt="AnikiRemake Integration" width="600">
 
 ## Features
 
