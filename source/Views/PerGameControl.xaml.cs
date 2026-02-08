@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -66,6 +67,33 @@ namespace PlayniteAchievements.Views
                     e.Handled = true;
                 }
             }
+        }
+
+        private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            if (ViewModel == null) return;
+
+            e.Handled = true;
+
+            var column = e.Column;
+            if (column == null || string.IsNullOrEmpty(column.SortMemberPath)) return;
+
+            var sortDirection = ListSortDirection.Ascending;
+            if (column.SortDirection != null && column.SortDirection == ListSortDirection.Ascending)
+            {
+                sortDirection = ListSortDirection.Descending;
+            }
+
+            ViewModel.SortDataGrid(column.SortMemberPath, sortDirection);
+
+            foreach (var c in (sender as DataGrid).Columns)
+            {
+                if (c != column)
+                {
+                    c.SortDirection = null;
+                }
+            }
+            column.SortDirection = sortDirection;
         }
     }
 }
