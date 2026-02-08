@@ -4,13 +4,6 @@
 
 <h1 align="center">Playnite Achievements</h1>
 
-<p align="center">
-<img src="Images/badge-bronze.svg" width="32" height="32" alt="Bronze">
-<img src="Images/badge-silver.svg" width="32" height="32" alt="Silver">
-<img src="Images/badge-gold.svg" width="32" height="32" alt="Gold">
-<img src="Images/badge-platinum.svg" width="32" height="32" alt="Platinum">
-<img src="Images/badge-perfect.svg" width="32" height="32" alt="Perfect">
-</p>
 
 <div align="center">
 
@@ -20,6 +13,15 @@
 [![Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/latest/total?style=for-the-badge&label=Total%20Downloads%20for%20the%20Latest%20Release&color=blue&cacheSeconds=3600)](https://github.com/justin-delano/PlayniteAchievements/releases)
 
 </div>
+
+<p align="center">
+<img src="Images/badge-bronze.svg" width="32" height="32" alt="Bronze">
+<img src="Images/badge-silver.svg" width="32" height="32" alt="Silver">
+<img src="Images/badge-gold.svg" width="32" height="32" alt="Gold">
+<img src="Images/badge-platinum.svg" width="32" height="32" alt="Platinum">
+<img src="Images/badge-perfect.svg" width="32" height="32" alt="Perfect">
+</p>
+
 
 <p align="center">
 A modern Playnite extension plugin for aggregating achievement data from multiple gaming platforms. Bring your gaming accomplishments together in one place with beautiful visualizations and seamless theme integration.
