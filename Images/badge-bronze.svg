@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="FillBronze" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B231A"/>
+      <stop offset="35%" style="stop-color:#B56A37"/>
+      <stop offset="55%" style="stop-color:#F2C08C"/>
+      <stop offset="100%" style="stop-color:#6A3A25"/>
+    </linearGradient>
+    <linearGradient id="ShineOverlay" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+      <stop offset="45%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+      <stop offset="55%" style="stop-color:#FFFFFF;stop-opacity:0.4"/>
+      <stop offset="70%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M 64,12 L 116,110 12,110 Z"
+        fill="url(#FillBronze)"
+        stroke="#FFEBDC"
+        stroke-width="3"
+        stroke-opacity="0.70"
+        stroke-linejoin="round"/>
+
+  <path d="M 64,12 L 116,110 12,110 Z" fill="url(#ShineOverlay)"/>
+</svg>

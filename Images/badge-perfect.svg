@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="FillRainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E91E63"/>
+      <stop offset="20%" style="stop-color:#9C27B0"/>
+      <stop offset="40%" style="stop-color:#3F51B5"/>
+      <stop offset="60%" style="stop-color:#2196F3"/>
+      <stop offset="80%" style="stop-color:#00BCD4"/>
+      <stop offset="100%" style="stop-color:#4CAF50"/>
+    </linearGradient>
+    <linearGradient id="ShineOverlay" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+      <stop offset="45%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+      <stop offset="55%" style="stop-color:#FFFFFF;stop-opacity:0.4"/>
+      <stop offset="70%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M 64,10 L 110,37 110,91 64,118 18,91 18,37 Z"
+        fill="url(#FillRainbow)"
+        stroke="#FFFFFF"
+        stroke-width="3"
+        stroke-opacity="0.70"
+        stroke-linejoin="round"/>
+
+  <path d="M 64,30 L 90,47 90,83 64,100 38,83 38,47 Z" fill="#FFFFFF" fill-opacity="0.20"/>
+
+  <path d="M 64,10 L 110,37 110,91 64,118 18,91 18,37 Z" fill="url(#ShineOverlay)"/>
+</svg>

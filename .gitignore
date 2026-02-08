@@ -8,6 +8,8 @@ build.txt
 *.pext
 *.zip
 
+AddonDBManifest.yaml
+
 # NuGet packages
 packages/
 *.nupkg
