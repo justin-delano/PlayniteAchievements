@@ -851,7 +851,7 @@
                             <DataGridTemplateColumn Width="34" Header="">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="#4FC3F7" BorderThickness="2,2,0,2" Padding="0">
+                                        <Border BorderBrush="#2196F3" BorderThickness="2,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -879,8 +879,20 @@
                             <DataGridTemplateColumn Width="92"> <!-- was 56 -->
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border CornerRadius="6" Margin="6,8" VerticalAlignment="Center"
-                                                Style="{StaticResource GameImageBorderStyle}"/>
+                                        <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2" Padding="0">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsPerfect}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Border CornerRadius="6" Margin="6,8" VerticalAlignment="Center"
+                                                    Style="{StaticResource GameImageBorderStyle}"/>
+                                        </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -889,16 +901,28 @@
                             <DataGridTemplateColumn Width="2*" Header="Game" SortMemberPath="GameName" MinWidth="160">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Button Content="{Binding GameName}"
-                                                Command="{Binding DataContext.NavigateToGameCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                CommandParameter="{Binding}"
-                                                PreviewMouseDown="GameNameButton_PreviewMouseDown"
-                                                Click="GameNameButton_Click"
-                                                Style="{StaticResource GameNameButtonStyle}">
-                                            <Button.ToolTip>
-                                                <ToolTip Content="Open game in library"/>
-                                            </Button.ToolTip>
-                                        </Button>
+                                        <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2" Padding="0">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsPerfect}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Button Content="{Binding GameName}"
+                                                    Command="{Binding DataContext.NavigateToGameCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    CommandParameter="{Binding}"
+                                                    PreviewMouseDown="GameNameButton_PreviewMouseDown"
+                                                    Click="GameNameButton_Click"
+                                                    Style="{StaticResource GameNameButtonStyle}">
+                                                <Button.ToolTip>
+                                                    <ToolTip Content="Open game in library"/>
+                                                </Button.ToolTip>
+                                            </Button>
+                                        </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -907,12 +931,24 @@
                             <DataGridTemplateColumn Width="2*" Header="Last Played" SortMemberPath="LastPlayed">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding LastPlayedText}"
-                                                VerticalAlignment="Center"
-                                                HorizontalAlignment="Center"
-                                                Style="{DynamicResource BaseTextBlockStyle}"
-                                                Foreground="{DynamicResource TextBrush}"
-                                                Opacity="0.7"/>
+                                        <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2" Padding="0">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsPerfect}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding LastPlayedText}"
+                                                    VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"
+                                                    Style="{DynamicResource BaseTextBlockStyle}"
+                                                    Foreground="{DynamicResource TextBrush}"
+                                                    Opacity="0.7"/>
+                                        </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -921,7 +957,18 @@
                                 <DataGridTemplateColumn Width="2*" Header="Progress" SortMemberPath="Progression">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <StackPanel Margin="2,6,10,6" VerticalAlignment="Center">
+                                            <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2" Padding="0">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsPerfect}" Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <StackPanel Margin="2,6,10,6" VerticalAlignment="Center">
 
                                                 <!-- Row 1: Progress bar with % text -->
                                                 <Grid>
@@ -1011,6 +1058,7 @@
 
                                                 </StackPanel>
                                             </StackPanel>
+                                            </Border>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -1019,7 +1067,7 @@
                                 <DataGridTemplateColumn Width="*" Header="Total" SortMemberPath="TotalAchievements">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Border BorderBrush="#4FC3F7" BorderThickness="0,2,2,2" Padding="0">
+                                            <Border BorderBrush="#2196F3" BorderThickness="0,2,2,2" Padding="0">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
