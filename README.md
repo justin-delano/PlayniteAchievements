@@ -8,12 +8,14 @@
 <img src="Images/badge-perfect.svg" width="32" height="32" alt="Perfect">
 </p>
 
-<p align="center">
+<div align="center">
+
 [![Release](https://img.shields.io/github/v/release/justin-delano/PlayniteAchievements?logo=github)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.14.0-blue)](https://playnite.link/)
 [![Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/total)](https://github.com/justin-delano/PlayniteAchievements/releases)
-</p>
+
+</div>
 
 <p align="center">
 A modern Playnite extension plugin for aggregating achievement data from multiple gaming platforms. Bring your gaming accomplishments together in one place with beautiful visualizations and seamless theme integration.
