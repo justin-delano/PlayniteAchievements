@@ -795,6 +795,7 @@
                             ItemsSource="{Binding GamesOverview}"
                             SelectedItem="{Binding SelectedGame, Mode=OneWay}"
                             SelectionChanged="GamesOverview_SelectionChanged"
+                            Sorting="DataGrid_Sorting"
                             AutoGenerateColumns="False"
                             IsReadOnly="True"
                             SelectionMode="Single"
@@ -1333,6 +1334,7 @@
 
                             <DataGrid Grid.Row="0"
                                       ItemsSource="{Binding RecentAchievements}"
+                                      Sorting="DataGrid_Sorting"
                                       AutoGenerateColumns="False"
                                       IsReadOnly="True"
                                       SelectionMode="Single"
@@ -1585,6 +1587,7 @@
                             <!-- Game Achievements List -->
                             <DataGrid Grid.Row="0"
                                       ItemsSource="{Binding SelectedGameAchievements}"
+                                      Sorting="DataGrid_Sorting"
                                       AutoGenerateColumns="False"
                                       IsReadOnly="True"
                                       SelectionMode="Single"
