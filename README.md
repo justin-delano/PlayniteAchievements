@@ -1,3 +1,7 @@
+<p align="center">
+<img src="source/icon.png" alt="Playnite Achievements Icon" width="128" height="128">
+</p>
+
 <h1 align="center">Playnite Achievements</h1>
 
 <p align="center">

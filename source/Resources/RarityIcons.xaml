@@ -63,15 +63,7 @@
     <GradientStop Offset="1.00" Color="#00FFFFFF"/>
   </LinearGradientBrush>
 
-  <!-- Optional facets for platinum/diamond -->
-  <DrawingBrush x:Key="FacetBrush" TileMode="Tile" ViewportUnits="Absolute" Viewport="0,0,24,24" Viewbox="0,0,24,24">
-    <DrawingBrush.Drawing>
-      <DrawingGroup>
-        <GeometryDrawing Brush="#1AFFFFFF" Geometry="M 0,0 L 24,0 L 0,24 Z"/>
-        <GeometryDrawing Brush="#1480C8FF" Geometry="M 24,24 L 24,0 L 0,24 Z"/>
-      </DrawingGroup>
-    </DrawingBrush.Drawing>
-  </DrawingBrush>
+  <!-- Note: FacetBrush removed (it adds a tiled "grid" over platinum). -->
 
   <!-- Iridescent rainbow gradient for Perfect Game badge -->
   <LinearGradientBrush x:Key="FillRainbow" StartPoint="0,0" EndPoint="1,1">
@@ -145,7 +137,7 @@
     </DrawingImage.Drawing>
   </DrawingImage>
 
-  <!-- Platinum / diamond hexagon -->
+  <!-- Platinum / diamond hexagon (smooth, no facet grid) -->
   <DrawingImage x:Key="BadgePlatinumHexagon">
     <DrawingImage.Drawing>
       <DrawingGroup>
@@ -154,9 +146,6 @@
             <Pen Brush="{StaticResource RimPlatinum}" Thickness="3" LineJoin="Round"/>
           </GeometryDrawing.Pen>
         </GeometryDrawing>
-
-        <!-- Facets -->
-        <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource FacetBrush}"/>
 
         <!-- Shine + extra glints -->
         <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource ShineOverlay}"/>
