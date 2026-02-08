@@ -137,7 +137,7 @@ namespace PlayniteAchievements.Views
             _providers = new ObservableCollection<ProviderStatus>();
 
             var scanModes = _achievementManager.GetScanModes();
-            ScanModes = new ObservableCollection<ScanMode>(scanModes);
+            ScanModes = new ObservableCollection<ScanMode>(scanModes.Where(m => m.Key != "LibrarySelected"));
 
             InitializeComponent();
 
