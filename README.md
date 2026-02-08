@@ -1,10 +1,6 @@
 # Playnite Achievements
 
-<img src="Images/badge-bronze.svg" width="32" height="32" alt="Bronze">
-<img src="Images/badge-silver.svg" width="32" height="32" alt="Silver">
-<img src="Images/badge-gold.svg" width="32" height="32" alt="Gold">
-<img src="Images/badge-platinum.svg" width="32" height="32" alt="Platinum">
-<img src="Images/badge-perfect.svg" width="32" height="32" alt="Perfect">
+<img src="Images/badge-bronze.svg" width="32" height="32" alt="Bronze"> <img src="Images/badge-silver.svg" width="32" height="32" alt="Silver"> <img src="Images/badge-gold.svg" width="32" height="32" alt="Gold"> <img src="Images/badge-platinum.svg" width="32" height="32" alt="Platinum"> <img src="Images/badge-perfect.svg" width="32" height="32" alt="Perfect">
 
 [![Release](https://img.shields.io/github/v/release/justin-delano/PlayniteAchievements?logo=github)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
