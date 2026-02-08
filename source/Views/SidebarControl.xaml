@@ -1068,7 +1068,7 @@
 
                                                 </StackPanel>
                                             </StackPanel>
-                                            </Border>
+                                            </Grid>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
