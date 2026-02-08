@@ -73,6 +73,26 @@ namespace PlayniteAchievements.Views
         public ObservableCollection<ProviderStatus> Providers => _providers;
 
         /// <summary>
+        /// Available scan modes for the scan dropdown.
+        /// </summary>
+        public ObservableCollection<ScanMode> ScanModes { get; }
+
+        private string _selectedScanMode = ScanModeType.Installed.GetKey();
+
+        /// <summary>
+        /// The selected scan mode key.
+        /// </summary>
+        public string SelectedScanMode
+        {
+            get => _selectedScanMode;
+            set
+            {
+                _selectedScanMode = value;
+                OnPropertyChanged(nameof(SelectedScanMode));
+            }
+        }
+
+        /// <summary>
         /// Gets the Playnite application icon path for use in the UI.
         /// Returns the Playnite executable path which can be used as an Image source.
         /// </summary>
@@ -115,6 +135,9 @@ namespace PlayniteAchievements.Views
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
 
             _providers = new ObservableCollection<ProviderStatus>();
+
+            var scanModes = _achievementManager.GetScanModes();
+            ScanModes = new ObservableCollection<ScanMode>(scanModes);
 
             InitializeComponent();
 
@@ -252,11 +275,11 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                _logger.Info("User clicked Begin Scan from first-time landing page.");
+                _logger.Info($"User clicked Begin Scan from first-time landing page with mode: {SelectedScanMode}");
 
                 MarkSetupComplete();
 
-                _ = _achievementManager.StartManagedRebuildAsync();
+                _ = _achievementManager.ExecuteScanAsync(SelectedScanMode);
             }
             catch (Exception ex)
             {
