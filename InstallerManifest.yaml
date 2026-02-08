@@ -6,8 +6,10 @@ Packages:
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.0.0/PlayniteAchievements_1_0_0.pext
     Changelog:
       - First public release
-      - Multi-platform support: Steam, RetroAchievements
-      - Beautiful visualizations with achievement progression charts and rarity breakdowns
-      - Seamless theme integration: SuccessStory legacy compatibility and native controls
-      - Fast and reliable with intelligent caching and background updates
-      - Flexible scanning options: Quick Scan, Full Scan, favorites, single game, auto-scan
+      - Multi-platform support for Steam and RetroAchievements
+      - Beautiful achievement progression timelines and rarity breakdowns
+      - SuccessStory legacy compatibility and modern native theme controls
+      - Intelligent caching with background updates
+      - Flexible scanning options including Quick Scan, Full Scan, favorites, single game, and auto-scan
+      - Graceful error handling throughout
+      - Localization support for multiple languages
