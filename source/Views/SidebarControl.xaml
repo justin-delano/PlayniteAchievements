@@ -851,7 +851,7 @@
                             <DataGridTemplateColumn Width="34" Header="">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="Transparent" BorderThickness=2,2,0,2" Padding="0">
+                                        <Border BorderBrush="Transparent" BorderThickness="2,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
                                                     <Style.Triggers>
@@ -878,7 +878,7 @@
                             <DataGridTemplateColumn Width="92"> <!-- was 56 -->
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="Transparent" BorderThickness=0,2,0,2" Padding="0">
+                                        <Border BorderBrush="Transparent" BorderThickness="0,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
                                                     <Style.Triggers>
@@ -899,7 +899,7 @@
                             <DataGridTemplateColumn Width="2*" Header="Game" SortMemberPath="GameName" MinWidth="160">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="Transparent" BorderThickness=0,2,0,2" Padding="0">
+                                        <Border BorderBrush="Transparent" BorderThickness="0,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
                                                     <Style.Triggers>
@@ -928,7 +928,7 @@
                             <DataGridTemplateColumn Width="2*" Header="Last Played" SortMemberPath="LastPlayed">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="Transparent" BorderThickness=0,2,0,2" Padding="0">
+                                        <Border BorderBrush="Transparent" BorderThickness="0,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
                                                     <Style.Triggers>
@@ -953,7 +953,7 @@
                                 <DataGridTemplateColumn Width="2*" Header="Progress" SortMemberPath="Progression">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Border BorderBrush="Transparent" BorderThickness=0,2,0,2" Padding="0">
+                                            <Border BorderBrush="Transparent" BorderThickness="0,2,0,2" Padding="0">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -1063,7 +1063,7 @@
                                 <DataGridTemplateColumn Width="*" Header="Total" SortMemberPath="TotalAchievements">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Border BorderBrush="Transparent" BorderThickness=0,2,2,2" Padding="0">
+                                            <Border BorderBrush="Transparent" BorderThickness="0,2,2,2" Padding="0">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
