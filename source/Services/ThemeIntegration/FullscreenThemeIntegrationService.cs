@@ -431,6 +431,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             var content = (FrameworkElement)XamlReader.Parse(xamlString);
 
+            // Set DataContext so theme bindings like {Binding SelectedGame.BackgroundImage} work
+            // The theme uses both {Binding SelectedGame.*} for game data and
+            // {PluginSettings Plugin=PlayniteAchievements, Path=...} for plugin data
+            content.DataContext = _settings;
+
             window.PreviewKeyDown += (_, e) =>
             {
                 if (e.Key == Key.Escape)
