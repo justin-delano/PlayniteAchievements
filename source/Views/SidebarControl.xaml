@@ -851,7 +851,7 @@
                             <DataGridTemplateColumn Width="34" Header="">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="#4FC3F7" BorderThickness="2,2,0,2,2" Padding="0">
+                                        <Border BorderBrush="#4FC3F7" BorderThickness="2,2,0,2" Padding="0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
