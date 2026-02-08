@@ -14,8 +14,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.14.0-blue?style=for-the-badge)](https://playnite.link/)
 [![Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/latest/total?style=for-the-badge&label=Total%20Downloads%20for%20the%20Latest%20Release&color=blue&cacheSeconds=3600)](https://github.com/justin-delano/PlayniteAchievements/releases)
-[![Ko-Fi](https://img.shields.io/badge/Ko--Fi-Support%20Me-FF5E5B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/justindelano)
-[![Sponsor](https://img.shields.io/badge/GitHub-Sponsor-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/justin-delano)
 
 </div>
 
