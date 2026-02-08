@@ -476,14 +476,15 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,10,0,10" ClipToBounds="False">
-                                <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality"
-                                        Effect="{Binding Percent, Converter={StaticResource PercentToRarityGlow}}">
+                                <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Opacity" Value="0.5"/>
+                                            <Setter Property="Effect" Value="{x:Null}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Unlocked}" Value="True">
                                                     <Setter Property="Opacity" Value="1"/>
+                                                    <Setter Property="Effect" Value="{Binding Percent, Converter={StaticResource PercentToRarityGlow}}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding IsHidden}" Value="True">
                                                     <Setter Property="Opacity" Value="1"/>
