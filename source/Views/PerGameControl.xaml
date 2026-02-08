@@ -475,27 +475,29 @@
                 <DataGridTemplateColumn Width="78">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Border Width="56" Height="56" CornerRadius="6" VerticalAlignment="Center" Margin="12,10,0,10"
-                                    Effect="{Binding GlobalPercentUnlocked, Converter={StaticResource PercentToRarityGlow}}">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Opacity" Value="0.5"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                                <Setter Property="Opacity" Value="1"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                                                <Setter Property="Opacity" Value="1"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                                <Border.Background>
-                                    <ImageBrush Stretch="UniformToFill"
-                                                helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                                                helpers:AsyncImage.DecodePixel="64"/>
-                                </Border.Background>
-                            </Border>
+                            <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,10,0,10" ClipToBounds="False">
+                                <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality"
+                                        Effect="{Binding Percent, Converter={StaticResource PercentToRarityGlow}}">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Opacity" Value="0.5"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                                    <Setter Property="Opacity" Value="1"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                    <Setter Property="Opacity" Value="1"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Border.Background>
+                                        <ImageBrush Stretch="UniformToFill"
+                                                    helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                                                    helpers:AsyncImage.DecodePixel="64"/>
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

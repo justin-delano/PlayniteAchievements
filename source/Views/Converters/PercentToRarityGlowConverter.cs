@@ -19,26 +19,26 @@ namespace PlayniteAchievements.Views.Converters
     {
         private static readonly DropShadowEffect UltraRareGlow = new DropShadowEffect
         {
-            BlurRadius = 18,
+            BlurRadius = 25,
             ShadowDepth = 0,
             Color = Color.FromRgb(0x4F, 0xC3, 0xF7),
-            Opacity = 0.9
+            Opacity = 1.0
         };
 
         private static readonly DropShadowEffect RareGlow = new DropShadowEffect
         {
-            BlurRadius = 18,
+            BlurRadius = 25,
             ShadowDepth = 0,
             Color = Color.FromRgb(0xFF, 0xD7, 0x00),
-            Opacity = 0.9
+            Opacity = 1.0
         };
 
         private static readonly DropShadowEffect UncommonGlow = new DropShadowEffect
         {
-            BlurRadius = 18,
+            BlurRadius = 25,
             ShadowDepth = 0,
             Color = Color.FromRgb(0xC0, 0xC0, 0xC0),
-            Opacity = 0.9
+            Opacity = 1.0
         };
 
         static PercentToRarityGlowConverter()
