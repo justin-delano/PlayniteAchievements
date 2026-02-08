@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -519,6 +520,39 @@ namespace PlayniteAchievements.ViewModels
         }
 
         #endregion
+
+        public void SortDataGrid(string sortMemberPath, ListSortDirection direction)
+        {
+            IEnumerable<AchievementDisplayItem> sorted;
+
+            switch (sortMemberPath)
+            {
+                case "DisplayName":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _allAchievements.OrderBy(a => a.DisplayName)
+                        : _allAchievements.OrderByDescending(a => a.DisplayName);
+                    break;
+                case "UnlockTime":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _allAchievements.OrderBy(a => a.UnlockTimeUtc ?? DateTime.MinValue)
+                        : _allAchievements.OrderByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue);
+                    break;
+                case "GlobalPercent":
+                    sorted = direction == ListSortDirection.Ascending
+                        ? _allAchievements.OrderBy(a => a.GlobalPercentUnlocked ?? 100)
+                        : _allAchievements.OrderByDescending(a => a.GlobalPercentUnlocked ?? 100);
+                    break;
+                default:
+                    sorted = _allAchievements;
+                    break;
+            }
+
+            _allAchievements = sorted.ToList();
+            _currentPage = 1;
+            OnPropertyChanged(nameof(CurrentPage));
+            UpdatePagedAchievements();
+            RaisePaginationChanged();
+        }
 
         #region IDisposable
 
