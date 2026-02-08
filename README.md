@@ -15,16 +15,15 @@
 </div>
 
 <p align="center">
+A modern Playnite extension plugin for aggregating achievement data from multiple gaming platforms. Bring your gaming accomplishments together in one place with beautiful visualizations and seamless theme integration.
+</p>
+
+<p align="center">
 <img src="Images/badge-bronze.svg" width="32" height="32" alt="Bronze">
 <img src="Images/badge-silver.svg" width="32" height="32" alt="Silver">
 <img src="Images/badge-gold.svg" width="32" height="32" alt="Gold">
 <img src="Images/badge-platinum.svg" width="32" height="32" alt="Platinum">
 <img src="Images/badge-perfect.svg" width="32" height="32" alt="Perfect">
-</p>
-
-
-<p align="center">
-A modern Playnite extension plugin for aggregating achievement data from multiple gaming platforms. Bring your gaming accomplishments together in one place with beautiful visualizations and seamless theme integration.
 </p>
 
 ## Why PlayniteAchievements?
