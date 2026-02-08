@@ -848,7 +848,8 @@
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsPerfect}" Value="True">
                                             <Setter Property="BorderBrush" Value="#4FC3F7"/>
-                                            <Setter Property="BorderThickness" Value="2"/>
+                                            <Setter Property="BorderThickness" Value="2,2,0,2"/>
+                                            <Setter Property="Margin" Value="0,0,-2,0"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
