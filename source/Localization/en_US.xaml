@@ -353,5 +353,9 @@
     <sys:String x:Key="LOCPlayAch_ThemeTransition_FilesProcessed">Files processed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_Replacements">Replacements made: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupLocation">Backup location: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoThemesMessage">No themes found that need transitioning. Themes with SuccessStory references will appear here.</sys:String>
+
+    <sys:String x:Key="LOCSuccessStoryAchievements">Achievements</sys:String>
+
 
 </ResourceDictionary>
