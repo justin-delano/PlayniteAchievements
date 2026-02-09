@@ -53,30 +53,43 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
             try
             {
-                var themeDirectories = Directory.GetDirectories(themesRootPath);
+                // Playnite themes are organized in Desktop and Fullscreen subdirectories
+                var subDirectories = new[] { "Desktop", "Fullscreen" };
 
-                foreach (var themeDir in themeDirectories)
+                foreach (var subDir in subDirectories)
                 {
-                    var dirInfo = new DirectoryInfo(themeDir);
-                    var themeName = dirInfo.Name;
-
-                    var backupPath = Path.Combine(themeDir, BackupFolderName);
-                    var hasBackup = Directory.Exists(backupPath);
-
-                    // Check if theme contains SuccessStory references
-                    bool needsTransition = CheckIfNeedsTransition(themeDir);
-
-                    var themeInfo = new ThemeInfo
+                    var subDirPath = Path.Combine(themesRootPath, subDir);
+                    if (!Directory.Exists(subDirPath))
                     {
-                        Name = themeName,
-                        Path = themeDir,
-                        HasBackup = hasBackup,
-                        NeedsTransition = !hasBackup && needsTransition
-                    };
+                        _logger.Debug($"Theme subdirectory does not exist: {subDirPath}");
+                        continue;
+                    }
 
-                    themes.Add(themeInfo);
+                    var themeDirectories = Directory.GetDirectories(subDirPath);
 
-                    _logger.Debug($"Discovered theme: {themeName}, NeedsTransition: {themeInfo.NeedsTransition}, HasBackup: {hasBackup}");
+                    foreach (var themeDir in themeDirectories)
+                    {
+                        var dirInfo = new DirectoryInfo(themeDir);
+                        var themeName = $"{subDir}/{dirInfo.Name}";
+
+                        var backupPath = Path.Combine(themeDir, BackupFolderName);
+                        var hasBackup = Directory.Exists(backupPath);
+
+                        // Check if theme contains SuccessStory references
+                        bool needsTransition = CheckIfNeedsTransition(themeDir);
+
+                        var themeInfo = new ThemeInfo
+                        {
+                            Name = themeName,
+                            Path = themeDir,
+                            HasBackup = hasBackup,
+                            NeedsTransition = !hasBackup && needsTransition
+                        };
+
+                        themes.Add(themeInfo);
+
+                        _logger.Debug($"Discovered theme: {themeName}, NeedsTransition: {themeInfo.NeedsTransition}, HasBackup: {hasBackup}");
+                    }
                 }
 
                 _logger.Info($"Discovered {themes.Count} themes, {themes.Count(t => t.NeedsTransition)} need transition.");
