@@ -69,14 +69,18 @@ namespace PlayniteAchievements.Services.ThemeTransition
                     }
 
                     var themeDirectories = Directory.GetDirectories(subDirPath);
+                    _logger.Info($"Found {themeDirectories.Length} themes in {subDir}");
 
                     foreach (var themeDir in themeDirectories)
                     {
                         var dirInfo = new DirectoryInfo(themeDir);
                         var themeName = $"{subDir}/{dirInfo.Name}";
 
+                        _logger.Debug($"Processing theme: {themeName} at {themeDir}");
+
                         var backupPath = Path.Combine(themeDir, BackupFolderName);
                         var hasBackup = Directory.Exists(backupPath);
+                        _logger.Debug($"Theme has backup: {hasBackup}");
 
                         // Check if theme contains SuccessStory references
                         var (needsTransition, couldNotScan) = CheckIfNeedsTransition(themeDir);
@@ -92,7 +96,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
                         themes.Add(themeInfo);
 
-                        _logger.Debug($"Discovered theme: {themeName}, NeedsTransition: {themeInfo.NeedsTransition}, HasBackup: {hasBackup}, CouldNotScan: {couldNotScan}");
+                        _logger.Info($"Discovered theme: {themeName}, NeedsTransition: {themeInfo.NeedsTransition}, HasBackup: {hasBackup}, CouldNotScan: {couldNotScan}");
                     }
                 }
 
@@ -139,28 +143,45 @@ namespace PlayniteAchievements.Services.ThemeTransition
             {
                 var dirInfo = new DirectoryInfo(themePath);
 
-                // Check for common theme files that might contain SuccessStory references
+                // Search recursively for XAML, PS1, and CS files
                 var filesToCheck = new List<string>();
-                filesToCheck.AddRange(dirInfo.GetFiles("*.xaml", SearchOption.TopDirectoryOnly).Select(f => f.FullName));
-                filesToCheck.AddRange(dirInfo.GetFiles("*.ps1", SearchOption.TopDirectoryOnly).Select(f => f.FullName));
-                filesToCheck.AddRange(dirInfo.GetFiles("*.cs", SearchOption.TopDirectoryOnly).Select(f => f.FullName));
 
-                // Also check in subdirectories (limit depth for performance)
-                foreach (var subDir in dirInfo.GetDirectories())
+                try
                 {
-                    if (subDir.Name == BackupFolderName || subDir.Name.StartsWith("."))
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        filesToCheck.AddRange(subDir.GetFiles("*.xaml", SearchOption.TopDirectoryOnly).Select(f => f.FullName));
-                    }
-                    catch { }
+                    filesToCheck.AddRange(dirInfo.GetFiles("*.xaml", SearchOption.AllDirectories).Select(f => f.FullName));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Debug(ex, $"Could not search for XAML files in {themePath}");
                 }
 
-                foreach (var file in filesToCheck.Take(50))
+                try
+                {
+                    filesToCheck.AddRange(dirInfo.GetFiles("*.ps1", SearchOption.AllDirectories).Select(f => f.FullName));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Debug(ex, $"Could not search for PS1 files in {themePath}");
+                }
+
+                try
+                {
+                    filesToCheck.AddRange(dirInfo.GetFiles("*.cs", SearchOption.AllDirectories).Select(f => f.FullName));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Debug(ex, $"Could not search for CS files in {themePath}");
+                }
+
+                // Remove duplicates and filter out backup folder
+                filesToCheck = filesToCheck
+                    .Where(f => !f.Contains(BackupFolderName))
+                    .Distinct()
+                    .ToList();
+
+                _logger.Debug($"Found {filesToCheck.Count} files to check in theme: {themePath}");
+
+                foreach (var file in filesToCheck.Take(100))
                 {
                     try
                     {
@@ -169,6 +190,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
                         if (content.IndexOf("SuccessStory", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             foundSuccessStory = true;
+                            _logger.Debug($"Found SuccessStory reference in: {file}");
                             break;
                         }
                     }
@@ -179,7 +201,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
                     }
                 }
 
-                _logger.Debug($"Theme scan for {themePath}: {filesRead} files read, {filesSkipped} files skipped, found SuccessStory: {foundSuccessStory}");
+                _logger.Info($"Theme scan for {Path.GetFileName(themePath)}: {filesRead} files read, {filesSkipped} files skipped, found SuccessStory: {foundSuccessStory}");
 
                 // If we couldn't read ANY files, conservatively assume it needs transition
                 // This handles the case where the theme is currently running and files are locked
