@@ -9,7 +9,8 @@
 [![Release](https://img.shields.io/github/v/release/justin-delano/PlayniteAchievements?style=for-the-badge&logo=github)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.14.0-blue?style=for-the-badge)](https://playnite.link/)
-[![Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/latest/total?style=for-the-badge&label=Total%20Downloads%20for%20the%20Latest%20Release&color=blue&cacheSeconds=3600)](https://github.com/justin-delano/PlayniteAchievements/releases)
+[![Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/total?style=for-the-badge&label=Total%20Downloads&color=blue)](https://github.com/justin-delano/PlayniteAchievements/releases)
+[![Latest Release Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/latest/total?style=for-the-badge&label=Latest%20Release%20Downloads&color=blue&cacheSeconds=3600)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
 
 </div>
 
