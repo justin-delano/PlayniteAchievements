@@ -4,7 +4,6 @@
 
 <h1 align="center">Playnite Achievements</h1>
 
-
 <div align="center">
 
 [![Release](https://img.shields.io/github/v/release/justin-delano/PlayniteAchievements?style=for-the-badge&logo=github)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
@@ -28,13 +27,14 @@ A modern Playnite extension plugin for aggregating achievement data from multipl
 
 ## Why PlayniteAchievements?
 
-| Traditional Approaches                | PlayniteAchievements                                     |
-| ------------------------------------- | -------------------------------------------------------- |
-| Limited platform support              | Modular architecture planning to support 10+ platforms   |
-| Basic visualization tools             | Rich charts with rarity breakdowns and progress tracking |
-| Single theme compatibility            | Dual integration: legacy and modern native controls      |
-| Fullscreen helper required            | Complete fullscreen integration included.                |
-| Manual profile configuration required | Compatible with existing Steam privacy settings          |
+| Traditional Approaches                | PlayniteAchievements                                                        |
+| ------------------------------------- | --------------------------------------------------------------------------- |
+| Limited platform support              | Modular architecture planning to support 10+ platforms                      |
+| Existing theme ecosystem              | Automatic theme transition system, so your favorite themes can work with PA |
+| Basic visualization tools             | Rich charts with rarity breakdowns and progress tracking                    |
+| Single theme compatibility            | Dual integration: legacy and modern native controls                         |
+| Fullscreen helper required            | Complete fullscreen integration included.                                   |
+| Manual profile configuration required | Compatible with existing Steam privacy settings                             |
 
 ## Screenshots
 
@@ -104,6 +104,7 @@ PlayniteAchievements includes an automatic theme transition tool that seamlessly
 **How It Works:**
 
 The transition tool automatically:
+
 - Scans your Playnite themes directory for themes using SuccessStory
 - Creates a selective backup of only files that contain SuccessStory references
 - Updates all references from "SuccessStory" to "PlayniteAchievements"
@@ -111,7 +112,7 @@ The transition tool automatically:
 
 **Features:**
 
-- **Smart Detection**: Recursively scans theme files (XAML, PS1, CS) for SuccessStory references
+- **Smart Detection**: Recursively scans theme files for SuccessStory references
 - **Selective Backup**: Only backs up files that were actually modified, minimizing disk usage
 - **Safe Revert**: Easily restore themes to their original state if needed
 - **Skip Compatible**: Themes already using PlayniteAchievements are automatically skipped
@@ -123,10 +124,7 @@ The transition tool automatically:
 
 **What Gets Transitioned:**
 
-Only theme files containing SuccessStory references are modified:
-- Theme control definitions (XAML)
-- Theme scripts (PowerShell, C#)
-- Configuration files
+Only theme files containing SuccessStory references are modified.
 
 Themes are searched in both Desktop and Fullscreen theme directories under your Playnite configuration folder.
 
