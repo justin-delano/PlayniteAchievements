@@ -196,7 +196,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
             {
                 var content = File.ReadAllText(file.FullName, Encoding.UTF8);
                 int successStoryCount = CountOccurrences(content, "SuccessStory");
-                int helperCount = CountOccurrences(content, "SuccessStoryFullscreenHelper");
+                int helperCount = CountOccurrences(content, "SSHelper");
                 int totalCount = successStoryCount + helperCount;
 
                 return (totalCount > 0, totalCount);
@@ -272,10 +272,11 @@ namespace PlayniteAchievements.Services.ThemeTransition
             string originalContent = content;
             int replacements = 0;
 
-            // Replace longer string first to avoid partial replacements
-            content = content.Replace("SuccessStoryFullscreenHelper", "PlayniteAchievements");
-            replacements += CountOccurrences(originalContent, "SuccessStoryFullscreenHelper");
+            // Replace SSHelper first (more specific)
+            content = content.Replace("SSHelper", "PlayniteAchievements");
+            replacements += CountOccurrences(originalContent, "SSHelper");
 
+            // Then replace SuccessStory (more general)
             content = content.Replace("SuccessStory", "PlayniteAchievements");
             replacements += CountOccurrences(originalContent, "SuccessStory");
 
