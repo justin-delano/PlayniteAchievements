@@ -97,6 +97,39 @@ Compatible with existing themes out of the box.
 
 Additional theme support planned. See the [Theme Integration Wiki](https://github.com/justindelano/PlayniteAchievements/wiki) for details.
 
+### Automatic Theme Transition
+
+PlayniteAchievements includes an automatic theme transition tool that seamlessly updates your SuccessStory-based themes to work with PlayniteAchievements.
+
+**How It Works:**
+
+The transition tool automatically:
+- Scans your Playnite themes directory for themes using SuccessStory
+- Creates a selective backup of only files that contain SuccessStory references
+- Updates all references from "SuccessStory" to "PlayniteAchievements"
+- Preserves your theme's original structure and styling
+
+**Features:**
+
+- **Smart Detection**: Recursively scans theme files (XAML, PS1, CS) for SuccessStory references
+- **Selective Backup**: Only backs up files that were actually modified, minimizing disk usage
+- **Safe Revert**: Easily restore themes to their original state if needed
+- **Skip Compatible**: Themes already using PlayniteAchievements are automatically skipped
+
+**Accessing the Tool:**
+
+1. **First-Time Prompt**: When you first install PlayniteAchievements, you'll see a landing page with the theme transition option
+2. **Settings Page**: Access anytime via Settings → Extensions → PlayniteAchievements → Theme Transition tab
+
+**What Gets Transitioned:**
+
+Only theme files containing SuccessStory references are modified:
+- Theme control definitions (XAML)
+- Theme scripts (PowerShell, C#)
+- Configuration files
+
+Themes are searched in both Desktop and Fullscreen theme directories under your Playnite configuration folder.
+
 ### Fast & Reliable
 
 - Intelligent caching maintains responsive performance
@@ -143,6 +176,20 @@ Additional platforms and features are released as development completes.
 ## For Theme Developers
 
 PlayniteAchievements provides comprehensive integration options for theme developers:
+
+### Quick Start: Automatic Theme Transition
+
+Theme developers can use the built-in theme transition tool to automatically update SuccessStory-based themes:
+
+1. Install PlayniteAchievements
+2. Open Settings → Extensions → PlayniteAchievements → Theme Transition
+3. Select your theme from the dropdown
+4. Click "Transition" to automatically convert all SuccessStory references
+5. Restart Playnite to apply changes
+
+The tool creates a backup of modified files and can revert changes if needed.
+
+### Manual Theme Integration
 
 ### SuccessStory Legacy Compatibility
 
