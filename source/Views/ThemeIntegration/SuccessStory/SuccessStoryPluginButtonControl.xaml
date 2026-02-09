@@ -24,12 +24,12 @@
             <!-- Trophy icon (shown when DisplayDetails=False) -->
             <TextBlock Text="&#xe820;" FontFamily="{DynamicResource FontIcoFont}"
                        Grid.Column="0" VerticalAlignment="Center"
-                       Visibility="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=DisplayDetails, Converter={StaticResource InverseBoolToVisConverter}}"
-                       FontSize="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=FontSize}" />
+                       Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:SuccessStoryThemeControlBase}, Path=DisplayDetails, Converter={StaticResource InverseBoolToVisConverter}}"
+                       FontSize="{Binding RelativeSource={RelativeSource AncestorType=local:SuccessStoryThemeControlBase}, Path=FontSize, FallbackValue=14}" />
 
             <!-- Details grid (shown when DisplayDetails=True) -->
             <Grid Grid.Column="1" HorizontalAlignment="Stretch"
-                  Visibility="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=DisplayDetails, Converter={StaticResource BooleanToVisibilityConverter}}">
+                  Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:SuccessStoryThemeControlBase}, Path=DisplayDetails, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="auto" />
@@ -44,22 +44,22 @@
 
                 <!-- 100% complete indicator -->
                 <TextBlock Grid.Column="0" Grid.Row="0" Grid.RowSpan="3" Text="&#xea33;" FontFamily="{DynamicResource CommonFont}"
-                           Visibility="{Binding AllUnlocked, Converter={StaticResource BooleanToVisibilityConverter}}"
+                           Visibility="{Binding NativeTheme.AllUnlocked, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"
                            VerticalAlignment="Center" Padding="5,3,5,5"
-                           FontSize="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=FontSize}" />
+                           FontSize="{Binding RelativeSource={RelativeSource AncestorType=local:SuccessStoryThemeControlBase}, Path=FontSize, FallbackValue=14}" />
 
                 <!-- "Achievements" label -->
                 <TextBlock Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="3" Margin="0,-3,0,-3"
                            Text="{DynamicResource LOCSuccessStoryAchievements}" Padding="5,3,5,5"
-                           FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource HeightToFontSizeConverter}}" />
+                           FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource HeightToFontSizeConverter}, FallbackValue=12}" />
 
                 <!-- Progress label -->
                 <TextBlock Margin="0,-3,0,-3" Grid.Column="1" Grid.Row="2" Padding="5,3,5,5"
-                           FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource HeightToFontSizeConverter}}">
+                           FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource HeightToFontSizeConverter}, FallbackValue=12}">
                     <TextBlock.Text>
                         <MultiBinding StringFormat="{}{0}/{1}">
-                            <Binding Path="UnlockedCount" FallbackValue="0" />
-                            <Binding Path="AchievementCount" FallbackValue="0" />
+                            <Binding Path="NativeTheme.UnlockedCount" FallbackValue="0" />
+                            <Binding Path="NativeTheme.AchievementCount" FallbackValue="0" />
                         </MultiBinding>
                     </TextBlock.Text>
                 </TextBlock>
@@ -67,8 +67,8 @@
                 <!-- Progress bar -->
                 <StackPanel Grid.Column="3" Grid.Row="2" Name="PART_GridProgressBar">
                     <ProgressBar Height="12" Width="{Binding ElementName=PART_GridProgressBar, Path=ActualWidth}"
-                                 Maximum="{Binding AchievementCount, Mode=OneWay, FallbackValue=100}"
-                                 Value="{Binding UnlockedCount, Mode=OneWay, FallbackValue=30}">
+                                 Maximum="{Binding NativeTheme.AchievementCount, Mode=OneWay, FallbackValue=100}"
+                                 Value="{Binding NativeTheme.UnlockedCount, Mode=OneWay, FallbackValue=30}">
                         <ProgressBar.Style>
                             <Style TargetType="{x:Type ProgressBar}" BasedOn="{StaticResource {x:Type ProgressBar}}">
                                 <Style.Triggers>
