@@ -233,15 +233,16 @@ namespace PlayniteAchievements.Services.ThemeTransition
         /// </summary>
         private bool IsProcessableFile(string extension)
         {
-            return extension == ".xaml" ||
-                   extension == ".ps1" ||
-                   extension == ".cs" ||
-                   extension == ".txt" ||
-                   extension == ".md" ||
-                   extension == ".json" ||
-                   extension == ".xml" ||
-                   extension == ".yaml" ||
-                   extension == ".yml";
+            return extension == ".xaml";
+            // return extension == ".xaml" ||
+            //        extension == ".ps1" ||
+            //        extension == ".cs" ||
+            //        extension == ".txt" ||
+            //        extension == ".md" ||
+            //        extension == ".json" ||
+            //        extension == ".xml" ||
+            //        extension == ".yaml" ||
+            //        extension == ".yml";
         }
 
         /// <summary>
@@ -265,6 +266,147 @@ namespace PlayniteAchievements.Services.ThemeTransition
             }
 
             return count;
+        }
+
+        /// <summary>
+        /// Reverts a theme to its original state from backup.
+        /// </summary>
+        /// <param name="themePath">Full path to the theme directory.</param>
+        /// <returns>Transition result with status and details.</returns>
+        public async Task<TransitionResult> RevertThemeAsync(string themePath)
+        {
+            if (string.IsNullOrWhiteSpace(themePath))
+            {
+                return new TransitionResult
+                {
+                    Success = false,
+                    Message = "Theme path cannot be empty."
+                };
+            }
+
+            if (!Directory.Exists(themePath))
+            {
+                return new TransitionResult
+                {
+                    Success = false,
+                    Message = $"Theme directory does not exist: {themePath}"
+                };
+            }
+
+            var backupPath = Path.Combine(themePath, BackupFolderName);
+
+            if (!Directory.Exists(backupPath))
+            {
+                return new TransitionResult
+                {
+                    Success = false,
+                    Message = $"No backup folder found at: {BackupFolderName}"
+                };
+            }
+
+            _logger.Info($"Starting theme revert for: {themePath}");
+
+            try
+            {
+                await Task.Run(() =>
+                {
+                    RestoreFromBackup(themePath, backupPath);
+                });
+
+                _logger.Info($"Theme revert completed successfully for: {themePath}");
+
+                return new TransitionResult
+                {
+                    Success = true,
+                    Message = $"Theme reverted successfully. Backup folder preserved at: {BackupFolderName}"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to revert theme at: {themePath}");
+                return new TransitionResult
+                {
+                    Success = false,
+                    Message = $"Revert failed: {ex.Message}"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Restores theme files from the backup directory.
+        /// </summary>
+        private void RestoreFromBackup(string themePath, string backupPath)
+        {
+            _logger.Info($"Restoring from backup: {backupPath}");
+
+            var backupDir = new DirectoryInfo(backupPath);
+
+            // First, delete all files and directories in the theme root (except backup)
+            var themeDir = new DirectoryInfo(themePath);
+
+            foreach (var file in themeDir.GetFiles())
+            {
+                try
+                {
+                    file.Delete();
+                    _logger.Debug($"Deleted file: {file.Name}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn(ex, $"Failed to delete file: {file.Name}");
+                }
+            }
+
+            foreach (var dir in themeDir.GetDirectories())
+            {
+                if (dir.Name == BackupFolderName)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    Directory.Delete(dir.FullName, recursive: true);
+                    _logger.Debug($"Deleted directory: {dir.Name}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warn(ex, $"Failed to delete directory: {dir.Name}");
+                }
+            }
+
+            // Now copy everything from backup to theme root
+            foreach (var file in backupDir.GetFiles())
+            {
+                string destFile = Path.Combine(themePath, file.Name);
+                file.CopyTo(destFile, overwrite: true);
+                _logger.Debug($"Restored file: {file.Name}");
+            }
+
+            foreach (var dir in backupDir.GetDirectories())
+            {
+                string destDir = Path.Combine(themePath, dir.Name);
+                CopyDirectoryRecursive(dir.FullName, destDir);
+                _logger.Debug($"Restored directory: {dir.Name}");
+            }
+
+            _logger.Info("Restore completed");
+        }
+
+        /// <summary>
+        /// Checks if a theme has a backup folder.
+        /// </summary>
+        /// <param name="themePath">Full path to the theme directory.</param>
+        /// <returns>True if backup folder exists.</returns>
+        public bool HasBackup(string themePath)
+        {
+            if (string.IsNullOrWhiteSpace(themePath))
+            {
+                return false;
+            }
+
+            var backupPath = Path.Combine(themePath, BackupFolderName);
+            return Directory.Exists(backupPath);
         }
     }
 }
