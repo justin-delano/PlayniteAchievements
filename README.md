@@ -40,20 +40,20 @@ A modern Playnite extension plugin for aggregating achievement data from multipl
 
 ### Sidebar View
 
-<img src="Images/sidebar-view1.png" alt="Sidebar Overview" width="600">
-<img src="Images/sidebar-view2.png" alt="Sidebar Single Game View" width="600">
+<img src="Images/sidebar-view1.png" alt="Sidebar Overview" width="900">
+<img src="Images/sidebar-view2.png" alt="Sidebar Single Game View" width="900">
 
 ### Single Game View
 
-<img src="Images/single-game-view.png" alt="Single Game View" width="600">
+<img src="Images/single-game-view.png" alt="Single Game View" width="900">
 
 ### Setup Page
 
-<img src="Images/setup-view.png" alt="Setup Page" width="600">
+<img src="Images/setup-view.png" alt="Setup Page" width="900">
 
 ### Theme Integration
 
-<img src="Images/aniki-remake1.png" alt="Aniki-Remake Integration" width="600">
+<img src="Images/aniki-remake1.png" alt="Aniki-Remake Integration" width="900">
 
 ## Features
 
