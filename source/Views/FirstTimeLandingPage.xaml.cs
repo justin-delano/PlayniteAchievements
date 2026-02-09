@@ -142,6 +142,7 @@ namespace PlayniteAchievements.Views
 
             _providers = new ObservableCollection<ProviderStatus>();
             _availableThemes = new ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
+            _revertableThemes = new ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
             _themeDiscovery = new ThemeDiscoveryService(_logger, _api);
             _themeTransition = new ThemeTransitionService(_logger);
 
@@ -358,13 +359,21 @@ namespace PlayniteAchievements.Views
         // ====================================================================
 
         private readonly ObservableCollection<ThemeDiscoveryService.ThemeInfo> _availableThemes;
+        private readonly ObservableCollection<ThemeDiscoveryService.ThemeInfo> _revertableThemes;
         private string _selectedThemePath;
+        private string _selectedRevertThemePath;
         private bool _showNoThemesMessage;
+        private bool _showNoRevertableThemesMessage;
 
         /// <summary>
         /// Gets the collection of themes available for transition.
         /// </summary>
         public ObservableCollection<ThemeDiscoveryService.ThemeInfo> AvailableThemes => _availableThemes;
+
+        /// <summary>
+        /// Gets the collection of themes that can be reverted.
+        /// </summary>
+        public ObservableCollection<ThemeDiscoveryService.ThemeInfo> RevertableThemes => _revertableThemes;
 
         /// <summary>
         /// Gets or sets the selected theme path for transition.
@@ -380,9 +389,27 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
+        /// Gets or sets the selected theme path for revert.
+        /// </summary>
+        public string SelectedRevertThemePath
+        {
+            get => _selectedRevertThemePath;
+            set
+            {
+                _selectedRevertThemePath = value;
+                OnPropertyChanged(nameof(SelectedRevertThemePath));
+            }
+        }
+
+        /// <summary>
         /// Gets whether there are themes that need transitioning.
         /// </summary>
         public bool HasThemesToTransition => _availableThemes?.Count > 0;
+
+        /// <summary>
+        /// Gets whether there are themes that can be reverted.
+        /// </summary>
+        public bool HasRevertableThemes => _revertableThemes?.Count > 0;
 
         /// <summary>
         /// Gets the message to show when no themes need transition.
@@ -400,6 +427,19 @@ namespace PlayniteAchievements.Views
             {
                 _showNoThemesMessage = value;
                 OnPropertyChanged(nameof(ShowNoThemesMessage));
+            }
+        }
+
+        /// <summary>
+        /// Gets whether to show the no revertable themes message.
+        /// </summary>
+        public bool ShowNoRevertableThemesMessage
+        {
+            get => _showNoRevertableThemesMessage;
+            private set
+            {
+                _showNoRevertableThemesMessage = value;
+                OnPropertyChanged(nameof(ShowNoRevertableThemesMessage));
             }
         }
 
@@ -431,6 +471,33 @@ namespace PlayniteAchievements.Views
         });
 
         /// <summary>
+        /// Command to revert the selected theme.
+        /// </summary>
+        public ICommand RevertThemeCommand => new RelayCommand(async () =>
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(SelectedRevertThemePath))
+                {
+                    _logger.Warn("Revert theme command executed but no theme selected.");
+                    return;
+                }
+
+                _logger.Info($"User requested theme revert for: {SelectedRevertThemePath}");
+
+                await ExecuteThemeRevertAsync(SelectedRevertThemePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to execute theme revert command.");
+                _api?.Notifications?.Add(new NotificationMessage(
+                    "PlayAch_RevertError",
+                    $"Theme revert failed: {ex.Message}",
+                    NotificationType.Error));
+            }
+        });
+
+        /// <summary>
         /// Loads the list of themes that need transitioning.
         /// </summary>
         private void LoadAvailableThemes()
@@ -451,28 +518,41 @@ namespace PlayniteAchievements.Views
             try
             {
                 _availableThemes.Clear();
+                _revertableThemes.Clear();
 
                 var themesPath = _themeDiscovery.GetDefaultThemesPath();
                 if (string.IsNullOrEmpty(themesPath))
                 {
                     _logger.Info("No themes path found, skipping theme discovery.");
                     ShowNoThemesMessage = true;
+                    ShowNoRevertableThemesMessage = true;
                     OnPropertyChanged(nameof(HasThemesToTransition));
+                    OnPropertyChanged(nameof(HasRevertableThemes));
                     return;
                 }
 
                 var themes = _themeDiscovery.DiscoverThemes(themesPath);
-                var themesNeedingTransition = themes.Where(t => t.NeedsTransition).ToList();
 
+                // Load themes that need transition
+                var themesNeedingTransition = themes.Where(t => t.NeedsTransition).ToList();
                 foreach (var theme in themesNeedingTransition)
                 {
                     _availableThemes.Add(theme);
                 }
 
-                ShowNoThemesMessage = _availableThemes.Count == 0;
-                OnPropertyChanged(nameof(HasThemesToTransition));
+                // Load themes that can be reverted
+                var themesWithBackups = themes.Where(t => t.HasBackup).ToList();
+                foreach (var theme in themesWithBackups)
+                {
+                    _revertableThemes.Add(theme);
+                }
 
-                _logger.Info($"Loaded {_availableThemes.Count} themes that need transitioning.");
+                ShowNoThemesMessage = _availableThemes.Count == 0;
+                ShowNoRevertableThemesMessage = _revertableThemes.Count == 0;
+                OnPropertyChanged(nameof(HasThemesToTransition));
+                OnPropertyChanged(nameof(HasRevertableThemes));
+
+                _logger.Info($"Loaded {_availableThemes.Count} themes that need transitioning, {_revertableThemes.Count} themes that can be reverted.");
             }
             catch (Exception ex)
             {
@@ -481,54 +561,16 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Executes the theme transition with progress window.
+        /// Executes the theme transition.
         /// </summary>
         private async Task ExecuteThemeTransitionAsync(string themePath)
         {
-            var progressWindow = new ThemeTransition.ThemeTransitionProgressWindow(_logger);
-
-            var windowOptions = new WindowOptions
-            {
-                ShowMinimizeButton = false,
-                ShowMaximizeButton = false,
-                ShowCloseButton = false,
-                CanBeResizable = false,
-                Width = 400,
-                Height = 280
-            };
-
-            var window = PlayniteUiProvider.CreateExtensionWindow(
-                progressWindow.WindowTitle,
-                progressWindow,
-                windowOptions
-            );
-
-            try
-            {
-                if (window.Owner == null)
-                {
-                    window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
-                }
-            }
-            catch { }
-
-            progressWindow.RequestClose += (s, e) => window.Close();
-
-            progressWindow.SetProgress(
-                ResourceProvider.GetString("LOCPlayAch_ThemeTransition_Processing") ?? "Processing theme...",
-                isIndeterminate: true);
-
-            window.Show();
-
             var result = await _themeTransition.TransitionThemeAsync(themePath);
-
-            progressWindow.SetResult(result);
 
             if (result.Success)
             {
                 _logger.Info($"Theme transition successful: {themePath}");
 
-                // Only show restart dialog if files were actually modified
                 if (result.FilesBackedUp > 0)
                 {
                     _api?.Dialogs?.ShowMessage(
@@ -539,14 +581,12 @@ namespace PlayniteAchievements.Views
                 }
                 else
                 {
-                    // No changes were made, just show info notification
                     _api?.Notifications?.Add(new NotificationMessage(
                         "PlayAch_TransitionSuccess",
                         result.Message,
                         NotificationType.Info));
                 }
 
-                // Reload themes to update the list
                 LoadAvailableThemes();
             }
             else
@@ -554,6 +594,35 @@ namespace PlayniteAchievements.Views
                 _logger.Warn($"Theme transition failed: {result.Message}");
                 _api?.Notifications?.Add(new NotificationMessage(
                     "PlayAch_TransitionFailed",
+                    result.Message,
+                    NotificationType.Error));
+            }
+        }
+
+        /// <summary>
+        /// Executes the theme revert.
+        /// </summary>
+        private async Task ExecuteThemeRevertAsync(string themePath)
+        {
+            var result = await _themeTransition.RevertThemeAsync(themePath);
+
+            if (result.Success)
+            {
+                _logger.Info($"Theme revert successful: {themePath}");
+
+                _api?.Dialogs?.ShowMessage(
+                    result.Message + "\n\nPlease restart Playnite to apply the theme changes.",
+                    "Revert Theme",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                LoadAvailableThemes();
+            }
+            else
+            {
+                _logger.Warn($"Theme revert failed: {result.Message}");
+                _api?.Notifications?.Add(new NotificationMessage(
+                    "PlayAch_RevertFailed",
                     result.Message,
                     NotificationType.Error));
             }

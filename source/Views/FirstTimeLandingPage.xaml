@@ -351,23 +351,32 @@
                            Opacity="0.7"
                            Margin="0,0,0,10"/>
 
-                <!-- Theme Selection Card -->
+                <!-- Transition Theme Card -->
                 <Border Background="{DynamicResource ControlBackgroundBrush}"
                         CornerRadius="4"
                         Padding="16"
-                        Margin="0,0,0,12">
+                        Margin="0,0,0,12"
+                        BorderBrush="{DynamicResource NormalBorderBrush}"
+                        BorderThickness="1">
                     <StackPanel>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Description}"
+                        <TextBlock Text="Transition Theme"
+                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,8"/>
+
+                        <TextBlock Text="Update themes that use SuccessStory to work with PlayniteAchievements."
                                    Style="{DynamicResource BaseTextBlockStyle}"
                                    Foreground="{DynamicResource TextBrush}"
                                    TextWrapping="Wrap"
-                                   Opacity="0.85"
+                                   Opacity="0.7"
                                    Margin="0,0,0,12"/>
 
                         <!-- Theme Dropdown and Transition Button -->
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Center">
-                            <ComboBox ItemsSource="{Binding AvailableThemes}"
+                            <ComboBox x:Name="TransitionThemeComboBox"
+                                      ItemsSource="{Binding AvailableThemes}"
                                       DisplayMemberPath="Name"
                                       SelectedValuePath="Path"
                                       SelectedValue="{Binding SelectedThemePath}"
@@ -383,7 +392,7 @@
                         </StackPanel>
 
                         <!-- No themes message -->
-                        <TextBlock Text="{Binding NoThemesMessage}"
+                        <TextBlock Text="No themes found that need transition."
                                    Style="{DynamicResource BaseTextBlockStyle}"
                                    Foreground="{DynamicResource TextBrush}"
                                    Opacity="0.6"
@@ -392,6 +401,58 @@
                                    HorizontalAlignment="Center"
                                    Margin="0,8,0,0"
                                    Visibility="{Binding ShowNoThemesMessage, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Revert Theme Card -->
+                <Border Background="{DynamicResource ControlBackgroundBrush}"
+                        CornerRadius="4"
+                        Padding="16"
+                        BorderBrush="{DynamicResource NormalBorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="Revert Theme"
+                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,8"/>
+
+                        <TextBlock Text="Restore a previously transitioned theme from its backup."
+                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   TextWrapping="Wrap"
+                                   Opacity="0.7"
+                                   Margin="0,0,0,12"/>
+
+                        <!-- Revertable Theme Dropdown and Revert Button -->
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Center">
+                            <ComboBox x:Name="RevertThemeComboBox"
+                                      ItemsSource="{Binding RevertableThemes}"
+                                      DisplayMemberPath="Name"
+                                      SelectedValuePath="Path"
+                                      SelectedValue="{Binding SelectedRevertThemePath}"
+                                      Width="200"
+                                      Margin="0,0,8,0"
+                                      VerticalContentAlignment="Center"
+                                      IsEnabled="{Binding HasRevertableThemes}"/>
+                            <Button Content="Revert"
+                                    Command="{Binding RevertThemeCommand}"
+                                    Padding="12,6"
+                                    MinWidth="100"
+                                    IsEnabled="{Binding HasRevertableThemes}"/>
+                        </StackPanel>
+
+                        <!-- No revertable themes message -->
+                        <TextBlock Text="No themes found with backups that can be reverted."
+                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Opacity="0.6"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,0"
+                                   Visibility="{Binding ShowNoRevertableThemesMessage, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
                 </Border>
             </StackPanel>
