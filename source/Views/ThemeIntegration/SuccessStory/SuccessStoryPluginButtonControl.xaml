@@ -22,7 +22,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Trophy icon (shown when DisplayDetails=False) -->
-            <TextBlock Text="&#xe820;" FontFamily="{DynamicResource FontIcoFont}"
+            <TextBlock Text="&#xedd7;" FontFamily="{DynamicResource FontIcoFont}"
                        Grid.Column="0" VerticalAlignment="Center"
                        Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:SuccessStoryThemeControlBase}, Path=DisplayDetails, Converter={StaticResource InverseBoolToVisConverter}}"
                        FontSize="{Binding RelativeSource={RelativeSource AncestorType=local:SuccessStoryThemeControlBase}, Path=FontSize, FallbackValue=14}" />
