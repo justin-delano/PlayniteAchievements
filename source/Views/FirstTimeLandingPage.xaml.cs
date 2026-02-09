@@ -527,10 +527,24 @@ namespace PlayniteAchievements.Views
             if (result.Success)
             {
                 _logger.Info($"Theme transition successful: {themePath}");
-                _api?.Notifications?.Add(new NotificationMessage(
-                    "PlayAch_TransitionSuccess",
-                    result.Message,
-                    NotificationType.Info));
+
+                // Only show restart dialog if files were actually modified
+                if (result.FilesBackedUp > 0)
+                {
+                    _api?.Dialogs?.ShowMessage(
+                        result.Message + "\n\nPlease restart Playnite to apply the theme changes.",
+                        "Theme Transition",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else
+                {
+                    // No changes were made, just show info notification
+                    _api?.Notifications?.Add(new NotificationMessage(
+                        "PlayAch_TransitionSuccess",
+                        result.Message,
+                        NotificationType.Info));
+                }
 
                 // Reload themes to update the list
                 LoadAvailableThemes();
