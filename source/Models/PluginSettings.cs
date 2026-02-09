@@ -526,7 +526,16 @@ namespace PlayniteAchievements.Models
         public Game SelectedGame
         {
             get => _selectedGame;
-            set => SetValue(ref _selectedGame, value, nameof(SelectedGame), nameof(SelectedGameCoverPath));
+            set
+            {
+                if (value != _selectedGame)
+                {
+                    _selectedGame = value;
+                    OnPropertyChanged(nameof(SelectedGame));
+                    OnPropertyChanged(nameof(SelectedGameCoverPath));
+                    OnPropertyChanged(nameof(SelectedGameBackgroundPath));
+                }
+            }
         }
 
         /// <summary>
@@ -536,6 +545,11 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         public string SelectedGameCoverPath => _selectedGame != null && !string.IsNullOrWhiteSpace(_selectedGame.CoverImage)
             ? _plugin?.PlayniteApi?.Database?.GetFullFilePath(_selectedGame.CoverImage)
+            : null;
+
+        [DontSerialize]
+        public string SelectedGameBackgroundPath => _selectedGame != null && !string.IsNullOrWhiteSpace(_selectedGame.BackgroundImage)
+            ? _plugin?.PlayniteApi?.Database?.GetFullFilePath(_selectedGame.BackgroundImage)
             : null;
 
         #endregion

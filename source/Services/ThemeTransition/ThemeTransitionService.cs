@@ -422,6 +422,15 @@ namespace PlayniteAchievements.Services.ThemeTransition
             result = result.Replace("AchievementsWindowStyle", "AchievementsWindow");
             replacements += CountOccurrences(originalContent, "AchievementsWindowStyle");
 
+            // Convert DataContext bindings to use PluginSettings with our exposed properties
+            // {Binding SelectedGame.DisplayBackgroundImageObject} -> {PluginSettings Plugin=PlayniteAchievements, Path=SelectedGameBackgroundPath}
+            // {Binding SelectedGame.CoverImageObjectCached} -> {PluginSettings Plugin=PlayniteAchievements, Path=SelectedGameCoverPath}
+            result = result.Replace("{Binding SelectedGame.DisplayBackgroundImageObject}", "{PluginSettings Plugin=PlayniteAchievements, Path=SelectedGameBackgroundPath}");
+            replacements += CountOccurrences(originalContent, "{Binding SelectedGame.DisplayBackgroundImageObject}");
+
+            result = result.Replace("{Binding SelectedGame.CoverImageObjectCached}", "{PluginSettings Plugin=PlayniteAchievements, Path=SelectedGameCoverPath}");
+            replacements += CountOccurrences(originalContent, "{Binding SelectedGame.CoverImageObjectCached}");
+
             return result;
         }
 
