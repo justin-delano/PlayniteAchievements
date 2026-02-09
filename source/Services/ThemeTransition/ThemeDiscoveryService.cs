@@ -138,6 +138,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
             int filesRead = 0;
             int filesSkipped = 0;
             bool foundSuccessStory = false;
+            bool foundPlayniteAchievements = false;
 
             try
             {
@@ -187,11 +188,19 @@ namespace PlayniteAchievements.Services.ThemeTransition
                     {
                         var content = File.ReadAllText(file);
                         filesRead++;
+
+                        // Check if theme already uses PlayniteAchievements (already transitioned)
+                        if (content.IndexOf("PlayniteAchievements", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            foundPlayniteAchievements = true;
+                            _logger.Debug($"Found PlayniteAchievements reference in: {file} - theme already transitioned");
+                            break;
+                        }
+
                         if (content.IndexOf("SuccessStory", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             foundSuccessStory = true;
                             _logger.Debug($"Found SuccessStory reference in: {file}");
-                            break;
                         }
                     }
                     catch (Exception ex)
@@ -199,6 +208,19 @@ namespace PlayniteAchievements.Services.ThemeTransition
                         filesSkipped++;
                         _logger.Debug(ex, $"Could not read file while checking theme: {file}");
                     }
+
+                    // Exit early if we found PlayniteAchievements (already transitioned)
+                    if (foundPlayniteAchievements)
+                    {
+                        break;
+                    }
+                }
+
+                // If theme already uses PlayniteAchievements, it doesn't need transition
+                if (foundPlayniteAchievements)
+                {
+                    _logger.Info($"Theme {Path.GetFileName(themePath)} already uses PlayniteAchievements - skipping");
+                    return (false, false);
                 }
 
                 _logger.Info($"Theme scan for {Path.GetFileName(themePath)}: {filesRead} files read, {filesSkipped} files skipped, found SuccessStory: {foundSuccessStory}");
