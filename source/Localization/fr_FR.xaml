@@ -334,4 +334,21 @@
     <sys:String x:Key="LOCPlayAch_Progress_ButtonHide">Masquer</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonContinue">Continuer</sys:String>
 
+    <!-- ================================================================= -->
+    <!-- THEME TRANSITION                                                   -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Title">Transition de thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Description">Transitionner un thème de SuccessStory vers PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_SelectTheme">Sélectionner le répertoire du thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Transition">Transitionner le thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Success">Thème transitionné avec succès !</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Failed">Échec de la transition du thème : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupExists">Le dossier de sauvegarde existe déjà. Veuillez le supprimer d'abord.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoPath">Veuillez sélectionner un répertoire de thème valide.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NotDirectory">Le chemin sélectionné n'est pas un répertoire.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Processing">Traitement du thème...</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_FilesProcessed">Fichiers traités : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Replacements">Remplacements effectués : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupLocation">Emplacement de la sauvegarde : {0}</sys:String>
+
 </ResourceDictionary>

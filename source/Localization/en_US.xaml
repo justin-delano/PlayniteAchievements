@@ -337,4 +337,21 @@
     <sys:String x:Key="LOCPlayAch_Progress_ButtonHide">Hide</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonContinue">Continue</sys:String>
 
+    <!-- ================================================================= -->
+    <!-- THEME TRANSITION                                                   -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Title">Theme Transition</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Description">Transition a theme from SuccessStory to PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_SelectTheme">Select Theme Directory</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Transition">Transition Theme</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Success">Theme transitioned successfully!</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Failed">Theme transition failed: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupExists">Backup folder already exists. Please remove it first.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoPath">Please select a valid theme directory.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NotDirectory">Selected path is not a directory.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Processing">Processing theme...</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_FilesProcessed">Files processed: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Replacements">Replacements made: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupLocation">Backup location: {0}</sys:String>
+
 </ResourceDictionary>
