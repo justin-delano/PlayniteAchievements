@@ -30,6 +30,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
             public string Path { get; set; }
             public bool HasBackup { get; set; }
             public bool NeedsTransition { get; set; }
+            public bool CouldNotScan { get; set; }
         }
 
         /// <summary>
@@ -78,19 +79,20 @@ namespace PlayniteAchievements.Services.ThemeTransition
                         var hasBackup = Directory.Exists(backupPath);
 
                         // Check if theme contains SuccessStory references
-                        bool needsTransition = CheckIfNeedsTransition(themeDir);
+                        var (needsTransition, couldNotScan) = CheckIfNeedsTransition(themeDir);
 
                         var themeInfo = new ThemeInfo
                         {
                             Name = themeName,
                             Path = themeDir,
                             HasBackup = hasBackup,
-                            NeedsTransition = !hasBackup && needsTransition
+                            NeedsTransition = !hasBackup && needsTransition,
+                            CouldNotScan = couldNotScan
                         };
 
                         themes.Add(themeInfo);
 
-                        _logger.Debug($"Discovered theme: {themeName}, NeedsTransition: {themeInfo.NeedsTransition}, HasBackup: {hasBackup}");
+                        _logger.Debug($"Discovered theme: {themeName}, NeedsTransition: {themeInfo.NeedsTransition}, HasBackup: {hasBackup}, CouldNotScan: {couldNotScan}");
                     }
                 }
 
@@ -127,8 +129,12 @@ namespace PlayniteAchievements.Services.ThemeTransition
         /// <summary>
         /// Checks if a theme directory contains SuccessStory references.
         /// </summary>
-        private bool CheckIfNeedsTransition(string themePath)
+        private (bool needsTransition, bool couldNotScan) CheckIfNeedsTransition(string themePath)
         {
+            int filesRead = 0;
+            int filesSkipped = 0;
+            bool foundSuccessStory = false;
+
             try
             {
                 var dirInfo = new DirectoryInfo(themePath);
@@ -159,23 +165,36 @@ namespace PlayniteAchievements.Services.ThemeTransition
                     try
                     {
                         var content = File.ReadAllText(file);
+                        filesRead++;
                         if (content.IndexOf("SuccessStory", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
-                            return true;
+                            foundSuccessStory = true;
+                            break;
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // Skip files that can't be read
+                        filesSkipped++;
+                        _logger.Debug(ex, $"Could not read file while checking theme: {file}");
                     }
                 }
 
-                return false;
+                _logger.Debug($"Theme scan for {themePath}: {filesRead} files read, {filesSkipped} files skipped, found SuccessStory: {foundSuccessStory}");
+
+                // If we couldn't read ANY files, conservatively assume it needs transition
+                // This handles the case where the theme is currently running and files are locked
+                if (filesRead == 0 && filesSkipped > 0)
+                {
+                    _logger.Warn($"Could not read any files in theme (likely currently running): {themePath}");
+                    return (true, true); // Conservative: assume it needs transition, mark as could not scan
+                }
+
+                return (foundSuccessStory, false);
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, $"Failed to check if theme needs transition: {themePath}");
-                return false;
+                _logger.Error(ex, $"Failed to check if theme needs transition: {themePath}");
+                return (true, true); // Conservative: assume it needs transition on error, mark as could not scan
             }
         }
     }
