@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
             PlayniteAchievements.Views.ThemeIntegration.Base.DependencyPropertyHelper.RegisterBoolProperty(
                 nameof(DisplayDetails),
                 typeof(SuccessStoryPluginButtonControl),
-                defaultValue: true);
+                defaultValue: false);
 
         public bool DisplayDetails
         {
