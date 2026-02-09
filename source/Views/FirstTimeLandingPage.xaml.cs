@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.ThemeTransition;
+using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
+using Playnite.SDK.Models;
 
 namespace PlayniteAchievements.Views
 {
@@ -23,6 +27,8 @@ namespace PlayniteAchievements.Views
         private readonly PlayniteAchievementsPlugin _plugin;
         private PlayniteAchievementsSettings _settings;
         private readonly IPlayniteAPI _api;
+        private readonly ThemeDiscoveryService _themeDiscovery;
+        private readonly ThemeTransitionService _themeTransition;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -135,6 +141,9 @@ namespace PlayniteAchievements.Views
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
 
             _providers = new ObservableCollection<ProviderStatus>();
+            _availableThemes = new ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
+            _themeDiscovery = new ThemeDiscoveryService(_logger);
+            _themeTransition = new ThemeTransitionService(_logger);
 
             var scanModes = _achievementManager.GetScanModes();
             ScanModes = new ObservableCollection<ScanMode>(scanModes.Where(m => m.Key != "LibrarySelected"));
@@ -144,6 +153,7 @@ namespace PlayniteAchievements.Views
             DataContext = this;
 
             RefreshProviderStatuses();
+            LoadAvailableThemes();
         }
 
         /// <summary>
@@ -341,6 +351,185 @@ namespace PlayniteAchievements.Views
             _settings._plugin?.SavePluginSettings(_settings);
 
             SetupComplete?.Invoke(this, EventArgs.Empty);
+        }
+
+        // ====================================================================
+        // THEME TRANSITION
+        // ====================================================================
+
+        private readonly ObservableCollection<ThemeDiscoveryService.ThemeInfo> _availableThemes;
+        private string _selectedThemePath;
+        private bool _showNoThemesMessage;
+
+        /// <summary>
+        /// Gets the collection of themes available for transition.
+        /// </summary>
+        public ObservableCollection<ThemeDiscoveryService.ThemeInfo> AvailableThemes => _availableThemes;
+
+        /// <summary>
+        /// Gets or sets the selected theme path for transition.
+        /// </summary>
+        public string SelectedThemePath
+        {
+            get => _selectedThemePath;
+            set
+            {
+                _selectedThemePath = value;
+                OnPropertyChanged(nameof(SelectedThemePath));
+            }
+        }
+
+        /// <summary>
+        /// Gets whether there are themes that need transitioning.
+        /// </summary>
+        public bool HasThemesToTransition => _availableThemes?.Count > 0;
+
+        /// <summary>
+        /// Gets the message to show when no themes need transition.
+        /// </summary>
+        public string NoThemesMessage => ResourceProvider.GetString("LOCPlayAch_ThemeTransition_NoThemesMessage")
+            ?? "No themes found that need transitioning.";
+
+        /// <summary>
+        /// Gets whether to show the no themes message.
+        /// </summary>
+        public bool ShowNoThemesMessage
+        {
+            get => _showNoThemesMessage;
+            private set
+            {
+                _showNoThemesMessage = value;
+                OnPropertyChanged(nameof(ShowNoThemesMessage));
+            }
+        }
+
+        /// <summary>
+        /// Command to transition the selected theme.
+        /// </summary>
+        public ICommand TransitionThemeCommand => new RelayCommand(async () =>
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(SelectedThemePath))
+                {
+                    _logger.Warn("Transition theme command executed but no theme selected.");
+                    return;
+                }
+
+                _logger.Info($"User requested theme transition for: {SelectedThemePath}");
+
+                await ExecuteThemeTransitionAsync(SelectedThemePath);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to execute theme transition command.");
+                _api?.Notifications?.Add(new NotificationMessage(
+                    "PlayAch_TransitionError",
+                    $"Theme transition failed: {ex.Message}",
+                    NotificationType.Error));
+            }
+        });
+
+        /// <summary>
+        /// Loads the list of themes that need transitioning.
+        /// </summary>
+        private void LoadAvailableThemes()
+        {
+            try
+            {
+                _availableThemes.Clear();
+
+                var themesPath = _themeDiscovery.GetDefaultThemesPath();
+                if (string.IsNullOrEmpty(themesPath))
+                {
+                    _logger.Info("No themes path found, skipping theme discovery.");
+                    ShowNoThemesMessage = true;
+                    OnPropertyChanged(nameof(HasThemesToTransition));
+                    return;
+                }
+
+                var themes = _themeDiscovery.DiscoverThemes(themesPath);
+                var themesNeedingTransition = themes.Where(t => t.NeedsTransition).ToList();
+
+                foreach (var theme in themesNeedingTransition)
+                {
+                    _availableThemes.Add(theme);
+                }
+
+                ShowNoThemesMessage = _availableThemes.Count == 0;
+                OnPropertyChanged(nameof(HasThemesToTransition));
+
+                _logger.Info($"Loaded {_availableThemes.Count} themes that need transitioning.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to load available themes.");
+            }
+        }
+
+        /// <summary>
+        /// Executes the theme transition with progress window.
+        /// </summary>
+        private async Task ExecuteThemeTransitionAsync(string themePath)
+        {
+            var progressWindow = new ThemeTransition.ThemeTransitionProgressWindow(_logger);
+
+            var windowOptions = new WindowOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = false,
+                ShowCloseButton = false,
+                CanBeResizable = false,
+                Width = 400,
+                Height = 280
+            };
+
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                progressWindow.WindowTitle,
+                progressWindow,
+                windowOptions
+            );
+
+            try
+            {
+                if (window.Owner == null)
+                {
+                    window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
+                }
+            }
+            catch { }
+
+            progressWindow.RequestClose += (s, e) => window.Close();
+
+            progressWindow.SetProgress(
+                ResourceProvider.GetString("LOCPlayAch_ThemeTransition_Processing") ?? "Processing theme...",
+                isIndeterminate: true);
+
+            window.Show();
+
+            var result = await _themeTransition.TransitionThemeAsync(themePath);
+
+            progressWindow.SetResult(result);
+
+            if (result.Success)
+            {
+                _logger.Info($"Theme transition successful: {themePath}");
+                _api?.Notifications?.Add(new NotificationMessage(
+                    "PlayAch_TransitionSuccess",
+                    result.Message,
+                    NotificationType.Info));
+
+                // Reload themes to update the list
+                LoadAvailableThemes();
+            }
+            else
+            {
+                _logger.Warn($"Theme transition failed: {result.Message}");
+                _api?.Notifications?.Add(new NotificationMessage(
+                    "PlayAch_TransitionFailed",
+                    result.Message,
+                    NotificationType.Error));
+            }
         }
 
         public void Dispose()

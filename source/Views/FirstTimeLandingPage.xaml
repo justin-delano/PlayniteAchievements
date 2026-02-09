@@ -341,6 +341,61 @@
 
             </Grid>
 
+            <!-- Theme Transition Section - Always Visible -->
+            <StackPanel Margin="0,16,0,0">
+                <!-- Section Header -->
+                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Title}"
+                           FontSize="{DynamicResource FontSize}"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextBrush}"
+                           Opacity="0.7"
+                           Margin="0,0,0,10"/>
+
+                <!-- Theme Selection Card -->
+                <Border Background="{DynamicResource ControlBackgroundBrush}"
+                        CornerRadius="4"
+                        Padding="16"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Description}"
+                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   TextWrapping="Wrap"
+                                   Opacity="0.85"
+                                   Margin="0,0,0,12"/>
+
+                        <!-- Theme Dropdown and Transition Button -->
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Center">
+                            <ComboBox ItemsSource="{Binding AvailableThemes}"
+                                      DisplayMemberPath="Name"
+                                      SelectedValuePath="Path"
+                                      SelectedValue="{Binding SelectedThemePath}"
+                                      Width="200"
+                                      Margin="0,0,8,0"
+                                      VerticalContentAlignment="Center"
+                                      IsEnabled="{Binding HasThemesToTransition}"/>
+                            <Button Content="{DynamicResource LOCPlayAch_ThemeTransition_Transition}"
+                                    Command="{Binding TransitionThemeCommand}"
+                                    Padding="12,6"
+                                    MinWidth="100"
+                                    IsEnabled="{Binding HasThemesToTransition}"/>
+                        </StackPanel>
+
+                        <!-- No themes message -->
+                        <TextBlock Text="{Binding NoThemesMessage}"
+                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Opacity="0.6"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,0"
+                                   Visibility="{Binding ShowNoThemesMessage, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
             <!-- End constrained content container -->
             </StackPanel>
 
