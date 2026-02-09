@@ -195,6 +195,14 @@ namespace PlayniteAchievements.Services.ThemeTransition
             try
             {
                 var content = File.ReadAllText(file.FullName, Encoding.UTF8);
+
+                // Skip files that are already converted (contain PlayniteAchievements)
+                if (content.Contains("PlayniteAchievements", StringComparison.Ordinal))
+                {
+                    _logger.Debug($"Skipping already converted file: {file.Name}");
+                    return (false, 0);
+                }
+
                 int fullscreenHelperCount = CountOccurrences(content, "SuccessStoryFullscreenHelper");
                 int pluginIdCount = CountOccurrences(content, "playnite-successstory-plugin");
                 int helperCount = CountOccurrences(content, "SSHelper");
@@ -273,22 +281,17 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
             string originalContent = content;
             int replacements = 0;
+            bool isYamlFile = file.Extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase);
 
-            // Replace SuccessStoryFullscreenHelper first (most specific - fullscreen installation checks)
-            content = content.Replace("SuccessStoryFullscreenHelper", "PlayniteAchievements");
-            replacements += CountOccurrences(originalContent, "SuccessStoryFullscreenHelper");
-
-            // Replace playnite-successstory-plugin second (installation checks)
-            content = content.Replace("playnite-successstory-plugin", "PlayniteAchievements");
-            replacements += CountOccurrences(originalContent, "playnite-successstory-plugin");
-
-            // Replace SSHelper third (class references)
-            content = content.Replace("SSHelper", "PlayniteAchievements");
-            replacements += CountOccurrences(originalContent, "SSHelper");
-
-            // Then replace SuccessStory (most general - matches all above)
-            content = content.Replace("SuccessStory", "PlayniteAchievements");
-            replacements += CountOccurrences(originalContent, "SuccessStory");
+            // For YAML files, preserve URLs to avoid breaking external references
+            if (isYamlFile)
+            {
+                content = ProcessYamlFile(content, originalContent, ref replacements);
+            }
+            else
+            {
+                content = ProcessStandardFile(content, originalContent, ref replacements);
+            }
 
             if (content != originalContent)
             {
@@ -309,11 +312,98 @@ namespace PlayniteAchievements.Services.ThemeTransition
         }
 
         /// <summary>
+        /// Processes YAML files, preserving URLs that should not be modified.
+        /// </summary>
+        private string ProcessYamlFile(string content, string originalContent, ref int replacements)
+        {
+            string result = content;
+            var urlPrefixes = new[] { "https://", "http://", "Url:", "PackageUrl:", "SourceUrl:", "GitHub:" };
+
+            // Find and temporarily replace URLs to prevent modification
+            var placeholders = new Dictionary<string, string>();
+            int placeholderIndex = 0;
+
+            foreach (var line in result.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                string trimmedLine = line.TrimStart();
+                if (string.IsNullOrWhiteSpace(trimmedLine))
+                {
+                    continue;
+                }
+
+                // Check if this line contains a URL that should be preserved
+                bool isUrlLine = false;
+                foreach (var prefix in urlPrefixes)
+                {
+                    if (trimmedLine.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+                        trimmedLine.Contains(prefix))
+                    {
+                        isUrlLine = true;
+                        break;
+                    }
+                }
+
+                if (isUrlLine && line.Contains("SuccessStory", StringComparison.Ordinal))
+                {
+                    string placeholder = $"__URL_PLACEHOLDER_{placeholderIndex}__";
+                    placeholders[placeholder] = line;
+                    result = result.Replace(line, placeholder);
+                    placeholderIndex++;
+                }
+            }
+
+            // Apply replacements to content with URLs protected
+            result = ApplyReplacements(result, originalContent, ref replacements);
+
+            // Restore URLs
+            foreach (var kvp in placeholders)
+            {
+                result = result.Replace(kvp.Key, kvp.Value);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Processes standard files (XAML, C#) with all replacements applied.
+        /// </summary>
+        private string ProcessStandardFile(string content, string originalContent, ref int replacements)
+        {
+            return ApplyReplacements(content, originalContent, ref replacements);
+        }
+
+        /// <summary>
+        /// Applies all SuccessStory to PlayniteAchievements replacements.
+        /// </summary>
+        private string ApplyReplacements(string content, string originalContent, ref int replacements)
+        {
+            string result = content;
+
+            // Replace SuccessStoryFullscreenHelper first (most specific - fullscreen installation checks)
+            result = result.Replace("SuccessStoryFullscreenHelper", "PlayniteAchievements");
+            replacements += CountOccurrences(originalContent, "SuccessStoryFullscreenHelper");
+
+            // Replace playnite-successstory-plugin second (installation checks)
+            result = result.Replace("playnite-successstory-plugin", "PlayniteAchievements");
+            replacements += CountOccurrences(originalContent, "playnite-successstory-plugin");
+
+            // Replace SSHelper third (class references)
+            result = result.Replace("SSHelper", "PlayniteAchievements");
+            replacements += CountOccurrences(originalContent, "SSHelper");
+
+            // Then replace SuccessStory (most general - matches all above)
+            result = result.Replace("SuccessStory", "PlayniteAchievements");
+            replacements += CountOccurrences(originalContent, "SuccessStory");
+
+            return result;
+        }
+
+        /// <summary>
         /// Determines if a file type should be processed for replacements.
         /// </summary>
         private bool IsProcessableFile(string extension)
         {
-            return extension == ".xaml";
+            return extension == ".xaml" || extension == ".yaml" || extension == ".cs";
         }
 
         /// <summary>
