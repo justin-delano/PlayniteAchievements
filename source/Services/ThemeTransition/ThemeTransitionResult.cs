@@ -18,6 +18,11 @@ namespace PlayniteAchievements.Services.ThemeTransition
         public string Message { get; set; }
 
         /// <summary>
+        /// Gets or sets the number of files backed up.
+        /// </summary>
+        public int FilesBackedUp { get; set; }
+
+        /// <summary>
         /// Gets or sets the number of files processed.
         /// </summary>
         public int FilesProcessed { get; set; }

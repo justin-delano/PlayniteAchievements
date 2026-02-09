@@ -1,7 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Playnite.SDK;
 
@@ -9,12 +10,13 @@ namespace PlayniteAchievements.Services.ThemeTransition
 {
     /// <summary>
     /// Service for transitioning themes from SuccessStory to PlayniteAchievements.
-    /// Creates a backup of the theme and replaces SuccessStory references.
+    /// Creates a selective backup of only files that were changed.
     /// </summary>
     public sealed class ThemeTransitionService
     {
         private readonly ILogger _logger;
         private const string BackupFolderName = "PlayniteAchievements_backup";
+        private const string ManifestFileName = "backup_manifest.txt";
 
         public ThemeTransitionService(ILogger logger)
         {
@@ -62,10 +64,9 @@ namespace PlayniteAchievements.Services.ThemeTransition
                     };
                 }
 
-                await Task.Run(() =>
+                var result = await Task.Run(() =>
                 {
-                    CreateBackup(themePath, backupPath);
-                    PerformReplacements(themePath, backupPath);
+                    return PerformTransition(themePath, backupPath);
                 });
 
                 _logger.Info($"Theme transition completed successfully for: {themePath}");
@@ -73,8 +74,10 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 return new TransitionResult
                 {
                     Success = true,
-                    Message = $"Theme transitioned successfully. Backup created at: {BackupFolderName}",
-                    BackupPath = backupPath
+                    Message = $"Theme transitioned successfully. {result.FilesBackedUp} files backed up, {result.FilesProcessed} files modified.",
+                    BackupPath = backupPath,
+                    FilesProcessed = result.FilesProcessed,
+                    ReplacementsMade = result.ReplacementsMade
                 };
             }
             catch (Exception ex)
@@ -89,70 +92,17 @@ namespace PlayniteAchievements.Services.ThemeTransition
         }
 
         /// <summary>
-        /// Creates a full backup of the theme directory.
+        /// Performs the transition: backs up modified files and applies replacements.
         /// </summary>
-        private void CreateBackup(string sourcePath, string backupPath)
+        private TransitionResult PerformTransition(string themePath, string backupPath)
         {
-            _logger.Info($"Creating backup at: {backupPath}");
-
-            var sourceDir = new DirectoryInfo(sourcePath);
-            var backupDir = Directory.CreateDirectory(backupPath);
-
-            foreach (var file in sourceDir.GetFiles())
-            {
-                string destFile = Path.Combine(backupPath, file.Name);
-                file.CopyTo(destFile, overwrite: true);
-                _logger.Debug($"Copied file: {file.Name} -> {destFile}");
-            }
-
-            foreach (var dir in sourceDir.GetDirectories())
-            {
-                if (dir.Name == BackupFolderName)
-                {
-                    continue;
-                }
-
-                string destDir = Path.Combine(backupPath, dir.Name);
-                CopyDirectoryRecursive(dir.FullName, destDir);
-            }
-
-            _logger.Info($"Backup created with {backupDir.GetFiles().Length} files and {backupDir.GetDirectories().Length} directories");
-        }
-
-        /// <summary>
-        /// Recursively copies a directory.
-        /// </summary>
-        private void CopyDirectoryRecursive(string sourceDir, string destDir)
-        {
-            Directory.CreateDirectory(destDir);
-
-            var sourceInfo = new DirectoryInfo(sourceDir);
-
-            foreach (var file in sourceInfo.GetFiles())
-            {
-                string destFile = Path.Combine(destDir, file.Name);
-                file.CopyTo(destFile, overwrite: true);
-            }
-
-            foreach (var dir in sourceInfo.GetDirectories())
-            {
-                string nestedDestDir = Path.Combine(destDir, dir.Name);
-                CopyDirectoryRecursive(dir.FullName, nestedDestDir);
-            }
-        }
-
-        /// <summary>
-        /// Performs SuccessStory to PlayniteAchievements replacements in all theme files.
-        /// </summary>
-        private void PerformReplacements(string themePath, string backupPath)
-        {
-            _logger.Info("Performing string replacements in theme files");
-
+            var backedUpFiles = new List<string>();
             int filesProcessed = 0;
             int replacementsMade = 0;
 
             var themeDir = new DirectoryInfo(themePath);
 
+            // First pass: find files that need replacement and back them up
             foreach (var file in themeDir.GetFiles("*.*", SearchOption.AllDirectories))
             {
                 if (file.FullName.StartsWith(backupPath, StringComparison.OrdinalIgnoreCase))
@@ -163,26 +113,105 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 string extension = file.Extension.ToLowerInvariant();
                 if (!IsProcessableFile(extension))
                 {
-                    _logger.Debug($"Skipping file with extension {extension}: {file.Name}");
                     continue;
                 }
 
-                try
+                var (needsReplacement, replacementCount) = CheckIfNeedsReplacement(file);
+                if (!needsReplacement)
                 {
-                    var (processed, count) = ProcessFile(file);
-                    if (processed)
-                    {
-                        filesProcessed++;
-                        replacementsMade += count;
-                    }
+                    continue;
                 }
-                catch (Exception ex)
+
+                // Back up the file
+                BackupFile(file, themePath, backupPath, backedUpFiles);
+                _logger.Debug($"Backed up file: {file.Name}");
+
+                // Apply replacements
+                var (processed, count) = ProcessFile(file);
+                if (processed)
                 {
-                    _logger.Warn(ex, $"Failed to process file: {file.FullName}");
+                    filesProcessed++;
+                    replacementsMade += count;
                 }
             }
 
-            _logger.Info($"Replacements complete: {filesProcessed} files processed, {replacementsMade} replacements made");
+            // Write manifest
+            WriteManifest(backupPath, backedUpFiles);
+
+            _logger.Info($"Transition complete: {filesProcessed} files processed, {replacementsMade} replacements made, {backedUpFiles.Count} files backed up");
+
+            return new TransitionResult
+            {
+                FilesBackedUp = backedUpFiles.Count,
+                FilesProcessed = filesProcessed,
+                ReplacementsMade = replacementsMade
+            };
+        }
+
+        /// <summary>
+        /// Checks if a file contains SuccessStory references.
+        /// </summary>
+        private (bool needsReplacement, int count) CheckIfNeedsReplacement(FileInfo file)
+        {
+            try
+            {
+                var content = File.ReadAllText(file.FullName, Encoding.UTF8);
+                int successStoryCount = CountOccurrences(content, "SuccessStory");
+                int helperCount = CountOccurrences(content, "SuccessStoryFullscreenHelper");
+                int totalCount = successStoryCount + helperCount;
+
+                return (totalCount > 0, totalCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, $"Could not check file for replacement: {file.FullName}");
+                return (false, 0);
+            }
+        }
+
+        /// <summary>
+        /// Backs up a single file, preserving directory structure.
+        /// </summary>
+        private void BackupFile(FileInfo file, string themePath, string backupPath, List<string> backedUpFiles)
+        {
+            string relativePath = file.FullName.Substring(themePath.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string destFile = Path.Combine(backupPath, relativePath);
+            string destDir = Path.GetDirectoryName(destFile);
+
+            if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+            {
+                Directory.CreateDirectory(destDir);
+            }
+
+            file.CopyTo(destFile, overwrite: false);
+            backedUpFiles.Add(relativePath);
+        }
+
+        /// <summary>
+        /// Writes the backup manifest file.
+        /// </summary>
+        private void WriteManifest(string backupPath, List<string> backedUpFiles)
+        {
+            string manifestPath = Path.Combine(backupPath, ManifestFileName);
+            File.WriteAllLines(manifestPath, backedUpFiles);
+            _logger.Info($"Wrote manifest with {backedUpFiles.Count} entries to: {manifestPath}");
+        }
+
+        /// <summary>
+        /// Reads the backup manifest file.
+        /// </summary>
+        private List<string> ReadManifest(string backupPath)
+        {
+            string manifestPath = Path.Combine(backupPath, ManifestFileName);
+            if (!File.Exists(manifestPath))
+            {
+                _logger.Warn($"Manifest file not found: {manifestPath}");
+                return new List<string>();
+            }
+
+            var files = File.ReadAllLines(manifestPath).Where(f => !string.IsNullOrWhiteSpace(f)).ToList();
+            _logger.Info($"Read manifest with {files.Count} entries from: {manifestPath}");
+            return files;
         }
 
         /// <summary>
@@ -234,15 +263,6 @@ namespace PlayniteAchievements.Services.ThemeTransition
         private bool IsProcessableFile(string extension)
         {
             return extension == ".xaml";
-            // return extension == ".xaml" ||
-            //        extension == ".ps1" ||
-            //        extension == ".cs" ||
-            //        extension == ".txt" ||
-            //        extension == ".md" ||
-            //        extension == ".json" ||
-            //        extension == ".xml" ||
-            //        extension == ".yaml" ||
-            //        extension == ".yml";
         }
 
         /// <summary>
@@ -308,9 +328,9 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
             try
             {
-                await Task.Run(() =>
+                var filesRestored = await Task.Run(() =>
                 {
-                    RestoreFromBackup(themePath, backupPath);
+                    return RestoreFromBackup(themePath, backupPath);
                 });
 
                 _logger.Info($"Theme revert completed successfully for: {themePath}");
@@ -318,7 +338,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 return new TransitionResult
                 {
                     Success = true,
-                    Message = $"Theme reverted successfully. Backup folder preserved at: {BackupFolderName}"
+                    Message = $"Theme reverted successfully. {filesRestored} files restored. Backup folder deleted."
                 };
             }
             catch (Exception ex)
@@ -333,64 +353,58 @@ namespace PlayniteAchievements.Services.ThemeTransition
         }
 
         /// <summary>
-        /// Restores theme files from the backup directory.
+        /// Restores theme files from the backup directory using the manifest.
         /// </summary>
-        private void RestoreFromBackup(string themePath, string backupPath)
+        private int RestoreFromBackup(string themePath, string backupPath)
         {
             _logger.Info($"Restoring from backup: {backupPath}");
 
-            var backupDir = new DirectoryInfo(backupPath);
+            var backedUpFiles = ReadManifest(backupPath);
+            int filesRestored = 0;
 
-            // First, delete all files and directories in the theme root (except backup)
-            var themeDir = new DirectoryInfo(themePath);
-
-            foreach (var file in themeDir.GetFiles())
+            foreach (var relativePath in backedUpFiles)
             {
-                try
-                {
-                    file.Delete();
-                    _logger.Debug($"Deleted file: {file.Name}");
-                }
-                catch (Exception ex)
-                {
-                    _logger.Warn(ex, $"Failed to delete file: {file.Name}");
-                }
-            }
+                string backupFile = Path.Combine(backupPath, relativePath);
+                string themeFile = Path.Combine(themePath, relativePath);
 
-            foreach (var dir in themeDir.GetDirectories())
-            {
-                if (dir.Name == BackupFolderName)
+                if (!File.Exists(backupFile))
                 {
+                    _logger.Warn($"Backup file not found: {backupFile}");
                     continue;
                 }
 
                 try
                 {
-                    Directory.Delete(dir.FullName, recursive: true);
-                    _logger.Debug($"Deleted directory: {dir.Name}");
+                    // Ensure target directory exists
+                    string targetDir = Path.GetDirectoryName(themeFile);
+                    if (!string.IsNullOrEmpty(targetDir) && !Directory.Exists(targetDir))
+                    {
+                        Directory.CreateDirectory(targetDir);
+                    }
+
+                    File.Copy(backupFile, themeFile, overwrite: true);
+                    filesRestored++;
+                    _logger.Debug($"Restored file: {relativePath}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.Warn(ex, $"Failed to delete directory: {dir.Name}");
+                    _logger.Error(ex, $"Failed to restore file: {relativePath}");
                 }
             }
 
-            // Now copy everything from backup to theme root
-            foreach (var file in backupDir.GetFiles())
+            // Delete the backup folder
+            try
             {
-                string destFile = Path.Combine(themePath, file.Name);
-                file.CopyTo(destFile, overwrite: true);
-                _logger.Debug($"Restored file: {file.Name}");
+                Directory.Delete(backupPath, recursive: true);
+                _logger.Info($"Deleted backup folder: {backupPath}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn(ex, $"Could not delete backup folder: {backupPath}");
             }
 
-            foreach (var dir in backupDir.GetDirectories())
-            {
-                string destDir = Path.Combine(themePath, dir.Name);
-                CopyDirectoryRecursive(dir.FullName, destDir);
-                _logger.Debug($"Restored directory: {dir.Name}");
-            }
-
-            _logger.Info("Restore completed");
+            _logger.Info($"Restore completed: {filesRestored} files restored");
+            return filesRestored;
         }
 
         /// <summary>
