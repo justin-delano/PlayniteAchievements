@@ -197,7 +197,8 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 var content = File.ReadAllText(file.FullName, Encoding.UTF8);
                 int successStoryCount = CountOccurrences(content, "SuccessStory");
                 int helperCount = CountOccurrences(content, "SSHelper");
-                int totalCount = successStoryCount + helperCount;
+                int pluginIdCount = CountOccurrences(content, "playnite-successstory-plugin");
+                int totalCount = successStoryCount + helperCount + pluginIdCount;
 
                 return (totalCount > 0, totalCount);
             }
@@ -272,11 +273,15 @@ namespace PlayniteAchievements.Services.ThemeTransition
             string originalContent = content;
             int replacements = 0;
 
-            // Replace SSHelper first (more specific)
+            // Replace playnite-successstory-plugin first (most specific - installation checks)
+            content = content.Replace("playnite-successstory-plugin", "PlayniteAchievements");
+            replacements += CountOccurrences(originalContent, "playnite-successstory-plugin");
+
+            // Replace SSHelper second (more specific)
             content = content.Replace("SSHelper", "PlayniteAchievements");
             replacements += CountOccurrences(originalContent, "SSHelper");
 
-            // Then replace SuccessStory (more general)
+            // Then replace SuccessStory (most general)
             content = content.Replace("SuccessStory", "PlayniteAchievements");
             replacements += CountOccurrences(originalContent, "SuccessStory");
 
