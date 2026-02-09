@@ -69,6 +69,20 @@ namespace PlayniteAchievements.Services.ThemeTransition
                     return PerformTransition(themePath, backupPath);
                 });
 
+                // If no files needed changes, report success but note no backup was created
+                if (result.FilesBackedUp == 0)
+                {
+                    _logger.Info($"No files contained SuccessStory references - no changes needed for: {themePath}");
+                    return new TransitionResult
+                    {
+                        Success = true,
+                        Message = "Theme already compatible - no SuccessStory references found. No backup created.",
+                        FilesProcessed = 0,
+                        ReplacementsMade = 0,
+                        FilesBackedUp = 0
+                    };
+                }
+
                 _logger.Info($"Theme transition completed successfully for: {themePath}");
 
                 return new TransitionResult
@@ -77,7 +91,8 @@ namespace PlayniteAchievements.Services.ThemeTransition
                     Message = $"Theme transitioned successfully. {result.FilesBackedUp} files backed up, {result.FilesProcessed} files modified.",
                     BackupPath = backupPath,
                     FilesProcessed = result.FilesProcessed,
-                    ReplacementsMade = result.ReplacementsMade
+                    ReplacementsMade = result.ReplacementsMade,
+                    FilesBackedUp = result.FilesBackedUp
                 };
             }
             catch (Exception ex)
@@ -99,8 +114,11 @@ namespace PlayniteAchievements.Services.ThemeTransition
             var backedUpFiles = new List<string>();
             int filesProcessed = 0;
             int replacementsMade = 0;
+            int filesSkipped = 0;
 
             var themeDir = new DirectoryInfo(themePath);
+
+            _logger.Info($"Scanning theme for SuccessStory references: {themePath}");
 
             // First pass: find files that need replacement and back them up
             foreach (var file in themeDir.GetFiles("*.*", SearchOption.AllDirectories))
@@ -119,12 +137,14 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 var (needsReplacement, replacementCount) = CheckIfNeedsReplacement(file);
                 if (!needsReplacement)
                 {
+                    filesSkipped++;
+                    _logger.Debug($"Skipped file (no SuccessStory): {GetRelativePath(file.FullName, themePath)}");
                     continue;
                 }
 
                 // Back up the file
                 BackupFile(file, themePath, backupPath, backedUpFiles);
-                _logger.Debug($"Backed up file: {file.Name}");
+                _logger.Info($"Backing up file with {replacementCount} SuccessStory references: {GetRelativePath(file.FullName, themePath)}");
 
                 // Apply replacements
                 var (processed, count) = ProcessFile(file);
@@ -135,10 +155,17 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 }
             }
 
-            // Write manifest
-            WriteManifest(backupPath, backedUpFiles);
+            // Only create backup folder and manifest if we actually backed up files
+            if (backedUpFiles.Count > 0)
+            {
+                WriteManifest(backupPath, backedUpFiles);
+            }
+            else
+            {
+                _logger.Info("No files contained SuccessStory references - no backup created");
+            }
 
-            _logger.Info($"Transition complete: {filesProcessed} files processed, {replacementsMade} replacements made, {backedUpFiles.Count} files backed up");
+            _logger.Info($"Transition complete: {filesProcessed} files modified, {filesSkipped} files skipped, {replacementsMade} replacements made");
 
             return new TransitionResult
             {
@@ -146,6 +173,18 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 FilesProcessed = filesProcessed,
                 ReplacementsMade = replacementsMade
             };
+        }
+
+        /// <summary>
+        /// Gets the relative path from themePath to fullPath.
+        /// </summary>
+        private string GetRelativePath(string fullPath, string themePath)
+        {
+            if (fullPath.StartsWith(themePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return fullPath.Substring(themePath.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            return fullPath;
         }
 
         /// <summary>
@@ -338,7 +377,9 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 return new TransitionResult
                 {
                     Success = true,
-                    Message = $"Theme reverted successfully. {filesRestored} files restored. Backup folder deleted."
+                    Message = filesRestored == 0
+                        ? "No files needed restoring (backup was empty). Backup folder deleted."
+                        : $"Theme reverted successfully. {filesRestored} files restored. Backup folder deleted."
                 };
             }
             catch (Exception ex)
