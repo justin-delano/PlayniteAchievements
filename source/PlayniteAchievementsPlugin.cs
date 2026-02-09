@@ -581,7 +581,11 @@ namespace PlayniteAchievements
 
         // === End Theme Integration ===
 
-        private void OpenPerGameAchievementsView(Guid gameId)
+        /// <summary>
+        /// Opens the per-game achievements view window for the specified game.
+        /// Public for access from theme integration controls.
+        /// </summary>
+        public void OpenPerGameAchievementsView(Guid gameId)
         {
             try
             {
