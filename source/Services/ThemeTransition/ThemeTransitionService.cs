@@ -415,6 +415,13 @@ namespace PlayniteAchievements.Services.ThemeTransition
             result = result.Replace("SuccessStory", "PlayniteAchievements");
             replacements += CountOccurrences(originalContent, "SuccessStory");
 
+            // Fix style key names to match plugin expectations
+            // Plugin looks for "GameAchievementsWindow" but themes have "GameAchievementsWindowStyle"
+            result = result.Replace("GameAchievementsWindowStyle", "GameAchievementsWindow");
+            replacements += CountOccurrences(originalContent, "GameAchievementsWindowStyle");
+            result = result.Replace("AchievementsWindowStyle", "AchievementsWindow");
+            replacements += CountOccurrences(originalContent, "AchievementsWindowStyle");
+
             return result;
         }
 
