@@ -49,7 +49,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">Voir les succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scanner un jeu</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scan la sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scanner la sélection</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_FullAchievementScan">Analyse complète des succès</sys:String>
 
     <!-- ================================================================= -->
@@ -72,10 +72,10 @@
     <!-- Long versions for menus -->
     <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Analyse rapide</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Full">Analyse complète</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Analyse installés</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Analyse favoris</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Single">Analyse jeu unique</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Analyse sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Analyser les jeux installés</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Analyser les favoris</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Single">Analyser un jeu</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Analyser la sélection</sys:String>
 
     <!-- ================================================================= -->
     <!-- COLUMNS (using common strings)                                    -->
@@ -378,15 +378,15 @@
     <!-- ================================================================= -->
     <!-- THEME TRANSITION                                                   -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Title">Transition de thème</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Description">Transitionner un thème de SuccessStory vers PlayniteAchievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_SelectTheme">Sélectionner le répertoire du thème</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Transition">Transitionner le thème</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Success">Thème transitionné avec succès !</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Failed">Échec de la transition du thème : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Title">Conversion de thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Description">Convertir un thème SuccessStory vers PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_SelectTheme">Sélectionner le dossier du thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Transition">Convertir le thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Success">Thème converti avec succès !</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Failed">Échec de la conversion du thème : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupExists">Le dossier de sauvegarde existe déjà. Veuillez le supprimer d'abord.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoPath">Veuillez sélectionner un répertoire de thème valide.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_NotDirectory">Le chemin sélectionné n'est pas un répertoire.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoPath">Veuillez sélectionner un dossier de thème valide.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NotDirectory">Le chemin sélectionné n'est pas un dossier.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_Processing">Traitement du thème...</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_FilesProcessed">Fichiers traités : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_Replacements">Remplacements effectués : {0}</sys:String>
@@ -394,7 +394,7 @@
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NoThemesMessage">Aucun thème trouvé nécessitant une transition. Les thèmes avec des références SuccessStory apparaîtront ici.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_Revert">Rétablir le thème</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NoRevertableThemes">Aucun thème trouvé avec des sauvegardes pouvant être rétabli.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertDescription">Restaurer un thème précédemment transitionné à partir de sa sauvegarde. Le dossier de sauvegarde sera préservé après rétablissement.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertDescription">Restaurer un thème précédemment converti à partir de sa sauvegarde. Le dossier de sauvegarde sera préservé après rétablissement.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertSuccess">Thème rétabli avec succès. Dossier de sauvegarde préservé à : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertFailed">Échec du rétablissement : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NoBackup">Aucun dossier de sauvegarde trouvé à : {0}</sys:String>
