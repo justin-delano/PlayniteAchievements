@@ -142,7 +142,7 @@ namespace PlayniteAchievements.Views
 
             _providers = new ObservableCollection<ProviderStatus>();
             _availableThemes = new ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
-            _themeDiscovery = new ThemeDiscoveryService(_logger);
+            _themeDiscovery = new ThemeDiscoveryService(_logger, _api);
             _themeTransition = new ThemeTransitionService(_logger);
 
             var scanModes = _achievementManager.GetScanModes();

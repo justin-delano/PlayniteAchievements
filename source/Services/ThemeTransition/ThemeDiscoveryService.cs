@@ -12,11 +12,13 @@ namespace PlayniteAchievements.Services.ThemeTransition
     public sealed class ThemeDiscoveryService
     {
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _playniteApi;
         private const string BackupFolderName = "PlayniteAchievements_backup";
 
-        public ThemeDiscoveryService(ILogger logger)
+        public ThemeDiscoveryService(ILogger logger, IPlayniteAPI playniteApi)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
         }
 
         /// <summary>
@@ -110,15 +112,9 @@ namespace PlayniteAchievements.Services.ThemeTransition
         {
             try
             {
-                var playnitePath = Path.GetDirectoryName(
-                    System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName);
-
-                if (string.IsNullOrEmpty(playnitePath))
-                {
-                    return null;
-                }
-
-                var themesPath = Path.Combine(playnitePath, "Themes");
+                // Playnite stores themes in the configuration directory
+                var configPath = _playniteApi.Paths.ConfigurationPath;
+                var themesPath = Path.Combine(configPath, "Themes");
                 return Directory.Exists(themesPath) ? themesPath : null;
             }
             catch (Exception ex)

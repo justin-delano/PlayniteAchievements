@@ -226,7 +226,7 @@ namespace PlayniteAchievements.Views
             _steam = steamClient;
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
 
-            _themeDiscovery = new ThemeDiscoveryService(_logger);
+            _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
             _themeTransition = new ThemeTransitionService(_logger);
 
             InitializeComponent();
