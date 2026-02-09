@@ -195,10 +195,11 @@ namespace PlayniteAchievements.Services.ThemeTransition
             try
             {
                 var content = File.ReadAllText(file.FullName, Encoding.UTF8);
-                int successStoryCount = CountOccurrences(content, "SuccessStory");
-                int helperCount = CountOccurrences(content, "SSHelper");
+                int fullscreenHelperCount = CountOccurrences(content, "SuccessStoryFullscreenHelper");
                 int pluginIdCount = CountOccurrences(content, "playnite-successstory-plugin");
-                int totalCount = successStoryCount + helperCount + pluginIdCount;
+                int helperCount = CountOccurrences(content, "SSHelper");
+                int successStoryCount = CountOccurrences(content, "SuccessStory");
+                int totalCount = fullscreenHelperCount + pluginIdCount + helperCount + successStoryCount;
 
                 return (totalCount > 0, totalCount);
             }
@@ -273,15 +274,19 @@ namespace PlayniteAchievements.Services.ThemeTransition
             string originalContent = content;
             int replacements = 0;
 
-            // Replace playnite-successstory-plugin first (most specific - installation checks)
+            // Replace SuccessStoryFullscreenHelper first (most specific - fullscreen installation checks)
+            content = content.Replace("SuccessStoryFullscreenHelper", "PlayniteAchievements");
+            replacements += CountOccurrences(originalContent, "SuccessStoryFullscreenHelper");
+
+            // Replace playnite-successstory-plugin second (installation checks)
             content = content.Replace("playnite-successstory-plugin", "PlayniteAchievements");
             replacements += CountOccurrences(originalContent, "playnite-successstory-plugin");
 
-            // Replace SSHelper second (more specific)
+            // Replace SSHelper third (class references)
             content = content.Replace("SSHelper", "PlayniteAchievements");
             replacements += CountOccurrences(originalContent, "SSHelper");
 
-            // Then replace SuccessStory (most general)
+            // Then replace SuccessStory (most general - matches all above)
             content = content.Replace("SuccessStory", "PlayniteAchievements");
             replacements += CountOccurrences(originalContent, "SuccessStory");
 
