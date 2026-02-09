@@ -970,6 +970,125 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- ================== TAB: THEME TRANSITION ================== -->
+            <TabItem x:Name="ThemeTransitionTab" Header="{DynamicResource LOCPlayAch_ThemeTransition_Title}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <!-- Plugin Header -->
+                        <StackPanel Margin="0,0,0,24">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Title}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6" />
+                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Description}"
+                                       Style="{DynamicResource MutedTextStyle}"
+                                       Margin="0,0,0,8"/>
+                            <!-- Decorative accent line -->
+                            <Border Height="2"
+                                    Width="60"
+                                    HorizontalAlignment="Left"
+                                    Background="#4CC9F0"
+                                    CornerRadius="1"
+                                    Margin="0,8,0,0"/>
+                        </StackPanel>
+
+                        <!-- ================== TRANSITION SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Transition}"
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,16">
+                                    Transition a theme from SuccessStory to PlayniteAchievements.
+                                    A backup will be created before any modifications are made.
+                                </TextBlock>
+
+                                <!-- Theme Dropdown and Transition Button -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <ComboBox Grid.Column="0"
+                                              ItemsSource="{Binding AvailableThemes}"
+                                              DisplayMemberPath="Name"
+                                              SelectedValuePath="Path"
+                                              SelectedValue="{Binding SelectedThemePath}"
+                                              VerticalContentAlignment="Center"
+                                              IsEnabled="{Binding HasThemesToTransition, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+
+                                    <Button Grid.Column="1"
+                                            Content="{DynamicResource LOCPlayAch_ThemeTransition_Transition}"
+                                            Click="TransitionTheme_Click"
+                                            Padding="14,6"
+                                            Margin="16,0,0,0"
+                                            MinWidth="100"
+                                            IsEnabled="{Binding HasThemesToTransition, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                </Grid>
+
+                                <!-- No themes message -->
+                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_NoThemesMessage}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,8,0,0"
+                                           Visibility="{Binding ShowNoThemesMessage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== REVERT SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="Revert Theme"
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,12"/>
+
+                                <TextBlock Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,16">
+                                    Restore a previously transitioned theme from its backup.
+                                    The backup folder will be preserved after reverting.
+                                </TextBlock>
+
+                                <!-- Revertable Theme Dropdown and Revert Button -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <ComboBox Grid.Column="0"
+                                              ItemsSource="{Binding RevertableThemes}"
+                                              DisplayMemberPath="Name"
+                                              SelectedValuePath="Path"
+                                              SelectedValue="{Binding SelectedRevertThemePath}"
+                                              VerticalContentAlignment="Center"
+                                              IsEnabled="{Binding HasRevertableThemes, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+
+                                    <Button Grid.Column="1"
+                                            Content="Revert"
+                                            Click="RevertTheme_Click"
+                                            Padding="14,6"
+                                            Margin="16,0,0,0"
+                                            MinWidth="100"
+                                            IsEnabled="{Binding HasRevertableThemes, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                </Grid>
+
+                                <!-- No revertable themes message -->
+                                <TextBlock Text="No themes found with backups that can be reverted."
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,8,0,0"
+                                           Visibility="{Binding ShowNoRevertableThemesMessage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
     </Grid>
 </UserControl>

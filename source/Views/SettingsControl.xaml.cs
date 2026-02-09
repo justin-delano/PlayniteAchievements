@@ -14,6 +14,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Services.ThemeTransition;
 using Playnite.SDK;
 using System.Diagnostics;
 using System.Windows.Navigation;
@@ -104,11 +105,118 @@ namespace PlayniteAchievements.Views
             set => SetValue(RaAuthStatusProperty, value);
         }
 
+        // Theme transition UI state properties
+        public static readonly DependencyProperty AvailableThemesProperty =
+            DependencyProperty.Register(
+                nameof(AvailableThemes),
+                typeof(System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>),
+                typeof(SettingsControl),
+                new PropertyMetadata(null));
+
+        public System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo> AvailableThemes
+        {
+            get => (System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>)GetValue(AvailableThemesProperty);
+            set => SetValue(AvailableThemesProperty, value);
+        }
+
+        public static readonly DependencyProperty RevertableThemesProperty =
+            DependencyProperty.Register(
+                nameof(RevertableThemes),
+                typeof(System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>),
+                typeof(SettingsControl),
+                new PropertyMetadata(null));
+
+        public System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo> RevertableThemes
+        {
+            get => (System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>)GetValue(RevertableThemesProperty);
+            set => SetValue(RevertableThemesProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectedThemePathProperty =
+            DependencyProperty.Register(
+                nameof(SelectedThemePath),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(string.Empty));
+
+        public string SelectedThemePath
+        {
+            get => (string)GetValue(SelectedThemePathProperty);
+            set => SetValue(SelectedThemePathProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectedRevertThemePathProperty =
+            DependencyProperty.Register(
+                nameof(SelectedRevertThemePath),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(string.Empty));
+
+        public string SelectedRevertThemePath
+        {
+            get => (string)GetValue(SelectedRevertThemePathProperty);
+            set => SetValue(SelectedRevertThemePathProperty, value);
+        }
+
+        public static readonly DependencyProperty HasThemesToTransitionProperty =
+            DependencyProperty.Register(
+                nameof(HasThemesToTransition),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool HasThemesToTransition
+        {
+            get => (bool)GetValue(HasThemesToTransitionProperty);
+            set => SetValue(HasThemesToTransitionProperty, value);
+        }
+
+        public static readonly DependencyProperty HasRevertableThemesProperty =
+            DependencyProperty.Register(
+                nameof(HasRevertableThemes),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool HasRevertableThemes
+        {
+            get => (bool)GetValue(HasRevertableThemesProperty);
+            set => SetValue(HasRevertableThemesProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowNoThemesMessageProperty =
+            DependencyProperty.Register(
+                nameof(ShowNoThemesMessage),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(true));
+
+        public bool ShowNoThemesMessage
+        {
+            get => (bool)GetValue(ShowNoThemesMessageProperty);
+            set => SetValue(ShowNoThemesMessageProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowNoRevertableThemesMessageProperty =
+            DependencyProperty.Register(
+                nameof(ShowNoRevertableThemesMessage),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(true));
+
+        public bool ShowNoRevertableThemesMessage
+        {
+            get => (bool)GetValue(ShowNoRevertableThemesMessageProperty);
+            set => SetValue(ShowNoRevertableThemesMessageProperty, value);
+        }
+
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly SteamHTTPClient _steam;
         private readonly SteamSessionManager _sessionManager;
         private readonly ILogger _logger;
+        private readonly ThemeDiscoveryService _themeDiscovery;
+        private readonly ThemeTransitionService _themeTransition;
 
         public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, SteamHTTPClient steamClient, SteamSessionManager sessionManager, PlayniteAchievementsPlugin plugin)
         {
@@ -118,11 +226,18 @@ namespace PlayniteAchievements.Views
             _steam = steamClient;
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
 
+            _themeDiscovery = new ThemeDiscoveryService(_logger);
+            _themeTransition = new ThemeTransitionService(_logger);
+
             InitializeComponent();
 
             // Playnite does not reliably set DataContext for settings views.
             // Bind directly to the settings model so XAML uses {Binding SomeSetting}.
             DataContext = _settingsViewModel.Settings;
+
+            // Initialize theme collections
+            AvailableThemes = new System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
+            RevertableThemes = new System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
 
             // Debug logging to verify DataContext and Settings values
             _logger?.Info($"SettingsControl created. DataContext type: {DataContext?.GetType().Name}");
@@ -143,7 +258,158 @@ namespace PlayniteAchievements.Views
                 }
                 await CheckSteamAuthAsync().ConfigureAwait(false);
                 UpdateRaAuthState();
+
+                // Load themes on initial load
+                LoadThemes();
             };
+        }
+
+        // -----------------------------
+        // Theme transition
+        // -----------------------------
+
+        private void LoadThemes()
+        {
+            try
+            {
+                AvailableThemes.Clear();
+                RevertableThemes.Clear();
+
+                var themesPath = _themeDiscovery.GetDefaultThemesPath();
+                if (string.IsNullOrEmpty(themesPath))
+                {
+                    _logger.Info("No themes path found for theme transition.");
+                    UpdateThemeTransitionState();
+                    return;
+                }
+
+                var themes = _themeDiscovery.DiscoverThemes(themesPath);
+
+                // Themes that need transition (no backup, has SuccessStory)
+                foreach (var theme in themes.Where(t => t.NeedsTransition))
+                {
+                    AvailableThemes.Add(theme);
+                }
+
+                // Themes that can be reverted (has backup)
+                foreach (var theme in themes.Where(t => t.HasBackup))
+                {
+                    RevertableThemes.Add(theme);
+                }
+
+                UpdateThemeTransitionState();
+
+                _logger.Info($"Loaded {AvailableThemes.Count} themes to transition, {RevertableThemes.Count} themes to revert.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to load themes for transition.");
+            }
+        }
+
+        private void UpdateThemeTransitionState()
+        {
+            var hasThemes = AvailableThemes.Count > 0;
+            var hasRevertable = RevertableThemes.Count > 0;
+
+            HasThemesToTransition = hasThemes;
+            HasRevertableThemes = hasRevertable;
+            ShowNoThemesMessage = !hasThemes;
+            ShowNoRevertableThemesMessage = !hasRevertable;
+        }
+
+        private async void TransitionTheme_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(SelectedThemePath))
+            {
+                _logger.Warn("Transition clicked but no theme selected.");
+                return;
+            }
+
+            _logger.Info($"User requested theme transition for: {SelectedThemePath}");
+
+            try
+            {
+                var result = await _themeTransition.TransitionThemeAsync(SelectedThemePath);
+
+                if (result.Success)
+                {
+                    _logger.Info($"Theme transition successful: {SelectedThemePath}");
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        result.Message,
+                        ResourceProvider.GetString("LOCPlayAch_ThemeTransition_Title") ?? "Theme Transition",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    // Reload themes to update the lists
+                    LoadThemes();
+                }
+                else
+                {
+                    _logger.Warn($"Theme transition failed: {result.Message}");
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        result.Message,
+                        ResourceProvider.GetString("LOCPlayAch_ThemeTransition_Title") ?? "Theme Transition",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to execute theme transition.");
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    $"Theme transition failed: {ex.Message}",
+                    ResourceProvider.GetString("LOCPlayAch_ThemeTransition_Title") ?? "Theme Transition",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private async void RevertTheme_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(SelectedRevertThemePath))
+            {
+                _logger.Warn("Revert clicked but no theme selected.");
+                return;
+            }
+
+            _logger.Info($"User requested theme revert for: {SelectedRevertThemePath}");
+
+            try
+            {
+                var result = await _themeTransition.RevertThemeAsync(SelectedRevertThemePath);
+
+                if (result.Success)
+                {
+                    _logger.Info($"Theme revert successful: {SelectedRevertThemePath}");
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        result.Message,
+                        "Revert Theme",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+
+                    // Reload themes to update the lists
+                    LoadThemes();
+                }
+                else
+                {
+                    _logger.Warn($"Theme revert failed: {result.Message}");
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        result.Message,
+                        "Revert Theme",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to execute theme revert.");
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    $"Theme revert failed: {ex.Message}",
+                    "Revert Theme",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         private void UpdateRaAuthState()
@@ -494,6 +760,11 @@ namespace PlayniteAchievements.Views
             {
                 await CheckSteamAuthAsync().ConfigureAwait(false);
                 _logger?.Info("Checked Steam auth for Steam tab.");
+            }
+            else if (string.Equals(name, "ThemeTransitionTab", StringComparison.OrdinalIgnoreCase))
+            {
+                LoadThemes();
+                _logger?.Info("Loaded themes for Theme Transition tab.");
             }
         }
 
