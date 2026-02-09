@@ -217,7 +217,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 var content = File.ReadAllText(file.FullName, Encoding.UTF8);
 
                 // Skip files that are already converted (contain PlayniteAchievements)
-                if (content.Contains("PlayniteAchievements", StringComparison.Ordinal))
+                if (content.IndexOf("PlayniteAchievements", StringComparison.Ordinal) >= 0)
                 {
                     _logger.Debug($"Skipping already converted file: {file.Name}");
                     return (false, 0);
@@ -363,7 +363,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
                     }
                 }
 
-                if (isUrlLine && line.Contains("SuccessStory", StringComparison.Ordinal))
+                if (isUrlLine && line.IndexOf("SuccessStory", StringComparison.Ordinal) >= 0)
                 {
                     string placeholder = $"__URL_PLACEHOLDER_{placeholderIndex}__";
                     placeholders[placeholder] = line;
