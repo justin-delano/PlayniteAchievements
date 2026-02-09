@@ -193,7 +193,7 @@ namespace PlayniteAchievements.ViewModels
             CloseViewCommand = new RelayCommand(_ => PlayniteUiProvider.RestoreMainView());
             ClearGameSelectionCommand = new RelayCommand(_ => ClearGameSelection());
             NavigateToGameCommand = new RelayCommand(param => NavigateToGame(param as GameOverviewItem));
-            ScanCommand = new AsyncCommand(_ => ExecuteScanAsync(), _ => !IsScanning);
+            ScanCommand = new AsyncCommand(_ => ExecuteScanAsync(), _ => CanExecuteScan());
 
             // Subscribe to progress events
             _achievementManager.RebuildProgress += OnRebuildProgress;
@@ -393,12 +393,33 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _selectedGame, value))
                 {
                     OnPropertyChanged(nameof(IsGameSelected));
+                    (ScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                     LoadSelectedGameAchievements();
                 }
             }
         }
 
         public bool IsGameSelected => SelectedGame != null;
+
+        /// <summary>
+        /// Determines whether the scan command can execute.
+        /// Scan is disabled if scanning, or if scan mode is Single and no game is selected.
+        /// </summary>
+        private bool CanExecuteScan()
+        {
+            if (IsScanning)
+            {
+                return false;
+            }
+
+            // If scan mode is Single, require a game to be selected
+            if (SelectedScanMode == ScanModeType.Single.GetKey())
+            {
+                return SelectedGame != null;
+            }
+
+            return true;
+        }
 
         public ObservableCollection<AchievementDisplayItem> SelectedGameAchievements { get; }
 
