@@ -354,6 +354,12 @@
     <sys:String x:Key="LOCPlayAch_ThemeTransition_Replacements">Replacements made: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupLocation">Backup location: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NoThemesMessage">No themes found that need transitioning. Themes with SuccessStory references will appear here.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Revert">Revert Theme</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoRevertableThemes">No themes found with backups that can be reverted.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertDescription">Restore a previously transitioned theme from its backup. The backup folder will be preserved after reverting.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertSuccess">Theme reverted successfully. Backup folder preserved at: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertFailed">Revert failed: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoBackup">No backup folder found at: {0}</sys:String>
 
     <sys:String x:Key="LOCSuccessStoryAchievements">Achievements</sys:String>
 

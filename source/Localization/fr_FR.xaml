@@ -351,6 +351,12 @@
     <sys:String x:Key="LOCPlayAch_ThemeTransition_Replacements">Remplacements effectués : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupLocation">Emplacement de la sauvegarde : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NoThemesMessage">Aucun thème trouvé nécessitant une transition. Les thèmes avec des références SuccessStory apparaîtront ici.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Revert">Rétablir le thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoRevertableThemes">Aucun thème trouvé avec des sauvegardes pouvant être rétabli.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertDescription">Restaurer un thème précédemment transitionné à partir de sa sauvegarde. Le dossier de sauvegarde sera préservé après rétablissement.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertSuccess">Thème rétabli avec succès. Dossier de sauvegarde préservé à : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertFailed">Échec du rétablissement : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoBackup">Aucun dossier de sauvegarde trouvé à : {0}</sys:String>
 
     <sys:String x:Key="LOCSuccessStoryAchievements">Succès</sys:String>
 </ResourceDictionary>
