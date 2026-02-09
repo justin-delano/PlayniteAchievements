@@ -18,6 +18,26 @@ namespace PlayniteAchievements.Services.ThemeTransition
         private const string BackupFolderName = "PlayniteAchievements_backup";
         private const string ManifestFileName = "backup_manifest.txt";
 
+        /// <summary>
+        /// Binary file extensions that should never be processed.
+        /// These files should not be read as text or modified.
+        /// </summary>
+        private static readonly HashSet<string> BinaryExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Images
+            ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp", ".svg", ".psd", ".tiff",
+            // Executables and binaries
+            ".exe", ".dll", ".so", ".dylib", ".bin",
+            // Archives and packages
+            ".zip", ".rar", ".7z", ".tar", ".gz", ".pext",
+            // Fonts
+            ".ttf", ".otf", ".woff", ".woff2", ".eot",
+            // Audio/Video
+            ".mp3", ".mp4", ".wav", ".avi", ".mkv", ".flac", ".ogg", ".mov",
+            // Documents (binary formats)
+            ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"
+        };
+
         public ThemeTransitionService(ILogger logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -400,10 +420,18 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
         /// <summary>
         /// Determines if a file type should be processed for replacements.
+        /// Skips binary files that should not be read as text.
         /// </summary>
         private bool IsProcessableFile(string extension)
         {
-            return extension == ".xaml" || extension == ".yaml" || extension == ".cs";
+            // Skip known binary extensions
+            if (BinaryExtensions.Contains(extension))
+            {
+                return false;
+            }
+
+            // Process all other files - content matching will determine if changes are needed
+            return true;
         }
 
         /// <summary>
