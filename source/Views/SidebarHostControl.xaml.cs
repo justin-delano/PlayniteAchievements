@@ -175,14 +175,16 @@ namespace PlayniteAchievements.Views
                         }
 
                         var firstTimeCompleted = settings?.Persisted?.FirstTimeSetupCompleted ?? true;
+                        var seenThemeTransition = settings?.Persisted?.SeenThemeTransition ?? false;
                         var cachedIds = _achievementManager.Cache.GetCachedGameIds();
                         var hasCachedData = cachedIds != null && cachedIds.Count > 0;
-                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
+                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeTransition={seenThemeTransition}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
 
                         // Show landing page if:
-                        // 1. Haven't seen landing page before (!firstTimeCompleted)
-                        // 2. No data in achievements_cache (NO MATTER WHAT)
-                        bool showLandingPage = !firstTimeCompleted || !hasCachedData;
+                        // 1. Haven't seen the theme transition page yet (!seenThemeTransition)
+                        // 2. Haven't seen landing page before (!firstTimeCompleted)
+                        // 3. No data in achievements_cache (NO MATTER WHAT)
+                        bool showLandingPage = !seenThemeTransition || !firstTimeCompleted || !hasCachedData;
 
                         if (settings != null && showLandingPage)
                         {
@@ -213,6 +215,14 @@ namespace PlayniteAchievements.Views
         private void CreateLandingPage(PlayniteAchievementsSettings settings)
         {
             _logger.Info("Showing first-time landing page.");
+
+            // Mark that the user has seen the theme transition landing page
+            if (!settings.Persisted.SeenThemeTransition)
+            {
+                settings.Persisted.SeenThemeTransition = true;
+                _plugin.SavePluginSettings(settings);
+                _logger.Info("Set SeenThemeTransition to true");
+            }
 
             _landingPage = new FirstTimeLandingPage(
                 _api,

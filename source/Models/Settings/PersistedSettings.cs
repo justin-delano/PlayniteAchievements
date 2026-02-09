@@ -41,6 +41,7 @@ namespace PlayniteAchievements.Models.Settings
         private double _rareThreshold = 20;
         private double _uncommonThreshold = 50;
         private bool _firstTimeSetupCompleted = false;
+        private bool _seenThemeTransition = false;
 
         #endregion
 
@@ -299,6 +300,16 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _firstTimeSetupCompleted, value);
         }
 
+        /// <summary>
+        /// Indicates whether the user has seen the theme transition landing page.
+        /// When false, the sidebar always shows the landing page to promote theme transition.
+        /// </summary>
+        public bool SeenThemeTransition
+        {
+            get => _seenThemeTransition;
+            set => SetValue(ref _seenThemeTransition, value);
+        }
+
         #endregion
 
         #region Clone Method
@@ -335,7 +346,8 @@ namespace PlayniteAchievements.Models.Settings
                 UltraRareThreshold = this.UltraRareThreshold,
                 RareThreshold = this.RareThreshold,
                 UncommonThreshold = this.UncommonThreshold,
-                FirstTimeSetupCompleted = this.FirstTimeSetupCompleted
+                FirstTimeSetupCompleted = this.FirstTimeSetupCompleted,
+                SeenThemeTransition = this.SeenThemeTransition
             };
         }
 
