@@ -272,11 +272,12 @@ namespace PlayniteAchievements.Services.ThemeTransition
             string originalContent = content;
             int replacements = 0;
 
-            content = content.Replace("SuccessStory", "PlayniteAchievements");
-            replacements += CountOccurrences(originalContent, "SuccessStory");
-
+            // Replace longer string first to avoid partial replacements
             content = content.Replace("SuccessStoryFullscreenHelper", "PlayniteAchievements");
             replacements += CountOccurrences(originalContent, "SuccessStoryFullscreenHelper");
+
+            content = content.Replace("SuccessStory", "PlayniteAchievements");
+            replacements += CountOccurrences(originalContent, "SuccessStory");
 
             if (content != originalContent)
             {
