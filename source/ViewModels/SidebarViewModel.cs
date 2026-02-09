@@ -278,7 +278,7 @@ namespace PlayniteAchievements.ViewModels
 
         public ObservableCollection<ScanMode> ScanModes { get; }
 
-        private string _selectedScanMode = ScanModeType.Single.GetKey();
+        private string _selectedScanMode = ScanModeType.Installed.GetKey();
         public string SelectedScanMode
         {
             get => _selectedScanMode;
