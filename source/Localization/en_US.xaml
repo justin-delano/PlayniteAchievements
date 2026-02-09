@@ -294,9 +294,50 @@
     <!-- ================================================================= -->
 
     <!-- ================================================================= -->
-    <!-- THEME INTEGRATION (CTRL-F Safe                                    -->
+    <!-- SUCCESS STORY INTEGRATION (CTRL-F Safe                                    -->
     <!-- ================================================================= -->
+    <!-- Core Achievement Labels -->
     <sys:String x:Key="LOCPlayniteAchievementsAchievements">Achievements</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsProgress">Progress</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsEarned">Earned</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsRetroAchievements">RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsManualAchievements">Your Achievements</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsAchievementsCount">Achievements count</sys:String>
+
+    <!-- Hidden Achievement Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsHiddenAchievement">Hidden achievement</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsHiddenTrophy">Hidden Trophy</sys:String>
+
+    <!-- Rarity Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsRarety">Rarity</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsCommon">Common</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsNoCommon">Uncommon</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsRare">Rare</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsUltraRare">Ultra-rare</sys:String>
+
+    <!-- Date and Time Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsDateUnlocked">Date unlocked</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsFirstUnlock">First unlock</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsLastUnlock">Last unlock</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsTimeToUnlock">Time to unlock everything</sys:String>
+
+    <!-- Statistics Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsAchStats">Achievements statistics</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsUserStats">User statistics</sys:String>
+
+    <!-- Progression Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsGlobalProgression">Global achievements progression</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementslvGamesProgression">Progression</sys:String>
+
+    <!-- Game Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsBaseGame">Base game</sys:String>
+
+    <!-- Chart/Graph Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALL">All achievements unlocked by month</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALLDay">All achievements unlocked by day</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitle">Achievements unlocked by month</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleSources">Achievements unlocked by source</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleDay">Achievements unlocked by day</sys:String>
 
     <!-- ================================================================= -->
     <!-- FIRST-TIME LANDING PAGE                                           -->
@@ -360,8 +401,5 @@
     <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertSuccess">Theme reverted successfully. Backup folder preserved at: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertFailed">Revert failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NoBackup">No backup folder found at: {0}</sys:String>
-
-    <sys:String x:Key="LOCSuccessStoryAchievements">Achievements</sys:String>
-
 
 </ResourceDictionary>

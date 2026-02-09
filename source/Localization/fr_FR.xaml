@@ -291,9 +291,50 @@
     <!-- ================================================================= -->
 
     <!-- ================================================================= -->
-    <!-- THEME INTEGRATION (CTRL-F Safe                                    -->
+    <!-- SUCCESS STORY INTEGRATION (CTRL-F Safe                                    -->
     <!-- ================================================================= -->
+    <!-- Core Achievement Labels -->
     <sys:String x:Key="LOCPlayniteAchievementsAchievements">Succès</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsProgress">Progression</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsEarned">Gagnés</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsRetroAchievements">RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsManualAchievements">Succès manuels</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsAchievementsCount">Nombre de succès</sys:String>
+
+    <!-- Hidden Achievement Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsHiddenAchievement">Succès caché</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsHiddenTrophy">Trophée caché</sys:String>
+
+    <!-- Rarity Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsRarety">Rareté</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsCommon">Commun</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsNoCommon">Peu commun</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsRare">Rare</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsUltraRare">Ultra-rare</sys:String>
+
+    <!-- Date and Time Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsDateUnlocked">Date de déblocage</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsFirstUnlock">Premier débloquer</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsLastUnlock">Dernier débloquer</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsTimeToUnlock">Temps pour tout débloquer</sys:String>
+
+    <!-- Statistics Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsAchStats">Statistiques des succès</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsUserStats">Statistiques de l'utilisateur</sys:String>
+
+    <!-- Progression Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsGlobalProgression">Progression globale des succès</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementslvGamesProgression">Progrès</sys:String>
+
+    <!-- Game Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsBaseGame">Jeu de base</sys:String>
+
+    <!-- Chart/Graph Labels -->
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALL">Tous les succès obtenus par mois</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleALLDay">Tous les succès obtenus par jour</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitle">Succès obtenus par mois</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleSources">Succès obtenus par sources</sys:String>
+    <sys:String x:Key="LOCPlayniteAchievementsGraphicTitleDay">Succès obtenus par jour</sys:String>
 
     <!-- ================================================================= -->
     <!-- FIRST-TIME LANDING PAGE                                           -->
