@@ -435,6 +435,19 @@ namespace PlayniteAchievements.Views
         /// </summary>
         private void LoadAvailableThemes()
         {
+            // Ensure we're on the UI thread before accessing ObservableCollection
+            if (Dispatcher.CheckAccess())
+            {
+                LoadAvailableThemesInternal();
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(LoadAvailableThemesInternal));
+            }
+        }
+
+        private void LoadAvailableThemesInternal()
+        {
             try
             {
                 _availableThemes.Clear();

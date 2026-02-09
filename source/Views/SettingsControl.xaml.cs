@@ -270,6 +270,19 @@ namespace PlayniteAchievements.Views
 
         private void LoadThemes()
         {
+            // Ensure we're on the UI thread before accessing DependencyProperties
+            if (Dispatcher.CheckAccess())
+            {
+                LoadThemesInternal();
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(LoadThemesInternal));
+            }
+        }
+
+        private void LoadThemesInternal()
+        {
             try
             {
                 AvailableThemes.Clear();
