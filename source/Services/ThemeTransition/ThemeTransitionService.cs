@@ -22,18 +22,6 @@ namespace PlayniteAchievements.Services.ThemeTransition
         }
 
         /// <summary>
-        /// Result of a theme transition operation.
-        /// </summary>
-        public class TransitionResult
-        {
-            public bool Success { get; set; }
-            public string Message { get; set; }
-            public int FilesProcessed { get; set; }
-            public int ReplacementsMade { get; set; }
-            public string BackupPath { get; set; }
-        }
-
-        /// <summary>
         /// Transitions a theme from SuccessStory to PlayniteAchievements.
         /// </summary>
         /// <param name="themePath">Full path to the theme directory.</param>
