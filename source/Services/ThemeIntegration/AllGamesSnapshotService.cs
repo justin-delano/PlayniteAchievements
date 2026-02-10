@@ -183,6 +183,41 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 .ThenBy(a => a?.DisplayName)
                 .ToList();
 
+            var unlockedAchievements = allAchievements
+                .Where(a => a != null && a.UnlockTimeUtc.HasValue && a.UnlockTimeUtc.Value != DateTime.MinValue)
+                .ToList();
+
+            DateTime NormalizeUtc(DateTime timestamp)
+            {
+                if (timestamp.Kind == DateTimeKind.Unspecified)
+                {
+                    return DateTime.SpecifyKind(timestamp, DateTimeKind.Utc);
+                }
+
+                return timestamp.Kind == DateTimeKind.Local ? timestamp.ToUniversalTime() : timestamp;
+            }
+
+            snapshot.MostRecentUnlocks = unlockedAchievements
+                .OrderByDescending(a => NormalizeUtc(a.UnlockTimeUtc.Value))
+                .ThenBy(a => a.DisplayName)
+                .ToList();
+
+            var rareRecentCutoffUtc = DateTime.UtcNow.AddDays(-180);
+            snapshot.RarestRecentUnlocks = unlockedAchievements
+                .Where(a => NormalizeUtc(a.UnlockTimeUtc.Value) >= rareRecentCutoffUtc)
+                .OrderBy(a => a.GlobalPercentUnlocked ?? 100)
+                .ThenByDescending(a => NormalizeUtc(a.UnlockTimeUtc.Value))
+                .ThenBy(a => a.DisplayName)
+                .ToList();
+
+            snapshot.MostRecentUnlocksTop3 = snapshot.MostRecentUnlocks.Take(3).ToList();
+            snapshot.MostRecentUnlocksTop5 = snapshot.MostRecentUnlocks.Take(5).ToList();
+            snapshot.MostRecentUnlocksTop10 = snapshot.MostRecentUnlocks.Take(10).ToList();
+
+            snapshot.RarestRecentUnlocksTop3 = snapshot.RarestRecentUnlocks.Take(3).ToList();
+            snapshot.RarestRecentUnlocksTop5 = snapshot.RarestRecentUnlocks.Take(5).ToList();
+            snapshot.RarestRecentUnlocksTop10 = snapshot.RarestRecentUnlocks.Take(10).ToList();
+
             return snapshot;
         }
 

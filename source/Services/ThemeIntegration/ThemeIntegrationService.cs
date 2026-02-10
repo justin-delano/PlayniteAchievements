@@ -29,6 +29,76 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     {
         private static readonly List<AchievementDetail> EmptyAchievementList = new List<AchievementDetail>();
         private static readonly AchievementRarityStats EmptyRarityStats = new AchievementRarityStats();
+        private static readonly string[] CompatibilityAllGamesDelegatedProperties =
+        {
+            nameof(PlayniteAchievementsSettings.AllGamesWithAchievements),
+            nameof(PlayniteAchievementsSettings.PlatinumGames),
+            nameof(PlayniteAchievementsSettings.PlatinumGamesAscending),
+            nameof(PlayniteAchievementsSettings.GSTotal),
+            nameof(PlayniteAchievementsSettings.GSPlat),
+            nameof(PlayniteAchievementsSettings.GS90),
+            nameof(PlayniteAchievementsSettings.GS30),
+            nameof(PlayniteAchievementsSettings.GS15),
+            nameof(PlayniteAchievementsSettings.GSScore),
+            nameof(PlayniteAchievementsSettings.GSLevel),
+            nameof(PlayniteAchievementsSettings.GSLevelProgress),
+            nameof(PlayniteAchievementsSettings.GSRank)
+        };
+
+        // NOTE: PlatinumGames is notified via compatibility surface only to avoid duplicate notifications.
+        private static readonly string[] NativeAllGamesDelegatedProperties =
+        {
+            nameof(PlayniteAchievementsSettings.HasData),
+            nameof(PlayniteAchievementsSettings.GamesWithAchievements),
+            nameof(PlayniteAchievementsSettings.TotalTrophies),
+            nameof(PlayniteAchievementsSettings.PlatinumTrophies),
+            nameof(PlayniteAchievementsSettings.GoldTrophies),
+            nameof(PlayniteAchievementsSettings.SilverTrophies),
+            nameof(PlayniteAchievementsSettings.BronzeTrophies),
+            nameof(PlayniteAchievementsSettings.Level),
+            nameof(PlayniteAchievementsSettings.LevelProgress),
+            nameof(PlayniteAchievementsSettings.Rank),
+            nameof(PlayniteAchievementsSettings.AllAchievementsUnlockAsc),
+            nameof(PlayniteAchievementsSettings.AllAchievementsUnlockDesc),
+            nameof(PlayniteAchievementsSettings.AllAchievementsRarityAsc),
+            nameof(PlayniteAchievementsSettings.AllAchievementsRarityDesc),
+            nameof(PlayniteAchievementsSettings.MostRecentUnlocks),
+            nameof(PlayniteAchievementsSettings.RarestRecentUnlocks),
+            nameof(PlayniteAchievementsSettings.MostRecentUnlocksTop3),
+            nameof(PlayniteAchievementsSettings.MostRecentUnlocksTop5),
+            nameof(PlayniteAchievementsSettings.MostRecentUnlocksTop10),
+            nameof(PlayniteAchievementsSettings.RarestRecentUnlocksTop3),
+            nameof(PlayniteAchievementsSettings.RarestRecentUnlocksTop5),
+            nameof(PlayniteAchievementsSettings.RarestRecentUnlocksTop10)
+        };
+
+        private static readonly string[] SingleGameThemeDelegatedProperties =
+        {
+            nameof(PlayniteAchievementsSettings.HasData),
+            nameof(PlayniteAchievementsSettings.HasAchievements),
+            nameof(PlayniteAchievementsSettings.AchievementCount),
+            nameof(PlayniteAchievementsSettings.UnlockedCount),
+            nameof(PlayniteAchievementsSettings.LockedCount),
+            nameof(PlayniteAchievementsSettings.ProgressPercentage),
+            nameof(PlayniteAchievementsSettings.AllUnlocked)
+        };
+
+        private static readonly string[] SingleGameLegacyDelegatedProperties =
+        {
+            nameof(PlayniteAchievementsSettings.HasDataLegacy),
+            nameof(PlayniteAchievementsSettings.Total),
+            nameof(PlayniteAchievementsSettings.Unlocked),
+            nameof(PlayniteAchievementsSettings.Percent),
+            nameof(PlayniteAchievementsSettings.Is100Percent),
+            nameof(PlayniteAchievementsSettings.Locked),
+            nameof(PlayniteAchievementsSettings.Common),
+            nameof(PlayniteAchievementsSettings.NoCommon),
+            nameof(PlayniteAchievementsSettings.Rare),
+            nameof(PlayniteAchievementsSettings.UltraRare),
+            nameof(PlayniteAchievementsSettings.ListAchievements),
+            nameof(PlayniteAchievementsSettings.ListAchUnlockDateAsc),
+            nameof(PlayniteAchievementsSettings.ListAchUnlockDateDesc)
+        };
 
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _api;
@@ -548,6 +618,23 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             ApplyCompatibilitySurface(snapshot);
         }
 
+        private void NotifySettingProperties(params string[] propertyNames)
+        {
+            if (propertyNames == null || propertyNames.Length == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < propertyNames.Length; i++)
+            {
+                var name = propertyNames[i];
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    _settings.OnPropertyChanged(name);
+                }
+            }
+        }
+
         private void ApplyCompatibilitySurface(AllGamesSnapshot snapshot)
         {
             _settings.LegacyTheme.AllGamesWithAchievements = snapshot.CreateAllGamesObservable();
@@ -566,18 +653,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.GSRank = snapshot.TotalCount > 0 && !string.IsNullOrWhiteSpace(snapshot.Rank) ? snapshot.Rank : "Bronze1";
 
             // Raise PropertyChanged for delegated properties so bindings update
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllGamesWithAchievements));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.PlatinumGames));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.PlatinumGamesAscending));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSTotal));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSPlat));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GS90));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GS30));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GS15));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSScore));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSLevel));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSLevelProgress));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSRank));
+            NotifySettingProperties(CompatibilityAllGamesDelegatedProperties);
         }
 
         private void ApplyNativeSurface(AllGamesSnapshot snapshot)
@@ -601,23 +677,17 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.Theme.AllAchievementsUnlockDesc = snapshot.AllAchievementsUnlockDesc;
             _settings.Theme.AllAchievementsRarityAsc = snapshot.AllAchievementsRarityAsc;
             _settings.Theme.AllAchievementsRarityDesc = snapshot.AllAchievementsRarityDesc;
+            _settings.Theme.MostRecentUnlocks = snapshot.MostRecentUnlocks;
+            _settings.Theme.RarestRecentUnlocks = snapshot.RarestRecentUnlocks;
+            _settings.Theme.MostRecentUnlocksTop3 = snapshot.MostRecentUnlocksTop3;
+            _settings.Theme.MostRecentUnlocksTop5 = snapshot.MostRecentUnlocksTop5;
+            _settings.Theme.MostRecentUnlocksTop10 = snapshot.MostRecentUnlocksTop10;
+            _settings.Theme.RarestRecentUnlocksTop3 = snapshot.RarestRecentUnlocksTop3;
+            _settings.Theme.RarestRecentUnlocksTop5 = snapshot.RarestRecentUnlocksTop5;
+            _settings.Theme.RarestRecentUnlocksTop10 = snapshot.RarestRecentUnlocksTop10;
 
             // Raise PropertyChanged for delegated properties so bindings update
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.HasData));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GamesWithAchievements));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.PlatinumGames));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.TotalTrophies));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.PlatinumTrophies));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GoldTrophies));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.SilverTrophies));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.BronzeTrophies));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Level));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.LevelProgress));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Rank));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllAchievementsUnlockAsc));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllAchievementsUnlockDesc));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllAchievementsRarityAsc));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllAchievementsRarityDesc));
+            NotifySettingProperties(NativeAllGamesDelegatedProperties);
         }
 
         #endregion
@@ -661,13 +731,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.Theme.AchievementsRarityDesc = snapshot.RarityDesc;
 
             // Raise PropertyChanged for computed properties that delegate to Theme
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.HasData));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.HasAchievements));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AchievementCount));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.UnlockedCount));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.LockedCount));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.ProgressPercentage));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllUnlocked));
+            NotifySettingProperties(SingleGameThemeDelegatedProperties);
         }
 
         private void ApplySingleGameToLegacyTheme(SingleGameSnapshot snapshot)
@@ -692,19 +756,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.ListAchUnlockDateDesc = snapshot.UnlockDateDesc;
 
             // Raise PropertyChanged for computed properties that delegate to LegacyTheme
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.HasDataLegacy));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Total));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Unlocked));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Percent));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Is100Percent));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Locked));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Common));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.NoCommon));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Rare));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.UltraRare));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.ListAchievements));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.ListAchUnlockDateAsc));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.ListAchUnlockDateDesc));
+            NotifySettingProperties(SingleGameLegacyDelegatedProperties);
         }
 
         /// <summary>
@@ -737,13 +789,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.Theme.UltraRareStats = EmptyRarityStats;
 
             // Raise PropertyChanged for computed properties that delegate to Theme
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.HasData));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.HasAchievements));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AchievementCount));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.UnlockedCount));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.LockedCount));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.ProgressPercentage));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllUnlocked));
+            NotifySettingProperties(SingleGameThemeDelegatedProperties);
         }
 
         private void ClearSingleGameLegacyTheme()
@@ -768,19 +814,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.ListAchUnlockDateDesc = EmptyAchievementList;
 
             // Raise PropertyChanged for computed properties that delegate to LegacyTheme
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.HasDataLegacy));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Total));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Unlocked));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Percent));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Is100Percent));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Locked));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Common));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.NoCommon));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Rare));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.UltraRare));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.ListAchievements));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.ListAchUnlockDateAsc));
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.ListAchUnlockDateDesc));
+            NotifySettingProperties(SingleGameLegacyDelegatedProperties);
         }
 
         #endregion

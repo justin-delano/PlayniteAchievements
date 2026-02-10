@@ -82,6 +82,22 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private List<AchievementDetail> _allAchievementsRarityAsc = new List<AchievementDetail>();
         [DontSerialize]
         private List<AchievementDetail> _allAchievementsRarityDesc = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _mostRecentUnlocks = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _rarestRecentUnlocks = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _mostRecentUnlocksTop3 = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _mostRecentUnlocksTop5 = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _mostRecentUnlocksTop10 = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _rarestRecentUnlocksTop3 = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _rarestRecentUnlocksTop5 = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _rarestRecentUnlocksTop10 = new List<AchievementDetail>();
 
         #endregion
 
@@ -389,6 +405,87 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _allAchievementsRarityDesc;
             set => SetValue(ref _allAchievementsRarityDesc, value);
+        }
+
+        /// <summary>
+        /// Unlocked achievements across all games, sorted by unlock date descending (newest first).
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> MostRecentUnlocks
+        {
+            get => _mostRecentUnlocks;
+            set => SetValue(ref _mostRecentUnlocks, value);
+        }
+
+        /// <summary>
+        /// Unlocked achievements across all games, sorted by rarity ascending (rarest first),
+        /// with recency used as a tie-breaker.
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> RarestRecentUnlocks
+        {
+            get => _rarestRecentUnlocks;
+            set => SetValue(ref _rarestRecentUnlocks, value);
+        }
+
+        /// <summary>
+        /// Top 3 unlocked achievements across all games, newest first.
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> MostRecentUnlocksTop3
+        {
+            get => _mostRecentUnlocksTop3;
+            set => SetValue(ref _mostRecentUnlocksTop3, value);
+        }
+
+        /// <summary>
+        /// Top 5 unlocked achievements across all games, newest first.
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> MostRecentUnlocksTop5
+        {
+            get => _mostRecentUnlocksTop5;
+            set => SetValue(ref _mostRecentUnlocksTop5, value);
+        }
+
+        /// <summary>
+        /// Top 10 unlocked achievements across all games, newest first.
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> MostRecentUnlocksTop10
+        {
+            get => _mostRecentUnlocksTop10;
+            set => SetValue(ref _mostRecentUnlocksTop10, value);
+        }
+
+        /// <summary>
+        /// Top 3 rare unlocked achievements across all games, filtered to the recent-window threshold.
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> RarestRecentUnlocksTop3
+        {
+            get => _rarestRecentUnlocksTop3;
+            set => SetValue(ref _rarestRecentUnlocksTop3, value);
+        }
+
+        /// <summary>
+        /// Top 5 rare unlocked achievements across all games, filtered to the recent-window threshold.
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> RarestRecentUnlocksTop5
+        {
+            get => _rarestRecentUnlocksTop5;
+            set => SetValue(ref _rarestRecentUnlocksTop5, value);
+        }
+
+        /// <summary>
+        /// Top 10 rare unlocked achievements across all games, filtered to the recent-window threshold.
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> RarestRecentUnlocksTop10
+        {
+            get => _rarestRecentUnlocksTop10;
+            set => SetValue(ref _rarestRecentUnlocksTop10, value);
         }
 
         #endregion

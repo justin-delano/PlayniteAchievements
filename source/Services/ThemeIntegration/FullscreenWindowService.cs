@@ -213,6 +213,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 </Viewbox>";
 
             var content = (FrameworkElement)XamlReader.Parse(xamlString);
+            content.DataContext = _settings;
 
             window.PreviewKeyDown += (_, e) =>
             {

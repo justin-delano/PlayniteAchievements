@@ -106,6 +106,47 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         /// </summary>
         public List<AchievementDetail> AllAchievementsRarityDesc { get; set; } = new List<AchievementDetail>();
 
+        /// <summary>
+        /// Unlocked achievements from all games, sorted by unlock date descending (newest first).
+        /// </summary>
+        public List<AchievementDetail> MostRecentUnlocks { get; set; } = new List<AchievementDetail>();
+
+        /// <summary>
+        /// Unlocked achievements from all games, sorted by rarity ascending (rarest first),
+        /// then by unlock date descending.
+        /// </summary>
+        public List<AchievementDetail> RarestRecentUnlocks { get; set; } = new List<AchievementDetail>();
+
+        /// <summary>
+        /// Top 3 unlocked achievements from all games, sorted by unlock date descending.
+        /// </summary>
+        public List<AchievementDetail> MostRecentUnlocksTop3 { get; set; } = new List<AchievementDetail>();
+
+        /// <summary>
+        /// Top 5 unlocked achievements from all games, sorted by unlock date descending.
+        /// </summary>
+        public List<AchievementDetail> MostRecentUnlocksTop5 { get; set; } = new List<AchievementDetail>();
+
+        /// <summary>
+        /// Top 10 unlocked achievements from all games, sorted by unlock date descending.
+        /// </summary>
+        public List<AchievementDetail> MostRecentUnlocksTop10 { get; set; } = new List<AchievementDetail>();
+
+        /// <summary>
+        /// Top 3 rare unlocked achievements from all games, filtered to recent window and sorted by rarity.
+        /// </summary>
+        public List<AchievementDetail> RarestRecentUnlocksTop3 { get; set; } = new List<AchievementDetail>();
+
+        /// <summary>
+        /// Top 5 rare unlocked achievements from all games, filtered to recent window and sorted by rarity.
+        /// </summary>
+        public List<AchievementDetail> RarestRecentUnlocksTop5 { get; set; } = new List<AchievementDetail>();
+
+        /// <summary>
+        /// Top 10 rare unlocked achievements from all games, filtered to recent window and sorted by rarity.
+        /// </summary>
+        public List<AchievementDetail> RarestRecentUnlocksTop10 { get; set; } = new List<AchievementDetail>();
+
         #endregion
 
         #region Helper Methods for Theme Binding

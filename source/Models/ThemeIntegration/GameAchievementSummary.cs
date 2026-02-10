@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Input;
+using PlayniteAchievements.Common;
 
 namespace PlayniteAchievements.Models.ThemeIntegration
 {
@@ -7,8 +8,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
     /// Summary of achievement progress for a single game, used in all-games overview displays.
     /// Represents a "trophy card" showing progress, trophy counts, and metadata for one game.
     /// </summary>
-    public sealed class GameAchievementSummary
+    public sealed class GameAchievementSummary : ObservableObject
     {
+        private int _progress;
+        private int _goldCount;
+        private int _silverCount;
+        private int _bronzeCount;
+
         /// <summary>
         /// Unique identifier for the game.
         /// </summary>
@@ -31,23 +37,44 @@ namespace PlayniteAchievements.Models.ThemeIntegration
 
         /// <summary>
         /// Achievement completion percentage (0-100).
+        /// Writable by design: some fullscreen themes rely on default TwoWay
+        /// binding behavior for ProgressBar.Value.
         /// </summary>
-        public int Progress { get; }
+        public int Progress
+        {
+            get => _progress;
+            set => SetValue(ref _progress, Math.Max(0, Math.Min(100, value)));
+        }
 
         /// <summary>
         /// Number of ultra-rare achievements unlocked (gold trophy equivalent).
+        /// Writable by design for compatibility with legacy fullscreen bindings.
         /// </summary>
-        public int GoldCount { get; }
+        public int GoldCount
+        {
+            get => _goldCount;
+            set => SetValue(ref _goldCount, Math.Max(0, value));
+        }
 
         /// <summary>
         /// Number of uncommon achievements unlocked (silver trophy equivalent).
+        /// Writable by design for compatibility with legacy fullscreen bindings.
         /// </summary>
-        public int SilverCount { get; }
+        public int SilverCount
+        {
+            get => _silverCount;
+            set => SetValue(ref _silverCount, Math.Max(0, value));
+        }
 
         /// <summary>
         /// Number of common achievements unlocked (bronze trophy equivalent).
+        /// Writable by design for compatibility with legacy fullscreen bindings.
         /// </summary>
-        public int BronzeCount { get; }
+        public int BronzeCount
+        {
+            get => _bronzeCount;
+            set => SetValue(ref _bronzeCount, Math.Max(0, value));
+        }
 
         /// <summary>
         /// Date of the most recent achievement unlock.
@@ -99,10 +126,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             Name = name ?? string.Empty;
             Platform = platform ?? "Unknown";
             CoverImagePath = coverImagePath ?? string.Empty;
-            Progress = Math.Max(0, Math.Min(100, progress));
-            GoldCount = Math.Max(0, goldCount);
-            SilverCount = Math.Max(0, silverCount);
-            BronzeCount = Math.Max(0, bronzeCount);
+            _progress = Math.Max(0, Math.Min(100, progress));
+            _goldCount = Math.Max(0, goldCount);
+            _silverCount = Math.Max(0, silverCount);
+            _bronzeCount = Math.Max(0, bronzeCount);
             LastUnlockDate = lastUnlockDate;
             OpenAchievementWindow = openAchievementWindow;
         }

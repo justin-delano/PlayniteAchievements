@@ -156,7 +156,7 @@ namespace PlayniteAchievements.Models
 
         #endregion
 
-        #region Modern Theme Integration (delegates to Theme)
+        #region Modern Theme Integration
 
         // === Per-Game Achievement Data ===
 
@@ -312,9 +312,67 @@ namespace PlayniteAchievements.Models
             set => Theme.AllAchievementsRarityDesc = value;
         }
 
+        // All recent unlocks across all games (newest first).
+        [DontSerialize]
+        public List<AchievementDetail> MostRecentUnlocks
+        {
+            get => Theme.MostRecentUnlocks ?? EmptyAchievementList;
+            set => Theme.MostRecentUnlocks = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> MostRecentUnlocksTop3
+        {
+            get => Theme.MostRecentUnlocksTop3 ?? EmptyAchievementList;
+            set => Theme.MostRecentUnlocksTop3 = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> MostRecentUnlocksTop5
+        {
+            get => Theme.MostRecentUnlocksTop5 ?? EmptyAchievementList;
+            set => Theme.MostRecentUnlocksTop5 = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> MostRecentUnlocksTop10
+        {
+            get => Theme.MostRecentUnlocksTop10 ?? EmptyAchievementList;
+            set => Theme.MostRecentUnlocksTop10 = value;
+        }
+
+        // All rare recent unlocks across all games (rarest first), limited to the last 180 days.
+        [DontSerialize]
+        public List<AchievementDetail> RarestRecentUnlocks
+        {
+            get => Theme.RarestRecentUnlocks ?? EmptyAchievementList;
+            set => Theme.RarestRecentUnlocks = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> RarestRecentUnlocksTop3
+        {
+            get => Theme.RarestRecentUnlocksTop3 ?? EmptyAchievementList;
+            set => Theme.RarestRecentUnlocksTop3 = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> RarestRecentUnlocksTop5
+        {
+            get => Theme.RarestRecentUnlocksTop5 ?? EmptyAchievementList;
+            set => Theme.RarestRecentUnlocksTop5 = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> RarestRecentUnlocksTop10
+        {
+            get => Theme.RarestRecentUnlocksTop10 ?? EmptyAchievementList;
+            set => Theme.RarestRecentUnlocksTop10 = value;
+        }
+
         #endregion
 
-        #region Legacy Theme Compatibility (delegates to LegacyTheme)
+        #region Legacy Theme Compatibility
 
         // === SuccessStory Compatibility ===
 
@@ -351,7 +409,7 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         public List<AchievementDetail> ListAchUnlockDateDesc => LegacyTheme.ListAchUnlockDateDesc ?? EmptyAchievementList;
 
-        // === Old Inline Properties (delegates to LegacyTheme) ===
+        // === Old Inline Properties ===
 
         [DontSerialize]
         public bool HasDataLegacy
@@ -381,7 +439,7 @@ namespace PlayniteAchievements.Models
             set => LegacyTheme.Percent = value;
         }
 
-        // === Aniki ReMake Compatibility (delegates to LegacyTheme) ===
+        // === Aniki ReMake Compatibility ===
 
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> AllGamesWithAchievements
