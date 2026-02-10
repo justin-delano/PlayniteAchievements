@@ -6,11 +6,11 @@
 
 <div align="center">
 
-[![Release](https://img.shields.io/github/v/release/justin-delano/PlayniteAchievements?style=for-the-badge&logo=github&color=green)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.14.0-orange?style=for-the-badge)](https://playnite.link/)
-[![Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/total?style=for-the-badge&label=Total%20Downloads&color=brightgreen)](https://github.com/justin-delano/PlayniteAchievements/releases)
-[![Latest Release Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/latest/total?style=for-the-badge&label=Latest%20Release%20Downloads&color=purple&cacheSeconds=3600)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
+[![Release](https://img.shields.io/github/v/release/justin-delano/PlayniteAchievements?style=for-the-badge&logo=github&color=0ea5e9)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-f59e0b?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Playnite SDK](https://img.shields.io/badge/Playnite%20SDK-6.14.0-6366f1?style=for-the-badge)](https://playnite.link/)
+[![Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/total?style=for-the-badge&label=Total%20Downloads&color=10b981)](https://github.com/justin-delano/PlayniteAchievements/releases)
+[![Latest Release Downloads](https://img.shields.io/github/downloads/justin-delano/PlayniteAchievements/latest/total?style=for-the-badge&label=Latest%20Release%20Downloads&color=8b5cf6&cacheSeconds=3600)](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
 
 </div>
 
