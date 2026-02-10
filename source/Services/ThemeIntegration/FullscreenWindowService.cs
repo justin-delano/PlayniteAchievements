@@ -4,6 +4,7 @@ using PlayniteAchievements.Models;
 using System;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Threading;
@@ -207,12 +208,28 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         xmlns:pbeh=""clr-namespace:Playnite.Behaviors;assembly=Playnite"">
                     <Grid Width=""1920"" Height=""1080"">
                         <ContentControl x:Name=""AchievementsWindow""
-                                        Focusable=""False""
-                                        Style=""{{DynamicResource {styleKey}}}"" />
+                                        Focusable=""False"" />
                     </Grid>
                 </Viewbox>";
 
             var content = (FrameworkElement)XamlReader.Parse(xamlString);
+
+            // Try to find and apply the style from application resources
+            try
+            {
+                if (Application.Current.TryFindResource(styleKey) is Style style)
+                {
+                    var contentControl = content.FindName("AchievementsWindow") as ContentControl;
+                    if (contentControl != null)
+                    {
+                        contentControl.Style = style;
+                    }
+                }
+            }
+            catch
+            {
+                // If style lookup fails, leave as-is and hope DynamicResource works
+            }
 
             window.PreviewKeyDown += (_, e) =>
             {
