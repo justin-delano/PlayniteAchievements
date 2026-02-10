@@ -997,20 +997,21 @@
                                     Margin="0,8,0,0"/>
                         </StackPanel>
 
-                        <!-- ================== TRANSITION SECTION ================== -->
+                        <!-- ================== MIGRATION SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Transition}"
+                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Migration}"
                                            Style="{StaticResource SectionHeaderStyle}"
                                            Margin="0,0,0,12"/>
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,16">
-                                    Transition a theme from SuccessStory to PlayniteAchievements.
-                                    A backup will be created before any modifications are made.
+                                    <Run Text="{DynamicResource LOCPlayAch_ThemeMigration_Description}"/>
+                                    <LineBreak/>
+                                    <Run Text="{DynamicResource LOCPlayAch_ThemeMigration_BackupNote}"/>
                                 </TextBlock>
 
-                                <!-- Theme Dropdown and Transition Button -->
+                                <!-- Theme Dropdown and Migration Button -->
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -1023,15 +1024,15 @@
                                               SelectedValuePath="Path"
                                               SelectedValue="{Binding SelectedThemePath, ElementName=SettingsControlRoot}"
                                               VerticalContentAlignment="Center"
-                                              IsEnabled="{Binding HasThemesToTransition, ElementName=SettingsControlRoot}"/>
+                                              IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}"/>
 
                                     <Button Grid.Column="1"
-                                            Content="{DynamicResource LOCPlayAch_ThemeMigration_Transition}"
-                                            Click="TransitionTheme_Click"
+                                            Content="{DynamicResource LOCPlayAch_ThemeMigration_Migration}"
+                                            Click="MigrationTheme_Click"
                                             Padding="14,6"
                                             Margin="16,0,0,0"
                                             MinWidth="100"
-                                            IsEnabled="{Binding HasThemesToTransition, ElementName=SettingsControlRoot}"/>
+                                            IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}"/>
                                 </Grid>
 
                                 <!-- No themes message -->
@@ -1045,14 +1046,13 @@
                         <!-- ================== REVERT SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Revert Theme"
+                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Revert}"
                                            Style="{StaticResource SectionHeaderStyle}"
                                            Margin="0,0,0,12"/>
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,16">
-                                    Restore a previously transitioned theme from its backup.
-                                    The backup folder will be preserved after reverting.
+                                    <Run Text="{DynamicResource LOCPlayAch_ThemeMigration_RevertDescription}"/>
                                 </TextBlock>
 
                                 <!-- Revertable Theme Dropdown and Revert Button -->
@@ -1071,7 +1071,7 @@
                                               IsEnabled="{Binding HasRevertableThemes, ElementName=SettingsControlRoot}"/>
 
                                     <Button Grid.Column="1"
-                                            Content="Revert"
+                                            Content="{DynamicResource LOCPlayAch_ThemeMigration_RevertButton}"
                                             Click="RevertTheme_Click"
                                             Padding="14,6"
                                             Margin="16,0,0,0"
@@ -1080,7 +1080,7 @@
                                 </Grid>
 
                                 <!-- No revertable themes message -->
-                                <TextBlock Text="No themes found with backups that can be reverted."
+                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_NoRevertableThemes}"
                                            Style="{StaticResource MutedTextStyle}"
                                            Margin="0,8,0,0"
                                            Visibility="{Binding ShowNoRevertableThemesMessage, ElementName=SettingsControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}"/>

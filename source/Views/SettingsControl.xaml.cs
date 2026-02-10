@@ -158,17 +158,17 @@ namespace PlayniteAchievements.Views
             set => SetValue(SelectedRevertThemePathProperty, value);
         }
 
-        public static readonly DependencyProperty HasThemesToTransitionProperty =
+        public static readonly DependencyProperty HasThemesToMigrateProperty =
             DependencyProperty.Register(
-                nameof(HasThemesToTransition),
+                nameof(HasThemesToMigrate),
                 typeof(bool),
                 typeof(SettingsControl),
                 new PropertyMetadata(false));
 
-        public bool HasThemesToTransition
+        public bool HasThemesToMigrate
         {
-            get => (bool)GetValue(HasThemesToTransitionProperty);
-            set => SetValue(HasThemesToTransitionProperty, value);
+            get => (bool)GetValue(HasThemesToMigrateProperty);
+            set => SetValue(HasThemesToMigrateProperty, value);
         }
 
         public static readonly DependencyProperty HasRevertableThemesProperty =
@@ -299,7 +299,7 @@ namespace PlayniteAchievements.Views
                 var themes = _themeDiscovery.DiscoverThemes(themesPath);
 
                 // Themes that need migration (no backup, has SuccessStory)
-                foreach (var theme in themes.Where(t => t.NeedsTransition))
+                foreach (var theme in themes.Where(t => t.NeedsMigration))
                 {
                     AvailableThemes.Add(theme);
                 }
@@ -312,11 +312,11 @@ namespace PlayniteAchievements.Views
 
                 UpdateThemeMigrationState();
 
-                _logger.Info($"Loaded {AvailableThemes.Count} themes to transition, {RevertableThemes.Count} themes to revert.");
+                _logger.Info($"Loaded {AvailableThemes.Count} themes to migrate, {RevertableThemes.Count} themes to revert.");
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to load themes for transition.");
+                _logger.Error(ex, "Failed to load themes for migration.");
             }
         }
 
@@ -325,17 +325,17 @@ namespace PlayniteAchievements.Views
             var hasThemes = AvailableThemes.Count > 0;
             var hasRevertable = RevertableThemes.Count > 0;
 
-            HasThemesToTransition = hasThemes;
+            HasThemesToMigrate = hasThemes;
             HasRevertableThemes = hasRevertable;
             ShowNoThemesMessage = !hasThemes;
             ShowNoRevertableThemesMessage = !hasRevertable;
         }
 
-        private async void TransitionTheme_Click(object sender, RoutedEventArgs e)
+        private async void MigrateTheme_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(SelectedThemePath))
             {
-                _logger.Warn("Transition clicked but no theme selected.");
+                _logger.Warn("Migrate clicked but no theme selected.");
                 return;
             }
 
@@ -343,7 +343,7 @@ namespace PlayniteAchievements.Views
 
             try
             {
-                var result = await _themeMigration.TransitionThemeAsync(SelectedThemePath);
+                var result = await _themeMigration.MigrateThemeAsync(SelectedThemePath);
 
                 if (result.Success)
                 {
@@ -411,7 +411,7 @@ namespace PlayniteAchievements.Views
                     _logger.Info($"Theme revert successful: {SelectedRevertThemePath}");
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
                         result.Message,
-                        "Revert Theme",
+                        ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Revert") ?? "Revert Theme",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
 
@@ -423,7 +423,7 @@ namespace PlayniteAchievements.Views
                     _logger.Warn($"Theme revert failed: {result.Message}");
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
                         result.Message,
-                        "Revert Theme",
+                        ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Revert") ?? "Revert Theme",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -433,7 +433,7 @@ namespace PlayniteAchievements.Views
                 _logger.Error(ex, "Failed to execute theme revert.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
                     $"Theme revert failed: {ex.Message}",
-                    "Revert Theme",
+                    ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Revert") ?? "Revert Theme",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }

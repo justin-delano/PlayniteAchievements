@@ -381,7 +381,10 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Title">Conversion de thème</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Description">Convertir un thème SuccessStory vers PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_SelectTheme">Sélectionner le dossier du thème</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_Migration">Convertir le thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Migration">Convertir</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrateLabel">Convertir le thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrateFullDescription">Mettre à jour les thèmes utilisant SuccessStory pour fonctionner avec PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupNote">Une sauvegarde sera créée avant toute modification.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Success">Thème converti avec succès !</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Failed">Échec de la conversion du thème : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupExists">Le dossier de sauvegarde existe déjà. Veuillez le supprimer d'abord.</sys:String>
@@ -391,13 +394,13 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_FilesProcessed">Fichiers traités : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Replacements">Remplacements effectués : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupLocation">Emplacement de la sauvegarde : {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">Aucun thème trouvé nécessitant une transition. Les thèmes avec des références SuccessStory apparaîtront ici.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">Aucun thème trouvé nécessitant une migration. Les thèmes avec des références SuccessStory apparaîtront ici.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Revert">Rétablir le thème</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">Aucun thème trouvé avec des sauvegardes pouvant être rétabli.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">Aucun thème trouvé avec des sauvegardes pouvant être rétablis.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertDescription">Restaurer un thème précédemment converti à partir de sa sauvegarde. Le dossier de sauvegarde sera préservé après rétablissement.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertSuccess">Thème rétabli avec succès. Dossier de sauvegarde préservé à : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertFailed">Échec du rétablissement : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoBackup">Aucun dossier de sauvegarde trouvé à : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertButton">Rétablir</sys:String>
 
-    <sys:String x:Key="LOCSuccessStoryAchievements">Succès</sys:String>
 </ResourceDictionary>

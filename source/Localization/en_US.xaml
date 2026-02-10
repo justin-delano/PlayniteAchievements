@@ -384,7 +384,10 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Title">Theme Migration</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Description">Migrate a theme from SuccessStory to PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_SelectTheme">Select Theme Directory</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_Migration">Migration Theme</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Migration">Migrate</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrateLabel">Migrate Theme</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrateFullDescription">Update themes that use SuccessStory to work with PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupNote">A backup will be created before any modifications are made.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Success">Theme migrated successfully!</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Failed">Theme migration failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupExists">Backup folder already exists. Please remove it first.</sys:String>
@@ -396,6 +399,7 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupLocation">Backup location: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">No themes found that need migrating. Themes with SuccessStory references will appear here.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Revert">Revert Theme</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertButton">Revert</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">No themes found with backups that can be reverted.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertDescription">Restore a previously migrated theme from its backup. The backup folder will be preserved after reverting.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertSuccess">Theme reverted successfully. Backup folder preserved at: {0}</sys:String>

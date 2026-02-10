@@ -402,9 +402,9 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Gets whether there are themes that need transitioning.
+        /// Gets whether there are themes that need migrating.
         /// </summary>
-        public bool HasThemesToTransition => _availableThemes?.Count > 0;
+        public bool HasThemesToMigrate => _availableThemes?.Count > 0;
 
         /// <summary>
         /// Gets whether there are themes that can be reverted.
@@ -412,10 +412,10 @@ namespace PlayniteAchievements.Views
         public bool HasRevertableThemes => _revertableThemes?.Count > 0;
 
         /// <summary>
-        /// Gets the message to show when no themes need transition.
+        /// Gets the message to show when no themes need migrating.
         /// </summary>
         public string NoThemesMessage => ResourceProvider.GetString("LOCPlayAch_ThemeMigration_NoThemesMessage")
-            ?? "No themes found that need transitioning.";
+            ?? "No themes found that need migrating.";
 
         /// <summary>
         /// Gets whether to show the no themes message.
@@ -444,15 +444,15 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Command to transition the selected theme.
+        /// Command to migrate the selected theme.
         /// </summary>
-        public ICommand TransitionThemeCommand => new RelayCommand(async () =>
+        public ICommand MigrateThemeCommand => new RelayCommand(async () =>
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(SelectedThemePath))
                 {
-                    _logger.Warn("Transition theme command executed but no theme selected.");
+                    _logger.Warn("Migrate theme command executed but no theme selected.");
                     return;
                 }
 
@@ -498,7 +498,7 @@ namespace PlayniteAchievements.Views
         });
 
         /// <summary>
-        /// Loads the list of themes that need transitioning.
+        /// Loads the list of themes that need migrating.
         /// </summary>
         private void LoadAvailableThemes()
         {
@@ -526,16 +526,16 @@ namespace PlayniteAchievements.Views
                     _logger.Info("No themes path found, skipping theme discovery.");
                     ShowNoThemesMessage = true;
                     ShowNoRevertableThemesMessage = true;
-                    OnPropertyChanged(nameof(HasThemesToTransition));
+                    OnPropertyChanged(nameof(HasThemesToMigrate));
                     OnPropertyChanged(nameof(HasRevertableThemes));
                     return;
                 }
 
                 var themes = _themeDiscovery.DiscoverThemes(themesPath);
 
-                // Load themes that need transition
-                var themesNeedingTransition = themes.Where(t => t.NeedsTransition).ToList();
-                foreach (var theme in themesNeedingTransition)
+                // Load themes that need migration
+                var themesNeedingMigration = themes.Where(t => t.NeedsMigration).ToList();
+                foreach (var theme in themesNeedingMigration)
                 {
                     _availableThemes.Add(theme);
                 }
@@ -549,10 +549,10 @@ namespace PlayniteAchievements.Views
 
                 ShowNoThemesMessage = _availableThemes.Count == 0;
                 ShowNoRevertableThemesMessage = _revertableThemes.Count == 0;
-                OnPropertyChanged(nameof(HasThemesToTransition));
+                OnPropertyChanged(nameof(HasThemesToMigrate));
                 OnPropertyChanged(nameof(HasRevertableThemes));
 
-                _logger.Info($"Loaded {_availableThemes.Count} themes that need transitioning, {_revertableThemes.Count} themes that can be reverted.");
+                _logger.Info($"Loaded {_availableThemes.Count} themes that need migrating, {_revertableThemes.Count} themes that can be reverted.");
             }
             catch (Exception ex)
             {
@@ -565,7 +565,7 @@ namespace PlayniteAchievements.Views
         /// </summary>
         private async Task ExecuteThemeMigrationAsync(string themePath)
         {
-            var result = await _themeMigration.TransitionThemeAsync(themePath);
+            var result = await _themeMigration.MigrateThemeAsync(themePath);
 
             if (result.Success)
             {
@@ -582,7 +582,7 @@ namespace PlayniteAchievements.Views
                 else
                 {
                     _api?.Notifications?.Add(new NotificationMessage(
-                        "PlayAch_TransitionSuccess",
+                        "PlayAch_MigrationSuccess",
                         result.Message,
                         NotificationType.Info));
                 }
@@ -593,7 +593,7 @@ namespace PlayniteAchievements.Views
             {
                 _logger.Warn($"Theme migration failed: {result.Message}");
                 _api?.Notifications?.Add(new NotificationMessage(
-                    "PlayAch_TransitionFailed",
+                    "PlayAch_MigrationFailed",
                     result.Message,
                     NotificationType.Error));
             }
@@ -612,7 +612,7 @@ namespace PlayniteAchievements.Views
 
                 _api?.Dialogs?.ShowMessage(
                     result.Message + "\n\nPlease restart Playnite to apply the theme changes.",
-                    "Revert Theme",
+                    ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Revert") ?? "Revert Theme",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
 
