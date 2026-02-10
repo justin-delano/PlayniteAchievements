@@ -1,4 +1,4 @@
-<successStory:SettingsAwareControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.SuccessStory.SuccessStoryPluginChartControl"
+<local:AchievementThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.SuccessStory.SuccessStoryPluginChartControl"
                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -6,15 +6,16 @@
                    xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
                    xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
                    xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+                   xmlns:local="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
                    xmlns:successStory="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.SuccessStory"
                    mc:Ignorable="d"
                    d:DesignHeight="200" d:DesignWidth="300"
                    Height="{Binding ChartHeight}">
 
-    <successStory:SettingsAwareControlBase.Resources>
+    <local:AchievementThemeControlBase.Resources>
         <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
         <converters:BooleanConverter x:Key="InvertedBooleanToVisibilityConverter" Mode="InvertedToVisibility" />
-    </successStory:SettingsAwareControlBase.Resources>
+    </local:AchievementThemeControlBase.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -90,4 +91,4 @@
             </lvc:CartesianChart>
         </Grid>
     </Grid>
-</successStory:SettingsAwareControlBase>
+</local:AchievementThemeControlBase>
