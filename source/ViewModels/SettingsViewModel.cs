@@ -42,6 +42,8 @@ namespace PlayniteAchievements.ViewModels
                 Settings = savedSettings;
                 // Set the plugin reference for ISettings methods
                 Settings._plugin = _plugin;
+                // Initialize DontSerialize properties that are not persisted
+                Settings.InitializeThemeProperties();
                 _logger.Info($"Settings loaded from storage. UltraRareThreshold={Settings.Persisted.UltraRareThreshold}, EnablePeriodicUpdates={Settings.Persisted.EnablePeriodicUpdates}");
             }
             else

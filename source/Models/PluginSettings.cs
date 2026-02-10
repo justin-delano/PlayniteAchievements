@@ -470,6 +470,23 @@ namespace PlayniteAchievements.Models
             Persisted = other.Persisted?.Clone() ?? new PersistedSettings();
         }
 
+        /// <summary>
+        /// Initializes theme properties that are not persisted.
+        /// Called when settings are loaded from storage to ensure DontSerialize
+        /// properties are properly initialized.
+        /// </summary>
+        internal void InitializeThemeProperties()
+        {
+            if (Theme == null)
+            {
+                Theme = new ThemeData();
+            }
+            if (LegacyTheme == null)
+            {
+                LegacyTheme = new LegacyThemeData();
+            }
+        }
+
         #endregion
 
         #region Constructors
