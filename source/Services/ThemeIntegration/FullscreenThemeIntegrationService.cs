@@ -343,12 +343,82 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             EnsureFullscreenInitialized();
 
-            var scanTask = _achievementService.StartManagedSingleGameScanAsync(id.Value);
-            _ = scanTask?.ContinueWith(_ =>
+            var progressOptions = new GlobalProgressOptions(ResourceProvider.GetString("LOCPlayAch_Status_Starting"), true)
             {
-                try { _requestPerGameThemeUpdate(id); } catch { }
-                try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
-            });
+                Cancelable = true,
+                IsIndeterminate = false
+            };
+
+            _api.Dialogs.ActivateGlobalProgress((progress) =>
+            {
+                progress.ProgressMaxValue = 100;
+                progress.CurrentProgressValue = 0;
+
+                // Subscribe to progress updates during this scan
+                EventHandler<ProgressReport> progressHandler = null;
+                progressHandler = (sender, report) =>
+                {
+                    if (report == null) return;
+
+                    try
+                    {
+                        // Update progress text
+                        if (!string.IsNullOrWhiteSpace(report.Message))
+                        {
+                            progress.Text = report.Message;
+                        }
+
+                        // Update progress value
+                        var percent = report.PercentComplete;
+                        if (percent <= 0 || double.IsNaN(percent))
+                        {
+                            if (report.TotalSteps > 0)
+                            {
+                                percent = (report.CurrentStep * 100.0) / report.TotalSteps;
+                            }
+                            else
+                            {
+                                percent = 0;
+                            }
+                        }
+                        progress.CurrentProgressValue = Math.Max(0, Math.Min(100, percent));
+
+                        // Check for cancellation
+                        if (report.IsCanceled || progress.CancelToken.IsCancellationRequested)
+                        {
+                            return;
+                        }
+                    }
+                    catch { }
+                };
+
+                _achievementService.RebuildProgress += progressHandler;
+
+                try
+                {
+                    // Wait for the scan to complete
+                    _achievementService.StartManagedSingleGameScanAsync(id.Value).Wait(progress.CancelToken);
+
+                    // Set to 100% complete
+                    progress.CurrentProgressValue = 100;
+                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+                }
+                catch (OperationCanceledException)
+                {
+                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "Single game achievement scan failed in fullscreen mode.");
+                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
+                }
+                finally
+                {
+                    _achievementService.RebuildProgress -= progressHandler;
+                    try { _requestPerGameThemeUpdate(id); } catch { }
+                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+                }
+            }, progressOptions);
         }
 
         private void ShowAchievementsWindow(string styleKey, Guid? preselectGameId)
