@@ -328,8 +328,24 @@ namespace PlayniteAchievements.Models
         private ICommand _fullRefreshCommand;
         [DontSerialize]
         private ICommand _installedRefreshCommand;
-        
 
+        [DontSerialize]
+        private List<AchievementDetail> _fullscreenSingleGameUnlockAsc;
+        [DontSerialize]
+        private List<AchievementDetail> _fullscreenSingleGameUnlockDesc;
+        [DontSerialize]
+        private List<AchievementDetail> _fullscreenSingleGameRarityAsc;
+        [DontSerialize]
+        private List<AchievementDetail> _fullscreenSingleGameRarityDesc;
+        [DontSerialize]
+        private List<AchievementDetail> _fullscreenAllAchievementsUnlockAsc;
+        [DontSerialize]
+        private List<AchievementDetail> _fullscreenAllAchievementsUnlockDesc;
+        [DontSerialize]
+        private List<AchievementDetail> _fullscreenAllAchievementsRarityAsc;
+        [DontSerialize]
+        private List<AchievementDetail> _fullscreenAllAchievementsRarityDesc;
+        
 
         [DontSerialize]
         public bool FullscreenHasData
@@ -448,6 +464,62 @@ namespace PlayniteAchievements.Models
         {
             get => _installedRefreshCommand;
             set => SetValue(ref _installedRefreshCommand, value);
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> FullscreenSingleGameUnlockAsc
+        {
+            get => _fullscreenSingleGameUnlockAsc ?? EmptyAchievementList;
+            set => SetValue(ref _fullscreenSingleGameUnlockAsc, value);
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> FullscreenSingleGameUnlockDesc
+        {
+            get => _fullscreenSingleGameUnlockDesc ?? EmptyAchievementList;
+            set => SetValue(ref _fullscreenSingleGameUnlockDesc, value);
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> FullscreenSingleGameRarityAsc
+        {
+            get => _fullscreenSingleGameRarityAsc ?? EmptyAchievementList;
+            set => SetValue(ref _fullscreenSingleGameRarityAsc, value);
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> FullscreenSingleGameRarityDesc
+        {
+            get => _fullscreenSingleGameRarityDesc ?? EmptyAchievementList;
+            set => SetValue(ref _fullscreenSingleGameRarityDesc, value);
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> FullscreenAllAchievementsUnlockAsc
+        {
+            get => _fullscreenAllAchievementsUnlockAsc ?? EmptyAchievementList;
+            set => SetValue(ref _fullscreenAllAchievementsUnlockAsc, value);
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> FullscreenAllAchievementsUnlockDesc
+        {
+            get => _fullscreenAllAchievementsUnlockDesc ?? EmptyAchievementList;
+            set => SetValue(ref _fullscreenAllAchievementsUnlockDesc, value);
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> FullscreenAllAchievementsRarityAsc
+        {
+            get => _fullscreenAllAchievementsRarityAsc ?? EmptyAchievementList;
+            set => SetValue(ref _fullscreenAllAchievementsRarityAsc, value);
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> FullscreenAllAchievementsRarityDesc
+        {
+            get => _fullscreenAllAchievementsRarityDesc ?? EmptyAchievementList;
+            set => SetValue(ref _fullscreenAllAchievementsRarityDesc, value);
         }
 
         #endregion

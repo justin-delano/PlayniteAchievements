@@ -70,6 +70,17 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 .ThenBy(a => a?.DisplayName)
                 .ToList();
 
+            // Rarity-sorted lists (ascending = rarest first, descending = common first)
+            var rarityAsc = all
+                .OrderBy(a => a?.GlobalPercentUnlocked ?? 100)
+                .ThenBy(a => a?.DisplayName)
+                .ToList();
+
+            var rarityDesc = all
+                .OrderByDescending(a => a?.GlobalPercentUnlocked ?? 100)
+                .ThenBy(a => a?.DisplayName)
+                .ToList();
+
             // Calculate rarity stats in a single pass.
             // NOTE: We intentionally match previous boundary behavior:
             // - percent == threshold belongs to the lower bucket.
@@ -119,6 +130,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 all,
                 asc,
                 desc,
+                rarityAsc,
+                rarityDesc,
                 common,
                 uncommon,
                 rare,
@@ -179,6 +192,12 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             _settings.NativeTheme.AllAchievements = snapshot.AllAchievements;
             _settings.NativeTheme.AchievementsNewestFirst = snapshot.UnlockDateDesc;
             _settings.NativeTheme.AchievementsOldestFirst = snapshot.UnlockDateAsc;
+
+            // Fullscreen single-game achievement lists
+            _settings.FullscreenSingleGameUnlockAsc = snapshot.UnlockDateAsc;
+            _settings.FullscreenSingleGameUnlockDesc = snapshot.UnlockDateDesc;
+            _settings.FullscreenSingleGameRarityAsc = snapshot.RarityAsc;
+            _settings.FullscreenSingleGameRarityDesc = snapshot.RarityDesc;
         }
 
         /// <summary>
@@ -247,6 +266,12 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             _settings.SuccessStoryTheme.Rare = new AchievementRarityStats();
             _settings.SuccessStoryTheme.UltraRare = new AchievementRarityStats();
             // --END SUCCESSSTORY--
+
+            // Clear fullscreen single-game properties
+            _settings.FullscreenSingleGameUnlockAsc = null;
+            _settings.FullscreenSingleGameUnlockDesc = null;
+            _settings.FullscreenSingleGameRarityAsc = null;
+            _settings.FullscreenSingleGameRarityDesc = null;
         }
     }
 }

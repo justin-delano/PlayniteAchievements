@@ -661,6 +661,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             public List<FullscreenAchievementGameItem> Platinum { get; set; } = new List<FullscreenAchievementGameItem>();
             public List<FullscreenAchievementGameItem> PlatinumAscending { get; set; } = new List<FullscreenAchievementGameItem>();
 
+            public List<AchievementDetail> AllAchievementsUnlockAsc { get; set; } = new List<AchievementDetail>();
+            public List<AchievementDetail> AllAchievementsUnlockDesc { get; set; } = new List<AchievementDetail>();
+            public List<AchievementDetail> AllAchievementsRarityAsc { get; set; } = new List<AchievementDetail>();
+            public List<AchievementDetail> AllAchievementsRarityDesc { get; set; } = new List<AchievementDetail>();
+
             public int PlatCount { get; set; }
             public int GoldCount { get; set; }
             public int SilverCount { get; set; }
@@ -837,6 +842,42 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 snapshot.Rank = RankFromLevel(snapshot.Level);
             }
 
+            // Build all-games achievement lists (flattened from all games)
+            var allAchievements = new List<AchievementDetail>();
+            foreach (var data in allData)
+            {
+                if (data?.Achievements == null) continue;
+                foreach (var achievement in data.Achievements)
+                {
+                    if (achievement != null)
+                    {
+                        allAchievements.Add(achievement);
+                    }
+                }
+            }
+
+            // Sort by unlock date (ascending = oldest first, descending = newest first)
+            snapshot.AllAchievementsUnlockAsc = allAchievements
+                .OrderBy(a => a?.UnlockTimeUtc)
+                .ThenBy(a => a?.DisplayName)
+                .ToList();
+
+            snapshot.AllAchievementsUnlockDesc = allAchievements
+                .OrderByDescending(a => a?.UnlockTimeUtc)
+                .ThenBy(a => a?.DisplayName)
+                .ToList();
+
+            // Sort by rarity (ascending = rarest first, descending = common first)
+            snapshot.AllAchievementsRarityAsc = allAchievements
+                .OrderBy(a => a?.GlobalPercentUnlocked ?? 100)
+                .ThenBy(a => a?.DisplayName)
+                .ToList();
+
+            snapshot.AllAchievementsRarityDesc = allAchievements
+                .OrderByDescending(a => a?.GlobalPercentUnlocked ?? 100)
+                .ThenBy(a => a?.DisplayName)
+                .ToList();
+
             return snapshot;
         }
 
@@ -888,6 +929,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.FullscreenLevel = snapshot.Level;
             _settings.FullscreenLevelProgress = snapshot.LevelProgress;
             _settings.FullscreenRank = !string.IsNullOrWhiteSpace(snapshot.Rank) ? snapshot.Rank : "Bronze1";
+
+            // All-games achievement lists
+            _settings.FullscreenAllAchievementsUnlockAsc = snapshot.AllAchievementsUnlockAsc;
+            _settings.FullscreenAllAchievementsUnlockDesc = snapshot.AllAchievementsUnlockDesc;
+            _settings.FullscreenAllAchievementsRarityAsc = snapshot.AllAchievementsRarityAsc;
+            _settings.FullscreenAllAchievementsRarityDesc = snapshot.AllAchievementsRarityDesc;
         }
 
         private static void GetTrophyCounts(GameAchievementData data, out int gold, out int silver, out int bronze)

@@ -23,6 +23,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public List<AchievementDetail> AllAchievements { get; }
         public List<AchievementDetail> UnlockDateAsc { get; }
         public List<AchievementDetail> UnlockDateDesc { get; }
+        public List<AchievementDetail> RarityAsc { get; }
+        public List<AchievementDetail> RarityDesc { get; }
 
         public AchievementRarityStats Common { get; }
         public AchievementRarityStats Uncommon { get; }
@@ -40,6 +42,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             List<AchievementDetail> allAchievements,
             List<AchievementDetail> unlockDateAsc,
             List<AchievementDetail> unlockDateDesc,
+            List<AchievementDetail> rarityAsc,
+            List<AchievementDetail> rarityDesc,
             AchievementRarityStats common,
             AchievementRarityStats uncommon,
             AchievementRarityStats rare,
@@ -55,6 +59,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             AllAchievements = allAchievements ?? new List<AchievementDetail>();
             UnlockDateAsc = unlockDateAsc ?? new List<AchievementDetail>();
             UnlockDateDesc = unlockDateDesc ?? new List<AchievementDetail>();
+            RarityAsc = rarityAsc ?? new List<AchievementDetail>();
+            RarityDesc = rarityDesc ?? new List<AchievementDetail>();
             Common = common ?? new AchievementRarityStats();
             Uncommon = uncommon ?? new AchievementRarityStats();
             Rare = rare ?? new AchievementRarityStats();
