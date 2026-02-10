@@ -41,6 +41,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private List<AchievementDetail> _achievementsNewestFirst = new List<AchievementDetail>();
         [DontSerialize]
         private List<AchievementDetail> _achievementsOldestFirst = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _achievementsRarityAsc = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDetail> _achievementsRarityDesc = new List<AchievementDetail>();
 
         #endregion
 
@@ -174,6 +178,26 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _achievementsOldestFirst;
             set => SetValue(ref _achievementsOldestFirst, value);
+        }
+
+        /// <summary>
+        /// Achievements sorted by rarity ascending (rarest first).
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> AchievementsRarityAsc
+        {
+            get => _achievementsRarityAsc;
+            set => SetValue(ref _achievementsRarityAsc, value);
+        }
+
+        /// <summary>
+        /// Achievements sorted by rarity descending (common first).
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDetail> AchievementsRarityDesc
+        {
+            get => _achievementsRarityDesc;
+            set => SetValue(ref _achievementsRarityDesc, value);
         }
 
         #endregion

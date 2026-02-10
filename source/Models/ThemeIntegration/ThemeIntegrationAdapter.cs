@@ -192,12 +192,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             _settings.NativeTheme.AllAchievements = snapshot.AllAchievements;
             _settings.NativeTheme.AchievementsNewestFirst = snapshot.UnlockDateDesc;
             _settings.NativeTheme.AchievementsOldestFirst = snapshot.UnlockDateAsc;
-
-            // Fullscreen single-game achievement lists
-            _settings.FullscreenSingleGameUnlockAsc = snapshot.UnlockDateAsc;
-            _settings.FullscreenSingleGameUnlockDesc = snapshot.UnlockDateDesc;
-            _settings.FullscreenSingleGameRarityAsc = snapshot.RarityAsc;
-            _settings.FullscreenSingleGameRarityDesc = snapshot.RarityDesc;
+            _settings.NativeTheme.AchievementsRarityAsc = snapshot.RarityAsc;
+            _settings.NativeTheme.AchievementsRarityDesc = snapshot.RarityDesc;
         }
 
         /// <summary>
@@ -245,6 +241,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             _settings.NativeTheme.AllAchievements = new List<AchievementDetail>();
             _settings.NativeTheme.AchievementsNewestFirst = new List<AchievementDetail>();
             _settings.NativeTheme.AchievementsOldestFirst = new List<AchievementDetail>();
+            _settings.NativeTheme.AchievementsRarityAsc = new List<AchievementDetail>();
+            _settings.NativeTheme.AchievementsRarityDesc = new List<AchievementDetail>();
 
             // Clear native rarity stats
             _settings.NativeTheme.CommonStats = new AchievementRarityStats();
@@ -266,12 +264,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             _settings.SuccessStoryTheme.Rare = new AchievementRarityStats();
             _settings.SuccessStoryTheme.UltraRare = new AchievementRarityStats();
             // --END SUCCESSSTORY--
-
-            // Clear fullscreen single-game properties
-            _settings.FullscreenSingleGameUnlockAsc = null;
-            _settings.FullscreenSingleGameUnlockDesc = null;
-            _settings.FullscreenSingleGameRarityAsc = null;
-            _settings.FullscreenSingleGameRarityDesc = null;
         }
     }
 }
