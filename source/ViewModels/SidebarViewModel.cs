@@ -1003,18 +1003,26 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(RarePercentage));
             OnPropertyChanged(nameof(UltraRarePercentage));
 
-            GlobalTimeline.SetCounts(snapshot.GlobalUnlockCountsByDate);
+            IDictionary<DateTime, int> selectedTimelineCounts = null;
+            IDictionary<DateTime, int> timelineCountsToShow = snapshot.GlobalUnlockCountsByDate;
 
-            if (SelectedGame?.PlayniteGameId.HasValue == true &&
-                snapshot.UnlockCountsByDateByGame != null &&
-                snapshot.UnlockCountsByDateByGame.TryGetValue(SelectedGame.PlayniteGameId.Value, out var selectedCounts))
+            if (SelectedGame?.PlayniteGameId.HasValue == true)
             {
-                SelectedGameTimeline.SetCounts(selectedCounts);
+                if (snapshot.UnlockCountsByDateByGame != null &&
+                    snapshot.UnlockCountsByDateByGame.TryGetValue(SelectedGame.PlayniteGameId.Value, out var selectedCounts))
+                {
+                    selectedTimelineCounts = selectedCounts;
+                }
+                else
+                {
+                    selectedTimelineCounts = new Dictionary<DateTime, int>();
+                }
+
+                timelineCountsToShow = selectedTimelineCounts;
             }
-            else
-            {
-                SelectedGameTimeline.SetCounts(null);
-            }
+
+            GlobalTimeline.SetCounts(timelineCountsToShow);
+            SelectedGameTimeline.SetCounts(selectedTimelineCounts);
 
             RefreshFilter();
             ApplyLeftFilters();
@@ -1492,14 +1500,12 @@ namespace PlayniteAchievements.ViewModels
                     revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
                 }
 
-                (List<AchievementDisplayItem> items, Dictionary<DateTime, int> counts) result = await Task.Run(() =>
+                List<AchievementDisplayItem> items = await Task.Run(() =>
                 {
-                    var counts = new Dictionary<DateTime, int>();
-
                     var gameData = _achievementManager.GetGameAchievementData(gameId);
                     if (gameData == null || gameData.Achievements == null)
                     {
-                        return (new List<AchievementDisplayItem>(), counts);
+                        return new List<AchievementDisplayItem>();
                     }
 
                     var achievements = new List<AchievementDisplayItem>(gameData.Achievements.Count);
@@ -1525,44 +1531,19 @@ namespace PlayniteAchievements.ViewModels
                         item.IsRevealed = revealedCopy.Contains(MakeRevealKey(gameId, ach.ApiName, gameData.GameName));
                         achievements.Add(item);
 
-                        if (ach.Unlocked && ach.UnlockTimeUtc.HasValue)
-                        {
-                            var date = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value).Date;
-                            if (counts.TryGetValue(date, out var existing))
-                            {
-                                counts[date] = existing + 1;
-                            }
-                            else
-                            {
-                                counts[date] = 1;
-                            }
-                        }
                     }
 
-                    var sorted = achievements
+                    return achievements
                         .OrderByDescending(a => a.Unlocked)
                         .ThenByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue)
                         .ThenBy(a => a.GlobalPercentUnlocked ?? 100)
                         .ToList();
-
-                    return (sorted, counts);
                 }).ConfigureAwait(true);
 
-                _allSelectedGameAchievements = result.items;
+                _allSelectedGameAchievements = items;
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>(_allSelectedGameAchievements);
                 _selectedGameAchievementsPager.SetSourceItems(_filteredSelectedGameAchievements);
                 _selectedGameAchievementsPager.GoToFirstPage();
-
-                // Filter global timeline to show only this game's achievements
-                if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
-                    _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var snapshotCounts))
-                {
-                    GlobalTimeline.SetCounts(snapshotCounts);
-                }
-                else
-                {
-                    GlobalTimeline.SetCounts(result.counts);
-                }
             }
             catch (Exception ex)
             {

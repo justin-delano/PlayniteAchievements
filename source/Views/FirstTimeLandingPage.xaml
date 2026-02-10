@@ -236,10 +236,11 @@
                                        Margin="0,0,0,12"/>
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Center">
-                                <ComboBox ItemsSource="{Binding ScanModes}"
+                                <ComboBox x:Name="ScanModeComboBox"
+                                          ItemsSource="{Binding ScanModes}"
                                           DisplayMemberPath="ShortDisplayName"
                                           SelectedValuePath="Key"
-                                          SelectedValue="{Binding SelectedScanMode}"
+                                          SelectedValue="{Binding SelectedScanMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           Width="110"
                                           Margin="0,0,8,0"
                                           VerticalContentAlignment="Center"/>

@@ -218,7 +218,7 @@ namespace PlayniteAchievements.ViewModels
                 TimelineRange.All =>
                     counts != null && counts.Count > 0
                         ? counts.Keys.Min().Date
-                        : DateTime.MinValue,
+                        : now.Date,
                 _ => now.AddDays(-14)
             };
         }

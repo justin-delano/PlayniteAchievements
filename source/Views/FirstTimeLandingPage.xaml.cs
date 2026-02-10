@@ -93,7 +93,9 @@ namespace PlayniteAchievements.Views
             get => _selectedScanMode;
             set
             {
-                _selectedScanMode = value;
+                _selectedScanMode = string.IsNullOrWhiteSpace(value)
+                    ? ScanModeType.Installed.GetKey()
+                    : value;
                 OnPropertyChanged(nameof(SelectedScanMode));
             }
         }
@@ -148,6 +150,10 @@ namespace PlayniteAchievements.Views
 
             var scanModes = _achievementManager.GetScanModes();
             ScanModes = new ObservableCollection<ScanMode>(scanModes.Where(m => m.Key != "LibrarySelected"));
+            if (!ScanModes.Any(m => string.Equals(m.Key, _selectedScanMode, StringComparison.Ordinal)))
+            {
+                _selectedScanMode = ScanModes.FirstOrDefault()?.Key ?? ScanModeType.Installed.GetKey();
+            }
 
             InitializeComponent();
 
@@ -286,11 +292,21 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                _logger.Info($"User clicked Begin Scan from first-time landing page with mode: {SelectedScanMode}");
+                var modeToRun = SelectedScanMode;
+                if (ScanModeComboBox?.SelectedValue is string selectedValue && !string.IsNullOrWhiteSpace(selectedValue))
+                {
+                    modeToRun = selectedValue;
+                }
+                else if (ScanModeComboBox?.SelectedItem is ScanMode selectedMode && !string.IsNullOrWhiteSpace(selectedMode.Key))
+                {
+                    modeToRun = selectedMode.Key;
+                }
+
+                _logger.Info($"User clicked Begin Scan from first-time landing page with mode: {modeToRun}");
 
                 MarkSetupComplete();
 
-                _ = _achievementManager.ExecuteScanAsync(SelectedScanMode);
+                _ = _achievementManager.ExecuteScanAsync(modeToRun);
             }
             catch (Exception ex)
             {
