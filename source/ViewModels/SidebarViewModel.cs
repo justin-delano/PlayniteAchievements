@@ -49,11 +49,6 @@ namespace PlayniteAchievements.ViewModels
         private static readonly TimeSpan ProgressMinInterval = TimeSpan.FromMilliseconds(50);
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
 
-        private readonly PaginationManager<AchievementDisplayItem> _achievementsPager;
-        private readonly PaginationManager<GameOverviewItem> _overviewPager;
-        private readonly PaginationManager<RecentAchievementItem> _recentPager;
-        private readonly PaginationManager<AchievementDisplayItem> _selectedGameAchievementsPager;
-
         private List<RecentAchievementItem> _filteredRecentAchievements = new List<RecentAchievementItem>();
         private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
         private List<string> _availableProviders = new List<string>();
@@ -84,7 +79,6 @@ namespace PlayniteAchievements.ViewModels
 
             // Initialize collections
             AllAchievements = new BulkObservableCollection<AchievementDisplayItem>();
-            PagedAchievements = new BulkObservableCollection<AchievementDisplayItem>();
             GamesOverview = new BulkObservableCollection<GameOverviewItem>();
             RecentAchievements = new BulkObservableCollection<RecentAchievementItem>();
             SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
@@ -92,70 +86,6 @@ namespace PlayniteAchievements.ViewModels
             // Initialize scan mode options from service (exclude LibrarySelected - context menu only)
             var scanModes = _achievementManager.GetScanModes();
             ScanModes = new ObservableCollection<ScanMode>(scanModes.Where(m => m.Type != ScanModeType.LibrarySelected));
-
-            _achievementsPager = new PaginationManager<AchievementDisplayItem>(
-                DefaultPageSize,
-                PagedAchievements,
-                OnPropertyChanged,
-                RaisePaginationChanged,
-                useDispatcherInvoke: false,
-                propertyNames: new PaginationPropertyNames
-                {
-                    CurrentPage = nameof(CurrentPage),
-                    TotalPages = nameof(TotalPages),
-                    CanGoNext = nameof(CanGoNext),
-                    CanGoPrevious = nameof(CanGoPrevious),
-                    HasMultiplePages = nameof(HasMultiplePages),
-                    TotalItems = nameof(FilteredCount)
-                });
-
-            _overviewPager = new PaginationManager<GameOverviewItem>(
-                OverviewPageSize,
-                GamesOverview,
-                OnPropertyChanged,
-                RaiseOverviewPaginationChanged,
-                useDispatcherInvoke: false,
-                propertyNames: new PaginationPropertyNames
-                {
-                    CurrentPage = nameof(OverviewCurrentPage),
-                    TotalPages = nameof(OverviewTotalPages),
-                    CanGoNext = nameof(CanGoOverviewNext),
-                    CanGoPrevious = nameof(CanGoOverviewPrevious),
-                    HasMultiplePages = nameof(OverviewHasMultiplePages),
-                    TotalItems = nameof(TotalGamesOverview)
-                });
-
-            _recentPager = new PaginationManager<RecentAchievementItem>(
-                RecentPageSize,
-                RecentAchievements,
-                OnPropertyChanged,
-                RaiseRecentPaginationChanged,
-                useDispatcherInvoke: false,
-                propertyNames: new PaginationPropertyNames
-                {
-                    CurrentPage = nameof(RecentCurrentPage),
-                    TotalPages = nameof(RecentTotalPages),
-                    CanGoNext = nameof(CanGoRecentNext),
-                    CanGoPrevious = nameof(CanGoRecentPrevious),
-                    HasMultiplePages = nameof(RecentHasMultiplePages),
-                    TotalItems = nameof(RecentTotalItems)
-                });
-
-            _selectedGameAchievementsPager = new PaginationManager<AchievementDisplayItem>(
-                SelectedGameAchievementsPageSize,
-                SelectedGameAchievements,
-                OnPropertyChanged,
-                RaiseSelectedGameAchievementsPaginationChanged,
-                useDispatcherInvoke: false,
-                propertyNames: new PaginationPropertyNames
-                {
-                    CurrentPage = nameof(SelectedGameAchievementsCurrentPage),
-                    TotalPages = nameof(SelectedGameAchievementsTotalPages),
-                    CanGoNext = nameof(CanGoSelectedGameAchievementsNext),
-                    CanGoPrevious = nameof(CanGoSelectedGameAchievementsPrevious),
-                    HasMultiplePages = nameof(SelectedGameAchievementsHasMultiplePages),
-                    TotalItems = nameof(SelectedGameAchievementsTotalItems)
-                });
 
             GlobalTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
             SelectedGameTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
@@ -173,22 +103,6 @@ namespace PlayniteAchievements.ViewModels
             ScanAllCommand = new AsyncCommand(_ => ScanAllAsync(), _ => !IsScanning);
             QuickScanCommand = new AsyncCommand(_ => QuickScanAsync(), _ => !IsScanning);
             CancelScanCommand = new RelayCommand(_ => CancelScan(), _ => IsScanning);
-            NextPageCommand = new RelayCommand(_ => GoToNextPage(), _ => CanGoNext);
-            PreviousPageCommand = new RelayCommand(_ => GoToPreviousPage(), _ => CanGoPrevious);
-            FirstPageCommand = new RelayCommand(_ => GoToFirstPage(), _ => CanGoPrevious);
-            LastPageCommand = new RelayCommand(_ => GoToLastPage(), _ => CanGoNext);
-            OverviewNextPageCommand = new RelayCommand(_ => GoToOverviewNextPage(), _ => CanGoOverviewNext);
-            OverviewPreviousPageCommand = new RelayCommand(_ => GoToOverviewPreviousPage(), _ => CanGoOverviewPrevious);
-            OverviewFirstPageCommand = new RelayCommand(_ => GoToOverviewFirstPage(), _ => CanGoOverviewPrevious);
-            OverviewLastPageCommand = new RelayCommand(_ => GoToOverviewLastPage(), _ => CanGoOverviewNext);
-            RecentNextPageCommand = new RelayCommand(_ => GoToRecentNextPage(), _ => CanGoRecentNext);
-            RecentPreviousPageCommand = new RelayCommand(_ => GoToRecentPreviousPage(), _ => CanGoRecentPrevious);
-            RecentFirstPageCommand = new RelayCommand(_ => GoToRecentFirstPage(), _ => CanGoRecentPrevious);
-            RecentLastPageCommand = new RelayCommand(_ => GoToRecentLastPage(), _ => CanGoRecentNext);
-            SelectedGameAchievementsNextPageCommand = new RelayCommand(_ => GoToSelectedGameAchievementsNextPage(), _ => CanGoSelectedGameAchievementsNext);
-            SelectedGameAchievementsPreviousPageCommand = new RelayCommand(_ => GoToSelectedGameAchievementsPreviousPage(), _ => CanGoSelectedGameAchievementsPrevious);
-            SelectedGameAchievementsFirstPageCommand = new RelayCommand(_ => GoToSelectedGameAchievementsFirstPage(), _ => CanGoSelectedGameAchievementsPrevious);
-            SelectedGameAchievementsLastPageCommand = new RelayCommand(_ => GoToSelectedGameAchievementsLastPage(), _ => CanGoSelectedGameAchievementsNext);
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
             CloseViewCommand = new RelayCommand(_ => PlayniteUiProvider.RestoreMainView());
             ClearGameSelectionCommand = new RelayCommand(_ => ClearGameSelection());
@@ -212,7 +126,6 @@ namespace PlayniteAchievements.ViewModels
         #region Collections
 
         public ObservableCollection<AchievementDisplayItem> AllAchievements { get; }
-        public ObservableCollection<AchievementDisplayItem> PagedAchievements { get; }
 
         // Overview tab collections
         public ObservableCollection<GameOverviewItem> GamesOverview { get; }
@@ -236,7 +149,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _leftSearchText, value ?? string.Empty))
                 {
-                    OverviewCurrentPage = 1;
                     ApplyLeftFilters();
                 }
             }
@@ -270,7 +182,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _selectedProviderFilter, value))
                 {
-                    OverviewCurrentPage = 1;
                     ApplyLeftFilters();
                 }
             }
@@ -299,7 +210,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _hideGamesWithNoUnlocked, value))
                 {
-                    OverviewCurrentPage = 1;
                     ApplyLeftFilters();
                 }
             }
@@ -313,7 +223,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _hideUnplayedGames, value))
                 {
-                    OverviewCurrentPage = 1;
                     ApplyLeftFilters();
                 }
             }
@@ -451,107 +360,6 @@ namespace PlayniteAchievements.ViewModels
 
         #endregion
 
-        #region Pagination Properties
-
-        private const int DefaultPageSize = 100;
-
-        public int CurrentPage
-        {
-            get => _achievementsPager.CurrentPage;
-            set => _achievementsPager.CurrentPage = value;
-        }
-
-        public int TotalPages => _achievementsPager.TotalPages;
-
-        public int FilteredCount => _achievementsPager.TotalItems;
-
-        public bool CanGoNext => _achievementsPager.CanGoNext;
-        public bool CanGoPrevious => _achievementsPager.CanGoPrevious;
-        public bool HasMultiplePages => _achievementsPager.HasMultiplePages;
-
-        public string PageInfo => string.Format(
-            Playnite.SDK.ResourceProvider.GetString("LOCPlayAch_Achievements_PageInfo"),
-            CurrentPage,
-            TotalPages);
-
-        #endregion
-
-        #region Overview Pagination Properties
-
-        private const int OverviewPageSize = 100;
-
-        public int OverviewCurrentPage
-        {
-            get => _overviewPager.CurrentPage;
-            set => _overviewPager.CurrentPage = value;
-        }
-
-        public int OverviewTotalPages => _overviewPager.TotalPages;
-
-        public bool CanGoOverviewNext => _overviewPager.CanGoNext;
-        public bool CanGoOverviewPrevious => _overviewPager.CanGoPrevious;
-
-        public bool OverviewHasMultiplePages => _overviewPager.HasMultiplePages;
-
-        public string OverviewPageInfo => string.Format(
-            Playnite.SDK.ResourceProvider.GetString("LOCPlayAch_Achievements_PageInfo"),
-            OverviewCurrentPage,
-            OverviewTotalPages);
-
-        #endregion
-
-        #region Recent Achievements Pagination Properties
-
-        private const int RecentPageSize = 100;
-
-        public int RecentCurrentPage
-        {
-            get => _recentPager.CurrentPage;
-            set => _recentPager.CurrentPage = value;
-        }
-
-        public int RecentTotalPages => _recentPager.TotalPages;
-
-        public int RecentTotalItems => _recentPager.TotalItems;
-
-        public bool CanGoRecentNext => _recentPager.CanGoNext;
-        public bool CanGoRecentPrevious => _recentPager.CanGoPrevious;
-
-        public bool RecentHasMultiplePages => _recentPager.HasMultiplePages;
-
-        public string RecentPageInfo => string.Format(
-            Playnite.SDK.ResourceProvider.GetString("LOCPlayAch_Achievements_PageInfo"),
-            RecentCurrentPage,
-            RecentTotalPages);
-
-        #endregion
-
-        #region Selected Game Achievements Pagination Properties
-
-        private const int SelectedGameAchievementsPageSize = 100;
-
-        public int SelectedGameAchievementsCurrentPage
-        {
-            get => _selectedGameAchievementsPager.CurrentPage;
-            set => _selectedGameAchievementsPager.CurrentPage = value;
-        }
-
-        public int SelectedGameAchievementsTotalPages => _selectedGameAchievementsPager.TotalPages;
-
-        public int SelectedGameAchievementsTotalItems => _selectedGameAchievementsPager.TotalItems;
-
-        public bool CanGoSelectedGameAchievementsNext => _selectedGameAchievementsPager.CanGoNext;
-        public bool CanGoSelectedGameAchievementsPrevious => _selectedGameAchievementsPager.CanGoPrevious;
-
-        public bool SelectedGameAchievementsHasMultiplePages => _selectedGameAchievementsPager.HasMultiplePages;
-
-        public string SelectedGameAchievementsPageInfo => string.Format(
-            ResourceProvider.GetString("LOCPlayAch_Achievements_PageInfo"),
-            SelectedGameAchievementsCurrentPage,
-            SelectedGameAchievementsTotalPages);
-
-        #endregion
-
         #region Progress Properties
 
         public bool IsScanning => _achievementManager.IsRebuilding;
@@ -584,7 +392,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _searchText, value ?? string.Empty))
                 {
-                    CurrentPage = 1;
                     RefreshFilter();
                 }
             }
@@ -600,7 +407,6 @@ namespace PlayniteAchievements.ViewModels
                 {
                     if (value) _showLockedOnly = false;
                     OnPropertyChanged(nameof(ShowLockedOnly));
-                    CurrentPage = 1;
                     RefreshFilter();
                 }
             }
@@ -616,7 +422,6 @@ namespace PlayniteAchievements.ViewModels
                 {
                     if (value) _showUnlockedOnly = false;
                     OnPropertyChanged(nameof(ShowUnlockedOnly));
-                    CurrentPage = 1;
                     RefreshFilter();
                 }
             }
@@ -630,7 +435,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _sortIndex, value))
                 {
-                    CurrentPage = 1;
                     RefreshFilter();
                 }
             }
@@ -659,22 +463,6 @@ namespace PlayniteAchievements.ViewModels
         public ICommand ScanAllCommand { get; }
         public ICommand QuickScanCommand { get; }
         public ICommand CancelScanCommand { get; }
-        public ICommand NextPageCommand { get; }
-        public ICommand PreviousPageCommand { get; }
-        public ICommand FirstPageCommand { get; }
-        public ICommand LastPageCommand { get; }
-        public ICommand OverviewNextPageCommand { get; }
-        public ICommand OverviewPreviousPageCommand { get; }
-        public ICommand OverviewFirstPageCommand { get; }
-        public ICommand OverviewLastPageCommand { get; }
-        public ICommand RecentNextPageCommand { get; }
-        public ICommand RecentPreviousPageCommand { get; }
-        public ICommand RecentFirstPageCommand { get; }
-        public ICommand RecentLastPageCommand { get; }
-        public ICommand SelectedGameAchievementsNextPageCommand { get; }
-        public ICommand SelectedGameAchievementsPreviousPageCommand { get; }
-        public ICommand SelectedGameAchievementsFirstPageCommand { get; }
-        public ICommand SelectedGameAchievementsLastPageCommand { get; }
         public ICommand RevealAchievementCommand { get; }
         public ICommand CloseViewCommand { get; }
         public ICommand ClearGameSelectionCommand { get; }
@@ -1027,8 +815,14 @@ namespace PlayniteAchievements.ViewModels
             RefreshFilter();
             ApplyLeftFilters();
 
-            _recentPager.SetSourceItems(_filteredRecentAchievements);
-            _recentPager.GoToFirstPage();
+            if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulk)
+            {
+                bulk.ReplaceAll(_filteredRecentAchievements);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
+            }
             UpdateFilteredStatus();
         }
 
@@ -1181,9 +975,14 @@ namespace PlayniteAchievements.ViewModels
             using (PerfTrace.Measure("SidebarViewModel.RefreshFilter", _logger, diagnostics))
             {
                 var filtered = ApplySort(AllAchievements.Where(FilterAchievement)).ToList();
-                _achievementsPager.SetSourceItems(filtered);
-
-                OnPropertyChanged(nameof(PageInfo));
+                if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+                {
+                    bulk.ReplaceAll(filtered);
+                }
+                else
+                {
+                    CollectionHelper.SynchronizeCollection(AllAchievements, filtered);
+                }
                 UpdateFilteredStatus();
             }
         }
@@ -1205,128 +1004,6 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-
-
-        private void GoToNextPage()
-        {
-            if (CanGoNext) CurrentPage++;
-        }
-
-        private void GoToPreviousPage()
-        {
-            if (CanGoPrevious) CurrentPage--;
-        }
-
-        private void GoToFirstPage()
-        {
-            CurrentPage = 1;
-        }
-
-        private void GoToLastPage()
-        {
-            CurrentPage = TotalPages;
-        }
-
-        private void GoToOverviewNextPage()
-        {
-            if (CanGoOverviewNext) OverviewCurrentPage++;
-        }
-
-        private void GoToOverviewPreviousPage()
-        {
-            if (CanGoOverviewPrevious) OverviewCurrentPage--;
-        }
-
-        private void GoToOverviewFirstPage()
-        {
-            OverviewCurrentPage = 1;
-        }
-
-        private void GoToOverviewLastPage()
-        {
-            OverviewCurrentPage = OverviewTotalPages;
-        }
-
-        private void GoToRecentNextPage()
-        {
-            if (CanGoRecentNext) RecentCurrentPage++;
-        }
-
-        private void GoToRecentPreviousPage()
-        {
-            if (CanGoRecentPrevious) RecentCurrentPage--;
-        }
-
-        private void GoToRecentFirstPage()
-        {
-            RecentCurrentPage = 1;
-        }
-
-        private void GoToRecentLastPage()
-        {
-            RecentCurrentPage = RecentTotalPages;
-        }
-
-        private void GoToSelectedGameAchievementsNextPage()
-        {
-            if (CanGoSelectedGameAchievementsNext) SelectedGameAchievementsCurrentPage++;
-        }
-
-        private void GoToSelectedGameAchievementsPreviousPage()
-        {
-            if (CanGoSelectedGameAchievementsPrevious) SelectedGameAchievementsCurrentPage--;
-        }
-
-        private void GoToSelectedGameAchievementsFirstPage()
-        {
-            SelectedGameAchievementsCurrentPage = 1;
-        }
-
-        private void GoToSelectedGameAchievementsLastPage()
-        {
-            SelectedGameAchievementsCurrentPage = SelectedGameAchievementsTotalPages;
-        }
-
-        private void RaisePaginationChanged()
-        {
-            OnPropertyChanged(nameof(PageInfo));
-            OnPropertyChanged(nameof(HasMultiplePages));
-            (NextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (PreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (FirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (LastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-        }
-
-        private void RaiseOverviewPaginationChanged()
-        {
-            OnPropertyChanged(nameof(OverviewPageInfo));
-            OnPropertyChanged(nameof(OverviewHasMultiplePages));
-            (OverviewNextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (OverviewPreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (OverviewFirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (OverviewLastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-        }
-
-        private void RaiseRecentPaginationChanged()
-        {
-            OnPropertyChanged(nameof(RecentPageInfo));
-            OnPropertyChanged(nameof(RecentHasMultiplePages));
-            (RecentNextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (RecentPreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (RecentFirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (RecentLastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-        }
-
-        private void RaiseSelectedGameAchievementsPaginationChanged()
-        {
-            OnPropertyChanged(nameof(SelectedGameAchievementsPageInfo));
-            OnPropertyChanged(nameof(SelectedGameAchievementsHasMultiplePages));
-            (SelectedGameAchievementsNextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (SelectedGameAchievementsPreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (SelectedGameAchievementsFirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (SelectedGameAchievementsLastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-        }
-
         private void UpdateStats()
         {
             _totalCount = AllAchievements.Count;
@@ -1342,9 +1019,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 StatusText = ResourceProvider.GetString("LOCPlayAch_Status_NoAchievementsCached");
             }
-            else if (FilteredCount < _totalCount)
+            else if (AllAchievements.Count < _totalCount)
             {
-                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_FilteredCounts"), FilteredCount, _totalCount, _unlockedCount, _gamesCount);
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Status_FilteredCounts"), AllAchievements.Count, _totalCount, _unlockedCount, _gamesCount);
             }
             else
             {
@@ -1381,10 +1058,6 @@ namespace PlayniteAchievements.ViewModels
             (ScanAllCommand as AsyncCommand)?.RaiseCanExecuteChanged();
             (QuickScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
             (CancelScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (NextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (PreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (FirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (LastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         #endregion
@@ -1426,7 +1099,14 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _filteredGamesOverview = filtered.ToList();
-            _overviewPager.SetSourceItems(_filteredGamesOverview);
+            if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulk)
+            {
+                bulk.ReplaceAll(_filteredGamesOverview);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(GamesOverview, _filteredGamesOverview);
+            }
             RecalculateOverviewStats();
 
             // Restore selection by finding the game with matching PlayniteGameId
@@ -1454,7 +1134,14 @@ namespace PlayniteAchievements.ViewModels
                         (a.Description?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0));
                 }
                 _filteredSelectedGameAchievements = filtered.ToList();
-                _selectedGameAchievementsPager.SetSourceItems(_filteredSelectedGameAchievements);
+                if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+                {
+                    bulk.ReplaceAll(_filteredSelectedGameAchievements);
+                }
+                else
+                {
+                    CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+                }
             }
             else
             {
@@ -1467,7 +1154,14 @@ namespace PlayniteAchievements.ViewModels
                         (r.Name?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0));
                 }
                 _filteredRecentAchievements = filtered.ToList();
-                _recentPager.SetSourceItems(_filteredRecentAchievements);
+                if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulk)
+                {
+                    bulk.ReplaceAll(_filteredRecentAchievements);
+                }
+                else
+                {
+                    CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
+                }
             }
         }
 
@@ -1480,8 +1174,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 _allSelectedGameAchievements = new List<AchievementDisplayItem>();
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
-                _selectedGameAchievementsPager.SetSourceItems(_allSelectedGameAchievements);
-                _selectedGameAchievementsPager.GoToFirstPage();
+                if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+                {
+                    bulk.ReplaceAll(_filteredSelectedGameAchievements);
+                }
+                else
+                {
+                    CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+                }
                 // Restore global timeline to show all games
                 GlobalTimeline.SetCounts(_latestSnapshot?.GlobalUnlockCountsByDate);
                 return;
@@ -1542,8 +1242,14 @@ namespace PlayniteAchievements.ViewModels
 
                 _allSelectedGameAchievements = items;
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>(_allSelectedGameAchievements);
-                _selectedGameAchievementsPager.SetSourceItems(_filteredSelectedGameAchievements);
-                _selectedGameAchievementsPager.GoToFirstPage();
+                if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+                {
+                    bulk.ReplaceAll(_filteredSelectedGameAchievements);
+                }
+                else
+                {
+                    CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+                }
             }
             catch (Exception ex)
             {
@@ -1589,7 +1295,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 _filteredGamesOverview.Reverse();
                 _overviewSortDirection = direction;
-                _overviewPager.SetSourceItems(_filteredGamesOverview);
+                if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulkOverview)
+                {
+                    bulkOverview.ReplaceAll(_filteredGamesOverview);
+                }
+                else
+                {
+                    CollectionHelper.SynchronizeCollection(GamesOverview, _filteredGamesOverview);
+                }
                 return;
             }
 
@@ -1618,7 +1331,14 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            _overviewPager.SetSourceItems(_filteredGamesOverview);
+            if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulkOverview2)
+            {
+                bulkOverview2.ReplaceAll(_filteredGamesOverview);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(GamesOverview, _filteredGamesOverview);
+            }
         }
 
         private void SortRecentAchievements(string sortMemberPath, ListSortDirection direction)
@@ -1629,7 +1349,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 _filteredRecentAchievements.Reverse();
                 _recentSortDirection = direction;
-                _recentPager.SetSourceItems(_filteredRecentAchievements);
+                if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulkRecent)
+                {
+                    bulkRecent.ReplaceAll(_filteredRecentAchievements);
+                }
+                else
+                {
+                    CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
+                }
                 return;
             }
 
@@ -1657,7 +1384,14 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            _recentPager.SetSourceItems(_filteredRecentAchievements);
+            if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulkRecent2)
+            {
+                bulkRecent2.ReplaceAll(_filteredRecentAchievements);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
+            }
         }
 
         private void SortSelectedGameAchievements(string sortMemberPath, ListSortDirection direction)
@@ -1668,7 +1402,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 _filteredSelectedGameAchievements.Reverse();
                 _selectedGameSortDirection = direction;
-                _selectedGameAchievementsPager.SetSourceItems(_filteredSelectedGameAchievements);
+                if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulkSelected)
+                {
+                    bulkSelected.ReplaceAll(_filteredSelectedGameAchievements);
+                }
+                else
+                {
+                    CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+                }
                 return;
             }
 
@@ -1695,7 +1436,14 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            _selectedGameAchievementsPager.SetSourceItems(_filteredSelectedGameAchievements);
+            if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulkSelected2)
+            {
+                bulkSelected2.ReplaceAll(_filteredSelectedGameAchievements);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+            }
         }
 
         public void Dispose()

@@ -1103,44 +1103,6 @@
 
                             </DataGrid.Columns>
                         </DataGrid>
-
-                        <StackPanel Grid.Row="1"
-                                    Orientation="Horizontal"
-                                    HorizontalAlignment="Center"
-                                    Margin="0,6"
-                                    Visibility="{Binding OverviewHasMultiplePages, Converter={StaticResource BoolToVis}}">
-                            <Button Content="&lt;&lt;"
-                                    Command="{Binding OverviewFirstPageCommand}"
-                                    Padding="8,4"
-                                    MinWidth="40"
-                                    Margin="0,0,8,0"
-                                    ToolTip="{DynamicResource LOCPlayAch_Pagination_First}"/>
-
-                            <Button Content="&lt;"
-                                    Command="{Binding OverviewPreviousPageCommand}"
-                                    Padding="8,4"
-                                    MinWidth="32"
-                                    Margin="0,0,8,0"
-                                    ToolTip="{DynamicResource LOCPlayAch_Pagination_Previous}"/>
-
-                            <TextBlock Text="{Binding OverviewPageInfo}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       VerticalAlignment="Center"/>
-
-                            <Button Content="&gt;"
-                                    Command="{Binding OverviewNextPageCommand}"
-                                    Padding="8,4"
-                                    MinWidth="32"
-                                    Margin="8,0,8,0"
-                                    ToolTip="{DynamicResource LOCPlayAch_Pagination_Next}"/>
-
-                            <Button Content="&gt;&gt;"
-                                    Command="{Binding OverviewLastPageCommand}"
-                                    Padding="8,4"
-                                    MinWidth="40"
-                                    ToolTip="{DynamicResource LOCPlayAch_Pagination_Last}"/>
-                        </StackPanel>
                         </Grid>
                     </Border>
                     
@@ -1540,44 +1502,6 @@
                                     </DataGridTemplateColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
-
-                            <StackPanel Grid.Row="1"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Center"
-                                        Margin="0,6"
-                                        Visibility="{Binding RecentHasMultiplePages, Converter={StaticResource BoolToVis}}">
-                                <Button Content="&lt;&lt;"
-                                        Command="{Binding RecentFirstPageCommand}"
-                                        Padding="8,4"
-                                        MinWidth="40"
-                                        Margin="0,0,8,0"
-                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_First}"/>
-
-                                <Button Content="&lt;"
-                                        Command="{Binding RecentPreviousPageCommand}"
-                                        Padding="8,4"
-                                        MinWidth="32"
-                                        Margin="0,0,8,0"
-                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Previous}"/>
-
-                                <TextBlock Text="{Binding RecentPageInfo}"
-                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                           Foreground="{DynamicResource TextBrush}"
-                                           VerticalAlignment="Center"/>
-
-                                <Button Content="&gt;"
-                                        Command="{Binding RecentNextPageCommand}"
-                                        Padding="8,4"
-                                        MinWidth="32"
-                                        Margin="8,0,8,0"
-                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Next}"/>
-
-                                <Button Content="&gt;&gt;"
-                                        Command="{Binding RecentLastPageCommand}"
-                                        Padding="8,4"
-                                        MinWidth="40"
-                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Last}"/>
-                            </StackPanel>
                         </Grid>
 
                         <!-- Game Detail Panel: When a game is selected -->
@@ -1800,45 +1724,6 @@
                                     </DataGridTemplateColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
-
-                            <!-- Game Timeline Chart with Range Buttons -->
-                            <StackPanel Grid.Row="1"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Center"
-                                        Margin="0,6"
-                                        Visibility="{Binding SelectedGameAchievementsHasMultiplePages, Converter={StaticResource BoolToVis}}">
-                                <Button Content="&lt;&lt;"
-                                        Command="{Binding SelectedGameAchievementsFirstPageCommand}"
-                                        Padding="8,4"
-                                        MinWidth="40"
-                                        Margin="0,0,8,0"
-                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_First}"/>
-
-                                <Button Content="&lt;"
-                                        Command="{Binding SelectedGameAchievementsPreviousPageCommand}"
-                                        Padding="8,4"
-                                        MinWidth="32"
-                                        Margin="0,0,8,0"
-                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Previous}"/>
-
-                                <TextBlock Text="{Binding SelectedGameAchievementsPageInfo}"
-                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                           Foreground="{DynamicResource TextBrush}"
-                                           VerticalAlignment="Center"/>
-
-                                <Button Content="&gt;"
-                                        Command="{Binding SelectedGameAchievementsNextPageCommand}"
-                                        Padding="8,4"
-                                        MinWidth="32"
-                                        Margin="8,0,8,0"
-                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Next}"/>
-
-                                <Button Content="&gt;&gt;"
-                                        Command="{Binding SelectedGameAchievementsLastPageCommand}"
-                                        Padding="8,4"
-                                        MinWidth="40"
-                                        ToolTip="{DynamicResource LOCPlayAch_Pagination_Last}"/>
-                            </StackPanel>
                         </Grid>
                         </Grid>
                     </Grid>
