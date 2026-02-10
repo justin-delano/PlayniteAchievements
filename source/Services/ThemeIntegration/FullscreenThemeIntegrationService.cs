@@ -354,90 +354,19 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             EnsureFullscreenInitialized();
-
-            var progressOptions = new GlobalProgressOptions(ResourceProvider.GetString("LOCPlayAch_Status_Starting"), true)
-            {
-                Cancelable = true,
-                IsIndeterminate = false
-            };
-
-            _api.Dialogs.ActivateGlobalProgress((progress) =>
-            {
-                progress.ProgressMaxValue = 100;
-                progress.CurrentProgressValue = 0;
-
-                // Subscribe to progress updates during this scan
-                EventHandler<ProgressReport> progressHandler = null;
-                progressHandler = (sender, report) =>
-                {
-                    if (report == null) return;
-
-                    try
-                    {
-                        // Update progress text
-                        if (!string.IsNullOrWhiteSpace(report.Message))
-                        {
-                            progress.Text = report.Message;
-                        }
-
-                        // Update progress value
-                        var percent = report.PercentComplete;
-                        if (percent <= 0 || double.IsNaN(percent))
-                        {
-                            if (report.TotalSteps > 0)
-                            {
-                                percent = (report.CurrentStep * 100.0) / report.TotalSteps;
-                            }
-                            else
-                            {
-                                percent = 0;
-                            }
-                        }
-                        progress.CurrentProgressValue = Math.Max(0, Math.Min(100, percent));
-
-                        // Check for cancellation
-                        if (report.IsCanceled || progress.CancelToken.IsCancellationRequested)
-                        {
-                            return;
-                        }
-                    }
-                    catch { }
-                };
-
-                _achievementService.RebuildProgress += progressHandler;
-
-                try
-                {
-                    // Wait for the scan to complete
-                    _achievementService.StartManagedSingleGameScanAsync(id.Value).Wait(progress.CancelToken);
-
-                    // Set to 100% complete
-                    progress.CurrentProgressValue = 100;
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
-                }
-                catch (OperationCanceledException)
-                {
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Error(ex, "Single game achievement scan failed in fullscreen mode.");
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
-                }
-                finally
-                {
-                    _achievementService.RebuildProgress -= progressHandler;
-                    try { _requestPerGameThemeUpdate(id); } catch { }
-                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
-                }
-            }, progressOptions);
+            RunAchievementScan(
+                () => _achievementService.ExecuteScanAsync(ScanModeType.Single, id.Value),
+                id.Value,
+                "Single game achievement scan failed in fullscreen mode."
+            );
         }
 
         private void RefreshQuick()
         {
             EnsureFullscreenInitialized();
-            RunMultiGameScan(
+            RunAchievementScan(
                 () => _achievementService.ExecuteScanAsync(ScanModeType.Quick),
+                null,
                 "Quick refresh achievement scan failed in fullscreen mode."
             );
         }
@@ -445,8 +374,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void RefreshFavorites()
         {
             EnsureFullscreenInitialized();
-            RunMultiGameScan(
+            RunAchievementScan(
                 () => _achievementService.ExecuteScanAsync(ScanModeType.Favorites),
+                null,
                 "Favorites achievement scan failed in fullscreen mode."
             );
         }
@@ -454,8 +384,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void RefreshFull()
         {
             EnsureFullscreenInitialized();
-            RunMultiGameScan(
+            RunAchievementScan(
                 () => _achievementService.ExecuteScanAsync(ScanModeType.Full),
+                null,
                 "Full achievement scan failed in fullscreen mode."
             );
         }
@@ -463,13 +394,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void RefreshInstalled()
         {
             EnsureFullscreenInitialized();
-            RunMultiGameScan(
+            RunAchievementScan(
                 () => _achievementService.ExecuteScanAsync(ScanModeType.Installed),
+                null,
                 "Installed games achievement scan failed in fullscreen mode."
             );
         }
 
-        private void RunMultiGameScan(Func<Task> scanTaskFactory, string errorLogMessage)
+        private void RunAchievementScan(Func<Task> scanTaskFactory, Guid? gameIdForThemeUpdate, string errorLogMessage)
         {
             var progressOptions = new GlobalProgressOptions(ResourceProvider.GetString("LOCPlayAch_Status_Starting"), true)
             {
@@ -536,6 +468,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 finally
                 {
                     _achievementService.RebuildProgress -= progressHandler;
+                    if (gameIdForThemeUpdate.HasValue)
+                    {
+                        try { _requestPerGameThemeUpdate(gameIdForThemeUpdate.Value); } catch { }
+                    }
                     try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
                 }
             }, progressOptions);
