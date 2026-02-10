@@ -13,6 +13,7 @@ using System.Windows.Threading;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Services
 {
@@ -43,6 +44,9 @@ namespace PlayniteAchievements.Services
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ICacheManager _cacheService;
         private readonly DiskImageService _diskImageService;
+        private int _savedGamesInCurrentRun;
+        private long _lastCacheInvalidationTickMs = -1;
+        private const long CacheInvalidationThrottleMs = 500;
 
         // Dependencies that need disposal
         private readonly IReadOnlyList<IDataProvider> _providers;
@@ -257,10 +261,19 @@ namespace PlayniteAchievements.Services
             Func<RebuildPayload, string> finalMessage,
             string errorLogMessage)
         {
+            if (!HasAnyAuthenticatedProvider())
+            {
+                _logger.Info("Scan requested but no providers are authenticated.");
+                Report(ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"), 0, 1);
+                return;
+            }
+
             if (!TryBeginRun(out var cts))
                 return;
 
             _progressMapper.Reset();
+            Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
+            Interlocked.Exchange(ref _lastCacheInvalidationTickMs, -1);
 
             // Report immediately so UI updates buttons before any async work
             var startMsg = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
@@ -286,44 +299,109 @@ namespace PlayniteAchievements.Services
             }
             finally
             {
+                if (Interlocked.Exchange(ref _savedGamesInCurrentRun, 0) > 0)
+                {
+                    NotifyCacheInvalidatedThrottled(force: true);
+                }
+
                 EndRun();
             }
         }
 
-        private List<Game> GetGamesToScan(CacheScanOptions options)
+        private sealed class ScanGameTarget
         {
+            public Game Game { get; set; }
+            public IDataProvider Provider { get; set; }
+        }
+
+        private IReadOnlyList<IDataProvider> GetAuthenticatedProviders()
+        {
+            return _providers
+                .Where(p => p != null && p.IsAuthenticated)
+                .ToList();
+        }
+
+        private IDataProvider ResolveProviderForGame(Game game, IReadOnlyList<IDataProvider> providers)
+        {
+            if (game == null || providers == null || providers.Count == 0)
+            {
+                return null;
+            }
+
+            foreach (var provider in providers)
+            {
+                try
+                {
+                    if (provider.IsCapable(game))
+                    {
+                        return provider;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"Provider capability check failed for game '{game?.Name}'.");
+                }
+            }
+
+            return null;
+        }
+
+        private List<ScanGameTarget> GetScanTargets(CacheScanOptions options, IReadOnlyList<IDataProvider> providers)
+        {
+            options ??= new CacheScanOptions();
+
+            IEnumerable<Game> candidates;
             if (options.PlayniteGameIds?.Count > 0)
             {
-                return options.PlayniteGameIds
+                candidates = options.PlayniteGameIds
                     .Select(id => _api.Database.Games.Get(id))
-                    .Where(g => g != null && _providers.Any(p => p.IsCapable(g)))
-                    .ToList();
+                    .Where(g => g != null);
             }
-
-            var allGames = _api.Database.Games.ToList();
-
-            // QuickRefreshMode: Use Playnite's LastActivity to get most recently played games
-            if (options.QuickRefreshMode)
+            else
             {
-                return allGames
-                    .Where(g => g.LastActivity != null)
-                    .OrderByDescending(g => g.LastActivity)
-                    .Where(g => _providers.Any(p => p.IsCapable(g)))
-                    .Take(options.QuickRefreshRecentGamesCount)
-                    .ToList();
+                var allGames = _api.Database.Games.ToList();
+                if (options.QuickRefreshMode)
+                {
+                    candidates = allGames
+                        .Where(g => g != null && g.LastActivity != null)
+                        .OrderByDescending(g => g.LastActivity);
+                }
+                else if (options.IgnoreUnplayedGames)
+                {
+                    candidates = allGames.Where(g => g != null && g.Playtime > 0);
+                }
+                else
+                {
+                    candidates = allGames.Where(g => g != null);
+                }
             }
 
-            // IgnoreUnplayedGames: Use Playnite's Playtime property
-            if (options.IgnoreUnplayedGames)
+            var targets = new List<ScanGameTarget>();
+            var seenGameIds = new HashSet<Guid>();
+            var quickLimit = Math.Max(1, options.QuickRefreshRecentGamesCount);
+
+            foreach (var game in candidates)
             {
-                return allGames
-                    .Where(g => g.Playtime > 0 && _providers.Any(p => p.IsCapable(g)))
-                    .ToList();
+                if (game == null || !seenGameIds.Add(game.Id))
+                {
+                    continue;
+                }
+
+                var provider = ResolveProviderForGame(game, providers);
+                if (provider == null)
+                {
+                    continue;
+                }
+
+                targets.Add(new ScanGameTarget { Game = game, Provider = provider });
+
+                if (options.QuickRefreshMode && targets.Count >= quickLimit)
+                {
+                    break;
+                }
             }
 
-            return allGames
-                .Where(g => _providers.Any(p => p.IsCapable(g)))
-                .ToList();
+            return targets;
         }
 
         private async Task<RebuildPayload> ScanAsync(
@@ -333,21 +411,24 @@ namespace PlayniteAchievements.Services
         {
             options ??= new CacheScanOptions();
 
-            var gamesToScan = GetGamesToScan(options);
-            var gamesWithProviders = gamesToScan
-                .Select(g => new { Game = g, Provider = _providers.FirstOrDefault(p => p.IsCapable(g)) })
-                .ToList();
+            var authenticatedProviders = GetAuthenticatedProviders();
+            if (authenticatedProviders.Count == 0)
+            {
+                _logger?.Warn("[Scan] No authenticated providers available.");
+                return new RebuildPayload();
+            }
 
-            var gamesByProvider = gamesWithProviders
-                .Where(x => x.Provider != null)
+            var scanTargets = GetScanTargets(options, authenticatedProviders);
+            var gamesToScan = scanTargets.Select(x => x.Game).ToList();
+            var gamesByProvider = scanTargets
                 .GroupBy(x => x.Provider)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.Game).ToList());
 
             // log games by providers to check, list all games and all providers
             _logger.Debug($"[Scan] Games to scan: {gamesToScan.Count}, Providers: {_providers.Count}, Grouped providers: {gamesByProvider.Count}");
-            // _logger.Debug($"[Scan] Games with providers: {string.Join(", ", gamesWithProviders.Where(x => x.Provider != null).Select(x => x.Game.Name + " => " + x.Provider.ProviderName))}");
+            // _logger.Debug($"[Scan] Games with providers: {string.Join(", ", scanTargets.Select(x => x.Game.Name + " => " + x.Provider.ProviderName))}");
 
-            if (gamesByProvider.Count == 0 && gamesWithProviders.All(x => x.Provider == null))
+            if (gamesByProvider.Count == 0)
             {
                 _logger?.Warn("[Scan] No matching providers available for scan options.");
                 return new RebuildPayload();
@@ -433,46 +514,113 @@ namespace PlayniteAchievements.Services
             {
             }
 
-            // Download achievement icons and update IconPath to local file paths
-            if (data.Achievements != null)
-            {
-                var gameIdStr = data.PlayniteGameId?.ToString();
-                foreach (var achievement in data.Achievements)
-                {
-                    if (string.IsNullOrWhiteSpace(achievement.IconPath))
-                        continue;
-
-                    bool isHttpUrl = achievement.IconPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                                    achievement.IconPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
-
-                    if (!isHttpUrl)
-                        continue;
-
-                    // Skip async call if already cached
-                    if (_diskImageService.IsIconCached(achievement.IconPath, 0, gameIdStr))
-                    {
-                        var cachedPath = _diskImageService.GetIconCachePathFromUri(achievement.IconPath, 0, gameIdStr);
-                        if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
-                        {
-                            achievement.IconPath = cachedPath;
-                            continue;
-                        }
-                    }
-
-                    var localPath = await _diskImageService.GetOrDownloadIconAsync(
-                        achievement.IconPath, 0, cancel, gameIdStr).ConfigureAwait(false);
-                    if (!string.IsNullOrWhiteSpace(localPath))
-                    {
-                        achievement.IconPath = localPath;
-                    }
-                }
-            }
+            await PopulateAchievementIconCacheAsync(data, cancel).ConfigureAwait(false);
 
             var key = data.PlayniteGameId.Value.ToString();
 
             if (!string.IsNullOrWhiteSpace(key))
             {
                 _cacheService.SaveGameData(key, data);
+                Interlocked.Increment(ref _savedGamesInCurrentRun);
+                NotifyCacheInvalidatedThrottled(force: false);
+            }
+        }
+
+        private void NotifyCacheInvalidatedThrottled(bool force)
+        {
+            var nowMs = Environment.TickCount64;
+            if (!force)
+            {
+                while (true)
+                {
+                    var lastMs = Interlocked.Read(ref _lastCacheInvalidationTickMs);
+                    if (lastMs >= 0 && (nowMs - lastMs) < CacheInvalidationThrottleMs)
+                    {
+                        return;
+                    }
+
+                    if (Interlocked.CompareExchange(ref _lastCacheInvalidationTickMs, nowMs, lastMs) == lastMs)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                Interlocked.Exchange(ref _lastCacheInvalidationTickMs, nowMs);
+            }
+
+            _cacheService.NotifyCacheInvalidated();
+        }
+
+        private static bool IsHttpIconPath(string iconPath)
+        {
+            return !string.IsNullOrWhiteSpace(iconPath) &&
+                   (iconPath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                    iconPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private async Task PopulateAchievementIconCacheAsync(GameAchievementData data, CancellationToken cancel)
+        {
+            if (data?.Achievements == null || data.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            var gameIdStr = data.PlayniteGameId?.ToString();
+            var iconTasks = new List<Task>(data.Achievements.Count);
+
+            foreach (var achievement in data.Achievements)
+            {
+                if (achievement == null || !IsHttpIconPath(achievement.IconPath))
+                {
+                    continue;
+                }
+
+                iconTasks.Add(ResolveIconPathAsync(achievement, gameIdStr, cancel));
+            }
+
+            if (iconTasks.Count > 0)
+            {
+                await Task.WhenAll(iconTasks).ConfigureAwait(false);
+            }
+        }
+
+        private async Task ResolveIconPathAsync(AchievementDetail achievement, string gameIdStr, CancellationToken cancel)
+        {
+            if (achievement == null || !IsHttpIconPath(achievement.IconPath))
+            {
+                return;
+            }
+
+            try
+            {
+                var originalPath = achievement.IconPath;
+                if (_diskImageService.IsIconCached(originalPath, 0, gameIdStr))
+                {
+                    var cachedPath = _diskImageService.GetIconCachePathFromUri(originalPath, 0, gameIdStr);
+                    if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
+                    {
+                        achievement.IconPath = cachedPath;
+                        return;
+                    }
+                }
+
+                var localPath = await _diskImageService
+                    .GetOrDownloadIconAsync(originalPath, 0, cancel, gameIdStr)
+                    .ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(localPath))
+                {
+                    achievement.IconPath = localPath;
+                }
+            }
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to resolve achievement icon path.");
             }
         }
 
@@ -563,6 +711,9 @@ namespace PlayniteAchievements.Services
                 case ScanModeType.LibrarySelected:
                     return StartManagedLibrarySelectedGamesScanAsync();
 
+                case ScanModeType.Missing:
+                    return StartManagedMissingScanAsync();
+
                 default:
                     _logger.Warn($"Unknown scan mode: {mode}, falling back to Quick.");
                     return StartManagedQuickRefreshAsync();
@@ -571,10 +722,8 @@ namespace PlayniteAchievements.Services
 
         private Task StartManagedInstalledGamesScanAsync()
         {
-            var providers = GetProviders();
             var gameIds = _api.Database.Games
                 .Where(g => g != null && g.IsInstalled)
-                .Where(g => providers.Any(p => p.IsCapable(g)))
                 .Select(g => g.Id)
                 .ToList();
 
@@ -588,17 +737,15 @@ namespace PlayniteAchievements.Services
                 cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
                 payload => string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
-                    gameIds.Count),
+                    payload?.Summary?.GamesScanned ?? 0),
                 "Installed games scan failed."
             );
         }
 
         private Task StartManagedFavoritesScanAsync()
         {
-            var providers = GetProviders();
             var gameIds = _api.Database.Games
                 .Where(g => g != null && g.Favorite)
-                .Where(g => providers.Any(p => p.IsCapable(g)))
                 .Select(g => g.Id)
                 .ToList();
 
@@ -612,17 +759,15 @@ namespace PlayniteAchievements.Services
                 cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
                 payload => string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
-                    gameIds.Count),
+                    payload?.Summary?.GamesScanned ?? 0),
                 "Favorites scan failed."
             );
         }
 
         private Task StartManagedLibrarySelectedGamesScanAsync()
         {
-            var providers = GetProviders();
             var selectedGames = _api.MainView.SelectedGames?
                 .Where(g => g != null)
-                .Where(g => providers.Any(p => p.IsCapable(g)))
                 .ToList();
 
             if (selectedGames == null || selectedGames.Count == 0)
@@ -636,8 +781,57 @@ namespace PlayniteAchievements.Services
                 cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
                 payload => string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
-                    gameIds.Count),
+                    payload?.Summary?.GamesScanned ?? 0),
                 "Library selected games scan failed."
+            );
+        }
+
+        private Task StartManagedMissingScanAsync()
+        {
+            var authenticatedProviders = GetAuthenticatedProviders();
+            if (authenticatedProviders.Count == 0)
+            {
+                _logger.Info("No authenticated providers available for missing scan.");
+                return Task.CompletedTask;
+            }
+
+            var cachedGameIds = new HashSet<string>(_cacheService.GetCachedGameIds(), StringComparer.OrdinalIgnoreCase);
+            var allGames = _api.Database.Games.ToList();
+
+            var missingGameIds = new List<Guid>();
+            foreach (var game in allGames)
+            {
+                if (game == null)
+                {
+                    continue;
+                }
+
+                var provider = ResolveProviderForGame(game, authenticatedProviders);
+                if (provider == null)
+                {
+                    continue;
+                }
+
+                if (!cachedGameIds.Contains(game.Id.ToString()))
+                {
+                    missingGameIds.Add(game.Id);
+                }
+            }
+
+            if (missingGameIds.Count == 0)
+            {
+                _logger.Info("No games missing achievement data found.");
+                return Task.CompletedTask;
+            }
+
+            _logger.Info($"Found {missingGameIds.Count} games missing achievement data.");
+
+            return RunManagedAsync(
+                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = missingGameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
+                payload => string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
+                    payload?.Summary?.GamesScanned ?? 0),
+                "Missing games scan failed."
             );
         }
 
