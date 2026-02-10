@@ -198,7 +198,7 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         public bool HasData
         {
-            get => Theme.HasData;
+            get => Theme.HasAchievements;
             set => Theme.HasData = value;
         }
 
