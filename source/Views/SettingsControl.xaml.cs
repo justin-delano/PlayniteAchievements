@@ -331,7 +331,7 @@ namespace PlayniteAchievements.Views
             ShowNoRevertableThemesMessage = !hasRevertable;
         }
 
-        private async void MigrateTheme_Click(object sender, RoutedEventArgs e)
+        private async void MigrationTheme_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(SelectedThemePath))
             {
