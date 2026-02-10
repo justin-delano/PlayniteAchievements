@@ -397,16 +397,27 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             try
             {
+                _logger?.Info("PopulateAllGamesDataSync: Starting to populate all-games achievement data.");
+
                 var allData = _achievementService.GetAllGameAchievementData() ?? new List<GameAchievementData>();
+                _logger?.Info($"PopulateAllGamesDataSync: Found {allData.Count} total game data entries.");
+
                 var ids = allData
                     .Where(d => d?.PlayniteGameId != null && d.NoAchievements == false && (d.Achievements?.Count ?? 0) > 0)
                     .Select(d => d.PlayniteGameId.Value)
                     .Distinct()
                     .ToList();
 
+                _logger?.Info($"PopulateAllGamesDataSync: Found {ids.Count} games with achievements.");
+
                 var info = BuildGameInfoMapOnUiThread(ids);
                 var snapshot = AllGamesSnapshotService.BuildSnapshot(allData, info, OpenGameWindow, CancellationToken.None);
+
+                _logger?.Info($"PopulateAllGamesDataSync: Snapshot created - TotalCount={snapshot.TotalCount}, PlatCount={snapshot.PlatCount}, GoldCount={snapshot.GoldCount}, Rank={snapshot.Rank}");
+
                 ApplySnapshot(snapshot);
+
+                _logger?.Info($"PopulateAllGamesDataSync: Applied snapshot. AllGamesWithAchievements count={_settings.LegacyTheme.AllGamesWithAchievements?.Count ?? 0}");
             }
             catch (Exception ex)
             {
