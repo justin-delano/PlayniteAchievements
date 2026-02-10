@@ -115,11 +115,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     // Reset consecutive errors on success
                     consecutiveErrors = 0;
 
-                    // Rate limit protection: add delay before next request
-                    if (i < gamesToScan.Count - 1)
-                    {
-                        await rateLimiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
-                    }
                 }
                 catch (OperationCanceledException)
                 {

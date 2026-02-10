@@ -221,12 +221,16 @@ namespace PlayniteAchievements.Services
                 }
 
                 RaiseGameCacheUpdatedEvent(k);
-                RaiseCacheInvalidatedEvent();
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Error_FileOperationFailed"));
             }
+        }
+
+        public void NotifyCacheInvalidated()
+        {
+            RaiseCacheInvalidatedEvent();
         }
     }
 

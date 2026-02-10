@@ -172,9 +172,9 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Delay in milliseconds between scanning each game to avoid rate limiting.
-        /// Default is 200ms. When transient failures occur, exponential backoff with jitter is applied.
-        /// Set to 0 for fastest scanning (exponential backoff will still apply on errors).
+        /// Base delay in milliseconds for retry/backoff after transient errors.
+        /// Default is 200ms. Higher values are safer for strict APIs but slower after failures.
+        /// Set to 0 for fastest retry behavior.
         /// </summary>
         public int ScanDelayMs
         {

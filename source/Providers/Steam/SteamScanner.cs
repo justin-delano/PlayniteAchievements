@@ -126,11 +126,6 @@ namespace PlayniteAchievements.Providers.Steam
                     // Reset consecutive errors on success
                     consecutiveErrors = 0;
 
-                    // Rate limit protection: add delay before next request
-                    if (i < gamesToScan.Count - 1)
-                    {
-                        await rateLimiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
-                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -244,7 +239,7 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             var schema = await FetchSchemaAsync(appId, cancel).ConfigureAwait(false);
-            var unlocked = await FetchUnlockedAsync(appId, ownedGamesPlaytime, cancel).ConfigureAwait(false);
+            var unlocked = await FetchUnlockedAsync(appId, ownedGamesPlaytime, schema, cancel).ConfigureAwait(false);
 
             var gameData = new GameAchievementData
             {
@@ -320,6 +315,7 @@ namespace PlayniteAchievements.Providers.Steam
         private async Task<UserUnlockedAchievements> FetchUnlockedAsync(
             int appId,
             Dictionary<int, int> ownedGamesPlaytime,
+            SchemaAndPercentages schema,
             CancellationToken cancel)
         {
             if (string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) || string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey))
@@ -347,7 +343,6 @@ namespace PlayniteAchievements.Providers.Steam
             if (scraped == null || scraped.TransientFailure)
                 return new UserUnlockedAchievements();
 
-            var schema = await FetchSchemaAsync(appId, cancel).ConfigureAwait(false);
             var iconFileToAchievements = new Dictionary<string, List<SchemaAchievement>>(StringComparer.OrdinalIgnoreCase);
 
             if (schema?.Achievements != null)
