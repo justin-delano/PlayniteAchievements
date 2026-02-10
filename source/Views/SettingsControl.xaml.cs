@@ -212,18 +212,16 @@ namespace PlayniteAchievements.Views
 
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
-        private readonly SteamHTTPClient _steam;
         private readonly SteamSessionManager _sessionManager;
         private readonly ILogger _logger;
         private readonly ThemeDiscoveryService _themeDiscovery;
         private readonly ThemeMigrationService _themeMigration;
 
-        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, SteamHTTPClient steamClient, SteamSessionManager sessionManager, PlayniteAchievementsPlugin plugin)
+        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, SteamSessionManager sessionManager, PlayniteAchievementsPlugin plugin)
         {
             _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
-            _steam = steamClient;
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
 
             _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
@@ -801,14 +799,6 @@ namespace PlayniteAchievements.Views
 
         public void Dispose()
         {
-            try
-            {
-                _steam?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Error disposing SteamClient in SettingsControl.");
-            }
         }
         
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)

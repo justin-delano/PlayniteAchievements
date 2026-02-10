@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,29 +23,44 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly PlayniteAchievementsSettings _settings;
         private readonly SteamSessionManager _sessionManager;
 
-        public SteamDataProvider(
+        /// <summary>
+        /// Gets the session manager for Steam authentication operations.
+        /// Exposed for settings UI to perform Steam authentication.
+        /// </summary>
+        public SteamSessionManager SessionManager => _sessionManager;
+
+        private SteamDataProvider(
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            SteamHTTPClient steamClient,
-            SteamSessionManager sessionManager,
-            SteamAPIClient apiHelper,
-            IPlayniteAPI api)
+            IPlayniteAPI api,
+            string pluginUserDataPath)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
-            if (steamClient == null) throw new ArgumentNullException(nameof(steamClient));
-            if (sessionManager == null) throw new ArgumentNullException(nameof(sessionManager));
-            if (apiHelper == null) throw new ArgumentNullException(nameof(apiHelper));
             if (api == null) throw new ArgumentNullException(nameof(api));
 
-            _steamClient = steamClient;
-            _apiHelper = apiHelper;
-            _api = api;
             _logger = logger;
             _settings = settings;
-            _sessionManager = sessionManager;
+            _api = api;
 
-            _scanner = new SteamScanner(settings, steamClient, sessionManager, apiHelper, api, logger);
+            // Create Steam-specific dependencies
+            _sessionManager = new SteamSessionManager(api, logger, pluginUserDataPath, settings);
+            _steamClient = new SteamHTTPClient(api, logger, _sessionManager);
+            _apiHelper = new SteamAPIClient(_steamClient.ApiHttpClient, logger);
+
+            _scanner = new SteamScanner(settings, _steamClient, _sessionManager, _apiHelper, api, logger);
+        }
+
+        /// <summary>
+        /// Factory method to create a SteamDataProvider with all its dependencies.
+        /// </summary>
+        public static SteamDataProvider Create(
+            ILogger logger,
+            PlayniteAchievementsSettings settings,
+            IPlayniteAPI api,
+            string pluginUserDataPath)
+        {
+            return new SteamDataProvider(logger, settings, api, pluginUserDataPath);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");

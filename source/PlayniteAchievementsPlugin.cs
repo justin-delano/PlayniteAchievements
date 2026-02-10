@@ -46,38 +46,37 @@ namespace PlayniteAchievements
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly NotificationPublisher _notifications;
-        private readonly SteamHTTPClient _steamClient;
-        private readonly SteamSessionManager _sessionManager;
+        private readonly SteamDataProvider _steamProvider;
 
         private readonly BackgroundUpdater _backgroundUpdates;
 
         // Theme integration
-        private readonly ThemeIntegrationAdapter _themeAdapter;
         private readonly ThemeIntegrationUpdateService _themeUpdateService;
-        private readonly FullscreenThemeIntegrationService _fullscreenThemeIntegration;
+        private readonly FullscreenWindowService _fullscreenWindowService;
+        private readonly ThemeIntegrationService _themeIntegrationService;
 
         // Control factories for theme integration
-        private static readonly Dictionary<string, Func<Control>> SuccessStoryControlFactories = new Dictionary<string, Func<Control>>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, Func<Control>> LegacyControlFactories = new Dictionary<string, Func<Control>>(StringComparer.OrdinalIgnoreCase)
         {
-            { "PluginButton", () => new Views.ThemeIntegration.SuccessStory.SuccessStoryPluginButtonControl() },
-            { "PluginProgressBar", () => new Views.ThemeIntegration.SuccessStory.SuccessStoryPluginProgressBarControl() },
-            { "PluginCompactList", () => new Views.ThemeIntegration.SuccessStory.SuccessStoryPluginCompactListControl() },
-            { "PluginCompactLocked", () => new Views.ThemeIntegration.SuccessStory.SuccessStoryPluginCompactLockedControl() },
-            { "PluginCompactUnlocked", () => new Views.ThemeIntegration.SuccessStory.SuccessStoryPluginCompactUnlockedControl() },
-            { "PluginChart", () => new Views.ThemeIntegration.SuccessStory.SuccessStoryPluginChartControl() },
-            { "PluginUserStats", () => new Views.ThemeIntegration.SuccessStory.SuccessStoryPluginUserStatsControl() },
-            { "PluginList", () => new Views.ThemeIntegration.SuccessStory.SuccessStoryPluginListControl() },
-            { "PluginViewItem", () => new Views.ThemeIntegration.SuccessStory.SuccessStoryPluginViewItemControl() }
+            { "PluginButton", () => new Views.ThemeIntegration.Legacy.PluginButtonControl() },
+            { "PluginProgressBar", () => new Views.ThemeIntegration.Legacy.PluginProgressBarControl() },
+            { "PluginCompactList", () => new Views.ThemeIntegration.Legacy.PluginCompactListControl() },
+            { "PluginCompactLocked", () => new Views.ThemeIntegration.Legacy.PluginCompactLockedControl() },
+            { "PluginCompactUnlocked", () => new Views.ThemeIntegration.Legacy.PluginCompactUnlockedControl() },
+            { "PluginChart", () => new Views.ThemeIntegration.Legacy.PluginChartControl() },
+            { "PluginUserStats", () => new Views.ThemeIntegration.Legacy.PluginUserStatsControl() },
+            { "PluginList", () => new Views.ThemeIntegration.Legacy.PluginListControl() },
+            { "PluginViewItem", () => new Views.ThemeIntegration.Legacy.PluginViewItemControl() }
         };
 
-        private static readonly Dictionary<string, Func<Control>> NativeControlFactories = new Dictionary<string, Func<Control>>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, Func<Control>> DesktopControlFactories = new Dictionary<string, Func<Control>>(StringComparer.OrdinalIgnoreCase)
         {
-            { "AchievementButton", () => new Views.ThemeIntegration.Native.AchievementButtonControl() },
-            { "AchievementProgressBar", () => new Views.ThemeIntegration.Native.AchievementProgressBarControl() },
-            { "AchievementCompactList", () => new Views.ThemeIntegration.Native.AchievementCompactListControl() },
-            { "AchievementChart", () => new Views.ThemeIntegration.Native.AchievementChartControl() },
-            { "AchievementStats", () => new Views.ThemeIntegration.Native.AchievementStatsControl() },
-            { "AchievementList", () => new Views.ThemeIntegration.Native.AchievementListControl() }
+            { "AchievementButton", () => new Views.ThemeIntegration.Desktop.AchievementButtonControl() },
+            { "AchievementProgressBar", () => new Views.ThemeIntegration.Desktop.AchievementProgressBarControl() },
+            { "AchievementCompactList", () => new Views.ThemeIntegration.Desktop.AchievementCompactListControl() },
+            { "AchievementChart", () => new Views.ThemeIntegration.Desktop.AchievementChartControl() },
+            { "AchievementStats", () => new Views.ThemeIntegration.Desktop.AchievementStatsControl() },
+            { "AchievementList", () => new Views.ThemeIntegration.Desktop.AchievementListControl() }
         };
 
         public override Guid Id { get; } =
@@ -86,7 +85,7 @@ namespace PlayniteAchievements
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
         public AchievementManager AchievementService => _achievementService;
         public MemoryImageService ImageService => _imageService;
-        public ThemeIntegrationAdapter ThemeIntegrationAdapter => _themeAdapter;
+        public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;
         public static PlayniteAchievementsPlugin Instance { get; private set; }
 
@@ -129,18 +128,15 @@ namespace PlayniteAchievements
                 _settingsViewModel.Settings.Persisted.RareThreshold,
                 _settingsViewModel.Settings.Persisted.UncommonThreshold);
 
-            _sessionManager = new SteamSessionManager(PlayniteApi, _logger, GetPluginUserDataPath(), _settingsViewModel.Settings);
-            _steamClient = new SteamHTTPClient(PlayniteApi, _logger, _sessionManager);
+            _steamProvider = SteamDataProvider.Create(
+                _logger,
+                _settingsViewModel.Settings,
+                PlayniteApi,
+                GetPluginUserDataPath());
 
             var providers = new List<IDataProvider>
             {
-                new SteamDataProvider(
-                    _logger,
-                    _settingsViewModel.Settings,
-                    _steamClient,
-                    _sessionManager,
-                    new SteamAPIClient(_steamClient.ApiHttpClient, _logger),
-                    PlayniteApi),
+                _steamProvider,
 
                 new RetroAchievementsDataProvider(
                     _logger,
@@ -153,20 +149,34 @@ namespace PlayniteAchievements
             _achievementService = new AchievementManager(api, _settingsViewModel.Settings, _logger, this, providers, _diskImageService);
             _notifications = new NotificationPublisher(api, _settingsViewModel.Settings, _logger);
             _backgroundUpdates = new BackgroundUpdater(_achievementService, _settingsViewModel.Settings, _logger, _notifications, null);
-            _themeAdapter = new ThemeIntegrationAdapter(_settingsViewModel.Settings);
-            _themeUpdateService = new ThemeIntegrationUpdateService(
-                _themeAdapter,
+
+            // Create theme integration services
+            // Note: We need to create _themeIntegrationService before _themeUpdateService,
+            // but _themeIntegrationService needs a callback to _themeUpdateService.
+            // We resolve this by using a local variable for the callback.
+            ThemeIntegrationUpdateService themeUpdateService = null;
+            Action<Guid?> requestUpdate = (id) => themeUpdateService?.RequestUpdate(id);
+
+            _fullscreenWindowService = new FullscreenWindowService(
+                PlayniteApi,
+                _settingsViewModel.Settings,
+                requestUpdate);
+
+            _themeIntegrationService = new ThemeIntegrationService(
+                PlayniteApi,
+                _achievementService,
+                _settingsViewModel.Settings,
+                _fullscreenWindowService,
+                requestUpdate,
+                _logger);
+
+            themeUpdateService = new ThemeIntegrationUpdateService(
+                _themeIntegrationService,
                 _achievementService,
                 _settingsViewModel.Settings,
                 _logger,
                 PlayniteApi?.MainView?.UIDispatcher ?? System.Windows.Application.Current.Dispatcher);
-            _fullscreenThemeIntegration = new FullscreenThemeIntegrationService(
-                PlayniteApi,
-                _achievementService,
-                _settingsViewModel.Settings,
-                OpenPerGameAchievementsView,
-                _themeUpdateService.RequestUpdate,
-                _logger);
+            _themeUpdateService = themeUpdateService;
 
             // Listen for new games entering the database to auto-scan .
             PlayniteApi?.Database?.Games?.ItemCollectionChanged += Games_ItemCollectionChanged;
@@ -222,7 +232,7 @@ namespace PlayniteAchievements
             try
             {
                 _logger.Info($"GetSettingsView called, firstRunView={firstRunView}");
-                var control = new SettingsControl(_settingsViewModel, _logger, _steamClient, _sessionManager, this);
+                var control = new SettingsControl(_settingsViewModel, _logger, _steamProvider.SessionManager, this);
                 _logger.Info("GetSettingsView succeeded");
                 return control;
             }
@@ -251,7 +261,7 @@ namespace PlayniteAchievements
                     MenuSection = "Playnite Achievements",
                     Action = (a) =>
                     {
-                        ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
+                        ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
                     }
                 };
                 yield break;
@@ -270,7 +280,7 @@ namespace PlayniteAchievements
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
-                    OpenPerGameAchievementsView(game.Id);
+                    OpenSingleGameAchievementsView(game.Id);
                 }
             };
 
@@ -280,7 +290,7 @@ namespace PlayniteAchievements
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id));
+                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id));
                 }
             };
         }
@@ -293,7 +303,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Quick.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Quick.GetKey()));
                 }
             };
 
@@ -303,7 +313,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Full.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Full.GetKey()));
                 }
             };
 
@@ -313,7 +323,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Installed.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Installed.GetKey()));
                 }
             };
 
@@ -323,7 +333,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Favorites.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Favorites.GetKey()));
                 }
             };
 
@@ -333,7 +343,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressWindowAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
                 }
             };
         }
@@ -422,7 +432,8 @@ namespace PlayniteAchievements
             try { _imageService?.Dispose(); } catch { }
             try { _diskImageService?.Dispose(); } catch { }
             try { _themeUpdateService?.Dispose(); } catch { }
-            try { _fullscreenThemeIntegration?.Dispose(); } catch { }
+            try { _fullscreenWindowService?.Dispose(); } catch { }
+            try { _themeIntegrationService?.Dispose(); } catch { }
         }
 
         // === Theme Integration ===
@@ -437,20 +448,20 @@ namespace PlayniteAchievements
                     if (game == null)
                     {
                         _themeUpdateService.RequestUpdate(null);
-                        _fullscreenThemeIntegration?.NotifySelectionChanged(null);
+                        _themeIntegrationService?.NotifySelectionChanged(null);
                         _settingsViewModel.Settings.SelectedGame = null;
                         return;
                     }
 
                     _themeUpdateService.RequestUpdate(game.Id);
-                    _fullscreenThemeIntegration?.NotifySelectionChanged(game.Id);
+                    _themeIntegrationService?.NotifySelectionChanged(game.Id);
                     _settingsViewModel.Settings.SelectedGame = game;
                 }
                 else
                 {
                     // Clear theme data when no game or multiple games selected
                     _themeUpdateService.RequestUpdate(null);
-                    _fullscreenThemeIntegration?.NotifySelectionChanged(null);
+                    _themeIntegrationService?.NotifySelectionChanged(null);
                     _settingsViewModel.Settings.SelectedGame = null;
                 }
             }
@@ -468,7 +479,7 @@ namespace PlayniteAchievements
             {
                 if (args?.Button == ControllerInput.B && args.State == ControllerInputState.Pressed)
                 {
-                    _fullscreenThemeIntegration?.CloseOverlayWindowIfOpen();
+                    _fullscreenWindowService?.CloseOverlayWindowIfOpen();
                 }
             }
             catch (Exception ex)
@@ -482,13 +493,13 @@ namespace PlayniteAchievements
             _themeUpdateService?.RequestUpdate(gameContext?.Id);
         }
 
-        private void ShowScanProgressWindowAndRun(Func<Task> scanTask)
+        private void ShowScanProgressControlAndRun(Func<Task> scanTask)
         {
             try
             {
                 EnsureWpfFallbackResources();
 
-                var progressWindow = new ScanProgressWindow(_achievementService, _logger);
+                var progressWindow = new ScanProgressControl(_achievementService, _logger);
 
                 var windowOptions = new WindowOptions
                 {
@@ -565,15 +576,15 @@ namespace PlayniteAchievements
         public override Control GetGameViewControl(GetGameViewControlArgs args)
         {
             // SuccessStory-compatible controls (legacy naming; properties are always populated).
-            if (SuccessStoryControlFactories.TryGetValue(args.Name, out var successStoryFactory))
+            if (LegacyControlFactories.TryGetValue(args.Name, out var successStoryFactory))
             {
                 return successStoryFactory();
             }
 
-            // Native PlayniteAchievements controls (always available)
-            if (NativeControlFactories.TryGetValue(args.Name, out var nativeFactory))
+            // Desktop PlayniteAchievements controls (always available)
+            if (DesktopControlFactories.TryGetValue(args.Name, out var desktopFactory))
             {
-                return nativeFactory();
+                return desktopFactory();
             }
 
             return null;
@@ -585,13 +596,13 @@ namespace PlayniteAchievements
         /// Opens the per-game achievements view window for the specified game.
         /// Public for access from theme integration controls.
         /// </summary>
-        public void OpenPerGameAchievementsView(Guid gameId)
+        public void OpenSingleGameAchievementsView(Guid gameId)
         {
             try
             {
                 EnsureWpfFallbackResources();
 
-                var view = new PerGameControl(
+                var view = new SingleGameControl(
                     gameId,
                     _achievementService,
                     PlayniteApi,
