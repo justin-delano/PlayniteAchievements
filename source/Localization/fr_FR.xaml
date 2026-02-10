@@ -248,6 +248,7 @@
     <sys:String x:Key="LOCPlayAch_Error_ScanFailed">Échec de l'analyse : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_QuickScanFailed">Échec de l'analyse rapide : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Authentification Steam requise. Analyse annulée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">Aucun fournisseur n'est authentifié. Veuillez configurer au moins un fournisseur dans les paramètres avant d'analyser.</sys:String>
 
     <!-- ================================================================= -->
     <!-- TIME RANGE                                                         -->

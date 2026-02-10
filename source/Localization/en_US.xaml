@@ -251,6 +251,7 @@
     <sys:String x:Key="LOCPlayAch_Error_ScanFailed">Scan failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_QuickScanFailed">Quick scan failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Steam authentication required. Scan canceled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No providers are authenticated. Please configure at least one provider in settings before scanning.</sys:String>
 
     <!-- ================================================================= -->
     <!-- TIME RANGE                                                         -->

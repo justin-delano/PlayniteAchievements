@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Threading;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
@@ -238,6 +239,22 @@ namespace PlayniteAchievements.Services
         {
             if (!TryBeginRun(out var cts))
                 return;
+
+            // Check if at least one provider is authenticated before starting scan
+            if (!HasAnyAuthenticatedProvider())
+            {
+                _logger.Info("Scan attempted but no providers are authenticated.");
+                PostToUi(() =>
+                {
+                    _api.Dialogs.ShowMessage(
+                        ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                });
+                EndRun();
+                return;
+            }
 
             _progressMapper.Reset();
 
