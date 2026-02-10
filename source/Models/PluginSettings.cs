@@ -319,7 +319,17 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _openFullscreenAchievementWindow;
         [DontSerialize]
-        private ICommand _refreshCommand;
+        private ICommand _singleGameRefreshCommand;
+        [DontSerialize]
+        private ICommand _quickRefreshCommand;
+        [DontSerialize]
+        private ICommand _favoritesRefreshCommand;
+        [DontSerialize]
+        private ICommand _fullRefreshCommand;
+        [DontSerialize]
+        private ICommand _installedRefreshCommand;
+        
+
 
         [DontSerialize]
         public bool FullscreenHasData
@@ -406,10 +416,38 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
-        public ICommand RefreshCommand
+        public ICommand SingleGameRefreshCommand
         {
-            get => _refreshCommand;
-            set => SetValue(ref _refreshCommand, value);
+            get => _singleGameRefreshCommand;
+            set => SetValue(ref _singleGameRefreshCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand QuickRefreshCommand
+        {
+            get => _quickRefreshCommand;
+            set => SetValue(ref _quickRefreshCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand FavoritesRefreshCommand
+        {
+            get => _favoritesRefreshCommand;
+            set => SetValue(ref _favoritesRefreshCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand FullRefreshCommand
+        {
+            get => _fullRefreshCommand;
+            set => SetValue(ref _fullRefreshCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand InstalledRefreshCommand
+        {
+            get => _installedRefreshCommand;
+            set => SetValue(ref _installedRefreshCommand, value);
         }
 
         #endregion

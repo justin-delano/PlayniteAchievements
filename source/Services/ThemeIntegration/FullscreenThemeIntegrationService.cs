@@ -34,7 +34,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private readonly ICommand _openOverviewCmd;
         private readonly ICommand _openSelectedGameCmd;
-        private readonly ICommand _refreshSelectedGameCmd;
+        private readonly ICommand _singleGameRefreshCmd;
+        private readonly ICommand _quickRefreshCmd;
+        private readonly ICommand _favoritesRefreshCmd;
+        private readonly ICommand _fullRefreshCmd;
+        private readonly ICommand _installedRefreshCmd;
 
         private readonly object _refreshLock = new object();
         private CancellationTokenSource _refreshCts;
@@ -60,14 +64,22 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             _openOverviewCmd = new RelayCommand(_ => OpenOverviewAchievementsWindow());
             _openSelectedGameCmd = new RelayCommand(_ => OpenSelectedGameAchievementsWindow());
-            _refreshSelectedGameCmd = new RelayCommand(_ => RefreshSelectedGameAchievements());
+            _singleGameRefreshCmd = new RelayCommand(_ => RefreshSingleGame());
+            _quickRefreshCmd = new RelayCommand(_ => RefreshQuick());
+            _favoritesRefreshCmd = new RelayCommand(_ => RefreshFavorites());
+            _fullRefreshCmd = new RelayCommand(_ => RefreshFull());
+            _installedRefreshCmd = new RelayCommand(_ => RefreshInstalled());
 
             // Command surfaces referenced by themes.
             _settings.OpenFullscreenAchievementWindow = _openSelectedGameCmd;
             _settings.OpenAchievementWindow = _openOverviewCmd;
             _settings.OpenGameAchievementWindow = _openSelectedGameCmd;
-            _settings.RefreshSelectedGameCommand = _refreshSelectedGameCmd;
-            _settings.RefreshCommand = _refreshSelectedGameCmd;
+            _settings.RefreshSelectedGameCommand = _singleGameRefreshCmd;
+            _settings.SingleGameRefreshCommand = _singleGameRefreshCmd;
+            _settings.QuickRefreshCommand = _quickRefreshCmd;
+            _settings.FavoritesRefreshCommand = _favoritesRefreshCmd;
+            _settings.FullRefreshCommand = _fullRefreshCmd;
+            _settings.InstalledRefreshCommand = _installedRefreshCmd;
 
             _settings.PropertyChanged += Settings_PropertyChanged;
             _achievementService.CacheInvalidated += AchievementService_CacheInvalidated;
@@ -333,7 +345,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: gameId);
         }
 
-        private void RefreshSelectedGameAchievements()
+        private void RefreshSingleGame()
         {
             var id = GetSingleSelectedGameId();
             if (!id.HasValue)
@@ -421,6 +433,114 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }, progressOptions);
         }
 
+        private void RefreshQuick()
+        {
+            EnsureFullscreenInitialized();
+            RunMultiGameScan(
+                () => _achievementService.ExecuteScanAsync(ScanModeType.Quick),
+                "Quick refresh achievement scan failed in fullscreen mode."
+            );
+        }
+
+        private void RefreshFavorites()
+        {
+            EnsureFullscreenInitialized();
+            RunMultiGameScan(
+                () => _achievementService.ExecuteScanAsync(ScanModeType.Favorites),
+                "Favorites achievement scan failed in fullscreen mode."
+            );
+        }
+
+        private void RefreshFull()
+        {
+            EnsureFullscreenInitialized();
+            RunMultiGameScan(
+                () => _achievementService.ExecuteScanAsync(ScanModeType.Full),
+                "Full achievement scan failed in fullscreen mode."
+            );
+        }
+
+        private void RefreshInstalled()
+        {
+            EnsureFullscreenInitialized();
+            RunMultiGameScan(
+                () => _achievementService.ExecuteScanAsync(ScanModeType.Installed),
+                "Installed games achievement scan failed in fullscreen mode."
+            );
+        }
+
+        private void RunMultiGameScan(Func<Task> scanTaskFactory, string errorLogMessage)
+        {
+            var progressOptions = new GlobalProgressOptions(ResourceProvider.GetString("LOCPlayAch_Status_Starting"), true)
+            {
+                Cancelable = true,
+                IsIndeterminate = false
+            };
+
+            _api.Dialogs.ActivateGlobalProgress((progress) =>
+            {
+                progress.ProgressMaxValue = 100;
+                progress.CurrentProgressValue = 0;
+
+                EventHandler<ProgressReport> progressHandler = null;
+                progressHandler = (sender, report) =>
+                {
+                    if (report == null) return;
+
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(report.Message))
+                        {
+                            progress.Text = report.Message;
+                        }
+
+                        var percent = report.PercentComplete;
+                        if (percent <= 0 || double.IsNaN(percent))
+                        {
+                            if (report.TotalSteps > 0)
+                            {
+                                percent = (report.CurrentStep * 100.0) / report.TotalSteps;
+                            }
+                            else
+                            {
+                                percent = 0;
+                            }
+                        }
+                        progress.CurrentProgressValue = Math.Max(0, Math.Min(100, percent));
+
+                        if (report.IsCanceled || progress.CancelToken.IsCancellationRequested)
+                        {
+                            return;
+                        }
+                    }
+                    catch { }
+                };
+
+                _achievementService.RebuildProgress += progressHandler;
+
+                try
+                {
+                    scanTaskFactory().Wait(progress.CancelToken);
+                    progress.CurrentProgressValue = 100;
+                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+                }
+                catch (OperationCanceledException)
+                {
+                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, errorLogMessage);
+                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
+                }
+                finally
+                {
+                    _achievementService.RebuildProgress -= progressHandler;
+                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+                }
+            }, progressOptions);
+        }
+
         private void ShowAchievementsWindow(string styleKey, Guid? preselectGameId)
         {
             if (string.IsNullOrWhiteSpace(styleKey))
@@ -488,16 +608,16 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             window.Width = parent != null && parent.Width > 0 ? parent.Width : SystemParameters.PrimaryScreenWidth;
 
             var xamlString = $@"
-<Viewbox Stretch=""Uniform""
-         xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
-         xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml""
-         xmlns:pbeh=""clr-namespace:Playnite.Behaviors;assembly=Playnite"">
-    <Grid Width=""1920"" Height=""1080"">
-        <ContentControl x:Name=""AchievementsWindow""
-                        Focusable=""False""
-                        Style=""{{DynamicResource {styleKey}}}"" />
-    </Grid>
-</Viewbox>";
+                <Viewbox Stretch=""Uniform""
+                        xmlns=""http://schemas.microsoft.com/winfx/2006/xaml/presentation""
+                        xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml""
+                        xmlns:pbeh=""clr-namespace:Playnite.Behaviors;assembly=Playnite"">
+                    <Grid Width=""1920"" Height=""1080"">
+                        <ContentControl x:Name=""AchievementsWindow""
+                                        Focusable=""False""
+                                        Style=""{{DynamicResource {styleKey}}}"" />
+                    </Grid>
+                </Viewbox>";
 
             var content = (FrameworkElement)XamlReader.Parse(xamlString);
 
@@ -796,7 +916,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             _settings.OpenAchievementWindow = _openOverviewCmd;
             _settings.OpenGameAchievementWindow = _openSelectedGameCmd;
-            _settings.RefreshSelectedGameCommand = _refreshSelectedGameCmd;
+            _settings.RefreshSelectedGameCommand = _singleGameRefreshCmd;
 
             _settings.AllGamesWithAchievements = new ObservableCollection<FullscreenAchievementGameItem>(snapshot.All ?? new List<FullscreenAchievementGameItem>());
             _settings.PlatinumGames = new ObservableCollection<FullscreenAchievementGameItem>(snapshot.Platinum ?? new List<FullscreenAchievementGameItem>());
@@ -817,7 +937,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void ApplyNativeSurface(Snapshot snapshot)
         {
             _settings.OpenFullscreenAchievementWindow = _openSelectedGameCmd;
-            _settings.RefreshCommand = _refreshSelectedGameCmd;
+            _settings.SingleGameRefreshCommand = _singleGameRefreshCmd;
 
             _settings.FullscreenHasData = snapshot.TotalCount > 0;
             _settings.FullscreenGamesWithAchievements = new ObservableCollection<FullscreenAchievementGameItem>(snapshot.All ?? new List<FullscreenAchievementGameItem>());
