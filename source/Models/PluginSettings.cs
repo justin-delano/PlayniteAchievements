@@ -89,7 +89,6 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _openGameAchievementWindow;
         [DontSerialize]
-        private ICommand _refreshSelectedGameCommand;
 
         [DontSerialize]
         public ICommand OpenFullscreenAchievementWindow
@@ -147,12 +146,7 @@ namespace PlayniteAchievements.Models
             set => SetValue(ref _openGameAchievementWindow, value);
         }
 
-        [DontSerialize]
-        public ICommand RefreshSelectedGameCommand
-        {
-            get => _refreshSelectedGameCommand;
-            set => SetValue(ref _refreshSelectedGameCommand, value);
-        }
+
 
         #endregion
 
@@ -375,6 +369,14 @@ namespace PlayniteAchievements.Models
         #region Legacy Theme Compatibility
 
         // === SuccessStory Compatibility ===
+        private ICommand _refreshSelectedGameCommand;
+
+        [DontSerialize]
+        public ICommand RefreshSelectedGameCommand
+        {
+            get => _refreshSelectedGameCommand;
+            set => SetValue(ref _refreshSelectedGameCommand, value);
+        }
 
         [DontSerialize]
         public bool EnableIntegrationCompactUnlocked => true;
