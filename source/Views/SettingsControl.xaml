@@ -165,7 +165,7 @@
                                                            Style="{StaticResource MutedTextStyle}"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBox Text="{Binding Persisted.UltraRareThreshold, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}"
+                                                <TextBox Text="{Binding Persisted.UltraRareThreshold, UpdateSourceTrigger=PropertyChanged}"
                                                          Width="50"
                                                          TextAlignment="Right"
                                                          VerticalAlignment="Center"/>
@@ -204,7 +204,7 @@
                                                            Style="{StaticResource MutedTextStyle}"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBox Text="{Binding Persisted.RareThreshold, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}"
+                                                <TextBox Text="{Binding Persisted.RareThreshold, UpdateSourceTrigger=PropertyChanged}"
                                                          Width="50"
                                                          TextAlignment="Right"
                                                          VerticalAlignment="Center"/>
@@ -243,7 +243,7 @@
                                                            Style="{StaticResource MutedTextStyle}"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBox Text="{Binding Persisted.UncommonThreshold, UpdateSourceTrigger=PropertyChanged, StringFormat=F1}"
+                                                <TextBox Text="{Binding Persisted.UncommonThreshold, UpdateSourceTrigger=PropertyChanged}"
                                                          Width="50"
                                                          TextAlignment="Right"
                                                          VerticalAlignment="Center"/>
