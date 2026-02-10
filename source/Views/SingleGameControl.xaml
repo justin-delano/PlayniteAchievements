@@ -555,7 +555,7 @@
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Grid>
+                            <Grid HorizontalAlignment="Center">
                                 <!-- Unlock time for unlocked achievements -->
                                 <TextBlock Text="{Binding UnlockTimeText}"
                                            VerticalAlignment="Center"
@@ -589,7 +589,7 @@
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                                 <Image Width="16" Height="16" Margin="0,0,4,0" Effect="{StaticResource BadgeShadow}" VerticalAlignment="Center">
                                     <Image.Style>
                                         <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
@@ -623,43 +623,5 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
-
-        <StackPanel Grid.Row="3"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Center"
-                    Margin="0,10,0,0"
-                    Visibility="{Binding HasMultiplePages, Converter={StaticResource BoolToVis}}">
-            <Button Content="&lt;&lt;"
-                    Command="{Binding FirstPageCommand}"
-                    Padding="8,4"
-                    MinWidth="40"
-                    Margin="0,0,8,0"
-                    ToolTip="{DynamicResource LOCPlayAch_Pagination_First}"/>
-
-            <Button Content="&lt;"
-                    Command="{Binding PreviousPageCommand}"
-                    Padding="8,4"
-                    MinWidth="32"
-                    Margin="0,0,8,0"
-                    ToolTip="{DynamicResource LOCPlayAch_Pagination_Previous}"/>
-
-            <TextBlock Text="{Binding PageInfo}"
-                       Style="{DynamicResource BaseTextBlockStyle}"
-                       Foreground="{DynamicResource TextBrush}"
-                       VerticalAlignment="Center"/>
-
-            <Button Content="&gt;"
-                    Command="{Binding NextPageCommand}"
-                    Padding="8,4"
-                    MinWidth="32"
-                    Margin="8,0,8,0"
-                    ToolTip="{DynamicResource LOCPlayAch_Pagination_Next}"/>
-
-            <Button Content="&gt;&gt;"
-                    Command="{Binding LastPageCommand}"
-                    Padding="8,4"
-                    MinWidth="40"
-                    ToolTip="{DynamicResource LOCPlayAch_Pagination_Last}"/>
-        </StackPanel>
     </Grid>
 </UserControl>

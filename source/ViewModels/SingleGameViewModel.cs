@@ -25,10 +25,6 @@ namespace PlayniteAchievements.ViewModels
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Guid _gameId;
 
-        private const int AchievementsPageSize = 100;
-        private int _currentPage = 1;
-        private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
-
         // Sort state tracking for quick reverse
         private string _currentSortPath;
         private ListSortDirection _currentSortDirection;
@@ -52,10 +48,6 @@ namespace PlayniteAchievements.ViewModels
             // Initialize commands
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
             DismissStatusCommand = new RelayCommand(_ => DismissStatus(), _ => CanDismissStatus);
-            NextPageCommand = new RelayCommand(_ => GoToNextPage(), _ => CanGoNext);
-            PreviousPageCommand = new RelayCommand(_ => GoToPreviousPage(), _ => CanGoPrevious);
-            FirstPageCommand = new RelayCommand(_ => GoToFirstPage(), _ => CanGoPrevious);
-            LastPageCommand = new RelayCommand(_ => GoToLastPage(), _ => CanGoNext);
 
             ScanGameCommand = new RelayCommand(
                 async (param) =>
@@ -181,31 +173,6 @@ namespace PlayniteAchievements.ViewModels
         // Achievement list
         public ObservableCollection<AchievementDisplayItem> Achievements { get; } = new ObservableCollection<AchievementDisplayItem>();
 
-        public int CurrentPage
-        {
-            get => _currentPage;
-            set
-            {
-                var clamped = Math.Max(1, Math.Min(value, TotalPages));
-                if (SetValueAndReturn(ref _currentPage, clamped))
-                {
-                    UpdatePagedAchievements();
-                    RaisePaginationChanged();
-                }
-            }
-        }
-
-        public int TotalPages => Math.Max(1, (int)Math.Ceiling(_allAchievements.Count / (double)AchievementsPageSize));
-
-        public bool CanGoNext => CurrentPage < TotalPages;
-        public bool CanGoPrevious => CurrentPage > 1;
-        public bool HasMultiplePages => TotalPages > 1;
-
-        public string PageInfo => string.Format(
-            ResourceProvider.GetString("LOCPlayAch_Achievements_PageInfo"),
-            CurrentPage,
-            TotalPages);
-
         private bool _isScanning;
         public bool IsScanning
         {
@@ -250,55 +217,10 @@ namespace PlayniteAchievements.ViewModels
         public ICommand RevealAchievementCommand { get; }
         public ICommand ScanGameCommand { get; }
         public ICommand DismissStatusCommand { get; }
-        public ICommand NextPageCommand { get; }
-        public ICommand PreviousPageCommand { get; }
-        public ICommand FirstPageCommand { get; }
-        public ICommand LastPageCommand { get; }
 
         #endregion
 
         #region Private Methods
-
-        private void UpdatePagedAchievements()
-        {
-            var skip = (CurrentPage - 1) * AchievementsPageSize;
-            var pageItems = _allAchievements.Skip(skip).Take(AchievementsPageSize);
-            CollectionHelper.SynchronizeCollection(Achievements, pageItems);
-            OnPropertyChanged(nameof(PageInfo));
-        }
-
-        private void RaisePaginationChanged()
-        {
-            OnPropertyChanged(nameof(TotalPages));
-            OnPropertyChanged(nameof(CanGoNext));
-            OnPropertyChanged(nameof(CanGoPrevious));
-            OnPropertyChanged(nameof(HasMultiplePages));
-            OnPropertyChanged(nameof(PageInfo));
-            (NextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (PreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (FirstPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (LastPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
-        }
-
-        private void GoToNextPage()
-        {
-            if (CanGoNext) CurrentPage++;
-        }
-
-        private void GoToPreviousPage()
-        {
-            if (CanGoPrevious) CurrentPage--;
-        }
-
-        private void GoToFirstPage()
-        {
-            CurrentPage = 1;
-        }
-
-        private void GoToLastPage()
-        {
-            CurrentPage = TotalPages;
-        }
 
         private void LoadGameData()
         {
@@ -329,15 +251,11 @@ namespace PlayniteAchievements.ViewModels
 
                     System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
                     {
-                        _allAchievements = new List<AchievementDisplayItem>();
-                        _currentPage = 1;
-                        OnPropertyChanged(nameof(CurrentPage));
                         Achievements.Clear();
                     });
 
                     OnPropertyChanged(nameof(Progression));
                     OnPropertyChanged(nameof(ProgressionText));
-                    RaisePaginationChanged();
 
                     Timeline.SetCounts(null);
                     return;
@@ -414,11 +332,7 @@ namespace PlayniteAchievements.ViewModels
 
                 System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
                 {
-                    _allAchievements = sorted;
-                    _currentPage = 1;
-                    OnPropertyChanged(nameof(CurrentPage));
-                    UpdatePagedAchievements();
-                    RaisePaginationChanged();
+                    CollectionHelper.SynchronizeCollection(Achievements, sorted);
                 });
 
                 OnPropertyChanged(nameof(Progression));
@@ -503,7 +417,7 @@ namespace PlayniteAchievements.ViewModels
 
                 System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
                 {
-                    foreach (var item in _allAchievements)
+                    foreach (var item in Achievements)
                     {
                         item.HideAchievementsLockedForSelf = hide;
                     }
@@ -531,12 +445,10 @@ namespace PlayniteAchievements.ViewModels
             if (_currentSortPath == sortMemberPath && _currentSortDirection == ListSortDirection.Ascending &&
                 direction == ListSortDirection.Descending)
             {
-                _allAchievements.Reverse();
+                var items = Achievements.ToList();
+                items.Reverse();
                 _currentSortDirection = direction;
-                _currentPage = 1;
-                OnPropertyChanged(nameof(CurrentPage));
-                UpdatePagedAchievements();
-                RaisePaginationChanged();
+                CollectionHelper.SynchronizeCollection(Achievements, items);
                 return;
             }
 
@@ -553,20 +465,17 @@ namespace PlayniteAchievements.ViewModels
 
             if (comparison != null)
             {
+                var items = Achievements.ToList();
                 if (direction == ListSortDirection.Descending)
                 {
-                    _allAchievements.Sort((a, b) => comparison(b, a));
+                    items.Sort((a, b) => comparison(b, a));
                 }
                 else
                 {
-                    _allAchievements.Sort(comparison);
+                    items.Sort(comparison);
                 }
+                CollectionHelper.SynchronizeCollection(Achievements, items);
             }
-
-            _currentPage = 1;
-            OnPropertyChanged(nameof(CurrentPage));
-            UpdatePagedAchievements();
-            RaisePaginationChanged();
         }
 
         #region IDisposable
