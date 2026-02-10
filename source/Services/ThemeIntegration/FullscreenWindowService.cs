@@ -43,7 +43,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         /// </summary>
         public void OpenOverviewWindow()
         {
-            ShowAchievementsWindow(styleKey: "AchievementsWindowStyle", preselectGameId: null);
+            ShowAchievementsWindow(styleKey: "AchievementsWindow", preselectGameId: null);
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             PreselectGame(gameId);
-            ShowAchievementsWindow(styleKey: "GameAchievementsWindowStyle", preselectGameId: gameId);
+            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: gameId);
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             PreselectGame(id.Value);
-            ShowAchievementsWindow(styleKey: "GameAchievementsWindowStyle", preselectGameId: id);
+            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: id);
         }
 
         /// <summary>
