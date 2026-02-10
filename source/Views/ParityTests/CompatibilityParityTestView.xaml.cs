@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
-using PlayniteAchievements.Views.ThemeIntegration.SuccessStory;
+using PlayniteAchievements.Views.ThemeIntegration.Legacy;
 using PlayniteAchievements.Models;
 using Playnite.SDK;
 
@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Views.ParityTests
                 {
                     // Populate theme properties once up-front.
                     // (This also queues icon resolution and a refresh once thumbnails are ready.)
-                    SuccessStoryIntegrationHelper.UpdateThemeProperties(_plugin, _game);
+                    IntegrationHelper.UpdateThemeProperties(_plugin, _game);
 
                     ApplyGameToHosts(this, _game);
                 }

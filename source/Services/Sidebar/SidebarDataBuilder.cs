@@ -41,7 +41,7 @@ namespace PlayniteAchievements.Services.Sidebar
             var recentAchievements = new List<RecentAchievementItem>();
 
             var globalCounts = new Dictionary<DateTime, int>();
-            var perGameCounts = new Dictionary<Guid, Dictionary<DateTime, int>>();
+            var singleGameCounts = new Dictionary<Guid, Dictionary<DateTime, int>>();
 
             int totalAchievements = 0;
             int totalUnlocked = 0;
@@ -132,10 +132,10 @@ namespace PlayniteAchievements.Services.Sidebar
 
                             if (gameData.PlayniteGameId.HasValue)
                             {
-                                if (!perGameCounts.TryGetValue(gameData.PlayniteGameId.Value, out var dict))
+                                if (!singleGameCounts.TryGetValue(gameData.PlayniteGameId.Value, out var dict))
                                 {
                                     dict = new Dictionary<DateTime, int>();
-                                    perGameCounts[gameData.PlayniteGameId.Value] = dict;
+                                    singleGameCounts[gameData.PlayniteGameId.Value] = dict;
                                 }
                                 Increment(dict, unlockDate);
 
@@ -202,7 +202,7 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.GamesOverview = gamesOverview;
             snapshot.RecentAchievements = recentAchievements;
             snapshot.GlobalUnlockCountsByDate = globalCounts;
-            snapshot.UnlockCountsByDateByGame = perGameCounts;
+            snapshot.UnlockCountsByDateByGame = singleGameCounts;
 
             snapshot.TotalGames = gamesOverview.Count;
             snapshot.TotalAchievements = totalAchievements;

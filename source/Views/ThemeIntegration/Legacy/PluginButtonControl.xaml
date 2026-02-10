@@ -1,0 +1,89 @@
+<local:ThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Legacy.PluginButtonControl"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
+                   xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+                   xmlns:local="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
+                   mc:Ignorable="d"
+                   d:DesignHeight="40" d:DesignWidth="200">
+    <local:ThemeControlBase.Resources>
+        <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
+        <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
+        <converters:HeightToFontSizeConverter x:Key="HeightToFontSizeConverter" />
+    </local:ThemeControlBase.Resources>
+
+    <Button Name="PART_PluginButton" Click="PART_PluginButton_Click">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Trophy icon (shown when DisplayDetails=False) -->
+            <TextBlock Text="&#xedd7;" FontFamily="{DynamicResource FontIcoFont}"
+                       Grid.Column="0" VerticalAlignment="Center"
+                       Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=DisplayDetails, Converter={StaticResource InverseBoolToVisConverter}}"
+                       FontSize="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=FontSize, FallbackValue=14}" />
+
+            <!-- Details grid (shown when DisplayDetails=True) -->
+            <Grid Grid.Column="1" HorizontalAlignment="Stretch"
+                  Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=DisplayDetails, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="3" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="3" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- 100% complete indicator -->
+                <TextBlock Grid.Column="0" Grid.Row="0" Grid.RowSpan="3" Text="&#xea33;" FontFamily="{DynamicResource CommonFont}"
+                           Visibility="{Binding Theme.AllUnlocked, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"
+                           VerticalAlignment="Center" Padding="5,3,5,5"
+                           FontSize="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=FontSize, FallbackValue=14}" />
+
+                <!-- "Achievements" label -->
+                <TextBlock Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="3" Margin="0,-3,0,-3"
+                           Text="{DynamicResource LOCSuccessStoryAchievements}" Padding="5,3,5,5"
+                           FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource HeightToFontSizeConverter}, FallbackValue=12}" />
+
+                <!-- Progress label -->
+                <TextBlock Margin="0,-3,0,-3" Grid.Column="1" Grid.Row="2" Padding="5,3,5,5"
+                           FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource HeightToFontSizeConverter}, FallbackValue=12}">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0}/{1}">
+                            <Binding Path="Theme.UnlockedCount" FallbackValue="0" />
+                            <Binding Path="Theme.AchievementCount" FallbackValue="0" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+
+                <!-- Progress bar -->
+                <StackPanel Grid.Column="3" Grid.Row="2" Name="PART_GridProgressBar">
+                    <ProgressBar Height="12" Width="{Binding ElementName=PART_GridProgressBar, Path=ActualWidth}"
+                                 Maximum="{Binding Theme.AchievementCount, Mode=OneWay, FallbackValue=100}"
+                                 Value="{Binding Theme.UnlockedCount, Mode=OneWay, FallbackValue=30}">
+                        <ProgressBar.Style>
+                            <Style TargetType="{x:Type ProgressBar}" BasedOn="{StaticResource {x:Type ProgressBar}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=IsMouseOver}" Value="True">
+                                        <Setter Property="Foreground" Value="{Binding ElementName=PART_PluginButton, Path=Foreground}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=IsChecked}" Value="True">
+                                        <Setter Property="Foreground" Value="{Binding ElementName=PART_PluginButton, Path=Foreground}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ProgressBar.Style>
+                    </ProgressBar>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Button>
+</local:ThemeControlBase>

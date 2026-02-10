@@ -1,0 +1,40 @@
+<local:CompactAchievementControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Legacy.PluginCompactLockedControl"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
+                   xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+                   xmlns:local="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
+                   xmlns:localControls="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Legacy.Controls"
+                   mc:Ignorable="d"
+                   d:DesignHeight="100" d:DesignWidth="300">
+    <!--
+        SuccessStory-compatible compact locked control for theme integration.
+        Programmatically creates grid columns to fit achievements, with "+X more" in the last column.
+    -->
+<local:CompactAchievementControlBase.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    </local:CompactAchievementControlBase.Resources>
+
+    <Grid Name="PART_GridContener" Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}">
+        <Grid Name="PART_ScCompactView" x:FieldModifier="protected" />
+
+        <!-- Empty state message -->
+        <TextBlock Text="No locked achievements"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextBrushDarker}">
+            <TextBlock.Style>
+                <Style TargetType="{x:Type TextBlock}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=HasLocked}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                    <Setter Property="Visibility" Value="Visible" />
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+    </Grid>
+</local:CompactAchievementControlBase>

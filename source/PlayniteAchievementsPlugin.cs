@@ -46,7 +46,7 @@ namespace PlayniteAchievements
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly NotificationPublisher _notifications;
-        private readonly SteamDataProvider _steamProvider;
+        private readonly SteamSessionManager _steamSessionManager;
 
         private readonly BackgroundUpdater _backgroundUpdates;
 
@@ -87,6 +87,7 @@ namespace PlayniteAchievements
         public MemoryImageService ImageService => _imageService;
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;
+        public SteamSessionManager SteamSessionManager => _steamSessionManager;
         public static PlayniteAchievementsPlugin Instance { get; private set; }
 
         /// <summary>
@@ -128,15 +129,16 @@ namespace PlayniteAchievements
                 _settingsViewModel.Settings.Persisted.RareThreshold,
                 _settingsViewModel.Settings.Persisted.UncommonThreshold);
 
-            _steamProvider = SteamDataProvider.Create(
-                _logger,
-                _settingsViewModel.Settings,
-                PlayniteApi,
-                GetPluginUserDataPath());
+            // Create shared Steam session manager for use by provider and settings UI
+            _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, GetPluginUserDataPath(), _settingsViewModel.Settings);
 
             var providers = new List<IDataProvider>
             {
-                _steamProvider,
+                new SteamDataProvider(
+                _logger,
+                _settingsViewModel.Settings,
+                PlayniteApi,
+                _steamSessionManager),
 
                 new RetroAchievementsDataProvider(
                     _logger,
@@ -232,7 +234,7 @@ namespace PlayniteAchievements
             try
             {
                 _logger.Info($"GetSettingsView called, firstRunView={firstRunView}");
-                var control = new SettingsControl(_settingsViewModel, _logger, _steamProvider.SessionManager, this);
+                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager);
                 _logger.Info("GetSettingsView succeeded");
                 return control;
             }

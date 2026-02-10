@@ -11,7 +11,7 @@ using Playnite.SDK.Controls;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
-using PlayniteAchievements.Views.ThemeIntegration.SuccessStory.Controls;
+using PlayniteAchievements.Views.ThemeIntegration.Legacy.Controls;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Base
 {
@@ -114,10 +114,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            if (Plugin?.Settings?.SuccessStoryTheme != null)
+            if (Plugin?.Settings?.LegacyTheme != null)
             {
-                Plugin.Settings.SuccessStoryTheme.PropertyChanged -= Settings_PropertyChanged;
-                Plugin.Settings.SuccessStoryTheme.PropertyChanged += Settings_PropertyChanged;
+                Plugin.Settings.LegacyTheme.PropertyChanged -= Settings_PropertyChanged;
+                Plugin.Settings.LegacyTheme.PropertyChanged += Settings_PropertyChanged;
             }
 
             UpdateFilteredAchievements();
@@ -134,9 +134,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            if (Plugin?.Settings?.SuccessStoryTheme != null)
+            if (Plugin?.Settings?.LegacyTheme != null)
             {
-                Plugin.Settings.SuccessStoryTheme.PropertyChanged -= Settings_PropertyChanged;
+                Plugin.Settings.LegacyTheme.PropertyChanged -= Settings_PropertyChanged;
             }
         }
 

@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     /// </summary>
     public sealed class ThemeIntegrationUpdateService : IDisposable
     {
-        private readonly ThemeIntegrationAdapter _adapter;
+        private readonly ThemeIntegrationService _integrator;
         private readonly AchievementManager _achievementService;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
@@ -44,13 +44,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private int _settingsRevision;
 
         public ThemeIntegrationUpdateService(
-            ThemeIntegrationAdapter adapter,
+            ThemeIntegrationService integrator,
             AchievementManager achievementService,
             PlayniteAchievementsSettings settings,
             ILogger logger,
             Dispatcher uiDispatcher)
         {
-            _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
+            _integrator = integrator ?? throw new ArgumentNullException(nameof(integrator));
             _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
@@ -83,7 +83,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 _ = _uiDispatcher.BeginInvoke(new Action(() =>
                 {
-                    try { _adapter.ClearThemeProperties(); } catch { }
+                    try { _integrator.ClearSingleGameThemeProperties(); } catch { }
                 }), DispatcherPriority.Background);
             }
         }
@@ -222,7 +222,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     continue;
                 }
 
-                ThemeIntegrationSnapshot snapshot = null;
+                SingleGameSnapshot snapshot = null;
                 try
                 {
                     var ultra = _ultraRareThreshold;
@@ -230,7 +230,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     var uncommon = _uncommonThreshold;
 
                     snapshot = await Task.Run(
-                        () => ThemeIntegrationAdapter.BuildSnapshot(gameId.Value, gameData, ultra, rare, uncommon),
+                        () => SingleGameSnapshotService.BuildSnapshot(gameId.Value, gameData, ultra, rare, uncommon),
                         token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
@@ -260,14 +260,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     return;
                 }
 
-                _adapter.ClearThemeProperties();
+                _integrator.ClearSingleGameThemeProperties();
                 _appliedGameId = null;
                 _appliedLastUpdatedUtc = default;
                 _appliedSettingsRevision = Volatile.Read(ref _settingsRevision);
             }, DispatcherPriority.Background).Task;
         }
 
-        private Task ApplySnapshotAsync(int version, ThemeIntegrationSnapshot snapshot, Guid gameId, DateTime lastUpdatedUtc, int settingsRevision)
+        private Task ApplySnapshotAsync(int version, SingleGameSnapshot snapshot, Guid gameId, DateTime lastUpdatedUtc, int settingsRevision)
         {
             return _uiDispatcher.InvokeAsync(() =>
             {
@@ -276,7 +276,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     return;
                 }
 
-                _adapter.ApplySnapshot(snapshot);
+                _integrator.ApplySnapshot(snapshot);
                 _appliedGameId = gameId;
                 _appliedLastUpdatedUtc = lastUpdatedUtc;
                 _appliedSettingsRevision = settingsRevision;

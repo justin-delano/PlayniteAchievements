@@ -1,0 +1,258 @@
+<local:ThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Legacy.PluginListControl"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:controls="clr-namespace:Playnite.SDK.Controls;assembly=Playnite.SDK"
+                   xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+                   xmlns:local="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
+                   xmlns:localControls="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Legacy.Controls"
+                   xmlns:wpftk="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
+                   xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                   mc:Ignorable="d"
+                   d:DesignHeight="400" d:DesignWidth="600">
+
+    <local:ThemeControlBase.Resources>
+        <converters:BooleanConverter x:Key="InvertBoolConverter" Mode="Inverted" />
+        <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
+        <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
+        <converters:LocalDateTimeConverter x:Key="LocalDateTimeConverter" />
+        <converters:ValueOperationConverter x:Key="ValueOperationConverter" />
+    </local:ThemeControlBase.Resources>
+
+    <Grid x:Name="PART_Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Sorting/Filtering Controls Row -->
+        <Grid Margin="0,0,0,10" Grid.Row="0"
+              Visibility="{Binding DisplayFilter, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="40" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="1" Name="PART_SortName" Content="&#xea64;"
+                    FontFamily="{DynamicResource CommonFont}" FontSize="16"
+                    Click="PART_SortName_Click" />
+            <Label Grid.Column="1" Name="PART_SortNameOrder" Content="1"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,2,0" />
+
+            <Button Grid.Column="3" Name="PART_SortCal" Content="&#xea65;"
+                    FontFamily="{DynamicResource CommonFont}" FontSize="16"
+                    Click="PART_SortCal_Click" />
+            <Label Grid.Column="3" Name="PART_SortCalOrder" Content="2"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,2,0" />
+
+            <Button Grid.Column="5" Name="PART_SortRarity" Content="&#xea68;"
+                    FontFamily="{DynamicResource CommonFont}" FontSize="16"
+                    Click="PART_SortRarity_Click" />
+            <Label Grid.Column="5" Name="PART_SortRarityOrder" Content="3"
+                   VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="0,0,2,0" />
+
+            <CheckBox Grid.Column="7" Name="PART_SortGroupBy"
+                      Checked="PART_SortGroupBy_Checked" Unchecked="PART_SortGroupBy_Unchecked"
+                      VerticalAlignment="Center">
+                <Label Content="{DynamicResource LOCSuccessStoryGroupByUnlocked}" />
+            </CheckBox>
+        </Grid>
+
+        <!-- Tab Control for Categories (RPCS3) -->
+        <Grid Margin="0,0,0,10" Grid.Row="1">
+            <TabControl Name="PART_TabControl" SelectionChanged="PART_TabControl_SelectionChanged">
+                <TabItem MaxWidth="200" Visibility="Collapsed" />
+                <TabItem MaxWidth="200" Visibility="Collapsed" />
+                <TabItem MaxWidth="200" Visibility="Collapsed" />
+                <TabItem MaxWidth="200" Visibility="Collapsed" />
+                <TabItem MaxWidth="200" Visibility="Collapsed" />
+                <TabItem MaxWidth="200" Visibility="Collapsed" />
+            </TabControl>
+        </Grid>
+
+        <!-- Achievement List -->
+        <Grid Name="PART_GridContener" Grid.Row="2">
+            <ListBox x:Name="lbAchievements"
+                     Style="{StaticResource {x:Type ListBox}}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.CanContentScroll="True"
+                     VirtualizingPanel.IsVirtualizing="True"
+                     VirtualizingPanel.VirtualizationMode="Recycling"
+                     ItemsSource="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=DisplayedAchievements}"
+                     Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}"
+                     Width="{Binding ElementName=PART_GridContener, Path=ActualWidth}"
+                     Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}">
+
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                    <Grid>
+                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                              Margin="3,0,0,0" />
+                                        </Border>
+                                    </Grid>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="Selector.IsSelected" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource TextBrushDark}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <wpftk:VirtualizingWrapPanel Orientation="Vertical"
+                                                     VirtualizingPanel.CacheLengthUnit="Item"
+                                                     VirtualizingPanel.VirtualizationMode="Recycling" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="5" Name="PART_Grid" d:DesignWidth="400" HorizontalAlignment="Stretch">
+                            <Grid.Width>
+                                <MultiBinding Converter="{StaticResource ValueOperationConverter}" ConverterParameter="-">
+                                    <Binding ElementName="lbAchievements" Path="ActualWidth" />
+                                    <Binding>
+                                        <Binding.Source>
+                                            <sys:Double>20</sys:Double>
+                                        </Binding.Source>
+                                    </Binding>
+                                </MultiBinding>
+                            </Grid.Width>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Achievement Icon with Blur Effect for Hidden -->
+                            <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                                <StackPanel.Style>
+                                    <Style TargetType="{x:Type StackPanel}">
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowHiddenIcon}" Value="False" />
+                                                    <Condition Binding="{Binding Hidden}" Value="True" />
+                                                    <Condition Binding="{Binding Unlocked}" Value="False" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Opacity" Value="0.2" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+
+                                <localControls:AchievementImage
+                                    Margin="4"
+                                    Width="{Binding ElementName=lbAchievements, Path=Tag}"
+                                    Height="{Binding ElementName=lbAchievements, Path=Tag}"
+                                    Icon="{Binding UnlockedIconDisplay, IsAsync=True}"
+                                    IsLocked="{Binding Unlocked, Converter={StaticResource InvertBoolConverter}}"
+                                    IconCustom="{Binding LockedIconDisplay, IsAsync=True}"
+                                    Percent="{Binding GlobalPercentUnlocked}"
+                                    EnableRaretyIndicator="True"
+                                    DisplayRaretyValue="False" />
+                            </StackPanel>
+
+                            <!-- Achievement Details -->
+                            <DockPanel Grid.Column="1" Margin="10,0,0,0" LastChildFill="True">
+                                <DockPanel DockPanel.Dock="Top" LastChildFill="True">
+                                    <!-- Right side: Date or Progress Bar -->
+                                    <Grid DockPanel.Dock="Right">
+                                        <!-- Unlocked Date -->
+                                        <TextBlock TextAlignment="Right" Foreground="{DynamicResource TextBrush}"
+                                                   Visibility="{Binding Unlocked, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0:yyyy-MM-dd HH:mm}">
+                                                    <Binding Path="UnlockTimeUtc" Converter="{StaticResource LocalDateTimeConverter}" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+
+                                        <!-- Progress Bar for achievements with progression -->
+                                        <Grid Width="120">
+                                            <Grid.Style>
+                                                <Style TargetType="{x:Type Grid}">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding ProgressMax}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+
+                                            <ProgressBar Minimum="{Binding ProgressMin}" Maximum="{Binding ProgressMax}"
+                                                         Value="{Binding ProgressValue}" />
+                                            <Label Content="{Binding ProgressText}" HorizontalAlignment="Center" />
+                                        </Grid>
+                                    </Grid>
+
+                                    <!-- Achievement Name with Blur for Hidden -->
+                                    <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource TextBrush}"
+                                               TextTrimming="CharacterEllipsis" FontWeight="SemiBold">
+                                        <TextBlock.Style>
+                                            <Style TargetType="{x:Type TextBlock}">
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowHiddenTitle}" Value="False" />
+                                                            <Condition Binding="{Binding Hidden}" Value="True" />
+                                                            <Condition Binding="{Binding Unlocked}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Opacity" Value="0.35" />
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </DockPanel>
+
+                                <!-- Description with Blur for Hidden -->
+                                <TextBlock Grid.Row="1" VerticalAlignment="Top" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextBrushDarker}"
+                                           Name="PART_Desc"
+                                           Text="{Binding Description}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="{x:Type TextBlock}">
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowHiddenDescription}" Value="False" />
+                                                        <Condition Binding="{Binding Hidden}" Value="True" />
+                                                        <Condition Binding="{Binding Unlocked}" Value="False" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Opacity" Value="0.35" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </DockPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+    </Grid>
+</local:ThemeControlBase>

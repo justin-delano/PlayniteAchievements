@@ -212,17 +212,17 @@ namespace PlayniteAchievements.Views
 
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
-        private readonly SteamSessionManager _sessionManager;
         private readonly ILogger _logger;
         private readonly ThemeDiscoveryService _themeDiscovery;
         private readonly ThemeMigrationService _themeMigration;
+        private readonly SteamSessionManager _steamSessionManager;
 
-        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, SteamSessionManager sessionManager, PlayniteAchievementsPlugin plugin)
+        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager)
         {
             _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
-            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+            _steamSessionManager = steamSessionManager ?? throw new ArgumentNullException(nameof(steamSessionManager));
 
             _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
             _themeMigration = new ThemeMigrationService(_logger);
@@ -547,7 +547,7 @@ namespace PlayniteAchievements.Views
 
             try
             {
-                var (ok, msg) = await _sessionManager.AuthenticateInteractiveAsync(CancellationToken.None).ConfigureAwait(false);
+                var (ok, msg) = await _steamSessionManager.AuthenticateInteractiveAsync(CancellationToken.None).ConfigureAwait(false);
                 SetSteamAuthStatus(msg);
 
                 // Update auth state after authentication attempt
@@ -569,7 +569,7 @@ namespace PlayniteAchievements.Views
 
         private void SteamAuth_Clear_Click(object sender, RoutedEventArgs e)
         {
-            _sessionManager.ClearSession();
+            _steamSessionManager.ClearSession();
             SetSteamAuthenticated(false);
             UpdateCombinedAuthState(false);
             SetSteamAuthStatus(ResourceProvider.GetString("LOCPlayAch_Settings_Status_CookiesCleared"));
@@ -580,7 +580,7 @@ namespace PlayniteAchievements.Views
             SetSteamAuthBusy(true);
             try
             {
-                var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(CancellationToken.None).ConfigureAwait(false);
+                var (isLoggedIn, _) = await _steamSessionManager.ProbeLoggedInAsync(CancellationToken.None).ConfigureAwait(false);
                 SetSteamAuthenticated(isLoggedIn);
 
                 // Update combined auth state

@@ -24,9 +24,8 @@ namespace PlayniteAchievements.Models
     ///
     /// Theme integration data is organized into:
     /// - Persisted: User-configurable settings
-    /// - SuccessStoryTheme: SuccessStory-compatible theme data
-    /// - NativeTheme: Native theme integration data
-    /// - Fullscreen properties: Inline properties for legacy fullscreen themes (Aniki ReMake compatibility)
+    /// - Theme: Unified modern theme integration data (per-game + all-games overview)
+    /// - LegacyTheme: Legacy compatibility data (SuccessStory, Aniki ReMake, old inline properties)
     ///
     /// Keep runtime/theme members clearly marked with [DontSerialize] on both the backing field
     /// and the public property to prevent settings bloat and improve performance.
@@ -35,32 +34,6 @@ namespace PlayniteAchievements.Models
     {
         private static readonly List<AchievementDetail> EmptyAchievementList = new List<AchievementDetail>();
         private static readonly AchievementRarityStats EmptyRarityStats = new AchievementRarityStats();
-        private static readonly string[] SuccessStoryForwardAll = new[]
-        {
-            nameof(Is100Percent),
-            nameof(Locked),
-            nameof(Common),
-            nameof(NoCommon),
-            nameof(Rare),
-            nameof(UltraRare),
-            nameof(ListAchievements),
-            nameof(ListAchUnlockDateAsc),
-            nameof(ListAchUnlockDateDesc)
-        };
-
-        private static readonly IReadOnlyDictionary<string, string[]> SuccessStoryForwardMap =
-            new Dictionary<string, string[]>(StringComparer.Ordinal)
-            {
-                { nameof(SuccessStoryThemeData.Is100Percent), new[] { nameof(Is100Percent) } },
-                { nameof(SuccessStoryThemeData.Locked), new[] { nameof(Locked) } },
-                { nameof(SuccessStoryThemeData.Common), new[] { nameof(Common) } },
-                { nameof(SuccessStoryThemeData.NoCommon), new[] { nameof(NoCommon) } },
-                { nameof(SuccessStoryThemeData.Rare), new[] { nameof(Rare) } },
-                { nameof(SuccessStoryThemeData.UltraRare), new[] { nameof(UltraRare) } },
-                { nameof(SuccessStoryThemeData.ListAchievements), new[] { nameof(ListAchievements) } },
-                { nameof(SuccessStoryThemeData.ListAchUnlockDateAsc), new[] { nameof(ListAchUnlockDateAsc) } },
-                { nameof(SuccessStoryThemeData.ListAchUnlockDateDesc), new[] { nameof(ListAchUnlockDateDesc) } }
-            };
 
         #region Composition Properties
 
@@ -70,93 +43,23 @@ namespace PlayniteAchievements.Models
         public PersistedSettings Persisted { get; private set; }
 
         /// <summary>
-        /// SuccessStory theme compatibility data (runtime, not serialized).
+        /// Unified modern theme integration data (runtime, not serialized).
+        /// Contains both per-game achievement data and all-games overview data.
         /// </summary>
         [DontSerialize]
-        public SuccessStoryThemeData SuccessStoryTheme { get; private set; }
+        public ThemeData Theme { get; private set; }
 
         /// <summary>
-        /// Native theme integration data (runtime, not serialized).
+        /// Legacy theme compatibility data (runtime, not serialized).
+        /// Contains SuccessStory compatibility, Aniki ReMake compatibility, and old inline properties.
         /// </summary>
         [DontSerialize]
-        public NativeThemeData NativeTheme { get; private set; }
-
-        /// <summary>
-        /// Fullscreen theme integration data (runtime, not serialized).
-        /// </summary>
-        [DontSerialize]
-        public FullscreenThemeData FullscreenTheme { get; private set; }
+        public LegacyThemeData LegacyTheme { get; private set; }
 
         #endregion
 
-        #region Desktop Theme Integration
+        #region Commands
 
-        /// <summary>
-        /// Modern desktop theme integration properties.
-        /// These properties delegate to NativeThemeData for per-game achievement data.
-        /// Use these for new desktop themes targeting PlayniteAchievements native integration.
-        /// </summary>
-
-        // Per-game achievement counts
-        [DontSerialize]
-        public bool HasAchievements => NativeTheme.HasAchievements;
-
-        [DontSerialize]
-        public int AchievementCount => NativeTheme.AchievementCount;
-
-        [DontSerialize]
-        public int UnlockedCount => NativeTheme.UnlockedCount;
-
-        [DontSerialize]
-        public int LockedCount => NativeTheme.LockedCount;
-
-        [DontSerialize]
-        public double ProgressPercentage => NativeTheme.ProgressPercentage;
-
-        [DontSerialize]
-        public bool AllUnlocked => NativeTheme.AllUnlocked;
-
-        // Per-game achievement lists
-        [DontSerialize]
-        public List<AchievementDetail> Achievements => NativeTheme.AllAchievements ?? EmptyAchievementList;
-
-        [DontSerialize]
-        public List<AchievementDetail> AchievementsNewestFirst => NativeTheme.AchievementsNewestFirst ?? EmptyAchievementList;
-
-        [DontSerialize]
-        public List<AchievementDetail> AchievementsOldestFirst => NativeTheme.AchievementsOldestFirst ?? EmptyAchievementList;
-
-        [DontSerialize]
-        public List<AchievementDetail> AchievementsRarityAsc => NativeTheme.AchievementsRarityAsc ?? EmptyAchievementList;
-
-        [DontSerialize]
-        public List<AchievementDetail> AchievementsRarityDesc => NativeTheme.AchievementsRarityDesc ?? EmptyAchievementList;
-
-        // Per-game rarity stats
-        [DontSerialize]
-        public AchievementRarityStats CommonStats => NativeTheme.CommonStats ?? EmptyRarityStats;
-
-        [DontSerialize]
-        public AchievementRarityStats UncommonStats => NativeTheme.UncommonStats ?? EmptyRarityStats;
-
-        [DontSerialize]
-        public AchievementRarityStats RareStats => NativeTheme.RareStats ?? EmptyRarityStats;
-
-        [DontSerialize]
-        public AchievementRarityStats UltraRareStats => NativeTheme.UltraRareStats ?? EmptyRarityStats;
-
-        #endregion
-
-        #region Fullscreen Theme Integration
-
-        /// <summary>
-        /// Modern fullscreen theme integration properties.
-        /// These properties delegate to FullscreenThemeData for all-games/overview data
-        /// and NativeThemeData for per-game data.
-        /// Use these for new fullscreen themes targeting PlayniteAchievements native integration.
-        /// </summary>
-
-        // Command surfaces
         [DontSerialize]
         private ICommand _openFullscreenAchievementWindow;
         [DontSerialize]
@@ -169,86 +72,13 @@ namespace PlayniteAchievements.Models
         private ICommand _fullRefreshCommand;
         [DontSerialize]
         private ICommand _installedRefreshCommand;
-
-        // Fullscreen overview data - delegates to FullscreenThemeData
         [DontSerialize]
-        public bool FullscreenHasData
-        {
-            get => FullscreenTheme.FullscreenHasData;
-            set => FullscreenTheme.FullscreenHasData = value;
-        }
-
+        private ICommand _openAchievementWindow;
         [DontSerialize]
-        public ObservableCollection<FullscreenAchievementGameItem> FullscreenGamesWithAchievements
-        {
-            get => FullscreenTheme.FullscreenGamesWithAchievements;
-            set => FullscreenTheme.FullscreenGamesWithAchievements = value;
-        }
-
+        private ICommand _openGameAchievementWindow;
         [DontSerialize]
-        public ObservableCollection<FullscreenAchievementGameItem> FullscreenPlatinumGames
-        {
-            get => FullscreenTheme.FullscreenPlatinumGames;
-            set => FullscreenTheme.FullscreenPlatinumGames = value;
-        }
+        private ICommand _refreshSelectedGameCommand;
 
-        [DontSerialize]
-        public int FullscreenTotalTrophies
-        {
-            get => FullscreenTheme.FullscreenTotalTrophies;
-            set => FullscreenTheme.FullscreenTotalTrophies = value;
-        }
-
-        [DontSerialize]
-        public int FullscreenPlatinumTrophies
-        {
-            get => FullscreenTheme.FullscreenPlatinumTrophies;
-            set => FullscreenTheme.FullscreenPlatinumTrophies = value;
-        }
-
-        [DontSerialize]
-        public int FullscreenGoldTrophies
-        {
-            get => FullscreenTheme.FullscreenGoldTrophies;
-            set => FullscreenTheme.FullscreenGoldTrophies = value;
-        }
-
-        [DontSerialize]
-        public int FullscreenSilverTrophies
-        {
-            get => FullscreenTheme.FullscreenSilverTrophies;
-            set => FullscreenTheme.FullscreenSilverTrophies = value;
-        }
-
-        [DontSerialize]
-        public int FullscreenBronzeTrophies
-        {
-            get => FullscreenTheme.FullscreenBronzeTrophies;
-            set => FullscreenTheme.FullscreenBronzeTrophies = value;
-        }
-
-        [DontSerialize]
-        public int FullscreenLevel
-        {
-            get => FullscreenTheme.FullscreenLevel;
-            set => FullscreenTheme.FullscreenLevel = value;
-        }
-
-        [DontSerialize]
-        public double FullscreenLevelProgress
-        {
-            get => FullscreenTheme.FullscreenLevelProgress;
-            set => FullscreenTheme.FullscreenLevelProgress = value;
-        }
-
-        [DontSerialize]
-        public string FullscreenRank
-        {
-            get => FullscreenTheme.FullscreenRank;
-            set => FullscreenTheme.FullscreenRank = value;
-        }
-
-        // Commands
         [DontSerialize]
         public ICommand OpenFullscreenAchievementWindow
         {
@@ -291,104 +121,6 @@ namespace PlayniteAchievements.Models
             set => SetValue(ref _installedRefreshCommand, value);
         }
 
-        // Single-game achievement lists - delegates to NativeThemeData
-        [DontSerialize]
-        public List<AchievementDetail> FullscreenSingleGameUnlockAsc => NativeTheme.AchievementsOldestFirst ?? EmptyAchievementList;
-
-        [DontSerialize]
-        public List<AchievementDetail> FullscreenSingleGameUnlockDesc => NativeTheme.AchievementsNewestFirst ?? EmptyAchievementList;
-
-        [DontSerialize]
-        public List<AchievementDetail> FullscreenSingleGameRarityAsc => NativeTheme.AchievementsRarityAsc ?? EmptyAchievementList;
-
-        [DontSerialize]
-        public List<AchievementDetail> FullscreenSingleGameRarityDesc => NativeTheme.AchievementsRarityDesc ?? EmptyAchievementList;
-
-        // All-games achievement lists - delegates to FullscreenThemeData
-        [DontSerialize]
-        public List<AchievementDetail> FullscreenAllAchievementsUnlockAsc
-        {
-            get => FullscreenTheme.AllAchievementsUnlockAsc ?? EmptyAchievementList;
-            set => FullscreenTheme.AllAchievementsUnlockAsc = value;
-        }
-
-        [DontSerialize]
-        public List<AchievementDetail> FullscreenAllAchievementsUnlockDesc
-        {
-            get => FullscreenTheme.AllAchievementsUnlockDesc ?? EmptyAchievementList;
-            set => FullscreenTheme.AllAchievementsUnlockDesc = value;
-        }
-
-        [DontSerialize]
-        public List<AchievementDetail> FullscreenAllAchievementsRarityAsc
-        {
-            get => FullscreenTheme.AllAchievementsRarityAsc ?? EmptyAchievementList;
-            set => FullscreenTheme.AllAchievementsRarityAsc = value;
-        }
-
-        [DontSerialize]
-        public List<AchievementDetail> FullscreenAllAchievementsRarityDesc
-        {
-            get => FullscreenTheme.AllAchievementsRarityDesc ?? EmptyAchievementList;
-            set => FullscreenTheme.AllAchievementsRarityDesc = value;
-        }
-
-        #endregion
-
-        #region Legacy Theme Properties
-
-        /// <summary>
-        /// Legacy theme compatibility properties for backward compatibility.
-        /// Includes SuccessStory compatibility, Aniki ReMake compatibility, and old inline properties.
-        /// New themes should prefer Desktop or Fullscreen sections above.
-        /// </summary>
-
-        // Old inline basic properties (for very old themes)
-        [DontSerialize]
-        private bool _hasData;
-        [DontSerialize]
-        private int _total;
-        [DontSerialize]
-        private int _unlocked;
-        [DontSerialize]
-        private double _percent;
-
-        [DontSerialize]
-        public bool HasData
-        {
-            get => _hasData;
-            set => SetValue(ref _hasData, value);
-        }
-
-        [DontSerialize]
-        public int Total
-        {
-            get => _total;
-            set => SetValue(ref _total, value);
-        }
-
-        [DontSerialize]
-        public int Unlocked
-        {
-            get => _unlocked;
-            set => SetValue(ref _unlocked, value);
-        }
-
-        [DontSerialize]
-        public double Percent
-        {
-            get => _percent;
-            set => SetValue(ref _percent, value);
-        }
-
-        // SuccessStory compatibility command surfaces
-        [DontSerialize]
-        private ICommand _openAchievementWindow;
-        [DontSerialize]
-        private ICommand _openGameAchievementWindow;
-        [DontSerialize]
-        private ICommand _refreshSelectedGameCommand;
-
         [DontSerialize]
         public ICommand OpenAchievementWindow
         {
@@ -410,7 +142,170 @@ namespace PlayniteAchievements.Models
             set => SetValue(ref _refreshSelectedGameCommand, value);
         }
 
-        // SuccessStory compatibility properties - delegates to SuccessStoryTheme
+        #endregion
+
+        #region Modern Theme Integration (delegates to Theme)
+
+        // === Per-Game Achievement Data ===
+
+        [DontSerialize]
+        public bool HasAchievements => Theme.HasAchievements;
+
+        [DontSerialize]
+        public int AchievementCount => Theme.AchievementCount;
+
+        [DontSerialize]
+        public int UnlockedCount => Theme.UnlockedCount;
+
+        [DontSerialize]
+        public int LockedCount => Theme.LockedCount;
+
+        [DontSerialize]
+        public double ProgressPercentage => Theme.ProgressPercentage;
+
+        [DontSerialize]
+        public bool AllUnlocked => Theme.AllUnlocked;
+
+        [DontSerialize]
+        public List<AchievementDetail> Achievements => Theme.AllAchievements ?? EmptyAchievementList;
+
+        [DontSerialize]
+        public List<AchievementDetail> AchievementsNewestFirst => Theme.AchievementsNewestFirst ?? EmptyAchievementList;
+
+        [DontSerialize]
+        public List<AchievementDetail> AchievementsOldestFirst => Theme.AchievementsOldestFirst ?? EmptyAchievementList;
+
+        [DontSerialize]
+        public List<AchievementDetail> AchievementsRarityAsc => Theme.AchievementsRarityAsc ?? EmptyAchievementList;
+
+        [DontSerialize]
+        public List<AchievementDetail> AchievementsRarityDesc => Theme.AchievementsRarityDesc ?? EmptyAchievementList;
+
+        [DontSerialize]
+        public AchievementRarityStats CommonStats => Theme.CommonStats ?? EmptyRarityStats;
+
+        [DontSerialize]
+        public AchievementRarityStats UncommonStats => Theme.UncommonStats ?? EmptyRarityStats;
+
+        [DontSerialize]
+        public AchievementRarityStats RareStats => Theme.RareStats ?? EmptyRarityStats;
+
+        [DontSerialize]
+        public AchievementRarityStats UltraRareStats => Theme.UltraRareStats ?? EmptyRarityStats;
+
+        // === All-Games Overview Data ===
+
+        [DontSerialize]
+        public bool HasData
+        {
+            get => Theme.HasData;
+            set => Theme.HasData = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> GamesWithAchievements
+        {
+            get => Theme.GamesWithAchievements;
+            set => Theme.GamesWithAchievements = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> PlatinumGames
+        {
+            get => Theme.PlatinumGames;
+            set => Theme.PlatinumGames = value;
+        }
+
+        [DontSerialize]
+        public int TotalTrophies
+        {
+            get => Theme.TotalTrophies;
+            set => Theme.TotalTrophies = value;
+        }
+
+        [DontSerialize]
+        public int PlatinumTrophies
+        {
+            get => Theme.PlatinumTrophies;
+            set => Theme.PlatinumTrophies = value;
+        }
+
+        [DontSerialize]
+        public int GoldTrophies
+        {
+            get => Theme.GoldTrophies;
+            set => Theme.GoldTrophies = value;
+        }
+
+        [DontSerialize]
+        public int SilverTrophies
+        {
+            get => Theme.SilverTrophies;
+            set => Theme.SilverTrophies = value;
+        }
+
+        [DontSerialize]
+        public int BronzeTrophies
+        {
+            get => Theme.BronzeTrophies;
+            set => Theme.BronzeTrophies = value;
+        }
+
+        [DontSerialize]
+        public int Level
+        {
+            get => Theme.Level;
+            set => Theme.Level = value;
+        }
+
+        [DontSerialize]
+        public double LevelProgress
+        {
+            get => Theme.LevelProgress;
+            set => Theme.LevelProgress = value;
+        }
+
+        [DontSerialize]
+        public string Rank
+        {
+            get => Theme.Rank;
+            set => Theme.Rank = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> AllAchievementsUnlockAsc
+        {
+            get => Theme.AllAchievementsUnlockAsc ?? EmptyAchievementList;
+            set => Theme.AllAchievementsUnlockAsc = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> AllAchievementsUnlockDesc
+        {
+            get => Theme.AllAchievementsUnlockDesc ?? EmptyAchievementList;
+            set => Theme.AllAchievementsUnlockDesc = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> AllAchievementsRarityAsc
+        {
+            get => Theme.AllAchievementsRarityAsc ?? EmptyAchievementList;
+            set => Theme.AllAchievementsRarityAsc = value;
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> AllAchievementsRarityDesc
+        {
+            get => Theme.AllAchievementsRarityDesc ?? EmptyAchievementList;
+            set => Theme.AllAchievementsRarityDesc = value;
+        }
+
+        #endregion
+
+        #region Legacy Theme Compatibility (delegates to LegacyTheme)
+
+        // === SuccessStory Compatibility ===
+
         [DontSerialize]
         public bool EnableIntegrationCompactUnlocked => true;
 
@@ -418,115 +313,139 @@ namespace PlayniteAchievements.Models
         public bool EnableIntegrationCompactLocked => true;
 
         [DontSerialize]
-        public bool Is100Percent => SuccessStoryTheme?.Is100Percent ?? false;
+        public bool Is100Percent => LegacyTheme.Is100Percent;
 
         [DontSerialize]
-        public int Locked => SuccessStoryTheme?.Locked ?? 0;
+        public int Locked => LegacyTheme.Locked;
 
         [DontSerialize]
-        public AchievementRarityStats Common => SuccessStoryTheme?.Common ?? EmptyRarityStats;
+        public AchievementRarityStats Common => LegacyTheme.Common ?? EmptyRarityStats;
 
         [DontSerialize]
-        public AchievementRarityStats NoCommon => SuccessStoryTheme?.NoCommon ?? EmptyRarityStats;
+        public AchievementRarityStats NoCommon => LegacyTheme.NoCommon ?? EmptyRarityStats;
 
         [DontSerialize]
-        public AchievementRarityStats Rare => SuccessStoryTheme?.Rare ?? EmptyRarityStats;
+        public AchievementRarityStats Rare => LegacyTheme.Rare ?? EmptyRarityStats;
 
         [DontSerialize]
-        public AchievementRarityStats UltraRare => SuccessStoryTheme?.UltraRare ?? EmptyRarityStats;
+        public AchievementRarityStats UltraRare => LegacyTheme.UltraRare ?? EmptyRarityStats;
 
         [DontSerialize]
-        public List<AchievementDetail> ListAchievements => SuccessStoryTheme?.ListAchievements ?? EmptyAchievementList;
+        public List<AchievementDetail> ListAchievements => LegacyTheme.ListAchievements ?? EmptyAchievementList;
 
         [DontSerialize]
-        public List<AchievementDetail> ListAchUnlockDateAsc => SuccessStoryTheme?.ListAchUnlockDateAsc ?? EmptyAchievementList;
+        public List<AchievementDetail> ListAchUnlockDateAsc => LegacyTheme.ListAchUnlockDateAsc ?? EmptyAchievementList;
 
         [DontSerialize]
-        public List<AchievementDetail> ListAchUnlockDateDesc => SuccessStoryTheme?.ListAchUnlockDateDesc ?? EmptyAchievementList;
+        public List<AchievementDetail> ListAchUnlockDateDesc => LegacyTheme.ListAchUnlockDateDesc ?? EmptyAchievementList;
 
-        // Aniki ReMake compatibility properties - delegates to FullscreenTheme
+        // === Old Inline Properties (delegates to LegacyTheme) ===
+
         [DontSerialize]
-        public ObservableCollection<FullscreenAchievementGameItem> AllGamesWithAchievements
+        public bool HasDataLegacy
         {
-            get => FullscreenTheme.AllGamesWithAchievements;
-            set => FullscreenTheme.AllGamesWithAchievements = value;
+            get => LegacyTheme.HasData;
+            set => LegacyTheme.HasData = value;
         }
 
         [DontSerialize]
-        public ObservableCollection<FullscreenAchievementGameItem> PlatinumGames
+        public int Total
         {
-            get => FullscreenTheme.PlatinumGames;
-            set => FullscreenTheme.PlatinumGames = value;
+            get => LegacyTheme.Total;
+            set => LegacyTheme.Total = value;
         }
 
         [DontSerialize]
-        public ObservableCollection<FullscreenAchievementGameItem> PlatinumGamesAscending
+        public int Unlocked
         {
-            get => FullscreenTheme.PlatinumGamesAscending;
-            set => FullscreenTheme.PlatinumGamesAscending = value;
+            get => LegacyTheme.Unlocked;
+            set => LegacyTheme.Unlocked = value;
+        }
+
+        [DontSerialize]
+        public double Percent
+        {
+            get => LegacyTheme.Percent;
+            set => LegacyTheme.Percent = value;
+        }
+
+        // === Aniki ReMake Compatibility (delegates to LegacyTheme) ===
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> AllGamesWithAchievements
+        {
+            get => LegacyTheme.AllGamesWithAchievements;
+            set => LegacyTheme.AllGamesWithAchievements = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> PlatinumGamesAscending
+        {
+            get => LegacyTheme.PlatinumGamesAscending;
+            set => LegacyTheme.PlatinumGamesAscending = value;
         }
 
         [DontSerialize]
         public string GSTotal
         {
-            get => FullscreenTheme.GSTotal;
-            set => FullscreenTheme.GSTotal = value;
+            get => LegacyTheme.GSTotal;
+            set => LegacyTheme.GSTotal = value;
         }
 
         [DontSerialize]
         public string GSPlat
         {
-            get => FullscreenTheme.GSPlat;
-            set => FullscreenTheme.GSPlat = value;
+            get => LegacyTheme.GSPlat;
+            set => LegacyTheme.GSPlat = value;
         }
 
         [DontSerialize]
         public string GS90
         {
-            get => FullscreenTheme.GS90;
-            set => FullscreenTheme.GS90 = value;
+            get => LegacyTheme.GS90;
+            set => LegacyTheme.GS90 = value;
         }
 
         [DontSerialize]
         public string GS30
         {
-            get => FullscreenTheme.GS30;
-            set => FullscreenTheme.GS30 = value;
+            get => LegacyTheme.GS30;
+            set => LegacyTheme.GS30 = value;
         }
 
         [DontSerialize]
         public string GS15
         {
-            get => FullscreenTheme.GS15;
-            set => FullscreenTheme.GS15 = value;
+            get => LegacyTheme.GS15;
+            set => LegacyTheme.GS15 = value;
         }
 
         [DontSerialize]
         public string GSScore
         {
-            get => FullscreenTheme.GSScore;
-            set => FullscreenTheme.GSScore = value;
+            get => LegacyTheme.GSScore;
+            set => LegacyTheme.GSScore = value;
         }
 
         [DontSerialize]
         public string GSLevel
         {
-            get => FullscreenTheme.GSLevel;
-            set => FullscreenTheme.GSLevel = value;
+            get => LegacyTheme.GSLevel;
+            set => LegacyTheme.GSLevel = value;
         }
 
         [DontSerialize]
         public double GSLevelProgress
         {
-            get => FullscreenTheme.GSLevelProgress;
-            set => FullscreenTheme.GSLevelProgress = value;
+            get => LegacyTheme.GSLevelProgress;
+            set => LegacyTheme.GSLevelProgress = value;
         }
 
         [DontSerialize]
         public string GSRank
         {
-            get => FullscreenTheme.GSRank;
-            set => FullscreenTheme.GSRank = value;
+            get => LegacyTheme.GSRank;
+            set => LegacyTheme.GSRank = value;
         }
 
         #endregion
@@ -535,52 +454,6 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         internal PlayniteAchievementsPlugin _plugin;
-
-        private void AttachSuccessStoryHandlers()
-        {
-            if (SuccessStoryTheme == null)
-            {
-                return;
-            }
-
-            SuccessStoryTheme.PropertyChanged -= SuccessStoryTheme_PropertyChanged;
-            SuccessStoryTheme.PropertyChanged += SuccessStoryTheme_PropertyChanged;
-        }
-
-        private void SuccessStoryTheme_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            ForwardPropertyChanged(e, SuccessStoryForwardMap, SuccessStoryForwardAll);
-        }
-
-        private void ForwardPropertyChanged(
-            PropertyChangedEventArgs e,
-            IReadOnlyDictionary<string, string[]> map,
-            string[] allTargets)
-        {
-            if (e == null || string.IsNullOrEmpty(e.PropertyName))
-            {
-                RaisePropertyChanged(allTargets);
-                return;
-            }
-
-            if (map != null && map.TryGetValue(e.PropertyName, out var targets))
-            {
-                RaisePropertyChanged(targets);
-            }
-        }
-
-        private void RaisePropertyChanged(IEnumerable<string> propertyNames)
-        {
-            if (propertyNames == null)
-            {
-                return;
-            }
-
-            foreach (var name in propertyNames)
-            {
-                OnPropertyChanged(name);
-            }
-        }
 
         /// <summary>
         /// Copies persisted settings from another settings instance.
@@ -608,10 +481,8 @@ namespace PlayniteAchievements.Models
         public PlayniteAchievementsSettings()
         {
             Persisted = new PersistedSettings();
-            SuccessStoryTheme = new SuccessStoryThemeData();
-            NativeTheme = new NativeThemeData();
-            FullscreenTheme = new FullscreenThemeData();
-            AttachSuccessStoryHandlers();
+            Theme = new ThemeData();
+            LegacyTheme = new LegacyThemeData();
         }
 
         /// <summary>
