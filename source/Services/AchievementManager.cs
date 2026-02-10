@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -45,7 +46,7 @@ namespace PlayniteAchievements.Services
         private readonly ICacheManager _cacheService;
         private readonly DiskImageService _diskImageService;
         private int _savedGamesInCurrentRun;
-        private long _lastCacheInvalidationTickMs = -1;
+        private long _lastCacheInvalidationTimestamp = -1;
         private const long CacheInvalidationThrottleMs = 500;
 
         // Dependencies that need disposal
@@ -273,7 +274,7 @@ namespace PlayniteAchievements.Services
 
             _progressMapper.Reset();
             Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
-            Interlocked.Exchange(ref _lastCacheInvalidationTickMs, -1);
+            Interlocked.Exchange(ref _lastCacheInvalidationTimestamp, -1);
 
             // Report immediately so UI updates buttons before any async work
             var startMsg = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
@@ -528,18 +529,22 @@ namespace PlayniteAchievements.Services
 
         private void NotifyCacheInvalidatedThrottled(bool force)
         {
-            var nowMs = Environment.TickCount64;
+            var nowTimestamp = Stopwatch.GetTimestamp();
             if (!force)
             {
                 while (true)
                 {
-                    var lastMs = Interlocked.Read(ref _lastCacheInvalidationTickMs);
-                    if (lastMs >= 0 && (nowMs - lastMs) < CacheInvalidationThrottleMs)
+                    var lastTimestamp = Interlocked.Read(ref _lastCacheInvalidationTimestamp);
+                    if (lastTimestamp >= 0)
                     {
-                        return;
+                        var elapsedMs = (nowTimestamp - lastTimestamp) * 1000L / Stopwatch.Frequency;
+                        if (elapsedMs < CacheInvalidationThrottleMs)
+                        {
+                            return;
+                        }
                     }
 
-                    if (Interlocked.CompareExchange(ref _lastCacheInvalidationTickMs, nowMs, lastMs) == lastMs)
+                    if (Interlocked.CompareExchange(ref _lastCacheInvalidationTimestamp, nowTimestamp, lastTimestamp) == lastTimestamp)
                     {
                         break;
                     }
@@ -547,7 +552,7 @@ namespace PlayniteAchievements.Services
             }
             else
             {
-                Interlocked.Exchange(ref _lastCacheInvalidationTickMs, nowMs);
+                Interlocked.Exchange(ref _lastCacheInvalidationTimestamp, nowTimestamp);
             }
 
             _cacheService.NotifyCacheInvalidated();
