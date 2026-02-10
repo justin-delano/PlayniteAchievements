@@ -6,13 +6,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Playnite.SDK;
 
-namespace PlayniteAchievements.Services.ThemeTransition
+namespace PlayniteAchievements.Services.ThemeMigration
 {
     /// <summary>
-    /// Service for transitioning themes from SuccessStory to PlayniteAchievements.
+    /// Service for migrating themes from SuccessStory to PlayniteAchievements.
     /// Creates a selective backup of only files that were changed.
     /// </summary>
-    public sealed class ThemeTransitionService
+    public sealed class ThemeMigrationService
     {
         private readonly ILogger _logger;
         private const string BackupFolderName = "PlayniteAchievements_backup";
@@ -38,21 +38,21 @@ namespace PlayniteAchievements.Services.ThemeTransition
             ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"
         };
 
-        public ThemeTransitionService(ILogger logger)
+        public ThemeMigrationService(ILogger logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
-        /// Transitions a theme from SuccessStory to PlayniteAchievements.
+        /// Migrates a theme from SuccessStory to PlayniteAchievements.
         /// </summary>
         /// <param name="themePath">Full path to the theme directory.</param>
-        /// <returns>Transition result with status and details.</returns>
-        public async Task<TransitionResult> TransitionThemeAsync(string themePath)
+        /// <returns>Migration result with status and details.</returns>
+        public async Task<MigrationResult> MigrateThemeAsync(string themePath)
         {
             if (string.IsNullOrWhiteSpace(themePath))
             {
-                return new TransitionResult
+                return new MigrationResult
                 {
                     Success = false,
                     Message = "Theme path cannot be empty."
@@ -61,14 +61,14 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
             if (!Directory.Exists(themePath))
             {
-                return new TransitionResult
+                return new MigrationResult
                 {
                     Success = false,
                     Message = $"Theme directory does not exist: {themePath}"
                 };
             }
 
-            _logger.Info($"Starting theme transition for: {themePath}");
+            _logger.Info($"Starting theme migration for: {themePath}");
 
             try
             {
@@ -77,7 +77,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 if (Directory.Exists(backupPath))
                 {
                     _logger.Info($"Backup already exists at: {backupPath}");
-                    return new TransitionResult
+                    return new MigrationResult
                     {
                         Success = false,
                         Message = $"Backup folder '{BackupFolderName}' already exists in theme directory. Please remove it first."
@@ -86,14 +86,14 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
                 var result = await Task.Run(() =>
                 {
-                    return PerformTransition(themePath, backupPath);
+                    return PerformMigration(themePath, backupPath);
                 });
 
                 // If no files needed changes, report success but note no backup was created
                 if (result.FilesBackedUp == 0)
                 {
                     _logger.Info($"No files contained SuccessStory references - no changes needed for: {themePath}");
-                    return new TransitionResult
+                    return new MigrationResult
                     {
                         Success = true,
                         Message = "Theme already compatible - no SuccessStory references found. No backup created.",
@@ -103,12 +103,12 @@ namespace PlayniteAchievements.Services.ThemeTransition
                     };
                 }
 
-                _logger.Info($"Theme transition completed successfully for: {themePath}");
+                _logger.Info($"Theme migration completed successfully for: {themePath}");
 
-                return new TransitionResult
+                return new MigrationResult
                 {
                     Success = true,
-                    Message = $"Theme transitioned successfully. {result.FilesBackedUp} files backed up, {result.FilesProcessed} files modified.",
+                    Message = $"Theme migrated successfully. {result.FilesBackedUp} files backed up, {result.FilesProcessed} files modified.",
                     BackupPath = backupPath,
                     FilesProcessed = result.FilesProcessed,
                     ReplacementsMade = result.ReplacementsMade,
@@ -117,19 +117,19 @@ namespace PlayniteAchievements.Services.ThemeTransition
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, $"Failed to transition theme at: {themePath}");
-                return new TransitionResult
+                _logger.Error(ex, $"Failed to migrate theme at: {themePath}");
+                return new MigrationResult
                 {
                     Success = false,
-                    Message = $"Transition failed: {ex.Message}"
+                    Message = $"Migration failed: {ex.Message}"
                 };
             }
         }
 
         /// <summary>
-        /// Performs the transition: backs up modified files and applies replacements.
+        /// Performs the migration: backs up modified files and applies replacements.
         /// </summary>
-        private TransitionResult PerformTransition(string themePath, string backupPath)
+        private MigrationResult PerformMigration(string themePath, string backupPath)
         {
             var backedUpFiles = new List<string>();
             int filesProcessed = 0;
@@ -185,9 +185,9 @@ namespace PlayniteAchievements.Services.ThemeTransition
                 _logger.Info("No files contained SuccessStory references - no backup created");
             }
 
-            _logger.Info($"Transition complete: {filesProcessed} files modified, {filesSkipped} files skipped, {replacementsMade} replacements made");
+            _logger.Info($"Migration complete: {filesProcessed} files modified, {filesSkipped} files skipped, {replacementsMade} replacements made");
 
-            return new TransitionResult
+            return new MigrationResult
             {
                 FilesBackedUp = backedUpFiles.Count,
                 FilesProcessed = filesProcessed,
@@ -477,12 +477,12 @@ namespace PlayniteAchievements.Services.ThemeTransition
         /// Reverts a theme to its original state from backup.
         /// </summary>
         /// <param name="themePath">Full path to the theme directory.</param>
-        /// <returns>Transition result with status and details.</returns>
-        public async Task<TransitionResult> RevertThemeAsync(string themePath)
+        /// <returns>Migration result with status and details.</returns>
+        public async Task<MigrationResult> RevertThemeAsync(string themePath)
         {
             if (string.IsNullOrWhiteSpace(themePath))
             {
-                return new TransitionResult
+                return new MigrationResult
                 {
                     Success = false,
                     Message = "Theme path cannot be empty."
@@ -491,7 +491,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
             if (!Directory.Exists(themePath))
             {
-                return new TransitionResult
+                return new MigrationResult
                 {
                     Success = false,
                     Message = $"Theme directory does not exist: {themePath}"
@@ -502,7 +502,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
             if (!Directory.Exists(backupPath))
             {
-                return new TransitionResult
+                return new MigrationResult
                 {
                     Success = false,
                     Message = $"No backup folder found at: {BackupFolderName}"
@@ -520,7 +520,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
                 _logger.Info($"Theme revert completed successfully for: {themePath}");
 
-                return new TransitionResult
+                return new MigrationResult
                 {
                     Success = true,
                     Message = filesRestored == 0
@@ -531,7 +531,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
             catch (Exception ex)
             {
                 _logger.Error(ex, $"Failed to revert theme at: {themePath}");
-                return new TransitionResult
+                return new MigrationResult
                 {
                     Success = false,
                     Message = $"Revert failed: {ex.Message}"

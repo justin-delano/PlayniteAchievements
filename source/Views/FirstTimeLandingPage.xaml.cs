@@ -9,7 +9,7 @@ using System.Windows.Input;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
-using PlayniteAchievements.Services.ThemeTransition;
+using PlayniteAchievements.Services.ThemeMigration;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -28,7 +28,7 @@ namespace PlayniteAchievements.Views
         private PlayniteAchievementsSettings _settings;
         private readonly IPlayniteAPI _api;
         private readonly ThemeDiscoveryService _themeDiscovery;
-        private readonly ThemeTransitionService _themeTransition;
+        private readonly ThemeMigrationService _themeTransition;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -144,7 +144,7 @@ namespace PlayniteAchievements.Views
             _availableThemes = new ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
             _revertableThemes = new ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
             _themeDiscovery = new ThemeDiscoveryService(_logger, _api);
-            _themeTransition = new ThemeTransitionService(_logger);
+            _themeTransition = new ThemeMigrationService(_logger);
 
             var scanModes = _achievementManager.GetScanModes();
             ScanModes = new ObservableCollection<ScanMode>(scanModes.Where(m => m.Key != "LibrarySelected"));
@@ -458,7 +458,7 @@ namespace PlayniteAchievements.Views
 
                 _logger.Info($"User requested theme transition for: {SelectedThemePath}");
 
-                await ExecuteThemeTransitionAsync(SelectedThemePath);
+                await ExecuteThemeMigrationAsync(SelectedThemePath);
             }
             catch (Exception ex)
             {
@@ -563,7 +563,7 @@ namespace PlayniteAchievements.Views
         /// <summary>
         /// Executes the theme transition.
         /// </summary>
-        private async Task ExecuteThemeTransitionAsync(string themePath)
+        private async Task ExecuteThemeMigrationAsync(string themePath)
         {
             var result = await _themeTransition.TransitionThemeAsync(themePath);
 

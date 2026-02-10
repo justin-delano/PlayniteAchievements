@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using Playnite.SDK;
 
-namespace PlayniteAchievements.Services.ThemeTransition
+namespace PlayniteAchievements.Services.ThemeMigration
 {
     /// <summary>
-    /// Service for discovering themes that need to be transitioned from SuccessStory.
+    /// Service for discovering themes that need to be migrated from SuccessStory.
     /// </summary>
     public sealed class ThemeDiscoveryService
     {
@@ -29,7 +29,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
             public string Name { get; set; }
             public string Path { get; set; }
             public bool HasBackup { get; set; }
-            public bool NeedsTransition { get; set; }
+            public bool NeedsMigration { get; set; }
             public bool CouldNotScan { get; set; }
         }
 
@@ -83,24 +83,24 @@ namespace PlayniteAchievements.Services.ThemeTransition
                         _logger.Debug($"Theme has backup: {hasBackup}");
 
                         // Check if theme contains SuccessStory references
-                        var (needsTransition, couldNotScan) = CheckIfNeedsTransition(themeDir);
+                        var (needsMigration, couldNotScan) = CheckIfNeedsMigration(themeDir);
 
                         var themeInfo = new ThemeInfo
                         {
                             Name = themeName,
                             Path = themeDir,
                             HasBackup = hasBackup,
-                            NeedsTransition = !hasBackup && needsTransition,
+                            NeedsMigration = !hasBackup && needsMigration,
                             CouldNotScan = couldNotScan
                         };
 
                         themes.Add(themeInfo);
 
-                        _logger.Info($"Discovered theme: {themeName}, NeedsTransition: {themeInfo.NeedsTransition}, HasBackup: {hasBackup}, CouldNotScan: {couldNotScan}");
+                        _logger.Info($"Discovered theme: {themeName}, NeedsMigration: {themeInfo.NeedsMigration}, HasBackup: {hasBackup}, CouldNotScan: {couldNotScan}");
                     }
                 }
 
-                _logger.Info($"Discovered {themes.Count} themes, {themes.Count(t => t.NeedsTransition)} need transition.");
+                _logger.Info($"Discovered {themes.Count} themes, {themes.Count(t => t.NeedsMigration)} need migration.");
             }
             catch (Exception ex)
             {
@@ -133,7 +133,7 @@ namespace PlayniteAchievements.Services.ThemeTransition
         /// <summary>
         /// Checks if a theme directory contains SuccessStory references.
         /// </summary>
-        private (bool needsTransition, bool couldNotScan) CheckIfNeedsTransition(string themePath)
+        private (bool needsMigration, bool couldNotScan) CheckIfNeedsMigration(string themePath)
         {
             int filesRead = 0;
             int filesSkipped = 0;
@@ -189,11 +189,11 @@ namespace PlayniteAchievements.Services.ThemeTransition
                         var content = File.ReadAllText(file);
                         filesRead++;
 
-                        // Check if theme already uses PlayniteAchievements (already transitioned)
+                        // Check if theme already uses PlayniteAchievements (already migrated)
                         if (content.IndexOf("PlayniteAchievements", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             foundPlayniteAchievements = true;
-                            _logger.Debug($"Found PlayniteAchievements reference in: {file} - theme already transitioned");
+                            _logger.Debug($"Found PlayniteAchievements reference in: {file} - theme already migrated");
                             break;
                         }
 
@@ -209,14 +209,14 @@ namespace PlayniteAchievements.Services.ThemeTransition
                         _logger.Debug(ex, $"Could not read file while checking theme: {file}");
                     }
 
-                    // Exit early if we found PlayniteAchievements (already transitioned)
+                    // Exit early if we found PlayniteAchievements (already migrated)
                     if (foundPlayniteAchievements)
                     {
                         break;
                     }
                 }
 
-                // If theme already uses PlayniteAchievements, it doesn't need transition
+                // If theme already uses PlayniteAchievements, it doesn't need migration
                 if (foundPlayniteAchievements)
                 {
                     _logger.Info($"Theme {Path.GetFileName(themePath)} already uses PlayniteAchievements - skipping");
@@ -225,20 +225,20 @@ namespace PlayniteAchievements.Services.ThemeTransition
 
                 _logger.Info($"Theme scan for {Path.GetFileName(themePath)}: {filesRead} files read, {filesSkipped} files skipped, found SuccessStory: {foundSuccessStory}");
 
-                // If we couldn't read ANY files, conservatively assume it needs transition
+                // If we couldn't read ANY files, conservatively assume it needs migration
                 // This handles the case where the theme is currently running and files are locked
                 if (filesRead == 0 && filesSkipped > 0)
                 {
                     _logger.Warn($"Could not read any files in theme (likely currently running): {themePath}");
-                    return (true, true); // Conservative: assume it needs transition, mark as could not scan
+                    return (true, true); // Conservative: assume it needs migration, mark as could not scan
                 }
 
                 return (foundSuccessStory, false);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, $"Failed to check if theme needs transition: {themePath}");
-                return (true, true); // Conservative: assume it needs transition on error, mark as could not scan
+                _logger.Error(ex, $"Failed to check if theme needs migration: {themePath}");
+                return (true, true); // Conservative: assume it needs migration on error, mark as could not scan
             }
         }
     }

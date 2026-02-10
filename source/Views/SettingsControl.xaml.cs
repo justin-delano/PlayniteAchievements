@@ -14,7 +14,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers.Steam;
-using PlayniteAchievements.Services.ThemeTransition;
+using PlayniteAchievements.Services.ThemeMigration;
 using Playnite.SDK;
 using System.Diagnostics;
 using System.Windows.Navigation;
@@ -216,7 +216,7 @@ namespace PlayniteAchievements.Views
         private readonly SteamSessionManager _sessionManager;
         private readonly ILogger _logger;
         private readonly ThemeDiscoveryService _themeDiscovery;
-        private readonly ThemeTransitionService _themeTransition;
+        private readonly ThemeMigrationService _themeTransition;
 
         public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, SteamHTTPClient steamClient, SteamSessionManager sessionManager, PlayniteAchievementsPlugin plugin)
         {
@@ -227,7 +227,7 @@ namespace PlayniteAchievements.Views
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
 
             _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
-            _themeTransition = new ThemeTransitionService(_logger);
+            _themeTransition = new ThemeMigrationService(_logger);
 
             InitializeComponent();
 
@@ -292,7 +292,7 @@ namespace PlayniteAchievements.Views
                 if (string.IsNullOrEmpty(themesPath))
                 {
                     _logger.Info("No themes path found for theme transition.");
-                    UpdateThemeTransitionState();
+                    UpdateThemeMigrationState();
                     return;
                 }
 
@@ -310,7 +310,7 @@ namespace PlayniteAchievements.Views
                     RevertableThemes.Add(theme);
                 }
 
-                UpdateThemeTransitionState();
+                UpdateThemeMigrationState();
 
                 _logger.Info($"Loaded {AvailableThemes.Count} themes to transition, {RevertableThemes.Count} themes to revert.");
             }
@@ -320,7 +320,7 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void UpdateThemeTransitionState()
+        private void UpdateThemeMigrationState()
         {
             var hasThemes = AvailableThemes.Count > 0;
             var hasRevertable = RevertableThemes.Count > 0;
@@ -788,7 +788,7 @@ namespace PlayniteAchievements.Views
                 await CheckSteamAuthAsync().ConfigureAwait(false);
                 _logger?.Info("Checked Steam auth for Steam tab.");
             }
-            else if (string.Equals(name, "ThemeTransitionTab", StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(name, "ThemeMigrationTab", StringComparison.OrdinalIgnoreCase))
             {
                 LoadThemes();
                 _logger?.Info("Loaded themes for Theme Transition tab.");

@@ -379,14 +379,14 @@
     <sys:String x:Key="LOCPlayAch_Progress_ButtonContinue">Continue</sys:String>
 
     <!-- ================================================================= -->
-    <!-- THEME TRANSITION                                                   -->
+    <!-- THEME MIGRATION                                                   -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Title">Theme Transition</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Description">Transition a theme from SuccessStory to PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Title">Theme Migration</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Description">Migrate a theme from SuccessStory to PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_SelectTheme">Select Theme Directory</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Transition">Transition Theme</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Success">Theme transitioned successfully!</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_Failed">Theme transition failed: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Transition">Migration Theme</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Success">Theme migrated successfully!</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_Failed">Theme migration failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupExists">Backup folder already exists. Please remove it first.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NoPath">Please select a valid theme directory.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NotDirectory">Selected path is not a directory.</sys:String>
@@ -394,10 +394,10 @@
     <sys:String x:Key="LOCPlayAch_ThemeTransition_FilesProcessed">Files processed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_Replacements">Replacements made: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_BackupLocation">Backup location: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoThemesMessage">No themes found that need transitioning. Themes with SuccessStory references will appear here.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_NoThemesMessage">No themes found that need migrating. Themes with SuccessStory references will appear here.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_Revert">Revert Theme</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NoRevertableThemes">No themes found with backups that can be reverted.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertDescription">Restore a previously transitioned theme from its backup. The backup folder will be preserved after reverting.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertDescription">Restore a previously migrated theme from its backup. The backup folder will be preserved after reverting.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertSuccess">Theme reverted successfully. Backup folder preserved at: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_RevertFailed">Revert failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeTransition_NoBackup">No backup folder found at: {0}</sys:String>

@@ -175,16 +175,16 @@ namespace PlayniteAchievements.Views
                         }
 
                         var firstTimeCompleted = settings?.Persisted?.FirstTimeSetupCompleted ?? true;
-                        var seenThemeTransition = settings?.Persisted?.SeenThemeTransition ?? false;
+                        var seenThemeMigration = settings?.Persisted?.SeenThemeMigration ?? false;
                         var cachedIds = _achievementManager.Cache.GetCachedGameIds();
                         var hasCachedData = cachedIds != null && cachedIds.Count > 0;
-                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeTransition={seenThemeTransition}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
+                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeMigration={seenThemeMigration}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
 
                         // Show landing page if:
-                        // 1. Haven't seen the theme transition page yet (!seenThemeTransition)
+                        // 1. Haven't seen the theme migration page yet (!seenThemeMigration)
                         // 2. Haven't seen landing page before (!firstTimeCompleted)
                         // 3. No data in achievements_cache (NO MATTER WHAT)
-                        bool showLandingPage = !seenThemeTransition || !firstTimeCompleted || !hasCachedData;
+                        bool showLandingPage = !seenThemeMigration || !firstTimeCompleted || !hasCachedData;
 
                         if (settings != null && showLandingPage)
                         {
@@ -216,12 +216,12 @@ namespace PlayniteAchievements.Views
         {
             _logger.Info("Showing first-time landing page.");
 
-            // Mark that the user has seen the theme transition landing page
-            if (!settings.Persisted.SeenThemeTransition)
+            // Mark that the user has seen the theme migration landing page
+            if (!settings.Persisted.SeenThemeMigration)
             {
-                settings.Persisted.SeenThemeTransition = true;
+                settings.Persisted.SeenThemeMigration = true;
                 _plugin.SavePluginSettings(settings);
-                _logger.Info("Set SeenThemeTransition to true");
+                _logger.Info("Set SeenThemeMigration to true");
             }
 
             _landingPage = new FirstTimeLandingPage(

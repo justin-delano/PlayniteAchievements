@@ -1,14 +1,14 @@
 using System;
 
-namespace PlayniteAchievements.Services.ThemeTransition
+namespace PlayniteAchievements.Services.ThemeMigration
 {
     /// <summary>
-    /// Result of a theme transition operation.
+    /// Result of a theme migration operation.
     /// </summary>
-    public class TransitionResult
+    public class MigrationResult
     {
         /// <summary>
-        /// Gets or sets whether the transition was successful.
+        /// Gets or sets whether the migration was successful.
         /// </summary>
         public bool Success { get; set; }
 
