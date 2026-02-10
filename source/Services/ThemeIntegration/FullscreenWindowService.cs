@@ -214,9 +214,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             var content = (FrameworkElement)XamlReader.Parse(xamlString);
 
-            // Set DataContext so theme bindings work
-            content.DataContext = _settings;
-
             window.PreviewKeyDown += (_, e) =>
             {
                 if (e.Key == Key.Escape)
