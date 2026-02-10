@@ -47,14 +47,26 @@ namespace PlayniteAchievements.Models
         /// Contains both per-game achievement data and all-games overview data.
         /// </summary>
         [DontSerialize]
-        public ThemeData Theme { get; private set; }
+        private ThemeData _theme;
+
+        public ThemeData Theme
+        {
+            get => _theme ?? (_theme = new ThemeData());
+            private set => _theme = value;
+        }
 
         /// <summary>
         /// Legacy theme compatibility data (runtime, not serialized).
         /// Contains SuccessStory compatibility, Aniki ReMake compatibility, and old inline properties.
         /// </summary>
         [DontSerialize]
-        public LegacyThemeData LegacyTheme { get; private set; }
+        private LegacyThemeData _legacyTheme;
+
+        public LegacyThemeData LegacyTheme
+        {
+            get => _legacyTheme ?? (_legacyTheme = new LegacyThemeData());
+            private set => _legacyTheme = value;
+        }
 
         #endregion
 
