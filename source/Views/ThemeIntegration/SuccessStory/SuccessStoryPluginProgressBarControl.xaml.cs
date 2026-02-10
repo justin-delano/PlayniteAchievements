@@ -12,7 +12,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
     /// Uses native PlayniteAchievements properties (AchievementCount, UnlockedCount, ProgressPercentage).
     /// Matches the original SuccessStory plugin styling.
     /// </summary>
-    public partial class SuccessStoryPluginProgressBarControl : AchievementThemeControlBase
+    public partial class SuccessStoryPluginProgressBarControl : ThemeControlBase
     {
         #region IntegrationShowProgressBarIndicator Property
 

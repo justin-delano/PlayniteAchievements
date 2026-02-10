@@ -1,4 +1,4 @@
-<local:AchievementThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.SuccessStory.SuccessStoryPluginCompactListControl"
+<local:ThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.SuccessStory.SuccessStoryPluginCompactListControl"
                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,11 +15,11 @@
         Matches the original SuccessStory plugin styling.
         Displays achievement icons in a horizontal wrap panel.
     -->
-    <local:AchievementThemeControlBase.Resources>
+    <local:ThemeControlBase.Resources>
         <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
         <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
         <converters:BooleanConverter x:Key="InvertBoolConverter" Mode="Inverted" />
-    </local:AchievementThemeControlBase.Resources>
+    </local:ThemeControlBase.Resources>
 
     <Grid Name="PART_GridContener" Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}">
         <ListBox ItemsSource="{Binding SuccessStoryTheme.ListAchievements, Mode=OneWay}"
@@ -94,4 +94,4 @@
             </ListBox.ItemTemplate>
         </ListBox>
     </Grid>
-</local:AchievementThemeControlBase>
+</local:ThemeControlBase>

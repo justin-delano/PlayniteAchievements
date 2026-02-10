@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
     /// Uses native PlayniteAchievements properties (AchievementCount, UnlockedCount, AllUnlocked).
     /// Matches the original SuccessStory plugin styling.
     /// </summary>
-    public partial class SuccessStoryPluginButtonControl : AchievementThemeControlBase
+    public partial class SuccessStoryPluginButtonControl : ThemeControlBase
     {
         #region DisplayDetails Property
 

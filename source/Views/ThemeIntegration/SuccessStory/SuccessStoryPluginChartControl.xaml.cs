@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
     /// <summary>
     /// SuccessStory-compatible chart control for theme integration.
     /// </summary>
-    public partial class SuccessStoryPluginChartControl : AchievementThemeControlBase
+    public partial class SuccessStoryPluginChartControl : ThemeControlBase
     {
         private readonly SuccessStoryChartViewModel _viewModel = new SuccessStoryChartViewModel();
 

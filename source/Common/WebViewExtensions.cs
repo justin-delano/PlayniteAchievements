@@ -3,7 +3,7 @@ using Playnite.SDK.Events; // Required for WebViewLoadingChangedEventArgs
 using System;
 using System.Threading.Tasks;
 
-namespace PlayniteAchievements.Extensions
+namespace PlayniteAchievements.Common
 {
     public static class WebViewExtensions
     {

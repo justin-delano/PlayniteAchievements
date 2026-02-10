@@ -22,7 +22,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
     /// Uses native PlayniteAchievements properties (AllAchievements, AchievementCount, etc.).
     /// Matches the original SuccessStory plugin styling and functionality.
     /// </summary>
-    public partial class SuccessStoryPluginListControl : AchievementThemeControlBase
+    public partial class SuccessStoryPluginListControl : ThemeControlBase
     {
         private CancellationTokenSource _sortCts;
 

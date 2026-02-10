@@ -8,7 +8,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
     /// Base class for theme integration controls.
     /// Provides common initialization and game context change handling for all achievement controls.
     /// </summary>
-    public abstract class AchievementThemeControlBase : PluginUserControl
+    public abstract class ThemeControlBase : PluginUserControl
     {
         /// <summary>
         /// Gets the plugin instance for this control.
@@ -16,13 +16,13 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         protected PlayniteAchievementsPlugin Plugin { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="AchievementThemeControlBase"/> class.
+        /// Initializes a new instance of the <see cref="ThemeControlBase"/> class.
         /// Derived classes must call InitializeComponent in their constructors.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the PlayniteAchievementsPlugin instance is not available.
         /// </exception>
-        protected AchievementThemeControlBase()
+        protected ThemeControlBase()
         {
             Plugin = PlayniteAchievementsPlugin.Instance
                 ?? throw new InvalidOperationException("Plugin instance not available");

@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
     /// Programmatically creates grid columns to fit achievements, with "+X more" in the last column.
     /// </summary>
     /// <typeparam name="T">The type of achievement collection (List&lt;AchievementDetail&gt; or similar).</typeparam>
-    public abstract class CompactAchievementControlBase : AchievementThemeControlBase, INotifyPropertyChanged
+    public abstract class CompactAchievementControlBase : ThemeControlBase, INotifyPropertyChanged
     {
         private static readonly List<AchievementDetail> EmptyAchievements = new List<AchievementDetail>();
         private List<AchievementDetail> _visibleAchievements = EmptyAchievements;

@@ -1,4 +1,4 @@
-<local:AchievementThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.SuccessStory.SuccessStoryPluginViewItemControl"
+<local:ThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.SuccessStory.SuccessStoryPluginViewItemControl"
                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -13,10 +13,10 @@
         Matches the original SuccessStory plugin styling.
         Displays achievement summary in game details view.
     -->
-    <local:AchievementThemeControlBase.Resources>
+    <local:ThemeControlBase.Resources>
         <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
         <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
-    </local:AchievementThemeControlBase.Resources>
+    </local:ThemeControlBase.Resources>
 
     <Grid Name="PART_GridContener">
         <!-- Simple label format (when IntegrationViewItemWithProgressBar=False) -->
@@ -49,4 +49,4 @@
                          Height="16" VerticalAlignment="Center" />
         </Grid>
     </Grid>
-</local:AchievementThemeControlBase>
+</local:ThemeControlBase>
