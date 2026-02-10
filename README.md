@@ -186,7 +186,7 @@ Theme developers can use the built-in theme transition tool to automatically upd
 4. Click "Transition" to automatically convert all SuccessStory references
 5. Restart Playnite to apply changes
 
-The tool creates a backup of modified files and can revert changes if needed.
+The tool creates a backup of modified files and can revert changes if needed. Fullscreen themes may have minor compatibility issues, which will be resolved in future updates, or as theme makers make adjustments. 
 
 ### Manual Theme Integration
 
