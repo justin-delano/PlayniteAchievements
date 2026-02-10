@@ -236,7 +236,6 @@ namespace PlayniteAchievements.Services
             Func<RebuildPayload, string> finalMessage,
             string errorLogMessage)
         {
-            _logger.Info("RunManagedAsync starting. Error msg template: " + errorLogMessage);
             if (!TryBeginRun(out var cts))
                 return;
 
