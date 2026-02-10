@@ -5,13 +5,13 @@ Packages:
     ReleaseDate: 2026-02-10
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.0.1/PlayniteAchievements_1_0_1.pext
     Changelog:
-      - Fullscreen theme: fixed Aniki theme compatibility and added native progress bar for single game refresh
-      - Fullscreen theme: added sorted achievement list properties for better theme integration
-      - Settings: reorganized into Desktop, Fullscreen, and Legacy sections for clarity
-      - Settings: added proper property change notifications for computed theme properties
-      - Steam provider: consolidated session management and initialization
-      - Scanning: unified all scan methods and added quick, favorites, full, and installed refresh commands
-      - Bug Fix: Steam provider will now properly find achievements that share icons
+      - Fullscreen theme - fixed Aniki theme compatibility and added native progress bar for single game refresh
+      - Fullscreen theme - added sorted achievement list properties for better theme integration
+      - Settings - reorganized into Desktop, Fullscreen, and Legacy sections for clarity
+      - Settings - added proper property change notifications for computed theme properties
+      - Steam provider - consolidated session management and initialization
+      - Scanning - unified all scan methods and added quick, favorites, full, and installed refresh commands
+      - Bug Fix - Steam provider will now properly find achievements that share icons
 
   - Version: 1.0.0
     RequiredApiVersion: 6.14.0
