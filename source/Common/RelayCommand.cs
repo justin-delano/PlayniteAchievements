@@ -1,8 +1,6 @@
 using System;
 using System.Windows.Input;
 
-using PlayniteAchievements.Common.Commands;
-
 namespace PlayniteAchievements.Common
 {
     /// <summary>

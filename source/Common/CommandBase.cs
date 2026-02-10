@@ -1,7 +1,7 @@
 using System;
 using System.Windows;
 
-namespace PlayniteAchievements.Common.Commands
+namespace PlayniteAchievements.Common
 {
     public abstract class CommandBase
     {

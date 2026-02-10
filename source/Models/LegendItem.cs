@@ -1,6 +1,6 @@
 using PlayniteAchievements.Common;
 
-namespace PlayniteAchievements.Models.PieChart
+namespace PlayniteAchievements.Models
 {
     public class LegendItem : ObservableObject
     {

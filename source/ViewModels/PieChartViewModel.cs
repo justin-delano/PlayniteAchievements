@@ -5,7 +5,7 @@ using System.Windows.Media;
 using LiveCharts;
 using LiveCharts.Wpf;
 using PlayniteAchievements.Common;
-using PlayniteAchievements.Models.PieChart;
+using PlayniteAchievements.Models;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.ViewModels

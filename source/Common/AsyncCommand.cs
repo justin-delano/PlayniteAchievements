@@ -2,8 +2,6 @@ using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-using PlayniteAchievements.Common.Commands;
-
 namespace PlayniteAchievements.Common
 {
     public class AsyncCommand : CommandBase, ICommand
