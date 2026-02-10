@@ -1,5 +1,14 @@
 AddonId: PlayniteAchievements
 Packages:
+  - Version: 1.0.2
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-02-10
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.0.2/PlayniteAchievements_1_0_2.pext
+    Changelog:
+      - New "Missing" scan mode - quickly scan games that don't have achievement data yet
+      - Improved scan feedback - clear error messages when no provider is configured
+      - Performance improvements to reduce UI lag during large scans
+
   - Version: 1.0.1
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-10
