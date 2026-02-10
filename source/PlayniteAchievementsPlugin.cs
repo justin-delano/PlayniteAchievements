@@ -499,6 +499,12 @@ namespace PlayniteAchievements
         {
             try
             {
+                // Validate authentication before showing progress window
+                if (!_achievementService.ValidateCanStartScan())
+                {
+                    return;
+                }
+
                 EnsureWpfFallbackResources();
 
                 var progressWindow = new ScanProgressControl(_achievementService, _logger);

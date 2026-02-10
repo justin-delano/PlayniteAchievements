@@ -64,6 +64,26 @@ namespace PlayniteAchievements.Services
         public bool HasAnyAuthenticatedProvider() => _providers.Any(p => p.IsAuthenticated);
 
         /// <summary>
+        /// Validates that a scan can proceed. Returns true if authenticated, otherwise shows dialog.
+        /// Call this before showing any progress UI.
+        /// </summary>
+        public bool ValidateCanStartScan()
+        {
+            if (HasAnyAuthenticatedProvider())
+            {
+                return true;
+            }
+
+            _logger.Info("Scan attempted but no providers are authenticated.");
+            _api.Dialogs.ShowMessage(
+                ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return false;
+        }
+
+        /// <summary>
         /// Gets the list of available data providers.
         /// </summary>
         public IReadOnlyList<IDataProvider> GetProviders() => _providers;
@@ -239,22 +259,6 @@ namespace PlayniteAchievements.Services
         {
             if (!TryBeginRun(out var cts))
                 return;
-
-            // Check if at least one provider is authenticated before starting scan
-            if (!HasAnyAuthenticatedProvider())
-            {
-                _logger.Info("Scan attempted but no providers are authenticated.");
-                PostToUi(() =>
-                {
-                    _api.Dialogs.ShowMessage(
-                        ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"),
-                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                });
-                EndRun();
-                return;
-            }
 
             _progressMapper.Reset();
 
