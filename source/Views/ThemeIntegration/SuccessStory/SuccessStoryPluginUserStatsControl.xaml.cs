@@ -15,7 +15,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
     /// <summary>
     /// SuccessStory-compatible user stats control for theme integration.
     /// </summary>
-    public partial class SuccessStoryPluginUserStatsControl : SuccessStoryThemeControlBase
+    public partial class SuccessStoryPluginUserStatsControl : AchievementThemeControlBase
     {
         private readonly SuccessStoryUserStatsViewModel _viewModel = new SuccessStoryUserStatsViewModel();
 

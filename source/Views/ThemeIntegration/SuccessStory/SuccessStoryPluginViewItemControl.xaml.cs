@@ -11,12 +11,12 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
     /// SuccessStory-compatible view item control for theme integration.
     /// Matches the original SuccessStory plugin styling.
     /// </summary>
-    public partial class SuccessStoryPluginViewItemControl : SuccessStoryThemeControlBase
+    public partial class SuccessStoryPluginViewItemControl : AchievementThemeControlBase
     {
         #region IntegrationViewItemWithProgressBar Property
 
         public static readonly DependencyProperty IntegrationViewItemWithProgressBarProperty =
-            PlayniteAchievements.Views.ThemeIntegration.Base.DependencyPropertyHelper.RegisterBoolProperty(
+            ThemeIntegration.Base.DependencyPropertyHelper.RegisterBoolProperty(
                 nameof(IntegrationViewItemWithProgressBar),
                 typeof(SuccessStoryPluginViewItemControl));
 

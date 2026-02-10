@@ -12,7 +12,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.SuccessStory
     /// SuccessStory-compatible compact list control for theme integration.
     /// Matches the original SuccessStory plugin styling.
     /// </summary>
-    public partial class SuccessStoryPluginCompactListControl : SuccessStoryThemeControlBase
+    public partial class SuccessStoryPluginCompactListControl : AchievementThemeControlBase
     {
         #region IconHeight Property
 

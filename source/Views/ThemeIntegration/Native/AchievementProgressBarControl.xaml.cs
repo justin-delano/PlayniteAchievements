@@ -7,7 +7,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Native
     /// Native PlayniteAchievements progress bar control for theme integration.
     /// Receives game context changes via GameContextChanged and updates achievement data.
     /// </summary>
-    public partial class AchievementProgressBarControl : NativeThemeControlBase
+    public partial class AchievementProgressBarControl : AchievementThemeControlBase
     {
         public AchievementProgressBarControl()
         {

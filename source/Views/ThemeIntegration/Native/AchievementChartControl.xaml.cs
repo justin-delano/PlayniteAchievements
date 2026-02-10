@@ -7,7 +7,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Native
     /// Native PlayniteAchievements chart control for theme integration.
     /// Receives game context changes via GameContextChanged and updates achievement data.
     /// </summary>
-    public partial class AchievementChartControl : NativeThemeControlBase
+    public partial class AchievementChartControl : AchievementThemeControlBase
     {
         public AchievementChartControl()
         {

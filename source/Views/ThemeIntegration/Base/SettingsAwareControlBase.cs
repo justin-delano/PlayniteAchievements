@@ -6,10 +6,10 @@ using System.Windows.Threading;
 namespace PlayniteAchievements.Views.ThemeIntegration.Base
 {
     /// <summary>
-    /// Base class for SuccessStory controls that need to respond to settings changes.
+    /// Base class for controls that need to respond to settings changes.
     /// Provides common settings subscription and update debouncing logic.
     /// </summary>
-    public abstract class SettingsAwareControlBase : SuccessStoryThemeControlBase
+    public abstract class SettingsAwareControlBase : AchievementThemeControlBase
     {
         private bool _updatePending;
 

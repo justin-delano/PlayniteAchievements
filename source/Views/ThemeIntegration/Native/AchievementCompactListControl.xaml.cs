@@ -7,7 +7,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Native
     /// Native PlayniteAchievements compact list control for theme integration.
     /// Receives game context changes via GameContextChanged and updates achievement data.
     /// </summary>
-    public partial class AchievementCompactListControl : NativeThemeControlBase
+    public partial class AchievementCompactListControl : AchievementThemeControlBase
     {
         public AchievementCompactListControl()
         {

@@ -8,7 +8,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
     /// Base class for controls that need simple settings subscription without debouncing.
     /// Provides basic Loaded/Unloaded handling for settings property changes.
     /// </summary>
-    public abstract class SettingsSubscriptionControlBase : SuccessStoryThemeControlBase
+    public abstract class SettingsSubscriptionControlBase : AchievementThemeControlBase
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SettingsSubscriptionControlBase"/> class.
