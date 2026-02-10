@@ -69,6 +69,7 @@
     <sys:String x:Key="LOCPlayAch_ScanModeShort_Favorites">Favoris</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanModeShort_Single">Unique</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanModeShort_Selected">Sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanModeShort_Missing">Manquants</sys:String>
     <!-- Long versions for menus -->
     <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Analyse rapide</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Full">Analyse complète</sys:String>
@@ -76,6 +77,7 @@
     <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Analyser les favoris</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Single">Analyser un jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Analyser la sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_Missing">Analyser les jeux manquants</sys:String>
 
     <!-- ================================================================= -->
     <!-- COLUMNS (using common strings)                                    -->

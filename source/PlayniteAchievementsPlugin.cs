@@ -348,6 +348,16 @@ namespace PlayniteAchievements
                     ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
                 }
             };
+
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Missing"),
+                MenuSection = "@Playnite Achievements",
+                Action = (a) =>
+                {
+                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Missing.GetKey()));
+                }
+            };
         }
 
         // === Sidebar ===

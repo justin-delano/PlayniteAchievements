@@ -16,7 +16,8 @@ namespace PlayniteAchievements.Models
         Installed,
         Favorites,
         Single,
-        LibrarySelected
+        LibrarySelected,
+        Missing
     }
 
     /// <summary>
@@ -101,5 +102,6 @@ namespace PlayniteAchievements.Models
         public const string Favorites = "Favorites";
         public const string Single = "Single";
         public const string LibrarySelected = "LibrarySelected";
+        public const string Missing = "Missing";
     }
 }
