@@ -553,6 +553,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.GSLevel = snapshot.TotalCount > 0 ? snapshot.Level.ToString() : "0";
             _settings.LegacyTheme.GSLevelProgress = snapshot.TotalCount > 0 ? snapshot.LevelProgress : 0;
             _settings.LegacyTheme.GSRank = snapshot.TotalCount > 0 && !string.IsNullOrWhiteSpace(snapshot.Rank) ? snapshot.Rank : "Bronze1";
+
+            // Raise PropertyChanged for delegated properties so bindings update
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllGamesWithAchievements));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.PlatinumGames));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.PlatinumGamesAscending));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSTotal));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSPlat));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GS90));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GS30));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GS15));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSScore));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSLevel));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSLevelProgress));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GSRank));
         }
 
         private void ApplyNativeSurface(AllGamesSnapshot snapshot)
@@ -576,6 +590,23 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.Theme.AllAchievementsUnlockDesc = snapshot.AllAchievementsUnlockDesc;
             _settings.Theme.AllAchievementsRarityAsc = snapshot.AllAchievementsRarityAsc;
             _settings.Theme.AllAchievementsRarityDesc = snapshot.AllAchievementsRarityDesc;
+
+            // Raise PropertyChanged for delegated properties so bindings update
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.HasData));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GamesWithAchievements));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.PlatinumGames));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.TotalTrophies));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.PlatinumTrophies));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.GoldTrophies));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.SilverTrophies));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.BronzeTrophies));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Level));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.LevelProgress));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.Rank));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllAchievementsUnlockAsc));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllAchievementsUnlockDesc));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllAchievementsRarityAsc));
+            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.AllAchievementsRarityDesc));
         }
 
         #endregion
