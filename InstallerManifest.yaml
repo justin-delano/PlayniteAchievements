@@ -8,7 +8,7 @@ Packages:
       - First public release
       - Multi-platform support for Steam and RetroAchievements
       - Beautiful achievement progression timelines and rarity breakdowns
-      - Theme transition and reversion functions, to quickly update existing themes. 
+      - Theme migration and reversion functions, to quickly update existing themes. 
       - SuccessStory legacy compatibility and modern native theme controls
       - Intelligent caching with background updates
       - Flexible scanning options including Quick Scan, Full Scan, favorites, single game, and auto-scan

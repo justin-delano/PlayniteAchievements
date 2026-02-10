@@ -28,14 +28,14 @@ A modern Playnite extension plugin for aggregating achievement data from multipl
 
 ## Why PlayniteAchievements?
 
-| Traditional Approaches                | PlayniteAchievements                                                        |
-| ------------------------------------- | --------------------------------------------------------------------------- |
-| Limited platform support              | Modular architecture planning to support 10+ platforms                      |
-| Existing theme ecosystem              | Automatic theme transition system, so your favorite themes can work with PA |
-| Basic visualization tools             | Rich charts with rarity breakdowns and progress tracking                    |
-| Single theme compatibility            | Dual integration: legacy and modern native controls                         |
-| Fullscreen helper required            | Complete fullscreen integration included.                                   |
-| Manual profile configuration required | Compatible with existing Steam privacy settings                             |
+| Traditional Approaches                | PlayniteAchievements                                                       |
+| ------------------------------------- | -------------------------------------------------------------------------- |
+| Limited platform support              | Modular architecture planning to support 10+ platforms                     |
+| Existing theme ecosystem              | Automatic theme migration system, so your favorite themes can work with PA |
+| Basic visualization tools             | Rich charts with rarity breakdowns and progress tracking                   |
+| Single theme compatibility            | Dual integration: legacy and modern native controls                        |
+| Fullscreen helper required            | Complete fullscreen integration included.                                  |
+| Manual profile configuration required | Compatible with existing Steam privacy settings                            |
 
 ## Screenshots
 
@@ -96,15 +96,15 @@ Compatible with existing themes out of the box.
 <img src="Images/aniki-remake2.png" alt="Aniki-Remake Integration" width="600">
 <img src="Images/aniki-remake3.png" alt="Aniki-Remake Integration" width="600">
 
-Additional theme support planned. See the [Theme Integration Wiki](https://github.com/justindelano/PlayniteAchievements/wiki) for details.
+Additional theme support planned.
 
-### Automatic Theme Transition
+### Automatic Theme Migration
 
-PlayniteAchievements includes an automatic theme transition tool that seamlessly updates your SuccessStory-based themes to work with PlayniteAchievements.
+PlayniteAchievements includes an automatic theme migration tool that seamlessly updates your SuccessStory-based themes to work with PlayniteAchievements.
 
 **How It Works:**
 
-The transition tool automatically:
+The migration tool automatically:
 
 - Scans your Playnite themes directory for themes using SuccessStory
 - Creates a selective backup of only files that contain SuccessStory references
@@ -120,10 +120,10 @@ The transition tool automatically:
 
 **Accessing the Tool:**
 
-1. **First-Time Prompt**: When you first install PlayniteAchievements, you'll see a landing page with the theme transition option
-2. **Settings Page**: Access anytime via Settings → Extensions → PlayniteAchievements → Theme Transition tab
+1. **First-Time Prompt**: When you first install PlayniteAchievements, you'll see a landing page with the theme migration option
+2. **Settings Page**: Access anytime via Settings → Extensions → PlayniteAchievements → Theme Migration tab
 
-**What Gets Transitioned:**
+**What Gets Migrated:**
 
 Only theme files containing SuccessStory references are modified.
 
@@ -176,17 +176,17 @@ Additional platforms and features are released as development completes.
 
 PlayniteAchievements provides comprehensive integration options for theme developers:
 
-### Quick Start: Automatic Theme Transition
+### Quick Start: Automatic Theme Migration
 
-Theme developers can use the built-in theme transition tool to automatically update SuccessStory-based themes:
+Theme developers can use the built-in theme migration tool to automatically update SuccessStory-based themes:
 
 1. Install PlayniteAchievements
-2. Open Settings → Extensions → PlayniteAchievements → Theme Transition
+2. Open Settings → Extensions → PlayniteAchievements → Theme Migration
 3. Select your theme from the dropdown
-4. Click "Transition" to automatically convert all SuccessStory references
+4. Click "Migrate" to automatically convert all SuccessStory references
 5. Restart Playnite to apply changes
 
-The tool creates a backup of modified files and can revert changes if needed. Fullscreen themes may have minor compatibility issues, which will be resolved in future updates, or as theme makers make adjustments. 
+The tool creates a backup of modified files and can revert changes if needed. Fullscreen themes may have minor compatibility issues, which will be resolved in future updates, or as theme makers make adjustments.
 
 ### Manual Theme Integration
 
@@ -214,7 +214,7 @@ Modern themes can use native PlayniteAchievements controls for better performanc
 
 ### Documentation
 
-For detailed integration guides, property references, and code examples, see the [Theme Integration Wiki](https://github.com/justindelano/PlayniteAchievements/wiki).
+For detailed integration guides, property references, and code examples, a Theme Integration Wiki will be coming soon.
 
 ## Support & Contributing
 

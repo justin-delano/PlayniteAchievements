@@ -972,20 +972,20 @@
                 </ScrollViewer>
             </TabItem>
 
-            <!-- ================== TAB: THEME TRANSITION ================== -->
-            <TabItem x:Name="ThemeTransitionTab" Header="{DynamicResource LOCPlayAch_ThemeTransition_Title}">
+            <!-- ================== TAB: THEME MIGRATION ================== -->
+            <TabItem x:Name="ThemeMigrationTab" Header="{DynamicResource LOCPlayAch_ThemeMigration_Title}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">
 
                         <!-- Plugin Header -->
                         <StackPanel Margin="0,0,0,24">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Title}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Title}"
                                        Foreground="{DynamicResource TextBrush}"
                                        Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,6" />
-                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Description}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Description}"
                                        Style="{DynamicResource MutedTextStyle}"
                                        Margin="0,0,0,8"/>
                             <!-- Decorative accent line -->
@@ -1000,7 +1000,7 @@
                         <!-- ================== TRANSITION SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Transition}"
+                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Transition}"
                                            Style="{StaticResource SectionHeaderStyle}"
                                            Margin="0,0,0,12"/>
 
@@ -1026,7 +1026,7 @@
                                               IsEnabled="{Binding HasThemesToTransition, ElementName=SettingsControlRoot}"/>
 
                                     <Button Grid.Column="1"
-                                            Content="{DynamicResource LOCPlayAch_ThemeTransition_Transition}"
+                                            Content="{DynamicResource LOCPlayAch_ThemeMigration_Transition}"
                                             Click="TransitionTheme_Click"
                                             Padding="14,6"
                                             Margin="16,0,0,0"
@@ -1035,7 +1035,7 @@
                                 </Grid>
 
                                 <!-- No themes message -->
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_NoThemesMessage}"
+                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_NoThemesMessage}"
                                            Style="{StaticResource MutedTextStyle}"
                                            Margin="0,8,0,0"
                                            Visibility="{Binding ShowNoThemesMessage, ElementName=SettingsControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}"/>

@@ -341,17 +341,17 @@
 
             </Grid>
 
-            <!-- Theme Transition Section - Always Visible -->
+            <!-- Theme Migration Section - Always Visible -->
             <StackPanel Margin="0,16,0,0">
                 <!-- Section Header -->
-                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeTransition_Title}"
+                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Title}"
                            FontSize="{DynamicResource FontSize}"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextBrush}"
                            Opacity="0.7"
                            Margin="0,0,0,10"/>
 
-                <!-- Transition Theme Card -->
+                <!-- Migrate Theme Card -->
                 <Border Background="{DynamicResource ControlBackgroundBrush}"
                         CornerRadius="4"
                         Padding="16"
@@ -359,7 +359,7 @@
                         BorderBrush="{DynamicResource NormalBorderBrush}"
                         BorderThickness="1">
                     <StackPanel>
-                        <TextBlock Text="Transition Theme"
+                        <TextBlock Text="Migrate Theme"
                                    Style="{DynamicResource BaseTextBlockStyle}"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextBrush}"
@@ -372,10 +372,10 @@
                                    Opacity="0.7"
                                    Margin="0,0,0,12"/>
 
-                        <!-- Theme Dropdown and Transition Button -->
+                        <!-- Theme Dropdown and Migration Button -->
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Center">
-                            <ComboBox x:Name="TransitionThemeComboBox"
+                            <ComboBox x:Name="MigrationThemeComboBox"
                                       ItemsSource="{Binding AvailableThemes}"
                                       DisplayMemberPath="Name"
                                       SelectedValuePath="Path"
@@ -383,16 +383,16 @@
                                       Width="200"
                                       Margin="0,0,8,0"
                                       VerticalContentAlignment="Center"
-                                      IsEnabled="{Binding HasThemesToTransition}"/>
-                            <Button Content="{DynamicResource LOCPlayAch_ThemeTransition_Transition}"
-                                    Command="{Binding TransitionThemeCommand}"
+                                      IsEnabled="{Binding HasThemesToMigrate}"/>
+                            <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_Transition}"
+                                    Command="{Binding MigrateThemeCommand}"
                                     Padding="12,6"
                                     MinWidth="100"
-                                    IsEnabled="{Binding HasThemesToTransition}"/>
+                                    IsEnabled="{Binding HasThemesToMigrate}"/>
                         </StackPanel>
 
                         <!-- No themes message -->
-                        <TextBlock Text="No themes found that need transition."
+                        <TextBlock Text="No themes found that need migration."
                                    Style="{DynamicResource BaseTextBlockStyle}"
                                    Foreground="{DynamicResource TextBrush}"
                                    Opacity="0.6"

@@ -301,8 +301,8 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Indicates whether the user has seen the theme transition landing page.
-        /// When false, the sidebar always shows the landing page to promote theme transition.
+        /// Indicates whether the user has seen the theme migration landing page.
+        /// When false, the sidebar always shows the landing page to promote theme migration.
         /// </summary>
         public bool SeenThemeMigration
         {
