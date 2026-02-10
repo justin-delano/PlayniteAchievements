@@ -88,7 +88,6 @@ namespace PlayniteAchievements.Models
         private ICommand _openAchievementWindow;
         [DontSerialize]
         private ICommand _openGameAchievementWindow;
-        [DontSerialize]
 
         [DontSerialize]
         public ICommand OpenFullscreenAchievementWindow
