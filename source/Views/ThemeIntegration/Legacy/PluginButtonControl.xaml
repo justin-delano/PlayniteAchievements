@@ -50,7 +50,7 @@
 
                 <!-- "Achievements" label -->
                 <TextBlock Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="3" Margin="0,-3,0,-3"
-                           Text="{DynamicResource LOCSuccessStoryAchievements}" Padding="5,3,5,5"
+                           Text="{DynamicResource LOCPlayAch_Achievements}" Padding="5,3,5,5"
                            FontSize="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight, Converter={StaticResource HeightToFontSizeConverter}, FallbackValue=12}" />
 
                 <!-- Progress label -->
