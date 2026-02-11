@@ -133,12 +133,40 @@ namespace PlayniteAchievements.Views
         {
             if (GameAchievementsDataGrid == null) return;
 
-            // Scroll to top using the DataGrid's internal ScrollViewer
-            if (GameAchievementsDataGrid.Items.Count > 0)
+            // Use Dispatcher to wait for collection to update and layout to render
+            Dispatcher.BeginInvoke(new Action(() =>
             {
-                GameAchievementsDataGrid.ScrollIntoView(GameAchievementsDataGrid.Items[0]);
-                GameAchievementsDataGrid.SelectedIndex = 0;
+                if (GameAchievementsDataGrid == null) return;
+
+                if (GameAchievementsDataGrid.Items.Count > 0)
+                {
+                    GameAchievementsDataGrid.ScrollIntoView(GameAchievementsDataGrid.Items[0]);
+                    GameAchievementsDataGrid.SelectedIndex = 0;
+                }
+
+                // Also try to reset via ScrollViewer for more reliable scroll reset
+                if (FindVisualChild<ScrollViewer>(GameAchievementsDataGrid) is ScrollViewer scrollViewer)
+                {
+                    scrollViewer.ScrollToTop();
+                }
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
+        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T result)
+                    return result;
+
+                var descendant = FindVisualChild<T>(child);
+                if (descendant != null)
+                    return descendant;
             }
+            return null;
         }
 
         private void AchievementRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
