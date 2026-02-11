@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             nameof(IconHeight),
             typeof(double),
             typeof(PluginCompactListControl),
-            new FrameworkPropertyMetadata(64.0));
+            new FrameworkPropertyMetadata(48.0));
 
         public double IconHeight
         {
@@ -49,7 +49,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         public PluginCompactListControl()
         {
             InitializeComponent();
-            IconHeight = 64.0;
+            IconHeight = 48.0;
         }
     }
 }
