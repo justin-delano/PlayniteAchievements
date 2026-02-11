@@ -3,6 +3,7 @@ using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -20,38 +21,155 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
         {
             using (var iso = new DiscUtilsFacade(filePath))
             {
-                var exeName = await FindBootExecutableAsync(iso, bootKey: "BOOT2", cdromPrefix: "cdrom0:", cancel).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(exeName))
+                var bootInfo = await FindBootExecutableAsync(iso, bootKey: "BOOT2", cdromPrefix: "cdrom0:", cancel).ConfigureAwait(false);
+                if (bootInfo == null)
                 {
                     Logger?.Warn($"[RA] {Name}: Could not locate primary executable via SYSTEM.CNF: {filePath}");
                     return Array.Empty<string>();
                 }
 
-                using (var exeStream = iso.OpenFileOrNull(exeName))
+                var executablePathCandidates = BuildExecutablePathCandidates(bootInfo).ToList();
+
+                Stream exeStream = null;
+                string openedExecutablePath = null;
+
+                foreach (var candidate in executablePathCandidates)
                 {
-                    if (exeStream == null)
+                    exeStream = iso.OpenFileOrNull(candidate);
+                    if (exeStream != null)
                     {
-                        Logger?.Warn($"[RA] {Name}: Could not locate primary executable '{exeName}': {filePath}");
+                        openedExecutablePath = candidate;
+                        break;
+                    }
+                }
+
+                if (exeStream == null)
+                {
+                    Logger?.Warn($"[RA] {Name}: Could not locate primary executable '{bootInfo.CanonicalPath}': {filePath}");
+                    return Array.Empty<string>();
+                }
+
+                using (exeStream)
+                {
+                    var maxBytesToHash = Math.Min((long)HashUtils.MaxHashBytes, exeStream.Length);
+                    var bytesToHash = (int)Math.Max(0, maxBytesToHash);
+                    var executableBytes = new byte[bytesToHash];
+
+                    var read = await HashUtils.ReadExactlyAsync(exeStream, executableBytes, 0, bytesToHash, cancel).ConfigureAwait(false);
+                    if (read <= 0)
+                    {
+                        Logger?.Warn($"[RA] {Name}: Executable '{openedExecutablePath}' is empty: {filePath}");
                         return Array.Empty<string>();
                     }
 
-                    var maxBytes = Math.Min(HashUtils.MaxHashBytes, exeStream.Length);
+                    var hashTitleCandidates = BuildHashTitleCandidates(bootInfo).ToList();
+                    var hashes = new List<string>(hashTitleCandidates.Count);
 
-                    using (var md5 = MD5.Create())
+                    foreach (var hashTitle in hashTitleCandidates)
                     {
-                        var exeNameBytes = Encoding.ASCII.GetBytes(exeName);
-                        md5.TransformBlock(exeNameBytes, 0, exeNameBytes.Length, null, 0);
+                        using (var md5 = MD5.Create())
+                        {
+                            var titleBytes = Encoding.ASCII.GetBytes(hashTitle);
+                            md5.TransformBlock(titleBytes, 0, titleBytes.Length, null, 0);
+                            md5.TransformFinalBlock(executableBytes, 0, read);
 
-                        await HashUtils.AppendStreamAsync(md5, exeStream, maxBytes, cancel).ConfigureAwait(false);
-
-                        md5.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-                        return new[] { HashUtils.ToHexLower(md5.Hash) };
+                            var hash = HashUtils.ToHexLower(md5.Hash);
+                            if (!string.IsNullOrWhiteSpace(hash))
+                            {
+                                hashes.Add(hash);
+                            }
+                        }
                     }
+
+                    if (hashes.Count == 0)
+                    {
+                        return Array.Empty<string>();
+                    }
+
+                    return hashes
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
                 }
             }
         }
 
-        private static async Task<string> FindBootExecutableAsync(DiscUtilsFacade iso, string bootKey, string cdromPrefix, CancellationToken cancel)
+        private sealed class BootExecutableInfo
+        {
+            public string CanonicalPath { get; set; }
+            public string CanonicalPathWithVersion { get; set; }
+            public string FileNameOnly { get; set; }
+            public string FileNameOnlyWithVersion { get; set; }
+        }
+
+        private static IEnumerable<string> BuildExecutablePathCandidates(BootExecutableInfo info)
+        {
+            if (info == null)
+            {
+                yield break;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var candidate in new[]
+            {
+                info.CanonicalPath,
+                info.CanonicalPathWithVersion,
+                info.FileNameOnly,
+                info.FileNameOnlyWithVersion
+            })
+            {
+                if (string.IsNullOrWhiteSpace(candidate))
+                {
+                    continue;
+                }
+
+                var normalized = candidate.Trim().TrimStart('\\');
+                if (normalized.Length == 0)
+                {
+                    continue;
+                }
+
+                if (seen.Add(normalized))
+                {
+                    yield return normalized;
+                }
+            }
+        }
+
+        private static IEnumerable<string> BuildHashTitleCandidates(BootExecutableInfo info)
+        {
+            if (info == null)
+            {
+                yield break;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var candidate in new[]
+            {
+                info.CanonicalPath,
+                info.CanonicalPathWithVersion,
+                info.FileNameOnly,
+                info.FileNameOnlyWithVersion
+            })
+            {
+                if (string.IsNullOrWhiteSpace(candidate))
+                {
+                    continue;
+                }
+
+                var normalized = candidate.Trim().TrimStart('\\');
+                if (normalized.Length == 0)
+                {
+                    continue;
+                }
+
+                if (seen.Add(normalized))
+                {
+                    yield return normalized;
+                }
+            }
+        }
+
+        private static async Task<BootExecutableInfo> FindBootExecutableAsync(DiscUtilsFacade iso, string bootKey, string cdromPrefix, CancellationToken cancel)
         {
             using (var cnfStream = iso.OpenFileOrNull("SYSTEM.CNF"))
             {
@@ -81,23 +199,57 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
                         }
 
                         rest = rest.Substring(1).TrimStart();
-                        if (rest.StartsWith(cdromPrefix, StringComparison.OrdinalIgnoreCase))
+                        var end = rest.IndexOfAny(new[] { ' ', '\t' });
+                        var bootValue = end >= 0 ? rest.Substring(0, end) : rest;
+                        if (string.IsNullOrWhiteSpace(bootValue))
                         {
-                            rest = rest.Substring(cdromPrefix.Length);
+                            continue;
                         }
 
-                        while (rest.StartsWith("\\", StringComparison.Ordinal))
+                        var bootPath = bootValue.Trim();
+                        if (bootPath.StartsWith(cdromPrefix, StringComparison.OrdinalIgnoreCase))
                         {
-                            rest = rest.Substring(1);
+                            bootPath = bootPath.Substring(cdromPrefix.Length);
                         }
 
-                        var end = rest.IndexOfAny(new[] { ' ', '\t', ';' });
-                        if (end >= 0)
+                        while (bootPath.StartsWith("\\", StringComparison.Ordinal))
                         {
-                            rest = rest.Substring(0, end);
+                            bootPath = bootPath.Substring(1);
                         }
 
-                        return string.IsNullOrWhiteSpace(rest) ? null : rest;
+                        var bootPathWithVersion = bootPath;
+                        var semicolonIndex = bootPath.IndexOf(';');
+                        if (semicolonIndex >= 0)
+                        {
+                            bootPath = bootPath.Substring(0, semicolonIndex);
+                        }
+
+                        if (string.IsNullOrWhiteSpace(bootPath))
+                        {
+                            continue;
+                        }
+
+                        var fileNameOnly = bootPath.Replace('\\', '/');
+                        var slashIndex = fileNameOnly.LastIndexOf('/');
+                        if (slashIndex >= 0 && slashIndex + 1 < fileNameOnly.Length)
+                        {
+                            fileNameOnly = fileNameOnly.Substring(slashIndex + 1);
+                        }
+
+                        var fileNameOnlyWithVersion = bootPathWithVersion.Replace('\\', '/');
+                        slashIndex = fileNameOnlyWithVersion.LastIndexOf('/');
+                        if (slashIndex >= 0 && slashIndex + 1 < fileNameOnlyWithVersion.Length)
+                        {
+                            fileNameOnlyWithVersion = fileNameOnlyWithVersion.Substring(slashIndex + 1);
+                        }
+
+                        return new BootExecutableInfo
+                        {
+                            CanonicalPath = bootPath,
+                            CanonicalPathWithVersion = string.IsNullOrWhiteSpace(bootPathWithVersion) ? null : bootPathWithVersion,
+                            FileNameOnly = string.IsNullOrWhiteSpace(fileNameOnly) ? bootPath : fileNameOnly,
+                            FileNameOnlyWithVersion = string.IsNullOrWhiteSpace(fileNameOnlyWithVersion) ? bootPathWithVersion : fileNameOnlyWithVersion
+                        };
                     }
                 }
             }
@@ -106,4 +258,3 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing.Hashers
         }
     }
 }
-
