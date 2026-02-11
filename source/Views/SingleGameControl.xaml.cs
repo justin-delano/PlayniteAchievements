@@ -95,5 +95,10 @@ namespace PlayniteAchievements.Views
             }
             column.SortDirection = sortDirection;
         }
+
+        private void ClearSearch_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel?.ClearSearch();
+        }
     }
 }

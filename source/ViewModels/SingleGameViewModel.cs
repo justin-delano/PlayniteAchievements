@@ -29,6 +29,10 @@ namespace PlayniteAchievements.ViewModels
         private string _currentSortPath;
         private ListSortDirection _currentSortDirection;
 
+        // Search and filter state
+        private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
+        private string _searchText = string.Empty;
+
         public SingleGameControlModel(
             Guid gameId,
             AchievementManager achievementManager,
@@ -225,6 +229,18 @@ namespace PlayniteAchievements.ViewModels
 
         public bool HasAchievements => TotalAchievements > 0;
 
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                if (SetValueAndReturn(ref _searchText, value ?? string.Empty))
+                {
+                    ApplySearchFilter();
+                }
+            }
+        }
+
         #endregion
 
         #region Commands
@@ -263,6 +279,7 @@ namespace PlayniteAchievements.ViewModels
                     UncommonCount = 0;
                     RareCount = 0;
                     UltraRareCount = 0;
+                    _allAchievements = new List<AchievementDisplayItem>();
 
                     System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
                     {
@@ -339,16 +356,13 @@ namespace PlayniteAchievements.ViewModels
                 UltraRareCount = ultraRare;
 
                 // Sort: unlocked first by date desc, then locked by rarity
-                var sorted = displayItems
+                _allAchievements = displayItems
                     .OrderByDescending(a => a.Unlocked)
                     .ThenByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue)
                     .ThenBy(a => a.GlobalPercentUnlocked ?? 100)
                     .ToList();
 
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
-                {
-                    CollectionHelper.SynchronizeCollection(Achievements, sorted);
-                });
+                ApplySearchFilter();
 
                 OnPropertyChanged(nameof(Progression));
                 OnPropertyChanged(nameof(ProgressionText));
@@ -491,6 +505,28 @@ namespace PlayniteAchievements.ViewModels
                 }
                 CollectionHelper.SynchronizeCollection(Achievements, items);
             }
+        }
+
+        private void ApplySearchFilter()
+        {
+            IEnumerable<AchievementDisplayItem> filtered = _allAchievements;
+
+            if (!string.IsNullOrEmpty(_searchText))
+            {
+                filtered = filtered.Where(a =>
+                    (a.DisplayName?.IndexOf(_searchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
+                    (a.Description?.IndexOf(_searchText, StringComparison.OrdinalIgnoreCase) >= 0));
+            }
+
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                CollectionHelper.SynchronizeCollection(Achievements, filtered.ToList());
+            });
+        }
+
+        public void ClearSearch()
+        {
+            SearchText = string.Empty;
         }
 
         #region IDisposable
