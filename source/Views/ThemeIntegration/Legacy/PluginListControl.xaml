@@ -10,7 +10,10 @@
                    xmlns:wpftk="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
                    mc:Ignorable="d"
-                   d:DesignHeight="400" d:DesignWidth="600">
+                   d:DesignHeight="400" d:DesignWidth="600"
+                   MinHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MinHeight}"
+                   Height="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=Height}"
+                   MaxHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MaxHeight}">
 
     <local:ThemeControlBase.Resources>
         <converters:BooleanConverter x:Key="InvertBoolConverter" Mode="Inverted" />
@@ -62,7 +65,7 @@
             <CheckBox Grid.Column="7" Name="PART_SortGroupBy"
                       Checked="PART_SortGroupBy_Checked" Unchecked="PART_SortGroupBy_Unchecked"
                       VerticalAlignment="Center">
-                <Label Content="{DynamicResource LOCSuccessStoryGroupByUnlocked}" />
+                <Label Content="{DynamicResource LOCPlayAch_GroupByUnlocked}" />
             </CheckBox>
         </Grid>
 
