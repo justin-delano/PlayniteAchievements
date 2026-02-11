@@ -215,7 +215,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                             titleLower.Contains("[tournament") ||
                             titleLower.Contains("[event") ||
                             titleLower.Contains("[bonus") ||
-                            titleLower.Contains("[hub"))
+                            titleLower.Contains("[hub") ||
+                            titleLower.Contains("[specialty") ||
+                            titleLower.Contains("[exclusive") ||
+                            titleLower.Contains("(subset"))
                         {
                             _logger?.Debug($"[RA] Skipping subset/tournament game: {item.Title} (ID={gameId})");
                             continue;

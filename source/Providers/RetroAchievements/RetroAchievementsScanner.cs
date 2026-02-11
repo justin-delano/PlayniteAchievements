@@ -584,7 +584,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
             var normalizedName = NormalizeGameName(game.Name);
 
-            // Prefer base sets first; only consider subset/event-style titles if no base set matches.
+            // Name fallback is intentionally restricted to base sets only.
+            // Subset/event-style sets are excluded to avoid incorrect non-base matches.
             var orderedGames = games.OrderByDescending(g => g.Title?.Length ?? 0).ToList();
             var baseSetGames = orderedGames.Where(g => !IsSubsetLikeTitle(g?.Title)).ToList();
 
@@ -594,8 +595,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 return baseSetMatch;
             }
 
-            var subsetGames = orderedGames.Where(g => IsSubsetLikeTitle(g?.Title)).ToList();
-            return TryFindNameMatch(game, normalizedName, subsetGames);
+            return 0;
         }
 
         private int TryFindNameMatch(Game game, string normalizedName, IReadOnlyList<Models.RaGameListWithTitle> games)
@@ -633,20 +633,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     }
                 }
 
-                // Try splitting by '-' for alternative titles
-                var dashParts = raGame.Title.Split('-');
-                if (dashParts.Length > 1)
-                {
-                    foreach (var part in dashParts)
-                    {
-                        var normalizedPart = NormalizeGameName(part);
-                        if (string.Equals(normalizedName, normalizedPart, StringComparison.OrdinalIgnoreCase))
-                        {
-                            _logger?.Info($"[RA] Name fallback: Matched '{game.Name}' -> '{part.Trim()}' (ID={raGame.ID})");
-                            return raGame.ID;
-                        }
-                    }
-                }
             }
 
             return 0;
@@ -664,7 +650,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                    titleLower.Contains("[tournament") ||
                    titleLower.Contains("[event") ||
                    titleLower.Contains("[bonus") ||
-                   titleLower.Contains("[hub");
+                   titleLower.Contains("[hub") ||
+                   titleLower.Contains("[specialty") ||
+                   titleLower.Contains("[exclusive") ||
+                   titleLower.Contains("(subset");
         }
 
         private async Task<List<Models.RaGameListWithTitle>> GetOrFetchGameListAsync(int consoleId, CancellationToken cancel)

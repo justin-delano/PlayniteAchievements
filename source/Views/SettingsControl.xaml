@@ -940,7 +940,7 @@
                                             Margin="0,8,0,12"/>
 
                                 <StackPanel>
-                                        <CheckBox Content="Enable archive scanning (.zip/.7z)"
+                                        <CheckBox Content="Enable archive scanning (.zip/.7z/.rar/.cso/.ciso)"
                                                   IsChecked="{Binding Persisted.EnableArchiveScanning}"
                                               Margin="0,0,0,10"/>
                                     <CheckBox Content="Enable disc hashing (for disc-based consoles)"
