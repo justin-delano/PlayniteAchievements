@@ -771,6 +771,69 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void ForceRebuildHashIndex_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var pluginUserDataPath = _plugin.GetPluginUserDataPath();
+                var raCacheDir = System.IO.Path.Combine(pluginUserDataPath, "ra");
+
+                if (!System.IO.Directory.Exists(raCacheDir))
+                {
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        "No RetroAchievements cache directory found.",
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
+                // Find and delete all hash index cache files
+                var hashIndexFiles = System.IO.Directory.GetFiles(raCacheDir, "hashindex_*.json.gz");
+                var deletedCount = 0;
+
+                foreach (var file in hashIndexFiles)
+                {
+                    try
+                    {
+                        System.IO.File.Delete(file);
+                        deletedCount++;
+                        _logger.Info($"Deleted hash index cache: {file}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Warn(ex, $"Failed to delete hash index cache: {file}");
+                    }
+                }
+
+                if (deletedCount > 0)
+                {
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        $"Deleted {deletedCount} hash index cache file(s).\n\nThe hash index will be rebuilt on the next scan, using the new subset/tournament filtering.",
+                        "Hash Index Cache Cleared",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                else
+                {
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        "No hash index cache files found to delete.\n\nThe cache may have already been cleared, or no scans have been performed yet.",
+                        "Hash Index Cache",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to force hash index rebuild.");
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    "Failed to clear hash index cache: " + ex.Message,
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         private async void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var tc = sender as TabControl;

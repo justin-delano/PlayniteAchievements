@@ -965,6 +965,25 @@
                                              TextAlignment="Right"
                                              VerticalAlignment="Center"/>
                                 </Grid>
+
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="Force hash index rebuild"
+                                               Style="{StaticResource MutedTextStyle}"
+                                               VerticalAlignment="Center"/>
+
+                                    <Button Grid.Column="1"
+                                            Content="Rebuild Now"
+                                            Click="ForceRebuildHashIndex_Click"
+                                            Padding="14,6"
+                                            Margin="16,0,0,0"
+                                            MinWidth="90"/>
+                                </Grid>
                             </StackPanel>
                         </Border>
 
