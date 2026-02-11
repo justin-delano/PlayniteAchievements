@@ -9,7 +9,9 @@
                    xmlns:local="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
                    mc:Ignorable="d"
                    d:DesignHeight="200" d:DesignWidth="300"
-                   Height="{Binding ChartHeight}">
+                   MinHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MinHeight}"
+                   Height="{Binding ChartHeight}"
+                   MaxHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MaxHeight}">
 
     <local:ThemeControlBase.Resources>
         <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
@@ -30,11 +32,11 @@
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
 
-            <ToggleButton Grid.Column="1" Content="Cut" IsChecked="{Binding CutPeriod}" IsEnabled="{Binding CutEnabled}"
+            <ToggleButton Grid.Column="1" Content="{DynamicResource LOCPlayAch_ChartCut}" IsChecked="{Binding CutPeriod}" IsEnabled="{Binding CutEnabled}"
                           Visibility="{Binding ElementName=PART_AllPeriod, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"
                           Click="ToggleButtonCut_Click" />
 
-            <ToggleButton Grid.Column="3" Content="All" IsChecked="{Binding AllPeriod, FallbackValue=True}"
+            <ToggleButton Grid.Column="3" Content="{DynamicResource LOCPlayAch_ChartAll}" IsChecked="{Binding AllPeriod, FallbackValue=True}"
                           Name="PART_AllPeriod"
                           Click="ToggleButtonAllPeriod_Click" />
         </Grid>
