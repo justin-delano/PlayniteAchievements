@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Database;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Services
@@ -13,6 +13,8 @@ namespace PlayniteAchievements.Services
     {
         private readonly ILogger _logger;
         private readonly CacheStorage _storage;
+        private readonly SqlNadoCacheStore _store;
+        private readonly LegacyJsonCacheImporter _importer;
 
         private readonly object _sync = new object();
 
@@ -28,6 +30,18 @@ namespace PlayniteAchievements.Services
         {
             _logger = logger;
             _storage = new CacheStorage(plugin, logger);
+            _store = new SqlNadoCacheStore(plugin, logger, _storage.BaseDir);
+            _importer = new LegacyJsonCacheImporter(_storage, _store, logger);
+
+            try
+            {
+                _store.EnsureInitialized();
+                _importer.ImportIfNeeded();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to initialize SQLNado achievement cache.");
+            }
         }
 
         private void RaiseGameCacheUpdatedEvent(string gameId)
@@ -61,7 +75,7 @@ namespace PlayniteAchievements.Services
         {
             try
             {
-                return Directory.Exists(_storage.UserCacheRootDir);
+                return _store.HasAnyCurrentUserCacheRows();
             }
             catch
             {
@@ -71,16 +85,20 @@ namespace PlayniteAchievements.Services
 
         private bool InitializeCacheState_Locked()
         {
-            if (!CoreArtifactsPresent())
+            try
+            {
+                var hadDbFile = File.Exists(_store.DatabasePath);
+                _store.EnsureInitialized();
+                if (!hadDbFile)
+                {
+                    ClearMemoryState_Locked();
+                    return true;
+                }
+            }
+            catch
             {
                 ClearMemoryState_Locked();
                 return true;
-            }
-
-            if (!Directory.Exists(_storage.UserCacheRootDir))
-            {
-                _storage.EnsureDir(_storage.UserCacheRootDir);
-                _userAchievements = new Dictionary<string, GameAchievementData>(StringComparer.OrdinalIgnoreCase);
             }
 
             return false;
@@ -100,9 +118,7 @@ namespace PlayniteAchievements.Services
 
         public bool IsCacheValid()
         {
-            // Check if any cached games exist
-            var cachedGames = GetCachedGameIds();
-            return cachedGames.Any();
+            return CoreArtifactsPresent();
         }
 
         /// <summary>
@@ -113,20 +129,7 @@ namespace PlayniteAchievements.Services
             lock (_sync)
             {
                 InitializeCacheState_Locked();
-
-                var files = _storage.EnumerateUserCacheFiles()?.ToList();
-                if (files == null || files.Count == 0)
-                    return new List<string>();
-
-                var ids = new List<string>();
-                foreach (var f in files)
-                {
-                    var key = Path.GetFileNameWithoutExtension(f);
-                    if (!string.IsNullOrWhiteSpace(key))
-                        ids.Add(key);
-                }
-
-                return ids;
+                return _store.GetCachedGameIdsForCurrentUsers() ?? new List<string>();
             }
         }
 
@@ -135,12 +138,9 @@ namespace PlayniteAchievements.Services
             lock (_sync)
             {
                 ClearMemoryState_Locked();
+                _store.ClearCacheData();
 
-                // Delete user achievement cache
-                _storage.DeleteDirectoryIfExists(_storage.UserCacheRootDir);
-
-                // Legacy cleanup: older dev builds created a provider-scoped cache folder.
-                // Keep only a single per-game cache directory going forward.
+                // Legacy cleanup retained for old dev builds that created provider-scoped cache folders.
                 try
                 {
                     var legacy = Path.Combine(_storage.BaseDir, "achievement_cache_by_provider");
@@ -171,23 +171,24 @@ namespace PlayniteAchievements.Services
 
                     var k = UserKey(key);
                     if (_userAchievements.TryGetValue(k, out var cached) && cached != null)
-                        return cached;
-
-                    var disk = _storage.ReadUserAchievement(k);
-                    if (disk != null)
                     {
-                        disk.LastUpdatedUtc = DateTimeUtilities.AsUtcKind(disk.LastUpdatedUtc);
-
-                        // Back-compat: older cache entries may not have persisted PlayniteGameId.
-                        // Most fullscreen aggregation relies on this being present.
-                        if (disk.PlayniteGameId == null && Guid.TryParse(k, out var parsedId))
-                        {
-                            disk.PlayniteGameId = parsedId;
-                        }
-                        _userAchievements[k] = disk;
+                        return cached;
                     }
 
-                    return disk;
+                    var dbData = _store.LoadCurrentUserGameData(k);
+                    if (dbData != null)
+                    {
+                        dbData.LastUpdatedUtc = DateTimeUtilities.AsUtcKind(dbData.LastUpdatedUtc);
+
+                        // Back-compat: older cache entries may not have persisted PlayniteGameId.
+                        if (dbData.PlayniteGameId == null && Guid.TryParse(k, out var parsedId))
+                        {
+                            dbData.PlayniteGameId = parsedId;
+                        }
+                        _userAchievements[k] = dbData;
+                    }
+
+                    return dbData;
                 }
             }
             catch (Exception ex)
@@ -207,6 +208,10 @@ namespace PlayniteAchievements.Services
                 lock (_sync)
                 {
                     var toWrite = data ?? new GameAchievementData();
+                    if (toWrite.LastUpdatedUtc == default(DateTime))
+                    {
+                        toWrite.LastUpdatedUtc = DateTime.UtcNow;
+                    }
                     toWrite.LastUpdatedUtc = DateTimeUtilities.AsUtcKind(toWrite.LastUpdatedUtc);
 
                     // Ensure PlayniteGameId is stored for guid-keyed entries (fullscreen aggregation depends on it).
@@ -214,8 +219,8 @@ namespace PlayniteAchievements.Services
                     {
                         toWrite.PlayniteGameId = parsedId;
                     }
-                    
-                    _storage.WriteUserAchievement(k, toWrite);
+
+                    _store.SaveCurrentUserGameData(k, toWrite);
 
                     _userAchievements[k] = toWrite;
                 }
