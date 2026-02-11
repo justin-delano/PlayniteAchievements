@@ -193,7 +193,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -279,6 +278,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="12"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="12"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
@@ -417,74 +417,67 @@
                         </lvc:CartesianChart.AxisY>
                     </lvc:CartesianChart>
                 </StackPanel>
-            </Grid>
-        </Border>
 
-        <!-- Search Achievements -->
-        <Border Grid.Row="2"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="16,12"
-                Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+                <!-- Search Achievements -->
+                <Grid Grid.Row="5" Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                <Grid Grid.Column="0">
-                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                             VerticalContentAlignment="Center"
-                             Padding="6,4"
-                             Background="Transparent"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
-                               VerticalAlignment="Center"
-                               Margin="9,0,0,0"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.5"
-                               IsHitTestVisible="False">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed"/>
+                    <Grid Grid.Column="0">
+                        <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                 VerticalContentAlignment="Center"
+                                 Padding="6,4"
+                                 Background="Transparent"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
+                                   VerticalAlignment="Center"
+                                   Margin="9,0,0,0"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Opacity="0.5"
+                                   IsHitTestVisible="False">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+
+                    <Button Grid.Column="1"
+                            Content="x"
+                            Click="ClearSearch_Click"
+                            Width="24"
+                            Margin="4,0,0,0"
+                            Padding="0">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Visibility" Value="Visible"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SearchText}" Value="">
-                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
-                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
+                        </Button.Style>
+                    </Button>
                 </Grid>
-
-                <Button Grid.Column="1"
-                        Content="x"
-                        Click="ClearSearch_Click"
-                        Width="24"
-                        Margin="4,0,0,0"
-                        Padding="0">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                            <Setter Property="Visibility" Value="Visible"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SearchText}" Value="">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
             </Grid>
         </Border>
 
         <!-- No Achievements Placeholder -->
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="2"
               Visibility="{Binding HasAchievements, Converter={StaticResource InverseBoolToVis}}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="40">
                 <TextBlock Text="{DynamicResource LOCPlayAch_NoAchievementsTitle}"
@@ -511,7 +504,7 @@
         </Grid>
 
         <!-- Achievements List -->
-        <DataGrid Grid.Row="3"
+        <DataGrid Grid.Row="2"
                   Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}"
                   ItemsSource="{Binding Achievements}"
                   Sorting="DataGrid_Sorting"
