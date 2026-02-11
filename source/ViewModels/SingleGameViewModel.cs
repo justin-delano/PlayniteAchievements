@@ -117,7 +117,13 @@ namespace PlayniteAchievements.ViewModels
         public int TotalAchievements
         {
             get => _totalAchievements;
-            private set => SetValue(ref _totalAchievements, value);
+            private set
+            {
+                if (SetValueAndReturn(ref _totalAchievements, value))
+                {
+                    OnPropertyChanged(nameof(HasAchievements));
+                }
+            }
         }
 
         private int _unlockedAchievements;
@@ -209,6 +215,15 @@ namespace PlayniteAchievements.ViewModels
             get => _isTimelineVisible;
             set => SetValue(ref _isTimelineVisible, value);
         }
+
+        private bool _isStatsVisible = true;
+        public bool IsStatsVisible
+        {
+            get => _isStatsVisible;
+            set => SetValue(ref _isStatsVisible, value);
+        }
+
+        public bool HasAchievements => TotalAchievements > 0;
 
         #endregion
 
