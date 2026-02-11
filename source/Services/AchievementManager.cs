@@ -919,6 +919,11 @@ namespace PlayniteAchievements.Services
         {
             try
             {
+                if (_cacheService is CacheManager optimizedCacheManager)
+                {
+                    return optimizedCacheManager.LoadAllGameDataFast() ?? new List<GameAchievementData>();
+                }
+
                 var gameIds = _cacheService.GetCachedGameIds();
                 var result = new List<GameAchievementData>();
                 foreach(var gameId in gameIds)

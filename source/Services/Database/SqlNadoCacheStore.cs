@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Services.Database
         {
             public long UserGameProgressId { get; set; }
             public long GameId { get; set; }
+            public string CacheKey { get; set; }
             public long PlaytimeSeconds { get; set; }
             public long NoAchievements { get; set; }
             public string LastUpdatedUtc { get; set; }
@@ -31,6 +32,20 @@ namespace PlayniteAchievements.Services.Database
             public string PlayniteGameId { get; set; }
             public string GameName { get; set; }
             public string LibrarySourceName { get; set; }
+        }
+
+        private sealed class ProgressAchievementJoinRow
+        {
+            public long UserGameProgressId { get; set; }
+            public string ApiName { get; set; }
+            public string DisplayName { get; set; }
+            public string Description { get; set; }
+            public string IconPath { get; set; }
+            public long Hidden { get; set; }
+            public double? GlobalPercentUnlocked { get; set; }
+            public string UnlockTimeUtc { get; set; }
+            public int? ProgressNum { get; set; }
+            public int? ProgressDenom { get; set; }
         }
 
         private sealed class AchievementJoinRow
@@ -54,10 +69,18 @@ namespace PlayniteAchievements.Services.Database
             public string FriendSource { get; set; }
         }
 
+        private sealed class CachedCurrentUserState
+        {
+            public string ExternalUserId { get; set; }
+            public long UserId { get; set; }
+        }
+
         private readonly object _sync = new object();
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly SqlNadoSchemaManager _schemaManager;
+        private readonly Dictionary<string, CachedCurrentUserState> _cachedCurrentUsersByProvider =
+            new Dictionary<string, CachedCurrentUserState>(StringComparer.OrdinalIgnoreCase);
         private SQLiteDatabase _db;
         private bool _initialized;
 
@@ -115,12 +138,15 @@ namespace PlayniteAchievements.Services.Database
         {
             return WithDb(db =>
             {
-                var count = db.ExecuteScalar<long>(
-                    @"SELECT COUNT(1)
-                      FROM UserGameProgress ugp
-                      INNER JOIN Users u ON u.Id = ugp.UserId
-                      WHERE u.IsCurrentUser = 1;");
-                return count > 0;
+                var exists = db.ExecuteScalar<long>(
+                    @"SELECT EXISTS(
+                        SELECT 1
+                        FROM UserGameProgress ugp
+                        INNER JOIN Users u ON u.Id = ugp.UserId
+                        WHERE u.IsCurrentUser = 1
+                        LIMIT 1
+                      );");
+                return exists != 0;
             });
         }
 
@@ -157,6 +183,7 @@ namespace PlayniteAchievements.Services.Database
                     @"SELECT
                         ugp.Id AS UserGameProgressId,
                         ugp.GameId AS GameId,
+                        ugp.CacheKey AS CacheKey,
                         ugp.PlaytimeSeconds AS PlaytimeSeconds,
                         ugp.NoAchievements AS NoAchievements,
                         ugp.LastUpdatedUtc AS LastUpdatedUtc,
@@ -179,6 +206,7 @@ namespace PlayniteAchievements.Services.Database
                     return null;
                 }
 
+                var model = CreateModel(progress);
                 var details = db.Load<AchievementJoinRow>(
                     @"SELECT
                         ad.ApiName AS ApiName,
@@ -198,19 +226,6 @@ namespace PlayniteAchievements.Services.Database
                       ORDER BY ad.Id;",
                     progress.UserGameProgressId,
                     progress.GameId).ToList();
-
-                var model = new GameAchievementData
-                {
-                    LastUpdatedUtc = ParseUtc(progress.LastUpdatedUtc) ?? DateTime.UtcNow,
-                    ProviderName = progress.ProviderName,
-                    LibrarySourceName = progress.LibrarySourceName,
-                    NoAchievements = progress.NoAchievements != 0,
-                    PlaytimeSeconds = (ulong)Math.Max(0, progress.PlaytimeSeconds),
-                    GameName = progress.GameName,
-                    AppId = (int)Math.Max(0, progress.ProviderGameId ?? 0),
-                    PlayniteGameId = ParseGuid(progress.PlayniteGameId),
-                    Achievements = new List<AchievementDetail>()
-                };
 
                 foreach (var row in details)
                 {
@@ -233,12 +248,124 @@ namespace PlayniteAchievements.Services.Database
                     });
                 }
 
-                if (model.PlayniteGameId == null && Guid.TryParse(cacheKey, out var parsed))
-                {
-                    model.PlayniteGameId = parsed;
-                }
+                BackfillPlayniteGameIdFromCacheKey(model, cacheKey);
 
                 return model;
+            });
+        }
+
+        public List<KeyValuePair<string, GameAchievementData>> LoadAllCurrentUserGameDataByCacheKey()
+        {
+            return WithDb(db =>
+            {
+                var progressRows = db.Load<ProgressGameJoinRow>(
+                    @"SELECT
+                        ugp.Id AS UserGameProgressId,
+                        ugp.GameId AS GameId,
+                        ugp.CacheKey AS CacheKey,
+                        ugp.PlaytimeSeconds AS PlaytimeSeconds,
+                        ugp.NoAchievements AS NoAchievements,
+                        ugp.LastUpdatedUtc AS LastUpdatedUtc,
+                        g.ProviderName AS ProviderName,
+                        g.ProviderGameId AS ProviderGameId,
+                        g.PlayniteGameId AS PlayniteGameId,
+                        g.GameName AS GameName,
+                        g.LibrarySourceName AS LibrarySourceName
+                      FROM UserGameProgress ugp
+                      INNER JOIN Users u ON u.Id = ugp.UserId
+                      INNER JOIN Games g ON g.Id = ugp.GameId
+                      WHERE u.IsCurrentUser = 1
+                      ORDER BY ugp.LastUpdatedUtc DESC, ugp.Id DESC;").ToList();
+
+                var selectedByProgressId = new Dictionary<long, ProgressGameJoinRow>();
+                var selectedByCacheKey = new Dictionary<string, ProgressGameJoinRow>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < progressRows.Count; i++)
+                {
+                    var row = progressRows[i];
+                    var cacheKey = row?.CacheKey?.Trim();
+                    if (string.IsNullOrWhiteSpace(cacheKey))
+                    {
+                        continue;
+                    }
+
+                    if (selectedByCacheKey.ContainsKey(cacheKey))
+                    {
+                        continue;
+                    }
+
+                    row.CacheKey = cacheKey;
+                    selectedByCacheKey[cacheKey] = row;
+                    selectedByProgressId[row.UserGameProgressId] = row;
+                }
+
+                if (selectedByProgressId.Count == 0)
+                {
+                    return new List<KeyValuePair<string, GameAchievementData>>();
+                }
+
+                var modelsByProgressId = new Dictionary<long, GameAchievementData>(selectedByProgressId.Count);
+                foreach (var row in selectedByProgressId.Values)
+                {
+                    var model = CreateModel(row);
+                    BackfillPlayniteGameIdFromCacheKey(model, row.CacheKey);
+                    modelsByProgressId[row.UserGameProgressId] = model;
+                }
+
+                var detailRows = db.Load<ProgressAchievementJoinRow>(
+                    @"SELECT
+                        ugp.Id AS UserGameProgressId,
+                        ad.ApiName AS ApiName,
+                        ad.DisplayName AS DisplayName,
+                        ad.Description AS Description,
+                        ad.IconPath AS IconPath,
+                        ad.Hidden AS Hidden,
+                        ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
+                        ua.UnlockTimeUtc AS UnlockTimeUtc,
+                        ua.ProgressNum AS ProgressNum,
+                        ua.ProgressDenom AS ProgressDenom
+                      FROM UserGameProgress ugp
+                      INNER JOIN Users u ON u.Id = ugp.UserId
+                      INNER JOIN AchievementDefinitions ad ON ad.GameId = ugp.GameId
+                      LEFT JOIN UserAchievements ua
+                        ON ua.AchievementDefinitionId = ad.Id
+                       AND ua.UserGameProgressId = ugp.Id
+                      WHERE u.IsCurrentUser = 1
+                      ORDER BY ugp.Id, ad.Id;").ToList();
+
+                for (int i = 0; i < detailRows.Count; i++)
+                {
+                    var row = detailRows[i];
+                    if (row == null ||
+                        string.IsNullOrWhiteSpace(row.ApiName) ||
+                        !modelsByProgressId.TryGetValue(row.UserGameProgressId, out var model))
+                    {
+                        continue;
+                    }
+
+                    model.Achievements.Add(new AchievementDetail
+                    {
+                        ApiName = row.ApiName,
+                        DisplayName = row.DisplayName,
+                        Description = row.Description,
+                        IconPath = row.IconPath,
+                        Hidden = row.Hidden != 0,
+                        GlobalPercentUnlocked = row.GlobalPercentUnlocked,
+                        UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
+                        ProgressNum = row.ProgressNum,
+                        ProgressDenom = row.ProgressDenom
+                    });
+                }
+
+                return selectedByCacheKey
+                    .OrderBy(a => a.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(a =>
+                    {
+                        return modelsByProgressId.TryGetValue(a.Value.UserGameProgressId, out var model)
+                            ? new KeyValuePair<string, GameAchievementData>(a.Key, model)
+                            : default(KeyValuePair<string, GameAchievementData>);
+                    })
+                    .Where(a => !string.IsNullOrWhiteSpace(a.Key) && a.Value != null)
+                    .ToList();
             });
         }
 
@@ -397,42 +524,50 @@ namespace PlayniteAchievements.Services.Database
 
         private long UpsertCurrentUser(SQLiteDatabase db, ResolvedUser user, string nowIso)
         {
-            db.ExecuteNonQuery(
-                @"UPDATE Users
-                  SET IsCurrentUser = CASE WHEN ExternalUserId = ? THEN 1 ELSE 0 END,
-                      UpdatedUtc = ?
-                  WHERE ProviderName = ?;",
-                user.ExternalUserId,
-                nowIso,
-                user.ProviderName);
-
-            var row = db.Load<UserRow>(
-                @"SELECT Id, ProviderName, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, CreatedUtc, UpdatedUtc
-                  FROM Users
-                  WHERE ProviderName = ? AND ExternalUserId = ?
-                  LIMIT 1;",
-                user.ProviderName,
-                user.ExternalUserId).FirstOrDefault();
-
-            if (row != null)
+            if (_cachedCurrentUsersByProvider.TryGetValue(user.ProviderName, out var cachedUser) &&
+                string.Equals(cachedUser.ExternalUserId, user.ExternalUserId, StringComparison.OrdinalIgnoreCase))
             {
-                db.ExecuteNonQuery(
-                    @"UPDATE Users
-                      SET DisplayName = ?,
-                          IsCurrentUser = 1,
-                          UpdatedUtc = ?
-                      WHERE Id = ?;",
-                    DbValue(user.DisplayName),
-                    nowIso,
-                    row.Id);
-                return row.Id;
+                var cachedIdExists = db.ExecuteScalar<long>(
+                    @"SELECT Id
+                      FROM Users
+                      WHERE Id = ?
+                      LIMIT 1;",
+                    cachedUser.UserId);
+                if (cachedIdExists <= 0)
+                {
+                    _cachedCurrentUsersByProvider.Remove(user.ProviderName);
+                }
+                else
+                {
+                    db.ExecuteNonQuery(
+                        @"UPDATE Users
+                          SET DisplayName = ?,
+                              FriendSource = ?,
+                              IsCurrentUser = 1,
+                              UpdatedUtc = ?
+                          WHERE Id = ?;",
+                        DbValue(user.DisplayName),
+                        DbValue(user.FriendSource),
+                        nowIso,
+                        cachedUser.UserId);
+                    return cachedUser.UserId;
+                }
             }
 
             db.ExecuteNonQuery(
-                @"INSERT INTO Users
+                @"UPDATE Users
+                  SET IsCurrentUser = 0,
+                      UpdatedUtc = ?
+                  WHERE ProviderName = ?
+                    AND IsCurrentUser = 1;",
+                nowIso,
+                user.ProviderName);
+
+            db.ExecuteNonQuery(
+                @"INSERT OR IGNORE INTO Users
                     (ProviderName, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, CreatedUtc, UpdatedUtc)
                   VALUES
-                    (?, ?, ?, 1, ?, ?, ?);",
+                    (?, ?, ?, 0, ?, ?, ?);",
                 user.ProviderName,
                 user.ExternalUserId,
                 DbValue(user.DisplayName),
@@ -440,7 +575,50 @@ namespace PlayniteAchievements.Services.Database
                 nowIso,
                 nowIso);
 
-            return db.ExecuteScalar<long>("SELECT last_insert_rowid();");
+            var userId = db.ExecuteScalar<long>(
+                @"SELECT Id
+                  FROM Users
+                  WHERE ProviderName = ?
+                    AND ExternalUserId = ?
+                  LIMIT 1;",
+                user.ProviderName,
+                user.ExternalUserId);
+
+            if (userId <= 0)
+            {
+                db.ExecuteNonQuery(
+                    @"INSERT INTO Users
+                        (ProviderName, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, CreatedUtc, UpdatedUtc)
+                      VALUES
+                        (?, ?, ?, 1, ?, ?, ?);",
+                    user.ProviderName,
+                    user.ExternalUserId,
+                    DbValue(user.DisplayName),
+                    DbValue(user.FriendSource),
+                    nowIso,
+                    nowIso);
+                userId = db.ExecuteScalar<long>("SELECT last_insert_rowid();");
+            }
+
+            db.ExecuteNonQuery(
+                @"UPDATE Users
+                  SET DisplayName = ?,
+                      FriendSource = ?,
+                      IsCurrentUser = 1,
+                      UpdatedUtc = ?
+                  WHERE Id = ?;",
+                DbValue(user.DisplayName),
+                DbValue(user.FriendSource),
+                nowIso,
+                userId);
+
+            _cachedCurrentUsersByProvider[user.ProviderName] = new CachedCurrentUserState
+            {
+                ExternalUserId = user.ExternalUserId,
+                UserId = userId
+            };
+
+            return userId;
         }
 
         private long UpsertGame(SQLiteDatabase db, string providerName, GameAchievementData data, string nowIso, string updatedIso)
@@ -594,6 +772,14 @@ namespace PlayniteAchievements.Services.Database
                 return idsByApiName;
             }
 
+            var existingByApiName = db.Load<AchievementDefinitionRow>(
+                    @"SELECT Id, GameId, ApiName, DisplayName, Description, IconPath, Hidden, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc
+                      FROM AchievementDefinitions
+                      WHERE GameId = ?;",
+                    gameId)
+                .Where(a => !string.IsNullOrWhiteSpace(a?.ApiName))
+                .ToDictionary(a => a.ApiName.Trim(), StringComparer.OrdinalIgnoreCase);
+
             foreach (var achievement in achievements)
             {
                 if (achievement == null || string.IsNullOrWhiteSpace(achievement.ApiName))
@@ -602,15 +788,7 @@ namespace PlayniteAchievements.Services.Database
                 }
 
                 var apiName = achievement.ApiName.Trim();
-                var existing = db.Load<AchievementDefinitionRow>(
-                    @"SELECT Id, GameId, ApiName, DisplayName, Description, IconPath, Hidden, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc
-                      FROM AchievementDefinitions
-                      WHERE GameId = ? AND ApiName = ?
-                      LIMIT 1;",
-                    gameId,
-                    apiName).FirstOrDefault();
-
-                if (existing == null)
+                if (!existingByApiName.TryGetValue(apiName, out var existing))
                 {
                     db.ExecuteNonQuery(
                         @"INSERT INTO AchievementDefinitions
@@ -628,7 +806,14 @@ namespace PlayniteAchievements.Services.Database
                         nowIso,
                         updatedIso);
 
-                    idsByApiName[apiName] = db.ExecuteScalar<long>("SELECT last_insert_rowid();");
+                    var definitionId = db.ExecuteScalar<long>("SELECT last_insert_rowid();");
+                    existingByApiName[apiName] = new AchievementDefinitionRow
+                    {
+                        Id = definitionId,
+                        GameId = gameId,
+                        ApiName = apiName
+                    };
+                    idsByApiName[apiName] = definitionId;
                     continue;
                 }
 
@@ -655,6 +840,35 @@ namespace PlayniteAchievements.Services.Database
             }
 
             return idsByApiName;
+        }
+
+        private static GameAchievementData CreateModel(ProgressGameJoinRow progress)
+        {
+            return new GameAchievementData
+            {
+                LastUpdatedUtc = ParseUtc(progress?.LastUpdatedUtc) ?? DateTime.UtcNow,
+                ProviderName = progress?.ProviderName,
+                LibrarySourceName = progress?.LibrarySourceName,
+                NoAchievements = progress != null && progress.NoAchievements != 0,
+                PlaytimeSeconds = (ulong)Math.Max(0, progress?.PlaytimeSeconds ?? 0),
+                GameName = progress?.GameName,
+                AppId = (int)Math.Max(0, progress?.ProviderGameId ?? 0),
+                PlayniteGameId = ParseGuid(progress?.PlayniteGameId),
+                Achievements = new List<AchievementDetail>()
+            };
+        }
+
+        private static void BackfillPlayniteGameIdFromCacheKey(GameAchievementData model, string cacheKey)
+        {
+            if (model?.PlayniteGameId != null || string.IsNullOrWhiteSpace(cacheKey))
+            {
+                return;
+            }
+
+            if (Guid.TryParse(cacheKey.Trim(), out var parsed))
+            {
+                model.PlayniteGameId = parsed;
+            }
         }
 
         private ResolvedUser ResolveCurrentUser(string providerName)

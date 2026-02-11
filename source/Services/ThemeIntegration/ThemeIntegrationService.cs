@@ -46,7 +46,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         };
 
         // NOTE: PlatinumGames is notified via compatibility surface only to avoid duplicate notifications.
-        private static readonly string[] NativeAllGamesDelegatedProperties =
+        private static readonly string[] NativeAllGamesCoreDelegatedProperties =
         {
             nameof(PlayniteAchievementsSettings.HasData),
             nameof(PlayniteAchievementsSettings.GamesWithAchievements),
@@ -58,18 +58,22 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.Level),
             nameof(PlayniteAchievementsSettings.LevelProgress),
             nameof(PlayniteAchievementsSettings.Rank),
-            nameof(PlayniteAchievementsSettings.AllAchievementsUnlockAsc),
-            nameof(PlayniteAchievementsSettings.AllAchievementsUnlockDesc),
-            nameof(PlayniteAchievementsSettings.AllAchievementsRarityAsc),
-            nameof(PlayniteAchievementsSettings.AllAchievementsRarityDesc),
-            nameof(PlayniteAchievementsSettings.MostRecentUnlocks),
-            nameof(PlayniteAchievementsSettings.RarestRecentUnlocks),
             nameof(PlayniteAchievementsSettings.MostRecentUnlocksTop3),
             nameof(PlayniteAchievementsSettings.MostRecentUnlocksTop5),
             nameof(PlayniteAchievementsSettings.MostRecentUnlocksTop10),
             nameof(PlayniteAchievementsSettings.RarestRecentUnlocksTop3),
             nameof(PlayniteAchievementsSettings.RarestRecentUnlocksTop5),
             nameof(PlayniteAchievementsSettings.RarestRecentUnlocksTop10)
+        };
+
+        private static readonly string[] NativeAllGamesHeavyDelegatedProperties =
+        {
+            nameof(PlayniteAchievementsSettings.AllAchievementsUnlockAsc),
+            nameof(PlayniteAchievementsSettings.AllAchievementsUnlockDesc),
+            nameof(PlayniteAchievementsSettings.AllAchievementsRarityAsc),
+            nameof(PlayniteAchievementsSettings.AllAchievementsRarityDesc),
+            nameof(PlayniteAchievementsSettings.MostRecentUnlocks),
+            nameof(PlayniteAchievementsSettings.RarestRecentUnlocks)
         };
 
         private static readonly string[] SingleGameThemeDelegatedProperties =
@@ -301,7 +305,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             // Immediately populate all-games data on UI thread before opening window
-            PopulateAllGamesDataSync();
+            PopulateAllGamesDataSync(includeHeavyAchievementLists: true);
 
             _windowService.OpenOverviewWindow();
         }
@@ -454,7 +458,16 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     {
                         try { _requestSingleGameThemeUpdate(gameIdForThemeUpdate.Value); } catch { }
                     }
-                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+                    try
+                    {
+                        if (IsFullscreen() && _fullscreenInitialized)
+                        {
+                            RequestRefresh(includeHeavyAchievementLists: mode == ScanModeType.Full);
+                        }
+                    }
+                    catch
+                    {
+                    }
                 }
             }, progressOptions);
         }
@@ -463,7 +476,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         #region Snapshot Building and Refresh
 
-        private void PopulateAllGamesDataSync()
+        private void PopulateAllGamesDataSync(bool includeHeavyAchievementLists)
         {
             try
             {
@@ -481,7 +494,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 _logger?.Info($"PopulateAllGamesDataSync: Found {ids.Count} games with achievements.");
 
                 var info = BuildGameInfoMapOnUiThread(ids);
-                var snapshot = AllGamesSnapshotService.BuildSnapshot(allData, info, OpenGameWindow, CancellationToken.None);
+                var snapshot = AllGamesSnapshotService.BuildSnapshot(
+                    allData,
+                    info,
+                    OpenGameWindow,
+                    CancellationToken.None,
+                    includeHeavyAchievementLists);
 
                 _logger?.Info($"PopulateAllGamesDataSync: Snapshot created - TotalCount={snapshot.TotalCount}, PlatCount={snapshot.PlatCount}, GoldCount={snapshot.GoldCount}, Rank={snapshot.Rank}");
 
@@ -495,11 +513,18 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
-        private void RequestRefresh()
+        private void RequestRefresh(bool includeHeavyAchievementLists = false)
         {
             if (!IsFullscreen())
             {
                 return;
+            }
+
+            var shouldBuildHeavyAchievementLists = includeHeavyAchievementLists;
+            if (!shouldBuildHeavyAchievementLists)
+            {
+                var currentHeavy = _settings?.Theme?.AllAchievementsUnlockAsc;
+                shouldBuildHeavyAchievementLists = currentHeavy == null || currentHeavy.Count == 0;
             }
 
             CancellationToken token;
@@ -552,7 +577,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                     token.ThrowIfCancellationRequested();
 
-                    var snapshot = AllGamesSnapshotService.BuildSnapshot(allData, info, OpenGameWindow, token);
+                    var snapshot = AllGamesSnapshotService.BuildSnapshot(
+                        allData,
+                        info,
+                        OpenGameWindow,
+                        token,
+                        shouldBuildHeavyAchievementLists);
 
                     uiDispatcher?.InvokeIfNeeded(() => ApplySnapshot(snapshot), DispatcherPriority.Background);
                 }
@@ -672,13 +702,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.Theme.LevelProgress = snapshot.LevelProgress;
             _settings.Theme.Rank = !string.IsNullOrWhiteSpace(snapshot.Rank) ? snapshot.Rank : "Bronze1";
 
-            // All-games achievement lists
-            _settings.Theme.AllAchievementsUnlockAsc = snapshot.AllAchievementsUnlockAsc;
-            _settings.Theme.AllAchievementsUnlockDesc = snapshot.AllAchievementsUnlockDesc;
-            _settings.Theme.AllAchievementsRarityAsc = snapshot.AllAchievementsRarityAsc;
-            _settings.Theme.AllAchievementsRarityDesc = snapshot.AllAchievementsRarityDesc;
-            _settings.Theme.MostRecentUnlocks = snapshot.MostRecentUnlocks;
-            _settings.Theme.RarestRecentUnlocks = snapshot.RarestRecentUnlocks;
+            // Lightweight all-games lists (always updated)
             _settings.Theme.MostRecentUnlocksTop3 = snapshot.MostRecentUnlocksTop3;
             _settings.Theme.MostRecentUnlocksTop5 = snapshot.MostRecentUnlocksTop5;
             _settings.Theme.MostRecentUnlocksTop10 = snapshot.MostRecentUnlocksTop10;
@@ -686,8 +710,23 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.Theme.RarestRecentUnlocksTop5 = snapshot.RarestRecentUnlocksTop5;
             _settings.Theme.RarestRecentUnlocksTop10 = snapshot.RarestRecentUnlocksTop10;
 
-            // Raise PropertyChanged for delegated properties so bindings update
-            NotifySettingProperties(NativeAllGamesDelegatedProperties);
+            var shouldUpdateHeavyLists = snapshot.HeavyListsBuilt || snapshot.TotalCount <= 0;
+            if (shouldUpdateHeavyLists)
+            {
+                _settings.Theme.AllAchievementsUnlockAsc = snapshot.AllAchievementsUnlockAsc;
+                _settings.Theme.AllAchievementsUnlockDesc = snapshot.AllAchievementsUnlockDesc;
+                _settings.Theme.AllAchievementsRarityAsc = snapshot.AllAchievementsRarityAsc;
+                _settings.Theme.AllAchievementsRarityDesc = snapshot.AllAchievementsRarityDesc;
+                _settings.Theme.MostRecentUnlocks = snapshot.MostRecentUnlocks;
+                _settings.Theme.RarestRecentUnlocks = snapshot.RarestRecentUnlocks;
+            }
+
+            // Raise PropertyChanged for delegated properties so bindings update.
+            NotifySettingProperties(NativeAllGamesCoreDelegatedProperties);
+            if (shouldUpdateHeavyLists)
+            {
+                NotifySettingProperties(NativeAllGamesHeavyDelegatedProperties);
+            }
         }
 
         #endregion

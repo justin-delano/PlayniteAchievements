@@ -37,11 +37,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             List<GameAchievementData> allData,
             Dictionary<Guid, GameInfo> gameInfo,
             Action<Guid> openGameWindowCallback,
-            CancellationToken token)
+            CancellationToken token,
+            bool includeHeavyAchievementLists = true)
         {
             token.ThrowIfCancellationRequested();
 
             var snapshot = new AllGamesSnapshot();
+            snapshot.HeavyListsBuilt = includeHeavyAchievementLists;
 
             allData ??= new List<GameAchievementData>();
             gameInfo ??= new Dictionary<Guid, GameInfo>();
@@ -147,78 +149,123 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 snapshot.Rank = RankFromLevel(snapshot.Level);
             }
 
-            // Build all-games achievement lists (flattened from all games)
-            var allAchievements = new List<AchievementDetail>();
-            foreach (var data in allData)
+            if (includeHeavyAchievementLists)
             {
-                if (data?.Achievements == null) continue;
-                foreach (var achievement in data.Achievements)
+                // Build all-games achievement lists (flattened from all games)
+                var allAchievements = new List<AchievementDetail>();
+                foreach (var data in allData)
                 {
-                    if (achievement != null)
+                    token.ThrowIfCancellationRequested();
+                    if (data?.Achievements == null) continue;
+                    foreach (var achievement in data.Achievements)
                     {
-                        allAchievements.Add(achievement);
+                        if (achievement != null)
+                        {
+                            allAchievements.Add(achievement);
+                        }
                     }
                 }
+
+                // Sort by unlock date (ascending = oldest first, descending = newest first)
+                snapshot.AllAchievementsUnlockAsc = allAchievements
+                    .OrderBy(a => a?.UnlockTimeUtc)
+                    .ThenBy(a => a?.DisplayName)
+                    .ToList();
+
+                snapshot.AllAchievementsUnlockDesc = allAchievements
+                    .OrderByDescending(a => a?.UnlockTimeUtc)
+                    .ThenBy(a => a?.DisplayName)
+                    .ToList();
+
+                // Sort by rarity (ascending = rarest first, descending = common first)
+                snapshot.AllAchievementsRarityAsc = allAchievements
+                    .OrderBy(a => a?.GlobalPercentUnlocked ?? 100)
+                    .ThenBy(a => a?.DisplayName)
+                    .ToList();
+
+                snapshot.AllAchievementsRarityDesc = allAchievements
+                    .OrderByDescending(a => a?.GlobalPercentUnlocked ?? 100)
+                    .ThenBy(a => a?.DisplayName)
+                    .ToList();
+
+                var unlockedAchievements = allAchievements
+                    .Where(a => a != null && a.UnlockTimeUtc.HasValue && a.UnlockTimeUtc.Value != DateTime.MinValue)
+                    .ToList();
+
+                PopulateRecentLists(snapshot, unlockedAchievements, includeFullLists: true);
             }
-
-            // Sort by unlock date (ascending = oldest first, descending = newest first)
-            snapshot.AllAchievementsUnlockAsc = allAchievements
-                .OrderBy(a => a?.UnlockTimeUtc)
-                .ThenBy(a => a?.DisplayName)
-                .ToList();
-
-            snapshot.AllAchievementsUnlockDesc = allAchievements
-                .OrderByDescending(a => a?.UnlockTimeUtc)
-                .ThenBy(a => a?.DisplayName)
-                .ToList();
-
-            // Sort by rarity (ascending = rarest first, descending = common first)
-            snapshot.AllAchievementsRarityAsc = allAchievements
-                .OrderBy(a => a?.GlobalPercentUnlocked ?? 100)
-                .ThenBy(a => a?.DisplayName)
-                .ToList();
-
-            snapshot.AllAchievementsRarityDesc = allAchievements
-                .OrderByDescending(a => a?.GlobalPercentUnlocked ?? 100)
-                .ThenBy(a => a?.DisplayName)
-                .ToList();
-
-            var unlockedAchievements = allAchievements
-                .Where(a => a != null && a.UnlockTimeUtc.HasValue && a.UnlockTimeUtc.Value != DateTime.MinValue)
-                .ToList();
-
-            DateTime NormalizeUtc(DateTime timestamp)
+            else
             {
-                if (timestamp.Kind == DateTimeKind.Unspecified)
+                // Lightweight mode: avoid building full all-games sorted list surfaces.
+                var unlockedAchievements = new List<AchievementDetail>();
+                foreach (var data in allData)
                 {
-                    return DateTime.SpecifyKind(timestamp, DateTimeKind.Utc);
+                    token.ThrowIfCancellationRequested();
+                    if (data?.Achievements == null)
+                    {
+                        continue;
+                    }
+
+                    for (int i = 0; i < data.Achievements.Count; i++)
+                    {
+                        var achievement = data.Achievements[i];
+                        if (achievement == null ||
+                            !achievement.UnlockTimeUtc.HasValue ||
+                            achievement.UnlockTimeUtc.Value == DateTime.MinValue)
+                        {
+                            continue;
+                        }
+
+                        unlockedAchievements.Add(achievement);
+                    }
                 }
 
-                return timestamp.Kind == DateTimeKind.Local ? timestamp.ToUniversalTime() : timestamp;
+                PopulateRecentLists(snapshot, unlockedAchievements, includeFullLists: false);
             }
 
-            snapshot.MostRecentUnlocks = unlockedAchievements
+            return snapshot;
+        }
+
+        private static void PopulateRecentLists(AllGamesSnapshot snapshot, List<AchievementDetail> unlockedAchievements, bool includeFullLists)
+        {
+            unlockedAchievements ??= new List<AchievementDetail>();
+
+            var mostRecent = unlockedAchievements
                 .OrderByDescending(a => NormalizeUtc(a.UnlockTimeUtc.Value))
                 .ThenBy(a => a.DisplayName)
                 .ToList();
 
             var rareRecentCutoffUtc = DateTime.UtcNow.AddDays(-180);
-            snapshot.RarestRecentUnlocks = unlockedAchievements
+            var rareRecent = unlockedAchievements
                 .Where(a => NormalizeUtc(a.UnlockTimeUtc.Value) >= rareRecentCutoffUtc)
                 .OrderBy(a => a.GlobalPercentUnlocked ?? 100)
                 .ThenByDescending(a => NormalizeUtc(a.UnlockTimeUtc.Value))
                 .ThenBy(a => a.DisplayName)
                 .ToList();
 
-            snapshot.MostRecentUnlocksTop3 = snapshot.MostRecentUnlocks.Take(3).ToList();
-            snapshot.MostRecentUnlocksTop5 = snapshot.MostRecentUnlocks.Take(5).ToList();
-            snapshot.MostRecentUnlocksTop10 = snapshot.MostRecentUnlocks.Take(10).ToList();
+            if (includeFullLists)
+            {
+                snapshot.MostRecentUnlocks = mostRecent;
+                snapshot.RarestRecentUnlocks = rareRecent;
+            }
 
-            snapshot.RarestRecentUnlocksTop3 = snapshot.RarestRecentUnlocks.Take(3).ToList();
-            snapshot.RarestRecentUnlocksTop5 = snapshot.RarestRecentUnlocks.Take(5).ToList();
-            snapshot.RarestRecentUnlocksTop10 = snapshot.RarestRecentUnlocks.Take(10).ToList();
+            snapshot.MostRecentUnlocksTop3 = mostRecent.Take(3).ToList();
+            snapshot.MostRecentUnlocksTop5 = mostRecent.Take(5).ToList();
+            snapshot.MostRecentUnlocksTop10 = mostRecent.Take(10).ToList();
 
-            return snapshot;
+            snapshot.RarestRecentUnlocksTop3 = rareRecent.Take(3).ToList();
+            snapshot.RarestRecentUnlocksTop5 = rareRecent.Take(5).ToList();
+            snapshot.RarestRecentUnlocksTop10 = rareRecent.Take(10).ToList();
+        }
+
+        private static DateTime NormalizeUtc(DateTime timestamp)
+        {
+            if (timestamp.Kind == DateTimeKind.Unspecified)
+            {
+                return DateTime.SpecifyKind(timestamp, DateTimeKind.Utc);
+            }
+
+            return timestamp.Kind == DateTimeKind.Local ? timestamp.ToUniversalTime() : timestamp;
         }
 
         private static void GetTrophyCounts(GameAchievementData data, out int gold, out int silver, out int bronze)

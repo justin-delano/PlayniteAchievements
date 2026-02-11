@@ -41,6 +41,9 @@ namespace PlayniteAchievements.Services.Database
                 ON Users (ProviderName)
                 WHERE IsCurrentUser = 1;");
 
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Users_CurrentUser_Id
+                ON Users (IsCurrentUser, Id);");
+
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS Games (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ProviderName TEXT NOT NULL COLLATE NOCASE,
@@ -108,6 +111,9 @@ namespace PlayniteAchievements.Services.Database
 
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_UserGameProgress_LastUpdatedUtc
                 ON UserGameProgress (LastUpdatedUtc);");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_UserGameProgress_User_LastUpdated
+                ON UserGameProgress (UserId, LastUpdatedUtc);");
 
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS UserAchievements (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
