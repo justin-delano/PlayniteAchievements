@@ -8,7 +8,9 @@
                    xmlns:local="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
                    xmlns:localControls="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Legacy.Controls"
                    mc:Ignorable="d"
-                   d:DesignHeight="100" d:DesignWidth="300">
+                   d:DesignHeight="100" d:DesignWidth="300"
+                   MinHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MinHeight}"
+                   MaxHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MaxHeight}">
     <!--
         SuccessStory-compatible compact locked control for theme integration.
         Programmatically creates grid columns to fit achievements, with "+X more" in the last column.
@@ -17,11 +19,13 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </local:CompactAchievementControlBase.Resources>
 
-    <Grid Name="PART_GridContener" Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}">
+    <Grid Name="PART_GridContener"
+          Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}"
+          Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}">
         <Grid Name="PART_ScCompactView" x:FieldModifier="protected" />
 
         <!-- Empty state message -->
-        <TextBlock Text="No locked achievements"
+        <TextBlock Text="{DynamicResource LOCPlayAch_NoLockedAchievements}"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    Foreground="{DynamicResource TextBrushDarker}">
