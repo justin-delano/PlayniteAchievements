@@ -465,5 +465,7 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">Aucun succès trouvé</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">Ce jeu n'a pas encore de succès suivis. Cliquez sur le bouton Scanner pour vérifier les données de succès.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">Ce jeu ne prend peut-être pas en charge les succès, ou ils ne sont pas disponibles pour cette plateforme.</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoLockedAchievements">Aucun succès verrouillé</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">Aucun succès débloqué</sys:String>
 
 </ResourceDictionary>
