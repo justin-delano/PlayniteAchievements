@@ -173,62 +173,93 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 var index = await _hashIndexStore.GetHashIndexAsync(consoleId, cancel).ConfigureAwait(false);
 
                 foreach (var candidate in candidates)
-            {
-                cancel.ThrowIfCancellationRequested();
-
-                if (string.IsNullOrWhiteSpace(candidate)) continue;
-
-                if (ArchiveUtils.IsArchivePath(candidate) && _settings.Persisted.EnableArchiveScanning)
                 {
-                    // Arcade hashing is based on filename; no need to inspect entries.
-                    if (hasher is Hashing.Hashers.ArcadeFilenameHasher)
+                    cancel.ThrowIfCancellationRequested();
+
+                    if (string.IsNullOrWhiteSpace(candidate)) continue;
+
+                    // CSO files need to be decompressed before hashing
+                    if (ArchiveUtils.IsCsoPath(candidate) && _settings.Persisted.EnableArchiveScanning)
                     {
-                        var hashes = await hasher.ComputeHashesAsync(candidate, cancel).ConfigureAwait(false);
-                        var match = TryMatchHash(index, hashes, out var matchedHash, out var gameId);
-                        _logger?.Info($"[RA] Archive '{candidate}' hashes={FormatHashesForLog(hashes)} matched={match} gameId={gameId}");
-                        if (match)
+                        if (!File.Exists(candidate))
                         {
-                            return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
+                            continue;
                         }
 
+                        _logger?.Info($"[RA] Decompressing CSO file: '{candidate}'");
+                        try
+                        {
+                            using (var tmpIso = CsoUtils.DecompressToTempFile(candidate))
+                            {
+                                var hashes = await hasher.ComputeHashesAsync(tmpIso.Path, cancel).ConfigureAwait(false);
+                                var match = TryMatchHash(index, hashes, out var matchedHash, out var gameId);
+                                _logger?.Info($"[RA] CSO file '{candidate}' hashes={FormatHashesForLog(hashes)} matched={match} gameId={gameId}");
+
+                                if (match)
+                                {
+                                    return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.Warn(ex, $"[RA] Failed to decompress CSO file '{candidate}': {ex.Message}");
+                        }
                         continue;
                     }
 
-                    var entries = ArchiveUtils.GetCandidateEntries(candidate);
-                    foreach (var entry in entries)
+                    // Standard archive handling (zip, 7z, rar)
+                    if (ArchiveUtils.IsArchivePath(candidate) && _settings.Persisted.EnableArchiveScanning)
                     {
-                        cancel.ThrowIfCancellationRequested();
-
-                        using (var tmp = ArchiveUtils.ExtractEntryToTempFile(candidate, entry))
+                        // Arcade hashing is based on filename; no need to inspect entries.
+                        if (hasher is Hashing.Hashers.ArcadeFilenameHasher)
                         {
-                            var hashes = await hasher.ComputeHashesAsync(tmp.Path, cancel).ConfigureAwait(false);
+                            var hashes = await hasher.ComputeHashesAsync(candidate, cancel).ConfigureAwait(false);
                             var match = TryMatchHash(index, hashes, out var matchedHash, out var gameId);
-                            _logger?.Info($"[RA] ArchiveEntry '{entry.Key}' hashes={FormatHashesForLog(hashes)} matched={match} gameId={gameId}");
-
+                            _logger?.Info($"[RA] Archive '{candidate}' hashes={FormatHashesForLog(hashes)} matched={match} gameId={gameId}");
                             if (match)
                             {
                                 return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
                             }
+
+                            continue;
+                        }
+
+                        var entries = ArchiveUtils.GetCandidateEntries(candidate);
+                        foreach (var entry in entries)
+                        {
+                            cancel.ThrowIfCancellationRequested();
+
+                            using (var tmp = ArchiveUtils.ExtractEntryToTempFile(candidate, entry))
+                            {
+                                var hashes = await hasher.ComputeHashesAsync(tmp.Path, cancel).ConfigureAwait(false);
+                                var match = TryMatchHash(index, hashes, out var matchedHash, out var gameId);
+                                _logger?.Info($"[RA] ArchiveEntry '{entry.Key}' hashes={FormatHashesForLog(hashes)} matched={match} gameId={gameId}");
+
+                                if (match)
+                                {
+                                    return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (!File.Exists(candidate))
+                        {
+                            continue;
+                        }
+
+                        var hashes = await hasher.ComputeHashesAsync(candidate, cancel).ConfigureAwait(false);
+                        var match = TryMatchHash(index, hashes, out var matchedHash, out var gameId);
+                        _logger?.Info($"[RA] File '{candidate}' hashes={FormatHashesForLog(hashes)} matched={match} gameId={gameId}");
+
+                        if (match)
+                        {
+                            return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
                         }
                     }
                 }
-                else
-                {
-                    if (!File.Exists(candidate))
-                    {
-                        continue;
-                    }
-
-                    var hashes = await hasher.ComputeHashesAsync(candidate, cancel).ConfigureAwait(false);
-                    var match = TryMatchHash(index, hashes, out var matchedHash, out var gameId);
-                    _logger?.Info($"[RA] File '{candidate}' hashes={FormatHashesForLog(hashes)} matched={match} gameId={gameId}");
-
-                    if (match)
-                    {
-                        return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
-                    }
-                }
-            }
             }
             catch (Exception ex)
             {
@@ -553,10 +584,28 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
             var normalizedName = NormalizeGameName(game.Name);
 
-            // Sort by title length descending to prioritize exact/longer matches
-            var sortedGames = games.OrderByDescending(g => g.Title?.Length ?? 0).ToList();
+            // Prefer base sets first; only consider subset/event-style titles if no base set matches.
+            var orderedGames = games.OrderByDescending(g => g.Title?.Length ?? 0).ToList();
+            var baseSetGames = orderedGames.Where(g => !IsSubsetLikeTitle(g?.Title)).ToList();
 
-            foreach (var raGame in sortedGames)
+            var baseSetMatch = TryFindNameMatch(game, normalizedName, baseSetGames);
+            if (baseSetMatch > 0)
+            {
+                return baseSetMatch;
+            }
+
+            var subsetGames = orderedGames.Where(g => IsSubsetLikeTitle(g?.Title)).ToList();
+            return TryFindNameMatch(game, normalizedName, subsetGames);
+        }
+
+        private int TryFindNameMatch(Game game, string normalizedName, IReadOnlyList<Models.RaGameListWithTitle> games)
+        {
+            if (games == null || games.Count == 0)
+            {
+                return 0;
+            }
+
+            foreach (var raGame in games)
             {
                 if (string.IsNullOrWhiteSpace(raGame.Title)) continue;
 
@@ -601,6 +650,21 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             }
 
             return 0;
+        }
+
+        private static bool IsSubsetLikeTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return false;
+            }
+
+            var titleLower = title.ToLowerInvariant();
+            return titleLower.Contains("[subset") ||
+                   titleLower.Contains("[tournament") ||
+                   titleLower.Contains("[event") ||
+                   titleLower.Contains("[bonus") ||
+                   titleLower.Contains("[hub");
         }
 
         private async Task<List<Models.RaGameListWithTitle>> GetOrFetchGameListAsync(int consoleId, CancellationToken cancel)
