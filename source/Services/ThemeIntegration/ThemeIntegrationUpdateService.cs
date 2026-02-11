@@ -127,7 +127,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             catch
             {
                 _ultraRareThreshold = 5;
-                _rareThreshold = 20;
+                _rareThreshold = 10;
                 _uncommonThreshold = 50;
                 RarityHelper.Configure(_ultraRareThreshold, _rareThreshold, _uncommonThreshold);
             }

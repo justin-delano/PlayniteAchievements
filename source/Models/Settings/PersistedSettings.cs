@@ -38,7 +38,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableRaNameFallback = true;
 
         private double _ultraRareThreshold = 5;
-        private double _rareThreshold = 20;
+        private double _rareThreshold = 10;
         private double _uncommonThreshold = 50;
         private bool _firstTimeSetupCompleted = false;
         private bool _seenThemeMigration = false;

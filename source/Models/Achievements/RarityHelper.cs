@@ -9,7 +9,7 @@ namespace PlayniteAchievements.Models.Achievements
     {
         // Default thresholds
         private static double _ultraRareThreshold = 5;
-        private static double _rareThreshold = 20;
+        private static double _rareThreshold = 10;
         private static double _uncommonThreshold = 50;
 
         // Rarity brushes
