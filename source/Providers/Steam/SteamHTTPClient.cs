@@ -175,13 +175,13 @@ namespace PlayniteAchievements.Providers.Steam
 
                 var unlockNode = row.SelectSingleNode(".//div[contains(@class,'achieveUnlockTime')]");
                 var isUnlocked = unlockNode != null;
-                var unlockText = WebUtility.HtmlDecode(unlockNode?.InnerText ?? "").Trim();
+                var unlockText = ExtractUnlockText(unlockNode);
                 var unlockUtc = SteamTimeParser.TryParseSteamUnlockTime(unlockText, language);
 
                 if (isUnlocked && !unlockUtc.HasValue)
                 {
                     var snippet = unlockText.Substring(0, Math.Min(50, unlockText.Length));
-                    _logger?.Warn($"[SteamAch] ParseAchievements: Failed to parse time from '{unlockText}' (hex: {BitConverter.ToString(Encoding.UTF8.GetBytes(snippet))})");
+                    _logger?.Warn($"[SteamAch] ParseAchievements: Failed to parse time (lang={language}) from '{unlockText}' (hex: {BitConverter.ToString(Encoding.UTF8.GetBytes(snippet))})");
                 }
 
                 if (!includeLocked && !isUnlocked) continue;
@@ -227,6 +227,27 @@ namespace PlayniteAchievements.Providers.Steam
                 });
             }
             return results;
+        }
+
+        private static string ExtractUnlockText(HtmlNode unlockNode)
+        {
+            if (unlockNode == null)
+            {
+                return string.Empty;
+            }
+
+            var raw = WebUtility.HtmlDecode(unlockNode.InnerText ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return string.Empty;
+            }
+
+            var firstLine = raw
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Trim())
+                .FirstOrDefault(line => !string.IsNullOrWhiteSpace(line));
+
+            return firstLine ?? raw.Trim();
         }
 
         public Task<bool?> GetAppHasAchievementsAsync(string apiKey, int appId, CancellationToken ct)
