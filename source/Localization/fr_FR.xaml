@@ -467,5 +467,8 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">Ce jeu ne prend peut-être pas en charge les succès, ou ils ne sont pas disponibles pour cette plateforme.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoLockedAchievements">Aucun succès verrouillé</sys:String>
     <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">Aucun succès débloqué</sys:String>
+    <sys:String x:Key="LOCPlayAch_ChartCut">Couper</sys:String>
+    <sys:String x:Key="LOCPlayAch_ChartAll">Tout</sys:String>
+    <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Grouper par débloqué</sys:String>
 
 </ResourceDictionary>
