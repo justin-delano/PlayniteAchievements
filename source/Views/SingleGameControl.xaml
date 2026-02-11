@@ -347,7 +347,8 @@
                 <!-- Timeline Header -->
                 <ToggleButton Grid.Row="3"
                               IsChecked="{Binding IsTimelineVisible, Mode=TwoWay}"
-                              Style="{StaticResource ExpanderHeaderStyle}">
+                              Style="{StaticResource ExpanderHeaderStyle}"
+                              Margin="0,4,0,0">
                     <TextBlock Text="{DynamicResource LOCPlayAch_Section_Timeline}"
                                Style="{DynamicResource BaseTextBlockStyle}"
                                Foreground="{DynamicResource TextBrush}"
