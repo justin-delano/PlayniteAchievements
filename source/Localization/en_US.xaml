@@ -182,7 +182,7 @@
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Settings_HideLocked">Hide My Locked Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HideLocked">Hide My Hidden Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames">Ignore unplayed games</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames_Help">If checked, games with 0 playtime will be skipped during scans.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use cover images instead of icons in games list</sys:String>

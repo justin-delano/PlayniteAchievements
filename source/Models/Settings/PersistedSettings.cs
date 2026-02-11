@@ -22,7 +22,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
         private int _quickRefreshRecentGamesCount = 10;
-        private bool _hideAchievementsLockedForSelf = false;
+        private bool _hideAchievementsLockedForSelf = true;
         private bool _useCoverImages = false;
         private bool _ignoreUnplayedGames = false;
         private bool _enableDiagnostics = false;
