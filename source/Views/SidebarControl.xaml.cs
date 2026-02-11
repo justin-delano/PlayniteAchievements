@@ -125,6 +125,19 @@ namespace PlayniteAchievements.Views
             if (grid.SelectedItem is GameOverviewItem item)
             {
                 _viewModel.SelectedGame = item;
+                ResetAchievementsScrollPosition();
+            }
+        }
+
+        private void ResetAchievementsScrollPosition()
+        {
+            if (GameAchievementsDataGrid == null) return;
+
+            // Scroll to top using the DataGrid's internal ScrollViewer
+            GameAchievementsDataGrid.ScrollIntoView(GameAchievementsDataGrid.Items[0]);
+            if (GameAchievementsDataGrid.Items.Count > 0)
+            {
+                GameAchievementsDataGrid.SelectedIndex = 0;
             }
         }
 

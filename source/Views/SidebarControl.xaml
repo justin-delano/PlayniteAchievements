@@ -1512,7 +1512,8 @@
                             </Grid.RowDefinitions>
 
                             <!-- Game Achievements List -->
-                            <DataGrid Grid.Row="0"
+                            <DataGrid x:Name="GameAchievementsDataGrid"
+                                      Grid.Row="0"
                                       ItemsSource="{Binding SelectedGameAchievements}"
                                       Sorting="DataGrid_Sorting"
                                       AutoGenerateColumns="False"
