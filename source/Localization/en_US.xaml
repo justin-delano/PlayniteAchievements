@@ -467,5 +467,8 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">This game may not support achievements, or achievements may not be available for this platform.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoLockedAchievements">No locked achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">No unlocked achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_ChartCut">Cut</sys:String>
+    <sys:String x:Key="LOCPlayAch_ChartAll">All</sys:String>
+    <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Group by unlocked</sys:String>
 
 </ResourceDictionary>
