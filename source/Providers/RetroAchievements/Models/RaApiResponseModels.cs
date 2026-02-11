@@ -30,6 +30,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Models
         [JsonProperty("GameID")]
         public int GameID { get; set; }
 
+        [JsonProperty("Title")]
+        public string Title { get; set; }
+
         [JsonProperty("Hashes")]
         public object Hashes { get; set; }
     }
