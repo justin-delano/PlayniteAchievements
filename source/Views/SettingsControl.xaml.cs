@@ -351,8 +351,8 @@ namespace PlayniteAchievements.Views
                     if (result.FilesBackedUp > 0)
                     {
                         _plugin.PlayniteApi.Dialogs.ShowMessage(
-                            result.Message + "\n\nPlease restart Playnite to apply the theme changes.",
-                            ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Title") ?? "Theme Migration",
+                            $"{result.Message}{Environment.NewLine}{Environment.NewLine}{L("LOCPlayAch_ThemeMigration_RestartRequired", "Please restart Playnite to apply the theme changes.")}",
+                            L("LOCPlayAch_ThemeMigration_Title", "Theme Migration"),
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
                     }
@@ -361,7 +361,7 @@ namespace PlayniteAchievements.Views
                         // No changes were made, just show info message
                         _plugin.PlayniteApi.Dialogs.ShowMessage(
                             result.Message,
-                            ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Title") ?? "Theme Migration",
+                            L("LOCPlayAch_ThemeMigration_Title", "Theme Migration"),
                             MessageBoxButton.OK,
                             MessageBoxImage.Information);
                     }
@@ -374,7 +374,7 @@ namespace PlayniteAchievements.Views
                     _logger.Warn($"Theme migration failed: {result.Message}");
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
                         result.Message,
-                        ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Title") ?? "Theme Migration",
+                        L("LOCPlayAch_ThemeMigration_Title", "Theme Migration"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -383,8 +383,8 @@ namespace PlayniteAchievements.Views
             {
                 _logger.Error(ex, "Failed to execute theme migration.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    $"Theme migration failed: {ex.Message}",
-                    ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Title") ?? "Theme Migration",
+                    LF("LOCPlayAch_ThemeMigration_Failed", "Theme migration failed: {0}", ex.Message),
+                    L("LOCPlayAch_ThemeMigration_Title", "Theme Migration"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -409,7 +409,7 @@ namespace PlayniteAchievements.Views
                     _logger.Info($"Theme revert successful: {SelectedRevertThemePath}");
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
                         result.Message,
-                        ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Revert") ?? "Revert Theme",
+                        L("LOCPlayAch_ThemeMigration_Revert", "Revert Theme"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
 
@@ -421,7 +421,7 @@ namespace PlayniteAchievements.Views
                     _logger.Warn($"Theme revert failed: {result.Message}");
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
                         result.Message,
-                        ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Revert") ?? "Revert Theme",
+                        L("LOCPlayAch_ThemeMigration_Revert", "Revert Theme"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Error);
                 }
@@ -430,8 +430,8 @@ namespace PlayniteAchievements.Views
             {
                 _logger.Error(ex, "Failed to execute theme revert.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    $"Theme revert failed: {ex.Message}",
-                    ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Revert") ?? "Revert Theme",
+                    LF("LOCPlayAch_ThemeMigration_RevertFailed", "Revert failed: {0}", ex.Message),
+                    L("LOCPlayAch_ThemeMigration_Revert", "Revert Theme"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -696,8 +696,8 @@ namespace PlayniteAchievements.Views
             catch (Exception ex)
             {
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    "Failed to wipe cache: " + ex.Message,
-                    "Friends Achievement Feed",
+                    LF("LOCPlayAch_Settings_Cache_WipeFailedWithError", "Failed to wipe cache: {0}", ex.Message),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -746,7 +746,7 @@ namespace PlayniteAchievements.Views
                 if (!reloadedValue)
                 {
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        "First-time setup has been reset!\n\nClose and reopen the sidebar to see the landing page.",
+                        L("LOCPlayAch_Settings_ResetFirstTimeSetupDone", "First-time setup has been reset. Close and reopen the sidebar to see the landing page."),
                         ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
@@ -754,7 +754,7 @@ namespace PlayniteAchievements.Views
                 else
                 {
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        "Failed to verify reset. The settings may not have been saved correctly.",
+                        L("LOCPlayAch_Settings_ResetFirstTimeSetupVerifyFailed", "Failed to verify reset. The settings may not have been saved correctly."),
                         ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);
@@ -764,7 +764,7 @@ namespace PlayniteAchievements.Views
             {
                 _logger.Error(ex, "Failed to reset first-time setup.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    "Failed to reset first-time setup: " + ex.Message,
+                    LF("LOCPlayAch_Settings_ResetFirstTimeSetupFailed", "Failed to reset first-time setup: {0}", ex.Message),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -781,8 +781,8 @@ namespace PlayniteAchievements.Views
                 if (!System.IO.Directory.Exists(raCacheDir))
                 {
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        "No RetroAchievements cache directory found.",
-                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                        L("LOCPlayAch_Settings_HashIndex_NoCacheDir", "No RetroAchievements cache directory found."),
+                        L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                     return;
@@ -809,16 +809,16 @@ namespace PlayniteAchievements.Views
                 if (deletedCount > 0)
                 {
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        $"Deleted {deletedCount} hash index cache file(s).\n\nThe hash index will be rebuilt on the next scan, using the new subset/tournament filtering.",
-                        "Hash Index Cache Cleared",
+                        LF("LOCPlayAch_Settings_HashIndex_DeletedCount", "Deleted {0} hash index cache file(s).{1}{1}The hash index will be rebuilt on the next scan.", deletedCount, Environment.NewLine),
+                        L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 }
                 else
                 {
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        "No hash index cache files found to delete.\n\nThe cache may have already been cleared, or no scans have been performed yet.",
-                        "Hash Index Cache",
+                        LF("LOCPlayAch_Settings_HashIndex_NoFiles", "No hash index cache files found to delete.{0}{0}The cache may have already been cleared, or no scans have been performed yet.", Environment.NewLine),
+                        L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 }
@@ -827,8 +827,8 @@ namespace PlayniteAchievements.Views
             {
                 _logger.Error(ex, "Failed to force hash index rebuild.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    "Failed to clear hash index cache: " + ex.Message,
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    LF("LOCPlayAch_Settings_HashIndex_ClearFailed", "Failed to clear hash index cache: {0}", ex.Message),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
@@ -862,6 +862,17 @@ namespace PlayniteAchievements.Views
 
         public void Dispose()
         {
+        }
+
+        private static string L(string key, string fallback)
+        {
+            var value = ResourceProvider.GetString(key);
+            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+        }
+
+        private static string LF(string key, string fallbackFormat, params object[] args)
+        {
+            return string.Format(L(key, fallbackFormat), args);
         }
         
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)

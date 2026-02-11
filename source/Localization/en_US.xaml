@@ -60,6 +60,7 @@
     <sys:String x:Key="LOCPlayAch_Button_QuickScan">Quick Scan</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_ScanAll">Full Scan</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tooltip_Clear">Clear</sys:String>
 
     <!-- Scan Modes -->
     <!-- Short versions for sidebar dropdown -->
@@ -100,6 +101,34 @@
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKey">Steam Web API Key</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKeyHint">Get your API key from</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage">Steam Language</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_English">English</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_German">German (Deutsch)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_French">French (Français)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Spanish">Spanish (Español)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Italian">Italian (Italiano)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Portuguese">Portuguese</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_BrazilianPortuguese">Brazilian Portuguese</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Russian">Russian (Русский)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Polish">Polish (Polski)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Dutch">Dutch (Nederlands)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Swedish">Swedish (Svenska)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Finnish">Finnish (Suomi)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Danish">Danish (Dansk)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Norwegian">Norwegian (Norsk)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Hungarian">Hungarian (Magyar)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Czech">Czech (Čeština)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Romanian">Romanian (Română)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Turkish">Turkish (Türkçe)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Greek">Greek (Ελληνικά)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Bulgarian">Bulgarian (Български)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Ukrainian">Ukrainian (Українська)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Thai">Thai (ไทย)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Vietnamese">Vietnamese (Tiếng Việt)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Japanese">Japanese (日本語)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Korean">Korean (한국어)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_SimplifiedChinese">Simplified Chinese (简体中文)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_TraditionalChinese">Traditional Chinese (繁體中文)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Arabic">Arabic (العربية)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CheckSteamAuth">Check</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">Authenticate</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CheckingSteamAuth">Checking Steam authentication...</sys:String>
@@ -133,10 +162,22 @@
     <sys:String x:Key="LOCPlayAch_Section_Notifications">Notifications</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_RarityThresholds">Achievement Rarity Thresholds</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RarityThresholds_Description">Configure the global unlock percentage cutoffs that determine achievement rarity tiers. Achievements are categorized based on what percentage of players have unlocked them.</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Username">Username</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Username_Help">Your RetroAchievements username.</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_WebApiKey">Web API Key</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_WebApiKey_Help">Find your key in your RetroAchievements control panel:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">Rarity stats</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Casual (Softcore)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Combined">Overall (Casual + Hardcore)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Controls how rarity percentages are calculated. Changing this requires a rescan to update cached values.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Scanning &amp; Hashing</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Enable archive scanning (.zip/.7z/.rar/.cso/.ciso)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Enable disc hashing (for disc-based consoles)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Hash index max age (days)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Force hash index rebuild</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RebuildNow">Rebuild Now</sys:String>
 
     <!-- ================================================================= -->
     <!-- CACHE                                                              -->
@@ -146,6 +187,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_WipeCache_All">Clear Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_Wiped">Cache cleared.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailed">Failed to clear cache (files remain).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailedWithError">Failed to wipe cache: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Description">Clear the plugin's in-memory achievement icon cache (icons will re-load as they appear in view).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Clear">Clear Image Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Cleared">Image cache cleared.</sys:String>
@@ -153,6 +195,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next sidebar open.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Reset Landing Page</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupDone">First-time setup has been reset. Close and reopen the sidebar to see the landing page.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupVerifyFailed">Failed to verify reset. The settings may not have been saved correctly.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupFailed">Failed to reset first-time setup: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoCacheDir">No RetroAchievements cache directory found.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_DeletedCount">Deleted {0} hash index cache file(s).{1}{1}The hash index will be rebuilt on the next scan.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoFiles">No hash index cache files found to delete.{0}{0}The cache may have already been cleared, or no scans have been performed yet.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_ClearFailed">Failed to clear hash index cache: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiagnostics">Enable diagnostics logging (perf timings)</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_ClearingCache">Clearing cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingFromCache">Loading from cache...</sys:String>
@@ -397,6 +445,7 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoPath">Please select a valid theme directory.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NotDirectory">Selected path is not a directory.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Processing">Processing theme...</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_RestartRequired">Please restart Playnite to apply the theme changes.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_FilesProcessed">Files processed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Replacements">Replacements made: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupLocation">Backup location: {0}</sys:String>

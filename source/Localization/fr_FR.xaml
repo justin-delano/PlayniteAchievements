@@ -60,6 +60,7 @@
     <sys:String x:Key="LOCPlayAch_Button_QuickScan">Analyse rapide</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_ScanAll">Analyser tout</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Annuler</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tooltip_Clear">Effacer</sys:String>
 
     <!-- Scan Modes -->
     <!-- Short versions for sidebar dropdown -->
@@ -100,6 +101,34 @@
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKey">Clé Steam Web API</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKeyHint">Obtenez votre clé API de</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage">Langue Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_English">Anglais</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_German">Allemand (Deutsch)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_French">Français (Français)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Spanish">Espagnol (Español)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Italian">Italien (Italiano)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Portuguese">Portugais</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_BrazilianPortuguese">Portugais brésilien</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Russian">Russe (Русский)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Polish">Polonais (Polski)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Dutch">Néerlandais (Nederlands)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Swedish">Suédois (Svenska)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Finnish">Finnois (Suomi)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Danish">Danois (Dansk)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Norwegian">Norvégien (Norsk)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Hungarian">Hongrois (Magyar)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Czech">Tchèque (Čeština)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Romanian">Roumain (Română)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Turkish">Turc (Türkçe)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Greek">Grec (Ελληνικά)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Bulgarian">Bulgare (Български)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Ukrainian">Ukrainien (Українська)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Thai">Thaï (ไทย)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Vietnamese">Vietnamien (Tiếng Việt)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Japanese">Japonais (日本語)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Korean">Coréen (한국어)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_SimplifiedChinese">Chinois simplifié (简体中文)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_TraditionalChinese">Chinois traditionnel (繁體中文)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Arabic">Arabe (العربية)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CheckSteamAuth">Vérifier l'authentification Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">S'authentifier via le navigateur</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CheckingSteamAuth">Vérification de l'authentification Steam...</sys:String>
@@ -109,6 +138,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_Status_CookiesCleared">Cookies de session Steam effacés.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_AuthInvalid">La session Steam est invalide. Veuillez vous réauthentifier.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_AuthError">Erreur lors de la vérification du statut Steam.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Status_BothNeeded">La clé Steam Web API et l'authentification web sont requises</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Status_ApiKeyNeeded">La clé Steam Web API est requise</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Status_WebAuthNeeded">L'authentification web est requise</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamAuth">Authentification Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamWebAuth">Authentification web Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_RaAuth">Authentification RetroAchievements</sys:String>
@@ -130,10 +162,22 @@
     <sys:String x:Key="LOCPlayAch_Section_Notifications">Notifications</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_RarityThresholds">Seuils de rareté des succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RarityThresholds_Description">Configurez les seuils globaux de pourcentage de déblocage qui déterminent les niveaux de rareté des succès. Les succès sont catégorisés selon le pourcentage de joueurs qui les ont débloqués.</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Username">Nom d'utilisateur</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Username_Help">Votre nom d'utilisateur RetroAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_WebApiKey">Clé API Web</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_WebApiKey_Help">Trouvez votre clé dans votre panneau de configuration RetroAchievements :</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">Statistiques de rareté</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Décontracté (Softcore)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Combined">Global (Casual + Hardcore)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Contrôle la manière dont les pourcentages de rareté sont calculés. Modifier ce réglage nécessite un nouveau scan pour mettre à jour les valeurs en cache.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Analyse et hachage</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Activer l'analyse des archives (.zip/.7z/.rar/.cso/.ciso)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Activer le hachage des disques (pour les consoles à disque)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Âge maximal de l'index de hachage (jours)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Forcer la reconstruction de l'index de hachage</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RebuildNow">Reconstruire maintenant</sys:String>
 
     <!-- ================================================================= -->
     <!-- CACHE                                                              -->
@@ -143,6 +187,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_WipeCache_All">Supprimer le cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_Wiped">Cache supprimé.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailed">Impossible de supprimer le cache (des fichiers restent).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailedWithError">Échec de la suppression du cache : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Description">Vider le cache en mémoire des icônes de succès (elles se rechargeront à l'affichage).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Clear">Vider le cache d'images</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Cleared">Cache d'images vidé.</sys:String>
@@ -150,6 +195,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Afficher à nouveau la page de configuration de premier démarrage à la prochaine ouverture de la barre latérale.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Réinitialiser la page d'accueil</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupDone">La configuration de premier démarrage a été réinitialisée. Fermez et rouvrez la barre latérale pour voir la page d'accueil.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupVerifyFailed">Impossible de vérifier la réinitialisation. Les paramètres n'ont peut-être pas été enregistrés correctement.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupFailed">Échec de la réinitialisation de la configuration initiale : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoCacheDir">Aucun dossier de cache RetroAchievements trouvé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_DeletedCount">{0} fichier(s) de cache d'index de hachage supprimé(s).{1}{1}L'index de hachage sera reconstruit lors du prochain scan.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoFiles">Aucun fichier de cache d'index de hachage à supprimer.{0}{0}Le cache a peut-être déjà été vidé, ou aucun scan n'a encore été effectué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_ClearFailed">Échec de la suppression du cache d'index de hachage : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiagnostics">Activer les logs de diagnostic (timings)</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_ClearingCache">Suppression du cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingFromCache">Chargement depuis le cache...</sys:String>
@@ -394,6 +445,7 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoPath">Veuillez sélectionner un dossier de thème valide.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NotDirectory">Le chemin sélectionné n'est pas un dossier.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Processing">Traitement du thème...</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_RestartRequired">Veuillez redémarrer Playnite pour appliquer les changements du thème.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_FilesProcessed">Fichiers traités : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Replacements">Remplacements effectués : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupLocation">Emplacement de la sauvegarde : {0}</sys:String>

@@ -119,11 +119,9 @@
                                            Style="{StaticResource SectionHeaderStyle}"
                                            Margin="0,0,0,12"/>
 
-                                <TextBlock Style="{StaticResource MutedTextStyle}"
-                                           Margin="0,0,0,16">
-                                    Configure the global unlock percentage cutoffs that determine achievement rarity tiers.
-                                    Achievements are categorized based on what percentage of players have unlocked them.
-                                </TextBlock>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RarityThresholds_Description}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,16"/>
 
                                 <!-- Threshold settings grid -->
                                 <Grid>
@@ -531,34 +529,34 @@
                                               VerticalAlignment="Center"
                                               MinWidth="150"
                                               HorizontalAlignment="Left">
-                                        <ComboBoxItem Content="English" Tag="english"/>
-                                        <ComboBoxItem Content="German (Deutsch)" Tag="german"/>
-                                        <ComboBoxItem Content="French (Français)" Tag="french"/>
-                                        <ComboBoxItem Content="Spanish (Español)" Tag="spanish"/>
-                                        <ComboBoxItem Content="Italian (Italiano)" Tag="italian"/>
-                                        <ComboBoxItem Content="Portuguese" Tag="portuguese"/>
-                                        <ComboBoxItem Content="Brazilian Portuguese" Tag="brazilian"/>
-                                        <ComboBoxItem Content="Russian (Русский)" Tag="russian"/>
-                                        <ComboBoxItem Content="Polish (Polski)" Tag="polish"/>
-                                        <ComboBoxItem Content="Dutch (Nederlands)" Tag="dutch"/>
-                                        <ComboBoxItem Content="Swedish (Svenska)" Tag="swedish"/>
-                                        <ComboBoxItem Content="Finnish (Suomi)" Tag="finnish"/>
-                                        <ComboBoxItem Content="Danish (Dansk)" Tag="danish"/>
-                                        <ComboBoxItem Content="Norwegian (Norsk)" Tag="norwegian"/>
-                                        <ComboBoxItem Content="Hungarian (Magyar)" Tag="hungarian"/>
-                                        <ComboBoxItem Content="Czech (Čeština)" Tag="czech"/>
-                                        <ComboBoxItem Content="Romanian (Română)" Tag="romanian"/>
-                                        <ComboBoxItem Content="Turkish (Türkçe)" Tag="turkish"/>
-                                        <ComboBoxItem Content="Greek (Ελληνικά)" Tag="greek"/>
-                                        <ComboBoxItem Content="Bulgarian (Български)" Tag="bulgarian"/>
-                                        <ComboBoxItem Content="Ukrainian (Українська)" Tag="ukrainian"/>
-                                        <ComboBoxItem Content="Thai (ไทย)" Tag="thai"/>
-                                        <ComboBoxItem Content="Vietnamese (Tiếng Việt)" Tag="vietnamese"/>
-                                        <ComboBoxItem Content="Japanese (日本語)" Tag="japanese"/>
-                                        <ComboBoxItem Content="Korean (한국어)" Tag="koreana"/>
-                                        <ComboBoxItem Content="Simplified Chinese (简体中文)" Tag="schinese"/>
-                                        <ComboBoxItem Content="Traditional Chinese (繁體中文)" Tag="tchinese"/>
-                                        <ComboBoxItem Content="Arabic (العربية)" Tag="arabic"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_English}" Tag="english"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_German}" Tag="german"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_French}" Tag="french"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Spanish}" Tag="spanish"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Italian}" Tag="italian"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Portuguese}" Tag="portuguese"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_BrazilianPortuguese}" Tag="brazilian"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Russian}" Tag="russian"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Polish}" Tag="polish"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Dutch}" Tag="dutch"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Swedish}" Tag="swedish"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Finnish}" Tag="finnish"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Danish}" Tag="danish"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Norwegian}" Tag="norwegian"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Hungarian}" Tag="hungarian"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Czech}" Tag="czech"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Romanian}" Tag="romanian"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Turkish}" Tag="turkish"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Greek}" Tag="greek"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Bulgarian}" Tag="bulgarian"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Ukrainian}" Tag="ukrainian"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Thai}" Tag="thai"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Vietnamese}" Tag="vietnamese"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Japanese}" Tag="japanese"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Korean}" Tag="koreana"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_SimplifiedChinese}" Tag="schinese"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_TraditionalChinese}" Tag="tchinese"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Arabic}" Tag="arabic"/>
                                     </ComboBox>
                                 </Grid>
 
@@ -912,7 +910,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Row="0" Grid.Column="0"
-                                               Text="Rarity stats"
+                                               Text="{DynamicResource LOCPlayAch_Settings_RaRarityStats}"
                                                Foreground="{DynamicResource TextBrush}"
                                                VerticalAlignment="Center"/>
 
@@ -922,28 +920,27 @@
                                               VerticalAlignment="Center"
                                               MinWidth="160"
                                               HorizontalAlignment="Left">
-                                        <ComboBoxItem Content="Casual (Softcore)" Tag="casual"/>
-                                        <ComboBoxItem Content="Hardcore" Tag="hardcore"/>
-                                        <ComboBoxItem Content="Overall (Casual + Hardcore)" Tag="combined"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Casual}" Tag="casual"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Hardcore}" Tag="hardcore"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Combined}" Tag="combined"/>
                                     </ComboBox>
 
                                     <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Text="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Description}"
                                                Margin="0,6,0,0"
-                                               Style="{StaticResource MutedTextStyle}">
-                                        <Run Text="Controls how rarity percentages are calculated. Changing this requires a rescan to update cached values." />
-                                    </TextBlock>
+                                               Style="{StaticResource MutedTextStyle}"/>
                                 </Grid>
 
                                  <!-- Scanning options -->
-                                 <TextBlock Text="Scanning &amp; Hashing"
+                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ScanningHashing}"
                                             Style="{StaticResource SectionHeaderStyle}"
                                             Margin="0,8,0,12"/>
 
                                 <StackPanel>
-                                        <CheckBox Content="Enable archive scanning (.zip/.7z/.rar/.cso/.ciso)"
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableArchiveScanning}"
                                                   IsChecked="{Binding Persisted.EnableArchiveScanning}"
                                               Margin="0,0,0,10"/>
-                                    <CheckBox Content="Enable disc hashing (for disc-based consoles)"
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableDiscHashing}"
                                                   IsChecked="{Binding Persisted.EnableDiscHashing}"
                                               Margin="0,0,0,10"/>
                                 </StackPanel>
@@ -955,7 +952,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Column="0"
-                                               Text="Hash index max age (days)"
+                                               Text="{DynamicResource LOCPlayAch_Settings_HashIndexMaxAgeDays}"
                                                Foreground="{DynamicResource TextBrush}"
                                                VerticalAlignment="Center"/>
 
@@ -973,12 +970,12 @@
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Column="0"
-                                               Text="Force hash index rebuild"
+                                               Text="{DynamicResource LOCPlayAch_Settings_ForceHashIndexRebuild}"
                                                Style="{StaticResource MutedTextStyle}"
                                                VerticalAlignment="Center"/>
 
                                     <Button Grid.Column="1"
-                                            Content="Rebuild Now"
+                                            Content="{DynamicResource LOCPlayAch_Settings_RebuildNow}"
                                             Click="ForceRebuildHashIndex_Click"
                                             Padding="14,6"
                                             Margin="16,0,0,0"
