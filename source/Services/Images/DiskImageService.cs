@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -24,6 +25,8 @@ namespace PlayniteAchievements.Services.Images
         private readonly HttpClient _http;
         private readonly string _cacheRoot;
         private readonly SemaphoreSlim _downloadGate;
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _pathWriteLocks =
+            new ConcurrentDictionary<string, SemaphoreSlim>(StringComparer.OrdinalIgnoreCase);
 
         public DiskImageService(ILogger logger, string cacheRoot, int downloadConcurrency = 4)
         {
@@ -44,6 +47,7 @@ namespace PlayniteAchievements.Services.Images
         {
             try { _http?.Dispose(); } catch { }
             try { _downloadGate?.Dispose(); } catch { }
+            try { _pathWriteLocks.Clear(); } catch { }
         }
 
         private string IconCacheDirectory => Path.Combine(_cacheRoot, "icon_cache");
@@ -137,46 +141,56 @@ namespace PlayniteAchievements.Services.Images
                 return cachePath;
             }
 
-            // Download and cache
-            await _downloadGate.WaitAsync(cancel).ConfigureAwait(false);
+            var pathLock = _pathWriteLocks.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
+            await pathLock.WaitAsync(cancel).ConfigureAwait(false);
             try
             {
-                // Double-check after acquiring lock
+                // Double-check after acquiring path-specific write lock.
                 if (File.Exists(cachePath))
                 {
                     return cachePath;
                 }
 
-                var bytes = await DownloadBytesAsync(uri, cancel).ConfigureAwait(false);
-                if (bytes == null || bytes.Length == 0)
+                // Download and cache under shared download concurrency gate.
+                await _downloadGate.WaitAsync(cancel).ConfigureAwait(false);
+                try
                 {
-                    return null;
+                    if (File.Exists(cachePath))
+                    {
+                        return cachePath;
+                    }
+
+                    var bytes = await DownloadBytesAsync(uri, cancel).ConfigureAwait(false);
+                    if (bytes == null || bytes.Length == 0)
+                    {
+                        return null;
+                    }
+
+                    // Convert to PNG and save
+                    using (var ms = new MemoryStream(bytes, writable: false))
+                    {
+                        var bitmap = new BitmapImage();
+                        bitmap.BeginInit();
+                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                        if (decodeSize > 0)
+                        {
+                            bitmap.DecodePixelWidth = decodeSize;
+                        }
+                        bitmap.StreamSource = ms;
+                        bitmap.EndInit();
+
+                        var encoder = new PngBitmapEncoder();
+                        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                        await SavePngWithRetryAsync(cachePath, encoder, cancel).ConfigureAwait(false);
+
+                        // _logger?.Debug($"Cached icon: {cachePath}");
+                        return cachePath;
+                    }
                 }
-
-                // Convert to PNG and save
-                using (var ms = new MemoryStream(bytes, writable: false))
+                finally
                 {
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                    if (decodeSize > 0)
-                    {
-                        bitmap.DecodePixelWidth = decodeSize;
-                    }
-                    bitmap.StreamSource = ms;
-                    bitmap.EndInit();
-
-                    // Save as PNG
-                    var encoder = new PngBitmapEncoder();
-                    encoder.Frames.Add(BitmapFrame.Create(bitmap));
-                    using (var fs = new FileStream(cachePath, FileMode.Create, FileAccess.Write))
-                    {
-                        encoder.Save(fs);
-                    }
-
-                    // _logger?.Debug($"Cached icon: {cachePath}");
-                    return cachePath;
+                    _downloadGate.Release();
                 }
             }
             catch (Exception ex)
@@ -186,7 +200,33 @@ namespace PlayniteAchievements.Services.Images
             }
             finally
             {
-                _downloadGate.Release();
+                pathLock.Release();
+            }
+        }
+
+        private static async Task SavePngWithRetryAsync(
+            string cachePath,
+            PngBitmapEncoder encoder,
+            CancellationToken cancel,
+            int maxAttempts = 3)
+        {
+            var attempt = 0;
+            while (true)
+            {
+                cancel.ThrowIfCancellationRequested();
+                attempt++;
+                try
+                {
+                    using (var fs = new FileStream(cachePath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                    {
+                        encoder.Save(fs);
+                    }
+                    return;
+                }
+                catch (IOException) when (attempt < maxAttempts)
+                {
+                    await Task.Delay(50 * attempt, cancel).ConfigureAwait(false);
+                }
             }
         }
 

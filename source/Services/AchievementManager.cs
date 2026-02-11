@@ -300,12 +300,13 @@ namespace PlayniteAchievements.Services
             }
             finally
             {
-                if (Interlocked.Exchange(ref _savedGamesInCurrentRun, 0) > 0)
+                var hasSavedGames = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0) > 0;
+                EndRun();
+
+                if (hasSavedGames)
                 {
                     NotifyCacheInvalidatedThrottled(force: true);
                 }
-
-                EndRun();
             }
         }
 
@@ -573,7 +574,7 @@ namespace PlayniteAchievements.Services
             }
 
             var gameIdStr = data.PlayniteGameId?.ToString();
-            var iconTasks = new List<Task>(data.Achievements.Count);
+            var groupedByIcon = new Dictionary<string, List<AchievementDetail>>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var achievement in data.Achievements)
             {
@@ -582,32 +583,60 @@ namespace PlayniteAchievements.Services
                     continue;
                 }
 
-                iconTasks.Add(ResolveIconPathAsync(achievement, gameIdStr, cancel));
+                if (!groupedByIcon.TryGetValue(achievement.IconPath, out var grouped))
+                {
+                    grouped = new List<AchievementDetail>();
+                    groupedByIcon[achievement.IconPath] = grouped;
+                }
+
+                grouped.Add(achievement);
             }
 
-            if (iconTasks.Count > 0)
-            {
-                await Task.WhenAll(iconTasks).ConfigureAwait(false);
-            }
-        }
-
-        private async Task ResolveIconPathAsync(AchievementDetail achievement, string gameIdStr, CancellationToken cancel)
-        {
-            if (achievement == null || !IsHttpIconPath(achievement.IconPath))
+            if (groupedByIcon.Count == 0)
             {
                 return;
             }
 
+            var iconTasks = groupedByIcon.Keys
+                .Select(iconPath => ResolveIconPathAsync(iconPath, gameIdStr, cancel))
+                .ToArray();
+
+            var resolvedIconPaths = await Task.WhenAll(iconTasks).ConfigureAwait(false);
+            foreach (var resolved in resolvedIconPaths)
+            {
+                if (string.IsNullOrWhiteSpace(resolved.OriginalPath) ||
+                    string.IsNullOrWhiteSpace(resolved.LocalPath))
+                {
+                    continue;
+                }
+
+                if (!groupedByIcon.TryGetValue(resolved.OriginalPath, out var grouped))
+                {
+                    continue;
+                }
+
+                foreach (var achievement in grouped)
+                {
+                    achievement.IconPath = resolved.LocalPath;
+                }
+            }
+        }
+
+        private async Task<(string OriginalPath, string LocalPath)> ResolveIconPathAsync(string originalPath, string gameIdStr, CancellationToken cancel)
+        {
+            if (!IsHttpIconPath(originalPath))
+            {
+                return default;
+            }
+
             try
             {
-                var originalPath = achievement.IconPath;
                 if (_diskImageService.IsIconCached(originalPath, 0, gameIdStr))
                 {
                     var cachedPath = _diskImageService.GetIconCachePathFromUri(originalPath, 0, gameIdStr);
                     if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
                     {
-                        achievement.IconPath = cachedPath;
-                        return;
+                        return (originalPath, cachedPath);
                     }
                 }
 
@@ -616,8 +645,10 @@ namespace PlayniteAchievements.Services
                     .ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(localPath))
                 {
-                    achievement.IconPath = localPath;
+                    return (originalPath, localPath);
                 }
+
+                return default;
             }
             catch (OperationCanceledException) when (cancel.IsCancellationRequested)
             {
@@ -625,7 +656,8 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "Failed to resolve achievement icon path.");
+                _logger?.Debug(ex, $"Failed to resolve achievement icon path for {originalPath}.");
+                return default;
             }
         }
 

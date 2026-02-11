@@ -52,6 +52,8 @@ namespace PlayniteAchievements.Services.Sidebar
             int perfectGames = 0;
 
             var unlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var hideLocked = settings.Persisted?.HideAchievementsLockedForSelf ?? false;
+            var canResolveReveals = hideLocked && revealedKeys.Count > 0;
 
             List<string> cachedIds;
             using (PerfTrace.Measure("SidebarDataBuilder.GetCachedGameIds", _logger, diagnostics))
@@ -101,13 +103,20 @@ namespace PlayniteAchievements.Services.Sidebar
                         Unlocked = ach.Unlocked,
                         Hidden = ach.Hidden,
                         ApiName = ach.ApiName,
-                        HideAchievementsLockedForSelf = settings.Persisted?.HideAchievementsLockedForSelf ?? false,
+                        HideAchievementsLockedForSelf = hideLocked,
                         ProgressNum = ach.ProgressNum,
                         ProgressDenom = ach.ProgressDenom
                     };
 
-                    var revealKey = MakeRevealKey(gameData.PlayniteGameId, ach.ApiName, gameData.GameName);
-                    item.IsRevealed = revealedKeys.Contains(revealKey);
+                    if (canResolveReveals && ach.Hidden && !ach.Unlocked)
+                    {
+                        var revealKey = MakeRevealKey(gameData.PlayniteGameId, ach.ApiName, gameData.GameName);
+                        item.IsRevealed = revealedKeys.Contains(revealKey);
+                    }
+                    else
+                    {
+                        item.IsRevealed = false;
+                    }
 
                     allAchievements.Add(item);
 

@@ -48,6 +48,9 @@ namespace PlayniteAchievements.ViewModels
         private DateTime _lastProgressUpdate = DateTime.MinValue;
         private static readonly TimeSpan ProgressMinInterval = TimeSpan.FromMilliseconds(50);
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
+        private System.Windows.Threading.DispatcherTimer _scanFullRefreshTimer;
+        private bool _scanRefreshPending;
+        private bool _scanRefreshRunning;
 
         private List<RecentAchievementItem> _filteredRecentAchievements = new List<RecentAchievementItem>();
         private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
@@ -76,6 +79,12 @@ namespace PlayniteAchievements.ViewModels
                 Interval = TimeSpan.FromMilliseconds(500)
             };
             _refreshDebounceTimer.Tick += OnRefreshDebounceTimerTick;
+
+            _scanFullRefreshTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(2)
+            };
+            _scanFullRefreshTimer.Tick += OnScanFullRefreshTimerTick;
 
             // Initialize collections
             AllAchievements = new BulkObservableCollection<AchievementDisplayItem>();
@@ -478,6 +487,7 @@ namespace PlayniteAchievements.ViewModels
             _isActive = isActive;
             if (!isActive)
             {
+                StopScanRefreshScheduler();
                 CancelPendingRefresh();
             }
             else
@@ -526,10 +536,17 @@ namespace PlayniteAchievements.ViewModels
                 await _refreshLock.WaitAsync(cancel).ConfigureAwait(false);
                 try
                 {
-                    HashSet<string> revealedCopy;
-                    lock (_revealedKeys)
+                    var hideLocked = _settings?.Persisted?.HideAchievementsLockedForSelf ?? false;
+                    HashSet<string> revealedCopy = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    if (hideLocked)
                     {
-                        revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
+                        lock (_revealedKeys)
+                        {
+                            if (_revealedKeys.Count > 0)
+                            {
+                                revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
+                            }
+                        }
                     }
                     var diagnostics = _settings?.Persisted?.EnableDiagnostics == true;
 
@@ -917,6 +934,18 @@ namespace PlayniteAchievements.ViewModels
 
             System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
             {
+                if (IsScanning)
+                {
+                    _scanRefreshPending = true;
+                    _refreshDebounceTimer.Stop();
+                    if (!_scanFullRefreshTimer.IsEnabled)
+                    {
+                        _scanFullRefreshTimer.Start();
+                    }
+                    return;
+                }
+
+                StopScanRefreshScheduler();
                 _refreshDebounceTimer.Stop();
                 _refreshDebounceTimer.Start();
             });
@@ -933,6 +962,48 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, "Failed to auto-refresh sidebar on cache change");
             }
+        }
+
+        private async void OnScanFullRefreshTimerTick(object sender, EventArgs e)
+        {
+            if (_disposed || !_isActive)
+            {
+                StopScanRefreshScheduler();
+                return;
+            }
+
+            if (!IsScanning)
+            {
+                StopScanRefreshScheduler();
+                return;
+            }
+
+            if (!_scanRefreshPending || _scanRefreshRunning)
+            {
+                return;
+            }
+
+            _scanRefreshPending = false;
+            _scanRefreshRunning = true;
+            try
+            {
+                await RefreshViewAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to refresh sidebar during active scan");
+            }
+            finally
+            {
+                _scanRefreshRunning = false;
+            }
+        }
+
+        private void StopScanRefreshScheduler()
+        {
+            _scanFullRefreshTimer?.Stop();
+            _scanRefreshPending = false;
+            _scanRefreshRunning = false;
         }
 
         private static double CalculatePercent(ProgressReport report)
@@ -1194,11 +1265,18 @@ namespace PlayniteAchievements.ViewModels
 
                 var gameId = SelectedGame.PlayniteGameId.Value;
                 var hideLocked = _settings?.Persisted?.HideAchievementsLockedForSelf ?? false;
-                HashSet<string> revealedCopy;
-                lock (_revealedKeys)
+                HashSet<string> revealedCopy = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (hideLocked)
                 {
-                    revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
+                    lock (_revealedKeys)
+                    {
+                        if (_revealedKeys.Count > 0)
+                        {
+                            revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
+                        }
+                    }
                 }
+                var canResolveReveals = hideLocked && revealedCopy.Count > 0;
 
                 List<AchievementDisplayItem> items = await Task.Run(() =>
                 {
@@ -1228,7 +1306,14 @@ namespace PlayniteAchievements.ViewModels
                             ProgressDenom = ach.ProgressDenom
                         };
 
-                        item.IsRevealed = revealedCopy.Contains(MakeRevealKey(gameId, ach.ApiName, gameData.GameName));
+                        if (canResolveReveals && ach.Hidden && !ach.Unlocked)
+                        {
+                            item.IsRevealed = revealedCopy.Contains(MakeRevealKey(gameId, ach.ApiName, gameData.GameName));
+                        }
+                        else
+                        {
+                            item.IsRevealed = false;
+                        }
                         achievements.Add(item);
 
                     }
@@ -1451,6 +1536,7 @@ namespace PlayniteAchievements.ViewModels
             _disposed = true;
             SetActive(false);
             _refreshDebounceTimer?.Stop();
+            _scanFullRefreshTimer?.Stop();
             CancelPendingRefresh();
             if (_achievementManager != null)
             {
