@@ -280,6 +280,8 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="12"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="12"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Stats Header -->
@@ -353,7 +355,7 @@
                 </ToggleButton>
 
                 <!-- Collapsible Timeline Section -->
-                <StackPanel Grid.Row="4"
+                <StackPanel Grid.Row="6"
                             Visibility="{Binding IsTimelineVisible, Converter={StaticResource BoolToVis}}">
                     <!-- Time Range Buttons -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -419,7 +421,7 @@
                 </StackPanel>
 
                 <!-- Search Achievements -->
-                <Grid Grid.Row="5" Margin="0,4,0,0">
+                <Grid Grid.Row="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
