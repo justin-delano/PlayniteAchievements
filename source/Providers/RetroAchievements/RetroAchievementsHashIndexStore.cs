@@ -206,6 +206,22 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     if (gameId == 0)
                         continue;
 
+                    // Filter out subset/tournament games by title pattern
+                    if (!string.IsNullOrWhiteSpace(item.Title))
+                    {
+                        var titleLower = item.Title.ToLowerInvariant();
+                        // Skip subsets, tournaments, events, bonus sets, and hubs
+                        if (titleLower.Contains("[subset") ||
+                            titleLower.Contains("[tournament") ||
+                            titleLower.Contains("[event") ||
+                            titleLower.Contains("[bonus") ||
+                            titleLower.Contains("[hub"))
+                        {
+                            _logger?.Debug($"[RA] Skipping subset/tournament game: {item.Title} (ID={gameId})");
+                            continue;
+                        }
+                    }
+
                     foreach (var hash in EnumerateHashes(item.Hashes))
                     {
                         if (string.IsNullOrWhiteSpace(hash)) continue;
