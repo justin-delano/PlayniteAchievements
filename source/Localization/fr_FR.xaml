@@ -406,4 +406,12 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoBackup">Aucun dossier de sauvegarde trouvé à : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertButton">Rétablir</sys:String>
 
+    <!-- ================================================================= -->
+    <!-- SINGLE GAME VIEW                                                   -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Section_Stats">Statistiques des succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">Aucun succès trouvé</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">Ce jeu n'a pas encore de succès suivis. Cliquez sur le bouton Scanner pour vérifier les données de succès.</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">Ce jeu ne prend peut-être pas en charge les succès, ou ils ne sont pas disponibles pour cette plateforme.</sys:String>
+
 </ResourceDictionary>
