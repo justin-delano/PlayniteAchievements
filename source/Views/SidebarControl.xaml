@@ -924,6 +924,7 @@
                                                     CommandParameter="{Binding}"
                                                     PreviewMouseDown="GameNameButton_PreviewMouseDown"
                                                     Click="GameNameButton_Click"
+                                                    HorizontalAlignment="Left"
                                                     Style="{StaticResource GameNameButtonStyle}">
                                                 <Button.ToolTip>
                                                     <ToolTip Content="Open game in library"/>
