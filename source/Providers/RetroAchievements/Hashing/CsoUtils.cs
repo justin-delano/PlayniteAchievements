@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using SharpCompress.Compressors;
 using SharpCompress.Compressors.Deflate;
@@ -93,12 +94,36 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing
                     var blockCount = GetBlockCount(header);
                     var indexEntryCount = checked(blockCount + 1);
                     var indexSize = checked((long)indexEntryCount * sizeof(uint));
-                    var indexOffset = ResolveIndexOffset(header, inStream.Length, indexSize);
 
-                    inStream.Position = indexOffset;
-                    var blockIndex = ReadBlockIndex(inStream, indexEntryCount);
+                    uint[] blockIndex = null;
+                    long indexOffset = 0;
+                    long offsetBase = 0;
+                    Exception lastIndexException = null;
 
-                    var offsetBase = ResolveOffsetBase(blockIndex, header, indexOffset, indexSize, inStream.Length);
+                    foreach (var candidateIndexOffset in GetIndexOffsetCandidates(header, inStream.Length, indexSize))
+                    {
+                        try
+                        {
+                            inStream.Position = candidateIndexOffset;
+                            var candidateIndex = ReadBlockIndex(inStream, indexEntryCount);
+                            var candidateOffsetBase = ResolveOffsetBase(candidateIndex, header, candidateIndexOffset, indexSize, inStream.Length);
+
+                            blockIndex = candidateIndex;
+                            indexOffset = candidateIndexOffset;
+                            offsetBase = candidateOffsetBase;
+                            break;
+                        }
+                        catch (Exception ex) when (ex is InvalidDataException || ex is EndOfStreamException)
+                        {
+                            lastIndexException = ex;
+                        }
+                    }
+
+                    if (blockIndex == null)
+                    {
+                        throw new InvalidDataException("Failed to parse CSO block index.", lastIndexException);
+                    }
+
                     var decompressBuffer = new byte[header.BlockSize];
                     var directCopyBuffer = new byte[header.BlockSize];
                     var remaining = header.UncompressedSize;
@@ -228,7 +253,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing
             return (int)blockCount;
         }
 
-        private static long ResolveIndexOffset(CsoHeader header, long fileLength, long indexSize)
+        private static IEnumerable<long> GetIndexOffsetCandidates(CsoHeader header, long fileLength, long indexSize)
         {
             var defaultOffset = (long)CisoHeaderSize;
             var declaredOffset = header.HeaderSize >= CisoHeaderSize ? (long)header.HeaderSize : defaultOffset;
@@ -236,15 +261,13 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing
             // CSO v1 header_size is often unreliable in the wild; prefer canonical 24-byte header.
             if (defaultOffset + indexSize <= fileLength)
             {
-                return defaultOffset;
+                yield return defaultOffset;
             }
 
-            if (declaredOffset + indexSize <= fileLength)
+            if (declaredOffset != defaultOffset && declaredOffset + indexSize <= fileLength)
             {
-                return declaredOffset;
+                yield return declaredOffset;
             }
-
-            throw new InvalidDataException("Failed to read CSO block index: index table is out of bounds.");
         }
 
         private static uint[] ReadBlockIndex(Stream stream, int indexEntryCount)
@@ -284,7 +307,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing
                 return indexOffset;
             }
 
-            return 0;
+            throw new InvalidDataException("Unable to determine CSO data offset base from block index.");
         }
 
         private static long DecodeEntryOffset(uint indexEntry, byte indexShift, long offsetBase)
