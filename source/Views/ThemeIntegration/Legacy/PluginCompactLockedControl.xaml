@@ -20,7 +20,7 @@
     </local:CompactAchievementControlBase.Resources>
 
     <Grid Name="PART_GridContener"
-          MinHeight="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}"
+          Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}"
           Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}">
         <Grid Name="PART_ScCompactView" x:FieldModifier="protected" />
 
