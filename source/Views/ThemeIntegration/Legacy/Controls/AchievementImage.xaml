@@ -71,9 +71,9 @@
             </TextBlock.Effect>
         </TextBlock>
 
-        <!-- Global percent bar overlay (SuccessStory-style) -->
+        <!-- Progress bar overlay (always visible per compatibility request). -->
         <Grid VerticalAlignment="Bottom"
-              Visibility="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowGlobalPercentBar, Converter={StaticResource BooleanToVisibilityConverter}}">
+              Visibility="Visible">
             <ProgressBar Height="12" Name="PART_ProgressBar" Maximum="100" />
             <Label Name="PART_Label"
                    ContentStringFormat=" {0}%"

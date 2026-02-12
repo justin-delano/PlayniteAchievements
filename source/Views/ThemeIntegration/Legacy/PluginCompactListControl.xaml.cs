@@ -20,12 +20,28 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             nameof(IconHeight),
             typeof(double),
             typeof(PluginCompactListControl),
-            new FrameworkPropertyMetadata(48.0));
+            new FrameworkPropertyMetadata(48.0, OnIconHeightChanged));
 
         public double IconHeight
         {
             get => (double)GetValue(IconHeightProperty);
             set => SetValue(IconHeightProperty, value);
+        }
+
+        #endregion
+
+        #region CompactHeight Property
+
+        public static readonly DependencyProperty CompactHeightProperty = DependencyProperty.Register(
+            nameof(CompactHeight),
+            typeof(double),
+            typeof(PluginCompactListControl),
+            new FrameworkPropertyMetadata(76.0));
+
+        public double CompactHeight
+        {
+            get => (double)GetValue(CompactHeightProperty);
+            private set => SetValue(CompactHeightProperty, value);
         }
 
         #endregion
@@ -50,6 +66,16 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         {
             InitializeComponent();
             IconHeight = 48.0;
+            CompactHeight = IconHeight + 28.0;
+        }
+
+        private static void OnIconHeightChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is PluginCompactListControl control)
+            {
+                var iconHeight = e.NewValue is double value ? value : 48.0;
+                control.CompactHeight = Math.Max(0, iconHeight + 28.0);
+            }
         }
     }
 }

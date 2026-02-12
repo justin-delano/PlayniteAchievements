@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     public sealed class ThemeIntegrationUpdateService : IDisposable
     {
         private readonly ThemeIntegrationService _integrator;
-        private readonly AchievementManager _achievementService;
+        private readonly ScanManager _achievementService;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly Dispatcher _uiDispatcher;
@@ -45,7 +45,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         public ThemeIntegrationUpdateService(
             ThemeIntegrationService integrator,
-            AchievementManager achievementService,
+            ScanManager achievementService,
             PlayniteAchievementsSettings settings,
             ILogger logger,
             Dispatcher uiDispatcher)

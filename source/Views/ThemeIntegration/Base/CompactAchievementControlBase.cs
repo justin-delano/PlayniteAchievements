@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using PlayniteAchievements.Common;
 using Playnite.SDK.Controls;
 using PlayniteAchievements.Models;
@@ -91,7 +90,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             {
                 Width = IconHeight,
                 Height = IconHeight,
-                Margin = new Thickness(4),
                 ToolTip = achievement.DisplayName,
                 // Icon is for unlocked state, IconCustom is for locked state
                 Icon = achievement.UnlockedIconDisplay,
@@ -99,7 +97,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 IsLocked = false,
                 Percent = achievement.GlobalPercentUnlocked ?? 0,
                 EnableRaretyIndicator = true,
-                DisplayRaretyValue = false
+                DisplayRaretyValue = true,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
             };
         }
 
@@ -204,9 +204,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             double actualWidth = CompactViewGrid.ActualWidth;
             if (actualWidth <= 0)
             {
-                actualWidth = IconHeight + 8;
+                actualWidth = IconHeight + 10;
             }
-            double iconSize = IconHeight + 8; // icon + margin (4px each side)
+            double iconSize = IconHeight + 10;
             int nbGrid = Math.Max(1, (int)(actualWidth / iconSize));
 
             for (int i = 0; i < nbGrid; i++)
@@ -229,7 +229,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                     }
                     else
                     {
-                        // Show "+X more" label in the last column
                         int remaining = GetRemainingTotalCount() - i;
                         if (remaining > 0)
                         {
@@ -242,7 +241,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 }
                 else if (_visibleAchievements.Count > 0)
                 {
-                    // Show remaining count if we have achievements but filled all slots
                     if (i == nbGrid - 1)
                     {
                         int remaining = GetRemainingTotalCount() - i;
@@ -257,45 +255,16 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             }
         }
 
-        private Border CreateMoreBadge(int remaining)
+        private Label CreateMoreBadge(int remaining)
         {
-            // SuccessStory-like: dim tile overlay with centered "+N".
-            var foreground = (Application.Current?.TryFindResource("TextBrush") as Brush) ?? Brushes.White;
-            var background = new SolidColorBrush(Color.FromArgb(0x88, 0, 0, 0));
-
-            var badge = new Border
+            return new Label
             {
-                Width = IconHeight,
-                Height = IconHeight,
-                Margin = new Thickness(4),
-                CornerRadius = new CornerRadius(6),
-                Background = background,
-                HorizontalAlignment = HorizontalAlignment.Center,
+                FontSize = 16,
+                Content = $"+{remaining}",
                 VerticalAlignment = VerticalAlignment.Center,
-                SnapsToDevicePixels = true
-            };
-
-            var grid = new Grid
-            {
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch
-            };
-
-            grid.Children.Add(new TextBlock
-            {
-                Text = $"+{remaining}",
-                FontSize = 18,
-                FontWeight = FontWeights.SemiBold,
-                Foreground = foreground,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                TextAlignment = TextAlignment.Center
-            });
-
-            badge.Child = grid;
-            ToolTipService.SetToolTip(badge, $"{remaining} more");
-
-            return badge;
+                ToolTip = $"{remaining} more"
+            };
         }
 
         public List<AchievementDetail> VisibleAchievements => _visibleAchievements;
@@ -306,7 +275,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             {
                 double actualWidth = CompactViewGrid?.ActualWidth ?? 0;
                 if (actualWidth <= 0 || IconHeight <= 0) return 0;
-                int nbGrid = Math.Max(1, (int)(actualWidth / (IconHeight + 8)));
+                int nbGrid = Math.Max(1, (int)(actualWidth / (IconHeight + 10)));
                 int total = GetRemainingTotalCount();
                 if (nbGrid >= total) return 0;
                 return Math.Max(0, total - (nbGrid - 1));

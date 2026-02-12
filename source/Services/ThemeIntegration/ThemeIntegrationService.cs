@@ -102,7 +102,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _api;
-        private readonly AchievementManager _achievementService;
+        private readonly ScanManager _achievementService;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly FullscreenWindowService _windowService;
         private readonly Action<Guid?> _requestSingleGameThemeUpdate;
@@ -122,7 +122,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         public ThemeIntegrationService(
             IPlayniteAPI api,
-            AchievementManager achievementService,
+            ScanManager achievementService,
             PlayniteAchievementsSettings settings,
             FullscreenWindowService windowService,
             Action<Guid?> requestSingleGameThemeUpdate,
@@ -334,7 +334,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 if (_achievementService.GetGameAchievementData(gameId) == null)
                 {
-                    var scanTask = _achievementService.StartManagedSingleGameScanAsync(gameId);
+                    var scanTask = _achievementService.ExecuteScanAsync(ScanModeType.Single, gameId);
                     _ = scanTask?.ContinueWith(_ =>
                     {
                         try { _requestSingleGameThemeUpdate(gameId); } catch { }
@@ -349,7 +349,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         #endregion
 
-        #region Refresh Operations (consolidated)
+        #region Refresh Operations
 
         private void RefreshWithMode(ScanModeType mode)
         {

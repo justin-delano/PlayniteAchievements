@@ -19,26 +19,34 @@
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </local:CompactAchievementControlBase.Resources>
 
-    <Grid Name="PART_GridContener"
-          Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}"
-          Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}">
-        <Grid Name="PART_ScCompactView" x:FieldModifier="protected" />
+    <Grid>
+        <Border CornerRadius="{DynamicResource ControlCornerRadius}"
+                BorderThickness="{DynamicResource ControlBorderThickness}"
+                Background="Transparent"
+                Padding="5"
+                BorderBrush="{DynamicResource NormalBorderBrush}">
+            <Grid Name="PART_GridContener"
+                  MinHeight="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}"
+                  Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}">
+                <Grid Name="PART_ScCompactView" x:FieldModifier="protected" />
 
-        <!-- Empty state message -->
-        <TextBlock Text="{DynamicResource LOCPlayAch_NoLockedAchievements}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   Foreground="{DynamicResource TextBrushDarker}">
-            <TextBlock.Style>
-                <Style TargetType="{x:Type TextBlock}">
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=HasLocked}" Value="True">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                    <Setter Property="Visibility" Value="Visible" />
-                </Style>
-            </TextBlock.Style>
-        </TextBlock>
+                <!-- Empty state message -->
+                <TextBlock Text="{DynamicResource LOCPlayAch_NoLockedAchievements}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextBrushDarker}">
+                    <TextBlock.Style>
+                        <Style TargetType="{x:Type TextBlock}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=HasLocked}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                            <Setter Property="Visibility" Value="Visible" />
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+        </Border>
     </Grid>
 </local:CompactAchievementControlBase>
