@@ -49,10 +49,8 @@ namespace PlayniteAchievements.ViewModels
         private static readonly TimeSpan ProgressMinInterval = TimeSpan.FromMilliseconds(50);
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
         private System.Windows.Threading.DispatcherTimer _scanFullRefreshTimer;
-        private System.Windows.Threading.DispatcherTimer _progressHideTimer;
         private bool _scanRefreshPending;
         private bool _scanRefreshRunning;
-        private bool _showProgress;
 
         private List<RecentAchievementItem> _filteredRecentAchievements = new List<RecentAchievementItem>();
         private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
@@ -87,12 +85,6 @@ namespace PlayniteAchievements.ViewModels
                 Interval = TimeSpan.FromSeconds(2)
             };
             _scanFullRefreshTimer.Tick += OnScanFullRefreshTimerTick;
-
-            _progressHideTimer = new System.Windows.Threading.DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(3)
-            };
-            _progressHideTimer.Tick += OnProgressHideTimerTick;
 
             // Initialize collections
             AllAchievements = new BulkObservableCollection<AchievementDisplayItem>();
@@ -395,7 +387,7 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _progressMessage, value);
         }
 
-        public bool ShowProgress => _showProgress || IsScanning;
+        public bool ShowProgress => IsScanning;
 
         #endregion
 
@@ -606,9 +598,6 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                _showProgress = true;
-                OnPropertyChanged(nameof(ShowProgress));
-                RaiseCommandsChanged();
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
@@ -619,7 +608,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, "Scan all failed");
                 StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
-                ProgressPercent = 0;
             }
         }
 
@@ -629,9 +617,6 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                _showProgress = true;
-                OnPropertyChanged(nameof(ShowProgress));
-                RaiseCommandsChanged();
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
@@ -642,7 +627,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, "Quick scan failed");
                 StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_QuickScanFailed"), ex.Message);
-                ProgressPercent = 0;
             }
         }
 
@@ -672,9 +656,6 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                _showProgress = true;
-                OnPropertyChanged(nameof(ShowProgress));
-                RaiseCommandsChanged();
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
@@ -688,9 +669,6 @@ namespace PlayniteAchievements.ViewModels
                     else
                     {
                         StatusText = "No game selected in the overview.";
-                        _showProgress = false;
-                        OnPropertyChanged(nameof(ShowProgress));
-                        RaiseCommandsChanged();
                         return;
                     }
                 }
@@ -702,7 +680,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, $"{SelectedScanMode} scan failed");
                 StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
-                ProgressPercent = 0;
             }
         }
 
@@ -910,8 +887,6 @@ namespace PlayniteAchievements.ViewModels
             var pct = CalculatePercent(report);
             bool isFinal = pct >= 100 || report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps);
 
-            _logger?.Debug($"OnRebuildProgress: pct={pct}, isFinal={isFinal}, msg='{report.Message}', IsCanceled={report.IsCanceled}");
-
             lock (_progressLock)
             {
                 if (!isFinal)
@@ -926,34 +901,25 @@ namespace PlayniteAchievements.ViewModels
                 _lastProgressUpdate = now;
             }
 
-            // Use BeginInvoke for intermediate updates to avoid blocking, but ensure final is processed
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
             {
                 try
                 {
+                    ProgressPercent = pct;
+
+                    // Detect completion at subscriber level to handle race where EndRun()
+                    // sets IsRebuilding=false before final report reaches UI
                     if (isFinal)
                     {
-                        // For final: set completion message, 100% progress, keep UI visible
-                        _logger?.Debug("Setting final progress state");
-                        _showProgress = true;  // Ensure progress stays visible
                         ProgressMessage = report.IsCanceled
                             ? ResourceProvider.GetString("LOCPlayAch_Status_Canceled")
                             : ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
-                        ProgressPercent = 100;
-
-                        // Start timer to hide progress UI after showing completion message
-                        StopProgressHideTimer();
-                        _progressHideTimer?.Start();
                     }
                     else
                     {
-                        // Intermediate progress update
                         ProgressMessage = report.Message ?? string.Empty;
-                        ProgressPercent = pct;
                     }
 
-                    // Always update commands and scanning state
-                    _logger?.Debug($"RaiseCommandsChanged, IsScanning={IsScanning}, _showProgress={_showProgress}, ShowProgress={ShowProgress}");
                     RaiseCommandsChanged();
                     OnPropertyChanged(nameof(IsScanning));
                     OnPropertyChanged(nameof(ShowProgress));
@@ -1044,25 +1010,6 @@ namespace PlayniteAchievements.ViewModels
             _scanFullRefreshTimer?.Stop();
             _scanRefreshPending = false;
             _scanRefreshRunning = false;
-        }
-
-        private void OnProgressHideTimerTick(object sender, EventArgs e)
-        {
-            if (_disposed)
-            {
-                StopProgressHideTimer();
-                return;
-            }
-
-            _showProgress = false;
-            OnPropertyChanged(nameof(ShowProgress));
-            RaiseCommandsChanged();
-            StopProgressHideTimer();
-        }
-
-        private void StopProgressHideTimer()
-        {
-            _progressHideTimer?.Stop();
         }
 
         private static double CalculatePercent(ProgressReport report)
@@ -1596,7 +1543,6 @@ namespace PlayniteAchievements.ViewModels
             SetActive(false);
             _refreshDebounceTimer?.Stop();
             _scanFullRefreshTimer?.Stop();
-            _progressHideTimer?.Stop();
             CancelPendingRefresh();
             if (_achievementManager != null)
             {
