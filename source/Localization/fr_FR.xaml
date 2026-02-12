@@ -207,7 +207,11 @@
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Settings_HideLocked">Masquer mes succès verrouillés</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Visibilité des succès cachés</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Contrôlez quels éléments des succès cachés sont masqués avant de les révéler.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenIcon">Masquer l'icône du succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenTitle">Masquer le titre du succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenDescription">Masquer la description du succès</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames">Ignorer les jeux non joués</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames_Help">Si coché, les jeux avec 0 temps de jeu seront ignorés lors des analyses.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Utiliser les images de couverture au lieu des icônes dans la liste des jeux</sys:String>

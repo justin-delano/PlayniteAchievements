@@ -207,7 +207,11 @@
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Settings_HideLocked">Hide My Hidden Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Hidden Achievement Visibility</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Control which elements of hidden achievements are obscured before you reveal them.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenIcon">Hide achievement icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenTitle">Hide achievement title</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenDescription">Hide achievement description</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames">Ignore unplayed games</sys:String>
     <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames_Help">If checked, games with 0 playtime will be skipped during scans.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use cover images instead of icons in games list</sys:String>
