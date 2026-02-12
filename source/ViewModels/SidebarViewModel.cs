@@ -519,9 +519,12 @@ namespace PlayniteAchievements.ViewModels
                 await _refreshLock.WaitAsync(cancel).ConfigureAwait(false);
                 try
                 {
-                    var hideLocked = _settings?.Persisted?.HideAchievementsLockedForSelf ?? false;
+                    var hideIcon = _settings?.Persisted?.HideHiddenIcon ?? false;
+                    var hideTitle = _settings?.Persisted?.HideHiddenTitle ?? false;
+                    var hideDescription = _settings?.Persisted?.HideHiddenDescription ?? false;
+                    var anyHidingEnabled = hideIcon || hideTitle || hideDescription;
                     HashSet<string> revealedCopy = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    if (hideLocked)
+                    if (anyHidingEnabled)
                     {
                         lock (_revealedKeys)
                         {
@@ -800,6 +803,13 @@ namespace PlayniteAchievements.ViewModels
                 {
                     HideUnplayedGames = true;
                 }
+            }
+            else if (e.PropertyName == "Persisted.HideHiddenIcon"
+                || e.PropertyName == "Persisted.HideHiddenTitle"
+                || e.PropertyName == "Persisted.HideHiddenDescription")
+            {
+                // Refresh view when any hide setting changes
+                _ = RefreshViewAsync();
             }
         }
 
@@ -1217,9 +1227,12 @@ namespace PlayniteAchievements.ViewModels
                     return;
 
                 var gameId = SelectedGame.PlayniteGameId.Value;
-                var hideLocked = _settings?.Persisted?.HideAchievementsLockedForSelf ?? false;
+                var hideIcon = _settings?.Persisted?.HideHiddenIcon ?? false;
+                var hideTitle = _settings?.Persisted?.HideHiddenTitle ?? false;
+                var hideDescription = _settings?.Persisted?.HideHiddenDescription ?? false;
+                var anyHidingEnabled = hideIcon || hideTitle || hideDescription;
                 HashSet<string> revealedCopy = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                if (hideLocked)
+                if (anyHidingEnabled)
                 {
                     lock (_revealedKeys)
                     {
@@ -1229,7 +1242,7 @@ namespace PlayniteAchievements.ViewModels
                         }
                     }
                 }
-                var canResolveReveals = hideLocked && revealedCopy.Count > 0;
+                var canResolveReveals = anyHidingEnabled && revealedCopy.Count > 0;
 
                 List<AchievementDisplayItem> items = await Task.Run(() =>
                 {
@@ -1254,7 +1267,9 @@ namespace PlayniteAchievements.ViewModels
                             Unlocked = ach.Unlocked,
                             Hidden = ach.Hidden,
                             ApiName = ach.ApiName,
-                            HideAchievementsLockedForSelf = hideLocked,
+                            HideHiddenIcon = hideIcon,
+                            HideHiddenTitle = hideTitle,
+                            HideHiddenDescription = hideDescription,
                             ProgressNum = ach.ProgressNum,
                             ProgressDenom = ach.ProgressDenom
                         };
