@@ -187,10 +187,22 @@ namespace PlayniteAchievements.ViewModels
                 {
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
-                    OnPropertyChanged(nameof(DisplayIcon));
-                    OnPropertyChanged(nameof(Icon));
-                    OnPropertyChanged(nameof(DisplayNameResolved));
-                    OnPropertyChanged(nameof(DescriptionResolved));
+                    // Only notify icon changes if icon hiding is enabled
+                    if (HideHiddenIcon)
+                    {
+                        OnPropertyChanged(nameof(DisplayIcon));
+                        OnPropertyChanged(nameof(Icon));
+                    }
+                    // Only notify name changes if title hiding is enabled
+                    if (HideHiddenTitle)
+                    {
+                        OnPropertyChanged(nameof(DisplayNameResolved));
+                    }
+                    // Only notify description changes if description hiding is enabled
+                    if (HideHiddenDescription)
+                    {
+                        OnPropertyChanged(nameof(DescriptionResolved));
+                    }
                 }
             }
         }
