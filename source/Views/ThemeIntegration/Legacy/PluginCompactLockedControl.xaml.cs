@@ -1,11 +1,7 @@
 // --SUCCESSSTORY--
 using System.Collections.Generic;
 using System.Windows.Controls;
-using System.Windows;
-using System.Windows.Data;
-using System.Windows.Media;
 using PlayniteAchievements.Models.Achievements;
-using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 using PlayniteAchievements.Views.ThemeIntegration.Legacy.Controls;
@@ -24,103 +20,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         {
             InitializeComponent();
             DataContext = this;
-
-            // Some themes (e.g., FusionX derivatives) place a sibling "Locked Achievements X/N"
-            // header next to this control but bind X to `Unlocked`. Patch that header at runtime
-            // to bind X to `Locked` without requiring theme file edits.
-            Loaded += PluginCompactLockedControl_Loaded;
-            Unloaded += PluginCompactLockedControl_Unloaded;
-        }
-
-        private void PluginCompactLockedControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            Dispatcher?.BeginInvoke(new System.Action(TryPatchSiblingLockedCountHeader), System.Windows.Threading.DispatcherPriority.Loaded);
-        }
-
-        private void PluginCompactLockedControl_Unloaded(object sender, RoutedEventArgs e)
-        {
-            // No-op: bindings are recreated by the theme when controls are reloaded.
-        }
-
-        private void TryPatchSiblingLockedCountHeader()
-        {
-            if (Plugin?.Settings == null)
-            {
-                return;
-            }
-
-            var current = (DependencyObject)this;
-            while (current != null)
-            {
-                if (current is UIElement element)
-                {
-                    if (VisualTreeHelper.GetParent(current) is Panel panel)
-                    {
-                        int index = panel.Children.IndexOf(element);
-                        if (index > 0)
-                        {
-                            int start = System.Math.Max(0, index - 3);
-                            for (int i = start; i < index; i++)
-                            {
-                                if (panel.Children[i] is StackPanel sibling && sibling.Orientation == Orientation.Horizontal)
-                                {
-                                    PatchUnlockedBindingToLocked(sibling);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                current = VisualTreeHelper.GetParent(current);
-            }
-        }
-
-        private void PatchUnlockedBindingToLocked(StackPanel headerPanel)
-        {
-            bool hasTotalBinding = false;
-            bool hasSlashText = false;
-
-            for (int i = 0; i < headerPanel.Children.Count; i++)
-            {
-                if (headerPanel.Children[i] is TextBlock tb)
-                {
-                    if ((tb.Text ?? string.Empty).Trim() == "/")
-                    {
-                        hasSlashText = true;
-                    }
-
-                    var binding = BindingOperations.GetBinding(tb, TextBlock.TextProperty);
-                    if (binding?.Path?.Path == nameof(PlayniteAchievementsSettings.Total))
-                    {
-                        hasTotalBinding = true;
-                    }
-                }
-            }
-
-            if (!hasTotalBinding || !hasSlashText)
-            {
-                return;
-            }
-
-            for (int i = 0; i < headerPanel.Children.Count; i++)
-            {
-                if (headerPanel.Children[i] is TextBlock tb)
-                {
-                    var binding = BindingOperations.GetBinding(tb, TextBlock.TextProperty);
-                    if (binding?.Path?.Path == nameof(PlayniteAchievementsSettings.Unlocked))
-                    {
-                        BindingOperations.SetBinding(
-                            tb,
-                            TextBlock.TextProperty,
-                            new Binding(nameof(PlayniteAchievementsSettings.Locked))
-                            {
-                                Source = Plugin.Settings,
-                                Mode = BindingMode.OneWay,
-                                FallbackValue = string.Empty
-                            });
-                    }
-                }
-            }
         }
 
         protected override List<AchievementDetail> GetSourceAchievements()

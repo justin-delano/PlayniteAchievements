@@ -11,8 +11,8 @@
                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
                    mc:Ignorable="d"
                    d:DesignHeight="400" d:DesignWidth="600"
-                   MinHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MinHeight}"
-                   Height="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=Height}"
+                   MinHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MinHeight, FallbackValue=400}"
+                   Height="500"
                    MaxHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MaxHeight}">
 
     <local:ThemeControlBase.Resources>
@@ -153,7 +153,6 @@
                                 </StackPanel.Style>
 
                                 <localControls:AchievementImage
-                                    Margin="4"
                                     Width="{Binding ElementName=lbAchievements, Path=Tag}"
                                     Height="{Binding ElementName=lbAchievements, Path=Tag}"
                                     Icon="{Binding UnlockedIconDisplay, IsAsync=True}"

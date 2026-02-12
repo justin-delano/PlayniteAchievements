@@ -95,7 +95,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             nameof(IconHeight),
             typeof(double),
             typeof(PluginListControl),
-            new FrameworkPropertyMetadata(64.0));
+            new FrameworkPropertyMetadata(48.0));
 
         public double IconHeight
         {
