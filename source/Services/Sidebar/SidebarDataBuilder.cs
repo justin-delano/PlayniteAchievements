@@ -12,11 +12,11 @@ namespace PlayniteAchievements.Services.Sidebar
 {
     public sealed class SidebarDataBuilder
     {
-        private readonly AchievementManager _achievementManager;
+        private readonly ScanManager _achievementManager;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
 
-        public SidebarDataBuilder(AchievementManager achievementManager, IPlayniteAPI playniteApi, ILogger logger)
+        public SidebarDataBuilder(ScanManager achievementManager, IPlayniteAPI playniteApi, ILogger logger)
         {
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _playniteApi = playniteApi;
