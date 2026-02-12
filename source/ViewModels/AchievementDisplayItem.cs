@@ -141,6 +141,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
+                    OnPropertyChanged(nameof(IsIconHidden));
                     OnPropertyChanged(nameof(DisplayIcon));
                     OnPropertyChanged(nameof(Icon));
                 }
@@ -157,6 +158,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
+                    OnPropertyChanged(nameof(IsTitleHidden));
                     OnPropertyChanged(nameof(DisplayNameResolved));
                 }
             }
@@ -172,6 +174,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
+                    OnPropertyChanged(nameof(IsDescriptionHidden));
                     OnPropertyChanged(nameof(DescriptionResolved));
                 }
             }
@@ -187,6 +190,9 @@ namespace PlayniteAchievements.ViewModels
                 {
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
+                    OnPropertyChanged(nameof(IsIconHidden));
+                    OnPropertyChanged(nameof(IsTitleHidden));
+                    OnPropertyChanged(nameof(IsDescriptionHidden));
                     // Only notify icon changes if icon hiding is enabled
                     if (HideHiddenIcon)
                     {
@@ -262,6 +268,21 @@ namespace PlayniteAchievements.ViewModels
         /// True if the achievement details are currently hidden (can reveal and not yet revealed).
         /// </summary>
         public bool IsHidden => CanReveal && !IsRevealed;
+
+        /// <summary>
+        /// True if the icon is currently being hidden (for XAML styling triggers).
+        /// </summary>
+        public bool IsIconHidden => IsHidden && HideHiddenIcon;
+
+        /// <summary>
+        /// True if the title is currently being hidden (for XAML styling triggers).
+        /// </summary>
+        public bool IsTitleHidden => IsHidden && HideHiddenTitle;
+
+        /// <summary>
+        /// True if the description is currently being hidden (for XAML styling triggers).
+        /// </summary>
+        public bool IsDescriptionHidden => IsHidden && HideHiddenDescription;
 
         public string DisplayNameResolved
         {

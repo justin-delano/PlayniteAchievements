@@ -1591,7 +1591,7 @@
                                                                         <Setter Property="Opacity" Value="1"/>
                                                                         <Setter Property="Effect" Value="{Binding Percent, Converter={StaticResource PercentToRarityGlow}}"/>
                                                                     </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                    <DataTrigger Binding="{Binding IsIconHidden}" Value="True">
                                                                         <Setter Property="Opacity" Value="1"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
@@ -1624,7 +1624,7 @@
                                                                     <DataTrigger Binding="{Binding Unlocked}" Value="True">
                                                                         <Setter Property="Opacity" Value="1"/>
                                                                     </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                    <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
                                                                         <Setter Property="FontStyle" Value="Italic"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
@@ -1643,7 +1643,7 @@
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
                                                                 <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                                                                    <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
                                                                         <Setter Property="FontStyle" Value="Italic"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
