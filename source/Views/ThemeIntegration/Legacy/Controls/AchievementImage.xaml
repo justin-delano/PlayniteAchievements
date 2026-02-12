@@ -30,13 +30,18 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <Border x:Name="PART_GlowHost"
-                Margin="0"
-                CornerRadius="8"
-                Background="#01FFFFFF"
-                SnapsToDevicePixels="True">
-            <Border.Style>
-                <Style TargetType="{x:Type Border}">
+        <Image Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" x:Name="PART_Image"
+               Loaded="Image_Loaded" ImageFailed="Image_ImageFailed"
+               helpers:AsyncImage.Gray="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsGray}">
+            <helpers:AsyncImage.Uri>
+                <MultiBinding Converter="{StaticResource LockedIconSelectorConverter}">
+                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IsLocked" />
+                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IconCustom" />
+                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Icon" />
+                </MultiBinding>
+            </helpers:AsyncImage.Uri>
+            <Image.Style>
+                <Style TargetType="{x:Type Image}">
                     <Style.Triggers>
                         <!-- Rarity indicator glow effect - color based on achievement rarity -->
                         <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=EnableRaretyIndicator}" Value="True">
@@ -53,20 +58,8 @@
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </Border.Style>
-
-            <Image Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" x:Name="PART_Image"
-                   Loaded="Image_Loaded" ImageFailed="Image_ImageFailed"
-                   helpers:AsyncImage.Gray="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsGray}">
-                <helpers:AsyncImage.Uri>
-                    <MultiBinding Converter="{StaticResource LockedIconSelectorConverter}">
-                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IsLocked" />
-                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IconCustom" />
-                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Icon" />
-                    </MultiBinding>
-                </helpers:AsyncImage.Uri>
-            </Image>
-        </Border>
+            </Image.Style>
+        </Image>
 
         <!-- Custom icon text overlay (only shown when using custom locked icon) -->
         <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconText, FallbackValue='🔒'}"
@@ -77,24 +70,6 @@
                 <DropShadowEffect Color="White" Opacity="0.75" BlurRadius="3" ShadowDepth="0" />
             </TextBlock.Effect>
         </TextBlock>
-
-        <!-- Rarity Badge Icon Overlay (top-right corner) -->
-        <Image Width="24" Height="24"
-               HorizontalAlignment="Right" VerticalAlignment="Top"
-               Margin="0,2,2,0"
-               x:Name="PART_RarityBadge"
-               Visibility="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=EnableRaretyIndicator, Converter={StaticResource BooleanToVisibilityConverter}}"
-               Effect="{StaticResource BadgeShadow}"
-               Stretch="Uniform">
-            <Image.Source>
-                <MultiBinding Converter="{StaticResource PercentToRarityBadgeConverter}">
-                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Percent" />
-                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="UltraRareThreshold" />
-                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="RareThreshold" />
-                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="UncommonThreshold" />
-                </MultiBinding>
-            </Image.Source>
-        </Image>
 
         <!-- Global percent bar overlay (SuccessStory-style) -->
         <Grid VerticalAlignment="Bottom"
