@@ -109,14 +109,12 @@ namespace PlayniteAchievements.ViewModels
 
             // Initialize commands
             RefreshViewCommand = new AsyncCommand(_ => RefreshViewAsync());
-            ScanAllCommand = new AsyncCommand(_ => ScanAllAsync(), _ => !IsScanning);
-            QuickScanCommand = new AsyncCommand(_ => QuickScanAsync(), _ => !IsScanning);
+            ScanCommand = new AsyncCommand(_ => ExecuteScanAsync(), _ => CanExecuteScan());
             CancelScanCommand = new RelayCommand(_ => CancelScan(), _ => IsScanning);
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
             CloseViewCommand = new RelayCommand(_ => PlayniteUiProvider.RestoreMainView());
             ClearGameSelectionCommand = new RelayCommand(_ => ClearGameSelection());
             NavigateToGameCommand = new RelayCommand(param => NavigateToGame(param as GameOverviewItem));
-            ScanCommand = new AsyncCommand(_ => ExecuteScanAsync(), _ => CanExecuteScan());
 
             // Subscribe to progress events
             _achievementManager.RebuildProgress += OnRebuildProgress;
@@ -469,14 +467,12 @@ namespace PlayniteAchievements.ViewModels
         #region Commands
 
         public ICommand RefreshViewCommand { get; }
-        public ICommand ScanAllCommand { get; }
-        public ICommand QuickScanCommand { get; }
+        public ICommand ScanCommand { get; }
         public ICommand CancelScanCommand { get; }
         public ICommand RevealAchievementCommand { get; }
         public ICommand CloseViewCommand { get; }
         public ICommand ClearGameSelectionCommand { get; }
         public ICommand NavigateToGameCommand { get; }
-        public ICommand ScanCommand { get; }
 
         #endregion
 
@@ -589,44 +585,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, "Failed to refresh sidebar achievements");
                 StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
-            }
-        }
-
-        public async System.Threading.Tasks.Task ScanAllAsync()
-        {
-            if (IsScanning) return;
-
-            try
-            {
-                ProgressPercent = 0;
-                ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
-
-                await _achievementManager.StartManagedRebuildAsync();
-                await RefreshViewAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Scan all failed");
-                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
-            }
-        }
-
-        public async System.Threading.Tasks.Task QuickScanAsync()
-        {
-            if (IsScanning) return;
-
-            try
-            {
-                ProgressPercent = 0;
-                ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
-
-                await _achievementManager.StartManagedQuickRefreshAsync();
-                await RefreshViewAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Quick scan failed");
-                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_QuickScanFailed"), ex.Message);
             }
         }
 
@@ -1134,8 +1092,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void RaiseCommandsChanged()
         {
-            (ScanAllCommand as AsyncCommand)?.RaiseCanExecuteChanged();
-            (QuickScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+            (ScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
             (CancelScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
