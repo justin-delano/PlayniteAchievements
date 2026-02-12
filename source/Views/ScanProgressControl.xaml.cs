@@ -12,10 +12,10 @@ namespace PlayniteAchievements.Views
     public partial class ScanProgressControl : UserControl
     {
         private readonly ScanProgressViewModel _viewModel;
-        private readonly AchievementManager _achievementManager;
+        private readonly ScanManager _achievementManager;
         private readonly ILogger _logger;
 
-        public ScanProgressControl(AchievementManager achievementManager, ILogger logger)
+        public ScanProgressControl(ScanManager achievementManager, ILogger logger)
         {
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _logger = logger;

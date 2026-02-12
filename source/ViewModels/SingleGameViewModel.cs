@@ -19,7 +19,7 @@ namespace PlayniteAchievements.ViewModels
 {
     public class SingleGameControlModel : ObservableObject, IDisposable
     {
-        private readonly AchievementManager _achievementManager;
+        private readonly ScanManager _achievementManager;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
@@ -35,7 +35,7 @@ namespace PlayniteAchievements.ViewModels
 
         public SingleGameControlModel(
             Guid gameId,
-            AchievementManager achievementManager,
+            ScanManager achievementManager,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)
@@ -401,6 +401,8 @@ namespace PlayniteAchievements.ViewModels
         private void OnRebuildProgress(object sender, ProgressReport report)
         {
             if (report == null) return;
+            var scanStatus = _achievementManager.GetScanStatusSnapshot(report);
+            var statusMessage = scanStatus.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Scanning");
 
             // Check if this progress is for our game
             var isForOurGame = report.Message?.Contains(_gameId.ToString()) == true ||
@@ -409,26 +411,28 @@ namespace PlayniteAchievements.ViewModels
             if (!isForOurGame && IsScanning)
             {
                 // If we're scanning and get progress not for our game, update generic status
-                ScanStatusMessage = report.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Scanning");
+                ScanStatusMessage = statusMessage;
                 OnPropertyChanged(nameof(ScanStatusMessage));
             }
             else if (isForOurGame)
             {
                 // Update with specific progress for our game
-                ScanStatusMessage = report.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Scanning");
+                ScanStatusMessage = statusMessage;
                 OnPropertyChanged(nameof(ScanStatusMessage));
             }
 
             // Handle completion
-            if (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps)
+            if (scanStatus.IsCanceled)
             {
                 IsScanning = false;
+                ScanStatusMessage = statusMessage;
                 OnPropertyChanged(nameof(IsScanning));
+                OnPropertyChanged(nameof(ScanStatusMessage));
             }
-            else if (report.IsCanceled)
+            else if (scanStatus.IsFinal)
             {
                 IsScanning = false;
-                ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
+                ScanStatusMessage = statusMessage;
                 OnPropertyChanged(nameof(IsScanning));
                 OnPropertyChanged(nameof(ScanStatusMessage));
             }
