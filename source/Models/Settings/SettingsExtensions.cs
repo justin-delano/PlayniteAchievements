@@ -43,7 +43,9 @@ namespace PlayniteAchievements.Models.Settings
             target.NotifyOnRebuild = source.NotifyOnRebuild;
 
             // Display Preferences
-            target.HideAchievementsLockedForSelf = source.HideAchievementsLockedForSelf;
+            target.HideHiddenIcon = source.HideHiddenIcon;
+            target.HideHiddenTitle = source.HideHiddenTitle;
+            target.HideHiddenDescription = source.HideHiddenDescription;
             target.UseCoverImages = source.UseCoverImages;
             target.IgnoreUnplayedGames = source.IgnoreUnplayedGames;
             target.EnableDiagnostics = source.EnableDiagnostics;
@@ -94,7 +96,9 @@ namespace PlayniteAchievements.Models.Settings
                 NotifyOnRebuild = source.NotifyOnRebuild,
 
                 // Display Preferences
-                HideAchievementsLockedForSelf = source.HideAchievementsLockedForSelf,
+                HideHiddenIcon = source.HideHiddenIcon,
+                HideHiddenTitle = source.HideHiddenTitle,
+                HideHiddenDescription = source.HideHiddenDescription,
                 UseCoverImages = source.UseCoverImages,
                 IgnoreUnplayedGames = source.IgnoreUnplayedGames,
                 EnableDiagnostics = source.EnableDiagnostics,
