@@ -280,12 +280,10 @@ namespace PlayniteAchievements.Services
             var startMsg = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
             Report(startMsg, 0, 1);
 
+            RebuildPayload payload = null;
             try
             {
-                var payload = await runner(cts.Token).ConfigureAwait(false);
-
-                var msg = finalMessage?.Invoke(payload) ?? ResourceProvider.GetString("LOCPlayAch_Status_Ready");
-                Report(msg, 1, 1);
+                payload = await runner(cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -295,13 +293,19 @@ namespace PlayniteAchievements.Services
             catch (Exception ex)
             {
                 _logger.Error(ex, errorLogMessage);
-                var errorMsg = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
-                Report(errorMsg, 0, 1);
+                Report(ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"), 0, 1);
             }
             finally
             {
                 var hasSavedGames = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0) > 0;
                 EndRun();
+
+                // Send final completion report AFTER EndRun so IsRebuilding is false when UI processes it
+                if (!cts.Token.IsCancellationRequested && payload != null)
+                {
+                    var msg = finalMessage?.Invoke(payload) ?? ResourceProvider.GetString("LOCPlayAch_Status_Ready");
+                    Report(msg, 1, 1);
+                }
 
                 if (hasSavedGames)
                 {
