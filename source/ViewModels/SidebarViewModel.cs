@@ -608,6 +608,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 _showProgress = true;
                 OnPropertyChanged(nameof(ShowProgress));
+                RaiseCommandsChanged();
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
@@ -618,9 +619,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, "Scan all failed");
                 StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
-            }
-            finally
-            {
                 ProgressPercent = 0;
             }
         }
@@ -633,6 +631,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 _showProgress = true;
                 OnPropertyChanged(nameof(ShowProgress));
+                RaiseCommandsChanged();
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
@@ -643,9 +642,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, "Quick scan failed");
                 StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_QuickScanFailed"), ex.Message);
-            }
-            finally
-            {
                 ProgressPercent = 0;
             }
         }
@@ -678,6 +674,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 _showProgress = true;
                 OnPropertyChanged(nameof(ShowProgress));
+                RaiseCommandsChanged();
                 ProgressPercent = 0;
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
 
@@ -693,6 +690,7 @@ namespace PlayniteAchievements.ViewModels
                         StatusText = "No game selected in the overview.";
                         _showProgress = false;
                         OnPropertyChanged(nameof(ShowProgress));
+                        RaiseCommandsChanged();
                         return;
                     }
                 }
@@ -704,9 +702,6 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, $"{SelectedScanMode} scan failed");
                 StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
-            }
-            finally
-            {
                 ProgressPercent = 0;
             }
         }
@@ -943,6 +938,10 @@ namespace PlayniteAchievements.ViewModels
                         ProgressMessage = report.IsCanceled
                             ? ResourceProvider.GetString("LOCPlayAch_Status_Canceled")
                             : ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+                        OnPropertyChanged(nameof(ProgressMessage));
+
+                        // Ensure progress stays at 100% during completion display
+                        ProgressPercent = 100;
 
                         // Start timer to hide progress UI after showing completion message
                         StopProgressHideTimer();
@@ -951,6 +950,7 @@ namespace PlayniteAchievements.ViewModels
                     else
                     {
                         ProgressMessage = report.Message ?? string.Empty;
+                        OnPropertyChanged(nameof(ProgressMessage));
                     }
 
                     // Raise commands changed before updating IsScanning so the cancel button updates correctly
@@ -1058,6 +1058,7 @@ namespace PlayniteAchievements.ViewModels
 
             _showProgress = false;
             OnPropertyChanged(nameof(ShowProgress));
+            RaiseCommandsChanged();
             StopProgressHideTimer();
         }
 
