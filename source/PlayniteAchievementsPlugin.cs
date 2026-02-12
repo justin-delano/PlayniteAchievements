@@ -122,6 +122,7 @@ namespace PlayniteAchievements
             // NECESSARY TO MAKE SURE CHARTS WORK
             var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
             // NECESSARY DO NOT REMOVE
+            _ = typeof(WpfToolkit.Controls.VirtualizingWrapPanel);
 
             // Configure rarity thresholds from settings
             RarityHelper.Configure(
