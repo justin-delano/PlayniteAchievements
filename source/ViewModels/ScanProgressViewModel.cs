@@ -10,8 +10,7 @@ namespace PlayniteAchievements.ViewModels
 {
     public class ScanProgressViewModel : ObservableObject
     {
-        private readonly AchievementManager _achievementManager;
-        private readonly ILogger _logger;
+        private readonly ScanManager _achievementManager;
 
         private double _progressPercent;
         private string _progressMessage;
@@ -55,66 +54,49 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand CancelCommand { get; }
         public ICommand ContinueCommand { get; }
 
-        public ScanProgressViewModel(AchievementManager achievementManager, ILogger logger)
+        public ScanProgressViewModel(ScanManager achievementManager, ILogger logger)
         {
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
-            _logger = logger;
 
             HideCommand = new RelayCommand(_ => HideWindow());
             CancelCommand = new RelayCommand(_ => CancelScan(), _ => _achievementManager.IsRebuilding);
             ContinueCommand = new RelayCommand(_ => Continue());
 
             IsComplete = false;
-
-            var lastReport = _achievementManager.GetLastRebuildProgress();
-            if (lastReport != null)
-            {
-                ProgressPercent = CalculatePercent(lastReport);
-                ProgressMessage = lastReport.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Starting");
-            }
-            else
-            {
-                ProgressPercent = 0;
-                ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
-            }
+            ApplyScanStatus(_achievementManager.GetScanStatusSnapshot());
         }
 
         public void OnProgress(ProgressReport report)
         {
             if (report == null) return;
 
-            ProgressPercent = CalculatePercent(report);
-            ProgressMessage = report.Message ?? string.Empty;
+            ApplyScanStatus(_achievementManager.GetScanStatusSnapshot(report));
+        }
 
-            // Check for completion conditions first
-            bool isNowComplete = report.IsCanceled ||
-                (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps) ||
-                ProgressPercent >= 100;
+        private void ApplyScanStatus(ScanStatusSnapshot status)
+        {
+            if (status == null)
+            {
+                return;
+            }
 
-            if (isNowComplete)
+            ProgressPercent = status.ProgressPercent;
+            ProgressMessage = status.Message ?? string.Empty;
+
+            if (status.IsFinal || status.IsCanceled)
             {
                 IsComplete = true;
             }
+            else if (status.IsScanning)
+            {
+                IsComplete = false;
+            }
 
-            // Raise property change for IsScanning to update button visibility
             OnPropertyChanged(nameof(IsScanning));
             OnPropertyChanged(nameof(ShowInProgressButtons));
             OnPropertyChanged(nameof(ShowCompleteButtons));
 
-            // Update cancel button enabled state (after IsComplete is set for correct behavior)
             CancelCommand?.RaiseCanExecuteChanged();
-        }
-
-        private double CalculatePercent(ProgressReport report)
-        {
-            if (report == null) return 0;
-
-            var pct = report.PercentComplete;
-            if ((pct <= 0 || double.IsNaN(pct)) && report.TotalSteps > 0)
-            {
-                pct = Math.Max(0, Math.Min(100, (report.CurrentStep * 100.0) / report.TotalSteps));
-            }
-            return pct;
         }
 
         private void HideWindow()

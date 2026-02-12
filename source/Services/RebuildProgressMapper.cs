@@ -4,13 +4,11 @@ using Playnite.SDK;
 
 namespace PlayniteAchievements.Services
 {
-    internal class RebuildProgressMapper
+    internal sealed class RebuildProgressMapper
     {
-        private RebuildStage? _lastStage;
-
         public void Reset()
         {
-            _lastStage = null;
+            // No mapper state is currently persisted between updates.
         }
 
         public ProgressReport Map(RebuildUpdate update)
@@ -46,8 +44,6 @@ namespace PlayniteAchievements.Services
 
         private ProgressReport MapStageUpdate(RebuildUpdate update)
         {
-            _lastStage = update.Stage;
-
             // Handle the NotConfigured stage as an error/cancellation
             if (update.Stage == RebuildStage.NotConfigured)
             {
@@ -74,20 +70,17 @@ namespace PlayniteAchievements.Services
 
         private ProgressReport MapUserProgressUpdate(RebuildUpdate update)
         {
-            _lastStage = update.Stage;
-
             var (cur, tot) = ProgressSteps(update);
             var countsText = CountsText(update.UserAppIndex + 1, update.UserAppCount);
 
-            // Format: "Refreshing achievements for Game Name (3/50)"
             var gameName = !string.IsNullOrWhiteSpace(update.CurrentGameName)
                 ? update.CurrentGameName
                 : ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame");
 
-            var format = ResourceProvider.GetString("LOCPlayAch_Targeted_RefreshingGame");
-            
-            var baseMessage = string.Format(format, gameName);
-            var message = $"{baseMessage} ({countsText})";
+            var message = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Targeted_RefreshingGameWithCounts"),
+                gameName,
+                countsText);
 
             return Build(message, cur, tot);
         }
@@ -142,27 +135,6 @@ namespace PlayniteAchievements.Services
             }
 
             return ResourceProvider.GetString("LOCPlayAch_Text_Ellipsis");
-        }
-
-        private string AppSuffix(RebuildUpdate update)
-        {
-            if (update == null)
-            {
-                return string.Empty;
-            }
-
-            if (!string.IsNullOrWhiteSpace(update.CurrentGameName))
-            {
-                return " — " + update.CurrentGameName;
-            }
-
-            if (update.CurrentAppId > 0)
-            {
-                var appIdLabel = string.Format(ResourceProvider.GetString("LOCPlayAch_Rebuild_Label_AppId"), update.CurrentAppId);
-                return " — " + appIdLabel;
-            }
-
-            return string.Empty;
         }
     }
 }

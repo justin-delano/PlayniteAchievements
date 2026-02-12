@@ -1,39 +1,62 @@
 using PlayniteAchievements.Models;
 using System;
+using System.Diagnostics;
 
 namespace PlayniteAchievements.Services
 {
     internal sealed class RebuildProgressReporter
     {
         private readonly Action<ProviderScanUpdate> _callback;
-        private readonly TimeSpan _min;
-        private DateTime _last;
-        private int _currentCounter;
+        private readonly long _minIntervalTicks;
+        private long _lastEmitTimestamp;
+        private int _currentIndex;
         public int OverallCount { get; }
 
         public RebuildProgressReporter(Action<ProviderScanUpdate> callback, int overallCount, int minMs = 50)
         {
             _callback = callback;
             OverallCount = Math.Max(0, overallCount);
-            _min = TimeSpan.FromMilliseconds(Math.Max(0, minMs));
+            _minIntervalTicks = (long)(Math.Max(0, minMs) * (double)Stopwatch.Frequency / 1000.0);
         }
 
-        public void Step() => _currentCounter++;
+        public void Step() => _currentIndex = Math.Min(OverallCount, _currentIndex + 1);
 
         public void Emit(ProviderScanUpdate u, bool force = false)
         {
             if (u == null || _callback == null) return;
 
-            u.CurrentIndex = Math.Min(_currentCounter, OverallCount);
+            u.CurrentIndex = Math.Min(_currentIndex, OverallCount);
             u.TotalItems = OverallCount;
 
-            var now = DateTime.UtcNow;
-
-            if (force || (now - _last) >= _min)
+            if (force)
             {
                 _callback(u);
-                _last = now;
+                _lastEmitTimestamp = Stopwatch.GetTimestamp();
+                return;
             }
+
+            if (ShouldEmitNow())
+            {
+                _callback(u);
+            }
+        }
+
+        private bool ShouldEmitNow()
+        {
+            if (_minIntervalTicks <= 0)
+            {
+                _lastEmitTimestamp = Stopwatch.GetTimestamp();
+                return true;
+            }
+
+            var now = Stopwatch.GetTimestamp();
+            if (_lastEmitTimestamp == 0 || (now - _lastEmitTimestamp) >= _minIntervalTicks)
+            {
+                _lastEmitTimestamp = now;
+                return true;
+            }
+
+            return false;
         }
     }
 }
