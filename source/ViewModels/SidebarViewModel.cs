@@ -910,6 +910,8 @@ namespace PlayniteAchievements.ViewModels
             var pct = CalculatePercent(report);
             bool isFinal = pct >= 100 || report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps);
 
+            _logger?.Debug($"OnRebuildProgress: pct={pct}, isFinal={isFinal}, msg='{report.Message}', IsCanceled={report.IsCanceled}");
+
             lock (_progressLock)
             {
                 if (!isFinal)
@@ -932,6 +934,7 @@ namespace PlayniteAchievements.ViewModels
                     if (isFinal)
                     {
                         // For final: set completion message, 100% progress, keep UI visible
+                        _logger?.Debug("Setting final progress state");
                         _showProgress = true;  // Ensure progress stays visible
                         ProgressMessage = report.IsCanceled
                             ? ResourceProvider.GetString("LOCPlayAch_Status_Canceled")
@@ -950,6 +953,7 @@ namespace PlayniteAchievements.ViewModels
                     }
 
                     // Always update commands and scanning state
+                    _logger?.Debug($"RaiseCommandsChanged, IsScanning={IsScanning}, _showProgress={_showProgress}, ShowProgress={ShowProgress}");
                     RaiseCommandsChanged();
                     OnPropertyChanged(nameof(IsScanning));
                     OnPropertyChanged(nameof(ShowProgress));
