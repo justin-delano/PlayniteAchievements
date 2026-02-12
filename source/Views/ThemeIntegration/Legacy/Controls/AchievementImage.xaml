@@ -24,8 +24,7 @@
     </UserControl.Resources>
 
     <Grid Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Height}"
-          Width="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Width}"
-          ClipToBounds="False">
+          Width="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Width}">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
