@@ -912,11 +912,23 @@ namespace PlayniteAchievements.ViewModels
             {
                 try
                 {
-                    OnPropertyChanged(nameof(IsScanning));
+                    // Detect completion at subscriber level to handle race where EndRun()
+                    // sets IsRebuilding=false before final report reaches UI
+                    if (isFinal)
+                    {
+                        IsScanning = false;
+                        ProgressMessage = report.IsCanceled
+                            ? ResourceProvider.GetString("LOCPlayAch_Status_Canceled")
+                            : ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+                    }
+                    else
+                    {
+                        OnPropertyChanged(nameof(IsScanning));
+                    }
+
                     OnPropertyChanged(nameof(ShowProgress));
                     RaiseCommandsChanged();
-                    ProgressPercent = CalculatePercent(report);
-                    ProgressMessage = report.Message ?? string.Empty;
+                    ProgressPercent = pct;
                 }
                 catch (Exception ex)
                 {
