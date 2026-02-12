@@ -895,14 +895,19 @@ namespace PlayniteAchievements.ViewModels
 
             var now = DateTime.UtcNow;
 
+            // Calculate percent before the lock so it's available in the callback
+            var pct = CalculatePercent(report);
+            bool isFinal = pct >= 100 || report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps);
+
             lock (_progressLock)
             {
-                var pct = CalculatePercent(report);
-                var isFinal = pct >= 100 || report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps);
-
-                if (!isFinal && (now - _lastProgressUpdate) < ProgressMinInterval)
+                if (!isFinal)
                 {
-                    return;
+                    // Only throttle non-final updates
+                    if ((now - _lastProgressUpdate) < ProgressMinInterval)
+                    {
+                        return;
+                    }
                 }
 
                 _lastProgressUpdate = now;
@@ -916,7 +921,8 @@ namespace PlayniteAchievements.ViewModels
                     // sets IsRebuilding=false before final report reaches UI
                     if (isFinal)
                     {
-                        IsScanning = false;
+                        // Refresh IsScanning property to pick up the final state from AchievementManager
+                        OnPropertyChanged(nameof(IsScanning));
                         ProgressMessage = report.IsCanceled
                             ? ResourceProvider.GetString("LOCPlayAch_Status_Canceled")
                             : ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
