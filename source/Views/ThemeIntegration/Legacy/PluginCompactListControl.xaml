@@ -62,7 +62,7 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Grid HorizontalAlignment="Left">
-                        <StackPanel ToolTip="{Binding DisplayName}" Margin="4" HorizontalAlignment="Left">
+                        <StackPanel ToolTip="{Binding DisplayName}" Margin="2" HorizontalAlignment="Left">
                             <StackPanel.Style>
                                 <Style TargetType="{x:Type StackPanel}">
                                     <Style.Triggers>
@@ -83,7 +83,6 @@
                             </StackPanel.Style>
 
                             <localControls:AchievementImage
-                                Margin="4"
                                 Width="{Binding ElementName=PART_GridContener, Path=Tag}"
                                 Height="{Binding ElementName=PART_GridContener, Path=Tag}"
                                 Icon="{Binding UnlockedIconDisplay, IsAsync=True}"
