@@ -52,7 +52,7 @@ A modern Playnite extension plugin for aggregating achievement data from multipl
 
 <img src="Images/setup-view.png" alt="Setup Page" width="900">
 
-### Theme Integration
+### Fullscreen Theme Integration
 
 <img src="Images/aniki-remake1.png" alt="Aniki-Remake Integration" width="900">
 
