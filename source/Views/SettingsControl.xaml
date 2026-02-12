@@ -396,15 +396,22 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance}"
                                            Style="{StaticResource SectionHeaderStyle}"/>
 
-                                <!-- Checkboxes -->
-                                <StackPanel>
-                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideLocked}"
-                                                  IsChecked="{Binding Persisted.HideAchievementsLockedForSelf}"
-                                              Margin="0,0,0,10"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
-                                                  IsChecked="{Binding Persisted.UseCoverImages}"
-                                              Margin="0,0,0,10"/>
-                                </StackPanel>
+                                <!-- Hidden Achievement Visibility -->
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements}"
+                                           FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements_Description}"
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideHiddenIcon}"
+                                          IsChecked="{Binding Persisted.HideHiddenIcon}" Margin="18,0,0,8"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideHiddenTitle}"
+                                          IsChecked="{Binding Persisted.HideHiddenTitle}" Margin="18,0,0,8"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideHiddenDescription}"
+                                          IsChecked="{Binding Persisted.HideHiddenDescription}" Margin="18,0,0,16"/>
+
+                                <!-- Other Appearance Options -->
+                                <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
+                                          IsChecked="{Binding Persisted.UseCoverImages}"
+                                          Margin="0,0,0,10"/>
                             </StackPanel>
                         </Border>
 
