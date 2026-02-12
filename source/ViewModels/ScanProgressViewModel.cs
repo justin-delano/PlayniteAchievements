@@ -86,22 +86,23 @@ namespace PlayniteAchievements.ViewModels
             ProgressPercent = CalculatePercent(report);
             ProgressMessage = report.Message ?? string.Empty;
 
+            // Check for completion conditions first
+            bool isNowComplete = report.IsCanceled ||
+                (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps) ||
+                ProgressPercent >= 100;
+
+            if (isNowComplete)
+            {
+                IsComplete = true;
+            }
+
             // Raise property change for IsScanning to update button visibility
             OnPropertyChanged(nameof(IsScanning));
             OnPropertyChanged(nameof(ShowInProgressButtons));
             OnPropertyChanged(nameof(ShowCompleteButtons));
 
-            // Update cancel button enabled state
+            // Update cancel button enabled state (after IsComplete is set for correct behavior)
             CancelCommand?.RaiseCanExecuteChanged();
-
-            if (report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps))
-            {
-                IsComplete = true;
-            }
-            else if (ProgressPercent >= 100)
-            {
-                IsComplete = true;
-            }
         }
 
         private double CalculatePercent(ProgressReport report)
