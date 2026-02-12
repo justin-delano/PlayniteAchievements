@@ -924,23 +924,18 @@ namespace PlayniteAchievements.ViewModels
                 _lastProgressUpdate = now;
             }
 
+            // Use BeginInvoke for intermediate updates to avoid blocking, but ensure final is processed
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
             {
                 try
                 {
-                    // Always update progress percent first
-                    ProgressPercent = pct;
-
-                    // Detect completion at subscriber level to handle race where EndRun()
-                    // sets IsRebuilding=false before final report reaches UI
                     if (isFinal)
                     {
+                        // For final: set completion message, 100% progress, keep UI visible
+                        _showProgress = true;  // Ensure progress stays visible
                         ProgressMessage = report.IsCanceled
                             ? ResourceProvider.GetString("LOCPlayAch_Status_Canceled")
                             : ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
-                        OnPropertyChanged(nameof(ProgressMessage));
-
-                        // Ensure progress stays at 100% during completion display
                         ProgressPercent = 100;
 
                         // Start timer to hide progress UI after showing completion message
@@ -949,14 +944,13 @@ namespace PlayniteAchievements.ViewModels
                     }
                     else
                     {
+                        // Intermediate progress update
                         ProgressMessage = report.Message ?? string.Empty;
-                        OnPropertyChanged(nameof(ProgressMessage));
+                        ProgressPercent = pct;
                     }
 
-                    // Raise commands changed before updating IsScanning so the cancel button updates correctly
+                    // Always update commands and scanning state
                     RaiseCommandsChanged();
-
-                    // Finally update IsScanning which affects ShowProgress
                     OnPropertyChanged(nameof(IsScanning));
                     OnPropertyChanged(nameof(ShowProgress));
                 }
