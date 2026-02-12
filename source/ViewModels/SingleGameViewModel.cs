@@ -300,7 +300,9 @@ namespace PlayniteAchievements.ViewModels
 
                 // Calculate rarity counts
                 int common = 0, uncommon = 0, rare = 0, ultraRare = 0;
-                var hideLocked = _settings?.Persisted.HideAchievementsLockedForSelf ?? false;
+                var hideIcon = _settings?.Persisted.HideHiddenIcon ?? false;
+                var hideTitle = _settings?.Persisted.HideHiddenTitle ?? false;
+                var hideDescription = _settings?.Persisted.HideHiddenDescription ?? false;
                 var displayItems = new List<AchievementDisplayItem>();
                 var unlockCounts = new Dictionary<DateTime, int>();
 
@@ -344,7 +346,9 @@ namespace PlayniteAchievements.ViewModels
                         Unlocked = ach.Unlocked,
                         Hidden = ach.Hidden,
                         ApiName = ach.ApiName,
-                        HideAchievementsLockedForSelf = hideLocked,
+                        HideHiddenIcon = hideIcon,
+                        HideHiddenTitle = hideTitle,
+                        HideHiddenDescription = hideDescription,
                         ProgressNum = ach.ProgressNum,
                         ProgressDenom = ach.ProgressDenom
                     });
@@ -442,17 +446,22 @@ namespace PlayniteAchievements.ViewModels
 
         private void OnSettingsChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "Persisted.HideAchievementsLockedForSelf"
-                || e.PropertyName == "HideAchievementsLockedForSelf"
+            if (e.PropertyName == "Persisted.HideHiddenIcon"
+                || e.PropertyName == "Persisted.HideHiddenTitle"
+                || e.PropertyName == "Persisted.HideHiddenDescription"
                 || e.PropertyName == "Persisted")
             {
-                var hide = _settings.Persisted.HideAchievementsLockedForSelf;
+                var hideIcon = _settings.Persisted.HideHiddenIcon;
+                var hideTitle = _settings.Persisted.HideHiddenTitle;
+                var hideDescription = _settings.Persisted.HideHiddenDescription;
 
                 System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
                 {
                     foreach (var item in Achievements)
                     {
-                        item.HideAchievementsLockedForSelf = hide;
+                        item.HideHiddenIcon = hideIcon;
+                        item.HideHiddenTitle = hideTitle;
+                        item.HideHiddenDescription = hideDescription;
                     }
                 });
             }
