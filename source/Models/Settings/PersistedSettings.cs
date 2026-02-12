@@ -22,7 +22,9 @@ namespace PlayniteAchievements.Models.Settings
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
         private int _quickRefreshRecentGamesCount = 10;
-        private bool _hideAchievementsLockedForSelf = true;
+        private bool _hideHiddenIcon = true;
+        private bool _hideHiddenTitle = true;
+        private bool _hideHiddenDescription = true;
         private bool _useCoverImages = false;
         private bool _ignoreUnplayedGames = false;
         private bool _enableDiagnostics = false;
@@ -138,13 +140,30 @@ namespace PlayniteAchievements.Models.Settings
         #region Display Preferences
 
         /// <summary>
-        /// When true, achievements not unlocked by the current account will show a locked icon
-        /// and their description will be hidden in the feed.
+        /// When true, hidden achievement icons are obscured before reveal.
         /// </summary>
-        public bool HideAchievementsLockedForSelf
+        public bool HideHiddenIcon
         {
-            get => _hideAchievementsLockedForSelf;
-            set => SetValue(ref _hideAchievementsLockedForSelf, value);
+            get => _hideHiddenIcon;
+            set => SetValue(ref _hideHiddenIcon, value);
+        }
+
+        /// <summary>
+        /// When true, hidden achievement titles are obscured before reveal.
+        /// </summary>
+        public bool HideHiddenTitle
+        {
+            get => _hideHiddenTitle;
+            set => SetValue(ref _hideHiddenTitle, value);
+        }
+
+        /// <summary>
+        /// When true, hidden achievement descriptions are obscured before reveal.
+        /// </summary>
+        public bool HideHiddenDescription
+        {
+            get => _hideHiddenDescription;
+            set => SetValue(ref _hideHiddenDescription, value);
         }
 
         /// <summary>
@@ -330,7 +349,9 @@ namespace PlayniteAchievements.Models.Settings
                 NotifyPeriodicUpdates = this.NotifyPeriodicUpdates,
                 NotifyOnRebuild = this.NotifyOnRebuild,
                 QuickRefreshRecentGamesCount = this.QuickRefreshRecentGamesCount,
-                HideAchievementsLockedForSelf = this.HideAchievementsLockedForSelf,
+                HideHiddenIcon = this.HideHiddenIcon,
+                HideHiddenTitle = this.HideHiddenTitle,
+                HideHiddenDescription = this.HideHiddenDescription,
                 UseCoverImages = this.UseCoverImages,
                 IgnoreUnplayedGames = this.IgnoreUnplayedGames,
                 EnableDiagnostics = this.EnableDiagnostics,
