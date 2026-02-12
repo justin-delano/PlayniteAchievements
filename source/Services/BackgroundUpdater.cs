@@ -8,7 +8,7 @@ namespace PlayniteAchievements.Services
 {
     public class BackgroundUpdater
     {
-        private readonly AchievementManager _achievementService;
+        private readonly ScanManager _achievementService;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly NotificationPublisher _notifications;
@@ -18,7 +18,7 @@ namespace PlayniteAchievements.Services
         private CancellationTokenSource _cts;
 
         public BackgroundUpdater(
-            AchievementManager achievementService,
+            ScanManager achievementService,
             PlayniteAchievementsSettings settings,
             ILogger logger,
             NotificationPublisher notifications,
@@ -139,7 +139,7 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                await _achievementService.StartManagedQuickRefreshAsync().ConfigureAwait(false);
+                await _achievementService.ExecuteScanAsync(ScanModeType.Quick).ConfigureAwait(false);
 
                 _logger.Debug("[PeriodicUpdate] Cache update completed.");
                 HandleUpdateCompletion();

@@ -42,7 +42,7 @@ namespace PlayniteAchievements
         };
 
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
-        private readonly AchievementManager _achievementService;
+        private readonly ScanManager _achievementService;
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly NotificationPublisher _notifications;
@@ -83,7 +83,7 @@ namespace PlayniteAchievements
             Guid.Parse("e6aad2c9-6e06-4d8d-ac55-ac3b252b5f7b");
 
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
-        public AchievementManager AchievementService => _achievementService;
+        public ScanManager AchievementService => _achievementService;
         public MemoryImageService ImageService => _imageService;
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;
@@ -121,8 +121,9 @@ namespace PlayniteAchievements
 
             // NECESSARY TO MAKE SURE CHARTS WORK
             var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
-            // NECESSARY DO NOT REMOVE
             _ = typeof(WpfToolkit.Controls.VirtualizingWrapPanel);
+            // NECESSARY DO NOT REMOVE
+
 
             // Configure rarity thresholds from settings
             RarityHelper.Configure(
@@ -149,7 +150,7 @@ namespace PlayniteAchievements
 
             _diskImageService = new DiskImageService(_logger, GetPluginUserDataPath());
             _imageService = new MemoryImageService(_logger, _diskImageService);
-            _achievementService = new AchievementManager(api, _settingsViewModel.Settings, _logger, this, providers, _diskImageService);
+            _achievementService = new ScanManager(api, _settingsViewModel.Settings, _logger, this, providers, _diskImageService);
             _notifications = new NotificationPublisher(api, _settingsViewModel.Settings, _logger);
             _backgroundUpdates = new BackgroundUpdater(_achievementService, _settingsViewModel.Settings, _logger, _notifications, null);
 
@@ -799,7 +800,7 @@ namespace PlayniteAchievements
                     continue;
                 }
 
-                // Fire and forget; StartManagedSingleGameScanAsync already manages progress/state.
+                // Fire and forget; ExecuteScanAsync already manages progress/state.
                 _ = TriggerNewGameScanAsync(game);
             }
         }

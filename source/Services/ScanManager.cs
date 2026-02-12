@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Services
     /// <summary>
     /// Manages user achievement scanning and caching operations.
     /// </summary>
-    public class AchievementManager : IDisposable
+    public class ScanManager : IDisposable
     {
         private readonly object _runLock = new object();
         private CancellationTokenSource _activeRunCts;
@@ -79,7 +79,7 @@ namespace PlayniteAchievements.Services
                 return true;
             }
 
-            _logger.Info("Scan attempted but no providers are authenticated.");
+            _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanAttemptedNoProviders"));
             _api.Dialogs.ShowMessage(
                 ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"),
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
@@ -118,7 +118,7 @@ namespace PlayniteAchievements.Services
             remove => _cacheService.CacheInvalidated -= value;
         }
 
-        public AchievementManager(
+        public ScanManager(
             IPlayniteAPI api,
             PlayniteAchievementsSettings settings,
             ILogger logger,
@@ -149,7 +149,8 @@ namespace PlayniteAchievements.Services
 
         private void PostToUi(Action action)
         {
-            _api?.MainView?.UIDispatcher?.InvokeIfNeeded(action, DispatcherPriority.Background);
+            var dispatcher = _api?.MainView?.UIDispatcher;
+            dispatcher.InvokeIfNeeded(action, DispatcherPriority.Background);
         }
 
         private void Report(string message, int current = 0, int total = 0, bool canceled = false)
@@ -171,12 +172,131 @@ namespace PlayniteAchievements.Services
 
             PostToUi(() =>
             {
-                try { handler(this, report); }
-                catch (Exception e)
+                foreach (EventHandler<ProgressReport> subscriber in handler.GetInvocationList())
                 {
-                    _logger?.Error(e, ResourceProvider.GetString("LOCPlayAch_Error_NotifySubscribers"));
+                    try
+                    {
+                        subscriber(this, report);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger?.Error(e, ResourceProvider.GetString("LOCPlayAch_Error_NotifySubscribers"));
+                    }
                 }
             });
+        }
+
+        /// <summary>
+        /// Calculates percentage for a scan progress report.
+        /// </summary>
+        public double CalculateProgressPercent(ProgressReport report)
+        {
+            if (report == null)
+            {
+                return 0;
+            }
+
+            var pct = report.PercentComplete;
+            if ((pct <= 0 || double.IsNaN(pct)) && report.TotalSteps > 0)
+            {
+                pct = Math.Max(0, Math.Min(100, (report.CurrentStep * 100.0) / report.TotalSteps));
+            }
+
+            if (double.IsNaN(pct))
+            {
+                return 0;
+            }
+
+            return Math.Max(0, Math.Min(100, pct));
+        }
+
+        /// <summary>
+        /// Determines if the provided report represents a final scan state.
+        /// </summary>
+        public bool IsFinalProgressReport(ProgressReport report)
+        {
+            return IsFinalProgressReport(report, CalculateProgressPercent(report));
+        }
+
+        /// <summary>
+        /// Resolves the user-facing scan status message from report + manager state.
+        /// </summary>
+        public string ResolveProgressMessage(ProgressReport report = null)
+        {
+            var effectiveReport = report ?? _lastProgress;
+            var isFinal = IsFinalProgressReport(effectiveReport);
+            return ResolveProgressMessage(effectiveReport, isFinal);
+        }
+
+        /// <summary>
+        /// Gets a centralized scan status snapshot for UI consumers.
+        /// </summary>
+        public ScanStatusSnapshot GetScanStatusSnapshot(ProgressReport report = null)
+        {
+            var effectiveReport = report ?? _lastProgress;
+            var progressPercent = CalculateProgressPercent(effectiveReport);
+            var isFinal = IsFinalProgressReport(effectiveReport, progressPercent);
+
+            return new ScanStatusSnapshot
+            {
+                IsScanning = IsRebuilding,
+                IsFinal = isFinal,
+                IsCanceled = effectiveReport?.IsCanceled == true,
+                ProgressPercent = progressPercent,
+                Message = ResolveProgressMessage(effectiveReport, isFinal)
+            };
+        }
+
+        /// <summary>
+        /// Gets a transient "starting scan" snapshot for immediate UI updates.
+        /// </summary>
+        public ScanStatusSnapshot GetStartingScanStatusSnapshot()
+        {
+            return new ScanStatusSnapshot
+            {
+                IsScanning = IsRebuilding,
+                IsFinal = false,
+                IsCanceled = false,
+                ProgressPercent = 0,
+                Message = ResourceProvider.GetString("LOCPlayAch_Status_Starting")
+            };
+        }
+
+        private bool IsFinalProgressReport(ProgressReport report, double progressPercent)
+        {
+            if (report == null)
+            {
+                return false;
+            }
+
+            return report.IsCanceled ||
+                   (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps) ||
+                   progressPercent >= 100;
+        }
+
+        private string ResolveProgressMessage(ProgressReport report, bool isFinal)
+        {
+            if (!string.IsNullOrWhiteSpace(report?.Message))
+            {
+                return report.Message;
+            }
+
+            if (report?.IsCanceled == true)
+            {
+                return ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
+            }
+
+            if (isFinal)
+            {
+                return ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+            }
+
+            if (!string.IsNullOrWhiteSpace(_lastStatus))
+            {
+                return _lastStatus;
+            }
+
+            return ResourceProvider.GetString("LOCPlayAch_Status_Starting");
         }
 
         // -----------------------------
@@ -234,13 +354,13 @@ namespace PlayniteAchievements.Services
             {
                 if (_activeRunCts != null)
                 {
-                    _logger.Info("TryBeginRun: Scan already in progress.");
+                    _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanAlreadyInProgress"));
                     cts = null;
                     Report(_lastStatus ?? ResourceProvider.GetString("LOCPlayAch_Status_UpdatingCache"), 0, 1);
                     return false;
                 }
 
-                _logger.Info("TryBeginRun: Starting new scan.");
+                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanStarting"));
                 _activeRunCts = new CancellationTokenSource();
                 cts = _activeRunCts;
                 return true;
@@ -249,7 +369,7 @@ namespace PlayniteAchievements.Services
 
         private void EndRun()
         {
-            _logger.Info("EndRun called.");
+            _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanEndRun"));
             lock (_runLock)
             {
                 _activeRunCts?.Dispose();
@@ -264,7 +384,7 @@ namespace PlayniteAchievements.Services
         {
             if (!HasAnyAuthenticatedProvider())
             {
-                _logger.Info("Scan requested but no providers are authenticated.");
+                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanRequestedNoProviders"));
                 Report(ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"), 0, 1);
                 return;
             }
@@ -287,7 +407,7 @@ namespace PlayniteAchievements.Services
             }
             catch (OperationCanceledException)
             {
-                _logger.Info("User achievement scan was canceled.");
+                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanCanceled"));
                 Report(ResourceProvider.GetString("LOCPlayAch_Status_Canceled"), 0, 1, true);
             }
             catch (Exception ex)
@@ -298,12 +418,13 @@ namespace PlayniteAchievements.Services
             finally
             {
                 var hasSavedGames = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0) > 0;
+                var wasCanceled = cts.IsCancellationRequested;
                 EndRun();
 
                 // Send final completion report AFTER EndRun so IsRebuilding is false when UI processes it
-                if (!cts.Token.IsCancellationRequested && payload != null)
+                if (!wasCanceled && payload != null)
                 {
-                    var msg = finalMessage?.Invoke(payload) ?? ResourceProvider.GetString("LOCPlayAch_Status_Ready");
+                    var msg = ResolveFinalSuccessMessage(payload, finalMessage);
                     Report(msg, 1, 1);
                 }
 
@@ -345,7 +466,9 @@ namespace PlayniteAchievements.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, $"Provider capability check failed for game '{game?.Name}'.");
+                    _logger?.Debug(ex, string.Format(
+                        ResourceProvider.GetString("LOCPlayAch_Log_ScanProviderCapabilityCheckFailed"),
+                        game?.Name));
                 }
             }
 
@@ -420,7 +543,7 @@ namespace PlayniteAchievements.Services
             var authenticatedProviders = GetAuthenticatedProviders();
             if (authenticatedProviders.Count == 0)
             {
-                _logger?.Warn("[Scan] No authenticated providers available.");
+                _logger?.Warn(ResourceProvider.GetString("LOCPlayAch_Log_ScanNoAuthenticatedProviders"));
                 return new RebuildPayload();
             }
 
@@ -431,12 +554,16 @@ namespace PlayniteAchievements.Services
                 .ToDictionary(g => g.Key, g => g.Select(x => x.Game).ToList());
 
             // log games by providers to check, list all games and all providers
-            _logger.Debug($"[Scan] Games to scan: {gamesToScan.Count}, Providers: {_providers.Count}, Grouped providers: {gamesByProvider.Count}");
+            _logger.Debug(string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Log_ScanSummary"),
+                gamesToScan.Count,
+                _providers.Count,
+                gamesByProvider.Count));
             // _logger.Debug($"[Scan] Games with providers: {string.Join(", ", scanTargets.Select(x => x.Game.Name + " => " + x.Provider.ProviderName))}");
 
             if (gamesByProvider.Count == 0)
             {
-                _logger?.Warn("[Scan] No matching providers available for scan options.");
+                _logger?.Warn(ResourceProvider.GetString("LOCPlayAch_Log_ScanNoMatchingProviders"));
                 return new RebuildPayload();
             }
 
@@ -660,180 +787,123 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, $"Failed to resolve achievement icon path for {originalPath}.");
+                _logger?.Debug(ex, string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Log_ScanResolveIconPathFailed"),
+                    originalPath));
                 return default;
             }
+        }
+
+        private string ResolveFinalSuccessMessage(RebuildPayload payload, Func<RebuildPayload, string> finalMessage)
+        {
+            if (finalMessage != null)
+            {
+                try
+                {
+                    var message = finalMessage(payload);
+                    if (!string.IsNullOrWhiteSpace(message))
+                    {
+                        return message;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"));
+                }
+            }
+
+            return ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
         }
 
         // -----------------------------
         // Public scan methods
         // -----------------------------
 
-        public Task StartManagedRebuildAsync()
+        private Task StartManagedScanCoreAsync(
+            CacheScanOptions options,
+            Func<RebuildPayload, string> finalMessage,
+            string errorLogMessage)
         {
             return RunManagedAsync(
-                cancel => ScanAsync(FullRefreshOptions(), HandleUpdate, cancel),
-                payload => string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Status_RebuildComplete"),
-                    payload?.Summary?.GamesScanned ?? 0),
-                "Full achievement scan failed."
+                cancel => ScanAsync(options, HandleUpdate, cancel),
+                finalMessage,
+                errorLogMessage
             );
         }
 
-        public Task StartManagedSingleGameScanAsync(Guid playniteGameId)
+        private Task StartManagedGameIdScanAsync(
+            ScanModeType mode,
+            List<Guid> gameIds,
+            Func<RebuildPayload, string> finalMessage,
+            string errorLogMessage,
+            string emptySelectionLogMessage = null)
         {
-            return RunManagedAsync(
-                cancel => ScanAsync(SingleGameOptions(playniteGameId), HandleUpdate, cancel),
-                payload => ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
-                "Single game scan failed."
-            );
-        }
-
-        public Task StartManagedQuickRefreshAsync()
-        {
-            return RunManagedAsync(
-                cancel => ScanAsync(QuickRefreshOptions(), HandleUpdate, cancel),
-                payload => string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Status_QuickRefreshComplete"),
-                    payload?.Summary?.GamesScanned ?? 0),
-                "Quick refresh scan failed."
-            );
-        }
-
-        public Task StartManagedScanAsync(List<Guid> gameIds)
-        {
-            return RunManagedAsync(
-                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
-                payload => ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
-                "Game list scan failed."
-            );
-        }
-
-        /// <summary>
-        /// Executes a scan based on the specified scan mode key.
-        /// </summary>
-        public Task ExecuteScanAsync(string modeKey, Guid? singleGameId = null)
-        {
-            // Parse string to enum, default to Quick if invalid
-            if (!Enum.TryParse<ScanModeType>(modeKey, out var mode))
+            if (gameIds == null || gameIds.Count == 0)
             {
-                _logger.Warn($"Unknown scan mode: {modeKey}, falling back to Quick.");
-                mode = ScanModeType.Quick;
+                if (!string.IsNullOrWhiteSpace(emptySelectionLogMessage))
+                {
+                    _logger.Info(emptySelectionLogMessage);
+                }
+
+                Report(FormatScanCompletionWithModeAndCount(mode, 0), 1, 1);
+                return Task.CompletedTask;
             }
 
-            return ExecuteScanAsync(mode, singleGameId);
+            return StartManagedScanCoreAsync(
+                new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false },
+                finalMessage,
+                errorLogMessage
+            );
         }
 
-        /// <summary>
-        /// Executes a scan based on the specified scan mode type.
-        /// </summary>
-        public Task ExecuteScanAsync(ScanModeType mode, Guid? singleGameId = null)
+        private static string GetScanModeShortName(ScanModeType mode)
         {
-            switch (mode)
-            {
-                case ScanModeType.Quick:
-                    return StartManagedQuickRefreshAsync();
+            var resourceKey = mode == ScanModeType.LibrarySelected
+                ? "LOCPlayAch_ScanModeShort_Selected"
+                : mode.GetShortResourceKey();
 
-                case ScanModeType.Full:
-                    return StartManagedRebuildAsync();
-
-                case ScanModeType.Installed:
-                    return StartManagedInstalledGamesScanAsync();
-
-                case ScanModeType.Favorites:
-                    return StartManagedFavoritesScanAsync();
-
-                case ScanModeType.Single:
-                    if (singleGameId.HasValue)
-                        return StartManagedSingleGameScanAsync(singleGameId.Value);
-                    _logger.Info("Single scan mode requested but no game ID provided.");
-                    return Task.CompletedTask;
-
-                case ScanModeType.LibrarySelected:
-                    return StartManagedLibrarySelectedGamesScanAsync();
-
-                case ScanModeType.Missing:
-                    return StartManagedMissingScanAsync();
-
-                default:
-                    _logger.Warn($"Unknown scan mode: {mode}, falling back to Quick.");
-                    return StartManagedQuickRefreshAsync();
-            }
+            return ResourceProvider.GetString(resourceKey);
         }
 
-        private Task StartManagedInstalledGamesScanAsync()
+        private static string FormatScanCompletionWithModeAndCount(ScanModeType mode, int gamesScanned)
         {
-            var gameIds = _api.Database.Games
+            return string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Status_ScanCompleteWithModeAndCount"),
+                GetScanModeShortName(mode),
+                Math.Max(0, gamesScanned));
+        }
+
+        private List<Guid> GetInstalledGameIds()
+        {
+            return _api.Database.Games
                 .Where(g => g != null && g.IsInstalled)
                 .Select(g => g.Id)
                 .ToList();
-
-            if (gameIds.Count == 0)
-            {
-                _logger.Info("No installed games found for scan.");
-                return Task.CompletedTask;
-            }
-
-            return RunManagedAsync(
-                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
-                payload => string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
-                    payload?.Summary?.GamesScanned ?? 0),
-                "Installed games scan failed."
-            );
         }
 
-        private Task StartManagedFavoritesScanAsync()
+        private List<Guid> GetFavoriteGameIds()
         {
-            var gameIds = _api.Database.Games
+            return _api.Database.Games
                 .Where(g => g != null && g.Favorite)
                 .Select(g => g.Id)
                 .ToList();
-
-            if (gameIds.Count == 0)
-            {
-                _logger.Info("No favorite games found for scan.");
-                return Task.CompletedTask;
-            }
-
-            return RunManagedAsync(
-                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
-                payload => string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
-                    payload?.Summary?.GamesScanned ?? 0),
-                "Favorites scan failed."
-            );
         }
 
-        private Task StartManagedLibrarySelectedGamesScanAsync()
+        private List<Guid> GetLibrarySelectedGameIds()
         {
-            var selectedGames = _api.MainView.SelectedGames?
+            return _api.MainView.SelectedGames?
                 .Where(g => g != null)
+                .Select(g => g.Id)
                 .ToList();
-
-            if (selectedGames == null || selectedGames.Count == 0)
-            {
-                _logger.Info("No games selected in Playnite library for scan.");
-                return Task.CompletedTask;
-            }
-
-            var gameIds = selectedGames.Select(g => g.Id).ToList();
-            return RunManagedAsync(
-                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
-                payload => string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
-                    payload?.Summary?.GamesScanned ?? 0),
-                "Library selected games scan failed."
-            );
         }
 
-        private Task StartManagedMissingScanAsync()
+        private List<Guid> GetMissingGameIds()
         {
             var authenticatedProviders = GetAuthenticatedProviders();
             if (authenticatedProviders.Count == 0)
             {
-                _logger.Info("No authenticated providers available for missing scan.");
-                return Task.CompletedTask;
+                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanMissingNoAuthenticatedProviders"));
+                return new List<Guid>();
             }
 
             var cachedGameIds = new HashSet<string>(_cacheService.GetCachedGameIds(), StringComparer.OrdinalIgnoreCase);
@@ -861,24 +931,121 @@ namespace PlayniteAchievements.Services
 
             if (missingGameIds.Count == 0)
             {
-                _logger.Info("No games missing achievement data found.");
-                return Task.CompletedTask;
+                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanMissingNoGames"));
+                return missingGameIds;
             }
 
-            _logger.Info($"Found {missingGameIds.Count} games missing achievement data.");
+            _logger.Info(string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Log_ScanMissingFoundGames"),
+                missingGameIds.Count));
+            return missingGameIds;
+        }
 
-            return RunManagedAsync(
-                cancel => ScanAsync(new CacheScanOptions { PlayniteGameIds = missingGameIds, IgnoreUnplayedGames = false }, HandleUpdate, cancel),
-                payload => string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
-                    payload?.Summary?.GamesScanned ?? 0),
-                "Missing games scan failed."
+        private Task StartManagedRebuildAsync()
+        {
+            return StartManagedScanCoreAsync(
+                FullRefreshOptions(),
+                payload => FormatScanCompletionWithModeAndCount(ScanModeType.Full, payload?.Summary?.GamesScanned ?? 0),
+                ResourceProvider.GetString("LOCPlayAch_Log_ScanFullFailed")
             );
+        }
+
+        private Task StartManagedSingleGameScanAsync(Guid playniteGameId)
+        {
+            return StartManagedScanCoreAsync(
+                SingleGameOptions(playniteGameId),
+                payload => ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete"),
+                ResourceProvider.GetString("LOCPlayAch_Log_ScanSingleFailed")
+            );
+        }
+
+        private Task StartManagedQuickRefreshAsync()
+        {
+            return StartManagedScanCoreAsync(
+                QuickRefreshOptions(),
+                payload => FormatScanCompletionWithModeAndCount(ScanModeType.Quick, payload?.Summary?.GamesScanned ?? 0),
+                ResourceProvider.GetString("LOCPlayAch_Log_ScanQuickFailed")
+            );
+        }
+
+        /// <summary>
+        /// Executes a scan based on the specified scan mode key.
+        /// </summary>
+        public Task ExecuteScanAsync(string modeKey, Guid? singleGameId = null)
+        {
+            // Parse string to enum, default to Quick if invalid
+            if (!Enum.TryParse<ScanModeType>(modeKey, out var mode))
+            {
+                _logger.Warn(string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Log_ScanUnknownModeKey"),
+                    modeKey));
+                mode = ScanModeType.Quick;
+            }
+
+            return ExecuteScanAsync(mode, singleGameId);
+        }
+
+        /// <summary>
+        /// Executes a scan based on the specified scan mode type.
+        /// </summary>
+        public Task ExecuteScanAsync(ScanModeType mode, Guid? singleGameId = null)
+        {
+            switch (mode)
+            {
+                case ScanModeType.Quick:
+                    return StartManagedQuickRefreshAsync();
+
+                case ScanModeType.Full:
+                    return StartManagedRebuildAsync();
+
+                case ScanModeType.Installed:
+                    return StartManagedGameIdScanAsync(
+                        ScanModeType.Installed,
+                        GetInstalledGameIds(),
+                        payload => FormatScanCompletionWithModeAndCount(ScanModeType.Installed, payload?.Summary?.GamesScanned ?? 0),
+                        ResourceProvider.GetString("LOCPlayAch_Log_ScanInstalledFailed"),
+                        ResourceProvider.GetString("LOCPlayAch_Log_ScanNoInstalledGames"));
+
+                case ScanModeType.Favorites:
+                    return StartManagedGameIdScanAsync(
+                        ScanModeType.Favorites,
+                        GetFavoriteGameIds(),
+                        payload => FormatScanCompletionWithModeAndCount(ScanModeType.Favorites, payload?.Summary?.GamesScanned ?? 0),
+                        ResourceProvider.GetString("LOCPlayAch_Log_ScanFavoritesFailed"),
+                        ResourceProvider.GetString("LOCPlayAch_Log_ScanNoFavoriteGames"));
+
+                case ScanModeType.Single:
+                    if (singleGameId.HasValue)
+                        return StartManagedSingleGameScanAsync(singleGameId.Value);
+                    _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanSingleNoGameId"));
+                    return Task.CompletedTask;
+
+                case ScanModeType.LibrarySelected:
+                    return StartManagedGameIdScanAsync(
+                        ScanModeType.LibrarySelected,
+                        GetLibrarySelectedGameIds(),
+                        payload => FormatScanCompletionWithModeAndCount(ScanModeType.LibrarySelected, payload?.Summary?.GamesScanned ?? 0),
+                        ResourceProvider.GetString("LOCPlayAch_Log_ScanSelectedFailed"),
+                        ResourceProvider.GetString("LOCPlayAch_Log_ScanNoSelectedGames"));
+
+                case ScanModeType.Missing:
+                    return StartManagedGameIdScanAsync(
+                        ScanModeType.Missing,
+                        GetMissingGameIds(),
+                        payload => FormatScanCompletionWithModeAndCount(ScanModeType.Missing, payload?.Summary?.GamesScanned ?? 0),
+                        ResourceProvider.GetString("LOCPlayAch_Log_ScanMissingFailed"));
+
+                default:
+                    _logger.Warn(string.Format(
+                        ResourceProvider.GetString("LOCPlayAch_Log_ScanUnknownModeEnum"),
+                        mode));
+                    return StartManagedQuickRefreshAsync();
+            }
         }
 
         public void CancelCurrentRebuild()
         {
-            _logger.Info($"CancelCurrentRebuild requested.");
+            _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_ScanCancelRequested"));
             lock (_runLock)
             {
                 _activeRunCts?.Cancel();
@@ -903,7 +1070,9 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"Failed to get achievement data for gameId={playniteGameId}");
+                _logger?.Error(ex, string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Log_ScanGetGameDataFailed"),
+                    playniteGameId));
                 return null;
             }
         }
@@ -937,7 +1106,7 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"Failed to get all achievement data");
+                _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Log_ScanGetAllGameDataFailed"));
                 return new();
             }
         }
