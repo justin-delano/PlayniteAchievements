@@ -7,29 +7,19 @@
     <!-- ================================================================= -->
 
     <!-- Common Labels -->
-    <sys:String x:Key="LOCPlayAch_Games">Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements">Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Perfect">Perfect</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progress</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rarity">Rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Total">Total</sys:String>
-    <sys:String x:Key="LOCPlayAch_Name">Name</sys:String>
-    <sys:String x:Key="LOCPlayAch_LastPlayed">Last Played</sys:String>
-    <sys:String x:Key="LOCPlayAch_Unlocked">Unlocked</sys:String>
 
     <!-- Label with Colon (for labels that need trailing punctuation) -->
     <sys:String x:Key="LOCPlayAch_Label_Rarity">Rarity:</sys:String>
 
     <!-- Common Statuses -->
-    <sys:String x:Key="LOCPlayAch_Status_Loading">Loading...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Scanning">Scanning...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_Ready">Ready</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_Idle">Idle</sys:String>
 
     <!-- Common Compound Phrases -->
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Recent Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_AchievementsOverTime">Achievements over time</sys:String>
-    <sys:String x:Key="LOCPlayAch_GlobalProgression">Global Progression</sys:String>
 
     <!-- ================================================================= -->
     <!-- PLUGIN                                                             -->
@@ -50,15 +40,12 @@
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scan Single Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scan Selected</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_FullAchievementScan">Full Achievement Scan</sys:String>
 
     <!-- ================================================================= -->
     <!-- BUTTONS                                                            -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Scan">Scan</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_QuickScan">Quick Scan</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_ScanAll">Full Scan</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_Clear">Clear</sys:String>
 
@@ -70,6 +57,7 @@
     <sys:String x:Key="LOCPlayAch_ScanModeShort_Favorites">Favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanModeShort_Single">Single</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanModeShort_Selected">Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanModeShort_LibrarySelected">Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanModeShort_Missing">Missing</sys:String>
     <!-- Long versions for menus -->
     <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Quick Scan</sys:String>
@@ -78,15 +66,14 @@
     <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Scan Favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Single">Scan Game</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Scan Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_ScanMode_LibrarySelected">Scan Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_ScanMode_Missing">Scan Missing</sys:String>
 
     <!-- ================================================================= -->
     <!-- COLUMNS (using common strings)                                    -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_UnlockDate">Unlocked</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Global">Global %</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Rarity</sys:String>
 
     <!-- ================================================================= -->
@@ -97,7 +84,6 @@
     <!-- ================================================================= -->
     <!-- STEAM AUTHENTICATION                                              -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Settings_SteamConnection">Steam Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKey">Steam Web API Key</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKeyHint">Get your API key from</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage">Steam Language</sys:String>
@@ -131,12 +117,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_SteamLanguage_Arabic">Arabic (العربية)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CheckSteamAuth">Check</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">Authenticate</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CheckingSteamAuth">Checking Steam authentication...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamAuth_OK">Steam configured successfully</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SteamAuth_WebAuthUnavailable">Steam web authentication is not available.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_NotChecked">Steam: Not checked</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_CookiesCleared">Steam session cookies cleared.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Status_AuthInvalid">Steam session is invalid. Please re-authenticate.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_AuthError">Error checking Steam status.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_BothNeeded">Steam Web API key and web authentication required</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Status_ApiKeyNeeded">Steam Web API key required</sys:String>
@@ -156,11 +139,9 @@
     <!-- SETTINGS SECTIONS                                                  -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_TabGeneral">General</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Advanced">Advanced and Performance</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance and Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Sync &amp; Updates</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_Notifications">Notifications</sys:String>
-    <sys:String x:Key="LOCPlayAch_Section_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_RarityThresholds">Achievement Rarity Thresholds</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RarityThresholds_Description">Configure the global unlock percentage cutoffs that determine achievement rarity tiers. Achievements are categorized based on what percentage of players have unlocked them.</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Username">Username</sys:String>
@@ -202,11 +183,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoFiles">No hash index cache files found to delete.{0}{0}The cache may have already been cleared, or no scans have been performed yet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_ClearFailed">Failed to clear hash index cache: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiagnostics">Enable diagnostics logging (perf timings)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_ClearingCache">Clearing cache...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_LoadingFromCache">Loading from cache...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_NoCache_Building">No cache found. Building cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Updating cache...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_CacheUpdated">Cache updated. Click Refresh to see changes.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">No achievements cached. Click 'Scan All' to scan your games.</sys:String>
 
     <!-- ================================================================= -->
@@ -244,14 +221,6 @@
     <!-- ================================================================= -->
     <!-- ACHIEVEMENTS TAB                                                   -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Achievements_UnlockedOnly">Unlocked Only</sys:String>
-    <sys:String x:Key="LOCPlayAch_Achievements_LockedOnly">Locked Only</sys:String>
-    <sys:String x:Key="LOCPlayAch_Achievements_SortBy">Sort:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Achievements_Sort_GameName">Game Name</sys:String>
-    <sys:String x:Key="LOCPlayAch_Achievements_Sort_AchievementName">Achievement Name</sys:String>
-    <sys:String x:Key="LOCPlayAch_Achievements_Sort_UnlockDate">Unlock Date</sys:String>
-    <sys:String x:Key="LOCPlayAch_Achievements_Sort_Rarity">Rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Achievements_PageInfo">Page {0} of {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements_ClickToReveal">Click to reveal</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle">Hidden Achievement</sys:String>
 
@@ -271,17 +240,11 @@
     <sys:String x:Key="LOCPlayAch_Status_Starting">Starting...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingAchievements">Loading achievements...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Canceled">Scan canceled.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_RebuildComplete">Scan complete: {0} games scanned</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_SingleGameComplete">{0}/{1} achievements unlocked ({2}%)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_QuickRefreshComplete">Quick refresh complete: {0} games scanned</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_ScanCompleteWithModeAndCount">{0} scan complete: {1} games scanned</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_ScanComplete">Scan complete!</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_ScanFailed">Scan failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">{0} of {1} ({2} unlocked) from {3} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} achievements ({1} unlocked) from {2} games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Progress_LoadingOwnedGames">Loading owned games...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Progress_RefreshingAchievements">Refreshing achievements...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Progress_ScanningGame">Scanning {0}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGame">Refreshing achievements for {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Refreshing achievements for {0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingSelfAchievements">Refreshing achievements for {0}...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_LoadingOwnedGames">Loading owned games...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_LoadingExistingCache">Loading from cache...</sys:String>
@@ -292,16 +255,47 @@
     <!-- ERRORS                                                             -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Scan failed</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_ClearCacheFailed">Failed to clear cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_SteamNotConfigured">Steam API Key or Web Auth not configured</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_ManagedRebuild">Unexpected error during scan. See log for details.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_SteamSessionNotFound">Steam session not found. Please authenticate and retry.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_SteamRateLimited">Steam rate-limited (429). Try again later.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_MissingSteamUserId">SteamID64 is required.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_FileOperationFailed">File operation failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_ScanFailed">Scan failed: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_QuickScanFailed">Quick scan failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Steam authentication required. Scan canceled.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No providers are authenticated. Please configure at least one provider in settings before scanning.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_NotifySubscribers">Failed to notify subscribers.</sys:String>
+
+    <!-- ================================================================= -->
+    <!-- LOG MESSAGES                                                       -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Log_ScanAttemptedNoProviders">Scan attempted but no providers are authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanAlreadyInProgress">Scan already in progress.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanStarting">Starting new scan.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanEndRun">Scan ended.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanRequestedNoProviders">Scan requested but no providers are authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanCanceled">User achievement scan was canceled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanProviderCapabilityCheckFailed">Provider capability check failed for game '{0}'.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanNoAuthenticatedProviders">No authenticated providers available for scan.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanSummary">Games to scan: {0}, Providers: {1}, Grouped providers: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanNoMatchingProviders">No matching providers available for scan options.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanResolveIconPathFailed">Failed to resolve achievement icon path for {0}.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanMissingNoAuthenticatedProviders">No authenticated providers available for missing scan.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanMissingNoGames">No games missing achievement data found.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanMissingFoundGames">Found {0} games missing achievement data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanFullFailed">Full achievement scan failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanSingleFailed">Single game scan failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanQuickFailed">Quick refresh scan failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanInstalledFailed">Installed games scan failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanNoInstalledGames">No installed games found for scan.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanFavoritesFailed">Favorites scan failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanNoFavoriteGames">No favorite games found for scan.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanSingleNoGameId">Single scan mode requested but no game ID provided.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanSelectedFailed">Library selected games scan failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanNoSelectedGames">No games selected in Playnite library for scan.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanMissingFailed">Missing games scan failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanUnknownModeKey">Unknown scan mode key: {0}. Falling back to Quick.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanUnknownModeEnum">Unknown scan mode: {0}. Falling back to Quick.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanCancelRequested">Cancel scan requested.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanGetGameDataFailed">Failed to get achievement data for gameId={0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_ScanGetAllGameDataFailed">Failed to get all achievement data</sys:String>
 
     <!-- ================================================================= -->
     <!-- TIME RANGE                                                         -->
@@ -316,16 +310,11 @@
     <!-- ================================================================= -->
     <!-- PAGINATION                                                         -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Pagination_First">First Page</sys:String>
-    <sys:String x:Key="LOCPlayAch_Pagination_Previous">Previous Page</sys:String>
-    <sys:String x:Key="LOCPlayAch_Pagination_Next">Next Page</sys:String>
-    <sys:String x:Key="LOCPlayAch_Pagination_Last">Last Page</sys:String>
 
     <!-- ================================================================= -->
     <!-- SIDEBAR CONTROL                                                    -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Sidebar_GamesOverview">Games Overview</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_GlobalProgression">Global achievements progression</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">Achievements by Provider</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">Perfect Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_RarityPieChart">Achievements by Rarity</sys:String>
@@ -338,7 +327,6 @@
     <sys:String x:Key="LOCPlayAch_Format_Counts">{0}/{1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Percentage">{0:F1}%</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rebuild_Label_AppId">App {0}</sys:String>
 
     <!-- ================================================================= -->
     <!-- WINDOW TITLES                                                     -->
@@ -397,14 +385,6 @@
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configure Your Accounts</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your providers.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Open Plugin Settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_SettingsDiagramTitle">How to Configure Providers:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NavInstructions">Navigate to the plugin settings:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NavSettings">Settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NavAddons">Addons</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NavExtensionSettings">Extension Settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NavGeneric">Generic</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NavPluginName">Playnite Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NavThenConfigure">Then configure credentials in the settings tabs.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsScanTitle">Ready to Scan</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsScanMessage">Your credentials are configured. Begin your first scan to track achievements across your library.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_BeginScan">Begin Scan</sys:String>
@@ -415,8 +395,6 @@
 
     <!-- Provider Status Cards -->
     <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">PROVIDER STATUS</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_Configured">Configured</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_NotConfigured">Not configured</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToScan">Ready to scan</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configure in settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeReady">READY</sys:String>
@@ -434,29 +412,18 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Title">Theme Migration</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Description">Migrate a theme from SuccessStory to PlayniteAchievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_SelectTheme">Select Theme Directory</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Migration">Migrate</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrateLabel">Migrate Theme</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrateFullDescription">Update themes that use SuccessStory to work with PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupNote">A backup will be created before any modifications are made.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_Success">Theme migrated successfully!</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Failed">Theme migration failed: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupExists">Backup folder already exists. Please remove it first.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoPath">Please select a valid theme directory.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_NotDirectory">Selected path is not a directory.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_Processing">Processing theme...</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RestartRequired">Please restart Playnite to apply the theme changes.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_FilesProcessed">Files processed: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_Replacements">Replacements made: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_BackupLocation">Backup location: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">No themes found that need migrating. Themes with SuccessStory references will appear here.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Revert">Revert Theme</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertButton">Revert</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">No themes found with backups that can be reverted.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertDescription">Restore a previously migrated theme from its backup. The backup folder will be preserved after reverting.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertSuccess">Theme reverted successfully. Backup folder preserved at: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertFailed">Revert failed: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoBackup">No backup folder found at: {0}</sys:String>
 
     <!-- ================================================================= -->
     <!-- SINGLE GAME VIEW                                                   -->
