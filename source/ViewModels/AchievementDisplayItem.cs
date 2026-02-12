@@ -130,20 +130,48 @@ namespace PlayniteAchievements.ViewModels
         private string _apiName;
         public string ApiName { get => _apiName; set => SetValue(ref _apiName, value); }
 
-        // Hide locked achievements setting integration
-        private bool _hideAchievementsLockedForSelf;
-        public bool HideAchievementsLockedForSelf
+        // Hidden achievement visibility settings
+        private bool _hideHiddenIcon;
+        public bool HideHiddenIcon
         {
-            get => _hideAchievementsLockedForSelf;
+            get => _hideHiddenIcon;
             set
             {
-                if (SetValueAndReturn(ref _hideAchievementsLockedForSelf, value))
+                if (SetValueAndReturn(ref _hideHiddenIcon, value))
                 {
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
                     OnPropertyChanged(nameof(DisplayIcon));
                     OnPropertyChanged(nameof(Icon));
+                }
+            }
+        }
+
+        private bool _hideHiddenTitle;
+        public bool HideHiddenTitle
+        {
+            get => _hideHiddenTitle;
+            set
+            {
+                if (SetValueAndReturn(ref _hideHiddenTitle, value))
+                {
+                    OnPropertyChanged(nameof(CanReveal));
+                    OnPropertyChanged(nameof(IsHidden));
                     OnPropertyChanged(nameof(DisplayNameResolved));
+                }
+            }
+        }
+
+        private bool _hideHiddenDescription;
+        public bool HideHiddenDescription
+        {
+            get => _hideHiddenDescription;
+            set
+            {
+                if (SetValueAndReturn(ref _hideHiddenDescription, value))
+                {
+                    OnPropertyChanged(nameof(CanReveal));
+                    OnPropertyChanged(nameof(IsHidden));
                     OnPropertyChanged(nameof(DescriptionResolved));
                 }
             }
@@ -214,9 +242,9 @@ namespace PlayniteAchievements.ViewModels
         public double ProgressPercent => HasProgress ? (ProgressNum.Value * 100.0 / ProgressDenom.Value) : 0;
 
         /// <summary>
-        /// True if the achievement can be revealed (is locked and hiding is enabled).
+        /// True if the achievement can be revealed (is locked and at least one hiding setting is enabled).
         /// </summary>
-        public bool CanReveal => HideAchievementsLockedForSelf && !Unlocked && Hidden;
+        public bool CanReveal => (HideHiddenIcon || HideHiddenTitle || HideHiddenDescription) && !Unlocked && Hidden;
 
         /// <summary>
         /// True if the achievement details are currently hidden (can reveal and not yet revealed).
@@ -227,7 +255,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsHidden) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle");
+                if (IsHidden && HideHiddenTitle) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle");
                 return DisplayName;
             }
         }
@@ -236,7 +264,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsHidden) return ResourceProvider.GetString("LOCPlayAch_Achievements_ClickToReveal");
+                if (IsHidden && HideHiddenDescription) return ResourceProvider.GetString("LOCPlayAch_Achievements_ClickToReveal");
                 return Description;
             }
         }
@@ -256,7 +284,7 @@ namespace PlayniteAchievements.ViewModels
         /// Updates this item's properties from a source Achievement object.
         /// This is used to synchronize data without recreating the entire object, preventing UI flicker.
         /// </summary>
-        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideLockedSetting)
+        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideIcon, bool hideTitle, bool hideDescription)
         {
             GameName = gameName;
             PlayniteGameId = playniteGameId;
@@ -268,7 +296,9 @@ namespace PlayniteAchievements.ViewModels
             Unlocked = source.Unlocked;
             Hidden = source.Hidden;
             ApiName = source.ApiName;
-            HideAchievementsLockedForSelf = hideLockedSetting;
+            HideHiddenIcon = hideIcon;
+            HideHiddenTitle = hideTitle;
+            HideHiddenDescription = hideDescription;
             ProgressNum = source.ProgressNum;
             ProgressDenom = source.ProgressDenom;
         }
@@ -292,7 +322,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsHidden)
+                if (IsHidden && HideHiddenIcon)
                 {
                     return DefaultIcon;
                 }
