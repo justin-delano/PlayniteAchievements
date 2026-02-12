@@ -878,11 +878,10 @@ namespace PlayniteAchievements.ViewModels
                         ProgressMessage = report.Message ?? string.Empty;
                     }
 
-                    // Update commands first to ensure cancel button updates
-                    RaiseCommandsChanged();
-
-                    // Then notify UI property changes
+                    // Notify property changes
+                    OnPropertyChanged(nameof(IsScanning));
                     OnPropertyChanged(nameof(ShowProgress));
+                    RaiseCommandsChanged();
                 }
                 catch (Exception ex)
                 {
