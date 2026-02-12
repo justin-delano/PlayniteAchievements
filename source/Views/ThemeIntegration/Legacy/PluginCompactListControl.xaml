@@ -24,7 +24,7 @@
     </local:ThemeControlBase.Resources>
 
     <Grid Name="PART_GridContener"
-          Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}"
+          MinHeight="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}"
           Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}">
         <ListBox ItemsSource="{Binding LegacyTheme.ListAchievements, Mode=OneWay}"
                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
