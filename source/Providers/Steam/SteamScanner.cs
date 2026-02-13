@@ -407,11 +407,20 @@ namespace PlayniteAchievements.Providers.Steam
                         }
                         else
                         {
-                            // Multiple achievements share this icon - use DisplayName/Description matching as fallback
-                            apiName = achievements.FirstOrDefault(a =>
-                                string.Equals(a.DisplayName, row.DisplayName, StringComparison.OrdinalIgnoreCase) ||
-                                string.Equals(a.Description, row.Description, StringComparison.OrdinalIgnoreCase)
-                            )?.Name;
+                            // Multiple achievements share this icon - prioritize: Description, then DisplayName
+                            var descMatches = achievements.Where(a =>
+                                string.Equals(a.Description, row.Description, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                            if (descMatches.Count == 1)
+                            {
+                                apiName = descMatches[0].Name;
+                            }
+                            else
+                            {
+                                // Description matched zero or multiple - fall back to DisplayName
+                                apiName = achievements.FirstOrDefault(a =>
+                                    string.Equals(a.DisplayName, row.DisplayName, StringComparison.OrdinalIgnoreCase))?.Name;
+                            }
 
                             if (apiName != null)
                                 fallbackMatches++;
