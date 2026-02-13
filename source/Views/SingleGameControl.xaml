@@ -657,17 +657,28 @@
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Grid HorizontalAlignment="Center">
+                            <Grid>
                                 <!-- Unlock time for unlocked achievements -->
-                                <TextBlock Text="{Binding UnlockTimeText}"
-                                           VerticalAlignment="Center"
-                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                           Foreground="{DynamicResource TextBrush}"
-                                           Opacity="0.7"
-                                           Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
-                                <!-- Progress bar for locked achievements with progress -->
+                                <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="✓"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,6,0"
+                                               Foreground="#4CAF50"
+                                               FontWeight="Bold"
+                                               FontSize="{DynamicResource FontSize}"/>
+                                    <TextBlock Text="{Binding UnlockTimeText}"
+                                               VerticalAlignment="Center"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               Opacity="0.7"/>
+                                </StackPanel>
+                                <!-- Locked achievements: progress bar or lock icon -->
                                 <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}">
-                                    <Grid Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}" Margin="16,0">
+                                    <!-- Progress bar for locked achievements with progress -->
+                                    <Grid Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}" Margin="4,0">
                                         <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
                                                      Minimum="0" Maximum="100"
                                                      Height="18"
@@ -681,6 +692,12 @@
                                                    FontWeight="SemiBold"
                                                    Foreground="White"/>
                                     </Grid>
+                                    <!-- Lock icon for locked achievements without progress -->
+                                    <Image Source="{StaticResource BadgeLocked}"
+                                           Width="16" Height="16"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Visibility="{Binding HasProgress, Converter={StaticResource InverseBoolToVis}}"/>
                                 </Grid>
                             </Grid>
                         </DataTemplate>
