@@ -11,7 +11,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,7 +22,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private readonly PlayniteAchievementsSettings _settings;
         private readonly RetroAchievementsApiClient _api;
         private readonly RetroAchievementsHashIndexStore _hashIndexStore;
-        private readonly IPlayniteAPI _playniteApi;
+        private readonly RetroAchievementsPathResolver _pathResolver;
         private readonly Dictionary<int, List<Models.RaGameListWithTitle>> _gameListCache = new();
 
         public RetroAchievementsScanner(
@@ -31,13 +30,13 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             PlayniteAchievementsSettings settings,
             RetroAchievementsApiClient api,
             RetroAchievementsHashIndexStore hashIndexStore,
-            IPlayniteAPI playniteApi)
+            RetroAchievementsPathResolver pathResolver)
         {
             _logger = logger;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _hashIndexStore = hashIndexStore ?? throw new ArgumentNullException(nameof(hashIndexStore));
-            _playniteApi = playniteApi;
+            _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
         }
 
         public async Task<RebuildPayload> ScanAsync(
@@ -168,7 +167,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
         private async Task<GameAchievementData> ScanGameAsync(Game game, int consoleId, IRaHasher hasher, CancellationToken cancel)
         {
-            var candidates = ResolveCandidateFilePaths(game).ToList();
+            var candidates = _pathResolver.ResolveCandidateFilePaths(game).ToList();
             _logger?.Info($"[RA] Scanning '{game?.Name}' consoleId={consoleId} hasher={hasher.Name} candidates={candidates.Count}.");
 
             try
@@ -492,116 +491,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 return DateTime.SpecifyKind(dt, DateTimeKind.Utc);
             }
 
-            return null;
-        }
-
-        private IEnumerable<string> ResolveCandidateFilePaths(Game game)
-        {
-            // Prefer game.Roms[*].Path
-            if (game?.Roms != null)
-            {
-                foreach (var rom in game.Roms)
-                {
-                    var p = ResolvePath(game, rom?.Path);
-                    if (!string.IsNullOrWhiteSpace(p))
-                    {
-                        yield return p;
-                    }
-                }
-            }
-
-            // Fallback: look for file-based actions.
-            if (game?.GameActions != null)
-            {
-                foreach (var act in game.GameActions)
-                {
-                    var p = ResolvePath(game, act?.Path);
-                    if (!string.IsNullOrWhiteSpace(p) && !p.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-                    {
-                        yield return p;
-                    }
-                }
-            }
-        }
-
-        private string ResolvePath(Game game, string path)
-        {
-            if (string.IsNullOrWhiteSpace(path)) return null;
-
-            var p = path.Trim().Trim('"');
-
-            try
-            {
-                // Get emulator for {EmulatorDir} expansion
-                var emulator = GetGameEmulator(game);
-                var emulatorDir = emulator?.InstallDir;
-
-                // Expand {EmulatorDir} in game.InstallDirectory first
-                var installDir = game?.InstallDirectory;
-                if (!string.IsNullOrWhiteSpace(installDir) &&
-                    installDir.IndexOf("{EmulatorDir}", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                    !string.IsNullOrWhiteSpace(emulatorDir))
-                {
-                    installDir = ReplaceInsensitive(installDir, "{EmulatorDir}", emulatorDir);
-                }
-
-                // Expand standard Playnite variables (includes {InstallDir} -> game.InstallDirectory)
-                p = _playniteApi?.ExpandGameVariables(game, p) ?? p;
-
-                // Expand any {EmulatorDir} that remains after standard expansion
-                if (p.IndexOf("{EmulatorDir}", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                    !string.IsNullOrWhiteSpace(emulatorDir))
-                {
-                    p = ReplaceInsensitive(p, "{EmulatorDir}", emulatorDir);
-                }
-
-                // Handle relative paths using the (now expanded) install directory
-                if (!Path.IsPathRooted(p) && !string.IsNullOrWhiteSpace(installDir))
-                {
-                    p = Path.Combine(installDir, p);
-                }
-
-                return p;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static string ReplaceInsensitive(string input, string oldValue, string newValue)
-        {
-            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(oldValue))
-                return input;
-
-            var idx = input.IndexOf(oldValue, StringComparison.OrdinalIgnoreCase);
-            if (idx < 0)
-                return input;
-
-            var sb = new StringBuilder(input.Length);
-            var start = 0;
-            while (idx >= 0)
-            {
-                sb.Append(input.Substring(start, idx - start));
-                sb.Append(newValue ?? string.Empty);
-                start = idx + oldValue.Length;
-                idx = input.IndexOf(oldValue, start, StringComparison.OrdinalIgnoreCase);
-            }
-            sb.Append(input.Substring(start));
-            return sb.ToString();
-        }
-
-        private Emulator GetGameEmulator(Game game)
-        {
-            if (game?.GameActions == null) return null;
-
-            foreach (var action in game.GameActions)
-            {
-                if (action?.Type == GameActionType.Emulator && action.EmulatorId != Guid.Empty)
-                {
-                    return _playniteApi?.Database?.Emulators?.Get(action.EmulatorId);
-                }
-            }
             return null;
         }
 
