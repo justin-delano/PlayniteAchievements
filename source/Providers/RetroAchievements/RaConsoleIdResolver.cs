@@ -35,8 +35,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     return true;
                 }
 
-                // Platform name is user-editable; only fall back to it when no stable SpecificationId exists.
-                if (string.IsNullOrWhiteSpace(platform.SpecificationId) && TryResolveFromString(platform.Name, out consoleId))
+                // Fall back to platform name if specification ID is missing or not recognized.
+                // This supports custom platform metadata where SpecificationId can be non-standard.
+                if (TryResolveFromString(platform.Name, out consoleId))
                 {
                     return true;
                 }
