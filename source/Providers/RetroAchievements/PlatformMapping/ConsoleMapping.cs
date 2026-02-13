@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Playnite.SDK.Data;
 
 namespace PlayniteAchievements.Providers.RetroAchievements
@@ -100,9 +101,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             }
 
             var normalized = Normalize(value);
+            var tokens = Tokenize(value);
 
             // Check for excluded platforms first
-            if (IsExcluded(normalized))
+            if (IsExcluded(normalized, tokens))
             {
                 return false;
             }
@@ -110,7 +112,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             // Try to match against console keywords, in priority order
             foreach (var console in _sortedConsoles)
             {
-                if (MatchesConsole(normalized, console))
+                if (MatchesConsole(normalized, tokens, console))
                 {
                     consoleId = console.Id;
                     return true;
@@ -171,12 +173,36 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             return consoles.OrderByDescending(c => c.Priority).ToList();
         }
 
-        private bool IsExcluded(string normalized)
+        private bool IsExcluded(string normalized, IReadOnlyList<string> tokens)
         {
-            return _excludedPlatforms.Any(excluded => normalized.Contains(Normalize(excluded)));
+            foreach (var excluded in _excludedPlatforms)
+            {
+                var normalizedExcluded = Normalize(excluded);
+                if (string.IsNullOrWhiteSpace(normalizedExcluded))
+                {
+                    continue;
+                }
+
+                if (string.Equals(normalized, normalizedExcluded, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+
+                if (ContainsToken(tokens, normalizedExcluded))
+                {
+                    return true;
+                }
+
+                if (normalizedExcluded.Length >= 4 && normalized.Contains(normalizedExcluded))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
-        private bool MatchesConsole(string normalized, ConsoleMapping console)
+        private bool MatchesConsole(string normalized, IReadOnlyList<string> tokens, ConsoleMapping console)
         {
             if (console.Keywords == null || console.Keywords.Count == 0)
             {
@@ -191,7 +217,17 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 }
 
                 var normalizedKeyword = Normalize(keyword);
-                if (normalized.Contains(normalizedKeyword))
+                if (string.IsNullOrWhiteSpace(normalizedKeyword))
+                {
+                    continue;
+                }
+
+                var isMatch =
+                    string.Equals(normalized, normalizedKeyword, StringComparison.Ordinal) ||
+                    ContainsToken(tokens, normalizedKeyword) ||
+                    (normalizedKeyword.Length >= 4 && normalized.Contains(normalizedKeyword));
+
+                if (isMatch)
                 {
                     // For consoles requiring exclusion checks (e.g., Cassette Vision),
                     // verify we're not actually matching a more specific variant
@@ -203,7 +239,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                         foreach (var specific in moreSpecificConsoles)
                         {
-                            if (MatchesConsole(normalized, specific))
+                            if (MatchesConsole(normalized, tokens, specific))
                             {
                                 return false; // Let the more specific console handle it
                             }
@@ -215,6 +251,56 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             }
 
             return false;
+        }
+
+        private static bool ContainsToken(IReadOnlyList<string> tokens, string keyword)
+        {
+            if (tokens == null || tokens.Count == 0 || string.IsNullOrWhiteSpace(keyword))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < tokens.Count; i++)
+            {
+                if (string.Equals(tokens[i], keyword, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static List<string> Tokenize(string input)
+        {
+            var tokens = new List<string>();
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return tokens;
+            }
+
+            var normalized = input.Trim().ToLowerInvariant();
+            var current = new StringBuilder(normalized.Length);
+
+            foreach (var c in normalized)
+            {
+                if (char.IsLetterOrDigit(c))
+                {
+                    current.Append(c);
+                }
+                else if (current.Length > 0)
+                {
+                    tokens.Add(current.ToString());
+                    current.Clear();
+                }
+            }
+
+            if (current.Length > 0)
+            {
+                tokens.Add(current.ToString());
+            }
+
+            return tokens;
         }
 
         private string Normalize(string input)
