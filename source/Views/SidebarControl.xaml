@@ -1277,7 +1277,15 @@
                                         Click="ClearGameSelection_Click"
                                         Padding="6,2"
                                         FontSize="{DynamicResource FontSizeSmall}"
-                                        VerticalAlignment="Top"/>
+                                        Foreground="{DynamicResource TextBrush}"
+                                        VerticalAlignment="Top">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                             </Grid>
                         </Border>
                     </Grid>
