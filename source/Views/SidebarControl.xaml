@@ -1451,7 +1451,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Date -->
-                                    <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime">
+                                    <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime" SortDirection="Descending">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding UnlockTimeText}"
@@ -1656,7 +1656,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Date / Progress -->
-                                    <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime">
+                                    <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime" SortDirection="Descending">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Grid HorizontalAlignment="Center">
