@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Views.ParityTests
                 {
                     // Populate theme properties once up-front.
                     // (This also queues icon resolution and a refresh once thumbnails are ready.)
-                    IntegrationHelper.UpdateThemeProperties(_plugin, _game);
+                    // IntegrationHelper.UpdateThemeProperties(_plugin, _game);
 
                     ApplyGameToHosts(this, _game);
                 }
