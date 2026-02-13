@@ -121,7 +121,7 @@ namespace PlayniteAchievements
 
             // NECESSARY TO MAKE SURE CHARTS WORK
             var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
-            _ = typeof(WpfToolkit.Controls.VirtualizingWrapPanel);
+            var panel = new WpfToolkit.Controls.VirtualizingWrapPanel();
             // NECESSARY DO NOT REMOVE
 
 
