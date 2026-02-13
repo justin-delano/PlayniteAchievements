@@ -1280,10 +1280,7 @@
                                         Foreground="{DynamicResource TextBrush}"
                                         VerticalAlignment="Top">
                                     <Button.Style>
-                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                            <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="BorderThickness" Value="0"/>
-                                        </Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"/>
                                     </Button.Style>
                                 </Button>
                             </Grid>
