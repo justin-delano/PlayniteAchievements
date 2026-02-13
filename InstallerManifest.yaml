@@ -1,5 +1,15 @@
 AddonId: PlayniteAchievements
 Packages:
+  - Version: 1.0.4
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-02-12
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.0.4/PlayniteAchievements_1_0_4.pext
+    Changelog:
+      - Scanning - fixed final progress reporting and consolidated code for better maintenance
+      - Theme integration - fixed SuccessStory control heights and added granular hidden achievement controls
+      - RetroAchievements - fixed Genesis platform-to-console matching
+      - UI and performance tweaks throughout
+
   - Version: 1.0.3
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-11
