@@ -8,7 +8,7 @@
                    mc:Ignorable="d"
                    d:DesignHeight="150" d:DesignWidth="300"
                    MinHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MinHeight}"
-                   Height="{Binding RelativeSource={RelativeSource AncestorType=local:ThemeControlBase}, Path=Height}"
+                   Height="{Binding Height}"
                    MaxHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MaxHeight}">
     <Grid Name="PART_GridContener">
         <ListBox Grid.IsSharedSizeScope="True" ItemsSource="{Binding ItemsSource}"
