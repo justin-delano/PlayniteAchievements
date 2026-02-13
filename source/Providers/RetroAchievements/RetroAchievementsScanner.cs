@@ -23,18 +23,21 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private readonly PlayniteAchievementsSettings _settings;
         private readonly RetroAchievementsApiClient _api;
         private readonly RetroAchievementsHashIndexStore _hashIndexStore;
+        private readonly IPlayniteAPI _playniteApi;
         private readonly Dictionary<int, List<Models.RaGameListWithTitle>> _gameListCache = new();
 
         public RetroAchievementsScanner(
             ILogger logger,
             PlayniteAchievementsSettings settings,
             RetroAchievementsApiClient api,
-            RetroAchievementsHashIndexStore hashIndexStore)
+            RetroAchievementsHashIndexStore hashIndexStore,
+            IPlayniteAPI playniteApi)
         {
             _logger = logger;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _hashIndexStore = hashIndexStore ?? throw new ArgumentNullException(nameof(hashIndexStore));
+            _playniteApi = playniteApi;
         }
 
         public async Task<RebuildPayload> ScanAsync(
@@ -521,7 +524,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             }
         }
 
-        private static string ResolvePath(Game game, string path)
+        private string ResolvePath(Game game, string path)
         {
             if (string.IsNullOrWhiteSpace(path)) return null;
 
@@ -529,15 +532,33 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
             try
             {
-                if (p.IndexOf("{InstallDir}", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                    !string.IsNullOrWhiteSpace(game?.InstallDirectory))
+                // Get emulator for {EmulatorDir} expansion
+                var emulator = GetGameEmulator(game);
+                var emulatorDir = emulator?.InstallDir;
+
+                // Expand {EmulatorDir} in game.InstallDirectory first
+                var installDir = game?.InstallDirectory;
+                if (!string.IsNullOrWhiteSpace(installDir) &&
+                    installDir.IndexOf("{EmulatorDir}", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    !string.IsNullOrWhiteSpace(emulatorDir))
                 {
-                    p = ReplaceInsensitive(p, "{InstallDir}", game.InstallDirectory);
+                    installDir = ReplaceInsensitive(installDir, "{EmulatorDir}", emulatorDir);
                 }
 
-                if (!Path.IsPathRooted(p) && !string.IsNullOrWhiteSpace(game?.InstallDirectory))
+                // Expand standard Playnite variables (includes {InstallDir} -> game.InstallDirectory)
+                p = _playniteApi?.ExpandGameVariables(game, p) ?? p;
+
+                // Expand any {EmulatorDir} that remains after standard expansion
+                if (p.IndexOf("{EmulatorDir}", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    !string.IsNullOrWhiteSpace(emulatorDir))
                 {
-                    p = Path.Combine(game.InstallDirectory, p);
+                    p = ReplaceInsensitive(p, "{EmulatorDir}", emulatorDir);
+                }
+
+                // Handle relative paths using the (now expanded) install directory
+                if (!Path.IsPathRooted(p) && !string.IsNullOrWhiteSpace(installDir))
+                {
+                    p = Path.Combine(installDir, p);
                 }
 
                 return p;
@@ -551,15 +572,11 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private static string ReplaceInsensitive(string input, string oldValue, string newValue)
         {
             if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(oldValue))
-            {
                 return input;
-            }
 
             var idx = input.IndexOf(oldValue, StringComparison.OrdinalIgnoreCase);
             if (idx < 0)
-            {
                 return input;
-            }
 
             var sb = new StringBuilder(input.Length);
             var start = 0;
@@ -572,6 +589,20 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             }
             sb.Append(input.Substring(start));
             return sb.ToString();
+        }
+
+        private Emulator GetGameEmulator(Game game)
+        {
+            if (game?.GameActions == null) return null;
+
+            foreach (var action in game.GameActions)
+            {
+                if (action?.Type == GameActionType.Emulator && action.EmulatorId != Guid.Empty)
+                {
+                    return _playniteApi?.Database?.Emulators?.Get(action.EmulatorId);
+                }
+            }
+            return null;
         }
 
         private async Task<int> TryMatchGameByNameAsync(Game game, int consoleId, CancellationToken cancel)

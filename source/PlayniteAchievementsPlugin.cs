@@ -145,7 +145,8 @@ namespace PlayniteAchievements
                 new RetroAchievementsDataProvider(
                     _logger,
                     _settingsViewModel.Settings,
-                    GetPluginUserDataPath())
+                    GetPluginUserDataPath(),
+                    PlayniteApi)
             };
 
             _diskImageService = new DiskImageService(_logger, GetPluginUserDataPath());
