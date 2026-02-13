@@ -10,6 +10,13 @@ namespace PlayniteAchievements.ViewModels
 
         public string ApiName { get; set; }
 
+        private bool _hidden;
+        public bool Hidden
+        {
+            get => _hidden;
+            set => SetValue(ref _hidden, value);
+        }
+
         private string _name;
         public string Name 
         { 

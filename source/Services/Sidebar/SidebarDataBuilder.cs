@@ -163,7 +163,8 @@ namespace PlayniteAchievements.Services.Sidebar
                                     UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
                                     GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
                                     GameIconPath = !string.IsNullOrEmpty(playniteGame?.Icon) ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon) : null,
-                                    GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage) ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage) : null
+                                    GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage) ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage) : null,
+                                    Hidden = ach.Hidden
                                 });
                             }
                         }
