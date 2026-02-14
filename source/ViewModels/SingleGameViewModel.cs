@@ -565,7 +565,7 @@ namespace PlayniteAchievements.ViewModels
 
             if (!ShowHidden)
             {
-                filtered = filtered.Where(a => !a.Hidden);
+                filtered = filtered.Where(a => !(a.Hidden && !a.Unlocked));
             }
 
             filtered = filtered.Where(a => a.Unlocked ? ShowUnlocked : ShowLocked);

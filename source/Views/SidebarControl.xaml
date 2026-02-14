@@ -1312,6 +1312,7 @@
                                       Sorting="DataGrid_Sorting"
                                       AutoGenerateColumns="False"
                                       IsReadOnly="True"
+                                      CanUserAddRows="False"
                                       SelectionMode="Single"
                                       SelectionUnit="FullRow"
                                       HeadersVisibility="Column"

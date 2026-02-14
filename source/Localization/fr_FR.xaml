@@ -235,7 +235,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements_ClickToReveal">Cliquer pour révéler</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle">Succès masqué</sys:String>
-    <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle_WithParens"> (Succès masqué)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle_WithParens">&#160;(Succès masqué)</sys:String>
 
     <!-- ================================================================= -->
     <!-- RARITY                                                             -->
