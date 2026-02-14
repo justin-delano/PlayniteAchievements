@@ -147,6 +147,11 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         /// </summary>
         public List<AchievementDetail> RarestRecentUnlocksTop10 { get; set; } = new List<AchievementDetail>();
 
+        /// <summary>
+        /// Indicates whether full all-games heavy list surfaces were built in this snapshot.
+        /// </summary>
+        public bool HeavyListsBuilt { get; set; } = true;
+
         #endregion
 
         #region Helper Methods for Theme Binding

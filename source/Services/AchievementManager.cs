@@ -140,6 +140,17 @@ namespace PlayniteAchievements.Services
 
         public void Dispose()
         {
+            try
+            {
+                if (_cacheService is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+            catch
+            {
+            }
+
             // SettingsPersister removed - user settings are now only saved via ISettings.EndEdit()
         }
 
@@ -1137,6 +1148,11 @@ namespace PlayniteAchievements.Services
         {
             try
             {
+                if (_cacheService is CacheManager optimizedCacheManager)
+                {
+                    return optimizedCacheManager.LoadAllGameDataFast() ?? new List<GameAchievementData>();
+                }
+
                 var gameIds = _cacheService.GetCachedGameIds();
                 var result = new List<GameAchievementData>();
                 foreach(var gameId in gameIds)
@@ -1155,5 +1171,6 @@ namespace PlayniteAchievements.Services
                 return new();
             }
         }
+
     }
 }

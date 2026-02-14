@@ -8,13 +8,13 @@ using Playnite.SDK;
 
 namespace PlayniteAchievements.Services
 {
-    // Centralizes disk paths and atomic JSON read/write for cache artifacts.
+    // Legacy JSON cache helper used only for one-time DB migration and cleanup paths.
     public sealed class CacheStorage
     {
         private readonly ILogger _logger;
 
         public string BaseDir { get; }
-        public string UserCacheRootDir { get; }  // Per-game achievement cache directory
+        public string UserCacheRootDir { get; }  // Legacy per-game JSON cache directory
 
         public CacheStorage(PlayniteAchievementsPlugin plugin, ILogger logger)
         {
@@ -22,7 +22,7 @@ namespace PlayniteAchievements.Services
             if (plugin == null) throw new ArgumentNullException(nameof(plugin));
 
             BaseDir = plugin.GetPluginUserDataPath();
-            UserCacheRootDir = Path.Combine(BaseDir, "achievement_cache");  // Per-game achievement cache
+            UserCacheRootDir = Path.Combine(BaseDir, "achievement_cache");  // Legacy per-game JSON cache
 
             EnsureDir(BaseDir);
         }

@@ -321,6 +321,11 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
+        public void RemoveGameIconCache(string gameId)
+        {
+            ClearGameCache(gameId);
+        }
+
         public long GetCacheSizeBytes()
         {
             try
