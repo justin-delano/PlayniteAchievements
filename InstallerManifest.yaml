@@ -1,5 +1,17 @@
 AddonId: PlayniteAchievements
 Packages:
+  - Version: 1.0.5
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-02-14
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.0.5/PlayniteAchievements_1_0_5.pext
+    Changelog:
+      - Happy Valentine's Day!
+      - Achievement lists - added unlocked/locked/hidden visibility filters and a new status column with lock/check icons
+      - Sorting UX - improved default sort indicators and reset behavior when selecting or clearing games
+      - Sidebar/single-game UI - moved search above stats and refined spacing, margins, and control styling
+      - Steam and RetroAchievements - improved icon fallback, emulator path expansion, and console/path resolution
+      - Performance and stability - improved async threading and added Steam session warmup for smoother scans
+      - GOG support coming soon!
   - Version: 1.0.4
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-12
