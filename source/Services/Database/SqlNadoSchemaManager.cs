@@ -5,7 +5,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 2;
+        public const int SchemaVersion = 1;
         private readonly ILogger _logger;
 
         public SqlNadoSchemaManager(ILogger logger)

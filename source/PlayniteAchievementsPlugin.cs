@@ -786,35 +786,84 @@ namespace PlayniteAchievements
         private void Games_ItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
         {
             _logger.Info("Games_ItemCollectionChanged triggered.");
-            if (e?.AddedItems == null || e.AddedItems.Count == 0)
+            if (e == null)
             {
                 return;
             }
 
-            foreach (var game in e.AddedItems)
+            var addedItems = e.AddedItems;
+            if (addedItems != null)
             {
-                if (game == null)
+                var addedGameIds = new List<Guid>();
+                foreach (var game in addedItems)
                 {
-                    continue;
+                    if (game == null)
+                    {
+                        continue;
+                    }
+
+                    addedGameIds.Add(game.Id);
                 }
 
-                // Fire and forget; StartManagedSingleGameScanAsync already manages progress/state.
-                _ = TriggerNewGameScanAsync(game);
+                if (addedGameIds.Count > 0)
+                {
+                    _ = TriggerNewGamesScanAsync(addedGameIds);
+                }
+            }
+
+            var removedItems = e.RemovedItems;
+            if (removedItems != null)
+            {
+                foreach (var game in removedItems)
+                {
+                    if (game == null)
+                    {
+                        continue;
+                    }
+
+                    _ = TriggerRemovedGameCleanupAsync(game);
+                }
             }
         }
 
-        private Task TriggerNewGameScanAsync(Game game)
+        private Task TriggerNewGamesScanAsync(List<Guid> gameIds)
         {
             return Task.Run(async () =>
             {
                 try
                 {
-                    _logger.Info($"Detected new game '{game?.Name}' ({game?.GameId}); starting single-game scan.");
-                    await _achievementService.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id).ConfigureAwait(false);
+                    var validGameIds = gameIds?
+                        .Where(id => id != Guid.Empty)
+                        .Distinct()
+                        .ToList() ?? new List<Guid>();
+
+                    if (validGameIds.Count == 0)
+                    {
+                        return;
+                    }
+
+                    _logger.Info($"Detected {validGameIds.Count} new game(s); starting batched scan.");
+                    await _achievementService.StartManagedScanAsync(validGameIds).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error(ex, $"Failed auto-scan for new game '{game?.Name}' ({game?.GameId}).");
+                    _logger.Error(ex, "Failed batched auto-scan for newly added games.");
+                }
+            });
+        }
+
+        private Task TriggerRemovedGameCleanupAsync(Game game)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    _logger.Info($"Detected removed game '{game?.Name}' ({game?.GameId}); removing cached achievements and icons.");
+                    _achievementService.RemoveGameCache(game.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Failed cleanup for removed game '{game?.Name}' ({game?.GameId}).");
                 }
             });
         }

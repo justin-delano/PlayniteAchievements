@@ -9,7 +9,7 @@ using Playnite.SDK;
 namespace PlayniteAchievements.Services
 {
 
-    public sealed class CacheManager : ICacheManager
+    public sealed class CacheManager : ICacheManager, IDisposable
     {
         private const int MaxInMemoryGames = 256;
 
@@ -337,9 +337,73 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        public void RemoveGameData(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            if (!Guid.TryParse(key.Trim(), out var playniteGameId))
+            {
+                return;
+            }
+
+            RemoveGameData(playniteGameId);
+        }
+
+        public void RemoveGameData(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return;
+            }
+
+            var cacheKey = playniteGameId.ToString();
+            try
+            {
+                lock (_sync)
+                {
+                    InitializeCacheState_Locked();
+
+                    var normalized = UserKey(cacheKey);
+                    if (_userAchievements.TryGetValue(normalized, out var entry))
+                    {
+                        if (entry?.Node != null)
+                        {
+                            _lruOrder.Remove(entry.Node);
+                        }
+
+                        _userAchievements.Remove(normalized);
+                    }
+
+                    _store.RemoveGameData(playniteGameId);
+                }
+
+                RaiseGameCacheUpdatedEvent(cacheKey);
+                RaiseCacheInvalidatedEvent();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed removing cached data for gameId={playniteGameId}");
+            }
+        }
+
         public void NotifyCacheInvalidated()
         {
             RaiseCacheInvalidatedEvent();
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                _store?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to dispose SQLNado cache store.");
+            }
         }
     }
 

@@ -25,7 +25,6 @@ namespace PlayniteAchievements.Services
             UserCacheRootDir = Path.Combine(BaseDir, "achievement_cache");  // Legacy per-game JSON cache
 
             EnsureDir(BaseDir);
-            EnsureDir(UserCacheRootDir);
         }
 
         public void EnsureDir(string dir)

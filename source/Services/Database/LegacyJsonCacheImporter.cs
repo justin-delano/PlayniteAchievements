@@ -28,6 +28,8 @@ namespace PlayniteAchievements.Services.Database
 
             int imported = 0;
             int failed = 0;
+            int deleted = 0;
+            int deleteFailed = 0;
 
             var files = _storage.EnumerateUserCacheFiles()?.ToList();
             if (files != null)
@@ -50,6 +52,17 @@ namespace PlayniteAchievements.Services.Database
 
                         _store.SaveCurrentUserGameData(key, data);
                         imported++;
+
+                        try
+                        {
+                            _storage.DeleteFileIfExists(file);
+                            deleted++;
+                        }
+                        catch (Exception ex)
+                        {
+                            deleteFailed++;
+                            _logger?.Warn(ex, $"Imported legacy cache but failed to delete source file: {file}");
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -59,10 +72,35 @@ namespace PlayniteAchievements.Services.Database
                 }
             }
 
-            _store.SetMetadata("legacy_import_done", "1");
-            _store.SetMetadata("legacy_import_utc", DateTime.UtcNow.ToString("O"));
+            _store.SetMetadata("legacy_import_last_attempt_utc", DateTime.UtcNow.ToString("O"));
+            _store.SetMetadata("legacy_import_imported_count", imported.ToString());
             _store.SetMetadata("legacy_import_failed_count", failed.ToString());
-            _logger?.Info($"Legacy cache import finished. Imported={imported}, Failed={failed}");
+            _store.SetMetadata("legacy_import_deleted_count", deleted.ToString());
+            _store.SetMetadata("legacy_import_delete_failed_count", deleteFailed.ToString());
+
+            try
+            {
+                if (!_storage.EnumerateUserCacheFiles().Any())
+                {
+                    _storage.DeleteDirectoryIfExists(_storage.UserCacheRootDir);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to delete legacy achievement_cache directory after migration.");
+            }
+
+            if (SqlNadoCacheBehavior.ShouldMarkLegacyImportDone(failed))
+            {
+                _store.SetMetadata("legacy_import_done", "1");
+                _store.SetMetadata("legacy_import_utc", DateTime.UtcNow.ToString("O"));
+            }
+            else
+            {
+                _store.SetMetadata("legacy_import_done", "0");
+            }
+
+            _logger?.Info($"Legacy cache import finished. Imported={imported}, Failed={failed}, Deleted={deleted}, DeleteFailed={deleteFailed}");
         }
     }
 }

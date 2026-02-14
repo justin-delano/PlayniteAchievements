@@ -140,6 +140,17 @@ namespace PlayniteAchievements.Services
 
         public void Dispose()
         {
+            try
+            {
+                if (_cacheService is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+            catch
+            {
+            }
+
             // SettingsPersister removed - user settings are now only saved via ISettings.EndEdit()
         }
 
@@ -940,6 +951,32 @@ namespace PlayniteAchievements.Services
             {
                 _logger?.Error(ex, $"Failed to get all achievement data");
                 return new();
+            }
+        }
+
+        public void RemoveGameCache(Guid gameId)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            try
+            {
+                _cacheService.RemoveGameData(gameId.ToString());
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed removing cached DB data for gameId={gameId}");
+            }
+
+            try
+            {
+                _diskImageService?.RemoveGameIconCache(gameId.ToString());
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed removing cached icon data for gameId={gameId}");
             }
         }
     }

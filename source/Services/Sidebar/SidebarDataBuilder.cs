@@ -55,17 +55,15 @@ namespace PlayniteAchievements.Services.Sidebar
             var hideLocked = settings.Persisted?.HideAchievementsLockedForSelf ?? false;
             var canResolveReveals = hideLocked && revealedKeys.Count > 0;
 
-            List<string> cachedIds;
-            using (PerfTrace.Measure("SidebarDataBuilder.GetCachedGameIds", _logger, diagnostics))
+            List<GameAchievementData> allGameData;
+            using (PerfTrace.Measure("SidebarDataBuilder.GetAllGameAchievementData", _logger, diagnostics))
             {
-                cachedIds = _achievementManager.Cache.GetCachedGameIds() ?? new List<string>();
+                allGameData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
             }
 
-            foreach (var cacheKey in cachedIds)
+            foreach (var gameData in allGameData)
             {
                 cancel.ThrowIfCancellationRequested();
-
-                var gameData = _achievementManager.GetGameAchievementData(cacheKey);
                 if (gameData?.Achievements == null || gameData.NoAchievements || gameData.Achievements.Count == 0)
                 {
                     continue;

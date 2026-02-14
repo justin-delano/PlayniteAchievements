@@ -300,6 +300,28 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
+        public void RemoveGameIconCache(string gameId)
+        {
+            if (string.IsNullOrWhiteSpace(gameId))
+            {
+                return;
+            }
+
+            try
+            {
+                var gameDir = Path.Combine(IconCacheDirectory, gameId);
+                if (Directory.Exists(gameDir))
+                {
+                    Directory.Delete(gameDir, recursive: true);
+                    _logger?.Info($"Removed icon cache for gameId={gameId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to remove icon cache for gameId={gameId}");
+            }
+        }
+
         public long GetCacheSizeBytes()
         {
             try

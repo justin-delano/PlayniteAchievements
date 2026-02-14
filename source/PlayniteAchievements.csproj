@@ -86,7 +86,7 @@
 		</Reference>
 		<Reference Include="SQLNado, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
 			<HintPath>packages\SQLNado.dll</HintPath>
-			<Private>False</Private>
+			<Private>True</Private>
 		</Reference>
 
 		<Reference Include="PresentationCore" />
