@@ -23,7 +23,7 @@ namespace PlayniteAchievements.Views
     public partial class FirstTimeLandingPage : IDisposable, INotifyPropertyChanged
     {
         private readonly ILogger _logger;
-        private readonly ScanManager _achievementManager;
+        private readonly AchievementManager _achievementManager;
         private readonly PlayniteAchievementsPlugin _plugin;
         private PlayniteAchievementsSettings _settings;
         private readonly IPlayniteAPI _api;
@@ -132,7 +132,7 @@ namespace PlayniteAchievements.Views
         public FirstTimeLandingPage(
             IPlayniteAPI api,
             ILogger logger,
-            ScanManager achievementManager,
+            AchievementManager achievementManager,
             PlayniteAchievementsSettings settings,
             PlayniteAchievementsPlugin plugin)
         {
@@ -219,7 +219,7 @@ namespace PlayniteAchievements.Views
 
         /// <summary>
         /// Gets whether any provider authentication is configured.
-        /// Delegates to ScanManager to check if any provider is authenticated.
+        /// Delegates to AchievementManager to check if any provider is authenticated.
         /// </summary>
         public bool HasAnyProviderAuth => _achievementManager.HasAnyAuthenticatedProvider();
 

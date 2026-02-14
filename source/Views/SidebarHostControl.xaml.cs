@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Views
         private readonly ILogger _logger;
         private readonly bool _enableDiagnostics;
         private readonly IPlayniteAPI _api;
-        private readonly ScanManager _achievementManager;
+        private readonly AchievementManager _achievementManager;
         private readonly PlayniteAchievementsPlugin _plugin;
 
         private SidebarControl _sidebar;
@@ -33,7 +33,7 @@ namespace PlayniteAchievements.Views
             ILogger logger,
             bool enableDiagnostics,
             IPlayniteAPI api,
-            ScanManager achievementManager,
+            AchievementManager achievementManager,
             PlayniteAchievementsPlugin plugin)
         {
             _createView = createView ?? throw new ArgumentNullException(nameof(createView));

@@ -10,7 +10,7 @@ namespace PlayniteAchievements.ViewModels
 {
     public class ScanProgressViewModel : ObservableObject
     {
-        private readonly ScanManager _achievementManager;
+        private readonly AchievementManager _achievementManager;
 
         private double _progressPercent;
         private string _progressMessage;
@@ -54,7 +54,7 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand CancelCommand { get; }
         public ICommand ContinueCommand { get; }
 
-        public ScanProgressViewModel(ScanManager achievementManager, ILogger logger)
+        public ScanProgressViewModel(AchievementManager achievementManager, ILogger logger)
         {
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
 

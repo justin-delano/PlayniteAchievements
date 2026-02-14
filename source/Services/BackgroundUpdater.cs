@@ -8,7 +8,7 @@ namespace PlayniteAchievements.Services
 {
     public class BackgroundUpdater
     {
-        private readonly ScanManager _achievementService;
+        private readonly AchievementManager _achievementManager;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly NotificationPublisher _notifications;
@@ -18,13 +18,13 @@ namespace PlayniteAchievements.Services
         private CancellationTokenSource _cts;
 
         public BackgroundUpdater(
-            ScanManager achievementService,
+            AchievementManager achievementService,
             PlayniteAchievementsSettings settings,
             ILogger logger,
             NotificationPublisher notifications,
             Action onUpdateCompleted)
         {
-            _achievementService = achievementService;
+            _achievementManager = achievementService;
             _settings = settings;
             _logger = logger;
             _notifications = notifications;
@@ -82,7 +82,7 @@ namespace PlayniteAchievements.Services
             try
             {
                 ctsToDispose?.Cancel();
-                _achievementService?.CancelCurrentRebuild();
+                _achievementManager?.CancelCurrentRebuild();
             }
             catch (Exception ex)
             {
@@ -127,7 +127,7 @@ namespace PlayniteAchievements.Services
 
         private bool ShouldPerformUpdate(TimeSpan interval)
         {
-            var cacheValid = _achievementService.Cache?.IsCacheValid() ?? false;
+            var cacheValid = _achievementManager.Cache?.IsCacheValid() ?? false;
             _logger.Debug($"[PeriodicUpdate] Cache valid={cacheValid}");
 
             return _settings.Persisted.EnablePeriodicUpdates && !cacheValid;
@@ -139,7 +139,7 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                await _achievementService.ExecuteScanAsync(ScanModeType.Quick).ConfigureAwait(false);
+                await _achievementManager.ExecuteScanAsync(ScanModeType.Quick).ConfigureAwait(false);
 
                 _logger.Debug("[PeriodicUpdate] Cache update completed.");
                 HandleUpdateCompletion();
@@ -157,7 +157,7 @@ namespace PlayniteAchievements.Services
 
         private void HandleUpdateCompletion()
         {
-            var lastStatus = _achievementService.GetLastRebuildStatus() ?? ResourceProvider.GetString("LOCPlayAch_Rebuild_Completed");
+            var lastStatus = _achievementManager.GetLastRebuildStatus() ?? ResourceProvider.GetString("LOCPlayAch_Rebuild_Completed");
             _notifications?.ShowPeriodicStatus(lastStatus);
             _onUpdateCompleted?.Invoke();
         }

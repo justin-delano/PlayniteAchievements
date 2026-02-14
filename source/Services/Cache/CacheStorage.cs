@@ -25,7 +25,6 @@ namespace PlayniteAchievements.Services
             UserCacheRootDir = Path.Combine(BaseDir, "achievement_cache");  // Per-game achievement cache
 
             EnsureDir(BaseDir);
-            EnsureDir(UserCacheRootDir);
         }
 
         public void EnsureDir(string dir)
@@ -51,6 +50,11 @@ namespace PlayniteAchievements.Services
         {
             EnsureDir(UserCacheRootDir);
             AtomicJson.WriteAtomic(UserPath(key), data);
+        }
+
+        public void DeleteUserAchievement(string key)
+        {
+            DeleteFileIfExists(UserPath(key));
         }
 
         public void DeleteFileIfExists(string path)

@@ -16,7 +16,7 @@ namespace PlayniteAchievements.Views
     {
         private readonly SidebarViewModel _viewModel;
         private readonly ILogger _logger;
-        private readonly ScanManager _achievementManager;
+        private readonly AchievementManager _achievementManager;
         private bool _isActive;
         private bool _ignoreNextSelectionChange;
 
@@ -25,7 +25,7 @@ namespace PlayniteAchievements.Views
             InitializeComponent();
         }
 
-        public SidebarControl(IPlayniteAPI api, ILogger logger, ScanManager achievementManager, PlayniteAchievementsSettings settings)
+        public SidebarControl(IPlayniteAPI api, ILogger logger, AchievementManager achievementManager, PlayniteAchievementsSettings settings)
         {
             using (PlayniteAchievements.Common.PerfTrace.Measure(
                 "SidebarControl.InitializeComponent",

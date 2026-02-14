@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     public sealed class ThemeIntegrationUpdateService : IDisposable
     {
         private readonly ThemeIntegrationService _integrator;
-        private readonly ScanManager _achievementService;
+        private readonly AchievementManager _achievementManager;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly Dispatcher _uiDispatcher;
@@ -45,13 +45,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         public ThemeIntegrationUpdateService(
             ThemeIntegrationService integrator,
-            ScanManager achievementService,
+            AchievementManager achievementService,
             PlayniteAchievementsSettings settings,
             ILogger logger,
             Dispatcher uiDispatcher)
         {
             _integrator = integrator ?? throw new ArgumentNullException(nameof(integrator));
-            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
+            _achievementManager = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
             _uiDispatcher = uiDispatcher ?? throw new ArgumentNullException(nameof(uiDispatcher));
@@ -192,7 +192,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 GameAchievementData gameData = null;
                 try
                 {
-                    gameData = await Task.Run(() => _achievementService.GetGameAchievementData(gameId.Value), token).ConfigureAwait(false);
+                    gameData = await Task.Run(() => _achievementManager.GetGameAchievementData(gameId.Value), token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {

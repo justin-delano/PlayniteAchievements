@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Services
     /// <summary>
     /// Manages user achievement scanning and caching operations.
     /// </summary>
-    public class ScanManager : IDisposable
+    public class AchievementManager : IDisposable
     {
         private readonly object _runLock = new object();
         private CancellationTokenSource _activeRunCts;
@@ -118,7 +118,7 @@ namespace PlayniteAchievements.Services
             remove => _cacheService.CacheInvalidated -= value;
         }
 
-        public ScanManager(
+        public AchievementManager(
             IPlayniteAPI api,
             PlayniteAchievementsSettings settings,
             ILogger logger,
@@ -985,6 +985,21 @@ namespace PlayniteAchievements.Services
             return ExecuteScanAsync(mode, singleGameId);
         }
 
+        public Task ExecuteScanForGamesAsync(IEnumerable<Guid> gameIds)
+        {
+            var ids = gameIds?
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+
+            return StartManagedGameIdScanAsync(
+                ScanModeType.LibrarySelected,
+                ids,
+                payload => FormatScanCompletionWithModeAndCount(ScanModeType.LibrarySelected, payload?.Summary?.GamesScanned ?? 0),
+                ResourceProvider.GetString("LOCPlayAch_Log_ScanSelectedFailed"),
+                ResourceProvider.GetString("LOCPlayAch_Log_ScanNoSelectedGames"));
+        }
+
         /// <summary>
         /// Executes a scan based on the specified scan mode type.
         /// </summary>
@@ -1050,6 +1065,36 @@ namespace PlayniteAchievements.Services
             {
                 _activeRunCts?.Cancel();
             }
+        }
+
+        public void RemoveGameCache(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return;
+            }
+
+            var key = playniteGameId.ToString();
+
+            try
+            {
+                _cacheService.RemoveGameData(key);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to remove achievement cache for game '{playniteGameId}'.");
+            }
+
+            try
+            {
+                _diskImageService.ClearGameCache(key);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to remove icon cache for game '{playniteGameId}'.");
+            }
+
+            NotifyCacheInvalidatedThrottled(force: true);
         }
 
         // -----------------------------

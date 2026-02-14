@@ -19,7 +19,7 @@ namespace PlayniteAchievements.ViewModels
 {
     public class SingleGameControlModel : ObservableObject, IDisposable
     {
-        private readonly ScanManager _achievementManager;
+        private readonly AchievementManager _achievementManager;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
@@ -38,7 +38,7 @@ namespace PlayniteAchievements.ViewModels
 
         public SingleGameControlModel(
             Guid gameId,
-            ScanManager achievementManager,
+            AchievementManager achievementManager,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)

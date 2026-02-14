@@ -42,7 +42,7 @@ namespace PlayniteAchievements
         };
 
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
-        private readonly ScanManager _achievementService;
+        private readonly AchievementManager _achievementManager;
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly NotificationPublisher _notifications;
@@ -83,7 +83,7 @@ namespace PlayniteAchievements
             Guid.Parse("e6aad2c9-6e06-4d8d-ac55-ac3b252b5f7b");
 
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
-        public ScanManager AchievementService => _achievementService;
+        public AchievementManager AchievementService => _achievementManager;
         public MemoryImageService ImageService => _imageService;
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;
@@ -105,7 +105,7 @@ namespace PlayniteAchievements
         // AnikiHelper (PlayniteAchievements-based) will call this when available.
         public Task RequestSingleGameScanAsync(Guid playniteGameId)
         {
-            return _achievementService?.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), playniteGameId) ?? Task.CompletedTask;
+            return _achievementManager?.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), playniteGameId) ?? Task.CompletedTask;
         }
 
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
@@ -152,9 +152,9 @@ namespace PlayniteAchievements
 
             _diskImageService = new DiskImageService(_logger, GetPluginUserDataPath());
             _imageService = new MemoryImageService(_logger, _diskImageService);
-            _achievementService = new ScanManager(api, _settingsViewModel.Settings, _logger, this, providers, _diskImageService);
+            _achievementManager = new AchievementManager(api, _settingsViewModel.Settings, _logger, this, providers, _diskImageService);
             _notifications = new NotificationPublisher(api, _settingsViewModel.Settings, _logger);
-            _backgroundUpdates = new BackgroundUpdater(_achievementService, _settingsViewModel.Settings, _logger, _notifications, null);
+            _backgroundUpdates = new BackgroundUpdater(_achievementManager, _settingsViewModel.Settings, _logger, _notifications, null);
 
             // Create theme integration services
             // Note: We need to create _themeIntegrationService before _themeUpdateService,
@@ -170,7 +170,7 @@ namespace PlayniteAchievements
 
             _themeIntegrationService = new ThemeIntegrationService(
                 PlayniteApi,
-                _achievementService,
+                _achievementManager,
                 _settingsViewModel.Settings,
                 _fullscreenWindowService,
                 requestUpdate,
@@ -178,7 +178,7 @@ namespace PlayniteAchievements
 
             themeUpdateService = new ThemeIntegrationUpdateService(
                 _themeIntegrationService,
-                _achievementService,
+                _achievementManager,
                 _settingsViewModel.Settings,
                 _logger,
                 PlayniteApi?.MainView?.UIDispatcher ?? System.Windows.Application.Current.Dispatcher);
@@ -267,7 +267,7 @@ namespace PlayniteAchievements
                     MenuSection = "Playnite Achievements",
                     Action = (a) =>
                     {
-                        ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
+                        ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
                     }
                 };
                 yield break;
@@ -296,7 +296,7 @@ namespace PlayniteAchievements
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id));
+                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id));
                 }
             };
         }
@@ -309,7 +309,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Quick.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Quick.GetKey()));
                 }
             };
 
@@ -319,7 +319,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Full.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Full.GetKey()));
                 }
             };
 
@@ -329,7 +329,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Installed.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Installed.GetKey()));
                 }
             };
 
@@ -339,7 +339,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Favorites.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Favorites.GetKey()));
                 }
             };
 
@@ -349,7 +349,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
                 }
             };
 
@@ -359,7 +359,7 @@ namespace PlayniteAchievements
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementService.ExecuteScanAsync(Models.ScanModeType.Missing.GetKey()));
+                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Missing.GetKey()));
                 }
             };
         }
@@ -381,11 +381,11 @@ namespace PlayniteAchievements
                         _settingsViewModel?.Settings?.Persisted?.EnableDiagnostics == true))
                     {
                         return new SidebarHostControl(
-                            () => new SidebarControl(PlayniteApi, _logger, _achievementService, _settingsViewModel.Settings),
+                            () => new SidebarControl(PlayniteApi, _logger, _achievementManager, _settingsViewModel.Settings),
                             _logger,
                             _settingsViewModel?.Settings?.Persisted?.EnableDiagnostics == true,
                             PlayniteApi,
-                            _achievementService,
+                            _achievementManager,
                             this);
                     }
                 }
@@ -410,7 +410,7 @@ namespace PlayniteAchievements
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
             _logger.Info($"Game stopped: {args.Game.Name}. Triggering achievement scan.");
-            _ = _achievementService.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), args.Game.Id);
+            _ = _achievementManager.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), args.Game.Id);
         }
 
         // === Lifecycle ===
@@ -514,14 +514,14 @@ namespace PlayniteAchievements
             try
             {
                 // Validate authentication before showing progress window
-                if (!_achievementService.ValidateCanStartScan())
+                if (!_achievementManager.ValidateCanStartScan())
                 {
                     return;
                 }
 
                 EnsureWpfFallbackResources();
 
-                var progressWindow = new ScanProgressControl(_achievementService, _logger);
+                var progressWindow = new ScanProgressControl(_achievementManager, _logger);
 
                 var windowOptions = new WindowOptions
                 {
@@ -626,7 +626,7 @@ namespace PlayniteAchievements
 
                 var view = new SingleGameControl(
                     gameId,
-                    _achievementService,
+                    _achievementManager,
                     PlayniteApi,
                     _logger,
                     _settingsViewModel.Settings);
@@ -790,35 +790,84 @@ namespace PlayniteAchievements
         private void Games_ItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
         {
             _logger.Info("Games_ItemCollectionChanged triggered.");
-            if (e?.AddedItems == null || e.AddedItems.Count == 0)
+            if (e == null)
             {
                 return;
             }
 
-            foreach (var game in e.AddedItems)
+            var addedItems = e.AddedItems;
+            if (addedItems != null)
             {
-                if (game == null)
+                var addedGameIds = new List<Guid>();
+                foreach (var game in addedItems)
                 {
-                    continue;
+                    if (game == null)
+                    {
+                        continue;
+                    }
+
+                    addedGameIds.Add(game.Id);
                 }
 
-                // Fire and forget; ExecuteScanAsync already manages progress/state.
-                _ = TriggerNewGameScanAsync(game);
+                if (addedGameIds.Count > 0)
+                {
+                    _ = TriggerNewGamesScanAsync(addedGameIds);
+                }
+            }
+
+            var removedItems = e.RemovedItems;
+            if (removedItems != null)
+            {
+                foreach (var game in removedItems)
+                {
+                    if (game == null)
+                    {
+                        continue;
+                    }
+
+                    _ = TriggerRemovedGameCleanupAsync(game);
+                }
             }
         }
 
-        private Task TriggerNewGameScanAsync(Game game)
+        private Task TriggerNewGamesScanAsync(List<Guid> gameIds)
         {
             return Task.Run(async () =>
             {
                 try
                 {
-                    _logger.Info($"Detected new game '{game?.Name}' ({game?.GameId}); starting single-game scan.");
-                    await _achievementService.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id).ConfigureAwait(false);
+                    var validGameIds = gameIds?
+                        .Where(id => id != Guid.Empty)
+                        .Distinct()
+                        .ToList() ?? new List<Guid>();
+
+                    if (validGameIds.Count == 0)
+                    {
+                        return;
+                    }
+
+                    _logger.Info($"Detected {validGameIds.Count} new game(s); starting batched scan.");
+                    await _achievementManager.ExecuteScanForGamesAsync(validGameIds).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error(ex, $"Failed auto-scan for new game '{game?.Name}' ({game?.GameId}).");
+                    _logger.Error(ex, "Failed batched auto-scan for newly added games.");
+                }
+            });
+        }
+
+        private Task TriggerRemovedGameCleanupAsync(Game game)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    _logger.Info($"Detected removed game '{game?.Name}' ({game?.GameId}); removing cached achievements and icons.");
+                    _achievementManager.RemoveGameCache(game.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Failed cleanup for removed game '{game?.Name}' ({game?.GameId}).");
                 }
             });
         }

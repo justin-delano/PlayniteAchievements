@@ -19,7 +19,7 @@ namespace PlayniteAchievements.Views
 
         public SingleGameControl(
             Guid gameId,
-            ScanManager achievementManager,
+            AchievementManager achievementManager,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)

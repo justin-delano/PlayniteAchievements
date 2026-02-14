@@ -28,7 +28,7 @@ namespace PlayniteAchievements.ViewModels
         /// </summary>
         public bool IgnoreUnplayedGames => _settings?.Persisted?.IgnoreUnplayedGames ?? false;
 
-        private readonly ScanManager _achievementManager;
+        private readonly AchievementManager _achievementManager;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
@@ -66,7 +66,7 @@ namespace PlayniteAchievements.ViewModels
         private ListSortDirection _selectedGameSortDirection;
 
 
-        public SidebarViewModel(ScanManager achievementManager, IPlayniteAPI playniteApi, ILogger logger, PlayniteAchievementsSettings settings)
+        public SidebarViewModel(AchievementManager achievementManager, IPlayniteAPI playniteApi, ILogger logger, PlayniteAchievementsSettings settings)
         {
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _playniteApi = playniteApi;
@@ -751,7 +751,7 @@ namespace PlayniteAchievements.ViewModels
             PerfectGames = snapshot.PerfectGames;
             GlobalProgression = snapshot.GlobalProgressionPercent;
 
-            // Build provider lookup dictionary from ScanManager
+            // Build provider lookup dictionary from AchievementManager
             var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
             foreach (var provider in _achievementManager.GetProviders())
             {
@@ -883,7 +883,7 @@ namespace PlayniteAchievements.ViewModels
 
             var now = DateTime.UtcNow;
 
-            // Centralized progress/status state from ScanManager.
+            // Centralized progress/status state from AchievementManager.
             var status = _achievementManager.GetScanStatusSnapshot(report);
 
             lock (_progressLock)
