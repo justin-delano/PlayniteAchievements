@@ -569,6 +569,51 @@
             </DataGrid.RowStyle>
 
             <DataGrid.Columns>
+                <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
+                <DataGridTemplateColumn Width="36" CanUserSort="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <!-- Checkmark for unlocked -->
+                                <TextBlock Text="✓"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource GlyphBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <!-- Padlock for locked -->
+                                <Image Source="{StaticResource BadgeLocked}"
+                                       Width="16" Height="16"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center">
+                                    <Image.Style>
+                                        <Style TargetType="Image">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Setter Property="Opacity" Value="0.6"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Unlocked}" Value="False">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <!-- Achievement Icon -->
                 <DataGridTemplateColumn Width="78">
                     <DataGridTemplateColumn.CellTemplate>
@@ -678,45 +723,29 @@
                         <DataTemplate>
                             <Grid>
                                 <!-- Unlock time for unlocked achievements -->
-                                <StackPanel Orientation="Horizontal"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}">
-                                    <TextBlock Text="✓"
-                                               VerticalAlignment="Center"
-                                               Margin="0,0,6,0"
-                                               Foreground="#4CAF50"
-                                               FontWeight="Bold"
-                                               FontSize="{DynamicResource FontSize}"/>
-                                    <TextBlock Text="{Binding UnlockTimeText}"
-                                               VerticalAlignment="Center"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.7"/>
-                                </StackPanel>
-                                <!-- Locked achievements: progress bar or lock icon -->
-                                <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}">
-                                    <!-- Progress bar for locked achievements with progress -->
-                                    <Grid Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}" Margin="4,0">
-                                        <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
-                                                     Minimum="0" Maximum="100"
-                                                     Height="18"
-                                                     Background="{DynamicResource ControlBackgroundBrush}"
-                                                     Foreground="{DynamicResource HighlightGlyphBrush}"/>
-                                        <TextBlock Text="{Binding ProgressText, Mode=OneWay}"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   Style="{DynamicResource BaseTextBlockStyle}"
-                                                   FontSize="{DynamicResource FontSizeSmall}"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="White"/>
-                                    </Grid>
-                                    <!-- Lock icon for locked achievements without progress -->
-                                    <Image Source="{StaticResource BadgeLocked}"
-                                           Width="16" Height="16"
+                                <TextBlock Text="{Binding UnlockTimeText}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
-                                           Visibility="{Binding HasProgress, Converter={StaticResource InverseBoolToVis}}"/>
+                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Opacity="0.7"
+                                           Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
+                                <!-- Progress bar for locked achievements with progress -->
+                                <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}" Margin="4,0">
+                                    <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
+                                                 Minimum="0" Maximum="100"
+                                                 Height="18"
+                                                 Background="{DynamicResource ControlBackgroundBrush}"
+                                                 Foreground="{DynamicResource HighlightGlyphBrush}"
+                                                 Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Text="{Binding ProgressText, Mode=OneWay}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               FontWeight="SemiBold"
+                                               Foreground="White"
+                                               Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
                                 </Grid>
                             </Grid>
                         </DataTemplate>
