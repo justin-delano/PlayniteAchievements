@@ -31,7 +31,7 @@ namespace PlayniteAchievements.Providers.Steam
         private static readonly Regex TimeAtEndRegex = new Regex(
             @"(?<prefix>(?:am|pm|a\.m\.|p\.m\.)\s*)?(?<time>\d{1,2}(?::|h)\d{2})(?<suffix>\s*(?:am|pm|a\.m\.|p\.m\.)?)\s*$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static readonly Regex ExtractTokensRegex = new Regex(@"\d{1,4}\p{L}+|\p{L}+|\d{1,4}", RegexOptions.Compiled);
+        private static readonly Regex ExtractTokensRegex = new Regex(@"\d{1,4}\p{L}+|\p{L}+\d{1,4}|\p{L}+|\d{1,4}", RegexOptions.Compiled);
         private static readonly Regex HasYearRegex = new Regex(@"\b\d{4}\b", RegexOptions.Compiled);
         private static readonly Regex MonthAbbreviationDotRegex = new Regex(@"(?<=\p{L})\.(?=\s|$)", RegexOptions.Compiled);
         private static readonly Regex LeadingWordRegex = new Regex(@"^\s*(\p{L}+)\b", RegexOptions.Compiled);
@@ -39,6 +39,7 @@ namespace PlayniteAchievements.Providers.Steam
         private static readonly Regex StartsWithDigitRegex = new Regex(@"^\s*\d", RegexOptions.Compiled);
         private static readonly Regex EndsWithDigitRegex = new Regex(@"\d\s*$", RegexOptions.Compiled);
         private static readonly Regex TrailingPunctuationRegex = new Regex(@"[\s,\-:;|]+$", RegexOptions.Compiled);
+        private static readonly Regex CompactMonthTokenRegex = new Regex(@"^(?<prefix>\D+?)(?<num>\d{1,2})$", RegexOptions.Compiled);
 
         private static readonly Lazy<Dictionary<string, int>> MonthTokenMap =
             new Lazy<Dictionary<string, int>>(BuildMonthTokenMap);
@@ -446,6 +447,22 @@ namespace PlayniteAchievements.Providers.Steam
             if (token.Length >= 2)
             {
                 map[token] = month;
+
+                var compact = token.Replace(" ", string.Empty);
+                if (compact.Length >= 2)
+                {
+                    map[compact] = month;
+
+                    var match = CompactMonthTokenRegex.Match(compact);
+                    if (match.Success &&
+                        int.TryParse(match.Groups["num"].Value, out var parsedNum) &&
+                        parsedNum == month)
+                    {
+                        var prefix = match.Groups["prefix"].Value;
+                        map[$"{prefix}{month}"] = month;
+                        map[$"{prefix}{month:00}"] = month;
+                    }
+                }
             }
         }
 

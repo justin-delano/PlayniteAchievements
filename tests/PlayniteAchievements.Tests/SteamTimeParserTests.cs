@@ -77,6 +77,28 @@ namespace PlayniteAchievements.Tests
             Assert.Null(parsed);
         }
 
+        [Fact]
+        public void VietnameseCompactMonthTokensParseForAllMonths()
+        {
+            var steamNow = new DateTime(2025, 12, 31, 12, 0, 0, DateTimeKind.Unspecified);
+
+            for (var month = 1; month <= 12; month++)
+            {
+                var paddedText = $"Mở khóa vào 14 Thg{month:00} @ 7:04am";
+                var paddedParsed = Parse(paddedText, "vietnamese", steamNow);
+                var expected = SteamLocalToUtc(2025, month, 14, 7, 4);
+
+                Assert.True(paddedParsed.HasValue, $"Failed for token Thg{month:00}");
+                Assert.Equal(expected, paddedParsed.Value);
+
+                var compactText = $"Mở khóa vào 14 Thg{month} @ 7:04am";
+                var compactParsed = Parse(compactText, "vietnamese", steamNow);
+
+                Assert.True(compactParsed.HasValue, $"Failed for token Thg{month}");
+                Assert.Equal(expected, compactParsed.Value);
+            }
+        }
+
         private static DateTime? Parse(string text, string language, DateTime? steamNow = null)
         {
             var now = steamNow ?? new DateTime(2025, 6, 1, 12, 0, 0, DateTimeKind.Unspecified);
