@@ -17,6 +17,19 @@ namespace PlayniteAchievements.Providers.Steam
 {
     internal sealed class SteamScanner
     {
+        private sealed class SteamTransientException : Exception
+        {
+            public SteamTransientException(string message)
+                : base(message)
+            {
+            }
+
+            public SteamTransientException(string message, Exception innerException)
+                : base(message, innerException)
+            {
+            }
+        }
+
         private readonly PlayniteAchievementsSettings _settings;
         private readonly SteamHTTPClient _steamClient;
         private readonly SteamSessionManager _sessionManager;
@@ -134,7 +147,7 @@ namespace PlayniteAchievements.Providers.Steam
                 catch (Exception ex)
                 {
                     consecutiveErrors++;
-                    _logger?.Debug(ex, $"[SteamAch] Failed to scan achievements for {game.Name} (appId={appId}) after {consecutiveErrors} consecutive errors");
+                    _logger?.Warn(ex, $"[SteamAch] Skipping game after retries: {game.Name} (appId={appId}). Consecutive errors={consecutiveErrors}");
 
                     // If we've hit too many consecutive errors, apply exponential backoff before continuing
                     if (consecutiveErrors >= 3)
@@ -158,6 +171,7 @@ namespace PlayniteAchievements.Providers.Steam
         private static bool IsTransientError(Exception ex)
         {
             if (ex is OperationCanceledException) return false;
+            if (ex is SteamTransientException) return true;
 
             // WebException with transient status codes
             if (ex is WebException webEx && webEx.Response is HttpWebResponse response)
@@ -175,6 +189,11 @@ namespace PlayniteAchievements.Providers.Steam
                 message.IndexOf("reset", StringComparison.OrdinalIgnoreCase) >= 0) return true;
             if (message.IndexOf("temporarily", StringComparison.OrdinalIgnoreCase) >= 0) return true;
             if (message.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+            if (ex.InnerException != null && !ReferenceEquals(ex.InnerException, ex))
+            {
+                return IsTransientError(ex.InnerException);
+            }
 
             return false;
         }
@@ -336,12 +355,21 @@ namespace PlayniteAchievements.Providers.Steam
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, $"[SteamAch] User achievements scrape failed (appId={appId}).");
+                if (IsTransientError(ex))
+                {
+                    throw new SteamTransientException($"[SteamAch] Transient scrape exception for appId={appId}.", ex);
+                }
+
+                _logger?.Debug(ex, $"[SteamAch] User achievements scrape failed (non-transient, appId={appId}).");
                 return new UserUnlockedAchievements();
             }
 
             if (scraped == null || scraped.TransientFailure)
-                return new UserUnlockedAchievements();
+            {
+                var detail = scraped?.DetailCode.ToString() ?? "Unknown";
+                var status = scraped?.StatusCode ?? 0;
+                throw new SteamTransientException($"[SteamAch] Transient scrape result for appId={appId}. detail={detail}, status={status}");
+            }
 
             var iconFileToAchievements = new Dictionary<string, List<SchemaAchievement>>(StringComparer.OrdinalIgnoreCase);
 
@@ -587,6 +615,13 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (SteamHTTPClient.HasAnyAchievementRows(html))
             {
+                if (SteamHTTPClient.HasOnlyHiddenAchievementRows(html))
+                {
+                    res.TransientFailure = false;
+                    res.SetDetail(SteamScrapeDetail.AllHidden);
+                    return res;
+                }
+
                 var hasUnlockedMarkers = html.IndexOf("achieveUnlockTime", StringComparison.OrdinalIgnoreCase) >= 0;
 
                 if (!hasUnlockedMarkers && !includeLocked)
