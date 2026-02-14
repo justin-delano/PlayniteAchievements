@@ -350,8 +350,7 @@
 
                 <!-- Collapsible Timeline Section -->
                 <StackPanel Grid.Row="6"
-                            Visibility="{Binding IsTimelineVisible, Converter={StaticResource BoolToVis}}"
-                            Margin="0,0,0,8">
+                            Visibility="{Binding IsTimelineVisible, Converter={StaticResource BoolToVis}}">
                     <!-- Time Range Buttons -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                         <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_7D}" GroupName="TimeRange"
@@ -419,7 +418,7 @@
 
         <!-- Search Achievements -->
         <Grid Grid.Row="2"
-              Margin="0,8,0,0"
+              Margin="0,8,0,8"
               Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
