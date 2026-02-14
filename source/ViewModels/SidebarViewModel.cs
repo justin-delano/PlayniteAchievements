@@ -49,9 +49,12 @@ namespace PlayniteAchievements.ViewModels
         private static readonly TimeSpan ProgressMinInterval = TimeSpan.FromMilliseconds(50);
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
         private System.Windows.Threading.DispatcherTimer _scanFullRefreshTimer;
+        private System.Windows.Threading.DispatcherTimer _progressHideTimer;
         private bool _scanRefreshPending;
         private bool _scanRefreshRunning;
         private bool _showCompletedProgress;
+        private bool _scanAttemptInProgress;
+        private static readonly TimeSpan ProgressHideDelay = TimeSpan.FromSeconds(3);
 
         private List<RecentAchievementItem> _filteredRecentAchievements = new List<RecentAchievementItem>();
         private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
@@ -86,6 +89,12 @@ namespace PlayniteAchievements.ViewModels
                 Interval = TimeSpan.FromSeconds(2)
             };
             _scanFullRefreshTimer.Tick += OnScanFullRefreshTimerTick;
+
+            _progressHideTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = ProgressHideDelay
+            };
+            _progressHideTimer.Tick += OnProgressHideTimerTick;
 
             // Initialize collections
             AllAchievements = new BulkObservableCollection<AchievementDisplayItem>();
@@ -521,6 +530,7 @@ namespace PlayniteAchievements.ViewModels
             if (!isActive)
             {
                 StopScanRefreshScheduler();
+                CancelProgressHideTimer(clearCompletedProgress: true);
                 CancelPendingRefresh();
             }
             else
@@ -640,7 +650,9 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
+                CancelProgressHideTimer(clearCompletedProgress: false);
                 ApplyScanStatus(_achievementManager.GetStartingScanStatusSnapshot());
+                _scanAttemptInProgress = true;
 
                 Guid? singleGameId = null;
                 if (SelectedScanMode == ScanModeType.Single.GetKey())
@@ -986,6 +998,43 @@ namespace PlayniteAchievements.ViewModels
             _scanRefreshRunning = false;
         }
 
+        private void StartProgressHideTimer()
+        {
+            if (_progressHideTimer == null)
+            {
+                return;
+            }
+
+            _progressHideTimer.Stop();
+            _progressHideTimer.Start();
+        }
+
+        private void CancelProgressHideTimer(bool clearCompletedProgress)
+        {
+            _progressHideTimer?.Stop();
+
+            if (clearCompletedProgress)
+            {
+                _scanAttemptInProgress = false;
+                if (_showCompletedProgress)
+                {
+                    _showCompletedProgress = false;
+                    OnPropertyChanged(nameof(ShowProgress));
+                }
+            }
+        }
+
+        private void OnProgressHideTimerTick(object sender, EventArgs e)
+        {
+            _progressHideTimer?.Stop();
+            _scanAttemptInProgress = false;
+            if (_showCompletedProgress)
+            {
+                _showCompletedProgress = false;
+                OnPropertyChanged(nameof(ShowProgress));
+            }
+        }
+
         private void ApplyScanStatus(ScanStatusSnapshot status)
         {
             if (status == null)
@@ -998,11 +1047,14 @@ namespace PlayniteAchievements.ViewModels
 
             if (status.IsScanning)
             {
+                _scanAttemptInProgress = true;
+                CancelProgressHideTimer(clearCompletedProgress: false);
                 _showCompletedProgress = false;
             }
-            else if (status.IsFinal || status.IsCanceled)
+            else if (_scanAttemptInProgress)
             {
                 _showCompletedProgress = true;
+                StartProgressHideTimer();
             }
             else
             {
@@ -1552,6 +1604,7 @@ namespace PlayniteAchievements.ViewModels
             SetActive(false);
             _refreshDebounceTimer?.Stop();
             _scanFullRefreshTimer?.Stop();
+            _progressHideTimer?.Stop();
             CancelPendingRefresh();
             if (_achievementManager != null)
             {
@@ -1561,6 +1614,10 @@ namespace PlayniteAchievements.ViewModels
             if (_settings != null)
             {
                 _settings.PropertyChanged -= OnSettingsChanged;
+            }
+            if (_progressHideTimer != null)
+            {
+                _progressHideTimer.Tick -= OnProgressHideTimerTick;
             }
         }
     }
