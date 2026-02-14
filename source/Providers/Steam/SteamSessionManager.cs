@@ -28,7 +28,7 @@ namespace PlayniteAchievements.Providers.Steam
         private DateTime _lastCookieRefreshUtc = DateTime.MinValue;
         private (bool Success, string SteamId) _authResult;
 
-        public SteamSessionManager(IPlayniteAPI api, ILogger logger, string pluginUserDataPath, PlayniteAchievementsSettings settings)
+        public SteamSessionManager(IPlayniteAPI api, ILogger logger, PlayniteAchievementsSettings settings)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
@@ -37,6 +37,21 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         public string GetCachedSteamId64() => _selfSteamId64;
+
+        public void WarmupSessionProbe()
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await RefreshCookiesHeadlessAsync(CancellationToken.None).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "[SteamAuth] Warmup session probe failed.");
+                }
+            });
+        }
 
         public bool NeedsRefresh
         {

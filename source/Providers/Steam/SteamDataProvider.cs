@@ -18,8 +18,6 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamHTTPClient _steamClient;
         private readonly SteamScanner _scanner;
         private readonly SteamAPIClient _apiHelper;
-        private readonly IPlayniteAPI _api;
-        private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly SteamSessionManager _sessionManager;
 
@@ -34,9 +32,7 @@ namespace PlayniteAchievements.Providers.Steam
             if (api == null) throw new ArgumentNullException(nameof(api));
             if (sessionManager == null) throw new ArgumentNullException(nameof(sessionManager));
 
-            _logger = logger;
             _settings = settings;
-            _api = api;
             _sessionManager = sessionManager;
 
             // Create Steam-specific dependencies
@@ -49,8 +45,6 @@ namespace PlayniteAchievements.Providers.Steam
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
         public string ProviderIconKey => "ProviderIconSteam";
         public string ProviderColorHex => "#B0B0B0";
-
-        public Guid PlatformPluginId => SteamPluginId;
 
         /// <summary>
         /// Checks if Steam authentication is properly configured.

@@ -92,13 +92,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
                 else
                 {
-                    dispatcher.Invoke(() =>
+                    dispatcher.BeginInvoke(new Action(() =>
                     {
                         if (_achievementsWindow != null && _achievementsWindow.IsVisible)
                         {
                             _achievementsWindow.Close();
                         }
-                    }, DispatcherPriority.Send);
+                    }), DispatcherPriority.Background);
                 }
             }
             catch
@@ -156,7 +156,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
                 else
                 {
-                    dispatcher.Invoke(() => OpenOverlayWindowOnUiThread(styleKey, preselectGameId), DispatcherPriority.Send);
+                    dispatcher.BeginInvoke(new Action(() => OpenOverlayWindowOnUiThread(styleKey, preselectGameId)), DispatcherPriority.Background);
                 }
             }
             catch

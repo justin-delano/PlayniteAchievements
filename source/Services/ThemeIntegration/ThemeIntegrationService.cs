@@ -117,6 +117,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private readonly object _refreshLock = new object();
         private CancellationTokenSource _refreshCts;
+        private DateTime _lastRefreshRequestUtc = DateTime.MinValue;
+        private static readonly TimeSpan StartupRefreshCoalesceWindow = TimeSpan.FromMilliseconds(350);
 
         private bool _fullscreenInitialized;
 
@@ -427,35 +429,50 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 };
 
                 _achievementService.RebuildProgress += progressHandler;
-
-                try
+                _ = Task.Run(async () =>
                 {
-                    var scanTask = mode == ScanModeType.Single && gameIdForThemeUpdate.HasValue
-                        ? _achievementService.ExecuteScanAsync(mode, gameIdForThemeUpdate.Value)
-                        : _achievementService.ExecuteScanAsync(mode);
-
-                    scanTask.Wait(progress.CancelToken);
-                    progress.CurrentProgressValue = 100;
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
-                }
-                catch (OperationCanceledException)
-                {
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Error(ex, errorLogMessage);
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
-                }
-                finally
-                {
-                    _achievementService.RebuildProgress -= progressHandler;
-                    if (gameIdForThemeUpdate.HasValue)
+                    try
                     {
-                        try { _requestSingleGameThemeUpdate(gameIdForThemeUpdate.Value); } catch { }
+                        var scanTask = mode == ScanModeType.Single && gameIdForThemeUpdate.HasValue
+                            ? _achievementService.ExecuteScanAsync(mode, gameIdForThemeUpdate.Value)
+                            : _achievementService.ExecuteScanAsync(mode);
+
+                        await scanTask.ConfigureAwait(false);
+
+                        try
+                        {
+                            progress.CurrentProgressValue = 100;
+                            progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+                        }
+                        catch { }
                     }
-                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
-                }
+                    catch (OperationCanceledException)
+                    {
+                        try
+                        {
+                            progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
+                        }
+                        catch { }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Error(ex, errorLogMessage);
+                        try
+                        {
+                            progress.Text = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
+                        }
+                        catch { }
+                    }
+                    finally
+                    {
+                        _achievementService.RebuildProgress -= progressHandler;
+                        if (gameIdForThemeUpdate.HasValue)
+                        {
+                            try { _requestSingleGameThemeUpdate(gameIdForThemeUpdate.Value); } catch { }
+                        }
+                        try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+                    }
+                });
             }, progressOptions);
         }
 
@@ -502,6 +519,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
+            var nowUtc = DateTime.UtcNow;
+            if ((nowUtc - _lastRefreshRequestUtc) < StartupRefreshCoalesceWindow)
+            {
+                return;
+            }
+            _lastRefreshRequestUtc = nowUtc;
+
             CancellationToken token;
             lock (_refreshLock)
             {
@@ -541,7 +565,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         }
                         else
                         {
-                            uiDispatcher.Invoke(() => { info = BuildGameInfoMapOnUiThread(ids); }, DispatcherPriority.Background);
+                            info = await uiDispatcher.InvokeAsync(() => BuildGameInfoMapOnUiThread(ids), DispatcherPriority.Background);
                         }
                     }
                     catch (Exception ex)

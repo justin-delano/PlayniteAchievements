@@ -132,15 +132,16 @@ namespace PlayniteAchievements
                 _settingsViewModel.Settings.Persisted.UncommonThreshold);
 
             // Create shared Steam session manager for use by provider and settings UI
-            _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, GetPluginUserDataPath(), _settingsViewModel.Settings);
+            _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, _settingsViewModel.Settings);
+            _steamSessionManager.WarmupSessionProbe();
 
             var providers = new List<IDataProvider>
             {
                 new SteamDataProvider(
-                _logger,
-                _settingsViewModel.Settings,
-                PlayniteApi,
-                _steamSessionManager),
+                    _logger,
+                    _settingsViewModel.Settings,
+                    PlayniteApi,
+                    _steamSessionManager),
 
                 new RetroAchievementsDataProvider(
                     _logger,
@@ -717,7 +718,7 @@ namespace PlayniteAchievements
                 }
                 else
                 {
-                    app.Dispatcher.Invoke((Action)Ensure, DispatcherPriority.Send);
+                    app.Dispatcher.BeginInvoke((Action)Ensure, DispatcherPriority.Background);
                 }
             }
             catch (Exception ex)
