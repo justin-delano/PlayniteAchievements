@@ -1375,13 +1375,7 @@
                                     <DataGridTemplateColumn Width="2*" Header="Achievement" SortMemberPath="Name">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="2*"/>
-                                                        <ColumnDefinition Width="1*"/>
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <StackPanel Grid.Column="0" Margin="12,10" VerticalAlignment="Center"> <!-- was 8,8 -->
+                                                <StackPanel Margin="12,10" VerticalAlignment="Center"> <!-- was 8,8 -->
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock Text="{Binding Name}"
                                                                     Style="{DynamicResource BaseTextBlockStyle}"
@@ -1414,8 +1408,7 @@
                                                                 MaxHeight="44"
                                                                 TextTrimming="CharacterEllipsis"
                                                                 Margin="0,3,0,0"/>
-                                                    </StackPanel>
-                                                </Grid>
+                                                </StackPanel>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
