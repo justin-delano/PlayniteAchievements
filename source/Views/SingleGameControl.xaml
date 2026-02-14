@@ -618,7 +618,7 @@
                 <DataGridTemplateColumn Width="78">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,14,0,14" ClipToBounds="False">
+                            <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">
                                 <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
                                     <Border.Style>
                                         <Style TargetType="Border">

@@ -789,6 +789,7 @@
                             ItemsSource="{Binding GamesOverview}"
                             SelectedItem="{Binding SelectedGame, Mode=OneWay}"
                             SelectionChanged="GamesOverview_SelectionChanged"
+                            PreviewMouseLeftButtonDown="GamesOverview_PreviewMouseLeftButtonDown"
                             Sorting="DataGrid_Sorting"
                             AutoGenerateColumns="False"
                             IsReadOnly="True"
@@ -1224,23 +1225,25 @@
                     <Grid Grid.Row="0" Grid.Column="2">
                         <!-- Header for when NO game is selected -->
                         <Border Background="{DynamicResource ControlBackgroundBrush}"
-                                Padding="16,10,16,10"
+                                Height="38"
                                 BorderBrush="{DynamicResource NormalBorderBrush}"
                                 BorderThickness="0,0,0,1"
                                 Visibility="{Binding IsGameSelected, Converter={StaticResource InverseBoolToVis}}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
                                        Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="Bold"
-                                       Foreground="{DynamicResource TextBrush}"/>
+                                       Foreground="{DynamicResource TextBrush}"
+                                       VerticalAlignment="Center"
+                                       Margin="16,0"/>
                         </Border>
 
                         <!-- Header for when a game IS selected -->
                         <Border Background="{DynamicResource ControlBackgroundBrush}"
+                                Height="38"
                                 BorderBrush="{DynamicResource NormalBorderBrush}"
                                 BorderThickness="0,0,0,1"
-                                Padding="12,10"
                                 Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
-                            <Grid>
+                            <Grid Margin="16,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
@@ -1271,7 +1274,7 @@
                                         Click="ClearGameSelection_Click"
                                         Padding="6,2"
                                         FontSize="{DynamicResource FontSizeSmall}"
-                                        VerticalAlignment="Top"/>
+                                        VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
                     </Grid>
@@ -1312,6 +1315,7 @@
                                       VirtualizingStackPanel.VirtualizationMode="Recycling"
                                       VirtualizingStackPanel.ScrollUnit="Pixel"
                                       ScrollViewer.CanContentScroll="True"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                       Padding="0"
                                       ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
                                       ScrollViewer.IsDeferredScrollingEnabled="False">
@@ -1357,7 +1361,7 @@
                                     <DataGridTemplateColumn Width="78"> <!-- was 56 -->
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,14,0,14" ClipToBounds="False">
+                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">
                                                     <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality"
                                                             Effect="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlow}}">
                                                         <Border.Background>
@@ -1460,31 +1464,22 @@
                                     <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime" SortDirection="Descending">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <StackPanel Orientation="Horizontal"
-                                                            HorizontalAlignment="Center"
-                                                            VerticalAlignment="Center">
-                                                    <TextBlock Text="✓"
-                                                               VerticalAlignment="Center"
-                                                               Margin="0,0,6,0"
-                                                               Foreground="#4CAF50"
-                                                               FontWeight="Bold"
-                                                               FontSize="{DynamicResource FontSize}"/>
-                                                    <TextBlock Text="{Binding UnlockTimeText}"
-                                                               VerticalAlignment="Center"
-                                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                                               Foreground="{DynamicResource TextBrush}"
-                                                               Opacity="0.7"/>
-                                                </StackPanel>
+                                                <TextBlock Text="{Binding UnlockTimeText}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           Opacity="0.7"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
 
                                     <!-- Rarity -->
-                                    <DataGridTemplateColumn Width="*" Header="Rarity" SortMemberPath="GlobalPercent"> <!-- was 72 -->
+                                    <DataGridTemplateColumn Width="*" Header="Rarity" SortMemberPath="GlobalPercent">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                    <Image Width="18" Height="18" Margin="0,0,6,0"
+                                                    <Image Width="16" Height="16" Margin="0,0,4,0"
                                                         Effect="{StaticResource BadgeShadow}"
                                                         VerticalAlignment="Center">
                                                         <Image.Style>
@@ -1508,10 +1503,11 @@
                                                     </Image>
 
                                                     <TextBlock Text="{Binding GlobalPercentText}"
-                                                            FontSize="{DynamicResource FontSizeSmall}"
-                                                            FontWeight="SemiBold"
-                                                            Foreground="{DynamicResource TextBrush}"
-                                                            Opacity="0.8"/>
+                                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                                               FontSize="{DynamicResource FontSizeSmall}"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               Opacity="0.8"/>
                                                 </StackPanel>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
@@ -1550,6 +1546,7 @@
                                       VirtualizingStackPanel.VirtualizationMode="Recycling"
                                       VirtualizingStackPanel.ScrollUnit="Pixel"
                                       ScrollViewer.CanContentScroll="True"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                       ScrollViewer.IsDeferredScrollingEnabled="False"
                                       Padding="0"
                                       ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
@@ -1640,7 +1637,7 @@
                                     <DataGridTemplateColumn Width="78">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="12,14,0,14" ClipToBounds="False">
+                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">
                                                     <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
                                                         <Border.Style>
                                                             <Style TargetType="Border">
@@ -1801,7 +1798,8 @@
                                                     </Image>
 
                                                     <TextBlock Text="{Binding GlobalPercentText}"
-                                                               FontSize="11"
+                                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                                               FontSize="{DynamicResource FontSizeSmall}"
                                                                FontWeight="SemiBold"
                                                                Foreground="{DynamicResource TextBrush}"
                                                                Opacity="0.8"/>
