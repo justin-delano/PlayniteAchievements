@@ -596,9 +596,9 @@
             <!-- Overview Tab Content -->
             <Grid x:Name="OverviewContent" Visibility="Visible">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" MinWidth="400"/>
+                    <ColumnDefinition Width="*" MinWidth="560"/>
                     <ColumnDefinition Width="4"/>
-                    <ColumnDefinition Width="*" MinWidth="400"/>
+                    <ColumnDefinition Width="*" MinWidth="480"/>
                 </Grid.ColumnDefinitions>
 
                 <Grid.RowDefinitions>
@@ -616,7 +616,7 @@
                         Padding="16,10">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*" MinWidth="140"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
@@ -657,12 +657,12 @@
                                   Margin="4,0,0,0"
                                   VerticalContentAlignment="Center"/>
 
-                        <CheckBox Grid.Column="2" Content="Hide No Unlocks"
+                        <CheckBox Grid.Column="2" Content="{DynamicResource LOCPlayAch_Filter_HideNoUnlocks}"
                                   IsChecked="{Binding HideGamesWithNoUnlocked}"
                                   VerticalAlignment="Center"
                                   Margin="8,0,0,0"/>
 
-                        <CheckBox Grid.Column="3" Content="Hide Unplayed"
+                        <CheckBox Grid.Column="3" Content="{DynamicResource LOCPlayAch_Filter_HideUnplayed}"
                                   IsChecked="{Binding HideUnplayedGames}"
                                   VerticalAlignment="Center"
                                   Margin="8,0,0,0"
@@ -699,7 +699,8 @@
                         Padding="16,10">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*" MinWidth="180"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
@@ -730,7 +731,25 @@
                             </TextBlock>
                         </Grid>
 
-                        <Button Grid.Column="1"
+                        <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Margin="8,0,0,0"
+                                Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Unlocked}"
+                                  IsChecked="{Binding ShowSelectedGameUnlocked}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,8,0"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Sidebar_Locked}"
+                                  IsChecked="{Binding ShowSelectedGameLocked}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,8,0"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
+                                  IsChecked="{Binding ShowSelectedGameHidden}"
+                                  VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="2"
                                 Content="✕"
                                 Click="ClearRightSearch_Click"
                                 Width="24"
@@ -890,7 +909,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Game Name (a bit larger) -->
-                            <DataGridTemplateColumn Width="2*" Header="Game" SortMemberPath="GameName" MinWidth="160">
+                            <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName" MinWidth="160">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -914,7 +933,7 @@
                                                     HorizontalAlignment="Left"
                                                     Style="{StaticResource GameNameButtonStyle}">
                                                 <Button.ToolTip>
-                                                    <ToolTip Content="Open game in library"/>
+                                                    <ToolTip Content="{DynamicResource LOCPlayAch_Tooltip_OpenGameInLibrary}"/>
                                                 </Button.ToolTip>
                                             </Button>
                                         </Grid>
@@ -923,7 +942,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Last Played (slightly larger) -->
-                            <DataGridTemplateColumn Width="2*" Header="Last Played" SortMemberPath="LastPlayed" SortDirection="Descending">
+                            <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_LastPlayed}" SortMemberPath="LastPlayed" SortDirection="Descending">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -951,7 +970,7 @@
                             </DataGridTemplateColumn>
 
                                 <!-- Progression with Rarity UNDER the bar -->
-                                <DataGridTemplateColumn Width="2*" Header="Progress" SortMemberPath="Progression">
+                                <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Progress}" SortMemberPath="Progression">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid>
@@ -1063,7 +1082,7 @@
                                 </DataGridTemplateColumn>
 
                                 <!-- Achievement Count -->
-                                <DataGridTemplateColumn Width="*" Header="Total" SortMemberPath="TotalAchievements">
+                                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Total}" SortMemberPath="TotalAchievements">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid>
@@ -1308,6 +1327,7 @@
                                       VirtualizingStackPanel.VirtualizationMode="Recycling"
                                       VirtualizingStackPanel.ScrollUnit="Pixel"
                                       ScrollViewer.CanContentScroll="True"
+                                      ScrollViewer.VerticalScrollBarVisibility="Visible"
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                       Padding="0"
                                       ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
@@ -1369,7 +1389,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Achievement Info (give a bit more vertical breathing room) -->
-                                    <DataGridTemplateColumn Width="2*" Header="Achievement" SortMemberPath="Name">
+                                    <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="Name">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Margin="12,10" VerticalAlignment="Center"> <!-- was 8,8 -->
@@ -1378,7 +1398,7 @@
                                                                     Style="{DynamicResource BaseTextBlockStyle}"
                                                                     Foreground="{DynamicResource TextBrush}"
                                                                     TextTrimming="CharacterEllipsis"/>
-                                                            <TextBlock Text=" (Hidden Achievement)"
+                                                                <TextBlock Text="{DynamicResource LOCPlayAch_Achievements_HiddenTitle_WithParens}"
                                                                     FontStyle="Italic"
                                                                     FontSize="{DynamicResource FontSizeSmall}"
                                                                     Foreground="{DynamicResource TextBrush}"
@@ -1411,7 +1431,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Game Icon/Cover (bigger) -->
-                                    <DataGridTemplateColumn Width="64" Header="Game" SortMemberPath="GameName"> <!-- was 40 -->
+                                    <DataGridTemplateColumn Width="64" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName"> <!-- was 40 -->
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Border CornerRadius="6"
@@ -1454,7 +1474,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Date -->
-                                    <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime" SortDirection="Descending">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding UnlockTimeText}"
@@ -1468,7 +1488,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Rarity -->
-                                    <DataGridTemplateColumn Width="*" Header="Rarity" SortMemberPath="GlobalPercent">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -1539,6 +1559,7 @@
                                       VirtualizingStackPanel.VirtualizationMode="Recycling"
                                       VirtualizingStackPanel.ScrollUnit="Pixel"
                                       ScrollViewer.CanContentScroll="True"
+                                      ScrollViewer.VerticalScrollBarVisibility="Visible"
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                       ScrollViewer.IsDeferredScrollingEnabled="False"
                                       Padding="0"
@@ -1659,7 +1680,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Achievement Info -->
-                                    <DataGridTemplateColumn Width="2*" Header="Achievement" SortMemberPath="DisplayName">
+                                    <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Margin="12,10" VerticalAlignment="Center" Background="Transparent">
@@ -1682,7 +1703,7 @@
                                                                 </Style>
                                                             </TextBlock.Style>
                                                         </TextBlock>
-                                                        <TextBlock Text=" (Hidden Achievement)"
+                                                        <TextBlock Text="{DynamicResource LOCPlayAch_Achievements_HiddenTitle_WithParens}"
                                                                    FontStyle="Italic"
                                                                    FontSize="{DynamicResource FontSizeSmall}"
                                                                    Foreground="{DynamicResource TextBrush}"
@@ -1730,7 +1751,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Date / Progress -->
-                                    <DataGridTemplateColumn Width="*" Header="Unlocked" SortMemberPath="UnlockTime" SortDirection="Descending">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Grid>
@@ -1765,7 +1786,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Rarity -->
-                                    <DataGridTemplateColumn Width="*" Header="Rarity" SortMemberPath="GlobalPercent">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">

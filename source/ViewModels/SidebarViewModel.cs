@@ -175,6 +175,45 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private bool _showSelectedGameUnlocked = true;
+        public bool ShowSelectedGameUnlocked
+        {
+            get => _showSelectedGameUnlocked;
+            set
+            {
+                if (SetValueAndReturn(ref _showSelectedGameUnlocked, value))
+                {
+                    ApplyRightFilters();
+                }
+            }
+        }
+
+        private bool _showSelectedGameLocked = true;
+        public bool ShowSelectedGameLocked
+        {
+            get => _showSelectedGameLocked;
+            set
+            {
+                if (SetValueAndReturn(ref _showSelectedGameLocked, value))
+                {
+                    ApplyRightFilters();
+                }
+            }
+        }
+
+        private bool _showSelectedGameHidden = true;
+        public bool ShowSelectedGameHidden
+        {
+            get => _showSelectedGameHidden;
+            set
+            {
+                if (SetValueAndReturn(ref _showSelectedGameHidden, value))
+                {
+                    ApplyRightFilters();
+                }
+            }
+        }
+
         private ObservableCollection<string> _providerFilterOptions;
         public ObservableCollection<string> ProviderFilterOptions
         {
@@ -309,6 +348,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _selectedGame, value))
                 {
+                    ResetSelectedGameAchievementVisibilityFilters();
                     OnPropertyChanged(nameof(IsGameSelected));
                     (ScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                     LoadSelectedGameAchievements();
@@ -1161,6 +1201,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 // Filter SelectedGameAchievements
                 var filtered = _allSelectedGameAchievements.AsEnumerable();
+
+                if (!ShowSelectedGameHidden)
+                {
+                    filtered = filtered.Where(a => !a.Hidden);
+                }
+
+                filtered = filtered.Where(a => a.Unlocked ? ShowSelectedGameUnlocked : ShowSelectedGameLocked);
+
                 if (!string.IsNullOrEmpty(RightSearchText))
                 {
                     filtered = filtered.Where(a =>
@@ -1197,6 +1245,13 @@ namespace PlayniteAchievements.ViewModels
                     CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
                 }
             }
+        }
+
+        private void ResetSelectedGameAchievementVisibilityFilters()
+        {
+            ShowSelectedGameUnlocked = true;
+            ShowSelectedGameLocked = true;
+            ShowSelectedGameHidden = true;
         }
 
         private async void LoadSelectedGameAchievements()

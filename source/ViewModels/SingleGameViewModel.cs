@@ -32,6 +32,9 @@ namespace PlayniteAchievements.ViewModels
         // Search and filter state
         private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
         private string _searchText = string.Empty;
+        private bool _showUnlocked = true;
+        private bool _showLocked = true;
+        private bool _showHidden = true;
 
         public SingleGameControlModel(
             Guid gameId,
@@ -235,6 +238,42 @@ namespace PlayniteAchievements.ViewModels
             set
             {
                 if (SetValueAndReturn(ref _searchText, value ?? string.Empty))
+                {
+                    ApplySearchFilter();
+                }
+            }
+        }
+
+        public bool ShowUnlocked
+        {
+            get => _showUnlocked;
+            set
+            {
+                if (SetValueAndReturn(ref _showUnlocked, value))
+                {
+                    ApplySearchFilter();
+                }
+            }
+        }
+
+        public bool ShowLocked
+        {
+            get => _showLocked;
+            set
+            {
+                if (SetValueAndReturn(ref _showLocked, value))
+                {
+                    ApplySearchFilter();
+                }
+            }
+        }
+
+        public bool ShowHidden
+        {
+            get => _showHidden;
+            set
+            {
+                if (SetValueAndReturn(ref _showHidden, value))
                 {
                     ApplySearchFilter();
                 }
@@ -523,6 +562,13 @@ namespace PlayniteAchievements.ViewModels
         private void ApplySearchFilter()
         {
             IEnumerable<AchievementDisplayItem> filtered = _allAchievements;
+
+            if (!ShowHidden)
+            {
+                filtered = filtered.Where(a => !a.Hidden);
+            }
+
+            filtered = filtered.Where(a => a.Unlocked ? ShowUnlocked : ShowLocked);
 
             if (!string.IsNullOrEmpty(_searchText))
             {

@@ -423,6 +423,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0">
@@ -452,7 +453,24 @@
                 </TextBlock>
             </Grid>
 
-            <Button Grid.Column="1"
+                <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Margin="8,0,0,0">
+                <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Unlocked}"
+                      IsChecked="{Binding ShowUnlocked}"
+                      VerticalAlignment="Center"
+                      Margin="0,0,8,0"/>
+                <CheckBox Content="{DynamicResource LOCPlayAch_Sidebar_Locked}"
+                      IsChecked="{Binding ShowLocked}"
+                      VerticalAlignment="Center"
+                      Margin="0,0,8,0"/>
+                <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
+                      IsChecked="{Binding ShowHidden}"
+                      VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Button Grid.Column="2"
                     Content="✕"
                     Click="ClearSearch_Click"
                     Width="24"
