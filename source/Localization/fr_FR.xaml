@@ -48,6 +48,7 @@
     <sys:String x:Key="LOCPlayAch_Button_Scan">Analyser</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Annuler</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_Clear">Effacer</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tooltip_OpenGameInLibrary">Ouvrir le jeu dans la bibliothèque</sys:String>
 
     <!-- Scan Modes -->
     <!-- Short versions for sidebar dropdown -->
@@ -75,6 +76,9 @@
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_UnlockDate">Débloqué</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Rareté</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Game">Jeu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Dernière partie</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
 
     <!-- ================================================================= -->
     <!-- SECTIONS                                                           -->
@@ -221,12 +225,17 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_Games">Filtrer les jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Filtrer les succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_HideNoUnlocks">Masquer sans déblocages</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_HideUnplayed">Masquer non joués</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Unlocked">Débloqué</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Hidden">Masqué</sys:String>
 
     <!-- ================================================================= -->
     <!-- ACHIEVEMENTS TAB                                                   -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements_ClickToReveal">Cliquer pour révéler</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle">Succès masqué</sys:String>
+    <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle_WithParens"> (Succès masqué)</sys:String>
 
     <!-- ================================================================= -->
     <!-- RARITY                                                             -->
