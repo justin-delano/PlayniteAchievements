@@ -930,7 +930,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Last Played (slightly larger) -->
-                            <DataGridTemplateColumn Width="2*" Header="Last Played" SortMemberPath="LastPlayed">
+                            <DataGridTemplateColumn Width="2*" Header="Last Played" SortMemberPath="LastPlayed" SortDirection="Descending">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
