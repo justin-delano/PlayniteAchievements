@@ -595,177 +595,169 @@
         <Grid Grid.Row="2">
             <!-- Overview Tab Content -->
             <Grid x:Name="OverviewContent" Visibility="Visible">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="400"/>
+                    <ColumnDefinition Width="4"/>
+                    <ColumnDefinition Width="*" MinWidth="400"/>
+                </Grid.ColumnDefinitions>
+
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Filters -->
-                <Border Grid.Row="0"
+                <!-- LEFT: Filters Row -->
+                <Border Grid.Row="0" Grid.Column="0"
                         Background="{DynamicResource ControlBackgroundBrush}"
                         BorderBrush="{DynamicResource NormalBorderBrush}"
-                        BorderThickness="0,0,0,1"
+                        BorderThickness="0,0,1,0"
                         Padding="16,10">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="16"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Left Search: Games Overview -->
                         <Grid Grid.Column="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <Grid Grid.Column="0">
-                                <TextBox Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                         VerticalContentAlignment="Center"
-                                         Padding="6,4"
-                                         Background="Transparent"/>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
-                                           VerticalAlignment="Center"
-                                           Margin="9,0,0,0"
-                                           Foreground="{DynamicResource TextBrush}"
-                                           Opacity="0.5"
-                                           IsHitTestVisible="False">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding LeftSearchText}" Value="">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding LeftSearchText}" Value="{x:Null}">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </Grid>
-
-                            <ComboBox Grid.Column="1"
-                                      ItemsSource="{Binding ProviderFilterOptions}"
-                                      SelectedItem="{Binding SelectedProviderFilter}"
-                                      Width="100"
-                                      Margin="4,0,0,0"
-                                      VerticalContentAlignment="Center"/>
-
-                            <CheckBox Grid.Column="2" Content="Hide No Unlocks"
-                                      IsChecked="{Binding HideGamesWithNoUnlocked}"
-                                      VerticalAlignment="Center"
-                                      Margin="8,0,0,0"/>
-
-                            <CheckBox Grid.Column="3" Content="Hide Unplayed"
-                                      IsChecked="{Binding HideUnplayedGames}"
-                                      VerticalAlignment="Center"
-                                      Margin="8,0,0,0"
-                                      Visibility="{Binding IgnoreUnplayedGames, Converter={StaticResource InverseBoolToVis}}"/>
-
-                            <Button Grid.Column="4"
-                                    Content="✕"
-                                    Click="ClearLeftSearch_Click"
-                                    Width="24"
-                                    Margin="4,0,0,0"
-                                    Padding="0">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Visibility" Value="Visible"/>
+                            <TextBox Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalContentAlignment="Center"
+                                     Padding="6,4"
+                                     Background="Transparent"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
+                                       VerticalAlignment="Center"
+                                       Margin="9,0,0,0"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.5"
+                                       IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding LeftSearchText}" Value="">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding LeftSearchText}" Value="{x:Null}">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </Button.Style>
-                            </Button>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </Grid>
 
-                        <!-- Right Search: Achievements (contextual) -->
-                        <Grid Grid.Column="2">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
+                        <ComboBox Grid.Column="1"
+                                  ItemsSource="{Binding ProviderFilterOptions}"
+                                  SelectedItem="{Binding SelectedProviderFilter}"
+                                  Width="100"
+                                  Margin="4,0,0,0"
+                                  VerticalContentAlignment="Center"/>
 
-                            <Grid Grid.Column="0">
-                                <TextBox Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                         VerticalContentAlignment="Center"
-                                         Padding="6,4"
-                                         Background="Transparent"/>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
-                                           VerticalAlignment="Center"
-                                           Margin="9,0,0,0"
-                                           Foreground="{DynamicResource TextBrush}"
-                                           Opacity="0.5"
-                                           IsHitTestVisible="False">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
+                        <CheckBox Grid.Column="2" Content="Hide No Unlocks"
+                                  IsChecked="{Binding HideGamesWithNoUnlocked}"
+                                  VerticalAlignment="Center"
+                                  Margin="8,0,0,0"/>
+
+                        <CheckBox Grid.Column="3" Content="Hide Unplayed"
+                                  IsChecked="{Binding HideUnplayedGames}"
+                                  VerticalAlignment="Center"
+                                  Margin="8,0,0,0"
+                                  Visibility="{Binding IgnoreUnplayedGames, Converter={StaticResource InverseBoolToVis}}"/>
+
+                        <Button Grid.Column="4"
+                                Content="✕"
+                                Click="ClearLeftSearch_Click"
+                                Width="24"
+                                Margin="4,0,0,0"
+                                Padding="0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding LeftSearchText}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding RightSearchText}" Value="">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding RightSearchText}" Value="{x:Null}">
-                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                            </Grid>
-
-                            <Button Grid.Column="1"
-                                    Content="✕"
-                                    Click="ClearRightSearch_Click"
-                                    Width="24"
-                                    Margin="4,0,0,0"
-                                    Padding="0">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding RightSearchText}" Value="">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding RightSearchText}" Value="{x:Null}">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                            </Button>
-                        </Grid>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding LeftSearchText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
                     </Grid>
                 </Border>
 
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" MinWidth="300"/>
-                        <ColumnDefinition Width="4"/>   <!-- splitter hit area -->
-                        <ColumnDefinition Width="*" MinWidth="300"/>
-                    </Grid.ColumnDefinitions>
+                <!-- RIGHT: Filters Row -->
+                <Border Grid.Row="0" Grid.Column="2"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderBrush="{DynamicResource NormalBorderBrush}"
+                        BorderThickness="0,0,0,0"
+                        Padding="16,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                        <Grid Grid.Column="0">
+                            <TextBox Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalContentAlignment="Center"
+                                     Padding="6,4"
+                                     Background="Transparent"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
+                                       VerticalAlignment="Center"
+                                       Margin="9,0,0,0"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.5"
+                                       IsHitTestVisible="False">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RightSearchText}" Value="">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RightSearchText}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
 
-                    <!-- LEFT: Header -->
-                    <Border Grid.Row="0" Grid.Column="0" 
-                            Background="{DynamicResource ControlBackgroundBrush}" 
-                            Padding="16,10,16,10" 
-                            BorderBrush="{DynamicResource NormalBorderBrush}" 
+                        <Button Grid.Column="1"
+                                Content="✕"
+                                Click="ClearRightSearch_Click"
+                                Width="24"
+                                Margin="4,0,0,0"
+                                Padding="0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding RightSearchText}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding RightSearchText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- LEFT: Header (Row 1) -->
+                    <Border Grid.Row="1" Grid.Column="0"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            Padding="16,10,16,10"
+                            BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,0,1,1">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_GamesOverview}"
@@ -776,7 +768,7 @@
                     </Border>
 
                     <!-- LEFT: Games List -->
-                    <Border Grid.Row="1" Grid.Column="0"
+                    <Border Grid.Row="2" Grid.Column="0"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,0,1,0">
                         <Grid>
@@ -1103,7 +1095,7 @@
                     </Border>
                     
                     <!-- LEFT: Pie Charts -->
-                    <Border Grid.Row="2" Grid.Column="0"
+                    <Border Grid.Row="3" Grid.Column="0"
                             Background="{DynamicResource ControlBackgroundBrush}"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,1,1,0"
@@ -1222,7 +1214,7 @@
                     </Border>
 
                     <!-- RIGHT: Header -->
-                    <Grid Grid.Row="0" Grid.Column="2">
+                    <Grid Grid.Row="1" Grid.Column="2">
                         <!-- Header for when NO game is selected -->
                         <Border Background="{DynamicResource ControlBackgroundBrush}"
                                 Height="38"
@@ -1280,7 +1272,7 @@
                     </Grid>
                     
                     <!-- RIGHT: Content (Recent List OR Game Details) -->
-                    <Grid Grid.Row="1" Grid.Column="2">
+                    <Grid Grid.Row="2" Grid.Column="2">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
@@ -1815,7 +1807,7 @@
                     </Grid>
 
                     <!-- RIGHT: Timeline -->
-                    <Border Grid.Row="2" Grid.Column="2"
+                    <Border Grid.Row="3" Grid.Column="2"
                             Background="{DynamicResource ControlBackgroundBrush}"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,0,0,0"
@@ -1900,17 +1892,16 @@
 
                     <!-- Visible divider line (always shows) -->
                     <Border Grid.Column="1"
-                        Grid.RowSpan="3"
+                        Grid.RowSpan="4"
                         Width="2"
                         HorizontalAlignment="Center"
                         Background="{DynamicResource PanelSeparatorBrush}"
                         Opacity="0.35"
                         IsHitTestVisible="False"/>
                     <GridSplitter Grid.Column="1"
-                        Grid.RowSpan="3"
+                        Grid.RowSpan="4"
                         Style="{StaticResource CenterLineSplitterStyle}"
                         Panel.ZIndex="100"/>
-                </Grid>
             </Grid>
         </Grid>
     </Grid>
