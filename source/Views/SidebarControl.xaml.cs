@@ -108,6 +108,7 @@ namespace PlayniteAchievements.Views
         private void ClearGameSelection_Click(object sender, RoutedEventArgs e)
         {
             _viewModel?.ClearGameSelection();
+            ResetRecentAchievementsSortDirection();
         }
 
         private void GamesOverview_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -130,6 +131,7 @@ namespace PlayniteAchievements.Views
             {
                 grid.SelectedItem = null;
                 _viewModel.ClearGameSelection();
+                ResetRecentAchievementsSortDirection();
                 e.Handled = true;
             }
         }
@@ -193,6 +195,25 @@ namespace PlayniteAchievements.Views
 
             // Set default sort on UnlockTime column to match data order (descending)
             var unlockTimeColumn = GameAchievementsDataGrid.Columns
+                .FirstOrDefault(c => c.SortMemberPath == "UnlockTime");
+            if (unlockTimeColumn != null)
+            {
+                unlockTimeColumn.SortDirection = ListSortDirection.Descending;
+            }
+        }
+
+        private void ResetRecentAchievementsSortDirection()
+        {
+            if (RecentAchievementsDataGrid == null) return;
+
+            // Clear all sort directions first
+            foreach (var column in RecentAchievementsDataGrid.Columns)
+            {
+                column.SortDirection = null;
+            }
+
+            // Set default sort on UnlockTime column to match data order (descending)
+            var unlockTimeColumn = RecentAchievementsDataGrid.Columns
                 .FirstOrDefault(c => c.SortMemberPath == "UnlockTime");
             if (unlockTimeColumn != null)
             {

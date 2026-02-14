@@ -1295,7 +1295,8 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                            <DataGrid Grid.Row="0"
+                            <DataGrid x:Name="RecentAchievementsDataGrid"
+                                      Grid.Row="0"
                                       ItemsSource="{Binding RecentAchievements}"
                                       Sorting="DataGrid_Sorting"
                                       AutoGenerateColumns="False"
