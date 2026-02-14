@@ -1085,11 +1085,9 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            var key = playniteGameId.ToString();
-
             try
             {
-                _cacheService.RemoveGameData(key);
+                _cacheService.RemoveGameData(playniteGameId);
             }
             catch (Exception ex)
             {
@@ -1098,7 +1096,7 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                _diskImageService.ClearGameCache(key);
+                _diskImageService.ClearGameCache(playniteGameId.ToString());
             }
             catch (Exception ex)
             {

@@ -337,37 +337,6 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        public void RemoveGameData(string key)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(key))
-                {
-                    return;
-                }
-
-                if (Guid.TryParse(key.Trim(), out var playniteGameId))
-                {
-                    RemoveGameData(playniteGameId);
-                    return;
-                }
-
-                var k = UserKey(key);
-                lock (_sync)
-                {
-                    InitializeCacheState_Locked();
-                    _userAchievements.Remove(k);
-                    _storage.DeleteUserAchievement(k);
-                }
-
-                RaiseGameCacheUpdatedEvent(k);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Error_FileOperationFailed"));
-            }
-        }
-
         public void RemoveGameData(Guid playniteGameId)
         {
             if (playniteGameId == Guid.Empty)
