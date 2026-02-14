@@ -236,25 +236,19 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridColumnHeader">
                         <Grid Background="{TemplateBinding Background}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <ContentPresenter Grid.Column="0"
-                                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                            VerticalAlignment="Center"
-                                            Margin="{TemplateBinding Padding}"/>
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
 
                             <Path x:Name="SortArrow"
-                                Grid.Column="1"
-                                Fill="{DynamicResource TextBrush}"
-                                Width="8" Height="6"
-                                Data="M 0,0 L 4,6 L 8,0"
-                                VerticalAlignment="Center"
-                                Margin="4,0,10,0"
-                                RenderTransformOrigin="0.5,0.5"
-                                Visibility="Collapsed"/>
+                                  HorizontalAlignment="Right"
+                                  Fill="{DynamicResource TextBrush}"
+                                  Width="8" Height="6"
+                                  Data="M 0,0 L 4,6 L 8,0"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,10,0"
+                                  RenderTransformOrigin="0.5,0.5"
+                                  Visibility="Collapsed"/>
 
                             <!-- REQUIRED for resizing -->
                             <Thumb x:Name="PART_LeftHeaderGripper"
@@ -675,7 +669,7 @@
                                       Visibility="{Binding IgnoreUnplayedGames, Converter={StaticResource InverseBoolToVis}}"/>
 
                             <Button Grid.Column="4"
-                                    Content="x"
+                                    Content="✕"
                                     Click="ClearLeftSearch_Click"
                                     Width="24"
                                     Margin="4,0,0,0"
@@ -731,7 +725,7 @@
                             </Grid>
 
                             <Button Grid.Column="1"
-                                    Content="x"
+                                    Content="✕"
                                     Click="ClearRightSearch_Click"
                                     Width="24"
                                     Margin="4,0,0,0"
@@ -1277,12 +1271,7 @@
                                         Click="ClearGameSelection_Click"
                                         Padding="6,2"
                                         FontSize="{DynamicResource FontSizeSmall}"
-                                        Foreground="{DynamicResource TextBrush}"
-                                        VerticalAlignment="Top">
-                                    <Button.Style>
-                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"/>
-                                    </Button.Style>
-                                </Button>
+                                        VerticalAlignment="Top"/>
                             </Grid>
                         </Border>
                     </Grid>

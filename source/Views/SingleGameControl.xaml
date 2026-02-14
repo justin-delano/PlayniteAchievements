@@ -79,22 +79,17 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="DataGridColumnHeader">
                             <Grid Background="{TemplateBinding Background}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <ContentPresenter Grid.Column="0"
-                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                   VerticalAlignment="Center"
                                                   Margin="{TemplateBinding Padding}"/>
                                 <Path x:Name="SortArrow"
-                                      Grid.Column="1"
+                                      HorizontalAlignment="Right"
                                       Fill="{DynamicResource TextBrush}"
                                       Width="8"
                                       Height="6"
                                       Data="M 0,0 L 4,6 L 8,0"
                                       VerticalAlignment="Center"
-                                      Margin="4,0,10,0"
+                                      Margin="0,0,10,0"
                                       RenderTransformOrigin="0.5,0.5"
                                       Visibility="Collapsed"/>
                                 <!-- REQUIRED for resizing -->
@@ -455,7 +450,7 @@
                     </Grid>
 
                     <Button Grid.Column="1"
-                            Content="x"
+                            Content="✕"
                             Click="ClearSearch_Click"
                             Width="24"
                             Margin="4,0,0,0"
