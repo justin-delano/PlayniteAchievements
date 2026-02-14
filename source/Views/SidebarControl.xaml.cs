@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -184,9 +185,18 @@ namespace PlayniteAchievements.Views
         {
             if (GameAchievementsDataGrid == null) return;
 
+            // Clear all sort directions first
             foreach (var column in GameAchievementsDataGrid.Columns)
             {
                 column.SortDirection = null;
+            }
+
+            // Set default sort on UnlockTime column to match data order (descending)
+            var unlockTimeColumn = GameAchievementsDataGrid.Columns
+                .FirstOrDefault(c => c.SortMemberPath == "UnlockTime");
+            if (unlockTimeColumn != null)
+            {
+                unlockTimeColumn.SortDirection = ListSortDirection.Descending;
             }
         }
 
