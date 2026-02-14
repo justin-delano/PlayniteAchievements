@@ -32,7 +32,7 @@
 
         <Image Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" x:Name="PART_Image"
                Loaded="Image_Loaded" ImageFailed="Image_ImageFailed"
-               helpers:AsyncImage.Gray="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsGray}">
+               helpers:AsyncImage.Gray="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsLocked}">
             <helpers:AsyncImage.Uri>
                 <MultiBinding Converter="{StaticResource LockedIconSelectorConverter}">
                     <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IsLocked" />

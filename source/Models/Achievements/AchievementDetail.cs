@@ -63,7 +63,7 @@ namespace PlayniteAchievements.Models.Achievements
         public string UnlockedIconDisplay => IconDisplay;
 
         [IgnoreDataMember]
-        public string LockedIconDisplay => AchievementIconResolver.ApplyGrayPrefix(IconDisplay);
+        public string LockedIconDisplay => IconDisplay;
 
         [IgnoreDataMember]
         public double Percent
