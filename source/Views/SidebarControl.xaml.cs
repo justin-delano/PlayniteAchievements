@@ -109,6 +109,30 @@ namespace PlayniteAchievements.Views
             _viewModel?.ClearGameSelection();
         }
 
+        private void GamesOverview_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_viewModel == null || !(sender is DataGrid grid)) return;
+
+            // Get the row that was clicked
+            var hitTestResult = VisualTreeHelper.HitTest(grid, e.GetPosition(grid));
+            if (hitTestResult == null) return;
+
+            // Walk up the visual tree to find the DataGridRow
+            DependencyObject current = hitTestResult.VisualHit;
+            while (current != null && !(current is DataGridRow))
+            {
+                current = VisualTreeHelper.GetParent(current);
+            }
+
+            // If we found a row and it's already selected, deselect it
+            if (current is DataGridRow row && row.IsSelected)
+            {
+                grid.SelectedItem = null;
+                _viewModel.ClearGameSelection();
+                e.Handled = true;
+            }
+        }
+
         private void GamesOverview_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_viewModel == null) return;
@@ -126,6 +150,7 @@ namespace PlayniteAchievements.Views
             if (grid.SelectedItem is GameOverviewItem item)
             {
                 _viewModel.SelectedGame = item;
+                ResetAchievementsSortDirection();
                 ResetAchievementsScrollPosition();
             }
         }
@@ -139,10 +164,12 @@ namespace PlayniteAchievements.Views
             {
                 if (GameAchievementsDataGrid == null) return;
 
+                // Clear any selection
+                GameAchievementsDataGrid.SelectedIndex = -1;
+
                 if (GameAchievementsDataGrid.Items.Count > 0)
                 {
                     GameAchievementsDataGrid.ScrollIntoView(GameAchievementsDataGrid.Items[0]);
-                    GameAchievementsDataGrid.SelectedIndex = 0;
                 }
 
                 // Also try to reset via ScrollViewer for more reliable scroll reset
@@ -151,6 +178,16 @@ namespace PlayniteAchievements.Views
                     scrollViewer.ScrollToTop();
                 }
             }), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
+        private void ResetAchievementsSortDirection()
+        {
+            if (GameAchievementsDataGrid == null) return;
+
+            foreach (var column in GameAchievementsDataGrid.Columns)
+            {
+                column.SortDirection = null;
+            }
         }
 
         private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
