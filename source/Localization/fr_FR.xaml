@@ -213,11 +213,11 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Visibilité des succès cachés</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Contrôlez quels éléments des succès cachés sont masqués avant de les révéler.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenIcon">Masquer l'icône du succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenTitle">Masquer le titre du succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenDescription">Masquer la description du succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames">Ignorer les jeux non joués</sys:String>
-    <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames_Help">Si coché, les jeux avec 0 temps de jeu seront ignorés lors des analyses.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">Révéler l'icône cachée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenTitle">Révéler le titre caché</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Révéler la description cachée</sys:String>
+    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Inclure les jeux non joués</sys:String>
+    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">Si décoché, les jeux avec 0 temps de jeu seront ignorés lors des analyses.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Utiliser les images de couverture au lieu des icônes dans la liste des jeux</sys:String>
 
     <!-- ================================================================= -->
@@ -225,8 +225,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_Games">Filtrer les jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Filtrer les succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_HideNoUnlocks">Masquer sans déblocages</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_HideUnplayed">Masquer non joués</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_ShowNoUnlocks">Afficher sans déblocages</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_ShowUnplayed">Afficher non joués</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unlocked">Débloqué</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Hidden">Masqué</sys:String>
 

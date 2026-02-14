@@ -684,8 +684,8 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                _plugin.AchievementService.Cache.ClearCache();
-                var stillPresent = _plugin.AchievementService.Cache.CacheFileExists();
+                _plugin.AchievementManager.Cache.ClearCache();
+                var stillPresent = _plugin.AchievementManager.Cache.CacheFileExists();
                 
                 var (msg, img) = !stillPresent
                     ? (ResourceProvider.GetString("LOCPlayAch_Settings_Cache_Wiped"), MessageBoxImage.Information)

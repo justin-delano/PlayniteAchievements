@@ -18,13 +18,13 @@ namespace PlayniteAchievements.Services
         private CancellationTokenSource _cts;
 
         public BackgroundUpdater(
-            AchievementManager achievementService,
+            AchievementManager AchievementManager,
             PlayniteAchievementsSettings settings,
             ILogger logger,
             NotificationPublisher notifications,
             Action onUpdateCompleted)
         {
-            _achievementManager = achievementService;
+            _achievementManager = AchievementManager;
             _settings = settings;
             _logger = logger;
             _notifications = notifications;

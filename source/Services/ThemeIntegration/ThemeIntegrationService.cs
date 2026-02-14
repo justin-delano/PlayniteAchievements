@@ -124,14 +124,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         public ThemeIntegrationService(
             IPlayniteAPI api,
-            AchievementManager achievementService,
+            AchievementManager achievementManager,
             PlayniteAchievementsSettings settings,
             FullscreenWindowService windowService,
             Action<Guid?> requestSingleGameThemeUpdate,
             ILogger logger)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
-            _achievementManager = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
+            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
             _requestSingleGameThemeUpdate = requestSingleGameThemeUpdate ?? throw new ArgumentNullException(nameof(requestSingleGameThemeUpdate));
@@ -157,13 +157,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.InstalledRefreshCommand = _installedRefreshCmd;
 
             _settings.PropertyChanged += Settings_PropertyChanged;
-            _achievementManager.CacheInvalidated += AchievementService_CacheInvalidated;
+            _achievementManager.CacheInvalidated += AchievementManager_CacheInvalidated;
         }
 
         public void Dispose()
         {
             try { _settings.PropertyChanged -= Settings_PropertyChanged; } catch { }
-            try { _achievementManager.CacheInvalidated -= AchievementService_CacheInvalidated; } catch { }
+            try { _achievementManager.CacheInvalidated -= AchievementManager_CacheInvalidated; } catch { }
 
             lock (_refreshLock)
             {
@@ -241,7 +241,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
-        private void AchievementService_CacheInvalidated(object sender, EventArgs e)
+        private void AchievementManager_CacheInvalidated(object sender, EventArgs e)
         {
             if (IsFullscreen() && _fullscreenInitialized)
             {

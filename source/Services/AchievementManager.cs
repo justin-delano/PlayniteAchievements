@@ -308,7 +308,7 @@ namespace PlayniteAchievements.Services
             return new CacheScanOptions
             {
                 QuickRefreshMode = false,
-                IgnoreUnplayedGames = _settings.Persisted.IgnoreUnplayedGames
+                IncludeUnplayedGames = _settings.Persisted.IncludeUnplayedGames
             };
         }
 
@@ -317,7 +317,7 @@ namespace PlayniteAchievements.Services
             return new CacheScanOptions
             {
                 PlayniteGameIds = new[] { playniteGameId },
-                IgnoreUnplayedGames = false
+                IncludeUnplayedGames = true
             };
         }
 
@@ -327,7 +327,7 @@ namespace PlayniteAchievements.Services
             {
                 QuickRefreshMode = true,
                 QuickRefreshRecentGamesCount = _settings?.Persisted?.QuickRefreshRecentGamesCount ?? 10,
-                IgnoreUnplayedGames = _settings.Persisted.IgnoreUnplayedGames
+                IncludeUnplayedGames = _settings.Persisted.IncludeUnplayedGames
             };
         }
 
@@ -495,7 +495,7 @@ namespace PlayniteAchievements.Services
                         .Where(g => g != null && g.LastActivity != null)
                         .OrderByDescending(g => g.LastActivity);
                 }
-                else if (options.IgnoreUnplayedGames)
+                else if (!options.IncludeUnplayedGames)
                 {
                     candidates = allGames.Where(g => g != null && g.Playtime > 0);
                 }
@@ -850,7 +850,7 @@ namespace PlayniteAchievements.Services
             }
 
             return StartManagedScanCoreAsync(
-                new CacheScanOptions { PlayniteGameIds = gameIds, IgnoreUnplayedGames = false },
+                new CacheScanOptions { PlayniteGameIds = gameIds, IncludeUnplayedGames = true },
                 finalMessage,
                 errorLogMessage
             );

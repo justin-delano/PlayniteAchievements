@@ -7,13 +7,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.ThemeMigration;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
 using Playnite.SDK.Models;
-
 namespace PlayniteAchievements.Views
 {
     /// <summary>
@@ -35,7 +33,6 @@ namespace PlayniteAchievements.Views
         private void OnPropertyChanged(string propertyName) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        /// <summary>
         /// View model for provider authentication status display.
         /// </summary>
         public class ProviderStatus : ObservableObject

@@ -83,7 +83,7 @@ namespace PlayniteAchievements
             Guid.Parse("e6aad2c9-6e06-4d8d-ac55-ac3b252b5f7b");
 
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
-        public AchievementManager AchievementService => _achievementManager;
+        public AchievementManager AchievementManager => _achievementManager;
         public MemoryImageService ImageService => _imageService;
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;

@@ -657,16 +657,15 @@
                                   Margin="4,0,0,0"
                                   VerticalContentAlignment="Center"/>
 
-                        <CheckBox Grid.Column="2" Content="{DynamicResource LOCPlayAch_Filter_HideNoUnlocks}"
-                                  IsChecked="{Binding HideGamesWithNoUnlocked}"
+                        <CheckBox Grid.Column="2" Content="{DynamicResource LOCPlayAch_Filter_ShowNoUnlocks}"
+                                  IsChecked="{Binding ShowGamesWithNoUnlocks}"
                                   VerticalAlignment="Center"
                                   Margin="8,0,0,0"/>
 
-                        <CheckBox Grid.Column="3" Content="{DynamicResource LOCPlayAch_Filter_HideUnplayed}"
-                                  IsChecked="{Binding HideUnplayedGames}"
+                        <CheckBox Grid.Column="3" Content="{DynamicResource LOCPlayAch_Filter_ShowUnplayed}"
+                                  IsChecked="{Binding ShowUnplayedGames}"
                                   VerticalAlignment="Center"
-                                  Margin="8,0,0,0"
-                                  Visibility="{Binding IgnoreUnplayedGames, Converter={StaticResource InverseBoolToVis}}"/>
+                                  Margin="8,0,0,0"/>
 
                         <Button Grid.Column="4"
                                 Content="✕"

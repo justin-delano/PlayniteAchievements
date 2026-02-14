@@ -52,10 +52,10 @@ namespace PlayniteAchievements.Services.Sidebar
             int perfectGames = 0;
 
             var unlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            var hideIcon = settings.Persisted?.HideHiddenIcon ?? false;
-            var hideTitle = settings.Persisted?.HideHiddenTitle ?? false;
-            var hideDescription = settings.Persisted?.HideHiddenDescription ?? false;
-            var anyHidingEnabled = hideIcon || hideTitle || hideDescription;
+            var showIcon = settings.Persisted?.ShowHiddenIcon ?? false;
+            var showTitle = settings.Persisted?.ShowHiddenTitle ?? false;
+            var showDescription = settings.Persisted?.ShowHiddenDescription ?? false;
+            var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
             var canResolveReveals = anyHidingEnabled && revealedKeys.Count > 0;
 
             List<string> cachedIds;
@@ -106,9 +106,9 @@ namespace PlayniteAchievements.Services.Sidebar
                         Unlocked = ach.Unlocked,
                         Hidden = ach.Hidden,
                         ApiName = ach.ApiName,
-                        HideHiddenIcon = hideIcon,
-                        HideHiddenTitle = hideTitle,
-                        HideHiddenDescription = hideDescription,
+                        ShowHiddenIcon = showIcon,
+                        ShowHiddenTitle = showTitle,
+                        ShowHiddenDescription = showDescription,
                         ProgressNum = ach.ProgressNum,
                         ProgressDenom = ach.ProgressDenom
                     };

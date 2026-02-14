@@ -43,11 +43,11 @@ namespace PlayniteAchievements.Models.Settings
             target.NotifyOnRebuild = source.NotifyOnRebuild;
 
             // Display Preferences
-            target.HideHiddenIcon = source.HideHiddenIcon;
-            target.HideHiddenTitle = source.HideHiddenTitle;
-            target.HideHiddenDescription = source.HideHiddenDescription;
+            target.ShowHiddenIcon = source.ShowHiddenIcon;
+            target.ShowHiddenTitle = source.ShowHiddenTitle;
+            target.ShowHiddenDescription = source.ShowHiddenDescription;
             target.UseCoverImages = source.UseCoverImages;
-            target.IgnoreUnplayedGames = source.IgnoreUnplayedGames;
+            target.IncludeUnplayedGames = source.IncludeUnplayedGames;
             target.EnableDiagnostics = source.EnableDiagnostics;
 
             // RetroAchievements Settings
@@ -96,11 +96,11 @@ namespace PlayniteAchievements.Models.Settings
                 NotifyOnRebuild = source.NotifyOnRebuild,
 
                 // Display Preferences
-                HideHiddenIcon = source.HideHiddenIcon,
-                HideHiddenTitle = source.HideHiddenTitle,
-                HideHiddenDescription = source.HideHiddenDescription,
+                ShowHiddenIcon = source.ShowHiddenIcon,
+                ShowHiddenTitle = source.ShowHiddenTitle,
+                ShowHiddenDescription = source.ShowHiddenDescription,
                 UseCoverImages = source.UseCoverImages,
-                IgnoreUnplayedGames = source.IgnoreUnplayedGames,
+                IncludeUnplayedGames = source.IncludeUnplayedGames,
                 EnableDiagnostics = source.EnableDiagnostics,
 
                 // RetroAchievements Settings
@@ -137,14 +137,6 @@ namespace PlayniteAchievements.Models.Settings
             {
                 throw new ArgumentNullException(nameof(settings));
             }
-
-            // Future migration logic can be added here based on oldVersion
-            // For example:
-            // if (oldVersion < 2)
-            // {
-            //     // Migrate from version 1 to 2
-            //     settings.NewProperty = GetDefaultValueForNewProperty();
-            // }
 
             return settings;
         }

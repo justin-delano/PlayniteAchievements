@@ -339,9 +339,9 @@ namespace PlayniteAchievements.ViewModels
 
                 // Calculate rarity counts
                 int common = 0, uncommon = 0, rare = 0, ultraRare = 0;
-                var hideIcon = _settings?.Persisted.HideHiddenIcon ?? false;
-                var hideTitle = _settings?.Persisted.HideHiddenTitle ?? false;
-                var hideDescription = _settings?.Persisted.HideHiddenDescription ?? false;
+                var showIcon = _settings?.Persisted.ShowHiddenIcon ?? false;
+                var showTitle = _settings?.Persisted.ShowHiddenTitle ?? false;
+                var showDescription = _settings?.Persisted.ShowHiddenDescription ?? false;
                 var displayItems = new List<AchievementDisplayItem>();
                 var unlockCounts = new Dictionary<DateTime, int>();
 
@@ -385,9 +385,9 @@ namespace PlayniteAchievements.ViewModels
                         Unlocked = ach.Unlocked,
                         Hidden = ach.Hidden,
                         ApiName = ach.ApiName,
-                        HideHiddenIcon = hideIcon,
-                        HideHiddenTitle = hideTitle,
-                        HideHiddenDescription = hideDescription,
+                        ShowHiddenIcon = showIcon,
+                        ShowHiddenTitle = showTitle,
+                        ShowHiddenDescription = showDescription,
                         ProgressNum = ach.ProgressNum,
                         ProgressDenom = ach.ProgressDenom
                     });
@@ -485,22 +485,22 @@ namespace PlayniteAchievements.ViewModels
 
         private void OnSettingsChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "Persisted.HideHiddenIcon"
-                || e.PropertyName == "Persisted.HideHiddenTitle"
-                || e.PropertyName == "Persisted.HideHiddenDescription"
+            if (e.PropertyName == "Persisted.ShowHiddenIcon"
+                || e.PropertyName == "Persisted.ShowHiddenTitle"
+                || e.PropertyName == "Persisted.ShowHiddenDescription"
                 || e.PropertyName == "Persisted")
             {
-                var hideIcon = _settings.Persisted.HideHiddenIcon;
-                var hideTitle = _settings.Persisted.HideHiddenTitle;
-                var hideDescription = _settings.Persisted.HideHiddenDescription;
+                var showIcon = _settings.Persisted.ShowHiddenIcon;
+                var showTitle = _settings.Persisted.ShowHiddenTitle;
+                var showDescription = _settings.Persisted.ShowHiddenDescription;
 
                 System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
                 {
                     foreach (var item in Achievements)
                     {
-                        item.HideHiddenIcon = hideIcon;
-                        item.HideHiddenTitle = hideTitle;
-                        item.HideHiddenDescription = hideDescription;
+                        item.ShowHiddenIcon = showIcon;
+                        item.ShowHiddenTitle = showTitle;
+                        item.ShowHiddenDescription = showDescription;
                     }
                 });
             }

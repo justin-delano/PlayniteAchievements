@@ -45,13 +45,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         public ThemeIntegrationUpdateService(
             ThemeIntegrationService integrator,
-            AchievementManager achievementService,
+            AchievementManager AchievementManager,
             PlayniteAchievementsSettings settings,
             ILogger logger,
             Dispatcher uiDispatcher)
         {
             _integrator = integrator ?? throw new ArgumentNullException(nameof(integrator));
-            _achievementManager = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
+            _achievementManager = AchievementManager ?? throw new ArgumentNullException(nameof(AchievementManager));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
             _uiDispatcher = uiDispatcher ?? throw new ArgumentNullException(nameof(uiDispatcher));

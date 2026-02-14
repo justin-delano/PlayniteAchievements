@@ -213,11 +213,11 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Hidden Achievement Visibility</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Control which elements of hidden achievements are obscured before you reveal them.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenIcon">Hide achievement icon</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenTitle">Hide achievement title</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HideHiddenDescription">Hide achievement description</sys:String>
-    <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames">Ignore unplayed games</sys:String>
-    <sys:String x:Key="LOCPlayAch_IgnoreUnplayedGames_Help">If checked, games with 0 playtime will be skipped during scans.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">Reveal hidden icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenTitle">Reveal hidden title</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Reveal hidden description</sys:String>
+    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Include unplayed games</sys:String>
+    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">If unchecked, games with 0 playtime will be skipped during scans.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use cover images instead of icons in games list</sys:String>
 
     <!-- ================================================================= -->
@@ -225,8 +225,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_Games">Search Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Search Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_HideNoUnlocks">Hide No Unlocks</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_HideUnplayed">Hide Unplayed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_ShowNoUnlocks">Show No Unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_ShowUnplayed">Show Unplayed</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unlocked">Unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Hidden">Hidden</sys:String>
 

@@ -24,9 +24,9 @@ namespace PlayniteAchievements.ViewModels
     public class SidebarViewModel : ObservableObject, IDisposable
     {
         /// <summary>
-        /// Returns true if IgnoreUnplayedGames is enabled in settings.
+        /// Returns true if unplayed games are included during scans.
         /// </summary>
-        public bool IgnoreUnplayedGames => _settings?.Persisted?.IgnoreUnplayedGames ?? false;
+        public bool IncludeUnplayedGames => _settings?.Persisted?.IncludeUnplayedGames ?? true;
 
         private readonly AchievementManager _achievementManager;
         private readonly IPlayniteAPI _playniteApi;
@@ -125,10 +125,6 @@ namespace PlayniteAchievements.ViewModels
                 _settings.PropertyChanged += OnSettingsChanged;
             }
 
-            if (_settings?.Persisted?.IgnoreUnplayedGames == true)
-            {
-                _hideUnplayedGames = true;
-            }
         }
 
         #region Collections
@@ -249,26 +245,26 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private bool _hideGamesWithNoUnlocked = true;
-        public bool HideGamesWithNoUnlocked
+        private bool _showGamesWithNoUnlocks = false;
+        public bool ShowGamesWithNoUnlocks
         {
-            get => _hideGamesWithNoUnlocked;
+            get => _showGamesWithNoUnlocks;
             set
             {
-                if (SetValueAndReturn(ref _hideGamesWithNoUnlocked, value))
+                if (SetValueAndReturn(ref _showGamesWithNoUnlocks, value))
                 {
                     ApplyLeftFilters();
                 }
             }
         }
 
-        private bool _hideUnplayedGames = true;
-        public bool HideUnplayedGames
+        private bool _showUnplayedGames = false;
+        public bool ShowUnplayedGames
         {
-            get => _hideUnplayedGames;
+            get => _showUnplayedGames;
             set
             {
-                if (SetValueAndReturn(ref _hideUnplayedGames, value))
+                if (SetValueAndReturn(ref _showUnplayedGames, value))
                 {
                     ApplyLeftFilters();
                 }
@@ -559,10 +555,10 @@ namespace PlayniteAchievements.ViewModels
                 await _refreshLock.WaitAsync(cancel).ConfigureAwait(false);
                 try
                 {
-                    var hideIcon = _settings?.Persisted?.HideHiddenIcon ?? false;
-                    var hideTitle = _settings?.Persisted?.HideHiddenTitle ?? false;
-                    var hideDescription = _settings?.Persisted?.HideHiddenDescription ?? false;
-                    var anyHidingEnabled = hideIcon || hideTitle || hideDescription;
+                    var showIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
+                    var showTitle = _settings?.Persisted?.ShowHiddenTitle ?? false;
+                    var showDescription = _settings?.Persisted?.ShowHiddenDescription ?? false;
+                    var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
                     HashSet<string> revealedCopy = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     if (anyHidingEnabled)
                     {
@@ -836,17 +832,13 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(UseCoverImages));
             }
-            else if (e.PropertyName == "Persisted.IgnoreUnplayedGames")
+            else if (e.PropertyName == "Persisted.IncludeUnplayedGames")
             {
-                OnPropertyChanged(nameof(IgnoreUnplayedGames));
-                if (IgnoreUnplayedGames)
-                {
-                    HideUnplayedGames = true;
-                }
+                OnPropertyChanged(nameof(IncludeUnplayedGames));
             }
-            else if (e.PropertyName == "Persisted.HideHiddenIcon"
-                || e.PropertyName == "Persisted.HideHiddenTitle"
-                || e.PropertyName == "Persisted.HideHiddenDescription")
+            else if (e.PropertyName == "Persisted.ShowHiddenIcon"
+                || e.PropertyName == "Persisted.ShowHiddenTitle"
+                || e.PropertyName == "Persisted.ShowHiddenDescription")
             {
                 // Refresh view when any hide setting changes
                 _ = RefreshViewAsync();
@@ -1161,13 +1153,13 @@ namespace PlayniteAchievements.ViewModels
             }
 
             // Hide games with no unlocked
-            if (HideGamesWithNoUnlocked)
+            if (!ShowGamesWithNoUnlocks)
             {
                 filtered = filtered.Where(g => g.UnlockedAchievements > 0);
             }
 
             // Hide unplayed games, but show them if they have achievements
-            if (HideUnplayedGames)
+            if (!ShowUnplayedGames)
             {
                 filtered = filtered.Where(g => g.LastPlayed.HasValue || g.UnlockedAchievements > 0);
             }
@@ -1282,10 +1274,10 @@ namespace PlayniteAchievements.ViewModels
                     return;
 
                 var gameId = SelectedGame.PlayniteGameId.Value;
-                var hideIcon = _settings?.Persisted?.HideHiddenIcon ?? false;
-                var hideTitle = _settings?.Persisted?.HideHiddenTitle ?? false;
-                var hideDescription = _settings?.Persisted?.HideHiddenDescription ?? false;
-                var anyHidingEnabled = hideIcon || hideTitle || hideDescription;
+                var showIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
+                var showTitle = _settings?.Persisted?.ShowHiddenTitle ?? false;
+                var showDescription = _settings?.Persisted?.ShowHiddenDescription ?? false;
+                var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
                 HashSet<string> revealedCopy = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 if (anyHidingEnabled)
                 {
@@ -1322,9 +1314,9 @@ namespace PlayniteAchievements.ViewModels
                             Unlocked = ach.Unlocked,
                             Hidden = ach.Hidden,
                             ApiName = ach.ApiName,
-                            HideHiddenIcon = hideIcon,
-                            HideHiddenTitle = hideTitle,
-                            HideHiddenDescription = hideDescription,
+                            ShowHiddenIcon = showIcon,
+                            ShowHiddenTitle = showTitle,
+                            ShowHiddenDescription = showDescription,
                             ProgressNum = ach.ProgressNum,
                             ProgressDenom = ach.ProgressDenom
                         };

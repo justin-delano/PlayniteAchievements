@@ -22,11 +22,11 @@ namespace PlayniteAchievements.Models.Settings
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
         private int _quickRefreshRecentGamesCount = 10;
-        private bool _hideHiddenIcon = true;
-        private bool _hideHiddenTitle = true;
-        private bool _hideHiddenDescription = true;
+        private bool _showHiddenIcon = false;
+        private bool _showHiddenTitle = false;
+        private bool _showHiddenDescription = false;
         private bool _useCoverImages = false;
-        private bool _ignoreUnplayedGames = false;
+        private bool _includeUnplayedGames = true;
         private bool _enableDiagnostics = false;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
@@ -140,30 +140,30 @@ namespace PlayniteAchievements.Models.Settings
         #region Display Preferences
 
         /// <summary>
-        /// When true, hidden achievement icons are obscured before reveal.
+        /// When true, hidden achievement icons are shown before reveal.
         /// </summary>
-        public bool HideHiddenIcon
+        public bool ShowHiddenIcon
         {
-            get => _hideHiddenIcon;
-            set => SetValue(ref _hideHiddenIcon, value);
+            get => _showHiddenIcon;
+            set => SetValue(ref _showHiddenIcon, value);
         }
 
         /// <summary>
-        /// When true, hidden achievement titles are obscured before reveal.
+        /// When true, hidden achievement titles are shown before reveal.
         /// </summary>
-        public bool HideHiddenTitle
+        public bool ShowHiddenTitle
         {
-            get => _hideHiddenTitle;
-            set => SetValue(ref _hideHiddenTitle, value);
+            get => _showHiddenTitle;
+            set => SetValue(ref _showHiddenTitle, value);
         }
 
         /// <summary>
-        /// When true, hidden achievement descriptions are obscured before reveal.
+        /// When true, hidden achievement descriptions are shown before reveal.
         /// </summary>
-        public bool HideHiddenDescription
+        public bool ShowHiddenDescription
         {
-            get => _hideHiddenDescription;
-            set => SetValue(ref _hideHiddenDescription, value);
+            get => _showHiddenDescription;
+            set => SetValue(ref _showHiddenDescription, value);
         }
 
         /// <summary>
@@ -175,10 +175,10 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _useCoverImages, value);
         }
 
-        public bool IgnoreUnplayedGames
+        public bool IncludeUnplayedGames
         {
-            get => _ignoreUnplayedGames;
-            set => SetValue(ref _ignoreUnplayedGames, value);
+            get => _includeUnplayedGames;
+            set => SetValue(ref _includeUnplayedGames, value);
         }
 
         /// <summary>
@@ -349,11 +349,11 @@ namespace PlayniteAchievements.Models.Settings
                 NotifyPeriodicUpdates = this.NotifyPeriodicUpdates,
                 NotifyOnRebuild = this.NotifyOnRebuild,
                 QuickRefreshRecentGamesCount = this.QuickRefreshRecentGamesCount,
-                HideHiddenIcon = this.HideHiddenIcon,
-                HideHiddenTitle = this.HideHiddenTitle,
-                HideHiddenDescription = this.HideHiddenDescription,
+                ShowHiddenIcon = this.ShowHiddenIcon,
+                ShowHiddenTitle = this.ShowHiddenTitle,
+                ShowHiddenDescription = this.ShowHiddenDescription,
                 UseCoverImages = this.UseCoverImages,
-                IgnoreUnplayedGames = this.IgnoreUnplayedGames,
+                IncludeUnplayedGames = this.IncludeUnplayedGames,
                 EnableDiagnostics = this.EnableDiagnostics,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,

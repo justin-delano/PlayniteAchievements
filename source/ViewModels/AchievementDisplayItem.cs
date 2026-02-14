@@ -131,13 +131,13 @@ namespace PlayniteAchievements.ViewModels
         public string ApiName { get => _apiName; set => SetValue(ref _apiName, value); }
 
         // Hidden achievement visibility settings
-        private bool _hideHiddenIcon;
-        public bool HideHiddenIcon
+        private bool _showHiddenIcon;
+        public bool ShowHiddenIcon
         {
-            get => _hideHiddenIcon;
+            get => _showHiddenIcon;
             set
             {
-                if (SetValueAndReturn(ref _hideHiddenIcon, value))
+                if (SetValueAndReturn(ref _showHiddenIcon, value))
                 {
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
@@ -148,13 +148,13 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private bool _hideHiddenTitle;
-        public bool HideHiddenTitle
+        private bool _showHiddenTitle;
+        public bool ShowHiddenTitle
         {
-            get => _hideHiddenTitle;
+            get => _showHiddenTitle;
             set
             {
-                if (SetValueAndReturn(ref _hideHiddenTitle, value))
+                if (SetValueAndReturn(ref _showHiddenTitle, value))
                 {
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
@@ -164,13 +164,13 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private bool _hideHiddenDescription;
-        public bool HideHiddenDescription
+        private bool _showHiddenDescription;
+        public bool ShowHiddenDescription
         {
-            get => _hideHiddenDescription;
+            get => _showHiddenDescription;
             set
             {
-                if (SetValueAndReturn(ref _hideHiddenDescription, value))
+                if (SetValueAndReturn(ref _showHiddenDescription, value))
                 {
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
@@ -194,18 +194,18 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(IsTitleHidden));
                     OnPropertyChanged(nameof(IsDescriptionHidden));
                     // Only notify icon changes if icon hiding is enabled
-                    if (HideHiddenIcon)
+                    if (!ShowHiddenIcon)
                     {
                         OnPropertyChanged(nameof(DisplayIcon));
                         OnPropertyChanged(nameof(Icon));
                     }
                     // Only notify name changes if title hiding is enabled
-                    if (HideHiddenTitle)
+                    if (!ShowHiddenTitle)
                     {
                         OnPropertyChanged(nameof(DisplayNameResolved));
                     }
                     // Only notify description changes if description hiding is enabled
-                    if (HideHiddenDescription)
+                    if (!ShowHiddenDescription)
                     {
                         OnPropertyChanged(nameof(DescriptionResolved));
                     }
@@ -262,7 +262,7 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// True if the achievement can be revealed (is locked and at least one hiding setting is enabled).
         /// </summary>
-        public bool CanReveal => (HideHiddenIcon || HideHiddenTitle || HideHiddenDescription) && !Unlocked && Hidden;
+        public bool CanReveal => (!ShowHiddenIcon || !ShowHiddenTitle || !ShowHiddenDescription) && !Unlocked && Hidden;
 
         /// <summary>
         /// True if the achievement details are currently hidden (can reveal and not yet revealed).
@@ -272,23 +272,23 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// True if the icon is currently being hidden (for XAML styling triggers).
         /// </summary>
-        public bool IsIconHidden => IsHidden && HideHiddenIcon;
+        public bool IsIconHidden => IsHidden && !ShowHiddenIcon;
 
         /// <summary>
         /// True if the title is currently being hidden (for XAML styling triggers).
         /// </summary>
-        public bool IsTitleHidden => IsHidden && HideHiddenTitle;
+        public bool IsTitleHidden => IsHidden && !ShowHiddenTitle;
 
         /// <summary>
         /// True if the description is currently being hidden (for XAML styling triggers).
         /// </summary>
-        public bool IsDescriptionHidden => IsHidden && HideHiddenDescription;
+        public bool IsDescriptionHidden => IsHidden && !ShowHiddenDescription;
 
         public string DisplayNameResolved
         {
             get
             {
-                if (IsHidden && HideHiddenTitle) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle");
+                if (IsHidden && !ShowHiddenTitle) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle");
                 return DisplayName;
             }
         }
@@ -297,7 +297,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsHidden && HideHiddenDescription) return ResourceProvider.GetString("LOCPlayAch_Achievements_ClickToReveal");
+                if (IsHidden && !ShowHiddenDescription) return ResourceProvider.GetString("LOCPlayAch_Achievements_ClickToReveal");
                 return Description;
             }
         }
@@ -329,9 +329,9 @@ namespace PlayniteAchievements.ViewModels
             Unlocked = source.Unlocked;
             Hidden = source.Hidden;
             ApiName = source.ApiName;
-            HideHiddenIcon = hideIcon;
-            HideHiddenTitle = hideTitle;
-            HideHiddenDescription = hideDescription;
+            ShowHiddenIcon = !hideIcon;
+            ShowHiddenTitle = !hideTitle;
+            ShowHiddenDescription = !hideDescription;
             ProgressNum = source.ProgressNum;
             ProgressDenom = source.ProgressDenom;
         }
@@ -355,7 +355,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsHidden && HideHiddenIcon)
+                if (IsHidden && !ShowHiddenIcon)
                 {
                     return DefaultIcon;
                 }

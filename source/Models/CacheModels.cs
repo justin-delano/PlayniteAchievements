@@ -23,9 +23,9 @@ namespace PlayniteAchievements.Models
         public int QuickRefreshRecentGamesCount { get; set; } = 10;
 
         /// <summary>
-        /// When true, games with zero playtime on Steam should be skipped.
+        /// When true, games with zero playtime on Steam are included.
         /// </summary>
-        public bool IgnoreUnplayedGames { get; set; } = false;
+        public bool IncludeUnplayedGames { get; set; } = true;
     }
 
     public class UserUnlockedAchievements

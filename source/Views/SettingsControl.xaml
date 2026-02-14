@@ -349,7 +349,7 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <!-- Ignore Unplayed Games -->
+                                <!-- Include Unplayed Games -->
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -357,10 +357,10 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0">
-                                            <CheckBox Content="{DynamicResource LOCPlayAch_IgnoreUnplayedGames}"
-                                                          IsChecked="{Binding Persisted.IgnoreUnplayedGames}"
+                                            <CheckBox Content="{DynamicResource LOCPlayAch_IncludeUnplayedGames}"
+                                                          IsChecked="{Binding Persisted.IncludeUnplayedGames}"
                                                   VerticalAlignment="Center"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_IgnoreUnplayedGames_Help}"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_IncludeUnplayedGames_Help}"
                                                    Style="{StaticResource MutedTextStyle}"
                                                    Margin="20,4,0,0"/>
                                     </StackPanel>
@@ -401,12 +401,12 @@
                                            FontWeight="SemiBold" Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
-                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideHiddenIcon}"
-                                          IsChecked="{Binding Persisted.HideHiddenIcon}" Margin="18,0,0,8"/>
-                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideHiddenTitle}"
-                                          IsChecked="{Binding Persisted.HideHiddenTitle}" Margin="18,0,0,8"/>
-                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideHiddenDescription}"
-                                          IsChecked="{Binding Persisted.HideHiddenDescription}" Margin="18,0,0,16"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenIcon}"
+                                          IsChecked="{Binding Persisted.ShowHiddenIcon}" Margin="18,0,0,8"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenTitle}"
+                                          IsChecked="{Binding Persisted.ShowHiddenTitle}" Margin="18,0,0,8"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenDescription}"
+                                          IsChecked="{Binding Persisted.ShowHiddenDescription}" Margin="18,0,0,16"/>
 
                                 <!-- Other Appearance Options -->
                                 <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
