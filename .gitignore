@@ -73,6 +73,5 @@ bld/
 .claude/
 memory/
 CLAUDE.md
-.trees/**
-.trees/
+/.trees/
 DatabasePlan.md
