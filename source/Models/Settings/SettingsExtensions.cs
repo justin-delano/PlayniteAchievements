@@ -29,6 +29,7 @@ namespace PlayniteAchievements.Models.Settings
 
             // Steam Settings
             target.SteamUserId = source.SteamUserId;
+            target.GogUserId = source.GogUserId;
             target.SteamApiKey = source.SteamApiKey;
             target.SteamLanguage = source.SteamLanguage;
 
@@ -82,6 +83,7 @@ namespace PlayniteAchievements.Models.Settings
             {
                 // Steam Settings
                 SteamUserId = source.SteamUserId,
+                GogUserId = source.GogUserId,
                 SteamApiKey = source.SteamApiKey,
                 SteamLanguage = source.SteamLanguage,
 

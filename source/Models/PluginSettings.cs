@@ -381,6 +381,12 @@ namespace PlayniteAchievements.Models
         public bool EnableIntegrationCompact => true;
 
         [DontSerialize]
+        public bool EnableIntegrationButton => true;
+
+        [DontSerialize]
+        public bool EnableIntegrationViewItem => true;
+
+        [DontSerialize]
         public bool EnableIntegrationCompactUnlocked => true;
 
         [DontSerialize]

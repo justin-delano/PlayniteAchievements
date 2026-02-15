@@ -28,6 +28,18 @@
                 </Style.Triggers>
             </Style>
 
+            <!-- Disable GOG auth buttons while busy -->
+            <Style x:Key="GogAuthActionButtonStyle"
+                   TargetType="Button"
+                   BasedOn="{StaticResource {x:Type Button}}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding GogAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                 Value="True">
+                        <Setter Property="IsEnabled" Value="False"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
             <!-- Section header style -->
             <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14"/>
@@ -987,6 +999,142 @@
                                             Padding="14,6"
                                             Margin="16,0,0,0"
                                             MinWidth="90"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ================== TAB: GOG SETTINGS ================== -->
+            <TabItem x:Name="GogTab" Header="{DynamicResource LOCPlayAch_Provider_GOG}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GogConnection}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <TextBlock Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,16"
+                                           Text="{DynamicResource LOCPlayAch_Settings_GogDescription}"/>
+
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Label_GogAuth}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                                VerticalAlignment="Top"
+                                               Margin="0,8,0,0"/>
+
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource PanelBackgroundBrush}"
+                                            CornerRadius="8"
+                                            Padding="16"
+                                            BorderThickness="1">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="#F72585"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding GogAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                 Value="True">
+                                                        <Setter Property="BorderBrush" Value="#06FFA5"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="{DynamicResource FontSize}"
+                                                           Margin="0,0,12,0"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                                    </TextBlock.RenderTransform>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding GogAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                             Value="True">
+                                                                    <Setter Property="Text" Value="&#xE73E;"/>
+                                                                    <Setter Property="Foreground" Value="#06FFA5"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding GogAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                             Value="False">
+                                                                    <Setter Property="Text" Value="&#xE711;"/>
+                                                                    <Setter Property="Foreground" Value="#F72585"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding GogAuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           VerticalAlignment="Center"
+                                                           FontSize="{DynamicResource FontSize}"
+                                                           FontWeight="SemiBold"/>
+                                            </Grid>
+
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_GogAuth_Check}"
+                                                        Style="{StaticResource GogAuthActionButtonStyle}"
+                                                        Click="GogAuth_Check_Click"
+                                                        Padding="14,6"
+                                                        Margin="0,0,8,0"/>
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_GogAuth_Reauthenticate}"
+                                                        Style="{StaticResource GogAuthActionButtonStyle}"
+                                                        Click="GogAuth_Authenticate_Click"
+                                                        Padding="14,6"
+                                                        Margin="0,0,8,0"/>
+                                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                                        ToolTip="{DynamicResource LOCPlayAch_Tooltip_Clear}"
+                                                        Style="{StaticResource GogAuthActionButtonStyle}"
+                                                        Click="GogAuth_Clear_Click"
+                                                        Padding="14,6"/>
+                                            </StackPanel>
+
+                                            <ProgressBar Height="3"
+                                                         Margin="0,8,0,0"
+                                                         IsIndeterminate="True"
+                                                         Foreground="#06FFA5">
+                                                <ProgressBar.Style>
+                                                    <Style TargetType="ProgressBar">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding GogAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                         Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ProgressBar.Style>
+                                            </ProgressBar>
+
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GogAuth_Help}"
+                                                       Style="{StaticResource MutedTextStyle}"
+                                                       Margin="0,10,0,0"/>
+                                        </StackPanel>
+                                    </Border>
                                 </Grid>
                             </StackPanel>
                         </Border>

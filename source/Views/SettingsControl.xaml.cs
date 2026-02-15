@@ -14,6 +14,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Providers.GOG;
 using PlayniteAchievements.Services.ThemeMigration;
 using Playnite.SDK;
 using System.Diagnostics;
@@ -51,6 +52,45 @@ namespace PlayniteAchievements.Views
         {
             get => (bool)GetValue(SteamAuthBusyProperty);
             set => SetValue(SteamAuthBusyProperty, value);
+        }
+
+        public static readonly DependencyProperty GogAuthStatusProperty =
+            DependencyProperty.Register(
+                nameof(GogAuthStatus),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_GogAuth_NotChecked")));
+
+        public string GogAuthStatus
+        {
+            get => (string)GetValue(GogAuthStatusProperty);
+            set => SetValue(GogAuthStatusProperty, value);
+        }
+
+        public static readonly DependencyProperty GogAuthBusyProperty =
+            DependencyProperty.Register(
+                nameof(GogAuthBusy),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool GogAuthBusy
+        {
+            get => (bool)GetValue(GogAuthBusyProperty);
+            set => SetValue(GogAuthBusyProperty, value);
+        }
+
+        public static readonly DependencyProperty GogAuthenticatedProperty =
+            DependencyProperty.Register(
+                nameof(GogAuthenticated),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool GogAuthenticated
+        {
+            get => (bool)GetValue(GogAuthenticatedProperty);
+            set => SetValue(GogAuthenticatedProperty, value);
         }
 
         public static readonly DependencyProperty SteamAuthenticatedProperty =
@@ -216,13 +256,15 @@ namespace PlayniteAchievements.Views
         private readonly ThemeDiscoveryService _themeDiscovery;
         private readonly ThemeMigrationService _themeMigration;
         private readonly SteamSessionManager _steamSessionManager;
+        private readonly GogSessionManager _gogSessionManager;
 
-        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager)
+        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager, GogSessionManager gogSessionManager)
         {
             _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
             _steamSessionManager = steamSessionManager ?? throw new ArgumentNullException(nameof(steamSessionManager));
+            _gogSessionManager = gogSessionManager ?? throw new ArgumentNullException(nameof(gogSessionManager));
 
             _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
             _themeMigration = new ThemeMigrationService(_logger);
@@ -255,6 +297,7 @@ namespace PlayniteAchievements.Views
                     _logger?.Info($"DataContext verified correct in Loaded event: {DataContext?.GetType().Name}");
                 }
                 await CheckSteamAuthAsync().ConfigureAwait(false);
+                await CheckGogAuthAsync().ConfigureAwait(false);
                 UpdateRaAuthState();
 
                 // Load themes on initial load
@@ -677,6 +720,206 @@ namespace PlayniteAchievements.Views
         }
 
         // -----------------------------
+        // GOG auth UI
+        // -----------------------------
+
+        private async void GogAuth_Check_Click(object sender, RoutedEventArgs e)
+        {
+            _logger?.Info("[GogAuth] Settings: Check Auth clicked.");
+            await CheckGogAuthAsync().ConfigureAwait(false);
+        }
+
+        private async void GogAuth_Authenticate_Click(object sender, RoutedEventArgs e)
+        {
+            _logger?.Info("[GogAuth] Settings: Re-authenticate clicked.");
+            SetGogAuthBusy(true);
+            var progress = new Progress<GogAuthProgressStep>(step =>
+            {
+                SetGogAuthStatusByKey(GetGogProgressMessageKey(step));
+            });
+
+            try
+            {
+                using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(3)))
+                {
+                    var result = await _gogSessionManager
+                        .AuthenticateInteractiveAsync(forceInteractive: true, timeoutCts.Token, progress)
+                        .ConfigureAwait(false);
+                    ApplyGogAuthResult(result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                SetGogAuthenticated(false);
+                SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_TimedOut");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[GogAuth] Settings authenticate action failed.");
+                SetGogAuthenticated(false);
+                SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_Failed");
+            }
+            finally
+            {
+                SetGogAuthBusy(false);
+            }
+        }
+
+        private void GogAuth_Clear_Click(object sender, RoutedEventArgs e)
+        {
+            _gogSessionManager.ClearSession();
+            SetGogAuthenticated(false);
+            SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_CookiesCleared");
+        }
+
+        private async Task CheckGogAuthAsync()
+        {
+            SetGogAuthBusy(true);
+            SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_Checking");
+            try
+            {
+                using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+                {
+                    var result = await _gogSessionManager.ProbeAuthenticationAsync(timeoutCts.Token).ConfigureAwait(false);
+                    ApplyGogAuthResult(result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                SetGogAuthenticated(false);
+                SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_TimedOut");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "GOG auth check failed.");
+                SetGogAuthenticated(false);
+                SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_ProbeFailed");
+            }
+            finally
+            {
+                SetGogAuthBusy(false);
+            }
+        }
+
+        private void ApplyGogAuthResult(GogAuthResult result)
+        {
+            if (result == null)
+            {
+                SetGogAuthenticated(false);
+                SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_Failed");
+                return;
+            }
+
+            var authenticated =
+                result.Outcome == GogAuthOutcome.Authenticated ||
+                result.Outcome == GogAuthOutcome.AlreadyAuthenticated;
+
+            SetGogAuthenticated(authenticated);
+
+            var statusKey = string.IsNullOrWhiteSpace(result.MessageKey)
+                ? GetDefaultMessageKeyForOutcome(result.Outcome)
+                : result.MessageKey;
+
+            if (!result.WindowOpened &&
+                !result.IsSuccess &&
+                (result.Outcome == GogAuthOutcome.Failed || result.Outcome == GogAuthOutcome.Cancelled))
+            {
+                statusKey = "LOCPlayAch_Settings_GogAuth_WindowNotOpened";
+            }
+
+            SetGogAuthStatusByKey(statusKey);
+        }
+
+        private static string GetDefaultMessageKeyForOutcome(GogAuthOutcome outcome)
+        {
+            switch (outcome)
+            {
+                case GogAuthOutcome.Authenticated:
+                    return "LOCPlayAch_Settings_GogAuth_Verified";
+                case GogAuthOutcome.AlreadyAuthenticated:
+                    return "LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated";
+                case GogAuthOutcome.NotAuthenticated:
+                    return "LOCPlayAch_Settings_GogAuth_NotAuthenticated";
+                case GogAuthOutcome.Cancelled:
+                    return "LOCPlayAch_Settings_GogAuth_Cancelled";
+                case GogAuthOutcome.TimedOut:
+                    return "LOCPlayAch_Settings_GogAuth_TimedOut";
+                case GogAuthOutcome.ProbeFailed:
+                    return "LOCPlayAch_Settings_GogAuth_ProbeFailed";
+                case GogAuthOutcome.Failed:
+                default:
+                    return "LOCPlayAch_Settings_GogAuth_Failed";
+            }
+        }
+
+        private static string GetGogProgressMessageKey(GogAuthProgressStep step)
+        {
+            switch (step)
+            {
+                case GogAuthProgressStep.CheckingExistingSession:
+                    return "LOCPlayAch_Settings_GogAuth_CheckingExistingSession";
+                case GogAuthProgressStep.OpeningLoginWindow:
+                    return "LOCPlayAch_Settings_GogAuth_OpeningWindow";
+                case GogAuthProgressStep.WaitingForUserLogin:
+                    return "LOCPlayAch_Settings_GogAuth_WaitingForLogin";
+                case GogAuthProgressStep.VerifyingSession:
+                    return "LOCPlayAch_Settings_GogAuth_VerifyingSession";
+                case GogAuthProgressStep.Completed:
+                    return "LOCPlayAch_Settings_GogAuth_Completed";
+                case GogAuthProgressStep.Failed:
+                default:
+                    return "LOCPlayAch_Settings_GogAuth_Failed";
+            }
+        }
+
+        private void SetGogAuthStatusByKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            var value = ResourceProvider.GetString(key);
+            SetGogAuthStatus(string.IsNullOrWhiteSpace(value) ? key : value);
+        }
+
+        private void SetGogAuthStatus(string status)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                GogAuthStatus = status;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => GogAuthStatus = status));
+            }
+        }
+
+        private void SetGogAuthBusy(bool busy)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                GogAuthBusy = busy;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => GogAuthBusy = busy));
+            }
+        }
+
+        private void SetGogAuthenticated(bool authenticated)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                GogAuthenticated = authenticated;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => GogAuthenticated = authenticated));
+            }
+        }
+
+        // -----------------------------
         // Cache actions
         // -----------------------------
 
@@ -848,6 +1091,11 @@ namespace PlayniteAchievements.Views
             {
                 await CheckSteamAuthAsync().ConfigureAwait(false);
                 _logger?.Info("Checked Steam auth for Steam tab.");
+            }
+            else if (string.Equals(name, "GogTab", StringComparison.OrdinalIgnoreCase))
+            {
+                await CheckGogAuthAsync().ConfigureAwait(false);
+                _logger?.Info("Checked GOG auth for GOG tab.");
             }
             else if (string.Equals(name, "ThemeMigrationTab", StringComparison.OrdinalIgnoreCase))
             {

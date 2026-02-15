@@ -33,6 +33,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
 
     <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
@@ -137,6 +138,28 @@
     <sys:String x:Key="LOCPlayAch_Settings_Ra_ApiKeyNeeded">API key required</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId">Steam User ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId_Help">Your 64-bit Steam ID. This is automatically detected when you authenticate.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogConnection">GOG Connection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogDescription">GOG achievements are fetched through the GOG gameplay API. Check your current session or re-authenticate to open a fresh login window.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_GogAuth">GOG Authentication</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Check">Check Auth</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Reauthenticate">Re-authenticate</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Help">Check Auth verifies existing login state without opening a browser. Re-authenticate always opens the login flow.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_NotChecked">GOG: Not checked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Checking">Checking GOG authentication...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_CheckingExistingSession">Checking existing GOG session...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_OpeningWindow">Opening GOG login window...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_WaitingForLogin">Waiting for GOG login confirmation...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_VerifyingSession">Verifying GOG session...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Completed">Authentication flow completed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Verified">GOG authentication verified.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_NotAuthenticated">GOG is not authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_TimedOut">GOG authentication timed out.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Failed">GOG authentication failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Cancelled">GOG authentication was cancelled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_CookiesCleared">GOG session cookies cleared.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated">GOG is already authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_ProbeFailed">Unable to verify GOG authentication state.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_WindowNotOpened">Could not open the GOG login window. Check Playnite focus and try again.</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
 
     <!-- ================================================================= -->

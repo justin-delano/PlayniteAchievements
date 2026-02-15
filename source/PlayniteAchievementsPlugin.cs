@@ -13,6 +13,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Providers.RetroAchievements;
 using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Providers.GOG;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -47,6 +48,7 @@ namespace PlayniteAchievements
         private readonly DiskImageService _diskImageService;
         private readonly NotificationPublisher _notifications;
         private readonly SteamSessionManager _steamSessionManager;
+        private readonly GogSessionManager _gogSessionManager;
 
         private readonly BackgroundUpdater _backgroundUpdates;
 
@@ -131,29 +133,38 @@ namespace PlayniteAchievements
                 _settingsViewModel.Settings.Persisted.RareThreshold,
                 _settingsViewModel.Settings.Persisted.UncommonThreshold);
 
+            var settings = _settingsViewModel.Settings;
+            var pluginUserDataPath = GetPluginUserDataPath();
+
             // Create shared Steam session manager for use by provider and settings UI
-            _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, _settingsViewModel.Settings);
+            _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, settings);
+            _gogSessionManager = new GogSessionManager(PlayniteApi, _logger, settings);
 
             var providers = new List<IDataProvider>
             {
                 new SteamDataProvider(
                     _logger,
-                    _settingsViewModel.Settings,
+                    settings,
                     PlayniteApi,
                     _steamSessionManager),
-
+                new GogDataProvider(
+                    _logger,
+                    settings,
+                    PlayniteApi,
+                    pluginUserDataPath,
+                    _gogSessionManager),
                 new RetroAchievementsDataProvider(
                     _logger,
-                    _settingsViewModel.Settings,
-                    GetPluginUserDataPath(),
-                    PlayniteApi)
+                    settings,
+                    PlayniteApi,
+                    pluginUserDataPath)
             };
 
-            _diskImageService = new DiskImageService(_logger, GetPluginUserDataPath());
+            _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
             _imageService = new MemoryImageService(_logger, _diskImageService);
-            _achievementManager = new AchievementManager(api, _settingsViewModel.Settings, _logger, this, providers, _diskImageService);
-            _notifications = new NotificationPublisher(api, _settingsViewModel.Settings, _logger);
-            _backgroundUpdates = new BackgroundUpdater(_achievementManager, _settingsViewModel.Settings, _logger, _notifications, null);
+            _achievementManager = new AchievementManager(api, settings, _logger, this, providers, _diskImageService);
+            _notifications = new NotificationPublisher(api, settings, _logger);
+            _backgroundUpdates = new BackgroundUpdater(_achievementManager, settings, _logger, _notifications, null);
 
             // Create theme integration services
             // Note: We need to create _themeIntegrationService before _themeUpdateService,
@@ -237,7 +248,7 @@ namespace PlayniteAchievements
             try
             {
                 _logger.Info($"GetSettingsView called, firstRunView={firstRunView}");
-                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager);
+                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager, _gogSessionManager);
                 _logger.Info("GetSettingsView succeeded");
                 return control;
             }

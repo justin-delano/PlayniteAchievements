@@ -33,6 +33,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
 
     <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
@@ -137,6 +138,28 @@
     <sys:String x:Key="LOCPlayAch_Settings_Ra_ApiKeyNeeded">Clé API requise</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId">ID utilisateur Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId_Help">Votre ID Steam 64 bits. Il est détecté automatiquement lors de l'authentification.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogConnection">Connexion GOG</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogDescription">Les succès GOG sont récupérés via l'API gameplay de GOG. Vérifiez votre session actuelle ou relancez l'authentification pour ouvrir une nouvelle fenêtre de connexion.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_GogAuth">Authentification GOG</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Check">Vérifier l'authentification</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Reauthenticate">Se réauthentifier</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Help">Vérifier l'authentification contrôle la session existante sans ouvrir de navigateur. Se réauthentifier ouvre toujours le flux de connexion.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_NotChecked">GOG : Non vérifié</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Checking">Vérification de l'authentification GOG...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_CheckingExistingSession">Vérification de la session GOG existante...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_OpeningWindow">Ouverture de la fenêtre de connexion GOG...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_WaitingForLogin">En attente de confirmation de connexion GOG...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_VerifyingSession">Vérification de la session GOG...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Completed">Flux d'authentification terminé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Verified">Authentification GOG vérifiée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_NotAuthenticated">GOG n'est pas authentifié.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_TimedOut">Délai d'authentification GOG dépassé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Failed">Échec de l'authentification GOG.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_Cancelled">L'authentification GOG a été annulée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_CookiesCleared">Cookies de session GOG effacés.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated">GOG est déjà authentifié.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_ProbeFailed">Impossible de vérifier l'état d'authentification GOG.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GogAuth_WindowNotOpened">Impossible d'ouvrir la fenêtre de connexion GOG. Vérifiez le focus de Playnite puis réessayez.</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
 
     <!-- ================================================================= -->

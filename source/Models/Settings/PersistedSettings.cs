@@ -14,6 +14,7 @@ namespace PlayniteAchievements.Models.Settings
         #region Backing Fields
 
         private string _steamUserId;
+        private string _gogUserId;
         private string _steamApiKey;
         private string _steamLanguage = "english";
         private bool _enablePeriodicUpdates = true;
@@ -53,6 +54,12 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _steamUserId;
             set => SetValue(ref _steamUserId, value);
+        }
+
+        public string GogUserId
+        {
+            get => _gogUserId;
+            set => SetValue(ref _gogUserId, value);
         }
 
         /// <summary>
@@ -341,6 +348,7 @@ namespace PlayniteAchievements.Models.Settings
             return new PersistedSettings
             {
                 SteamUserId = this.SteamUserId,
+                GogUserId = this.GogUserId,
                 SteamApiKey = this.SteamApiKey,
                 SteamLanguage = this.SteamLanguage,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,

@@ -27,7 +27,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private string _clientUsername;
         private string _clientApiKey;
 
-        public RetroAchievementsDataProvider(ILogger logger, PlayniteAchievementsSettings settings, string pluginUserDataPath, IPlayniteAPI playniteApi)
+        public RetroAchievementsDataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
