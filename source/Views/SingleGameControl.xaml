@@ -208,15 +208,17 @@
 
                 <!-- Game Icon -->
                 <Border Grid.Column="0"
-                        Width="48" Height="48"
+                    Height="48"
                         CornerRadius="4"
+                    ClipToBounds="True"
                         Margin="0,0,12,0">
-                <Border.Background>
-                        <ImageBrush Stretch="UniformToFill"
-                                    helpers:AsyncImage.Uri="{Binding GameIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
-                                    helpers:AsyncImage.DecodePixel="96"/>
-                </Border.Background>
-            </Border>
+                    <Image Height="48"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center"
+                       helpers:AsyncImage.Uri="{Binding GameIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
+                       helpers:AsyncImage.DecodePixel="96"/>
+                </Border>
                 
                 <!-- Game Info -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
