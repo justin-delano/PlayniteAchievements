@@ -38,21 +38,6 @@ namespace PlayniteAchievements.Providers.Steam
 
         public string GetCachedSteamId64() => _selfSteamId64;
 
-        public void WarmupSessionProbe()
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await RefreshCookiesHeadlessAsync(CancellationToken.None).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "[SteamAuth] Warmup session probe failed.");
-                }
-            });
-        }
-
         public bool NeedsRefresh
         {
             get

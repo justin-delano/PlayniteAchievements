@@ -133,7 +133,6 @@ namespace PlayniteAchievements
 
             // Create shared Steam session manager for use by provider and settings UI
             _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, _settingsViewModel.Settings);
-            _steamSessionManager.WarmupSessionProbe();
 
             var providers = new List<IDataProvider>
             {

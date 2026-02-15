@@ -147,7 +147,7 @@ namespace PlayniteAchievements.Providers.Steam
                 catch (Exception ex)
                 {
                     consecutiveErrors++;
-                    _logger?.Warn(ex, $"[SteamAch] Skipping game after retries: {game.Name} (appId={appId}). Consecutive errors={consecutiveErrors}");
+                    _logger?.Warn($"[SteamAch] Skipping game after retries: {game.Name} (appId={appId}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
 
                     // If we've hit too many consecutive errors, apply exponential backoff before continuing
                     if (consecutiveErrors >= 3)
@@ -553,12 +553,72 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             var result = ClassifyScrapeOrPrivate(res, html, includeLocked, language);
+
+            if (result.TransientFailure && result.DetailCode == SteamScrapeDetail.NoRowsUnknown)
+            {
+                var canonicalStatsKey = ExtractStatsKey(result.FinalUrl);
+                if (!string.IsNullOrWhiteSpace(canonicalStatsKey) &&
+                    !string.Equals(canonicalStatsKey, appId.ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    var fallbackRequested = BuildAchievementsUrl(resolved, canonicalStatsKey, language);
+                    _logger?.Debug($"[SteamAch] NoRowsUnknown for appId={appId}; retrying once with canonical stats key '{canonicalStatsKey}'. Url={fallbackRequested}");
+
+                    var fallbackPage = await _steamClient.GetAchievementsPageByKeyAsync(resolved, canonicalStatsKey, language, cancel).ConfigureAwait(false);
+                    var fallbackHtml = fallbackPage?.Html ?? string.Empty;
+                    var fallbackResponse = new AchievementsScrapeResponse
+                    {
+                        RequestedUrl = fallbackRequested,
+                        FinalUrl = fallbackPage?.FinalUrl ?? fallbackRequested,
+                        StatusCode = fallbackPage != null ? (int)fallbackPage.StatusCode : 0
+                    };
+
+                    if (fallbackResponse.StatusCode == 429)
+                    {
+                        fallbackResponse.TransientFailure = true;
+                        fallbackResponse.SetDetail(SteamScrapeDetail.TooManyRequests);
+                        return fallbackResponse;
+                    }
+
+                    if (!LooksLoggedOutHeuristic(fallbackHtml, fallbackResponse.FinalUrl))
+                    {
+                        var fallbackClassified = ClassifyScrapeOrPrivate(fallbackResponse, fallbackHtml, includeLocked, language);
+                        if (fallbackClassified.SuccessWithRows)
+                        {
+                            await MaybeClassifyNoAchievementsBySchemaAsync(fallbackClassified, appId, cancel).ConfigureAwait(false);
+                            return fallbackClassified;
+                        }
+                    }
+                }
+            }
+
             await MaybeClassifyNoAchievementsBySchemaAsync(result, appId, cancel).ConfigureAwait(false);
             return result;
         }
 
         private static string BuildAchievementsUrl(string steamId64, int appId, string language) =>
             $"https://steamcommunity.com/profiles/{steamId64}/stats/{appId}/?tab=achievements&l={language ?? "english"}";
+
+        private static string BuildAchievementsUrl(string steamId64, string statsKey, string language) =>
+            $"https://steamcommunity.com/profiles/{steamId64}/stats/{statsKey}/?tab=achievements&l={language ?? "english"}";
+
+        private static string ExtractStatsKey(string url)
+        {
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                return null;
+            }
+
+            var parts = uri.AbsolutePath.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            for (var i = 0; i < parts.Length - 1; i++)
+            {
+                if (string.Equals(parts[i], "stats", StringComparison.OrdinalIgnoreCase))
+                {
+                    return parts[i + 1];
+                }
+            }
+
+            return null;
+        }
 
         private async Task MaybeClassifyNoAchievementsBySchemaAsync(AchievementsScrapeResponse res, int appId, CancellationToken ct)
         {

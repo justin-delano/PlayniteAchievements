@@ -132,6 +132,16 @@ namespace PlayniteAchievements.Providers.Steam
         public Task<SteamPageResult> GetAchievementsPageAsync(string steamId64, int appId, string language, CancellationToken ct)
             => GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64}/stats/{appId}/?tab=achievements&l={language ?? "english"}", true, ct);
 
+        public Task<SteamPageResult> GetAchievementsPageByKeyAsync(string steamId64, string statsKey, string language, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(statsKey))
+            {
+                return Task.FromResult(new SteamPageResult());
+            }
+
+            return GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64}/stats/{statsKey.Trim()}/?tab=achievements&l={language ?? "english"}", true, ct);
+        }
+
         // ---------------------------------------------------------------------
         // Player Summaries
         // ---------------------------------------------------------------------
