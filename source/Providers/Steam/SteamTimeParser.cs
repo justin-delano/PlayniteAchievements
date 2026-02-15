@@ -7,16 +7,12 @@ using System.Text.RegularExpressions;
 
 namespace PlayniteAchievements.Providers.Steam
 {
-    /// <summary>
-    /// Utilities for parsing Steam achievement unlock times and handling Steam's Pacific timezone.
-    /// Parsing is token-first and language-agnostic so it can tolerate noisy localized wrappers.
-    /// </summary>
     internal static class SteamTimeParser
     {
         private static readonly TimeZoneInfo SteamBaseTimeZone =
             TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
 
-        private static readonly string[] SupportedCultureNames = new[]
+        private static readonly string[] SupportedCultureNames =
         {
             "en-US", "de-DE", "fr-FR", "es-ES", "it-IT", "ru-RU",
             "ja-JP", "pt-PT", "pt-BR", "pl-PL", "nl-NL", "sv-SE",
@@ -26,27 +22,11 @@ namespace PlayniteAchievements.Providers.Steam
         };
 
         private static readonly CultureInfo[] SupportedCultures = BuildSupportedCultures();
+        private static readonly Lazy<Dictionary<string, int>> MonthTokenMap = new Lazy<Dictionary<string, int>>(BuildMonthTokenMap);
+        private static readonly Dictionary<string, (Regex CurrentYear, Regex PastYears)> UnlockRegexByLanguage = BuildUnlockRegexByLanguage();
 
         private static readonly Regex CollapseSpacesRegex = new Regex(@"\s+", RegexOptions.Compiled);
-        private static readonly Regex TimeAtEndRegex = new Regex(
-            @"(?<prefix>(?:am|pm|a\.m\.|p\.m\.)\s*)?(?<time>\d{1,2}(?::|h)\d{2})(?<suffix>\s*(?:am|pm|a\.m\.|p\.m\.)?)\s*$",
-            RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static readonly Regex ExtractTokensRegex = new Regex(@"\d{1,4}\p{L}+|\p{L}+\d{1,4}|\p{L}+|\d{1,4}", RegexOptions.Compiled);
-        private static readonly Regex HasYearRegex = new Regex(@"\b\d{4}\b", RegexOptions.Compiled);
-        private static readonly Regex MonthAbbreviationDotRegex = new Regex(@"(?<=\p{L})\.(?=\s|$)", RegexOptions.Compiled);
-        private static readonly Regex LeadingWordRegex = new Regex(@"^\s*(\p{L}+)\b", RegexOptions.Compiled);
-        private static readonly Regex TrailingWordRegex = new Regex(@"\b(\p{L}+)\s*$", RegexOptions.Compiled);
-        private static readonly Regex StartsWithDigitRegex = new Regex(@"^\s*\d", RegexOptions.Compiled);
-        private static readonly Regex EndsWithDigitRegex = new Regex(@"\d\s*$", RegexOptions.Compiled);
-        private static readonly Regex TrailingPunctuationRegex = new Regex(@"[\s,\-:;|]+$", RegexOptions.Compiled);
-        private static readonly Regex CompactMonthTokenRegex = new Regex(@"^(?<prefix>\D+?)(?<num>\d{1,2})$", RegexOptions.Compiled);
 
-        private static readonly Lazy<Dictionary<string, int>> MonthTokenMap =
-            new Lazy<Dictionary<string, int>>(BuildMonthTokenMap);
-
-        /// <summary>
-        /// Parse Steam's achievement unlock time format to UTC.
-        /// </summary>
         public static DateTime? TryParseSteamUnlockTime(string text, string language)
         {
             return TryParseSteamUnlockTime(text, language, GetSteamNow());
@@ -67,34 +47,22 @@ namespace PlayniteAchievements.Providers.Steam
 
             try
             {
-                var culture = GetCultureForSteamLanguage(language);
-
-                if (!TryExtractTime(clean, out var timeValue, out var datePart))
+                if (!TryMatchLanguageRegex(clean, language, out var match))
                 {
                     return null;
                 }
 
-                var cleanedDatePart = CleanupDatePart(datePart);
-                if (string.IsNullOrWhiteSpace(cleanedDatePart))
+                if (!TryBuildLocalDateTime(match, steamNow.Year, out var localDateTime, out var hasExplicitYear))
                 {
                     return null;
                 }
 
-                if (TryParseTokenizedDateTime(cleanedDatePart, timeValue, steamNow.Year, out var tokenizedDt, out var tokenizedHasYear))
+                if (!hasExplicitYear && localDateTime > steamNow.AddDays(2))
                 {
-                    return HandleYearAndConvert(tokenizedDt, tokenizedHasYear, steamNow);
+                    localDateTime = localDateTime.AddYears(-1);
                 }
 
-                var fallbackInput = $"{cleanedDatePart} {timeValue}".Trim();
-                var hasYear = HasYearRegex.IsMatch(cleanedDatePart);
-
-                if (TryParseWithCulture(fallbackInput, culture, out var dt) ||
-                    TryParseAcrossCultures(fallbackInput, culture, out dt))
-                {
-                    return HandleYearAndConvert(dt, hasYear, steamNow);
-                }
-
-                return null;
+                return ConvertToUtc(localDateTime);
             }
             catch
             {
@@ -102,42 +70,192 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
-        private static bool TryExtractTime(string input, out string normalizedTime, out string datePart)
+        private static bool TryMatchLanguageRegex(string input, string language, out Match match)
         {
-            normalizedTime = null;
-            datePart = null;
+            match = null;
 
-            var match = TimeAtEndRegex.Match(input);
-            if (!match.Success)
+            var key = (language ?? "english").Trim().ToLowerInvariant();
+            if (!UnlockRegexByLanguage.TryGetValue(key, out var pair) &&
+                !UnlockRegexByLanguage.TryGetValue("english", out pair))
             {
                 return false;
             }
 
-            var prefix = NormalizeMeridiemToken(match.Groups["prefix"].Value);
-            var suffix = NormalizeMeridiemToken(match.Groups["suffix"].Value);
-            var meridiem = !string.IsNullOrWhiteSpace(suffix) ? suffix : prefix;
-            var timeCore = NormalizeTime(match.Groups["time"].Value);
+            var current = pair.CurrentYear.Match(input);
+            if (current.Success)
+            {
+                match = current;
+                return true;
+            }
 
-            normalizedTime = string.IsNullOrWhiteSpace(meridiem) ? timeCore : $"{timeCore} {meridiem}";
-            datePart = input.Substring(0, match.Index).Trim();
+            var past = pair.PastYears.Match(input);
+            if (past.Success)
+            {
+                match = past;
+                return true;
+            }
 
-            return !string.IsNullOrWhiteSpace(normalizedTime) && !string.IsNullOrWhiteSpace(datePart);
+            return false;
+        }
+
+        private static bool TryBuildLocalDateTime(Match match, int referenceYear, out DateTime localDateTime, out bool hasYear)
+        {
+            localDateTime = default;
+            hasYear = false;
+
+            var dayGroup = match.Groups["day"];
+            var monthGroup = match.Groups["month"];
+            var yearGroup = match.Groups["year"];
+            var hourGroup = match.Groups["hour"];
+            var minuteGroup = match.Groups["minute"];
+            var meridiemGroup = match.Groups["meridiem"];
+
+            if (!dayGroup.Success || !monthGroup.Success || !hourGroup.Success || !minuteGroup.Success)
+            {
+                return false;
+            }
+
+            if (!int.TryParse(dayGroup.Value, out var day) || day < 1 || day > 31)
+            {
+                return false;
+            }
+
+            if (!TryResolveMonth(monthGroup.Value, out var month))
+            {
+                return false;
+            }
+
+            var year = referenceYear;
+            if (yearGroup.Success && int.TryParse(yearGroup.Value, out var parsedYear) && parsedYear >= 1900 && parsedYear <= 3000)
+            {
+                year = parsedYear;
+                hasYear = true;
+            }
+
+            if (!int.TryParse(hourGroup.Value, out var hour) || !int.TryParse(minuteGroup.Value, out var minute))
+            {
+                return false;
+            }
+
+            if (minute < 0 || minute > 59)
+            {
+                return false;
+            }
+
+            var meridiem = meridiemGroup.Success ? meridiemGroup.Value : string.Empty;
+            if (!ApplyMeridiem(ref hour, meridiem))
+            {
+                return false;
+            }
+
+            if (hour < 0 || hour > 23)
+            {
+                return false;
+            }
+
+            try
+            {
+                localDateTime = new DateTime(year, month, day, hour, minute, 0, DateTimeKind.Unspecified);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool ApplyMeridiem(ref int hour, string meridiemRaw)
+        {
+            if (string.IsNullOrWhiteSpace(meridiemRaw))
+            {
+                return hour >= 0 && hour <= 23;
+            }
+
+            var normalized = NormalizeMeridiemToken(meridiemRaw);
+
+            if (normalized == "am")
+            {
+                if (hour < 1 || hour > 12)
+                {
+                    return false;
+                }
+
+                hour = hour == 12 ? 0 : hour;
+                return true;
+            }
+
+            if (normalized == "pm")
+            {
+                if (hour < 1 || hour > 12)
+                {
+                    return false;
+                }
+
+                hour = hour == 12 ? 12 : hour + 12;
+                return true;
+            }
+
+            return false;
         }
 
         private static string NormalizeMeridiemToken(string token)
         {
-            var cleaned = NormalizeWhitespace((token ?? string.Empty).Replace(".", ""));
-            if (cleaned.Equals("am", StringComparison.OrdinalIgnoreCase))
+            var cleaned = NormalizeWhitespace(token ?? string.Empty)
+                .Replace(".", string.Empty)
+                .Replace(" ", string.Empty)
+                .ToLowerInvariant();
+
+            switch (cleaned)
             {
-                return "AM";
+                case "am":
+                case "aｍ":
+                case "上午":
+                case "오전":
+                case "صباحًا":
+                case "صباحا":
+                    return "am";
+
+                case "pm":
+                case "pｍ":
+                case "下午":
+                case "오후":
+                case "مساءً":
+                case "مساء":
+                    return "pm";
+
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static bool TryResolveMonth(string monthRaw, out int month)
+        {
+            month = 0;
+            if (string.IsNullOrWhiteSpace(monthRaw))
+            {
+                return false;
             }
 
-            if (cleaned.Equals("pm", StringComparison.OrdinalIgnoreCase))
+            var compactNumeric = Regex.Replace(monthRaw, @"\D", string.Empty);
+            if (compactNumeric.Length > 0 && int.TryParse(compactNumeric, out var numericMonth) && numericMonth >= 1 && numericMonth <= 12)
             {
-                return "PM";
+                month = numericMonth;
+                return true;
             }
 
-            return string.Empty;
+            var token = NormalizeMonthToken(monthRaw);
+            if (MonthTokenMap.Value.TryGetValue(token, out month))
+            {
+                return true;
+            }
+
+            var compact = token.Replace(" ", string.Empty);
+            if (MonthTokenMap.Value.TryGetValue(compact, out month))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static string NormalizeWhitespace(string text)
@@ -149,268 +267,156 @@ namespace PlayniteAchievements.Providers.Steam
             return CollapseSpacesRegex.Replace(normalized, " ").Trim();
         }
 
-        private static string CleanupDatePart(string datePart)
+        private static DateTime ConvertToUtc(DateTime dt)
         {
-            var cleaned = NormalizeWhitespace(datePart ?? string.Empty);
-            cleaned = cleaned.Replace("@", " ");
-            cleaned = MonthAbbreviationDotRegex.Replace(cleaned, "");
-            cleaned = TrimLeadingNoiseWords(cleaned);
-            cleaned = TrimTrailingNoiseWords(cleaned);
-            cleaned = TrailingPunctuationRegex.Replace(cleaned, string.Empty);
-            return NormalizeWhitespace(cleaned);
-        }
-
-        private static string TrimLeadingNoiseWords(string input)
-        {
-            var cleaned = input ?? string.Empty;
-
-            for (var i = 0; i < 8 && cleaned.Length > 0; i++)
-            {
-                if (StartsWithDigitRegex.IsMatch(cleaned))
-                {
-                    break;
-                }
-
-                var match = LeadingWordRegex.Match(cleaned);
-                if (!match.Success)
-                {
-                    break;
-                }
-
-                var token = NormalizeMonthToken(match.Groups[1].Value);
-                if (MonthTokenMap.Value.ContainsKey(token))
-                {
-                    break;
-                }
-
-                cleaned = cleaned.Substring(match.Length).TrimStart();
-            }
-
-            return cleaned;
-        }
-
-        private static string TrimTrailingNoiseWords(string input)
-        {
-            var cleaned = input ?? string.Empty;
-
-            for (var i = 0; i < 8 && cleaned.Length > 0; i++)
-            {
-                if (EndsWithDigitRegex.IsMatch(cleaned))
-                {
-                    break;
-                }
-
-                var match = TrailingWordRegex.Match(cleaned);
-                if (!match.Success)
-                {
-                    break;
-                }
-
-                var token = NormalizeMonthToken(match.Groups[1].Value);
-                if (MonthTokenMap.Value.ContainsKey(token))
-                {
-                    break;
-                }
-
-                cleaned = cleaned.Substring(0, match.Index).TrimEnd();
-            }
-
-            return cleaned;
-        }
-
-        private static bool TryParseTokenizedDateTime(string datePart, string timeRaw, int referenceYear, out DateTime dt, out bool hasYear)
-        {
-            dt = default;
-            hasYear = false;
-
-            if (!TryParseTimeOfDay(timeRaw, out var parsedTime))
-            {
-                return false;
-            }
-
-            var tokenized = NormalizeForTokenization(datePart);
-            var tokens = ExtractTokensRegex.Matches(tokenized)
-                .Cast<Match>()
-                .Select(m => m.Value)
-                .ToList();
-
-            if (tokens.Count == 0)
-            {
-                return false;
-            }
-
-            var monthCandidates = new List<(int Index, int Month)>();
-            for (var i = 0; i < tokens.Count; i++)
-            {
-                if (MonthTokenMap.Value.TryGetValue(tokens[i], out var month))
-                {
-                    monthCandidates.Add((i, month));
-                }
-            }
-
-            if (monthCandidates.Count == 0)
-            {
-                return false;
-            }
-
-            var chosen = monthCandidates.FirstOrDefault(c => HasAdjacentDayToken(tokens, c.Index));
-            if (chosen.Month == 0)
-            {
-                chosen = monthCandidates[0];
-            }
-
-            if (!TryResolveDay(tokens, chosen.Index, out var day))
-            {
-                return false;
-            }
-
-            if (!TryResolveYear(tokens, chosen.Index, out var year))
-            {
-                year = referenceYear;
-            }
-            else
-            {
-                hasYear = true;
-            }
+            var local = DateTime.SpecifyKind(dt, DateTimeKind.Unspecified);
 
             try
             {
-                dt = new DateTime(year, chosen.Month, day, parsedTime.Hour, parsedTime.Minute, 0, DateTimeKind.Unspecified);
-                return true;
+                if (SteamBaseTimeZone.IsInvalidTime(local))
+                {
+                    local = local.AddHours(1);
+                }
+
+                if (SteamBaseTimeZone.IsAmbiguousTime(local))
+                {
+                    var offsets = SteamBaseTimeZone.GetAmbiguousTimeOffsets(local);
+                    var preferredOffset = offsets[0] > offsets[1] ? offsets[0] : offsets[1];
+                    return new DateTimeOffset(local, preferredOffset).UtcDateTime;
+                }
+
+                var offset = SteamBaseTimeZone.GetUtcOffset(local);
+                return new DateTimeOffset(local, offset).UtcDateTime;
             }
             catch
             {
-                return false;
+                return new DateTimeOffset(local, SteamBaseTimeZone.BaseUtcOffset).UtcDateTime;
             }
         }
 
-        private static bool TryParseTimeOfDay(string timeRaw, out DateTime parsed)
+        private static Dictionary<string, (Regex CurrentYear, Regex PastYears)> BuildUnlockRegexByLanguage()
         {
-            parsed = default;
-            if (string.IsNullOrWhiteSpace(timeRaw))
+            (Regex CurrentYear, Regex PastYears) Pair(string currentYearPattern, string pastYearPattern)
             {
-                return false;
+                return (
+                    new Regex(currentYearPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase),
+                    new Regex(pastYearPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase));
             }
 
-            var normalized = NormalizeTime(timeRaw);
-            var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            return new Dictionary<string, (Regex CurrentYear, Regex PastYears)>(StringComparer.OrdinalIgnoreCase)
             {
-                normalized,
-                Regex.Replace(normalized, @"(?i)(am|pm)$", " $1").Trim()
+                ["english"] = Pair(
+                    @"^Unlocked\s+(?<month>[\p{L}]+)\s+(?<day>\d{1,2}),\s*(?<year>\d{4})\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]\.?m\.?)\s*$",
+                    @"^Unlocked\s+(?<month>[\p{L}]+)\s+(?<day>\d{1,2})\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]\.?m\.?)\s*$"),
+
+                ["german"] = Pair(
+                    @"^Am\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+um\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s+freigeschaltet\s*$",
+                    @"^Am\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+um\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s+freigeschaltet\s*$"),
+
+                ["french"] = Pair(
+                    @"^Débloqué\s+le\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+à\s+(?<hour>\d{1,2})h(?<minute>\d{2})\s*$",
+                    @"^Débloqué\s+le\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+à\s+(?<hour>\d{1,2})h(?<minute>\d{2})\s*$"),
+
+                ["spanish"] = Pair(
+                    @"^Se\s+desbloqueó\s+el\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+(?<year>\d{4})\s+a\s+las\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Se\s+desbloqueó\s+el\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+a\s+las\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["italian"] = Pair(
+                    @"^Sbloccato\s+in\s+data\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+(?<year>\d{4}),\s+ore\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Sbloccato\s+in\s+data\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+),\s+ore\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["russian"] = Pair(
+                    @"^Дата\s+получения:\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+г\.\s+в\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Дата\s+получения:\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+в\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["japanese"] = Pair(
+                    @"^アンロックした日\s*(?<year>\d{4})年\s*(?<month>\d{1,2})月\s*(?<day>\d{1,2})日\s*(?<hour>\d{1,2})時\s*(?<minute>\d{2})分\s*$",
+                    @"^アンロックした日\s*(?<month>\d{1,2})月\s*(?<day>\d{1,2})日\s*(?<hour>\d{1,2})時\s*(?<minute>\d{2})分\s*$"),
+
+                ["portuguese"] = Pair(
+                    @"^Desbloqueada\s+a\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+às\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Desbloqueada\s+a\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+às\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["brazilian"] = Pair(
+                    @"^Alcançada\s+em\s+(?<day>\d{1,2})/(?<month>[\p{L}]+)\./(?<year>\d{4})\s+às\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Alcançada\s+em\s+(?<day>\d{1,2})\s+de\s+(?<month>[\p{L}]+)\.\s+às\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["polish"] = Pair(
+                    @"^Odblokowano:\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+(?<year>\d{4})\s+o\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Odblokowano:\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+o\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["dutch"] = Pair(
+                    @"^Ontgrendeld\s+op\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+(?<year>\d{4})\s+om\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Ontgrendeld\s+op\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+om\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["swedish"] = Pair(
+                    @"^Upplåst\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+),\s*(?<year>\d{4})\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Upplåst\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["finnish"] = Pair(
+                    @"^Avattu\s+(?<day>\d{1,2})\.(?<month>\d{1,2})\.(?<year>\d{4})\s+klo\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$",
+                    @"^Avattu\s+(?<day>\d{1,2})\.(?<month>\d{1,2})\.\s+klo\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$"),
+
+                ["danish"] = Pair(
+                    @"^Låst\s+op:\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+kl\.\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Låst\s+op:\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+kl\.\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["norwegian"] = Pair(
+                    @"^Låst\s+opp\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+kl\.\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$",
+                    @"^Låst\s+opp\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+kl\.\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$"),
+
+                ["hungarian"] = Pair(
+                    @"^Feloldva:\s*(?<year>\d{4})\.\s*(?<month>[\p{L}]+)\.\s*(?<day>\d{1,2})\.,\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Feloldva:\s*(?<month>[\p{L}]+)\.\s*(?<day>\d{1,2})\.,\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["czech"] = Pair(
+                    @"^Odemčeno\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+v\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$",
+                    @"^Odemčeno\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+v\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$"),
+
+                ["romanian"] = Pair(
+                    @"^Obținută\s+la\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+la\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Obținută\s+la\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+la\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["turkish"] = Pair(
+                    @"^Kazanma\s+Tarihi\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+(?<year>\d{4})\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Kazanma\s+Tarihi\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["greek"] = Pair(
+                    @"^Ξεκλειδώθηκε\s+στις\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+(?<year>\d{4}),\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Ξεκλειδώθηκε\s+στις\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+),\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["bulgarian"] = Pair(
+                    @"^Откл\.\s+на\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+в\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Откл\.\s+на\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+в\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["ukrainian"] = Pair(
+                    @"^Здобуто\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+о\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Здобуто\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+о\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["thai"] = Pair(
+                    @"^ปลดล็อก\s+(?<day>\d{1,2})\s+(?<month>[\p{L}\.]+)\s+(?<year>\d{4})\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]m)\s*$",
+                    @"^ปลดล็อก\s+(?<day>\d{1,2})\s+(?<month>[\p{L}\.]+)\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]m)\s*$"),
+
+                ["vietnamese"] = Pair(
+                    @"^Mở\s+khóa\s+vào\s+(?<day>\d{1,2})\s+(?<month>[\p{L}\d]+),\s*(?<year>\d{4})\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*(?<meridiem>[ap]m)\s*$",
+                    @"^Mở\s+khóa\s+vào\s+(?<day>\d{1,2})\s+(?<month>[\p{L}\d]+)\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*(?<meridiem>[ap]m)\s*$"),
+
+                ["koreana"] = Pair(
+                    @"^(?<year>\d{4})년\s*(?<month>\d{1,2})월\s*(?<day>\d{1,2})일\s*(?<meridiem>오전|오후)\s*(?<hour>\d{1,2})시\s*(?<minute>\d{2})분에\s*획득\s*$",
+                    @"^(?<month>\d{1,2})월\s*(?<day>\d{1,2})일\s*(?<meridiem>오전|오후)\s*(?<hour>\d{1,2})시\s*(?<minute>\d{2})분에\s*획득\s*$"),
+
+                ["schinese"] = Pair(
+                    @"^(?<year>\d{4})\s*年\s*(?<month>\d{1,2})\s*月\s*(?<day>\d{1,2})\s*日\s*(?<meridiem>上午|下午)\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*解锁\s*$",
+                    @"^(?<month>\d{1,2})\s*月\s*(?<day>\d{1,2})\s*日\s*(?<meridiem>上午|下午)\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*解锁\s*$"),
+
+                ["tchinese"] = Pair(
+                    @"^解鎖於\s*(?<year>\d{4})\s*年\s*(?<month>\d{1,2})\s*月\s*(?<day>\d{1,2})\s*日\s*(?<meridiem>上午|下午)\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^解鎖於\s*(?<month>\d{1,2})\s*月\s*(?<day>\d{1,2})\s*日\s*(?<meridiem>上午|下午)\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+
+                ["arabic"] = Pair(
+                    @"^Unlocked\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+),\s*(?<year>\d{4})\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*(?<meridiem>صباحًا|صباحا|مساءً|مساء)\s*$",
+                    @"^Unlocked\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*(?<meridiem>صباحًا|صباحا|مساءً|مساء)\s*$")
             };
-
-            var formats = new[]
-            {
-                "H:mm", "HH:mm",
-                "h:mmtt", "h:mm tt",
-                "hh:mmtt", "hh:mm tt"
-            };
-
-            foreach (var candidate in candidates)
-            {
-                if (DateTime.TryParseExact(
-                    candidate,
-                    formats,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.AllowWhiteSpaces,
-                    out parsed))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static string NormalizeTime(string timeRaw)
-        {
-            var normalized = (timeRaw ?? string.Empty).Trim();
-            normalized = normalized.Replace('h', ':').Replace('H', ':');
-            return NormalizeWhitespace(normalized);
-        }
-
-        private static bool TryParseWithCulture(string input, CultureInfo culture, out DateTime dt)
-        {
-            dt = default;
-            if (culture == null)
-            {
-                return false;
-            }
-
-            if (DateTime.TryParse(input, culture, DateTimeStyles.AllowWhiteSpaces, out dt))
-            {
-                return true;
-            }
-
-            return TryFallbackParse(input, culture, out dt);
-        }
-
-        private static bool TryParseAcrossCultures(string input, CultureInfo firstCulture, out DateTime dt)
-        {
-            dt = default;
-
-            if (firstCulture != null && TryParseWithCulture(input, firstCulture, out dt))
-            {
-                return true;
-            }
-
-            foreach (var culture in SupportedCultures)
-            {
-                if (firstCulture != null &&
-                    culture.Name.Equals(firstCulture.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                if (TryParseWithCulture(input, culture, out dt))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool TryFallbackParse(string input, CultureInfo originalCulture, out DateTime result)
-        {
-            try
-            {
-                var looseCulture = (CultureInfo)originalCulture.Clone();
-                var dtf = looseCulture.DateTimeFormat;
-
-                dtf.MonthNames = dtf.MonthNames.Select(RemoveDiacritics).ToArray();
-                dtf.AbbreviatedMonthNames = dtf.AbbreviatedMonthNames.Select(RemoveDiacritics).ToArray();
-                dtf.MonthGenitiveNames = dtf.MonthGenitiveNames.Select(RemoveDiacritics).ToArray();
-                dtf.AbbreviatedMonthGenitiveNames = dtf.AbbreviatedMonthGenitiveNames.Select(RemoveDiacritics).ToArray();
-
-                var looseInput = RemoveDiacritics(input);
-                return DateTime.TryParse(looseInput, looseCulture, DateTimeStyles.AllowWhiteSpaces, out result);
-            }
-            catch
-            {
-                result = default;
-                return false;
-            }
-        }
-
-        private static string NormalizeForTokenization(string input)
-        {
-            var source = RemoveDiacritics(input ?? string.Empty).ToLowerInvariant();
-            var sb = new StringBuilder(source.Length);
-
-            foreach (var ch in source)
-            {
-                if (char.IsLetterOrDigit(ch) || char.IsWhiteSpace(ch))
-                {
-                    sb.Append(ch);
-                }
-                else
-                {
-                    sb.Append(' ');
-                }
-            }
-
-            return NormalizeWhitespace(sb.ToString());
         }
 
         private static Dictionary<string, int> BuildMonthTokenMap()
@@ -429,9 +435,35 @@ namespace PlayniteAchievements.Providers.Steam
                 }
             }
 
-            // Common variant aliases seen in Steam output.
-            map["sept"] = 9;
             map["set"] = 9;
+
+            foreach (var kvp in new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["ян"] = 1,
+                ["янв"] = 1,
+                ["апр"] = 4,
+
+                ["يناير"] = 1,
+                ["فبراير"] = 2,
+                ["أبريل"] = 4,
+                ["ابريل"] = 4,
+
+                ["ม.ค"] = 1,
+                ["ก.พ"] = 2,
+                ["มี.ค"] = 3,
+                ["เม.ย"] = 4,
+                ["พ.ค"] = 5,
+                ["มิ.ย"] = 6,
+                ["ก.ค"] = 7,
+                ["ส.ค"] = 8,
+                ["ก.ย"] = 9,
+                ["ต.ค"] = 10,
+                ["พ.ย"] = 11,
+                ["ธ.ค"] = 12
+            })
+            {
+                map[kvp.Key] = kvp.Value;
+            }
 
             return map;
         }
@@ -447,143 +479,8 @@ namespace PlayniteAchievements.Providers.Steam
             if (token.Length >= 2)
             {
                 map[token] = month;
-
-                var compact = token.Replace(" ", string.Empty);
-                if (compact.Length >= 2)
-                {
-                    map[compact] = month;
-
-                    var match = CompactMonthTokenRegex.Match(compact);
-                    if (match.Success &&
-                        int.TryParse(match.Groups["num"].Value, out var parsedNum) &&
-                        parsedNum == month)
-                    {
-                        var prefix = match.Groups["prefix"].Value;
-                        map[$"{prefix}{month}"] = month;
-                        map[$"{prefix}{month:00}"] = month;
-                    }
-                }
+                map[token.Replace(" ", string.Empty)] = month;
             }
-        }
-
-        private static string NormalizeMonthToken(string raw)
-        {
-            return RemoveDiacritics(raw ?? string.Empty)
-                .ToLowerInvariant()
-                .Trim()
-                .Trim('.', ',', ';', ':');
-        }
-
-        private static bool HasAdjacentDayToken(List<string> tokens, int monthIndex)
-        {
-            return (monthIndex > 0 && IsDayToken(tokens[monthIndex - 1])) ||
-                   (monthIndex + 1 < tokens.Count && IsDayToken(tokens[monthIndex + 1]));
-        }
-
-        private static bool IsDayToken(string token)
-        {
-            return TryParseLeadingNumber(token, out var value) && value >= 1 && value <= 31;
-        }
-
-        private static bool TryResolveDay(List<string> tokens, int monthIndex, out int day)
-        {
-            day = 0;
-
-            if (monthIndex > 0 &&
-                TryParseLeadingNumber(tokens[monthIndex - 1], out var prev) &&
-                prev >= 1 && prev <= 31)
-            {
-                day = prev;
-                return true;
-            }
-
-            if (monthIndex + 1 < tokens.Count &&
-                TryParseLeadingNumber(tokens[monthIndex + 1], out var next) &&
-                next >= 1 && next <= 31)
-            {
-                day = next;
-                return true;
-            }
-
-            for (var distance = 2; distance < tokens.Count; distance++)
-            {
-                var left = monthIndex - distance;
-                if (left >= 0 &&
-                    TryParseLeadingNumber(tokens[left], out var leftValue) &&
-                    leftValue >= 1 && leftValue <= 31)
-                {
-                    day = leftValue;
-                    return true;
-                }
-
-                var right = monthIndex + distance;
-                if (right < tokens.Count &&
-                    TryParseLeadingNumber(tokens[right], out var rightValue) &&
-                    rightValue >= 1 && rightValue <= 31)
-                {
-                    day = rightValue;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool TryResolveYear(List<string> tokens, int monthIndex, out int year)
-        {
-            year = 0;
-
-            // Prefer a year after month token first.
-            for (var i = monthIndex + 1; i < tokens.Count; i++)
-            {
-                if (TryParseLeadingNumber(tokens[i], out var after) && after >= 1900 && after <= 3000)
-                {
-                    year = after;
-                    return true;
-                }
-            }
-
-            for (var i = monthIndex - 1; i >= 0; i--)
-            {
-                if (TryParseLeadingNumber(tokens[i], out var before) && before >= 1900 && before <= 3000)
-                {
-                    year = before;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool TryParseLeadingNumber(string token, out int value)
-        {
-            value = 0;
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return false;
-            }
-
-            var digits = new string(token.TakeWhile(char.IsDigit).ToArray());
-            if (digits.Length == 0 || digits.Length > 4)
-            {
-                return false;
-            }
-
-            return int.TryParse(digits, out value);
-        }
-
-        private static DateTime HandleYearAndConvert(DateTime dt, bool hasYear, DateTime steamNow)
-        {
-            if (!hasYear)
-            {
-                // If parsed yearless date lands too far in the future, treat it as previous year.
-                if (dt > steamNow.AddDays(2))
-                {
-                    dt = dt.AddYears(-1);
-                }
-            }
-
-            return ConvertToUtc(dt);
         }
 
         private static string RemoveDiacritics(string text)
@@ -608,67 +505,26 @@ namespace PlayniteAchievements.Providers.Steam
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
 
-        private static DateTime ConvertToUtc(DateTime dt)
-        {
-            try
-            {
-                return TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(dt, DateTimeKind.Unspecified), SteamBaseTimeZone);
-            }
-            catch
-            {
-                return DateTime.SpecifyKind(dt, DateTimeKind.Utc);
-            }
-        }
-
         private static CultureInfo[] BuildSupportedCultures()
         {
             return SupportedCultureNames
                 .Select(name =>
                 {
-                    try { return new CultureInfo(name); } catch { return null; }
+                    try { return new CultureInfo(name); }
+                    catch { return null; }
                 })
                 .Where(c => c != null)
                 .ToArray();
         }
 
-        private static CultureInfo GetCultureForSteamLanguage(string language)
+        private static string NormalizeMonthToken(string raw)
         {
-            switch (language?.ToLowerInvariant())
-            {
-                case "german": return new CultureInfo("de-DE");
-                case "french": return new CultureInfo("fr-FR");
-                case "spanish": return new CultureInfo("es-ES");
-                case "italian": return new CultureInfo("it-IT");
-                case "russian": return new CultureInfo("ru-RU");
-                case "japanese": return new CultureInfo("ja-JP");
-                case "portuguese": return new CultureInfo("pt-PT");
-                case "brazilian": return new CultureInfo("pt-BR");
-                case "polish": return new CultureInfo("pl-PL");
-                case "dutch": return new CultureInfo("nl-NL");
-                case "swedish": return new CultureInfo("sv-SE");
-                case "finnish": return new CultureInfo("fi-FI");
-                case "danish": return new CultureInfo("da-DK");
-                case "norwegian": return new CultureInfo("nb-NO");
-                case "hungarian": return new CultureInfo("hu-HU");
-                case "czech": return new CultureInfo("cs-CZ");
-                case "romanian": return new CultureInfo("ro-RO");
-                case "turkish": return new CultureInfo("tr-TR");
-                case "greek": return new CultureInfo("el-GR");
-                case "bulgarian": return new CultureInfo("bg-BG");
-                case "ukrainian": return new CultureInfo("uk-UA");
-                case "thai": return new CultureInfo("th-TH");
-                case "vietnamese": return new CultureInfo("vi-VN");
-                case "koreana": return new CultureInfo("ko-KR");
-                case "schinese": return new CultureInfo("zh-CN");
-                case "tchinese": return new CultureInfo("zh-TW");
-                case "arabic": return new CultureInfo("ar-SA");
-                default: return new CultureInfo("en-US");
-            }
+            return RemoveDiacritics(raw ?? string.Empty)
+                .ToLowerInvariant()
+                .Trim()
+                .Trim('.', ',', ';', ':', '،');
         }
 
-        /// <summary>
-        /// Get current time in Steam's Pacific timezone.
-        /// </summary>
         public static DateTime GetSteamNow()
         {
             try
@@ -681,10 +537,6 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
-        /// <summary>
-        /// Get the timezone offset for Steam's Pacific timezone for cookie usage.
-        /// Returns -28800 seconds (UTC-8) as Steam's standard offset.
-        /// </summary>
         public static string GetSteamTimezoneOffsetCookieValue()
         {
             return "-28800,0";

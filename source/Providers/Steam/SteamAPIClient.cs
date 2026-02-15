@@ -10,7 +10,7 @@ using Playnite.SDK.Data;
 
 namespace PlayniteAchievements.Providers.Steam
 {
-    internal sealed class SteamAPIClient
+    internal sealed class SteamApiClient
     {
         private const string DefaultUserAgent = 
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly HttpClient _apiHttp;
         private readonly ILogger _logger;
 
-        public SteamAPIClient(HttpClient apiHttp, ILogger logger)
+        public SteamApiClient(HttpClient apiHttp, ILogger logger)
         {
             _apiHttp = apiHttp ?? throw new ArgumentNullException(nameof(apiHttp));
             _logger = logger;

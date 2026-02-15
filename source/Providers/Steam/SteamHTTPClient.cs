@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Steam
 {
-    public sealed class SteamHTTPClient : IDisposable
+    public sealed class SteamHttpClient : IDisposable
     {
         private static readonly Uri CommunityBase = new Uri("https://steamcommunity.com/");
         private static readonly Uri StoreBase = new Uri("https://store.steampowered.com/");
@@ -24,7 +24,7 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly SteamSessionManager _sessionManager;
-        private readonly SteamAPIClient _apiHelper;
+        private readonly SteamApiClient _steamApiClient;
         private readonly CookieContainer _cookieJar = new CookieContainer();
         private readonly object _cookieLock = new object();
 
@@ -38,14 +38,14 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly ConcurrentDictionary<int, Lazy<Task<bool?>>> _hasAchievementsCache =
             new ConcurrentDictionary<int, Lazy<Task<bool?>>>();
 
-        public SteamHTTPClient(IPlayniteAPI api, ILogger logger, SteamSessionManager sessionManager)
+        public SteamHttpClient(IPlayniteAPI api, ILogger logger, SteamSessionManager sessionManager)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
 
             BuildHttpClientsOnce();
-            _apiHelper = new SteamAPIClient(_apiHttp, _logger);
+            _steamApiClient = new SteamApiClient(_apiHttp, _logger);
 
             LoadCookiesFromCefIntoJar();
         }
@@ -122,7 +122,7 @@ namespace PlayniteAchievements.Providers.Steam
         public Task<Dictionary<int, int>> GetPlaytimesAsync(
             string apiKey, string steamId64, bool includePlayedFreeGames = true)
         {
-            return _apiHelper.GetOwnedGamesAsync(apiKey, steamId64, includePlayedFreeGames);
+            return _steamApiClient.GetOwnedGamesAsync(apiKey, steamId64, includePlayedFreeGames);
         }
 
         // ---------------------------------------------------------------------
@@ -157,7 +157,7 @@ namespace PlayniteAchievements.Providers.Steam
                 return new List<SteamPlayerSummaries>();
             }
 
-            var apiResults = await _apiHelper.GetPlayerSummariesAsync(apiKey, ids, ct).ConfigureAwait(false);
+            var apiResults = await _steamApiClient.GetPlayerSummariesAsync(apiKey, ids, ct).ConfigureAwait(false);
             return apiResults ?? new List<SteamPlayerSummaries>();
         }
 
@@ -270,7 +270,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         private async Task<bool?> FetchAppHasAchievementsAsync(string apiKey, int appId)
         {
-            return await _apiHelper.GetSchemaForGameAsync(apiKey, appId).ConfigureAwait(false);
+            return await _steamApiClient.GetSchemaForGameAsync(apiKey, appId).ConfigureAwait(false);
         }
 
         // ---------------------------------------------------------------------

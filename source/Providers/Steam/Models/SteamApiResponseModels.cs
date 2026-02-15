@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 namespace PlayniteAchievements.Providers.Steam.Models
 {
     /// <summary>
-    /// Shared Steam Web API response models used by both SteamClient and SteamApiHelper.
+    /// Shared Steam Web API response models used by both SteamHttpClient and SteamApiClient.
     /// Consolidates duplicate model definitions to reduce code duplication.
     /// </summary>
     [DataContract]

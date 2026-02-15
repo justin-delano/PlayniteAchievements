@@ -15,9 +15,9 @@ namespace PlayniteAchievements.Providers.Steam
     {
         internal static readonly Guid SteamPluginId = Guid.Parse("CB91DFC9-B977-43BF-8E70-55F46E410FAB");
 
-        private readonly SteamHTTPClient _steamClient;
+        private readonly SteamHttpClient _steamClient;
         private readonly SteamScanner _scanner;
-        private readonly SteamAPIClient _apiHelper;
+        private readonly SteamApiClient _steamApiClient;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly SteamSessionManager _sessionManager;
 
@@ -36,10 +36,10 @@ namespace PlayniteAchievements.Providers.Steam
             _sessionManager = sessionManager;
 
             // Create Steam-specific dependencies
-            _steamClient = new SteamHTTPClient(api, logger, _sessionManager);
-            _apiHelper = new SteamAPIClient(_steamClient.ApiHttpClient, logger);
+            _steamClient = new SteamHttpClient(api, logger, _sessionManager);
+            _steamApiClient = new SteamApiClient(_steamClient.ApiHttpClient, logger);
 
-            _scanner = new SteamScanner(settings, _steamClient, _sessionManager, _apiHelper, api, logger);
+            _scanner = new SteamScanner(settings, _steamClient, _sessionManager, _steamApiClient, api, logger);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");

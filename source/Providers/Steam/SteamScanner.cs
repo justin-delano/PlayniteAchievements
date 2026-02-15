@@ -31,9 +31,9 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         private readonly PlayniteAchievementsSettings _settings;
-        private readonly SteamHTTPClient _steamClient;
+        private readonly SteamHttpClient _steamClient;
         private readonly SteamSessionManager _sessionManager;
-        private readonly SteamAPIClient _apiHelper;
+        private readonly SteamApiClient _steamApiClient;
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
 
@@ -42,16 +42,16 @@ namespace PlayniteAchievements.Providers.Steam
 
         public SteamScanner(
             PlayniteAchievementsSettings settings,
-            SteamHTTPClient steamClient,
+            SteamHttpClient steamClient,
             SteamSessionManager sessionManager,
-            SteamAPIClient apiHelper,
+            SteamApiClient steamApiClient,
             IPlayniteAPI api,
             ILogger logger)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _steamClient = steamClient ?? throw new ArgumentNullException(nameof(steamClient));
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
-            _apiHelper = apiHelper ?? throw new ArgumentNullException(nameof(apiHelper));
+            _steamApiClient = steamApiClient ?? throw new ArgumentNullException(nameof(steamApiClient));
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
         }
@@ -227,7 +227,7 @@ namespace PlayniteAchievements.Providers.Steam
                 return new Dictionary<int, int>();
 
             var lazyTask = _ownedGamePlaytimeCache.GetOrAdd(resolved,
-                new Lazy<Task<Dictionary<int, int>>>(() => _apiHelper.GetOwnedGamesAsync(apiKey, resolved, true)));
+                new Lazy<Task<Dictionary<int, int>>>(() => _steamApiClient.GetOwnedGamesAsync(apiKey, resolved, true)));
 
             try
             {
@@ -324,7 +324,7 @@ namespace PlayniteAchievements.Providers.Steam
         private Task<SchemaAndPercentages> FetchSchemaAsync(int appId, CancellationToken cancel)
         {
             var language = string.IsNullOrWhiteSpace(_settings.Persisted.SteamLanguage) ? "english" : _settings.Persisted.SteamLanguage.Trim();
-            return _apiHelper.GetSchemaForGameDetailedAsync(
+            return _steamApiClient.GetSchemaForGameDetailedAsync(
                 _settings.Persisted.SteamApiKey.Trim(),
                 appId,
                 language,
@@ -673,9 +673,9 @@ namespace PlayniteAchievements.Providers.Steam
                 return res;
             }
 
-            if (SteamHTTPClient.HasAnyAchievementRows(html))
+            if (SteamHttpClient.HasAnyAchievementRows(html))
             {
-                if (SteamHTTPClient.HasOnlyHiddenAchievementRows(html))
+                if (SteamHttpClient.HasOnlyHiddenAchievementRows(html))
                 {
                     res.TransientFailure = false;
                     res.SetDetail(SteamScrapeDetail.AllHidden);
@@ -728,7 +728,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (html.IndexOf("global_action_menu", StringComparison.OrdinalIgnoreCase) >= 0) return false;
 
-            if (SteamHTTPClient.LooksLoggedOutHeader(html)) return true;
+            if (SteamHttpClient.LooksLoggedOutHeader(html)) return true;
 
             if (html.IndexOf("g_steamID = \"0\"", StringComparison.OrdinalIgnoreCase) >= 0) return true;
 
