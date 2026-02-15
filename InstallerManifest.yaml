@@ -11,6 +11,8 @@ Packages:
       - Steam - fixed unlock time parsing for Vietnamese language users
       - Cache now automatically removes entries for games no longer in your library
       - Progress bar now hides after 3 seconds instead of staying visible
+      - Clarified settings and filters by using positive language, e.g. "Show Locked Achievements" instead of "Hide Locked Achievements".
+      - Various UI improvements and bug fixes throughout
 
   - Version: 1.0.5
     RequiredApiVersion: 6.14.0
