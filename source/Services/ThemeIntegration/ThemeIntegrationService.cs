@@ -320,37 +320,18 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
-            EnsureFullscreenInitialized();
-            RequestSingleGameUpdateWithScanIfNeeded(id.Value);
-            _windowService.OpenGameWindow(id.Value);
+            OpenGameWindow(id.Value);
         }
 
         public void OpenGameWindow(Guid gameId)
         {
             EnsureFullscreenInitialized();
-            RequestSingleGameUpdateWithScanIfNeeded(gameId);
+
+            // Populate single-game data synchronously before opening the window.
+            // This mirrors the pattern used in OpenOverviewWindow to prevent stale data.
+            PopulateSingleGameDataSync(gameId);
+
             _windowService.OpenGameWindow(gameId);
-        }
-
-        private void RequestSingleGameUpdateWithScanIfNeeded(Guid gameId)
-        {
-            _requestSingleGameThemeUpdate(gameId);
-
-            try
-            {
-                if (_achievementManager.GetGameAchievementData(gameId) == null)
-                {
-                    var scanTask = _achievementManager.ExecuteScanAsync(ScanModeType.Single, gameId);
-                    _ = scanTask?.ContinueWith(_ =>
-                    {
-                        try { _requestSingleGameThemeUpdate(gameId); } catch { }
-                        try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
-                    });
-                }
-            }
-            catch
-            {
-            }
         }
 
         #endregion
@@ -518,6 +499,45 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to populate all-games data synchronously.");
+            }
+        }
+
+        /// <summary>
+        /// Synchronously populates single-game achievement data before opening a game window.
+        /// Uses existing cached data without triggering a scan. This prevents stale data by
+        /// ensuring the snapshot is applied before the window opens.
+        /// </summary>
+        private void PopulateSingleGameDataSync(Guid gameId)
+        {
+            try
+            {
+                var gameData = _achievementManager.GetGameAchievementData(gameId);
+                if (gameData == null || gameData.NoAchievements)
+                {
+                    ClearSingleGameThemeProperties();
+                    return;
+                }
+
+                var snapshot = SingleGameSnapshotService.BuildSnapshot(
+                    gameId,
+                    gameData,
+                    _settings.Persisted.UltraRareThreshold,
+                    _settings.Persisted.RareThreshold,
+                    _settings.Persisted.UncommonThreshold);
+
+                if (snapshot != null)
+                {
+                    ApplySnapshot(snapshot);
+                }
+                else
+                {
+                    ClearSingleGameThemeProperties();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to populate single-game data synchronously for game {gameId}.");
+                ClearSingleGameThemeProperties();
             }
         }
 
