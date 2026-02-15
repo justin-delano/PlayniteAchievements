@@ -1,5 +1,17 @@
 AddonId: PlayniteAchievements
 Packages:
+  - Version: 1.1.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-02-15
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.1.0/PlayniteAchievements_1_1_0.pext
+    Changelog:
+      - New SQLite database backend - achievement data is now stored in a local database for faster loading and better performance
+      - Steam - fixed rate limiting errors when scanning large libraries
+      - Steam - fixed issue where all achievements could appear hidden incorrectly
+      - Steam - fixed unlock time parsing for Vietnamese language users
+      - Cache now automatically removes entries for games no longer in your library
+      - Progress bar now hides after 3 seconds instead of staying visible
+
   - Version: 1.0.5
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-14
