@@ -206,7 +206,10 @@ namespace PlayniteAchievements.Providers.Epic
                     ApiName = item.AchievementId,
                     DisplayName = string.IsNullOrWhiteSpace(item.Title) ? item.AchievementId : item.Title,
                     Description = item.Description ?? string.Empty,
-                    IconPath = item.IconUrl ?? string.Empty,
+                    UnlockedIconPath = item.UnlockedIconUrl ?? string.Empty,
+                    LockedIconPath = item.LockedIconUrl,
+                    Points = item.XP,
+                    Category = null,
                     Hidden = item.Hidden,
                     UnlockTimeUtc = item.UnlockTimeUtc,
                     GlobalPercentUnlocked = item.RarityPercent

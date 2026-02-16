@@ -470,7 +470,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     ApiName = achId,
                     DisplayName = title,
                     Description = desc,
-                    IconPath = string.IsNullOrWhiteSpace(badge) ? null : $"https://i.retroachievements.org/Badge/{badge}.png",
+                    UnlockedIconPath = string.IsNullOrWhiteSpace(badge) ? null : $"https://i.retroachievements.org/Badge/{badge}.png",
+                    LockedIconPath = string.IsNullOrWhiteSpace(badge) ? null : $"https://i.retroachievements.org/Badge/{badge}_lock.png",
+                    Points = ach.Points,
+                    Category = null,
                     UnlockTimeUtc = unlockUtc,
                     GlobalPercentUnlocked = globalPercent,
                     Hidden = false
