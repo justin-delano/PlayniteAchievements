@@ -13,8 +13,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     /// <summary>
     /// Service for managing fullscreen overlay achievement windows.
     /// Handles window creation, display, and closing for fullscreen mode.
-    /// Follows SuccessStoryFullscreenHelper pattern: changes Playnite selection
-    /// before opening game windows so theme bindings resolve correctly.
+    /// Follows SuccessStoryFullscreenHelper pattern for opening windows,
+    /// but restores original selection when window closes.
     /// </summary>
     public sealed class FullscreenWindowService : IDisposable
     {
@@ -24,6 +24,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private Dispatcher UiDispatcher => _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
 
         private Window _achievementsWindow;
+        private Guid? _originalSelectedGameId;
 
         public FullscreenWindowService(
             IPlayniteAPI api,
@@ -45,6 +46,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         /// </summary>
         public void OpenOverviewWindow()
         {
+            _originalSelectedGameId = GetSingleSelectedGameId();
             ShowAchievementsWindow(styleKey: "AchievementsWindow", selectGameId: null);
         }
 
@@ -76,6 +78,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
+            _originalSelectedGameId = id.Value;
             SelectGame(id.Value);
             ShowAchievementsWindow(styleKey: "GameAchievementsWindow", selectGameId: null);
         }
@@ -238,7 +241,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     _achievementsWindow = null;
                 }
-                // No restore needed - selection stays on the clicked game
+
+                // Restore original selection when window closes
+                if (_originalSelectedGameId.HasValue)
+                {
+                    try { _api?.MainView?.SelectGame(_originalSelectedGameId.Value); } catch { }
+                    try { _requestSingleGameThemeUpdate(_originalSelectedGameId); } catch { }
+                    _originalSelectedGameId = null;
+                }
             };
 
             window.Content = content;
