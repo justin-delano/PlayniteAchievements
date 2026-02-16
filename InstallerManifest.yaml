@@ -1,5 +1,18 @@
 AddonId: PlayniteAchievements
 Packages:
+  - Version: 1.2.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-02-16
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.2.0/PlayniteAchievements_1_2_0.pext
+    Changelog:
+      - GOG support! - track achievements from your GOG library!
+      - Steam - improved unlock detection using progress bar as fallback
+      - Fullscreen mode - fixed game selection issues when opening achievement windows
+      - Localization updates for all supported steam languages (localization for other providers coming soon)
+      - Fixed grid view achievement counts - each game now shows its own achievement progress instead of the selected game's count
+      - Various UI improvements and bug fixes throughout
+      - Next up is Epic Games Store support, gamerscore tracking, streamlined authentication flows, more legacy SuccessStory support, and more
+
   - Version: 1.1.0
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-15
