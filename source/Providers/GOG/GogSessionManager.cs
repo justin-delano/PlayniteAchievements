@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -179,6 +180,13 @@ namespace PlayniteAchievements.Providers.GOG
         /// </summary>
         public bool TryLoadLibraryCredentials()
         {
+            // Skip if already authenticated with library credentials (no need to re-probe)
+            if (_isSessionAuthenticated && _usingLibraryCredentials)
+            {
+                _logger?.Debug("[GogAuth] Already authenticated with library credentials, skipping reload.");
+                return true;
+            }
+
             _libraryPluginName = GetInstalledLibraryPluginName();
 
             if (string.IsNullOrEmpty(_libraryPluginName))
@@ -561,17 +569,64 @@ namespace PlayniteAchievements.Providers.GOG
 
             try
             {
-                using (var client = new HttpClient())
+                // Create CookieContainer and add cookies with proper domain handling
+                var cookieContainer = new CookieContainer
+                {
+                    PerDomainCapacity = 100,
+                    Capacity = 300,
+                    MaxCookieSize = 4096 * 10
+                };
+
+                int addedCount = 0;
+                int errorCount = 0;
+
+                foreach (var cookie in cookies)
+                {
+                    if (string.IsNullOrEmpty(cookie.Domain))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        var fixedValue = FixCookieValue(cookie.Value);
+                        var systemCookie = new Cookie
+                        {
+                            Name = cookie.Name,
+                            Value = fixedValue,
+                            Domain = cookie.Domain,
+                            Path = cookie.Path ?? "/",
+                            Secure = cookie.Secure,
+                            HttpOnly = cookie.HttpOnly
+                        };
+
+                        if (cookie.Expires.HasValue)
+                        {
+                            systemCookie.Expires = cookie.Expires.Value;
+                        }
+
+                        cookieContainer.Add(systemCookie);
+                        addedCount++;
+                    }
+                    catch (CookieException ex)
+                    {
+                        errorCount++;
+                        _logger?.Debug($"[GogAuth] CookieException for '{cookie.Name}' on domain '{cookie.Domain}': {ex.Message}");
+                    }
+                }
+
+                _logger?.Debug($"[GogAuth] CookieContainer: {addedCount} cookies added, {errorCount} errors.");
+
+                using (var handler = new HttpClientHandler
+                {
+                    CookieContainer = cookieContainer,
+                    AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+                })
+                using (var client = new HttpClient(handler))
                 {
                     client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36");
 
-                    // Build cookie header - only include name=value, not domain
-                    var cookieHeader = string.Join("; ", cookies.Select(c => $"{c.Name}={c.Value}"));
-
-                    _logger?.Debug($"[GogAuth] Cookie header (first 200 chars): {cookieHeader.Substring(0, Math.Min(200, cookieHeader.Length))}");
                     _logger?.Debug($"[GogAuth] Calling account info API: {accountInfoUrl}");
-
-                    client.DefaultRequestHeaders.Add("Cookie", cookieHeader);
 
                     var response = await client.GetAsync(accountInfoUrl).ConfigureAwait(false);
                     var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -593,6 +648,26 @@ namespace PlayniteAchievements.Providers.GOG
                 _logger?.Error(ex, "[GogAuth] Error calling account info API.");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Fixes cookie values containing special characters that need encoding.
+        /// Ported from playnite-plugincommon Tools.FixCookieValue.
+        /// </summary>
+        private static string FixCookieValue(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            // URL-encode values containing commas (unless already quoted)
+            if (value[0] != '"' && value.IndexOf(',') >= 0)
+            {
+                return Uri.EscapeDataString(value);
+            }
+
+            return value;
         }
 
         #endregion
