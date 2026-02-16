@@ -115,8 +115,8 @@ namespace PlayniteAchievements.Views
 
         public bool GogLibraryNotDetected
         {
-            get => (bool)GetValue(GogAuthenticatedProperty);
-            set => SetValue(GogAuthenticatedProperty, value);
+            get => (bool)GetValue(GogLibraryNotDetectedProperty);
+            set => SetValue(GogLibraryNotDetectedProperty, value);
         }
 
         public static readonly DependencyProperty SteamAuthenticatedProperty =
@@ -940,13 +940,19 @@ namespace PlayniteAchievements.Views
 
         private void SetGogAuthenticated(bool authenticated)
         {
+            _logger?.Debug($"[GogAuth] SetGogAuthenticated: value={authenticated}, CheckAccess={Dispatcher.CheckAccess()}");
             if (Dispatcher.CheckAccess())
             {
                 GogAuthenticated = authenticated;
+                _logger?.Debug($"[GogAuth] SetGogAuthenticated: set directly, GogAuthenticated={GogAuthenticated}");
             }
             else
             {
-                Dispatcher.BeginInvoke(new Action(() => GogAuthenticated = authenticated));
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    GogAuthenticated = authenticated;
+                    _logger?.Debug($"[GogAuth] SetGogAuthenticated: set via Dispatcher, GogAuthenticated={GogAuthenticated}");
+                }));
             }
         }
 
