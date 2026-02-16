@@ -178,21 +178,38 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (nodes == null || nodes.Count == 0) return new List<ScrapedAchievement>();
 
+            // Parse progress bar to get unlocked count as backup for rows without timestamps
+            int? unlockedCountFromProgressBar = TryParseUnlockedCountFromProgressBar(doc);
+
             var results = new List<ScrapedAchievement>();
+            int rowIndex = 0;
+
             foreach (var row in nodes)
             {
                 if (row.SelectSingleNode(".//div[contains(@class,'achieveHiddenBox')]") != null) continue;
 
                 var unlockNode = row.SelectSingleNode(".//div[contains(@class,'achieveUnlockTime')]");
-                var isUnlocked = unlockNode != null;
                 var unlockText = ExtractUnlockText(unlockNode);
                 var unlockUtc = SteamTimeParser.TryParseSteamUnlockTime(unlockText, language);
 
-                if (isUnlocked && !unlockUtc.HasValue)
+                // Primary indicator: presence of unlock time div with parseable time
+                bool isUnlocked = unlockNode != null && unlockUtc.HasValue;
+
+                // Backup indicator: if progress bar says N unlocked, first N rows are unlocked
+                // This handles old achievements where Steam didn't record unlock times
+                if (!isUnlocked && unlockedCountFromProgressBar.HasValue && rowIndex < unlockedCountFromProgressBar.Value)
+                {
+                    isUnlocked = true;
+                    // Keep unlockUtc as null to indicate unknown unlock time
+                }
+
+                if (isUnlocked && unlockNode != null && !unlockUtc.HasValue && !string.IsNullOrWhiteSpace(unlockText))
                 {
                     var snippet = unlockText.Substring(0, Math.Min(50, unlockText.Length));
                     _logger?.Warn($"[SteamAch] ParseAchievements: Failed to parse time (lang={language}) from '{unlockText}' (hex: {BitConverter.ToString(Encoding.UTF8.GetBytes(snippet))})");
                 }
+
+                rowIndex++;
 
                 if (!includeLocked && !isUnlocked) continue;
 
@@ -237,6 +254,37 @@ namespace PlayniteAchievements.Providers.Steam
                 });
             }
             return results;
+        }
+
+        /// <summary>
+        /// Parses the progress bar section to extract the unlocked achievement count.
+        /// Steam always displays unlocked achievements first, so the first N rows are unlocked.
+        /// This works across languages by finding the first two numbers in the summary text.
+        /// </summary>
+        private static int? TryParseUnlockedCountFromProgressBar(HtmlDocument doc)
+        {
+            // Look for the achievements summary section
+            var summaryNode = doc.DocumentNode.SelectSingleNode("//div[@id='topSummaryAchievements']");
+            if (summaryNode == null) return null;
+
+            // Get the first text-containing div (before the progress bar)
+            var textNode = summaryNode.SelectSingleNode("./div[not(contains(@class,'achieveBar'))]");
+            if (textNode == null) return null;
+
+            var text = textNode.InnerText;
+            if (string.IsNullOrWhiteSpace(text)) return null;
+
+            // Find first two numbers - they represent (unlocked, total) regardless of language
+            // English: "12 of 15 (80%) achievements earned"
+            // French: "12 sur 15 (80%) succès débloqués"
+            // German: "12 von 15 (80%) Errungenschaften freigeschaltet"
+            var numberMatches = Regex.Matches(text, @"\b(\d+)\b");
+            if (numberMatches.Count >= 2 && int.TryParse(numberMatches[0].Groups[1].Value, out var unlockedCount))
+            {
+                return unlockedCount;
+            }
+
+            return null;
         }
 
         private static string ExtractUnlockText(HtmlNode unlockNode)
