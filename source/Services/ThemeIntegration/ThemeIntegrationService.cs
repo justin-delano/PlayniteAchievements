@@ -326,8 +326,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         public void OpenGameWindow(Guid gameId)
         {
             EnsureFullscreenInitialized();
-            // FullscreenWindowService changes Playnite's selection to gameId,
-            // which triggers OnGameSelected -> updates SelectedGame and theme data
+
+            // Synchronously populate single-game data before opening the window.
+            // This prevents the race condition where the window opens before
+            // async theme updates complete, showing stale data from the previous selection.
+            PopulateSingleGameDataSync(gameId);
+
             _windowService.OpenGameWindow(gameId);
         }
 
