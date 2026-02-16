@@ -26,7 +26,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
-        private bool _useCoverImages = false;
+        private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
         private bool _enableDiagnostics = false;
         private int _scanDelayMs = 200;
