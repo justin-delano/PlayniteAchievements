@@ -187,6 +187,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 if (_achievementsWindow != null && _achievementsWindow.IsVisible)
                 {
+                    // Clear original selection tracking before closing so the Closed
+                    // handler doesn't restore to old selection when transitioning windows
+                    _originalSelectedGameId = null;
                     _achievementsWindow.Close();
                 }
             }
