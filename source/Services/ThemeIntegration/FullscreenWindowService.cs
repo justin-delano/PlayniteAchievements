@@ -19,6 +19,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly IPlayniteAPI _api;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Action<Guid?> _requestSingleGameThemeUpdate;
+        private readonly Action _restoreSelectedGameThemeData;
         private Dispatcher UiDispatcher => _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
 
         private Window _achievementsWindow;
@@ -26,11 +27,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         public FullscreenWindowService(
             IPlayniteAPI api,
             PlayniteAchievementsSettings settings,
-            Action<Guid?> requestSingleGameThemeUpdate)
+            Action<Guid?> requestSingleGameThemeUpdate,
+            Action restoreSelectedGameThemeData)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _requestSingleGameThemeUpdate = requestSingleGameThemeUpdate ?? throw new ArgumentNullException(nameof(requestSingleGameThemeUpdate));
+            _restoreSelectedGameThemeData = restoreSelectedGameThemeData ?? throw new ArgumentNullException(nameof(restoreSelectedGameThemeData));
         }
 
         public void Dispose()
@@ -48,6 +51,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         /// <summary>
         /// Opens the achievement window for a specific game.
+        /// Does NOT change Playnite's main game selection to avoid affecting
+        /// the underlying view when the window closes.
         /// </summary>
         public void OpenGameWindow(Guid gameId)
         {
@@ -56,8 +61,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
-            PreselectGame(gameId);
-            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: gameId);
+            // Do NOT call PreselectGame here - it changes the main selection,
+            // which would cause the wrong game to be selected when the window closes.
+            // The single-game data is already populated synchronously by ThemeIntegrationService.
+            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: null);
         }
 
         /// <summary>
@@ -230,6 +237,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     _achievementsWindow = null;
                 }
+
+                // Restore single-game theme data to match Playnite's current selection.
+                try { _restoreSelectedGameThemeData(); } catch { }
             };
 
             window.Content = content;

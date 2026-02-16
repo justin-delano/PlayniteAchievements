@@ -334,6 +334,24 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _windowService.OpenGameWindow(gameId);
         }
 
+        /// <summary>
+        /// Restores single-game theme data to match Playnite's currently selected game.
+        /// Called when fullscreen achievement windows close to ensure the underlying
+        /// game detail view shows correct data.
+        /// </summary>
+        public void RestoreSelectedGameThemeData()
+        {
+            var selectedId = GetSingleSelectedGameId();
+            if (selectedId.HasValue)
+            {
+                PopulateSingleGameDataSync(selectedId.Value);
+            }
+            else
+            {
+                ClearSingleGameThemeProperties();
+            }
+        }
+
         #endregion
 
         #region Refresh Operations
