@@ -755,19 +755,28 @@ namespace PlayniteAchievements.Views
             await CheckGogAuthAsync().ConfigureAwait(false);
         }
 
-        private void GogAuth_RefreshFromLibrary_Click(object sender, RoutedEventArgs e)
+        private async void GogAuth_RefreshFromLibrary_Click(object sender, RoutedEventArgs e)
         {
             _logger?.Info("[GogAuth] Settings: Refresh from Library clicked.");
-            _gogSessionManager.RefreshFromLibrary();
-            _ = CheckGogAuthAsync().ConfigureAwait(false);
+            await CheckGogAuthAsync(forceRefresh: true).ConfigureAwait(false);
         }
 
-        private async Task CheckGogAuthAsync()
+        private async Task CheckGogAuthAsync(bool forceRefresh = false)
         {
             SetGogAuthBusy(true);
             SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_Checking");
+
+            // Small delay to ensure user sees the checking feedback
+            await Task.Delay(300).ConfigureAwait(false);
+
             try
             {
+                // Force refresh credentials from library if requested
+                if (forceRefresh)
+                {
+                    _gogSessionManager.RefreshFromLibrary();
+                }
+
                 using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
                 {
                     var result = await _gogSessionManager.ProbeAuthenticationAsync(timeoutCts.Token).ConfigureAwait(false);

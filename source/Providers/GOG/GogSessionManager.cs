@@ -178,10 +178,11 @@ namespace PlayniteAchievements.Providers.GOG
         /// <summary>
         /// Attempts to load credentials from the GOG library plugin storage.
         /// </summary>
-        public bool TryLoadLibraryCredentials()
+        /// <param name="forceRefresh">If true, bypasses the "already authenticated" check and reloads credentials.</param>
+        public bool TryLoadLibraryCredentials(bool forceRefresh = false)
         {
             // Skip if already authenticated with library credentials (no need to re-probe)
-            if (_isSessionAuthenticated && _usingLibraryCredentials)
+            if (!forceRefresh && _isSessionAuthenticated && _usingLibraryCredentials)
             {
                 _logger?.Debug("[GogAuth] Already authenticated with library credentials, skipping reload.");
                 return true;
@@ -349,8 +350,8 @@ namespace PlayniteAchievements.Providers.GOG
         /// </summary>
         public void RefreshFromLibrary()
         {
-            _logger?.Info("[GogAuth] Refreshing credentials from library.");
-            TryLoadLibraryCredentials();
+            _logger?.Info("[GogAuth] Refreshing credentials from library (forced).");
+            TryLoadLibraryCredentials(forceRefresh: true);
         }
 
         /// <summary>
@@ -616,6 +617,7 @@ namespace PlayniteAchievements.Providers.GOG
                 }
 
                 _logger?.Debug($"[GogAuth] CookieContainer: {addedCount} cookies added, {errorCount} errors.");
+                _logger?.Debug($"[GogAuth] CookieContainer count: {cookieContainer.Count}");
 
                 using (var handler = new HttpClientHandler
                 {
