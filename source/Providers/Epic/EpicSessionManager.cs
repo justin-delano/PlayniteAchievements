@@ -453,14 +453,7 @@ namespace PlayniteAchievements.Providers.Epic
                     return null;
                 }
 
-                _logger?.Debug($"[EpicAuth] Decrypted token JSON (first 500 chars): {json.Substring(0, Math.Min(500, json.Length))}");
-
-                var token = JsonConvert.DeserializeObject<EpicStoreToken>(json);
-                if (token != null)
-                {
-                    _logger?.Debug($"[EpicAuth] Deserialized token: AccountId={token.AccountId ?? "null"}, Token={(token.Token != null ? (token.Token.Length > 20 ? token.Token.Substring(0, 20) + "..." : token.Token) : "null")}, RefreshToken={(token.RefreshToken != null ? "present" : "null")}");
-                }
-                return token;
+                return JsonConvert.DeserializeObject<EpicStoreToken>(json);
             }
             catch (Exception ex)
             {
