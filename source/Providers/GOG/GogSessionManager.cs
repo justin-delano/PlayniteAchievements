@@ -410,21 +410,27 @@ namespace PlayniteAchievements.Providers.GOG
                 var decryptedJson = DecryptFromFile(userPath, Encoding.UTF8, password);
                 if (string.IsNullOrWhiteSpace(decryptedJson))
                 {
+                    _logger?.Debug("[GogAuth] User file content is empty after decryption.");
                     return false;
                 }
 
-                var userData = Serialization.FromJson<GogUserData>(decryptedJson);
+                _logger?.Debug($"[GogAuth] User file content (first 200 chars): {decryptedJson.Substring(0, Math.Min(200, decryptedJson.Length))}");
+
+                // The User file contains AccountInfos structure from CommonPluginsStores
+                var userData = Serialization.FromJson<GogAccountInfos>(decryptedJson);
                 if (userData != null && !string.IsNullOrWhiteSpace(userData.UserId))
                 {
                     _userId = userData.UserId;
+                    _logger?.Info($"[GogAuth] Loaded user ID from User file: {_userId}");
                     return true;
                 }
 
+                _logger?.Warn("[GogAuth] User data parsed but UserId is missing.");
                 return false;
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "[GogAuth] Error loading user info.");
+                _logger?.Error(ex, "[GogAuth] Error loading user info.");
                 return false;
             }
         }
@@ -498,12 +504,17 @@ namespace PlayniteAchievements.Providers.GOG
         }
 
         /// <summary>
-        /// Represents the user data stored by GOG library plugins.
+        /// Represents the user account info stored by GOG library plugins.
+        /// Matches AccountInfos structure from CommonPluginsStores.
         /// </summary>
-        private class GogUserData
+        private class GogAccountInfos
         {
             public string UserId { get; set; }
-            public string Username { get; set; }
+            public string ClientId { get; set; }
+            public string Pseudo { get; set; }
+            public string Avatar { get; set; }
+            public string Link { get; set; }
+            public bool IsCurrent { get; set; }
         }
 
         #endregion
