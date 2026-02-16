@@ -34,6 +34,7 @@
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
 
     <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
@@ -166,6 +167,21 @@
     <sys:String x:Key="LOCPlayAch_Settings_Gog_GetLibrary">Obtenir le plugin GOG Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Gog_RefreshFromLibrary">Actualiser depuis la bibliothèque</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Gog_LibraryHelp">PlayniteAchievements utilise les identifiants de votre plugin de bibliothèque GOG installé. Connectez-vous via les paramètres du plugin de bibliothèque pour activer le suivi des succès GOG.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicConnection">Connexion Epic Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicDescription">Les succès Epic sont résolus à partir de votre session web Epic authentifiée. Vérifiez la session actuelle ou relancez l'authentification pour actualiser l'état de connexion.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Authentification Epic</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Check">Vérifier l'authentification</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_NotChecked">Epic : Non vérifié</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Checking">Vérification de l'authentification Epic...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_TimedOut">Délai d'authentification Epic dépassé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Failed">Échec de l'authentification Epic.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Verified">Authentification Epic vérifiée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated">Epic est déjà authentifié.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_ProbeFailed">Impossible de vérifier l'état d'authentification Epic.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_CookiesCleared">Cookies de session Epic effacés.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryDetected">Utilisation des identifiants {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_RefreshFromLibrary">Actualiser depuis la bibliothèque</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryHelp">PlayniteAchievements utilise les identifiants de votre plugin de bibliothèque Epic Games ou Legendary. Connectez-vous via les paramètres du plugin de bibliothèque pour activer le suivi des succès Epic.</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
 
     <!-- ================================================================= -->

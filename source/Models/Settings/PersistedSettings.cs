@@ -15,6 +15,12 @@ namespace PlayniteAchievements.Models.Settings
 
         private string _steamUserId;
         private string _gogUserId;
+        private string _epicAccountId;
+        private string _epicAccessToken;
+        private string _epicRefreshToken;
+        private string _epicTokenType;
+        private DateTime? _epicTokenExpiryUtc;
+        private DateTime? _epicRefreshTokenExpiryUtc;
         private string _steamApiKey;
         private string _steamLanguage = "english";
         private bool _enablePeriodicUpdates = true;
@@ -60,6 +66,42 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _gogUserId;
             set => SetValue(ref _gogUserId, value);
+        }
+
+        public string EpicAccountId
+        {
+            get => _epicAccountId;
+            set => SetValue(ref _epicAccountId, value);
+        }
+
+        public string EpicAccessToken
+        {
+            get => _epicAccessToken;
+            set => SetValue(ref _epicAccessToken, value);
+        }
+
+        public string EpicRefreshToken
+        {
+            get => _epicRefreshToken;
+            set => SetValue(ref _epicRefreshToken, value);
+        }
+
+        public string EpicTokenType
+        {
+            get => _epicTokenType;
+            set => SetValue(ref _epicTokenType, value);
+        }
+
+        public DateTime? EpicTokenExpiryUtc
+        {
+            get => _epicTokenExpiryUtc;
+            set => SetValue(ref _epicTokenExpiryUtc, value);
+        }
+
+        public DateTime? EpicRefreshTokenExpiryUtc
+        {
+            get => _epicRefreshTokenExpiryUtc;
+            set => SetValue(ref _epicRefreshTokenExpiryUtc, value);
         }
 
         /// <summary>
@@ -349,6 +391,12 @@ namespace PlayniteAchievements.Models.Settings
             {
                 SteamUserId = this.SteamUserId,
                 GogUserId = this.GogUserId,
+                EpicAccountId = this.EpicAccountId,
+                EpicAccessToken = this.EpicAccessToken,
+                EpicRefreshToken = this.EpicRefreshToken,
+                EpicTokenType = this.EpicTokenType,
+                EpicTokenExpiryUtc = this.EpicTokenExpiryUtc,
+                EpicRefreshTokenExpiryUtc = this.EpicRefreshTokenExpiryUtc,
                 SteamApiKey = this.SteamApiKey,
                 SteamLanguage = this.SteamLanguage,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,

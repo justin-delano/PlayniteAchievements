@@ -14,6 +14,7 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.Providers.RetroAchievements;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.GOG;
+using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -49,6 +50,7 @@ namespace PlayniteAchievements
         private readonly NotificationPublisher _notifications;
         private readonly SteamSessionManager _steamSessionManager;
         private readonly GogSessionManager _gogSessionManager;
+        private readonly EpicSessionManager _epicSessionManager;
 
         private readonly BackgroundUpdater _backgroundUpdates;
 
@@ -90,6 +92,7 @@ namespace PlayniteAchievements
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;
         public SteamSessionManager SteamSessionManager => _steamSessionManager;
+        public EpicSessionManager EpicSessionManager => _epicSessionManager;
         public static PlayniteAchievementsPlugin Instance { get; private set; }
 
         /// <summary>
@@ -139,6 +142,7 @@ namespace PlayniteAchievements
             // Create shared Steam session manager for use by provider and settings UI
             _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, settings);
             _gogSessionManager = new GogSessionManager(PlayniteApi, _logger, settings);
+            _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
 
             var providers = new List<IDataProvider>
             {
@@ -153,6 +157,11 @@ namespace PlayniteAchievements
                     PlayniteApi,
                     pluginUserDataPath,
                     _gogSessionManager),
+                new EpicDataProvider(
+                    _logger,
+                    settings,
+                    PlayniteApi,
+                    _epicSessionManager),
                 new RetroAchievementsDataProvider(
                     _logger,
                     settings,
@@ -248,7 +257,7 @@ namespace PlayniteAchievements
             try
             {
                 _logger.Info($"GetSettingsView called, firstRunView={firstRunView}");
-                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager, _gogSessionManager);
+                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager, _gogSessionManager, _epicSessionManager);
                 _logger.Info("GetSettingsView succeeded");
                 return control;
             }

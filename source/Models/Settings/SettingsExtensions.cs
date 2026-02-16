@@ -30,6 +30,12 @@ namespace PlayniteAchievements.Models.Settings
             // Steam Settings
             target.SteamUserId = source.SteamUserId;
             target.GogUserId = source.GogUserId;
+            target.EpicAccountId = source.EpicAccountId;
+            target.EpicAccessToken = source.EpicAccessToken;
+            target.EpicRefreshToken = source.EpicRefreshToken;
+            target.EpicTokenType = source.EpicTokenType;
+            target.EpicTokenExpiryUtc = source.EpicTokenExpiryUtc;
+            target.EpicRefreshTokenExpiryUtc = source.EpicRefreshTokenExpiryUtc;
             target.SteamApiKey = source.SteamApiKey;
             target.SteamLanguage = source.SteamLanguage;
 
@@ -84,6 +90,12 @@ namespace PlayniteAchievements.Models.Settings
                 // Steam Settings
                 SteamUserId = source.SteamUserId,
                 GogUserId = source.GogUserId,
+                EpicAccountId = source.EpicAccountId,
+                EpicAccessToken = source.EpicAccessToken,
+                EpicRefreshToken = source.EpicRefreshToken,
+                EpicTokenType = source.EpicTokenType,
+                EpicTokenExpiryUtc = source.EpicTokenExpiryUtc,
+                EpicRefreshTokenExpiryUtc = source.EpicRefreshTokenExpiryUtc,
                 SteamApiKey = source.SteamApiKey,
                 SteamLanguage = source.SteamLanguage,
 
