@@ -1,35 +1,91 @@
 using PlayniteAchievements.Providers.GOG.Models;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Common;
 using Playnite.SDK;
 using Playnite.SDK.Data;
-using Playnite.SDK.Events;
 using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Security.Principal;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.GOG
 {
     /// <summary>
-    /// WebView-based authentication client for GOG.
-    /// Uses Playnite's IWebView API for browser-based authentication.
-    /// Based on SteamSessionManager pattern and playnite-plugincommon GogApi.cs.
+    /// Manages GOG authentication by reading credentials from installed GOG library plugins.
+    /// Supports both official GOG Library and GOG OSS Library plugins.
+    /// Users must install and authenticate via a GOG library plugin to use GOG features.
     /// </summary>
     public sealed class GogSessionManager : IGogTokenProvider
     {
-        private const string UrlLogin = "https://www.gog.com/account/";
-        private const string UrlAccountInfo = "https://menu.gog.com/v1/account/basic";
-        private static readonly TimeSpan InteractiveAuthTimeout = TimeSpan.FromMinutes(3);
+        #region Constants
+
+        // Official GOG Library Plugin ID
+        private const string OfficialGogLibraryPluginId = "AEBE8B7C-6DC3-4A66-AF31-E7375C6B5E9E";
+
+        // GOG OSS Library Plugin ID
+        private const string GogOssLibraryPluginId = "03689811-3F33-4DFB-A121-2EE168FB9A5C";
+
+        // Credential file names in StoresData
+        private const string TokenFileName = "GOG_Token.dat";
+        private const string CookiesFileName = "GOG_Cookies.dat";
+        private const string UserFileName = "GOG_User.dat";
+
+        #endregion
+
+        #region Fields
+
+        private readonly IPlayniteAPI _api;
+        private readonly ILogger _logger;
+        private readonly PlayniteAchievementsSettings _settings;
 
         private string _accessToken;
         private string _userId;
         private DateTime _tokenExpiryUtc = DateTime.MinValue;
         private bool _isSessionAuthenticated;
-        private (bool Success, string UserId) _authResult;
-        private int _authCheckInProgress;
-        private readonly IPlayniteAPI _api;
-        private readonly ILogger _logger;
-        private readonly PlayniteAchievementsSettings _settings;
+        private bool _usingLibraryCredentials;
+        private string _libraryPluginName;
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Gets the current access token, throwing if expired or missing.
+        /// </summary>
+        public string GetAccessToken()
+        {
+            if (string.IsNullOrEmpty(_accessToken) || DateTime.UtcNow >= _tokenExpiryUtc)
+            {
+                throw new AuthRequiredException("GOG authentication required. Please login via a GOG library plugin.");
+            }
+            return _accessToken;
+        }
+
+        /// <summary>
+        /// Gets the current user ID.
+        /// </summary>
+        public string GetUserId() => _userId;
+
+        /// <summary>
+        /// Checks if currently authenticated with valid credentials.
+        /// </summary>
+        public bool IsAuthenticated => _isSessionAuthenticated;
+
+        /// <summary>
+        /// Gets whether credentials were loaded from a GOG library plugin.
+        /// </summary>
+        public bool UsingLibraryCredentials => _usingLibraryCredentials;
+
+        /// <summary>
+        /// Gets the name of the detected library plugin, or null if none detected.
+        /// </summary>
+        public string LibraryPluginName => _libraryPluginName;
+
+        #endregion
+
+        #region Constructor
 
         public GogSessionManager(IPlayniteAPI api, ILogger logger, PlayniteAchievementsSettings settings)
         {
@@ -44,32 +100,168 @@ namespace PlayniteAchievements.Providers.GOG
             }
         }
 
+        #endregion
+
+        #region Public Methods
+
         /// <summary>
-        /// Gets the current access token, throwing if expired or missing.
+        /// Checks if a GOG library plugin is installed.
         /// </summary>
-        public string GetAccessToken()
+        public bool IsGogLibraryInstalled()
         {
-            if (string.IsNullOrEmpty(_accessToken) || DateTime.UtcNow >= _tokenExpiryUtc)
-            {
-                throw new AuthRequiredException("GOG authentication required. Please login.");
-            }
-            return _accessToken;
+            return !string.IsNullOrEmpty(GetInstalledLibraryPluginName());
         }
 
         /// <summary>
-        /// Gets the current user ID.
+        /// Gets the name of the installed GOG library plugin, or null if none.
+        /// Official GOG Library takes precedence over GOG OSS.
         /// </summary>
-        public string GetUserId() => _userId;
+        public string GetInstalledLibraryPluginName()
+        {
+            try
+            {
+                var plugins = _api?.Addons?.Plugins;
+                if (plugins == null)
+                {
+                    _logger?.Debug("[GogAuth] Could not access plugins collection.");
+                    return null;
+                }
+
+                var officialId = Guid.Parse(OfficialGogLibraryPluginId);
+                var ossId = Guid.Parse(GogOssLibraryPluginId);
+
+                // Check for official GOG Library first
+                foreach (var plugin in plugins)
+                {
+                    if (plugin == null) continue;
+                    if (plugin.Id == officialId)
+                    {
+                        _logger?.Debug("[GogAuth] Found official GOG Library plugin.");
+                        return "GOG Library";
+                    }
+                }
+
+                // Check for GOG OSS Library
+                foreach (var plugin in plugins)
+                {
+                    if (plugin == null) continue;
+                    if (plugin.Id == ossId)
+                    {
+                        _logger?.Debug("[GogAuth] Found GOG OSS Library plugin.");
+                        return "GOG OSS Library";
+                    }
+                }
+
+                _logger?.Debug("[GogAuth] No GOG library plugin found.");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[GogAuth] Error checking for GOG library plugin.");
+                return null;
+            }
+        }
 
         /// <summary>
-        /// Checks if currently authenticated based on verified web session (cookie-backed),
-        /// independent of in-memory token availability.
+        /// Attempts to load credentials from the GOG library plugin storage.
         /// </summary>
-        public bool IsAuthenticated => _isSessionAuthenticated;
+        public bool TryLoadLibraryCredentials()
+        {
+            _libraryPluginName = GetInstalledLibraryPluginName();
+
+            if (string.IsNullOrEmpty(_libraryPluginName))
+            {
+                _logger?.Info("[GogAuth] No GOG library plugin installed.");
+                _usingLibraryCredentials = false;
+                _isSessionAuthenticated = false;
+                return false;
+            }
+
+            var storesDataPath = GetStoresDataPath();
+            if (string.IsNullOrEmpty(storesDataPath) || !Directory.Exists(storesDataPath))
+            {
+                _logger?.Warn($"[GogAuth] StoresData directory not found: {storesDataPath}");
+                _usingLibraryCredentials = false;
+                _isSessionAuthenticated = false;
+                return false;
+            }
+
+            // Try loading token
+            var tokenPath = Path.Combine(storesDataPath, TokenFileName);
+            if (!TryLoadToken(tokenPath))
+            {
+                _logger?.Warn("[GogAuth] Failed to load GOG token from library.");
+                _usingLibraryCredentials = false;
+                _isSessionAuthenticated = false;
+                return false;
+            }
+
+            _usingLibraryCredentials = true;
+            _isSessionAuthenticated = !string.IsNullOrWhiteSpace(_userId);
+
+            if (_isSessionAuthenticated)
+            {
+                _settings.Persisted.GogUserId = _userId;
+                _logger?.Info($"[GogAuth] Successfully loaded credentials from {_libraryPluginName}. User: {_userId}");
+            }
+
+            return _isSessionAuthenticated;
+        }
 
         /// <summary>
-        /// Runs a best-effort background probe to hydrate authentication state from current web session cookies.
-        /// Safe to call at startup; failures are logged and not propagated.
+        /// Probes authentication state by loading library credentials.
+        /// </summary>
+        public Task<GogAuthResult> ProbeAuthenticationAsync(CancellationToken ct)
+        {
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+
+                if (TryLoadLibraryCredentials())
+                {
+                    return Task.FromResult(GogAuthResult.Create(
+                        GogAuthOutcome.AlreadyAuthenticated,
+                        "LOCPlayAch_Settings_Gog_LibraryDetected",
+                        _userId,
+                        _tokenExpiryUtc,
+                        windowOpened: false));
+                }
+
+                var libraryName = GetInstalledLibraryPluginName();
+                if (!string.IsNullOrEmpty(libraryName))
+                {
+                    // Library installed but not logged in
+                    return Task.FromResult(GogAuthResult.Create(
+                        GogAuthOutcome.NotAuthenticated,
+                        "LOCPlayAch_Settings_Gog_LibraryNotLoggedIn",
+                        windowOpened: false));
+                }
+
+                // No library installed
+                return Task.FromResult(GogAuthResult.Create(
+                    GogAuthOutcome.NotAuthenticated,
+                    "LOCPlayAch_Settings_Gog_NoLibrary",
+                    windowOpened: false));
+            }
+            catch (OperationCanceledException)
+            {
+                return Task.FromResult(GogAuthResult.Create(
+                    GogAuthOutcome.Cancelled,
+                    "LOCPlayAch_Settings_GogAuth_Cancelled",
+                    windowOpened: false));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[GogAuth] Probe failed with exception.");
+                return Task.FromResult(GogAuthResult.Create(
+                    GogAuthOutcome.ProbeFailed,
+                    "LOCPlayAch_Settings_GogAuth_ProbeFailed",
+                    windowOpened: false));
+            }
+        }
+
+        /// <summary>
+        /// Runs a best-effort background probe to hydrate authentication state.
         /// </summary>
         public async Task PrimeAuthenticationStateAsync(CancellationToken ct)
         {
@@ -89,349 +281,17 @@ namespace PlayniteAchievements.Providers.GOG
             }
         }
 
-        public async Task<GogAuthResult> ProbeAuthenticationAsync(CancellationToken ct)
-        {
-            try
-            {
-                ct.ThrowIfCancellationRequested();
-
-                if (HasValidToken())
-                {
-                    return GogAuthResult.Create(
-                        GogAuthOutcome.AlreadyAuthenticated,
-                        "LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated",
-                        _userId,
-                        _tokenExpiryUtc,
-                        windowOpened: false);
-                }
-
-                var extractedId = await QuickAuthCheckAsync(ct).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(extractedId))
-                {
-                    return GogAuthResult.Create(
-                        GogAuthOutcome.AlreadyAuthenticated,
-                        "LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated",
-                        extractedId,
-                        _tokenExpiryUtc,
-                        windowOpened: false);
-                }
-
-                    _isSessionAuthenticated = false;
-
-                return GogAuthResult.Create(
-                    GogAuthOutcome.NotAuthenticated,
-                    "LOCPlayAch_Settings_GogAuth_NotAuthenticated",
-                    windowOpened: false);
-            }
-            catch (OperationCanceledException)
-            {
-                return GogAuthResult.Create(
-                    GogAuthOutcome.Cancelled,
-                    "LOCPlayAch_Settings_GogAuth_Cancelled",
-                    windowOpened: false);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "[GogAuth] Probe failed with exception.");
-                return GogAuthResult.Create(
-                    GogAuthOutcome.ProbeFailed,
-                    "LOCPlayAch_Settings_GogAuth_ProbeFailed",
-                    windowOpened: false);
-            }
-        }
-
         /// <summary>
-        /// Main authentication entry point.
+        /// Refreshes credentials from the library plugin storage.
         /// </summary>
-        public async Task<GogAuthResult> AuthenticateInteractiveAsync(
-            bool forceInteractive,
-            CancellationToken ct,
-            IProgress<GogAuthProgressStep> progress = null)
+        public void RefreshFromLibrary()
         {
-            var windowOpened = false;
-
-            try
-            {
-                ct.ThrowIfCancellationRequested();
-                progress?.Report(GogAuthProgressStep.CheckingExistingSession);
-
-                _logger?.Info("[GogAuth] Starting interactive authentication.");
-
-                if (!forceInteractive)
-                {
-                    try
-                    {
-                        var existingUserId = await QuickAuthCheckAsync(ct).ConfigureAwait(false);
-                        if (!string.IsNullOrWhiteSpace(existingUserId))
-                        {
-                            _logger?.Info("[GogAuth] Quick auth check succeeded - already authenticated.");
-                            progress?.Report(GogAuthProgressStep.Completed);
-                            return GogAuthResult.Create(
-                                GogAuthOutcome.AlreadyAuthenticated,
-                                "LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated",
-                                existingUserId,
-                                _tokenExpiryUtc,
-                                windowOpened: false);
-                        }
-                    }
-                    catch (Exception quickCheckEx)
-                    {
-                        _logger?.Debug(quickCheckEx, "[GogAuth] Quick check failed before interactive login, proceeding.");
-                    }
-                }
-                else
-                {
-                    ClearSession();
-                }
-
-                _logger?.Info("[GogAuth] Opening login dialog.");
-                progress?.Report(GogAuthProgressStep.OpeningLoginWindow);
-
-                var loginTcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                _ = _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
-                {
-                    try
-                    {
-                        var result = LoginInteractively();
-                        loginTcs.TrySetResult(result ?? "");
-                    }
-                    catch (Exception ex)
-                    {
-                        loginTcs.TrySetException(ex);
-                    }
-                }));
-                windowOpened = true;
-
-                progress?.Report(GogAuthProgressStep.WaitingForUserLogin);
-                var completed = await Task.WhenAny(
-                    loginTcs.Task,
-                    Task.Delay(InteractiveAuthTimeout, ct)).ConfigureAwait(false);
-
-                if (completed != loginTcs.Task)
-                {
-                    _logger?.Warn("[GogAuth] Interactive login timed out while waiting for dialog completion.");
-                    progress?.Report(GogAuthProgressStep.Failed);
-                    return GogAuthResult.Create(
-                        GogAuthOutcome.TimedOut,
-                        "LOCPlayAch_Settings_GogAuth_TimedOut",
-                        windowOpened: windowOpened);
-                }
-
-                var extractedId = await loginTcs.Task.ConfigureAwait(false);
-
-                progress?.Report(GogAuthProgressStep.VerifyingSession);
-                if (string.IsNullOrWhiteSpace(extractedId))
-                {
-                    // Fallback: dialog may have been manually closed after successful login.
-                    extractedId = await QuickAuthCheckAsync(ct).ConfigureAwait(false);
-                }
-
-                if (string.IsNullOrWhiteSpace(extractedId))
-                {
-                    _logger?.Warn("[GogAuth] Interactive login failed or was cancelled.");
-                    progress?.Report(GogAuthProgressStep.Failed);
-                    return GogAuthResult.Create(
-                        GogAuthOutcome.Cancelled,
-                        "LOCPlayAch_Settings_GogAuth_Cancelled",
-                        windowOpened: windowOpened);
-                }
-
-                _userId = extractedId;
-                _logger?.Info("[GogAuth] Interactive login succeeded.");
-                progress?.Report(GogAuthProgressStep.Completed);
-                return GogAuthResult.Create(
-                    GogAuthOutcome.Authenticated,
-                    "LOCPlayAch_Settings_GogAuth_Verified",
-                    extractedId,
-                    _tokenExpiryUtc,
-                    windowOpened: windowOpened);
-            }
-            catch (OperationCanceledException)
-            {
-                _logger?.Info("[GogAuth] Authentication was cancelled or timed out.");
-                progress?.Report(GogAuthProgressStep.Failed);
-                return GogAuthResult.Create(
-                    GogAuthOutcome.TimedOut,
-                    "LOCPlayAch_Settings_GogAuth_TimedOut",
-                    windowOpened: windowOpened);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "[GogAuth] Authentication failed with exception.");
-                progress?.Report(GogAuthProgressStep.Failed);
-                return GogAuthResult.Create(
-                    GogAuthOutcome.Failed,
-                    "LOCPlayAch_Settings_GogAuth_Failed",
-                    windowOpened: windowOpened);
-            }
+            _logger?.Info("[GogAuth] Refreshing credentials from library.");
+            TryLoadLibraryCredentials();
         }
 
         /// <summary>
-        /// Quick check using offscreen view to see if already authenticated.
-        /// </summary>
-        private async Task<string> QuickAuthCheckAsync(CancellationToken ct)
-        {
-            // Check existing token validity
-            if (HasValidToken())
-            {
-                _logger?.Debug("[GogAuth] Existing token is still valid.");
-                return _userId;
-            }
-
-            ct.ThrowIfCancellationRequested();
-
-            var responseTask = CallAccountInfoApiAsync(timeoutMs: 6000);
-            var completed = await Task.WhenAny(
-                responseTask,
-                Task.Delay(Timeout.Infinite, ct)).ConfigureAwait(false);
-            if (completed != responseTask)
-            {
-                throw new OperationCanceledException(ct);
-            }
-
-            var response = await responseTask.ConfigureAwait(false);
-            if (TryApplyAuthResponse(response, requireToken: true))
-            {
-                _logger?.Info("[GogAuth] Quick check validated existing session.");
-                return _userId;
-            }
-
-            _logger?.Debug("[GogAuth] Quick check - not logged in.");
-            return null;
-        }
-
-        private async Task<string> WaitForAuthenticatedUserAsync(CancellationToken ct)
-        {
-            const int attempts = 8;
-            const int delayMs = 500;
-
-            for (int attempt = 1; attempt <= attempts; attempt++)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                try
-                {
-                    var extractedId = await QuickAuthCheckAsync(ct).ConfigureAwait(false);
-                    if (!string.IsNullOrWhiteSpace(extractedId))
-                    {
-                        return extractedId;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "[GogAuth] Waiting for authenticated user failed, retrying.");
-                }
-
-                if (attempt < attempts)
-                {
-                    await Task.Delay(delayMs, ct).ConfigureAwait(false);
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Calls the account info API using an offscreen WebView session.
-        /// </summary>
-        private async Task<GogAccountInfoResponse> CallAccountInfoApiAsync(int timeoutMs = 15000)
-        {
-            var dispatchOperation = _api.MainView.UIDispatcher.InvokeAsync(async () =>
-            {
-                using (var view = _api.WebViews.CreateOffscreenView())
-                {
-                    await view.NavigateAndWaitAsync(UrlAccountInfo, timeoutMs: timeoutMs);
-                    var responseText = await view.GetPageTextAsync();
-                    if (TryParseAccountInfo(responseText, out var response))
-                    {
-                        return response;
-                    }
-                }
-                return null;
-            });
-
-            var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
-            return await responseTask.ConfigureAwait(false);
-        }
-
-        private bool TryApplyAuthResponse(GogAccountInfoResponse response, bool requireToken)
-        {
-            if (response == null || !response.IsLoggedIn)
-            {
-                return false;
-            }
-
-            _userId = response.UserId;
-            _accessToken = response.ResolvedAccessToken;
-            _isSessionAuthenticated = !string.IsNullOrWhiteSpace(_userId);
-
-            if (_isSessionAuthenticated)
-            {
-                _settings.Persisted.GogUserId = _userId;
-            }
-
-            if (string.IsNullOrWhiteSpace(_userId))
-            {
-                _logger?.Debug("[GogAuth] Account API returned logged-in state but no userId.");
-                _isSessionAuthenticated = false;
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(_accessToken))
-            {
-                _tokenExpiryUtc = DateTime.MinValue;
-                if (requireToken)
-                {
-                    _logger?.Debug("[GogAuth] Account API returned logged-in state but no accessToken.");
-                    return false;
-                }
-
-                return true;
-            }
-
-            // Keep a minimum validity window to avoid immediate false negatives from bad expires values.
-            var expiresInSeconds = response.ResolvedAccessTokenExpires > 0 ? response.ResolvedAccessTokenExpires : 300;
-            _tokenExpiryUtc = DateTime.UtcNow.AddSeconds(expiresInSeconds);
-
-            return true;
-        }
-
-        /// <summary>
-        /// Parses the account info response from JSON text.
-        /// </summary>
-        private bool TryParseAccountInfo(string json, out GogAccountInfoResponse response)
-        {
-            response = null;
-            if (string.IsNullOrWhiteSpace(json))
-                return false;
-
-            try
-            {
-                response = Serialization.FromJson<GogAccountInfoResponse>(json);
-                return response != null && response.IsLoggedIn;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[GogAuth] Failed to parse account info response.");
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Checks if URL is a login page.
-        /// </summary>
-        private static bool IsLoginPageUrl(string url)
-        {
-            if (string.IsNullOrWhiteSpace(url))
-                return false;
-
-            return url.IndexOf("/login", StringComparison.OrdinalIgnoreCase) >= 0
-                   || url.IndexOf("openlogin", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        /// <summary>
-        /// Clears the session by resetting stored tokens.
+        /// Clears the in-memory session state (does not affect library plugin credentials).
         /// </summary>
         public void ClearSession()
         {
@@ -440,123 +300,189 @@ namespace PlayniteAchievements.Providers.GOG
             _userId = null;
             _tokenExpiryUtc = DateTime.MinValue;
             _isSessionAuthenticated = false;
-            _authResult = (false, null);
+            _usingLibraryCredentials = false;
             _settings.Persisted.GogUserId = null;
+        }
 
-            // Also clear cookies from CEF
+        #endregion
+
+        #region Private Methods
+
+        private string GetStoresDataPath()
+        {
             try
             {
-                _api.MainView.UIDispatcher.Invoke(() =>
-                {
-                    using (var view = _api.WebViews.CreateOffscreenView())
-                    {
-                        view.DeleteDomainCookies(".gog.com");
-                        view.DeleteDomainCookies("gog.com");
-                    }
-                });
+                // PlaynitePaths.ExtensionsDataPath is not directly accessible,
+                // but we can construct the path from the application data directory
+                var extensionsDataPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Playnite",
+                    "ExtensionsData");
+
+                return Path.Combine(extensionsDataPath, "StoresData");
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "[GogAuth] Failed to clear GOG cookies from CEF.");
+                _logger?.Error(ex, "[GogAuth] Failed to get StoresData path.");
+                return null;
             }
         }
 
-        /// <summary>
-        /// Synchronous login method matching Steam library plugin pattern.
-        /// Blocks until CloseWhenLoggedIn closes the view.
-        /// </summary>
-        private string LoginInteractively()
+        private bool TryLoadToken(string tokenPath)
         {
-            _authResult = (false, null);
-            IWebView view = null;
+            if (!File.Exists(tokenPath))
+            {
+                _logger?.Debug($"[GogAuth] Token file not found: {tokenPath}");
+                return false;
+            }
 
             try
             {
-                view = _api.WebViews.CreateView(580, 700);
-                view.DeleteDomainCookies(".gog.com");
-                view.DeleteDomainCookies("gog.com");
+                var password = GetEncryptionPassword();
+                if (string.IsNullOrEmpty(password))
+                {
+                    _logger?.Warn("[GogAuth] Could not get encryption password.");
+                    return false;
+                }
 
-                view.LoadingChanged += CloseWhenLoggedIn;
-                view.Navigate(UrlLogin);
+                var decryptedJson = DecryptFromFile(tokenPath, Encoding.UTF8, password);
+                if (string.IsNullOrWhiteSpace(decryptedJson))
+                {
+                    _logger?.Warn("[GogAuth] Decrypted token is empty.");
+                    return false;
+                }
 
-                // This blocks until CloseWhenLoggedIn calls view.Close()
-                view.OpenDialog();
+                var tokenData = Serialization.FromJson<GogTokenData>(decryptedJson);
+                if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.Token))
+                {
+                    _logger?.Warn("[GogAuth] Failed to parse token data.");
+                    return false;
+                }
 
-                return _authResult.Success ? _authResult.UserId : null;
+                _accessToken = tokenData.Token;
+
+                // Try to load user info as well
+                var storesDataPath = Path.GetDirectoryName(tokenPath);
+                var userPath = Path.Combine(storesDataPath, UserFileName);
+                TryLoadUserInfo(userPath, password);
+
+                return true;
             }
-            finally
+            catch (CryptographicException ex)
             {
-                if (view != null)
-                {
-                    view.LoadingChanged -= CloseWhenLoggedIn;
-                    view.Dispose();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Event handler that auto-closes the WebView when auth is detected.
-        /// </summary>
-        private async void CloseWhenLoggedIn(object sender, WebViewLoadingChangedEventArgs e)
-        {
-            try
-            {
-                if (e.IsLoading)
-                    return;
-
-                var view = (IWebView)sender;
-                var address = view.GetCurrentAddress();
-
-                // Skip if still on login page
-                if (IsLoginPageUrl(address))
-                {
-                    _logger?.Debug("[GogAuth] Still on login page, waiting...");
-                    return;
-                }
-
-                if (Interlocked.CompareExchange(ref _authCheckInProgress, 1, 0) != 0)
-                    return;
-
-                _logger?.Debug($"[GogAuth] Navigation to: {address}");
-
-                // GOG does not reliably redirect after login and can commit cookies with a short delay.
-                // Poll auth for a short window so successful login auto-closes reliably.
-                var extractedId = await WaitForAuthenticatedUserAsync(CancellationToken.None).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(extractedId))
-                {
-                    _authResult = (true, extractedId);
-                    _logger?.Info($"[GogAuth] Authenticated as user: {extractedId}");
-                    _ = _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
-                    {
-                        try
-                        {
-                            view.Close();
-                        }
-                        catch (Exception closeEx)
-                        {
-                            _logger?.Debug(closeEx, "[GogAuth] Failed to close login dialog.");
-                        }
-                    }));
-                }
-                else
-                {
-                    _logger?.Debug("[GogAuth] Session not authenticated yet after navigation.");
-                }
+                _logger?.Error(ex, "[GogAuth] Cryptographic error decrypting token.");
+                return false;
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, "[GogAuth] Failed to check authentication status");
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _authCheckInProgress, 0);
+                _logger?.Error(ex, "[GogAuth] Error loading token.");
+                return false;
             }
         }
 
-        private bool HasValidToken()
+        private bool TryLoadUserInfo(string userPath, string password)
         {
-            return !string.IsNullOrEmpty(_accessToken) && DateTime.UtcNow < _tokenExpiryUtc;
+            if (!File.Exists(userPath))
+            {
+                _logger?.Debug($"[GogAuth] User file not found: {userPath}");
+                return false;
+            }
+
+            try
+            {
+                var decryptedJson = DecryptFromFile(userPath, Encoding.UTF8, password);
+                if (string.IsNullOrWhiteSpace(decryptedJson))
+                {
+                    return false;
+                }
+
+                var userData = Serialization.FromJson<GogUserData>(decryptedJson);
+                if (userData != null && !string.IsNullOrWhiteSpace(userData.UserId))
+                {
+                    _userId = userData.UserId;
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[GogAuth] Error loading user info.");
+                return false;
+            }
         }
+
+        private static string GetEncryptionPassword()
+        {
+            try
+            {
+                return WindowsIdentity.GetCurrent()?.User?.Value;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        #endregion
+
+        #region Encryption (ported from playnite-plugincommon)
+
+        /// <summary>
+        /// Decrypts content from a file using AES encryption.
+        /// Ported from CommonPlayniteShared.Common.Encryption.
+        /// </summary>
+        private static string DecryptFromFile(string inputFile, Encoding encoding, string password)
+        {
+            byte[] encryptedData = File.ReadAllBytes(inputFile);
+            var passwordBytes = Encoding.UTF8.GetBytes(password);
+            var salt = new byte[32];
+
+            Array.Copy(encryptedData, 0, salt, 0, salt.Length);
+
+            using (var AES = new RijndaelManaged())
+            {
+                AES.KeySize = 256;
+                AES.BlockSize = 128;
+                AES.Padding = PaddingMode.PKCS7;
+                AES.Mode = CipherMode.CFB;
+
+                using (var key = new Rfc2898DeriveBytes(passwordBytes, salt, 1000))
+                {
+                    AES.Key = key.GetBytes(AES.KeySize / 8);
+                    AES.IV = key.GetBytes(AES.BlockSize / 8);
+                }
+
+                using (var memoryStream = new MemoryStream(encryptedData, 32, encryptedData.Length - 32))
+                using (var cs = new CryptoStream(memoryStream, AES.CreateDecryptor(), CryptoStreamMode.Read))
+                using (var reader = new StreamReader(cs, encoding))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
+        }
+
+        #endregion
+
+        #region Nested Types
+
+        /// <summary>
+        /// Represents the token data stored by GOG library plugins.
+        /// </summary>
+        private class GogTokenData
+        {
+            public string Token { get; set; }
+        }
+
+        /// <summary>
+        /// Represents the user data stored by GOG library plugins.
+        /// </summary>
+        private class GogUserData
+        {
+            public string UserId { get; set; }
+            public string Username { get; set; }
+        }
+
+        #endregion
     }
-
 }
