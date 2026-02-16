@@ -413,27 +413,45 @@ namespace PlayniteAchievements.Providers.Epic
                 "Playnite", "ExtensionsData", "StoresData");
         }
 
+        private static string GetExtensionsDataPath()
+        {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Playnite", "ExtensionsData");
+        }
+
         #endregion
 
         #region Token Loading
 
         private EpicStoreToken TryLoadLibraryToken()
         {
-            // Both Epic Games Library and Legendary share the same token file
-            var tokenPath = Path.Combine(GetStoresDataPath(), TokenFileName);
-            if (!File.Exists(tokenPath))
+            // Try official Epic Games Library plugin first (stores tokens in its own directory)
+            var officialTokenPath = Path.Combine(GetExtensionsDataPath(), EpicLibraryPluginId, "tokens.json");
+            if (File.Exists(officialTokenPath))
             {
-                _logger?.Debug($"[EpicAuth] Token file not found: {tokenPath}");
-                return null;
+                var token = TryDecryptToken(officialTokenPath);
+                if (token != null)
+                {
+                    _logger?.Debug($"[EpicAuth] Loaded token from Epic Games Library plugin (official).");
+                    return token;
+                }
             }
 
-            var token = TryDecryptToken(tokenPath);
-            if (token != null)
+            // Fallback to playnite-plugincommon format (used by SuccessStory and other plugins)
+            var pluginCommonTokenPath = Path.Combine(GetStoresDataPath(), TokenFileName);
+            if (File.Exists(pluginCommonTokenPath))
             {
-                _logger?.Debug($"[EpicAuth] Loaded token from {_libraryPluginName ?? "Epic"} library plugin.");
+                var token = TryDecryptToken(pluginCommonTokenPath);
+                if (token != null)
+                {
+                    _logger?.Debug($"[EpicAuth] Loaded token from {_libraryPluginName ?? "Epic"} library plugin (plugincommon).");
+                    return token;
+                }
             }
 
-            return token;
+            _logger?.Debug($"[EpicAuth] No token files found.");
+            return null;
         }
 
         private EpicStoreToken TryDecryptToken(string filePath)
