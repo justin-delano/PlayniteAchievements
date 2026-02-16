@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Providers.Epic
         private const string QueryCodePattern = "(?:\\?|&|\\b)code=([^&\\s\\\"'<>]+)";
         private const string LooseCodePattern = "\\bcode\\s*[:=]\\s*([A-Za-z0-9_\\-\\.\\~\\%]+)";
 
+        private const int TokenExpiryBufferMinutes = 5;
         private static readonly TimeSpan InteractiveAuthTimeout = TimeSpan.FromMinutes(3);
 
         private readonly IPlayniteAPI _api;
@@ -36,7 +37,7 @@ namespace PlayniteAchievements.Providers.Epic
         private string _tokenType;
         private DateTime _tokenExpiryUtc;
         private DateTime _refreshTokenExpiryUtc;
-        private bool _isSessionAuthenticated;
+        private int _authCheckInProgress;
 
         private (bool Success, string AccountId) _authResult;
 
@@ -52,10 +53,9 @@ namespace PlayniteAchievements.Providers.Epic
             _tokenType = string.IsNullOrWhiteSpace(settings.Persisted.EpicTokenType) ? "bearer" : settings.Persisted.EpicTokenType.Trim();
             _tokenExpiryUtc = settings.Persisted.EpicTokenExpiryUtc ?? DateTime.MinValue;
             _refreshTokenExpiryUtc = settings.Persisted.EpicRefreshTokenExpiryUtc ?? DateTime.MinValue;
-            _isSessionAuthenticated = HasValidAccessToken();
         }
 
-        public bool IsAuthenticated => _isSessionAuthenticated;
+        public bool IsAuthenticated => HasValidAccessToken();
 
         public string GetAccountId() => _accountId;
 
@@ -93,6 +93,48 @@ namespace PlayniteAchievements.Providers.Epic
             throw new EpicAuthRequiredException("Epic access token unavailable. Please authenticate.");
         }
 
+        public async Task<bool> TryRefreshTokenAsync(CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(_refreshToken) || DateTime.UtcNow >= _refreshTokenExpiryUtc)
+            {
+                _logger?.Debug("[EpicAuth] Cannot refresh token - no valid refresh token available.");
+                return false;
+            }
+
+            await _tokenRefreshSemaphore.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                if (HasValidAccessToken())
+                {
+                    return true;
+                }
+
+                try
+                {
+                    await RenewTokensAsync(_refreshToken, ct).ConfigureAwait(false);
+                    var success = HasValidAccessToken();
+                    if (success)
+                    {
+                        _logger?.Info("[EpicAuth] Token refresh succeeded.");
+                    }
+                    else
+                    {
+                        _logger?.Warn("[EpicAuth] Token refresh completed but no valid access token.");
+                    }
+                    return success;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "[EpicAuth] Token refresh failed.");
+                    return false;
+                }
+            }
+            finally
+            {
+                _tokenRefreshSemaphore.Release();
+            }
+        }
+
         public async Task PrimeAuthenticationStateAsync(CancellationToken ct)
         {
             try
@@ -119,7 +161,6 @@ namespace PlayniteAchievements.Providers.Epic
 
                 if (HasValidAccessToken())
                 {
-                    _isSessionAuthenticated = true;
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.AlreadyAuthenticated,
                         "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
@@ -140,7 +181,6 @@ namespace PlayniteAchievements.Providers.Epic
 
                     if (HasValidAccessToken())
                     {
-                        _isSessionAuthenticated = true;
                         return EpicAuthResult.Create(
                             EpicAuthOutcome.AlreadyAuthenticated,
                             "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
@@ -156,7 +196,6 @@ namespace PlayniteAchievements.Providers.Epic
                     await AuthenticateUsingAuthCodeAsync(authCode, ct).ConfigureAwait(false);
                     if (HasValidAccessToken())
                     {
-                        _isSessionAuthenticated = true;
                         return EpicAuthResult.Create(
                             EpicAuthOutcome.AlreadyAuthenticated,
                             "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
@@ -165,7 +204,6 @@ namespace PlayniteAchievements.Providers.Epic
                     }
                 }
 
-                _isSessionAuthenticated = false;
                 return EpicAuthResult.Create(
                     EpicAuthOutcome.NotAuthenticated,
                     "LOCPlayAch_Settings_EpicAuth_NotAuthenticated",
@@ -272,7 +310,6 @@ namespace PlayniteAchievements.Providers.Epic
                         windowOpened: windowOpened);
                 }
 
-                _isSessionAuthenticated = true;
                 progress?.Report(EpicAuthProgressStep.Completed);
 
                 return EpicAuthResult.Create(
@@ -320,7 +357,6 @@ namespace PlayniteAchievements.Providers.Epic
                 _logger?.Debug(ex, "[EpicAuth] Failed to clear Epic cookies.");
             }
 
-            _isSessionAuthenticated = false;
             _accountId = null;
             _accessToken = null;
             _refreshToken = null;
@@ -333,7 +369,8 @@ namespace PlayniteAchievements.Providers.Epic
 
         private bool HasValidAccessToken()
         {
-            return !string.IsNullOrWhiteSpace(_accessToken) && DateTime.UtcNow < _tokenExpiryUtc;
+            return !string.IsNullOrWhiteSpace(_accessToken) &&
+                   DateTime.UtcNow < _tokenExpiryUtc.AddMinutes(-TokenExpiryBufferMinutes);
         }
 
         private string LoginByFlow(EpicAuthFlow authFlow)
@@ -446,30 +483,85 @@ namespace PlayniteAchievements.Providers.Epic
                     return;
                 }
 
+                // Prevent concurrent checks (matching GOG pattern)
+                if (Interlocked.CompareExchange(ref _authCheckInProgress, 1, 0) != 0)
+                {
+                    return;
+                }
+
                 var view = (IWebView)sender;
 
-                // Check for redirect indicator before attempting extraction.
-                // After login, Epic redirects to a page displaying localhost/launcher/authorized?code=...
-                var pageText = await view.GetPageTextAsync().ConfigureAwait(false);
-                if (string.IsNullOrEmpty(pageText) || !pageText.Contains("localhost"))
+                // Poll for authorization code with retry (matching GOG's WaitForAuthenticatedUserAsync pattern)
+                var code = await WaitForAuthorizationCodeAsync(view, CancellationToken.None).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(code))
                 {
-                    return;
+                    _authResult = (true, code);
+                    _logger?.Info("[EpicAuth] Authorization code extracted, closing login dialog.");
+                    _ = _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
+                    {
+                        try
+                        {
+                            view.Close();
+                        }
+                        catch (Exception closeEx)
+                        {
+                            _logger?.Debug(closeEx, "[EpicAuth] Failed to close login dialog.");
+                        }
+                    }));
                 }
-
-                var source = await view.GetPageSourceAsync().ConfigureAwait(false);
-                var code = TryExtractAuthorizationCode(source);
-                if (string.IsNullOrWhiteSpace(code))
-                {
-                    return;
-                }
-
-                _authResult = (true, code);
-                await _api.MainView.UIDispatcher.InvokeAsync(() => view.Close());
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "[EpicAuth] CloseWhenLoggedIn failed.");
             }
+            finally
+            {
+                Interlocked.Exchange(ref _authCheckInProgress, 0);
+            }
+        }
+
+        private async Task<string> WaitForAuthorizationCodeAsync(IWebView view, CancellationToken ct)
+        {
+            const int attempts = 8;
+            const int delayMs = 500;
+
+            for (int attempt = 1; attempt <= attempts; attempt++)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                try
+                {
+                    // Check for redirect indicator before attempting extraction.
+                    // After login, Epic redirects to a page displaying localhost/launcher/authorized?code=...
+                    var pageText = await view.GetPageTextAsync().ConfigureAwait(false);
+                    if (string.IsNullOrEmpty(pageText) || !pageText.Contains("localhost"))
+                    {
+                        if (attempt < attempts)
+                        {
+                            await Task.Delay(delayMs, ct).ConfigureAwait(false);
+                        }
+                        continue;
+                    }
+
+                    var source = await view.GetPageSourceAsync().ConfigureAwait(false);
+                    var code = TryExtractAuthorizationCode(source);
+                    if (!string.IsNullOrWhiteSpace(code))
+                    {
+                        return code;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"[EpicAuth] Waiting for authorization code failed on attempt {attempt}, retrying.");
+                }
+
+                if (attempt < attempts)
+                {
+                    await Task.Delay(delayMs, ct).ConfigureAwait(false);
+                }
+            }
+
+            return null;
         }
 
         private async Task<string> TryGetAuthorizationCodeFromSessionAsync(CancellationToken ct)
@@ -676,7 +768,6 @@ namespace PlayniteAchievements.Providers.Epic
             _tokenType = string.IsNullOrWhiteSpace(payload.token_type) ? "bearer" : payload.token_type.Trim();
             _tokenExpiryUtc = NormalizeUtc(payload.expires_at, payload.expires_in);
             _refreshTokenExpiryUtc = NormalizeUtc(payload.refresh_expires_at, payload.refresh_expires_in);
-            _isSessionAuthenticated = HasValidAccessToken();
 
             SavePersistedTokenState();
         }
