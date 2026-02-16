@@ -312,10 +312,9 @@ namespace PlayniteAchievements.Providers.GOG
         {
             try
             {
-                // PlaynitePaths.ExtensionsDataPath is not directly accessible,
-                // but we can construct the path from the application data directory
+                // Playnite stores data in %APPDATA%\Playnite\ExtensionsData (not LocalApplicationData)
                 var extensionsDataPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "Playnite",
                     "ExtensionsData");
 
@@ -352,19 +351,37 @@ namespace PlayniteAchievements.Providers.GOG
                     return false;
                 }
 
+                _logger?.Debug($"[GogAuth] Token file content (first 100 chars): {decryptedJson.Substring(0, Math.Min(100, decryptedJson.Length))}");
+
                 var tokenData = Serialization.FromJson<GogTokenData>(decryptedJson);
-                if (tokenData == null || string.IsNullOrWhiteSpace(tokenData.Token))
+                if (tokenData == null)
                 {
                     _logger?.Warn("[GogAuth] Failed to parse token data.");
                     return false;
                 }
 
+                // Token field contains the access token
                 _accessToken = tokenData.Token;
 
-                // Try to load user info as well
-                var storesDataPath = Path.GetDirectoryName(tokenPath);
-                var userPath = Path.Combine(storesDataPath, UserFileName);
-                TryLoadUserInfo(userPath, password);
+                // AccountId field contains the user ID (if present in token)
+                if (!string.IsNullOrWhiteSpace(tokenData.AccountId))
+                {
+                    _userId = tokenData.AccountId;
+                }
+
+                if (string.IsNullOrWhiteSpace(_accessToken))
+                {
+                    _logger?.Warn("[GogAuth] Token value is empty.");
+                    return false;
+                }
+
+                // If we don't have user ID from token, try loading from user file
+                if (string.IsNullOrWhiteSpace(_userId))
+                {
+                    var storesDataPath = Path.GetDirectoryName(tokenPath);
+                    var userPath = Path.Combine(storesDataPath, UserFileName);
+                    TryLoadUserInfo(userPath, password);
+                }
 
                 return true;
             }
@@ -468,10 +485,16 @@ namespace PlayniteAchievements.Providers.GOG
 
         /// <summary>
         /// Represents the token data stored by GOG library plugins.
+        /// Matches StoreToken structure from playnite-plugincommon.
         /// </summary>
         private class GogTokenData
         {
+            public string AccountId { get; set; }
+            public string Type { get; set; }
             public string Token { get; set; }
+            public DateTime? ExpireAt { get; set; }
+            public string RefreshToken { get; set; }
+            public DateTime? RefreshExpireAt { get; set; }
         }
 
         /// <summary>
