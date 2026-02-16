@@ -101,4 +101,23 @@ namespace PlayniteAchievements.Providers.Epic
     {
         public EpicAuthRequiredException(string message) : base(message) { }
     }
+
+    /// <summary>
+    /// Response model for Epic account info API.
+    /// Used to validate access tokens by querying account details.
+    /// </summary>
+    internal sealed class EpicAccountInfo
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+
+        [JsonProperty("displayName")]
+        public string DisplayName { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("email")]
+        public string Email { get; set; }
+    }
 }
