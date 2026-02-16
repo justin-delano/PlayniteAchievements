@@ -1,5 +1,7 @@
 using Playnite.SDK;
 using SqlNado;
+using System.Linq;
+using PlayniteAchievements.Services.Database.Rows;
 
 namespace PlayniteAchievements.Services.Database
 {
