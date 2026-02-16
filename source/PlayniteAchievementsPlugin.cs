@@ -1,33 +1,34 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows;
-using PlayniteAchievements.Models;
-using PlayniteAchievements.Models.ThemeIntegration;
-using PlayniteAchievements.Models.Achievements;
-using PlayniteAchievements.ViewModels;
-using PlayniteAchievements.Providers;
-using PlayniteAchievements.Services;
-using PlayniteAchievements.Providers.RetroAchievements;
-using PlayniteAchievements.Providers.Steam;
-using PlayniteAchievements.Providers.GOG;
-using PlayniteAchievements.Views;
-using PlayniteAchievements.Views.Helpers;
+using LiveCharts.Wpf;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.GOG;
+using PlayniteAchievements.Providers.PSN;
+using PlayniteAchievements.Providers.RetroAchievements;
+using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.ThemeIntegration;
-using System.Threading.Tasks;
+using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views;
+using PlayniteAchievements.Views.Helpers;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Shell;
 using System.Windows.Threading;
-using LiveCharts.Wpf;
 
 namespace PlayniteAchievements
 {
@@ -153,6 +154,10 @@ namespace PlayniteAchievements
                     PlayniteApi,
                     pluginUserDataPath,
                     _gogSessionManager),
+                new PsnDataProvider(
+                    _logger,
+                    PlayniteApi,
+                    _settingsViewModel),
                 new RetroAchievementsDataProvider(
                     _logger,
                     settings,

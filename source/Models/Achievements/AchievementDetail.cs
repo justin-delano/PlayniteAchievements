@@ -27,6 +27,12 @@ namespace PlayniteAchievements.Models.Achievements
         public double? GlobalPercentUnlocked { get; set; }
 
         /// <summary>
+        /// Optional provider-specific type (used by PSN: "platinum", "gold", "silver", "bronze").
+        /// Null/empty for most providers.
+        /// </summary>
+        public string TrophyType { get; set; }
+
+        /// <summary>
         /// Current progress value for achievements with partial completion (e.g., 25 out of 100).
         /// Null when the provider doesn't support progress or the achievement is all-or-nothing.
         /// </summary>

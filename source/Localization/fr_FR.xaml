@@ -34,6 +34,8 @@
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_PlayStation">Playstation</sys:String>
+
 
     <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
@@ -473,5 +475,16 @@
     <sys:String x:Key="LOCPlayAch_ChartCut">Couper</sys:String>
     <sys:String x:Key="LOCPlayAch_ChartAll">Tout</sys:String>
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Grouper par débloqué</sys:String>
+
+    <!-- ================================================================= -->
+    <!-- PLAYSTATION                                                  -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Title">PlayStation (PSN)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnablePsnAchievements">Activer les trophées PlayStation (PSN)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Help">
+        Nécessite le plugin PlayStation Library (PSN Library) et d’être connecté dedans.
+Quand c’est désactivé, les jeux PSN sont ignorés pendant les scans et aucun appel PSN n’est effectué.
+    </sys:String>
+
 
 </ResourceDictionary>

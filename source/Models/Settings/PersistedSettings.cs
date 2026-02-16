@@ -18,6 +18,7 @@ namespace PlayniteAchievements.Models.Settings
         private string _steamApiKey;
         private string _steamLanguage = "english";
         private bool _enablePeriodicUpdates = true;
+        private bool _enablePsnAchievements = true;
         private int _periodicUpdateHours = 6;
         private bool _enableNotifications = true;
         private bool _notifyPeriodicUpdates = true;
@@ -83,6 +84,16 @@ namespace PlayniteAchievements.Models.Settings
         #endregion
 
         #region Update and Refresh Settings
+
+        /// <summary>
+        /// Enable PlayStation (PSN) achievements provider/scans.
+        /// </summary>
+        public bool EnablePsnAchievements
+        {
+            get => _enablePsnAchievements;
+            set => SetValue(ref _enablePsnAchievements, value);
+        }
+
 
         /// <summary>
         /// Enable the background periodic updates.
@@ -352,6 +363,7 @@ namespace PlayniteAchievements.Models.Settings
                 SteamApiKey = this.SteamApiKey,
                 SteamLanguage = this.SteamLanguage,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
+                EnablePsnAchievements = this.EnablePsnAchievements,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 EnableNotifications = this.EnableNotifications,
                 NotifyPeriodicUpdates = this.NotifyPeriodicUpdates,

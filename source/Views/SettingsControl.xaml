@@ -1261,6 +1261,33 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- ================== TAB: PLAYSTATION (PSN) ================== -->
+            <TabItem x:Name="PsnTab" Header="{DynamicResource LOCPlayAch_Provider_PlayStation}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Psn_Title}"
+                               Style="{StaticResource SectionHeaderStyle}"
+                               Margin="0,0,0,12"/>
+
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnablePsnAchievements}"
+                              IsChecked="{Binding Persisted.EnablePsnAchievements}"
+                              Margin="0,0,0,8"/>
+
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Psn_Help}"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="20,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
         </TabControl>
     </Grid>
 </UserControl>

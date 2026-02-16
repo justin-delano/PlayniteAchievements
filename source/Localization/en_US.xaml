@@ -34,6 +34,8 @@
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_PlayStation">Playstation</sys:String>
+
 
     <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
@@ -473,5 +475,16 @@
     <sys:String x:Key="LOCPlayAch_ChartCut">Cut</sys:String>
     <sys:String x:Key="LOCPlayAch_ChartAll">All</sys:String>
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Group by unlocked</sys:String>
+
+    <!-- ================================================================= -->
+    <!-- PLAYSTATION                                                  -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Title">PlayStation (PSN)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnablePsnAchievements">Enable PlayStation (PSN) achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Help">
+        Requires the PlayStation Library plugin (PSN Library) and an active login there.
+When disabled, PSN games are ignored during scans and no PSN API calls are made.
+    </sys:String>
+
 
 </ResourceDictionary>
