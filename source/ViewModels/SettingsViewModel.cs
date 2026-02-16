@@ -88,6 +88,7 @@ namespace PlayniteAchievements.ViewModels
 
             // Allow non-Steam usage when RetroAchievements is configured.
             if (string.IsNullOrWhiteSpace(Settings.Persisted.SteamUserId) &&
+                string.IsNullOrWhiteSpace(Settings.Persisted.EpicAccountId) &&
                 string.IsNullOrWhiteSpace(Settings.Persisted.RaUsername))
             {
                 errors.Add(ResourceProvider.GetString("LOCPlayAch_Error_MissingSteamUserId"));
