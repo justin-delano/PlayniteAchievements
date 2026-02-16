@@ -52,14 +52,23 @@ namespace PlayniteAchievements.Providers.GOG
         #region Properties
 
         /// <summary>
-        /// Gets the current access token, throwing if expired or missing.
+        /// Gets the current access token, throwing if missing.
+        /// Note: Expiry checking is disabled when using library credentials since the library handles refresh.
         /// </summary>
         public string GetAccessToken()
         {
-            if (string.IsNullOrEmpty(_accessToken) || DateTime.UtcNow >= _tokenExpiryUtc)
+            if (string.IsNullOrEmpty(_accessToken))
             {
                 throw new AuthRequiredException("GOG authentication required. Please login via a GOG library plugin.");
             }
+
+            // When using library credentials, skip expiry check - the library plugin handles token refresh
+            // Only check expiry if we have an actual expiry time set (not DateTime.MinValue)
+            if (_tokenExpiryUtc != DateTime.MinValue && DateTime.UtcNow >= _tokenExpiryUtc)
+            {
+                throw new AuthRequiredException("GOG authentication token expired. Please refresh from library.");
+            }
+
             return _accessToken;
         }
 
