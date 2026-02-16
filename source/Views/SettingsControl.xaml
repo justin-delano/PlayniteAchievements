@@ -32,12 +32,42 @@
             <Style x:Key="GogAuthActionButtonStyle"
                    TargetType="Button"
                    BasedOn="{StaticResource {x:Type Button}}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding GogAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                 Value="True">
-                        <Setter Property="IsEnabled" Value="False"/>
-                    </DataTrigger>
-                </Style.Triggers>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="buttonBorder"
+                                    Background="{DynamicResource ControlBackgroundBrush}"
+                                    BorderBrush="{DynamicResource NormalBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  TextElement.Foreground="{DynamicResource TextBrush}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="buttonBorder" Property="Background"
+                                            Value="{DynamicResource HighlightBrush}"/>
+                                    <Setter TargetName="buttonBorder" Property="BorderBrush"
+                                            Value="{DynamicResource GlyphBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="buttonBorder" Property="Background"
+                                            Value="{DynamicResource PressedBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="buttonBorder" Property="Opacity" Value="0.5"/>
+                                </Trigger>
+                                <DataTrigger Binding="{Binding GogAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                             Value="True">
+                                    <Setter Property="IsEnabled" Value="False"/>
+                                </DataTrigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <!-- Section header style -->
@@ -1043,7 +1073,7 @@
                                             <Style TargetType="Border">
                                                 <Setter Property="BorderBrush" Value="#F72585"/>
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding GogAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    <DataTrigger Binding="{Binding GogAuthenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                  Value="True">
                                                         <Setter Property="BorderBrush" Value="#06FFA5"/>
                                                     </DataTrigger>
@@ -1069,13 +1099,13 @@
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
                                                             <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding GogAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                <DataTrigger Binding="{Binding GogAuthenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                              Value="True">
                                                                     <Setter Property="Text" Value="&#xE73E;"/>
                                                                     <Setter Property="Foreground" Value="#06FFA5"/>
                                                                     <Setter Property="FontWeight" Value="Bold"/>
                                                                 </DataTrigger>
-                                                                <DataTrigger Binding="{Binding GogAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                <DataTrigger Binding="{Binding GogAuthenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                              Value="False">
                                                                     <Setter Property="Text" Value="&#xE711;"/>
                                                                     <Setter Property="Foreground" Value="#F72585"/>
