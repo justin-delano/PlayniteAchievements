@@ -3,7 +3,10 @@ using PlayniteAchievements.Models;
 using Playnite.SDK;
 using Playnite.SDK.Data;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
@@ -197,36 +200,65 @@ namespace PlayniteAchievements.Providers.GOG
 
             _logger?.Info($"[GogAuth] Loading credentials from {storesDataPath}");
 
-            // Try loading token
-            var tokenPath = Path.Combine(storesDataPath, TokenFileName);
-            if (!TryLoadToken(tokenPath))
+            var password = GetEncryptionPassword();
+            if (string.IsNullOrEmpty(password))
             {
-                _logger?.Warn("[GogAuth] Failed to load GOG token from library.");
+                _logger?.Warn("[GogAuth] Could not get encryption password.");
                 _usingLibraryCredentials = false;
                 _isSessionAuthenticated = false;
                 return false;
             }
 
-            _logger?.Info($"[GogAuth] Token loaded successfully. AccessToken present: {!string.IsNullOrWhiteSpace(_accessToken)}, UserId: {_userId ?? "(null)"}");
+            // Load cookies from GOG_Cookies.dat
+            var cookiesPath = Path.Combine(storesDataPath, CookiesFileName);
+            var cookies = TryLoadCookies(cookiesPath, password);
+            if (cookies == null || cookies.Count == 0)
+            {
+                _logger?.Warn("[GogAuth] Failed to load GOG cookies from library.");
+                _usingLibraryCredentials = false;
+                _isSessionAuthenticated = false;
+                return false;
+            }
 
-            // We have a valid token - consider authenticated
-            // The userId might come from either token.AccountId or the user file
+            _logger?.Info($"[GogAuth] Loaded {cookies.Count} cookies from library.");
+
+            // Use cookies to get real access token from account API
+            var accountInfo = GetAccountInfoAsync(cookies).GetAwaiter().GetResult();
+            if (accountInfo == null || !accountInfo.IsLoggedIn)
+            {
+                _logger?.Warn("[GogAuth] Account info API returned not logged in.");
+                _usingLibraryCredentials = false;
+                _isSessionAuthenticated = false;
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(accountInfo.AccessToken))
+            {
+                _logger?.Warn("[GogAuth] Account info returned but access token is missing.");
+                _usingLibraryCredentials = false;
+                _isSessionAuthenticated = false;
+                return false;
+            }
+
+            // Store the real access token from the API
+            _accessToken = accountInfo.AccessToken;
+            _userId = accountInfo.UserId;
+
+            // Calculate token expiry
+            if (accountInfo.AccessTokenExpires > 0)
+            {
+                _tokenExpiryUtc = DateTime.UtcNow.AddSeconds(accountInfo.AccessTokenExpires);
+            }
+
             _usingLibraryCredentials = true;
-            _isSessionAuthenticated = !string.IsNullOrWhiteSpace(_accessToken);
+            _isSessionAuthenticated = true;
 
             if (!string.IsNullOrWhiteSpace(_userId))
             {
                 _settings.Persisted.GogUserId = _userId;
             }
 
-            if (_isSessionAuthenticated)
-            {
-                _logger?.Info($"[GogAuth] Successfully loaded credentials from {_libraryPluginName}.");
-            }
-            else
-            {
-                _logger?.Warn($"[GogAuth] Token loaded but access token is empty.");
-            }
+            _logger?.Info($"[GogAuth] Successfully authenticated via {_libraryPluginName}. UserId: {_userId}");
 
             return _isSessionAuthenticated;
         }
@@ -470,6 +502,89 @@ namespace PlayniteAchievements.Providers.GOG
             }
         }
 
+        private List<GogCookie> TryLoadCookies(string cookiesPath, string password)
+        {
+            if (!File.Exists(cookiesPath))
+            {
+                _logger?.Debug($"[GogAuth] Cookies file not found: {cookiesPath}");
+                return null;
+            }
+
+            try
+            {
+                var decryptedJson = DecryptFromFile(cookiesPath, Encoding.UTF8, password);
+                if (string.IsNullOrWhiteSpace(decryptedJson))
+                {
+                    _logger?.Warn("[GogAuth] Decrypted cookies are empty.");
+                    return null;
+                }
+
+                var cookies = Serialization.FromJson<List<GogCookie>>(decryptedJson);
+                if (cookies == null || cookies.Count == 0)
+                {
+                    _logger?.Warn("[GogAuth] Failed to parse cookies JSON or list is empty.");
+                    return null;
+                }
+
+                // Filter to GOG domain cookies and remove expired ones
+                var validCookies = cookies
+                    .Where(c => c.Domain != null && c.Domain.IndexOf("gog.com", StringComparison.OrdinalIgnoreCase) >= 0)
+                    .Where(c => c.Expires == null || c.Expires > DateTime.Now)
+                    .ToList();
+
+                _logger?.Debug($"[GogAuth] Found {validCookies.Count} valid GOG cookies (filtered from {cookies.Count} total).");
+                return validCookies;
+            }
+            catch (CryptographicException ex)
+            {
+                _logger?.Error(ex, "[GogAuth] Cryptographic error decrypting cookies.");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[GogAuth] Error loading cookies.");
+                return null;
+            }
+        }
+
+        private async Task<GogAccountBasicResponse> GetAccountInfoAsync(List<GogCookie> cookies)
+        {
+            const string accountInfoUrl = "https://menu.gog.com/v1/account/basic";
+
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+
+                    // Build cookie header
+                    var cookieHeader = string.Join("; ", cookies.Select(c => $"{c.Name}={c.Value}"));
+                    client.DefaultRequestHeaders.Add("Cookie", cookieHeader);
+
+                    _logger?.Debug($"[GogAuth] Calling account info API: {accountInfoUrl}");
+
+                    var response = await client.GetAsync(accountInfoUrl).ConfigureAwait(false);
+                    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger?.Warn($"[GogAuth] Account info API returned status {response.StatusCode}: {content}");
+                        return null;
+                    }
+
+                    _logger?.Debug($"[GogAuth] Account info response (first 200 chars): {content.Substring(0, Math.Min(200, content.Length))}");
+
+                    var accountInfo = Serialization.FromJson<GogAccountBasicResponse>(content);
+                    return accountInfo;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[GogAuth] Error calling account info API.");
+                return null;
+            }
+        }
+
         #endregion
 
         #region Encryption (ported from playnite-plugincommon)
@@ -511,6 +626,46 @@ namespace PlayniteAchievements.Providers.GOG
         #endregion
 
         #region Nested Types
+
+        /// <summary>
+        /// Represents a cookie stored by GOG library plugins.
+        /// Matches HttpCookie structure from Playnite SDK.
+        /// </summary>
+        private class GogCookie
+        {
+            public string Name { get; set; }
+            public string Value { get; set; }
+            public string Domain { get; set; }
+            public string Path { get; set; }
+            public DateTime? Expires { get; set; }
+            public bool Secure { get; set; }
+            public bool HttpOnly { get; set; }
+        }
+
+        /// <summary>
+        /// Represents the account info response from menu.gog.com.
+        /// Contains the real access token needed for gameplay API.
+        /// </summary>
+        private class GogAccountBasicResponse
+        {
+            [SerializationPropertyName("isLoggedIn")]
+            public bool IsLoggedIn { get; set; }
+
+            [SerializationPropertyName("userId")]
+            public string UserId { get; set; }
+
+            [SerializationPropertyName("accessToken")]
+            public string AccessToken { get; set; }
+
+            [SerializationPropertyName("accessTokenExpires")]
+            public int AccessTokenExpires { get; set; }
+
+            [SerializationPropertyName("clientId")]
+            public string ClientId { get; set; }
+
+            [SerializationPropertyName("username")]
+            public string Username { get; set; }
+        }
 
         /// <summary>
         /// Represents the token data stored by GOG library plugins.
