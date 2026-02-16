@@ -812,21 +812,28 @@ namespace PlayniteAchievements.Views
         {
             if (result == null)
             {
+                _logger?.Debug("[GogAuth] ApplyGogAuthResult: result is null");
                 SetGogAuthenticated(false);
                 SetGogLibraryDetected(false);
                 SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_Failed");
                 return;
             }
 
+            _logger?.Debug($"[GogAuth] ApplyGogAuthResult: Outcome={result.Outcome}, IsSuccess={result.IsSuccess}, UserId={result.UserId}");
+
             var authenticated =
                 result.Outcome == GogAuthOutcome.Authenticated ||
                 result.Outcome == GogAuthOutcome.AlreadyAuthenticated;
 
+            _logger?.Debug($"[GogAuth] ApplyGogAuthResult: authenticated={authenticated}");
+
+            // Always set authenticated state first
             SetGogAuthenticated(authenticated);
 
             // Check if library is detected (regardless of auth status)
             var libraryName = _gogSessionManager.GetInstalledLibraryPluginName();
             var libraryDetected = !string.IsNullOrEmpty(libraryName);
+            _logger?.Debug($"[GogAuth] ApplyGogAuthResult: libraryDetected={libraryDetected}, libraryName={libraryName}");
             SetGogLibraryDetected(libraryDetected);
 
             var statusKey = string.IsNullOrWhiteSpace(result.MessageKey)
