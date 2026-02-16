@@ -31,9 +31,8 @@ namespace PlayniteAchievements.Providers.Epic
         private const string EpicLibraryPluginId = "00000002-DBD1-46C6-B5D0-B1BA559D10E4";
         private const string LegendaryPluginId = "EAD65C3B-2F8F-4E37-B4E6-B3DE6BE540C6";
 
-        // Token file names (safe path names used by playnite-plugincommon)
-        private const string EpicTokenFileName = "Epic_Token.dat";
-        private const string LegendaryTokenFileName = "Legendary_Token.dat";
+        // Credential file names in StoresData (shared by both Epic Games Library and Legendary)
+        private const string TokenFileName = "Epic_Tokens.dat";
 
         #endregion
 
@@ -53,6 +52,7 @@ namespace PlayniteAchievements.Providers.Epic
 
         private bool _useLibraryCredentials;
         private string _libraryPluginName;
+        private bool _libraryTokenValidated;
 
         #endregion
 
@@ -72,8 +72,9 @@ namespace PlayniteAchievements.Providers.Epic
                 if (token != null && !string.IsNullOrWhiteSpace(token.Token))
                 {
                     _useLibraryCredentials = true;
+                    _libraryTokenValidated = false;
                     LoadFromStoreToken(token);
-                    _logger?.Info($"[EpicAuth] Loaded credentials from {_libraryPluginName} library plugin.");
+                    _logger?.Info($"[EpicAuth] Found credentials from {_libraryPluginName} library plugin. Will validate on first use.");
                     return;
                 }
             }
@@ -101,6 +102,28 @@ namespace PlayniteAchievements.Providers.Epic
         public async Task<string> GetAccessTokenAsync(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
+
+            // If using library credentials, validate the token with Epic API first
+            if (_useLibraryCredentials && !_libraryTokenValidated && !string.IsNullOrWhiteSpace(_accessToken))
+            {
+                await _tokenRefreshSemaphore.WaitAsync(ct).ConfigureAwait(false);
+                try
+                {
+                    // Double-check after acquiring lock
+                    if (!_libraryTokenValidated && !string.IsNullOrWhiteSpace(_accessToken))
+                    {
+                        if (await TryValidateLibraryTokenAsync(ct).ConfigureAwait(false))
+                        {
+                            return _accessToken;
+                        }
+                        // Validation failed - fall through to refresh logic
+                    }
+                }
+                finally
+                {
+                    _tokenRefreshSemaphore.Release();
+                }
+            }
 
             if (HasValidAccessToken())
             {
@@ -293,6 +316,7 @@ namespace PlayniteAchievements.Providers.Epic
             _tokenType = "bearer";
             _tokenExpiryUtc = DateTime.MinValue;
             _refreshTokenExpiryUtc = DateTime.MinValue;
+            _libraryTokenValidated = false;
 
             _logger?.Info("[EpicAuth] Session cleared.");
         }
@@ -310,6 +334,7 @@ namespace PlayniteAchievements.Providers.Epic
                 if (token != null && !string.IsNullOrWhiteSpace(token.Token))
                 {
                     _useLibraryCredentials = true;
+                    _libraryTokenValidated = false;
                     LoadFromStoreToken(token);
                     _logger?.Info($"[EpicAuth] Refreshed credentials from {_libraryPluginName} library plugin.");
                     return;
@@ -318,6 +343,7 @@ namespace PlayniteAchievements.Providers.Epic
 
             // No library credentials available
             _useLibraryCredentials = false;
+            _libraryTokenValidated = false;
             _logger?.Info("[EpicAuth] No library credentials available for refresh.");
         }
 
@@ -327,25 +353,52 @@ namespace PlayniteAchievements.Providers.Epic
 
         /// <summary>
         /// Checks if an Epic library plugin is installed and returns its name.
-        /// Checks Epic Games Library first, then Legendary.
+        /// Uses Playnite API to detect installed plugins. Epic Games Library takes precedence.
         /// </summary>
         public string GetInstalledLibraryPluginName()
         {
-            // Check for Official Epic Library first
-            var epicPath = GetTokenFilePath(EpicLibraryPluginId, EpicTokenFileName);
-            if (epicPath != null && File.Exists(epicPath))
+            try
             {
-                return "Epic Games";
-            }
+                var plugins = _api?.Addons?.Plugins;
+                if (plugins == null)
+                {
+                    _logger?.Debug("[EpicAuth] Could not access plugins collection.");
+                    return null;
+                }
 
-            // Check for Legendary Library
-            var legendaryPath = GetTokenFilePath(LegendaryPluginId, LegendaryTokenFileName);
-            if (legendaryPath != null && File.Exists(legendaryPath))
+                var epicId = Guid.Parse(EpicLibraryPluginId);
+                var legendaryId = Guid.Parse(LegendaryPluginId);
+
+                // Check for Epic Games Library first
+                foreach (var plugin in plugins)
+                {
+                    if (plugin == null) continue;
+                    if (plugin.Id == epicId)
+                    {
+                        _logger?.Debug("[EpicAuth] Found Epic Games Library plugin.");
+                        return "Epic Games Library";
+                    }
+                }
+
+                // Check for Legendary Library
+                foreach (var plugin in plugins)
+                {
+                    if (plugin == null) continue;
+                    if (plugin.Id == legendaryId)
+                    {
+                        _logger?.Debug("[EpicAuth] Found Legendary Library plugin.");
+                        return "Legendary Library";
+                    }
+                }
+
+                _logger?.Debug("[EpicAuth] No Epic library plugin found.");
+                return null;
+            }
+            catch (Exception ex)
             {
-                return "Legendary";
+                _logger?.Error(ex, "[EpicAuth] Error checking for Epic library plugin.");
+                return null;
             }
-
-            return null;
         }
 
         /// <summary>
@@ -360,77 +413,27 @@ namespace PlayniteAchievements.Providers.Epic
                 "Playnite", "ExtensionsData", "StoresData");
         }
 
-        private string GetTokenFilePath(string pluginId, string tokenFileName)
-        {
-            try
-            {
-                // playnite-plugincommon uses GetSafePathName to encode the filename
-                var safeFileName = GetSafePathName($"{pluginId}_Token.dat");
-                return Path.Combine(GetStoresDataPath(), safeFileName);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"[EpicAuth] Failed to get token file path for {pluginId}.");
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Creates a safe filename by encoding special characters (from playnite-plugincommon).
-        /// </summary>
-        private static string GetSafePathName(string name)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                return name;
-            }
-
-            var sb = new StringBuilder();
-            foreach (var c in name)
-            {
-                if (char.IsLetterOrDigit(c) || c == '_' || c == '-' || c == '.')
-                {
-                    sb.Append(c);
-                }
-                else
-                {
-                    sb.Append('_');
-                }
-            }
-            return sb.ToString();
-        }
-
         #endregion
 
         #region Token Loading
 
         private EpicStoreToken TryLoadLibraryToken()
         {
-            // Try Epic Games Library first
-            var epicPath = GetTokenFilePath(EpicLibraryPluginId, EpicTokenFileName);
-            if (epicPath != null && File.Exists(epicPath))
+            // Both Epic Games Library and Legendary share the same token file
+            var tokenPath = Path.Combine(GetStoresDataPath(), TokenFileName);
+            if (!File.Exists(tokenPath))
             {
-                var token = TryDecryptToken(epicPath);
-                if (token != null)
-                {
-                    _logger?.Debug("[EpicAuth] Loaded token from Epic Games Library plugin.");
-                    return token;
-                }
+                _logger?.Debug($"[EpicAuth] Token file not found: {tokenPath}");
+                return null;
             }
 
-            // Try Legendary Library
-            var legendaryPath = GetTokenFilePath(LegendaryPluginId, LegendaryTokenFileName);
-            if (legendaryPath != null && File.Exists(legendaryPath))
+            var token = TryDecryptToken(tokenPath);
+            if (token != null)
             {
-                var token = TryDecryptToken(legendaryPath);
-                if (token != null)
-                {
-                    _logger?.Debug("[EpicAuth] Loaded token from Legendary Library plugin.");
-                    return token;
-                }
+                _logger?.Debug($"[EpicAuth] Loaded token from {_libraryPluginName ?? "Epic"} library plugin.");
             }
 
-            return null;
+            return token;
         }
 
         private EpicStoreToken TryDecryptToken(string filePath)
@@ -487,6 +490,95 @@ namespace PlayniteAchievements.Providers.Epic
         #endregion
 
         #region Token Renewal
+
+        /// <summary>
+        /// Validates the library token with Epic's API and refreshes if needed.
+        /// Returns true if a valid access token is available after validation.
+        /// </summary>
+        private async Task<bool> TryValidateLibraryTokenAsync(CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(_accessToken) || string.IsNullOrWhiteSpace(_accountId))
+            {
+                _logger?.Debug("[EpicAuth] Cannot validate - missing access token or account ID.");
+                return false;
+            }
+
+            // First, try to validate the current access token with the API
+            var accountInfo = await GetAccountInfoAsync(_accountId, _accessToken, ct).ConfigureAwait(false);
+            if (accountInfo != null)
+            {
+                _libraryTokenValidated = true;
+                _logger?.Info($"[EpicAuth] Validated credentials from {_libraryPluginName} library plugin for account {accountInfo.DisplayName}.");
+                return true;
+            }
+
+            _logger?.Debug("[EpicAuth] Access token validation failed, attempting refresh.");
+
+            // Access token is invalid, try to refresh using refresh token
+            if (!string.IsNullOrWhiteSpace(_refreshToken) && DateTime.UtcNow < _refreshTokenExpiryUtc)
+            {
+                try
+                {
+                    await RenewTokensAsync(_refreshToken, ct).ConfigureAwait(false);
+
+                    // Validate the refreshed token
+                    if (HasValidAccessToken() && !string.IsNullOrWhiteSpace(_accountId))
+                    {
+                        accountInfo = await GetAccountInfoAsync(_accountId, _accessToken, ct).ConfigureAwait(false);
+                        if (accountInfo != null)
+                        {
+                            _libraryTokenValidated = true;
+                            _logger?.Info($"[EpicAuth] Refreshed and validated credentials from {_libraryPluginName} library plugin.");
+                            return true;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "[EpicAuth] Token refresh during validation failed.");
+                }
+            }
+
+            _logger?.Warn($"[EpicAuth] Failed to validate credentials from {_libraryPluginName} library plugin.");
+            return false;
+        }
+
+        /// <summary>
+        /// Calls Epic's account API to validate an access token.
+        /// Returns account info if the token is valid, null otherwise.
+        /// </summary>
+        private async Task<EpicAccountInfo> GetAccountInfoAsync(string accountId, string accessToken, CancellationToken ct)
+        {
+            const string accountInfoUrl = "https://account-public-service-prod03.ol.epicgames.com/account/api/public/account/{0}";
+
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Add("Authorization", $"bearer {accessToken}");
+
+                    var url = string.Format(accountInfoUrl, accountId);
+                    _logger?.Debug($"[EpicAuth] Validating token with account API: {url}");
+
+                    var response = await client.GetAsync(url, ct).ConfigureAwait(false);
+                    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger?.Debug($"[EpicAuth] Account API returned status {response.StatusCode}: {content}");
+                        return null;
+                    }
+
+                    var accountInfo = JsonConvert.DeserializeObject<EpicAccountInfo>(content);
+                    return accountInfo;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[EpicAuth] Error calling account info API.");
+                return null;
+            }
+        }
 
         private async Task RenewTokensAsync(string refreshToken, CancellationToken ct)
         {
