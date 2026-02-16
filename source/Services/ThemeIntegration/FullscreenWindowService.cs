@@ -25,6 +25,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private Window _achievementsWindow;
         private Guid? _originalSelectedGameId;
+        private bool _isTransitioning;
 
         public FullscreenWindowService(
             IPlayniteAPI api,
@@ -187,14 +188,16 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 if (_achievementsWindow != null && _achievementsWindow.IsVisible)
                 {
-                    // Clear original selection tracking before closing so the Closed
-                    // handler doesn't restore to old selection when transitioning windows
-                    _originalSelectedGameId = null;
+                    // Set transitioning flag so Closed handler skips restore
+                    // (we're switching windows, not closing the final one)
+                    _isTransitioning = true;
                     _achievementsWindow.Close();
+                    _isTransitioning = false;
                 }
             }
             catch
             {
+                _isTransitioning = false;
             }
 
             // Match SuccessStoryFullscreenHelper behavior as closely as possible (Aniki ReMake expects this).
@@ -245,8 +248,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     _achievementsWindow = null;
                 }
 
-                // Restore original selection when window closes
-                if (_originalSelectedGameId.HasValue)
+                // Restore original selection when window closes (but not during transitions)
+                if (!_isTransitioning && _originalSelectedGameId.HasValue)
                 {
                     try { _api?.MainView?.SelectGame(_originalSelectedGameId.Value); } catch { }
                     try { _requestSingleGameThemeUpdate(_originalSelectedGameId); } catch { }
