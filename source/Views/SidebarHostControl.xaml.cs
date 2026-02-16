@@ -178,7 +178,7 @@ namespace PlayniteAchievements.Views
                         var seenThemeMigration = settings?.Persisted?.SeenThemeMigration ?? false;
                         var cachedIds = _achievementManager.Cache.GetCachedGameIds();
                         var hasCachedData = cachedIds != null && cachedIds.Count > 0;
-                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeMigration={seenThemeMigration}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
+                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeMigration={seenThemeMigration}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasEpicAuth={!string.IsNullOrEmpty(settings?.Persisted?.EpicAccountId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
 
                         // Show landing page if:
                         // 1. Haven't seen the theme migration page yet (!seenThemeMigration)
