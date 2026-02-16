@@ -1,9 +1,35 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace PlayniteAchievements.Providers.Epic
 {
+    /// <summary>
+    /// Token model matching playnite-plugincommon's StoreToken structure.
+    /// Used to deserialize encrypted tokens from Epic/Legendary library plugins.
+    /// </summary>
+    internal sealed class EpicStoreToken
+    {
+        [JsonProperty("AccountId")]
+        public string AccountId { get; set; }
+
+        [JsonProperty("Type")]
+        public string Type { get; set; }
+
+        [JsonProperty("Token")]
+        public string Token { get; set; }
+
+        [JsonProperty("ExpireAt")]
+        public DateTime? ExpireAt { get; set; }
+
+        [JsonProperty("RefreshToken")]
+        public string RefreshToken { get; set; }
+
+        [JsonProperty("RefreshExpireAt")]
+        public DateTime? RefreshExpireAt { get; set; }
+    }
+
     public enum EpicAuthOutcome
     {
         Authenticated,

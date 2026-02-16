@@ -34,6 +34,7 @@
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
 
     <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
@@ -160,6 +161,36 @@
     <sys:String x:Key="LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated">GOG is already authenticated.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GogAuth_ProbeFailed">Unable to verify GOG authentication state.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GogAuth_WindowNotOpened">Could not open the GOG login window. Check Playnite focus and try again.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicConnection">Epic Games Connection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicDescription">Epic achievements are resolved from your authenticated Epic web session. Check current session or re-authenticate to refresh login state.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Epic Authentication</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Check">Check Auth</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Reauthenticate">Re-authenticate</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_ReauthenticateEmbedded">Re-authenticate (Embedded)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_ReauthenticateBrowser">Re-authenticate (Browser)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Help">Use Embedded first for in-app login. If Epic blocks that flow, use Browser and paste the redirected URL or code.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_NotChecked">Epic: Not checked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Checking">Checking Epic authentication...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_CheckingExistingSession">Checking existing Epic session...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_OpeningWindow">Opening Epic login window...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_WaitingForLogin">Waiting for Epic login confirmation...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_BrowserPrompt">If Epic login does not complete in the Playnite window, sign in using your default browser. After login, copy the final redirected URL (or just the code parameter) and paste it here.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_VerifyingSession">Verifying Epic session...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Completed">Authentication flow completed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Verified">Epic authentication verified.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_NotAuthenticated">Epic is not authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_TimedOut">Epic authentication timed out.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Failed">Epic authentication failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Cancelled">Epic authentication was cancelled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_CookiesCleared">Epic session cookies cleared.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated">Epic is already authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_ProbeFailed">Unable to verify Epic authentication state.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_WindowNotOpened">Could not open the Epic login window. Check Playnite focus and try again.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryDetected">Using {0} credentials</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryNotLoggedIn">Library detected but not logged in</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_RefreshFromLibrary">Refresh from Library</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryHelp">PlayniteAchievements uses credentials from your installed Epic Games or Legendary library plugin. Login via the library plugin's settings to enable Epic achievement tracking.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_GetLibrary">Get Epic Games Library Plugin</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
 
     <!-- ================================================================= -->

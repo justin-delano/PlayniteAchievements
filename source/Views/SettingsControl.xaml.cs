@@ -15,6 +15,7 @@ using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.GOG;
+using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Services.ThemeMigration;
 using Playnite.SDK;
 using System.Diagnostics;
@@ -91,6 +92,84 @@ namespace PlayniteAchievements.Views
         {
             get => (bool)GetValue(GogAuthenticatedProperty);
             set => SetValue(GogAuthenticatedProperty, value);
+        }
+
+        public static readonly DependencyProperty EpicAuthStatusProperty =
+            DependencyProperty.Register(
+                nameof(EpicAuthStatus),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_EpicAuth_NotChecked")));
+
+        public string EpicAuthStatus
+        {
+            get => (string)GetValue(EpicAuthStatusProperty);
+            set => SetValue(EpicAuthStatusProperty, value);
+        }
+
+        public static readonly DependencyProperty EpicAuthBusyProperty =
+            DependencyProperty.Register(
+                nameof(EpicAuthBusy),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool EpicAuthBusy
+        {
+            get => (bool)GetValue(EpicAuthBusyProperty);
+            set => SetValue(EpicAuthBusyProperty, value);
+        }
+
+        public static readonly DependencyProperty EpicAuthenticatedProperty =
+            DependencyProperty.Register(
+                nameof(EpicAuthenticated),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool EpicAuthenticated
+        {
+            get => (bool)GetValue(EpicAuthenticatedProperty);
+            set => SetValue(EpicAuthenticatedProperty, value);
+        }
+
+        public static readonly DependencyProperty EpicLibraryPluginNameProperty =
+            DependencyProperty.Register(
+                nameof(EpicLibraryPluginName),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata("Epic"));
+
+        public string EpicLibraryPluginName
+        {
+            get => (string)GetValue(EpicLibraryPluginNameProperty);
+            set => SetValue(EpicLibraryPluginNameProperty, value);
+        }
+
+        public static readonly DependencyProperty EpicLibraryDetectedProperty =
+            DependencyProperty.Register(
+                nameof(EpicLibraryDetected),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool EpicLibraryDetected
+        {
+            get => (bool)GetValue(EpicLibraryDetectedProperty);
+            set => SetValue(EpicLibraryDetectedProperty, value);
+        }
+
+        public static readonly DependencyProperty EpicLibraryNotDetectedProperty =
+            DependencyProperty.Register(
+                nameof(EpicLibraryNotDetected),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(true));
+
+        public bool EpicLibraryNotDetected
+        {
+            get => (bool)GetValue(EpicLibraryNotDetectedProperty);
+            set => SetValue(EpicLibraryNotDetectedProperty, value);
         }
 
         public static readonly DependencyProperty SteamAuthenticatedProperty =
@@ -257,14 +336,16 @@ namespace PlayniteAchievements.Views
         private readonly ThemeMigrationService _themeMigration;
         private readonly SteamSessionManager _steamSessionManager;
         private readonly GogSessionManager _gogSessionManager;
+        private readonly EpicSessionManager _epicSessionManager;
 
-        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager, GogSessionManager gogSessionManager)
+        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager, GogSessionManager gogSessionManager, EpicSessionManager epicSessionManager)
         {
             _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
             _steamSessionManager = steamSessionManager ?? throw new ArgumentNullException(nameof(steamSessionManager));
             _gogSessionManager = gogSessionManager ?? throw new ArgumentNullException(nameof(gogSessionManager));
+            _epicSessionManager = epicSessionManager ?? throw new ArgumentNullException(nameof(epicSessionManager));
 
             _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
             _themeMigration = new ThemeMigrationService(_logger);
@@ -298,6 +379,7 @@ namespace PlayniteAchievements.Views
                 }
                 await CheckSteamAuthAsync().ConfigureAwait(false);
                 await CheckGogAuthAsync().ConfigureAwait(false);
+                await CheckEpicAuthAsync().ConfigureAwait(false);
                 UpdateRaAuthState();
 
                 // Load themes on initial load
@@ -920,6 +1002,251 @@ namespace PlayniteAchievements.Views
         }
 
         // -----------------------------
+        // Epic auth UI
+        // -----------------------------
+
+        private async void EpicAuth_Check_Click(object sender, RoutedEventArgs e)
+        {
+            _logger?.Info("[EpicAuth] Settings: Check Auth clicked.");
+            await CheckEpicAuthAsync().ConfigureAwait(false);
+        }
+
+        private async void EpicAuth_RefreshFromLibrary_Click(object sender, RoutedEventArgs e)
+        {
+            _logger?.Info("[EpicAuth] Settings: Refresh from Library clicked.");
+            await CheckEpicAuthAsync(forceRefresh: true).ConfigureAwait(false);
+        }
+
+        private void EpicAuth_Clear_Click(object sender, RoutedEventArgs e)
+        {
+            _epicSessionManager.ClearSession();
+            SetEpicAuthenticated(false);
+            SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_CookiesCleared");
+        }
+
+        private async Task CheckEpicAuthAsync(bool forceRefresh = false)
+        {
+            SetEpicAuthBusy(true);
+            SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_Checking");
+
+            // Small delay to ensure user sees the checking feedback
+            await Task.Delay(300).ConfigureAwait(false);
+
+            try
+            {
+                // Force refresh credentials from library if requested
+                if (forceRefresh)
+                {
+                    _epicSessionManager.RefreshFromLibrary();
+                }
+
+                using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+                {
+                    var result = await _epicSessionManager.ProbeAuthenticationAsync(timeoutCts.Token).ConfigureAwait(false);
+                    ApplyEpicAuthResult(result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                SetEpicAuthenticated(false);
+                SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_TimedOut");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Epic auth check failed.");
+                SetEpicAuthenticated(false);
+                SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_ProbeFailed");
+            }
+            finally
+            {
+                SetEpicAuthBusy(false);
+            }
+        }
+
+        private void ApplyEpicAuthResult(EpicAuthResult result)
+        {
+            if (result == null)
+            {
+                SetEpicAuthenticated(false);
+                SetEpicLibraryDetected(false);
+                SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_Failed");
+                return;
+            }
+
+            var authenticated =
+                result.Outcome == EpicAuthOutcome.Authenticated ||
+                result.Outcome == EpicAuthOutcome.AlreadyAuthenticated;
+
+            SetEpicAuthenticated(authenticated);
+
+            // Check if library is detected (regardless of auth status)
+            var libraryName = _epicSessionManager?.GetInstalledLibraryPluginName();
+            var libraryDetected = !string.IsNullOrEmpty(libraryName);
+            SetEpicLibraryDetected(libraryDetected);
+            SetEpicLibraryPluginName(libraryName ?? "Epic");
+
+            var statusKey = string.IsNullOrWhiteSpace(result.MessageKey)
+                ? GetDefaultEpicMessageKeyForOutcome(result.Outcome)
+                : result.MessageKey;
+
+            // Format the status message with library name if available
+            if (authenticated && libraryDetected && statusKey == "LOCPlayAch_Settings_Epic_LibraryDetected")
+            {
+                var format = ResourceProvider.GetString(statusKey);
+                if (!string.IsNullOrWhiteSpace(format))
+                {
+                    SetEpicAuthStatus(string.Format(format, libraryName));
+                    return;
+                }
+            }
+
+            if (!result.WindowOpened &&
+                !result.IsSuccess &&
+                (result.Outcome == EpicAuthOutcome.Failed || result.Outcome == EpicAuthOutcome.Cancelled))
+            {
+                statusKey = "LOCPlayAch_Settings_EpicAuth_WindowNotOpened";
+            }
+
+            SetEpicAuthStatusByKey(statusKey);
+        }
+
+        private static string GetDefaultEpicMessageKeyForOutcome(EpicAuthOutcome outcome)
+        {
+            switch (outcome)
+            {
+                case EpicAuthOutcome.Authenticated:
+                    return "LOCPlayAch_Settings_EpicAuth_Verified";
+                case EpicAuthOutcome.AlreadyAuthenticated:
+                    return "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated";
+                case EpicAuthOutcome.NotAuthenticated:
+                    return "LOCPlayAch_Settings_EpicAuth_NotAuthenticated";
+                case EpicAuthOutcome.Cancelled:
+                    return "LOCPlayAch_Settings_EpicAuth_Cancelled";
+                case EpicAuthOutcome.TimedOut:
+                    return "LOCPlayAch_Settings_EpicAuth_TimedOut";
+                case EpicAuthOutcome.ProbeFailed:
+                    return "LOCPlayAch_Settings_EpicAuth_ProbeFailed";
+                case EpicAuthOutcome.Failed:
+                default:
+                    return "LOCPlayAch_Settings_EpicAuth_Failed";
+            }
+        }
+
+        private static string GetEpicProgressMessageKey(EpicAuthProgressStep step)
+        {
+            switch (step)
+            {
+                case EpicAuthProgressStep.CheckingExistingSession:
+                    return "LOCPlayAch_Settings_EpicAuth_CheckingExistingSession";
+                case EpicAuthProgressStep.OpeningLoginWindow:
+                    return "LOCPlayAch_Settings_EpicAuth_OpeningWindow";
+                case EpicAuthProgressStep.WaitingForUserLogin:
+                    return "LOCPlayAch_Settings_EpicAuth_WaitingForLogin";
+                case EpicAuthProgressStep.VerifyingSession:
+                    return "LOCPlayAch_Settings_EpicAuth_VerifyingSession";
+                case EpicAuthProgressStep.Completed:
+                    return "LOCPlayAch_Settings_EpicAuth_Completed";
+                case EpicAuthProgressStep.Failed:
+                default:
+                    return "LOCPlayAch_Settings_EpicAuth_Failed";
+            }
+        }
+
+        private void SetEpicAuthStatusByKey(string key, params object[] args)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            var value = ResourceProvider.GetString(key);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                SetEpicAuthStatus(key);
+            }
+            else if (args != null && args.Length > 0)
+            {
+                try
+                {
+                    SetEpicAuthStatus(string.Format(value, args));
+                }
+                catch
+                {
+                    SetEpicAuthStatus(value);
+                }
+            }
+            else
+            {
+                SetEpicAuthStatus(value);
+            }
+        }
+
+        private void SetEpicAuthStatus(string status)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                EpicAuthStatus = status;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => EpicAuthStatus = status));
+            }
+        }
+
+        private void SetEpicAuthBusy(bool busy)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                EpicAuthBusy = busy;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => EpicAuthBusy = busy));
+            }
+        }
+
+        private void SetEpicAuthenticated(bool authenticated)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                EpicAuthenticated = authenticated;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => EpicAuthenticated = authenticated));
+            }
+        }
+
+        private void SetEpicLibraryPluginName(string name)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                EpicLibraryPluginName = name;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => EpicLibraryPluginName = name));
+            }
+        }
+
+        private void SetEpicLibraryDetected(bool detected)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                EpicLibraryDetected = detected;
+                EpicLibraryNotDetected = !detected;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    EpicLibraryDetected = detected;
+                    EpicLibraryNotDetected = !detected;
+                }));
+            }
+        }
+
+        // -----------------------------
         // Cache actions
         // -----------------------------
 
@@ -1096,6 +1423,11 @@ namespace PlayniteAchievements.Views
             {
                 await CheckGogAuthAsync().ConfigureAwait(false);
                 _logger?.Info("Checked GOG auth for GOG tab.");
+            }
+            else if (string.Equals(name, "EpicTab", StringComparison.OrdinalIgnoreCase))
+            {
+                await CheckEpicAuthAsync().ConfigureAwait(false);
+                _logger?.Info("Checked Epic auth for Epic tab.");
             }
             else if (string.Equals(name, "ThemeMigrationTab", StringComparison.OrdinalIgnoreCase))
             {
