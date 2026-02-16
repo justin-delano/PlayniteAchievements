@@ -524,11 +524,19 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         /// Synchronously populates single-game achievement data before opening a game window.
         /// Uses existing cached data without triggering a scan. This prevents stale data by
         /// ensuring the snapshot is applied before the window opens.
+        /// Also updates SelectedGame for theme bindings that use {Binding SelectedGame...}.
         /// </summary>
         private void PopulateSingleGameDataSync(Guid gameId)
         {
             try
             {
+                // Update SelectedGame for theme bindings like {Binding SelectedGame.DisplayName}
+                var game = _api?.Database?.Games?.Get(gameId);
+                if (game != null)
+                {
+                    _settings.SelectedGame = game;
+                }
+
                 var gameData = _achievementManager.GetGameAchievementData(gameId);
                 if (gameData == null || gameData.NoAchievements)
                 {
