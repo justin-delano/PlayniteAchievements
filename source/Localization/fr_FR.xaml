@@ -160,6 +160,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated">GOG est déjà authentifié.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GogAuth_ProbeFailed">Impossible de vérifier l'état d'authentification GOG.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GogAuth_WindowNotOpened">Impossible d'ouvrir la fenêtre de connexion GOG. Vérifiez le focus de Playnite puis réessayez.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_LibraryDetected">Utilisation des identifiants {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_LibraryNotLoggedIn">Bibliothèque détectée mais non connectée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_NoLibrary">Aucun plugin de bibliothèque GOG détecté</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_GetLibrary">Obtenir le plugin GOG Library</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_RefreshFromLibrary">Actualiser depuis la bibliothèque</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_LibraryHelp">PlayniteAchievements utilise les identifiants de votre plugin de bibliothèque GOG installé. Connectez-vous via les paramètres du plugin de bibliothèque pour activer le suivi des succès GOG.</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
 
     <!-- ================================================================= -->
