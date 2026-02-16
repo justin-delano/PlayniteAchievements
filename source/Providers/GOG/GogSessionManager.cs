@@ -186,6 +186,8 @@ namespace PlayniteAchievements.Providers.GOG
                 return false;
             }
 
+            _logger?.Info($"[GogAuth] Loading credentials from {storesDataPath}");
+
             // Try loading token
             var tokenPath = Path.Combine(storesDataPath, TokenFileName);
             if (!TryLoadToken(tokenPath))
@@ -196,13 +198,25 @@ namespace PlayniteAchievements.Providers.GOG
                 return false;
             }
 
+            _logger?.Info($"[GogAuth] Token loaded successfully. AccessToken present: {!string.IsNullOrWhiteSpace(_accessToken)}, UserId: {_userId ?? "(null)"}");
+
+            // We have a valid token - consider authenticated
+            // The userId might come from either token.AccountId or the user file
             _usingLibraryCredentials = true;
-            _isSessionAuthenticated = !string.IsNullOrWhiteSpace(_userId);
+            _isSessionAuthenticated = !string.IsNullOrWhiteSpace(_accessToken);
+
+            if (!string.IsNullOrWhiteSpace(_userId))
+            {
+                _settings.Persisted.GogUserId = _userId;
+            }
 
             if (_isSessionAuthenticated)
             {
-                _settings.Persisted.GogUserId = _userId;
-                _logger?.Info($"[GogAuth] Successfully loaded credentials from {_libraryPluginName}. User: {_userId}");
+                _logger?.Info($"[GogAuth] Successfully loaded credentials from {_libraryPluginName}.");
+            }
+            else
+            {
+                _logger?.Warn($"[GogAuth] Token loaded but access token is empty.");
             }
 
             return _isSessionAuthenticated;
