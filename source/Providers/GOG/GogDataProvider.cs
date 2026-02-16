@@ -52,7 +52,7 @@ namespace PlayniteAchievements.Providers.GOG
 
         public string ProviderIconKey => "ProviderIconGOG";
 
-        public string ProviderColorHex => "#5100DC";
+        public string ProviderColorHex => "#A855F7";
 
         public bool IsAuthenticated => _sessionManager.IsAuthenticated;
 
