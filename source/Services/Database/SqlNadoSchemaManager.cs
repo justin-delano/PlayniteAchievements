@@ -190,11 +190,11 @@ namespace PlayniteAchievements.Services.Database
         {
             try
             {
-                // Rename IconPath to IconUnlockedPath
-                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions RENAME COLUMN IconPath TO IconUnlockedPath;");
+                // Rename IconPath to UnlockedIconPath
+                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions RENAME COLUMN IconPath TO UnlockedIconPath;");
 
                 // Add new columns to AchievementDefinitions
-                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN IconLockedPath TEXT NULL;");
+                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN LockedIconPath TEXT NULL;");
                 ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Points INTEGER NULL;");
                 ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Category TEXT NULL;");
 
