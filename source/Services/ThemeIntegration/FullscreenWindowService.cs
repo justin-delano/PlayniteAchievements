@@ -13,13 +13,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     /// <summary>
     /// Service for managing fullscreen overlay achievement windows.
     /// Handles window creation, display, and closing for fullscreen mode.
+    /// Follows SuccessStoryFullscreenHelper pattern: changes Playnite selection
+    /// before opening game windows so theme bindings resolve correctly.
     /// </summary>
     public sealed class FullscreenWindowService : IDisposable
     {
         private readonly IPlayniteAPI _api;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Action<Guid?> _requestSingleGameThemeUpdate;
-        private readonly Action _restoreSelectedGameThemeData;
         private Dispatcher UiDispatcher => _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
 
         private Window _achievementsWindow;
@@ -27,13 +28,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         public FullscreenWindowService(
             IPlayniteAPI api,
             PlayniteAchievementsSettings settings,
-            Action<Guid?> requestSingleGameThemeUpdate,
-            Action restoreSelectedGameThemeData)
+            Action<Guid?> requestSingleGameThemeUpdate)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _requestSingleGameThemeUpdate = requestSingleGameThemeUpdate ?? throw new ArgumentNullException(nameof(requestSingleGameThemeUpdate));
-            _restoreSelectedGameThemeData = restoreSelectedGameThemeData ?? throw new ArgumentNullException(nameof(restoreSelectedGameThemeData));
         }
 
         public void Dispose()
@@ -46,13 +45,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         /// </summary>
         public void OpenOverviewWindow()
         {
-            ShowAchievementsWindow(styleKey: "AchievementsWindow", preselectGameId: null);
+            ShowAchievementsWindow(styleKey: "AchievementsWindow", selectGameId: null);
         }
 
         /// <summary>
         /// Opens the achievement window for a specific game.
-        /// Does NOT change Playnite's main game selection to avoid affecting
-        /// the underlying view when the window closes.
+        /// Changes Playnite's selection so theme bindings resolve to this game.
         /// </summary>
         public void OpenGameWindow(Guid gameId)
         {
@@ -61,10 +59,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
-            // Do NOT call PreselectGame here - it changes the main selection,
-            // which would cause the wrong game to be selected when the window closes.
-            // The single-game data is already populated synchronously by ThemeIntegrationService.
-            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: null);
+            // Change Playnite's selection so theme bindings ({PluginSettings}, {Binding SelectedGame...})
+            // resolve to this game's data. This is the SuccessStoryFullscreenHelper pattern.
+            SelectGame(gameId);
+            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", selectGameId: null);
         }
 
         /// <summary>
@@ -78,8 +76,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
-            PreselectGame(id.Value);
-            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", preselectGameId: id);
+            SelectGame(id.Value);
+            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", selectGameId: null);
         }
 
         /// <summary>
@@ -114,9 +112,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
-        private void PreselectGame(Guid gameId)
+        private void SelectGame(Guid gameId)
         {
+            // Change Playnite's main selection - this triggers OnGameSelected which
+            // updates SelectedGame and theme data for the new selection
             try { _api?.MainView?.SelectGame(gameId); } catch { }
+            // Request theme data update for the selected game
             try { _requestSingleGameThemeUpdate(gameId); } catch { }
         }
 
@@ -142,7 +143,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
-        private void ShowAchievementsWindow(string styleKey, Guid? preselectGameId)
+        private void ShowAchievementsWindow(string styleKey, Guid? selectGameId)
         {
             if (string.IsNullOrWhiteSpace(styleKey))
             {
@@ -159,11 +160,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                 if (dispatcher.CheckAccess())
                 {
-                    OpenOverlayWindowOnUiThread(styleKey, preselectGameId);
+                    OpenOverlayWindowOnUiThread(styleKey, selectGameId);
                 }
                 else
                 {
-                    dispatcher.BeginInvoke(new Action(() => OpenOverlayWindowOnUiThread(styleKey, preselectGameId)), DispatcherPriority.Background);
+                    dispatcher.BeginInvoke(new Action(() => OpenOverlayWindowOnUiThread(styleKey, selectGameId)), DispatcherPriority.Background);
                 }
             }
             catch
@@ -172,11 +173,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
-        private void OpenOverlayWindowOnUiThread(string styleKey, Guid? preselectGameId)
+        private void OpenOverlayWindowOnUiThread(string styleKey, Guid? selectGameId)
         {
-            if (preselectGameId.HasValue)
+            if (selectGameId.HasValue)
             {
-                PreselectGame(preselectGameId.Value);
+                SelectGame(selectGameId.Value);
             }
 
             try
@@ -237,9 +238,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     _achievementsWindow = null;
                 }
-
-                // Restore single-game theme data to match Playnite's current selection.
-                try { _restoreSelectedGameThemeData(); } catch { }
+                // No restore needed - selection stays on the clicked game
             };
 
             window.Content = content;

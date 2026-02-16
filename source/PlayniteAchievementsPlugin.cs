@@ -173,14 +173,10 @@ namespace PlayniteAchievements
             ThemeIntegrationUpdateService themeUpdateService = null;
             Action<Guid?> requestUpdate = (id) => themeUpdateService?.RequestUpdate(id);
 
-            // Similarly, FullscreenWindowService needs a restore callback from ThemeIntegrationService.
-            Action restoreSelectedGameThemeData = null;
-
             _fullscreenWindowService = new FullscreenWindowService(
                 PlayniteApi,
                 _settingsViewModel.Settings,
-                requestUpdate,
-                () => restoreSelectedGameThemeData?.Invoke());
+                requestUpdate);
 
             _themeIntegrationService = new ThemeIntegrationService(
                 PlayniteApi,
@@ -189,9 +185,6 @@ namespace PlayniteAchievements
                 _fullscreenWindowService,
                 requestUpdate,
                 _logger);
-
-            // Wire up the restore callback for when fullscreen windows close
-            restoreSelectedGameThemeData = _themeIntegrationService.RestoreSelectedGameThemeData;
 
             themeUpdateService = new ThemeIntegrationUpdateService(
                 _themeIntegrationService,
