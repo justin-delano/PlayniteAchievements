@@ -225,6 +225,19 @@ namespace PlayniteAchievements.Providers.Epic
             {
                 ct.ThrowIfCancellationRequested();
 
+                // If using library credentials, validate the token with Epic API first
+                if (_useLibraryCredentials && !_libraryTokenValidated && !string.IsNullOrWhiteSpace(_accessToken))
+                {
+                    if (await TryValidateLibraryTokenAsync(ct).ConfigureAwait(false))
+                    {
+                        return EpicAuthResult.Create(
+                            EpicAuthOutcome.AlreadyAuthenticated,
+                            "LOCPlayAch_Settings_Epic_LibraryDetected",
+                            _accountId,
+                            windowOpened: false);
+                    }
+                }
+
                 if (HasValidAccessToken())
                 {
                     return EpicAuthResult.Create(
@@ -236,8 +249,8 @@ namespace PlayniteAchievements.Providers.Epic
                         windowOpened: false);
                 }
 
-                // Try to refresh with existing refresh token
-                if (!string.IsNullOrWhiteSpace(_refreshToken) && DateTime.UtcNow < _refreshTokenExpiryUtc)
+                // Try to refresh with existing refresh token (only in legacy mode)
+                if (!_useLibraryCredentials && !string.IsNullOrWhiteSpace(_refreshToken) && DateTime.UtcNow < _refreshTokenExpiryUtc)
                 {
                     try
                     {
@@ -252,9 +265,7 @@ namespace PlayniteAchievements.Providers.Epic
                     {
                         return EpicAuthResult.Create(
                             EpicAuthOutcome.AlreadyAuthenticated,
-                            _libraryPluginName != null
-                                ? "LOCPlayAch_Settings_Epic_LibraryDetected"
-                                : "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                            "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
                             _accountId,
                             windowOpened: false);
                     }
