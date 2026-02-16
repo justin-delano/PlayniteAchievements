@@ -5,7 +5,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 1;
+        public const int SchemaVersion = 2;
         private readonly ILogger _logger;
 
         public SqlNadoSchemaManager(ILogger logger)
@@ -136,6 +136,8 @@ namespace PlayniteAchievements.Services.Database
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_UserAchievements_Definition
                 ON UserAchievements (AchievementDefinitionId);");
 
+            ApplyMigrations(db);
+
             db.ExecuteNonQuery(
                 "INSERT OR REPLACE INTO CacheMetadata (Key, Value) VALUES (?, ?);",
                 "schema_version",
@@ -151,6 +153,59 @@ namespace PlayniteAchievements.Services.Database
             catch (System.Exception ex)
             {
                 _logger?.Error(ex, $"Failed schema SQL: {sql}");
+                throw;
+            }
+        }
+
+        private void ApplyMigrations(SQLiteDatabase db)
+        {
+            var currentVersion = GetStoredSchemaVersion(db);
+            if (currentVersion < 2)
+            {
+                _logger?.Info($"[Schema] Migrating database from version {currentVersion} to 2");
+                ApplyMigrationV1ToV2(db);
+            }
+        }
+
+        private int GetStoredSchemaVersion(SQLiteDatabase db)
+        {
+            try
+            {
+                var rows = db.Load<CacheMetadataRow>(
+                    "SELECT Key, Value FROM CacheMetadata WHERE Key = ?;",
+                    "schema_version").ToList();
+                if (rows.Count > 0 && int.TryParse(rows[0]?.Value, out var version))
+                {
+                    return version;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                _logger?.Debug(ex, "[Schema] Could not read schema version, assuming 0");
+            }
+            return 0;
+        }
+
+        private void ApplyMigrationV1ToV2(SQLiteDatabase db)
+        {
+            try
+            {
+                // Rename IconPath to IconUnlockedPath
+                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions RENAME COLUMN IconPath TO IconUnlockedPath;");
+
+                // Add new columns to AchievementDefinitions
+                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN IconLockedPath TEXT NULL;");
+                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Points INTEGER NULL;");
+                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Category TEXT NULL;");
+
+                // Add IsComplete column to UserGameProgress
+                ExecuteSafe(db, @"ALTER TABLE UserGameProgress ADD COLUMN IsComplete INTEGER NOT NULL DEFAULT 0;");
+
+                _logger?.Info("[Schema] Migration v1->v2 completed successfully");
+            }
+            catch (System.Exception ex)
+            {
+                _logger?.Error(ex, "[Schema] Migration v1->v2 failed");
                 throw;
             }
         }
