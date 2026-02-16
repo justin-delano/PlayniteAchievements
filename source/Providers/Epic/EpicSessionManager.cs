@@ -3,6 +3,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Common;
 using Playnite.SDK;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -438,6 +439,27 @@ namespace PlayniteAchievements.Providers.Epic
                 }
             }
 
+            // Try Legendary Library plugin encrypted tokens
+            var legendaryEncryptedPath = Path.Combine(GetExtensionsDataPath(), LegendaryPluginId, "tokens_encrypted.json");
+            if (File.Exists(legendaryEncryptedPath))
+            {
+                var token = TryDecryptToken(legendaryEncryptedPath);
+                if (token != null)
+                {
+                    _logger?.Debug($"[EpicAuth] Loaded encrypted token from Legendary Library plugin.");
+                    return token;
+                }
+            }
+
+            // Try Legendary unencrypted tokens (from legendary launcher config)
+            // Check multiple possible locations: original legendary, Heroic variant, and env variable
+            var legendaryToken = TryLoadLegendaryTokenFromConfig();
+            if (legendaryToken != null)
+            {
+                _logger?.Debug($"[EpicAuth] Loaded token from Legendary config.");
+                return legendaryToken;
+            }
+
             // Fallback to playnite-plugincommon format (used by SuccessStory and other plugins)
             var pluginCommonTokenPath = Path.Combine(GetStoresDataPath(), TokenFileName);
             if (File.Exists(pluginCommonTokenPath))
@@ -451,6 +473,103 @@ namespace PlayniteAchievements.Providers.Epic
             }
 
             _logger?.Debug($"[EpicAuth] No token files found.");
+            return null;
+        }
+
+        /// <summary>
+        /// Loads token from Legendary's unencrypted user.json format.
+        /// </summary>
+        private EpicStoreToken TryLoadLegendaryToken(string filePath)
+        {
+            try
+            {
+                var json = File.ReadAllText(filePath);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return null;
+                }
+
+                // Legendary user.json has different structure - map it to EpicStoreToken
+                var legendaryToken = JsonConvert.DeserializeObject<LegendaryUserToken>(json);
+                if (legendaryToken == null || string.IsNullOrWhiteSpace(legendaryToken.access_token))
+                {
+                    return null;
+                }
+
+                return new EpicStoreToken
+                {
+                    AccountId = legendaryToken.account_id,
+                    Token = legendaryToken.access_token,
+                    RefreshToken = legendaryToken.refresh_token,
+                    Type = legendaryToken.token_type,
+                    ExpireAt = ParseLegendaryExpiry(legendaryToken.expires_at),
+                    RefreshExpireAt = ParseLegendaryExpiry(legendaryToken.refresh_expires_at)
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[EpicAuth] Failed to load Legendary token from {filePath}.");
+                return null;
+            }
+        }
+
+        private static DateTime? ParseLegendaryExpiry(string expiresAt)
+        {
+            if (string.IsNullOrWhiteSpace(expiresAt))
+            {
+                return null;
+            }
+
+            if (DateTime.TryParse(expiresAt, out var dt))
+            {
+                return dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Tries to load Legendary token from multiple possible config locations.
+        /// Checks: original legendary, Heroic Games Launcher variant, and LEGENDARY_CONFIG_PATH env var.
+        /// </summary>
+        private EpicStoreToken TryLoadLegendaryTokenFromConfig()
+        {
+            // Build list of possible Legendary config paths
+            var configPaths = new List<string>();
+
+            // Check for LEGENDARY_CONFIG_PATH environment variable first
+            var envConfigPath = Environment.GetEnvironmentVariable("LEGENDARY_CONFIG_PATH");
+            if (!string.IsNullOrWhiteSpace(envConfigPath) && Directory.Exists(envConfigPath))
+            {
+                configPaths.Add(Path.Combine(envConfigPath, "user.json"));
+            }
+
+            // Original legendary config path
+            var originalLegendaryPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                ".config", "legendary", "user.json");
+            configPaths.Add(originalLegendaryPath);
+
+            // Heroic Games Launcher's legendary config path
+            var heroicLegendaryPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "heroic", "legendaryConfig", "legendary", "user.json");
+            configPaths.Add(heroicLegendaryPath);
+
+            // Try each path, preferring the most recently modified one
+            foreach (var configPath in configPaths)
+            {
+                if (File.Exists(configPath))
+                {
+                    var token = TryLoadLegendaryToken(configPath);
+                    if (token != null)
+                    {
+                        _logger?.Debug($"[EpicAuth] Loaded Legendary token from {configPath}.");
+                        return token;
+                    }
+                }
+            }
+
             return null;
         }
 

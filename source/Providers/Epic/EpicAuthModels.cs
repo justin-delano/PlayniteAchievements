@@ -103,6 +103,37 @@ namespace PlayniteAchievements.Providers.Epic
     }
 
     /// <summary>
+    /// Token model matching Legendary launcher's user.json format.
+    /// Legendary stores tokens unencrypted in ~/.config/legendary/user.json
+    /// </summary>
+    internal sealed class LegendaryUserToken
+    {
+        [JsonProperty("account_id")]
+        public string account_id { get; set; }
+
+        [JsonProperty("token_type")]
+        public string token_type { get; set; }
+
+        [JsonProperty("access_token")]
+        public string access_token { get; set; }
+
+        [JsonProperty("expires_at")]
+        public string expires_at { get; set; }
+
+        [JsonProperty("refresh_token")]
+        public string refresh_token { get; set; }
+
+        [JsonProperty("refresh_expires_at")]
+        public string refresh_expires_at { get; set; }
+
+        [JsonProperty("expires_in")]
+        public int? expires_in { get; set; }
+
+        [JsonProperty("refresh_expires_in")]
+        public int? refresh_expires_in { get; set; }
+    }
+
+    /// <summary>
     /// Response model for Epic account info API.
     /// Used to validate access tokens by querying account details.
     /// </summary>
