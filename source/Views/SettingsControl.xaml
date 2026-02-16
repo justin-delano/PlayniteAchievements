@@ -32,42 +32,12 @@
             <Style x:Key="GogAuthActionButtonStyle"
                    TargetType="Button"
                    BasedOn="{StaticResource {x:Type Button}}">
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="buttonBorder"
-                                    Background="{DynamicResource ControlBackgroundBrush}"
-                                    BorderBrush="{DynamicResource NormalBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"
-                                                  TextElement.Foreground="{DynamicResource TextBrush}"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="buttonBorder" Property="Background"
-                                            Value="{DynamicResource HighlightBrush}"/>
-                                    <Setter TargetName="buttonBorder" Property="BorderBrush"
-                                            Value="{DynamicResource GlyphBrush}"/>
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="buttonBorder" Property="Background"
-                                            Value="{DynamicResource PressedBrush}"/>
-                                </Trigger>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="buttonBorder" Property="Opacity" Value="0.5"/>
-                                </Trigger>
-                                <DataTrigger Binding="{Binding GogAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                             Value="True">
-                                    <Setter Property="IsEnabled" Value="False"/>
-                                </DataTrigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding GogAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                 Value="True">
+                        <Setter Property="IsEnabled" Value="False"/>
+                    </DataTrigger>
+                </Style.Triggers>
             </Style>
 
             <!-- Section header style -->
@@ -1128,11 +1098,63 @@
                                             <!-- Show refresh button when library is detected -->
                                             <StackPanel Orientation="Horizontal"
                                                         Visibility="{Binding GogLibraryDetected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Gog_RefreshFromLibrary}"
-                                                        Style="{StaticResource GogAuthActionButtonStyle}"
+                                                <Button Style="{StaticResource GogAuthActionButtonStyle}"
                                                         Click="GogAuth_RefreshFromLibrary_Click"
                                                         Padding="14,6"
-                                                        Margin="0,0,8,0"/>
+                                                        Margin="0,0,8,0">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <!-- Spinning icon when busy -->
+                                                        <TextBlock x:Name="RefreshIcon"
+                                                                   FontFamily="Segoe MDL2 Assets"
+                                                                   FontSize="12"
+                                                                   Margin="0,0,6,0"
+                                                                   VerticalAlignment="Center"
+                                                                   RenderTransformOrigin="0.5,0.5">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Text" Value="&#xE72C;"/>
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding GogAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                                     Value="True">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                            <TextBlock.RenderTransform>
+                                                                <RotateTransform x:Name="SpinTransform" Angle="0"/>
+                                                            </TextBlock.RenderTransform>
+                                                        </TextBlock>
+                                                        <!-- Button text -->
+                                                        <TextBlock x:Name="RefreshText">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Text" Value="{DynamicResource LOCPlayAch_Settings_Gog_RefreshFromLibrary}"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding GogAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                                     Value="True">
+                                                                            <Setter Property="Text" Value="{DynamicResource LOCPlayAch_Settings_GogAuth_Checking}"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                    <Button.Triggers>
+                                                        <EventTrigger RoutedEvent="Loaded">
+                                                            <BeginStoryboard>
+                                                                <Storyboard>
+                                                                    <DoubleAnimation Storyboard.TargetName="SpinTransform"
+                                                                                     Storyboard.TargetProperty="Angle"
+                                                                                     From="0" To="360"
+                                                                                     Duration="0:0:1"
+                                                                                     RepeatBehavior="Forever"/>
+                                                                </Storyboard>
+                                                            </BeginStoryboard>
+                                                        </EventTrigger>
+                                                    </Button.Triggers>
+                                                </Button>
                                             </StackPanel>
 
                                             <!-- Show get library link when no library detected -->
