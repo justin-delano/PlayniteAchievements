@@ -165,15 +165,25 @@
     <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Authentification Epic</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_NotChecked">Epic : Non vérifié</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Checking">Vérification de l'authentification Epic...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_CheckingExistingSession">Vérification de la session Epic existante...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_OpeningWindow">Ouverture de la fenêtre de connexion Epic...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_WaitingForLogin">En attente de confirmation de connexion Epic...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_VerifyingSession">Vérification de la session Epic...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Completed">Flux d'authentification terminé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Verified">Authentification Epic vérifiée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_NotAuthenticated">Epic n'est pas authentifié.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_TimedOut">Délai d'authentification Epic dépassé.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Failed">Échec de l'authentification Epic.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Verified">Authentification Epic vérifiée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_Cancelled">L'authentification Epic a été annulée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_CookiesCleared">Cookies de session Epic effacés.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated">Epic est déjà authentifié.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_ProbeFailed">Impossible de vérifier l'état d'authentification Epic.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_CookiesCleared">Cookies de session Epic effacés.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_WindowNotOpened">Impossible d'ouvrir la fenêtre de connexion Epic. Vérifiez que Playnite a le focus et réessayez.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryDetected">Utilisation des identifiants {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryNotLoggedIn">Bibliothèque détectée mais non connectée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_RefreshFromLibrary">Actualiser depuis la bibliothèque</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryHelp">PlayniteAchievements utilise les identifiants de votre plugin de bibliothèque Epic Games ou Legendary. Connectez-vous via les paramètres du plugin de bibliothèque pour activer le suivi des succès Epic.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_GetLibrary">Obtenir le plugin Epic Games Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
 
     <!-- ================================================================= -->

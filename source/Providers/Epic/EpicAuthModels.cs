@@ -11,22 +11,22 @@ namespace PlayniteAchievements.Providers.Epic
     /// </summary>
     internal sealed class EpicStoreToken
     {
-        [JsonProperty("AccountId")]
+        [JsonProperty("account_id")]
         public string AccountId { get; set; }
 
-        [JsonProperty("Type")]
+        [JsonProperty("token_type")]
         public string Type { get; set; }
 
-        [JsonProperty("Token")]
+        [JsonProperty("access_token")]
         public string Token { get; set; }
 
-        [JsonProperty("ExpireAt")]
+        [JsonProperty("expires_at")]
         public DateTime? ExpireAt { get; set; }
 
-        [JsonProperty("RefreshToken")]
+        [JsonProperty("refresh_token")]
         public string RefreshToken { get; set; }
 
-        [JsonProperty("RefreshExpireAt")]
+        [JsonProperty("refresh_expires_at")]
         public DateTime? RefreshExpireAt { get; set; }
     }
 

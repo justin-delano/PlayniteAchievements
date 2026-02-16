@@ -180,6 +180,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_ProbeFailed">Unable to verify Epic authentication state.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_WindowNotOpened">Could not open the Epic login window. Check Playnite focus and try again.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryDetected">Using {0} credentials</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryNotLoggedIn">Library detected but not logged in</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_RefreshFromLibrary">Refresh from Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryHelp">PlayniteAchievements uses credentials from your installed Epic Games or Legendary library plugin. Login via the library plugin's settings to enable Epic achievement tracking.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_GetLibrary">Get Epic Games Library Plugin</sys:String>
