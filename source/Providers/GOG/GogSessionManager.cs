@@ -519,6 +519,8 @@ namespace PlayniteAchievements.Providers.GOG
                     return null;
                 }
 
+                _logger?.Debug($"[GogAuth] Raw cookies JSON (first 500 chars): {decryptedJson.Substring(0, Math.Min(500, decryptedJson.Length))}");
+
                 var cookies = Serialization.FromJson<List<GogCookie>>(decryptedJson);
                 if (cookies == null || cookies.Count == 0)
                 {
@@ -526,13 +528,19 @@ namespace PlayniteAchievements.Providers.GOG
                     return null;
                 }
 
-                // Filter to GOG domain cookies and remove expired ones
+                // Filter to GOG domain cookies, remove expired ones, and filter out empty values
                 var validCookies = cookies
                     .Where(c => c.Domain != null && c.Domain.IndexOf("gog.com", StringComparison.OrdinalIgnoreCase) >= 0)
                     .Where(c => c.Expires == null || c.Expires > DateTime.Now)
+                    .Where(c => !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.Value))
                     .ToList();
 
                 _logger?.Debug($"[GogAuth] Found {validCookies.Count} valid GOG cookies (filtered from {cookies.Count} total).");
+                foreach (var c in validCookies)
+                {
+                    _logger?.Debug($"[GogAuth] Cookie: {c.Name}={c.Value.Substring(0, Math.Min(20, c.Value.Length))}... Domain={c.Domain}");
+                }
+
                 return validCookies;
             }
             catch (CryptographicException ex)
@@ -555,24 +563,26 @@ namespace PlayniteAchievements.Providers.GOG
             {
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36");
 
-                    // Build cookie header
+                    // Build cookie header - only include name=value, not domain
                     var cookieHeader = string.Join("; ", cookies.Select(c => $"{c.Name}={c.Value}"));
-                    client.DefaultRequestHeaders.Add("Cookie", cookieHeader);
 
+                    _logger?.Debug($"[GogAuth] Cookie header (first 200 chars): {cookieHeader.Substring(0, Math.Min(200, cookieHeader.Length))}");
                     _logger?.Debug($"[GogAuth] Calling account info API: {accountInfoUrl}");
+
+                    client.DefaultRequestHeaders.Add("Cookie", cookieHeader);
 
                     var response = await client.GetAsync(accountInfoUrl).ConfigureAwait(false);
                     var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    _logger?.Debug($"[GogAuth] Account info full response: {content}");
 
                     if (!response.IsSuccessStatusCode)
                     {
                         _logger?.Warn($"[GogAuth] Account info API returned status {response.StatusCode}: {content}");
                         return null;
                     }
-
-                    _logger?.Debug($"[GogAuth] Account info response (first 200 chars): {content.Substring(0, Math.Min(200, content.Length))}");
 
                     var accountInfo = Serialization.FromJson<GogAccountBasicResponse>(content);
                     return accountInfo;
