@@ -93,6 +93,32 @@ namespace PlayniteAchievements.Views
             set => SetValue(GogAuthenticatedProperty, value);
         }
 
+        public static readonly DependencyProperty GogLibraryDetectedProperty =
+            DependencyProperty.Register(
+                nameof(GogLibraryDetected),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool GogLibraryDetected
+        {
+            get => (bool)GetValue(GogLibraryDetectedProperty);
+            set => SetValue(GogLibraryDetectedProperty, value);
+        }
+
+        public static readonly DependencyProperty GogLibraryNotDetectedProperty =
+            DependencyProperty.Register(
+                nameof(GogLibraryNotDetected),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(true));
+
+        public bool GogLibraryNotDetected
+        {
+            get => (bool)GetValue(GogAuthenticatedProperty);
+            set => SetValue(GogAuthenticatedProperty, value);
+        }
+
         public static readonly DependencyProperty SteamAuthenticatedProperty =
             DependencyProperty.Register(
                 nameof(SteamAuthenticated),
@@ -729,47 +755,11 @@ namespace PlayniteAchievements.Views
             await CheckGogAuthAsync().ConfigureAwait(false);
         }
 
-        private async void GogAuth_Authenticate_Click(object sender, RoutedEventArgs e)
+        private void GogAuth_RefreshFromLibrary_Click(object sender, RoutedEventArgs e)
         {
-            _logger?.Info("[GogAuth] Settings: Re-authenticate clicked.");
-            SetGogAuthBusy(true);
-            var progress = new Progress<GogAuthProgressStep>(step =>
-            {
-                SetGogAuthStatusByKey(GetGogProgressMessageKey(step));
-            });
-
-            try
-            {
-                using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(3)))
-                {
-                    var result = await _gogSessionManager
-                        .AuthenticateInteractiveAsync(forceInteractive: true, timeoutCts.Token, progress)
-                        .ConfigureAwait(false);
-                    ApplyGogAuthResult(result);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                SetGogAuthenticated(false);
-                SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_TimedOut");
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "[GogAuth] Settings authenticate action failed.");
-                SetGogAuthenticated(false);
-                SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_Failed");
-            }
-            finally
-            {
-                SetGogAuthBusy(false);
-            }
-        }
-
-        private void GogAuth_Clear_Click(object sender, RoutedEventArgs e)
-        {
-            _gogSessionManager.ClearSession();
-            SetGogAuthenticated(false);
-            SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_CookiesCleared");
+            _logger?.Info("[GogAuth] Settings: Refresh from Library clicked.");
+            _gogSessionManager.RefreshFromLibrary();
+            _ = CheckGogAuthAsync().ConfigureAwait(false);
         }
 
         private async Task CheckGogAuthAsync()
@@ -801,11 +791,29 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void SetGogLibraryDetected(bool detected)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                GogLibraryDetected = detected;
+                GogLibraryNotDetected = !detected;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    GogLibraryDetected = detected;
+                    GogLibraryNotDetected = !detected;
+                }));
+            }
+        }
+
         private void ApplyGogAuthResult(GogAuthResult result)
         {
             if (result == null)
             {
                 SetGogAuthenticated(false);
+                SetGogLibraryDetected(false);
                 SetGogAuthStatusByKey("LOCPlayAch_Settings_GogAuth_Failed");
                 return;
             }
@@ -816,9 +824,25 @@ namespace PlayniteAchievements.Views
 
             SetGogAuthenticated(authenticated);
 
+            // Check if library is detected (regardless of auth status)
+            var libraryName = _gogSessionManager.GetInstalledLibraryPluginName();
+            var libraryDetected = !string.IsNullOrEmpty(libraryName);
+            SetGogLibraryDetected(libraryDetected);
+
             var statusKey = string.IsNullOrWhiteSpace(result.MessageKey)
                 ? GetDefaultMessageKeyForOutcome(result.Outcome)
                 : result.MessageKey;
+
+            // Format the status message with library name if available
+            if (authenticated && libraryDetected && statusKey == "LOCPlayAch_Settings_Gog_LibraryDetected")
+            {
+                var format = ResourceProvider.GetString(statusKey);
+                if (!string.IsNullOrWhiteSpace(format))
+                {
+                    SetGogAuthStatus(string.Format(format, libraryName));
+                    return;
+                }
+            }
 
             if (!result.WindowOpened &&
                 !result.IsSuccess &&
