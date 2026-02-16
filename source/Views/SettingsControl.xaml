@@ -1020,7 +1020,7 @@
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,16"
-                                           Text="{DynamicResource LOCPlayAch_Settings_GogDescription}"/>
+                                           Text="{DynamicResource LOCPlayAch_Settings_Gog_LibraryHelp}"/>
 
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
@@ -1095,23 +1095,25 @@
                                                            FontWeight="SemiBold"/>
                                             </Grid>
 
-                                            <StackPanel Orientation="Horizontal">
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_GogAuth_Check}"
+                                            <!-- Show refresh button when library is detected -->
+                                            <StackPanel Orientation="Horizontal"
+                                                        Visibility="{Binding GogLibraryDetected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Gog_RefreshFromLibrary}"
                                                         Style="{StaticResource GogAuthActionButtonStyle}"
-                                                        Click="GogAuth_Check_Click"
+                                                        Click="GogAuth_RefreshFromLibrary_Click"
                                                         Padding="14,6"
                                                         Margin="0,0,8,0"/>
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_GogAuth_Reauthenticate}"
-                                                        Style="{StaticResource GogAuthActionButtonStyle}"
-                                                        Click="GogAuth_Authenticate_Click"
-                                                        Padding="14,6"
-                                                        Margin="0,0,8,0"/>
-                                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
-                                                        ToolTip="{DynamicResource LOCPlayAch_Tooltip_Clear}"
-                                                        Style="{StaticResource GogAuthActionButtonStyle}"
-                                                        Click="GogAuth_Clear_Click"
-                                                        Padding="14,6"/>
                                             </StackPanel>
+
+                                            <!-- Show get library link when no library detected -->
+                                            <TextBlock Style="{StaticResource MutedTextStyle}"
+                                                       Margin="0,8,0,0"
+                                                       Visibility="{Binding GogLibraryNotDetected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                <Hyperlink NavigateUri="https://playnite.link/addons/#AEBE8B7C-6DC3-4A66-AF31-E7375C6B5E9E"
+                                                           RequestNavigate="Hyperlink_RequestNavigate">
+                                                    <Run Text="{DynamicResource LOCPlayAch_Settings_Gog_GetLibrary}" />
+                                                </Hyperlink>
+                                            </TextBlock>
 
                                             <ProgressBar Height="3"
                                                          Margin="0,8,0,0"
@@ -1129,10 +1131,6 @@
                                                     </Style>
                                                 </ProgressBar.Style>
                                             </ProgressBar>
-
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GogAuth_Help}"
-                                                       Style="{StaticResource MutedTextStyle}"
-                                                       Margin="0,10,0,0"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
