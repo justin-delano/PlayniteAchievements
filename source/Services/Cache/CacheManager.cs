@@ -243,8 +243,20 @@ namespace PlayniteAchievements.Services
                 foreach (var record in records)
                 {
                     var cacheKey = UserKey(record.Key);
+                    if (string.IsNullOrWhiteSpace(cacheKey))
+                    {
+                        continue;
+                    }
+
+                    // Check memory cache first - it has the most recent data
+                    if (TryGetMemoryGameData_Locked(cacheKey, out var cached) && cached != null)
+                    {
+                        result.Add(cached);
+                        continue;
+                    }
+
                     var gameData = record.Value;
-                    if (string.IsNullOrWhiteSpace(cacheKey) || gameData == null)
+                    if (gameData == null)
                     {
                         continue;
                     }
