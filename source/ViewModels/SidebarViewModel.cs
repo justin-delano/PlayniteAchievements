@@ -945,12 +945,8 @@ namespace PlayniteAchievements.ViewModels
 
             System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
             {
-                if (IsScanning)
-                {
-                    // Don't refresh during scans - the scan completion handler will refresh
-                    return;
-                }
-
+                // Use debounced refresh for both during and after scans
+                // This batches multiple invalidation events into a single refresh
                 StopScanRefreshScheduler();
                 _refreshDebounceTimer.Stop();
                 _refreshDebounceTimer.Start();
