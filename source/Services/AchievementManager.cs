@@ -45,6 +45,7 @@ namespace PlayniteAchievements.Services
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ICacheManager _cacheService;
         private readonly DiskImageService _diskImageService;
+        private readonly ProviderRegistry _providerRegistry;
         private int _savedGamesInCurrentRun;
         private long _lastCacheInvalidationTimestamp = -1;
         private const long CacheInvalidationThrottleMs = 500;
@@ -56,6 +57,11 @@ namespace PlayniteAchievements.Services
         public ICacheManager Cache => _cacheService;
 
         /// <summary>
+        /// Gets the provider registry for checking/modifying provider enabled state.
+        /// </summary>
+        public ProviderRegistry ProviderRegistry => _providerRegistry;
+
+        /// <summary>
         /// Predefined scan modes available in the plugin.
         /// Generated automatically from ScanModeType enum.
         /// </summary>
@@ -64,9 +70,10 @@ namespace PlayniteAchievements.Services
             .ToArray();
 
         /// <summary>
-        /// Checks if at least one provider has valid authentication credentials configured.
+        /// Checks if at least one provider is enabled and has valid authentication credentials configured.
         /// </summary>
-        public bool HasAnyAuthenticatedProvider() => _providers.Any(p => p.IsAuthenticated);
+        public bool HasAnyAuthenticatedProvider() => _providers.Any(p =>
+            _providerRegistry.IsProviderEnabled(p.ProviderKey) && p.IsAuthenticated);
 
         /// <summary>
         /// Validates that a scan can proceed. Returns true if authenticated, otherwise shows dialog.
@@ -124,7 +131,8 @@ namespace PlayniteAchievements.Services
             ILogger logger,
             PlayniteAchievementsPlugin plugin,
             IEnumerable<IDataProvider> providers,
-            DiskImageService diskImageService)
+            DiskImageService diskImageService,
+            ProviderRegistry providerRegistry)
         {
             _api = api;
             _settings = settings;
@@ -132,6 +140,7 @@ namespace PlayniteAchievements.Services
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             if (providers == null) throw new ArgumentNullException(nameof(providers));
             _diskImageService = diskImageService ?? throw new ArgumentNullException(nameof(diskImageService));
+            _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
 
             _cacheService = new CacheManager(api, logger, _plugin);
             _providers = providers.ToList();
@@ -455,7 +464,9 @@ namespace PlayniteAchievements.Services
         private IReadOnlyList<IDataProvider> GetAuthenticatedProviders()
         {
             return _providers
-                .Where(p => p != null && p.IsAuthenticated)
+                .Where(p => p != null &&
+                    _providerRegistry.IsProviderEnabled(p.ProviderKey) &&
+                    p.IsAuthenticated)
                 .ToList();
         }
 
