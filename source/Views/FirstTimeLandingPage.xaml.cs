@@ -277,7 +277,7 @@ namespace PlayniteAchievements.Views
         /// <summary>
         /// Gets the settings for checking if setup is complete.
         /// </summary>
-        private PlayniteAchievementsSettings CurrentSettings => _settings._plugin?.Settings ?? _settings;
+        private PlayniteAchievementsSettings CurrentSettings => _plugin.Settings ?? _settings;
 
         /// <summary>
         /// Gets whether cached achievement data exists.
@@ -394,16 +394,7 @@ namespace PlayniteAchievements.Views
             try
             {
                 _logger.Info("User clicked Open Plugin Settings from first-time landing page.");
-
-                var pluginId = _settings._plugin?.Id;
-                if (pluginId.HasValue)
-                {
-                    _api.MainView.OpenPluginSettings(pluginId.Value);
-                }
-                else
-                {
-                    _logger.Warn("Cannot open plugin settings: plugin ID is not available.");
-                }
+                _api.MainView.OpenPluginSettings(_plugin.Id);
             }
             catch (Exception ex)
             {
@@ -489,7 +480,7 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                _settings._plugin?.SavePluginSettings(_settings);
+                _plugin.SavePluginSettings(_settings);
             }
             catch (Exception ex)
             {
@@ -502,7 +493,7 @@ namespace PlayniteAchievements.Views
             _settings.Persisted.FirstTimeSetupCompleted = true;
 
             // Save the settings to persist FirstTimeSetupCompleted
-            _settings._plugin?.SavePluginSettings(_settings);
+            _plugin.SavePluginSettings(_settings);
 
             SetupComplete?.Invoke(this, EventArgs.Empty);
         }
