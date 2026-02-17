@@ -190,6 +190,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_Epic_GetLibrary">Get Epic Games Library Plugin</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_OwnAuthHelp">Click Login to authenticate with Epic via an embedded browser window. Your credentials are stored securely within PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_Login">Login</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Alternative Login</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Login to Epic in your default browser when it opens\n2. After logging in, find the "authorizationCode" value on the page\n3. Copy and paste that value in the next dialog</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Paste the authorizationCode value here:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
 
