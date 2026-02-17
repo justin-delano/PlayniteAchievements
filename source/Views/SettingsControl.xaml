@@ -593,10 +593,6 @@
                                             Margin="16,10,0,0"
                                             MinWidth="90"/>
 
-                                    <CheckBox Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
-                                              Content="{DynamicResource LOCPlayAch_Settings_EnableDiagnostics}"
-                                              IsChecked="{Binding Persisted.EnableDiagnostics}"
-                                              Margin="0,10,0,0"/>
                                 </Grid>
                             </StackPanel>
                         </Border>

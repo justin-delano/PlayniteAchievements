@@ -2,7 +2,6 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
@@ -19,7 +18,6 @@ namespace PlayniteAchievements.Views
     {
         private readonly Func<UserControl> _createView;
         private readonly ILogger _logger;
-        private readonly bool _enableDiagnostics;
         private readonly IPlayniteAPI _api;
         private readonly AchievementManager _achievementManager;
         private readonly PlayniteAchievementsPlugin _plugin;
@@ -31,14 +29,12 @@ namespace PlayniteAchievements.Views
         public SidebarHostControl(
             Func<UserControl> createView,
             ILogger logger,
-            bool enableDiagnostics,
             IPlayniteAPI api,
             AchievementManager achievementManager,
             PlayniteAchievementsPlugin plugin)
         {
             _createView = createView ?? throw new ArgumentNullException(nameof(createView));
             _logger = logger;
-            _enableDiagnostics = enableDiagnostics;
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
@@ -157,53 +153,50 @@ namespace PlayniteAchievements.Views
                     return;
                 }
 
-                using (PerfTrace.Measure("SidebarHost.CreateContent", _logger, _enableDiagnostics))
+                try
                 {
-                    try
+                    // Use the shared settings object from the plugin (same instance used by providers)
+                    // This ensures settings changes in landing page are immediately visible to providers
+                    var settings = _plugin.Settings;
+                    if (settings != null)
                     {
-                        // Use the shared settings object from the plugin (same instance used by providers)
-                        // This ensures settings changes in landing page are immediately visible to providers
-                        var settings = _plugin.Settings;
-                        if (settings != null)
-                        {
-                            // Ensure plugin reference is set for ISettings methods (SavePluginSettings)
-                            settings._plugin = _plugin;
-                        }
-
-                        var firstTimeCompleted = settings?.Persisted?.FirstTimeSetupCompleted ?? true;
-                        var seenThemeMigration = settings?.Persisted?.SeenThemeMigration ?? false;
-                        var cachedIds = _achievementManager.Cache.GetCachedGameIds();
-                        var hasCachedData = cachedIds != null && cachedIds.Count > 0;
-                        _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeMigration={seenThemeMigration}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasEpicAuth={!string.IsNullOrEmpty(settings?.Persisted?.EpicAccountId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
-
-                        // Show landing page if:
-                        // 1. Haven't seen the theme migration page yet (!seenThemeMigration)
-                        // 2. Haven't seen landing page before (!firstTimeCompleted)
-                        // 3. No data in achievements_cache (NO MATTER WHAT)
-                        bool showLandingPage = !seenThemeMigration || !firstTimeCompleted || !hasCachedData;
-
-                        if (settings != null && showLandingPage)
-                        {
-                            _logger.Info("Creating landing page");
-                            CreateLandingPage(settings);
-                        }
-                        else
-                        {
-                            _logger.Info("Creating sidebar directly");
-                            CreateSidebar();
-                        }
-
-                        PART_Loading.Visibility = Visibility.Collapsed;
+                        // Ensure plugin reference is set for ISettings methods (SavePluginSettings)
+                        settings._plugin = _plugin;
                     }
-                    catch (Exception ex)
+
+                    var firstTimeCompleted = settings?.Persisted?.FirstTimeSetupCompleted ?? true;
+                    var seenThemeMigration = settings?.Persisted?.SeenThemeMigration ?? false;
+                    var cachedIds = _achievementManager.Cache.GetCachedGameIds();
+                    var hasCachedData = cachedIds != null && cachedIds.Count > 0;
+                    _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeMigration={seenThemeMigration}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.Persisted?.SteamUserId)}, HasEpicAuth={!string.IsNullOrEmpty(settings?.Persisted?.EpicAccountId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.Persisted?.RaUsername)}");
+
+                    // Show landing page if:
+                    // 1. Haven't seen the theme migration page yet (!seenThemeMigration)
+                    // 2. Haven't seen landing page before (!firstTimeCompleted)
+                    // 3. No data in achievements_cache (NO MATTER WHAT)
+                    bool showLandingPage = !seenThemeMigration || !firstTimeCompleted || !hasCachedData;
+
+                    if (settings != null && showLandingPage)
                     {
-                        _logger?.Error(ex, "Failed to create sidebar content.");
-                        PART_Loading.Visibility = Visibility.Visible;
+                        _logger.Info("Creating landing page");
+                        CreateLandingPage(settings);
                     }
-                    finally
+                    else
                     {
-                        _createScheduled = false;
+                        _logger.Info("Creating sidebar directly");
+                        CreateSidebar();
                     }
+
+                    PART_Loading.Visibility = Visibility.Collapsed;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "Failed to create sidebar content.");
+                    PART_Loading.Visibility = Visibility.Visible;
+                }
+                finally
+                {
+                    _createScheduled = false;
                 }
             }), DispatcherPriority.Background);
         }

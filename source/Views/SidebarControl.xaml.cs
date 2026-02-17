@@ -27,13 +27,7 @@ namespace PlayniteAchievements.Views
 
         public SidebarControl(IPlayniteAPI api, ILogger logger, AchievementManager achievementManager, PlayniteAchievementsSettings settings)
         {
-            using (PlayniteAchievements.Common.PerfTrace.Measure(
-                "SidebarControl.InitializeComponent",
-                logger,
-                settings?.Persisted?.EnableDiagnostics == true))
-            {
-                InitializeComponent();
-            }
+            InitializeComponent();
 
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _achievementManager = achievementManager;

@@ -49,7 +49,7 @@ namespace PlayniteAchievements.ViewModels
             _logger = logger;
             _settings = settings;
 
-            Timeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
+            Timeline = new TimelineViewModel();
             OnPropertyChanged(nameof(Timeline));
 
             // Initialize commands

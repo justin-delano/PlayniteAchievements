@@ -106,8 +106,8 @@ namespace PlayniteAchievements.ViewModels
             var scanModes = _achievementManager.GetScanModes();
             ScanModes = new ObservableCollection<ScanMode>(scanModes.Where(m => m.Type != ScanModeType.LibrarySelected));
 
-            GlobalTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
-            SelectedGameTimeline = new TimelineViewModel { EnableDiagnostics = _settings?.Persisted?.EnableDiagnostics == true };
+            GlobalTimeline = new TimelineViewModel();
+            SelectedGameTimeline = new TimelineViewModel();
 
             GamesPieChart = new PieChartViewModel();
             RarityPieChart = new PieChartViewModel();
@@ -580,15 +580,10 @@ namespace PlayniteAchievements.ViewModels
                             }
                         }
                     }
-                    var diagnostics = _settings?.Persisted?.EnableDiagnostics == true;
-
                     SidebarDataSnapshot snapshot;
-                    using (PerfTrace.Measure("SidebarViewModel.BuildSnapshot", _logger, diagnostics))
-                    {
-                        snapshot = await Task.Run(
-                            () => _dataBuilder.Build(_settings, revealedCopy, cancel),
-                            cancel).ConfigureAwait(false);
-                    }
+                    snapshot = await Task.Run(
+                        () => _dataBuilder.Build(_settings, revealedCopy, cancel),
+                        cancel).ConfigureAwait(false);
 
                     System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
                     {
@@ -602,10 +597,7 @@ namespace PlayniteAchievements.ViewModels
                             return;
                         }
 
-                        using (PerfTrace.Measure("SidebarViewModel.ApplySnapshot", _logger, diagnostics))
-                        {
-                            ApplySnapshot(snapshot);
-                        }
+                        ApplySnapshot(snapshot);
                     });
                 }
                 finally
@@ -1090,20 +1082,16 @@ namespace PlayniteAchievements.ViewModels
 
         public void RefreshFilter()
         {
-            var diagnostics = _settings?.Persisted?.EnableDiagnostics == true;
-            using (PerfTrace.Measure("SidebarViewModel.RefreshFilter", _logger, diagnostics))
+            var filtered = ApplySort(AllAchievements.Where(FilterAchievement)).ToList();
+            if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
             {
-                var filtered = ApplySort(AllAchievements.Where(FilterAchievement)).ToList();
-                if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-                {
-                    bulk.ReplaceAll(filtered);
-                }
-                else
-                {
-                    CollectionHelper.SynchronizeCollection(AllAchievements, filtered);
-                }
-                UpdateFilteredStatus();
+                bulk.ReplaceAll(filtered);
             }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(AllAchievements, filtered);
+            }
+            UpdateFilteredStatus();
         }
 
         private IEnumerable<AchievementDisplayItem> ApplySort(IEnumerable<AchievementDisplayItem> items)

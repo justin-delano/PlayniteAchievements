@@ -23,13 +23,6 @@ namespace PlayniteAchievements.ViewModels
         private Dictionary<DateTime, int> _countsByDate = new Dictionary<DateTime, int>();
         private int _updateVersion;
 
-        private bool _enableDiagnostics;
-        public bool EnableDiagnostics
-        {
-            get => _enableDiagnostics;
-            set => SetValue(ref _enableDiagnostics, value);
-        }
-
         public TimelineViewModel()
         {
             SetTimeRangeCommand = new RelayCommand(param =>
@@ -169,33 +162,30 @@ namespace PlayniteAchievements.ViewModels
                             return;
                         }
 
-                        using (PerfTrace.Measure("TimelineViewModel.Apply", _logger, enabled: EnableDiagnostics))
+                        if (values.Any())
                         {
-                            if (values.Any())
+                            if (TimelineSeries.Count == 0)
                             {
-                                if (TimelineSeries.Count == 0)
+                                TimelineSeries.Add(new ColumnSeries
                                 {
-                                    TimelineSeries.Add(new ColumnSeries
-                                    {
-                                        Title = "Achievements",
-                                        Values = new ChartValues<int>(values)
-                                    });
-                                }
-                                else
-                                {
-                                    CollectionHelper.SynchronizeValueCollection((ChartValues<int>)TimelineSeries[0].Values, values);
-                                }
+                                    Title = "Achievements",
+                                    Values = new ChartValues<int>(values)
+                                });
                             }
                             else
                             {
-                                while (TimelineSeries.Count > 0)
-                                {
-                                    TimelineSeries.RemoveAt(0);
-                                }
+                                CollectionHelper.SynchronizeValueCollection((ChartValues<int>)TimelineSeries[0].Values, values);
                             }
-
-                            CollectionHelper.SynchronizeValueCollection(TimelineLabels, labels);
                         }
+                        else
+                        {
+                            while (TimelineSeries.Count > 0)
+                            {
+                                TimelineSeries.RemoveAt(0);
+                            }
+                        }
+
+                        CollectionHelper.SynchronizeValueCollection(TimelineLabels, labels);
                     });
                 }
                 catch (Exception ex)

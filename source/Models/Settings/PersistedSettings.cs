@@ -39,7 +39,6 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenDescription = false;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
-        private bool _enableDiagnostics = false;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
 
@@ -285,15 +284,6 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Enables debug-level performance tracing logs (timings) for diagnosing UI hangs.
-        /// </summary>
-        public bool EnableDiagnostics
-        {
-            get => _enableDiagnostics;
-            set => SetValue(ref _enableDiagnostics, value);
-        }
-
-        /// <summary>
         /// Base delay in milliseconds for retry/backoff after transient errors.
         /// Default is 200ms. Higher values are safer for strict APIs but slower after failures.
         /// Set to 0 for fastest retry behavior.
@@ -469,7 +459,6 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenDescription = this.ShowHiddenDescription,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
-                EnableDiagnostics = this.EnableDiagnostics,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
                 RaUsername = this.RaUsername,

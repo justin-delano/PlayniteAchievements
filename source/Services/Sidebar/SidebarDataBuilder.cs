@@ -31,9 +31,6 @@ namespace PlayniteAchievements.Services.Sidebar
             settings ??= new PlayniteAchievementsSettings();
             revealedKeys ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var diagnostics = settings.Persisted?.EnableDiagnostics == true;
-            using (PerfTrace.Measure("SidebarDataBuilder.Build", _logger, diagnostics))
-            {
             var snapshot = new SidebarDataSnapshot();
 
             var allAchievements = new List<AchievementDisplayItem>();
@@ -59,10 +56,7 @@ namespace PlayniteAchievements.Services.Sidebar
             var canResolveReveals = anyHidingEnabled && revealedKeys.Count > 0;
 
             List<GameAchievementData> allGameData;
-            using (PerfTrace.Measure("SidebarDataBuilder.GetAllGameAchievementData", _logger, diagnostics))
-            {
-                allGameData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
-            }
+            allGameData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
 
             foreach (var gameData in allGameData)
             {
@@ -232,7 +226,6 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.UnlockedByProvider = unlockedByProvider;
 
             return snapshot;
-            }
         }
 
         private static void Increment(Dictionary<DateTime, int> dict, DateTime date)

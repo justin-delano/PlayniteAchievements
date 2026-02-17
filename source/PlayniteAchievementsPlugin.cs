@@ -401,19 +401,12 @@ namespace PlayniteAchievements
                 Icon = GetSidebarIcon(),
                 Opened = () =>
                 {
-                    using (PlayniteAchievements.Common.PerfTrace.Measure(
-                        "SidebarItem.Opened",
+                    return new SidebarHostControl(
+                        () => new SidebarControl(PlayniteApi, _logger, _achievementManager, _settingsViewModel.Settings),
                         _logger,
-                        _settingsViewModel?.Settings?.Persisted?.EnableDiagnostics == true))
-                    {
-                        return new SidebarHostControl(
-                            () => new SidebarControl(PlayniteApi, _logger, _achievementManager, _settingsViewModel.Settings),
-                            _logger,
-                            _settingsViewModel?.Settings?.Persisted?.EnableDiagnostics == true,
-                            PlayniteApi,
-                            _achievementManager,
-                            this);
-                    }
+                        PlayniteApi,
+                        _achievementManager,
+                        this);
                 }
             };
         }

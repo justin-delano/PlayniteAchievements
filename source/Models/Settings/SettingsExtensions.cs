@@ -60,7 +60,6 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowHiddenDescription = source.ShowHiddenDescription;
             target.UseCoverImages = source.UseCoverImages;
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
-            target.EnableDiagnostics = source.EnableDiagnostics;
 
             // RetroAchievements Settings
             target.RaUsername = source.RaUsername;
@@ -125,7 +124,6 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenDescription = source.ShowHiddenDescription,
                 UseCoverImages = source.UseCoverImages,
                 IncludeUnplayedGames = source.IncludeUnplayedGames,
-                EnableDiagnostics = source.EnableDiagnostics,
 
                 // RetroAchievements Settings
                 RaUsername = source.RaUsername,
