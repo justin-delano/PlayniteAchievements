@@ -5,7 +5,7 @@ namespace PlayniteAchievements.Services.Database.Rows
         public long Id { get; set; }
         public long UserGameProgressId { get; set; }
         public long AchievementDefinitionId { get; set; }
-        public bool Unlocked { get; set; }
+        public long Unlocked { get; set; }
         public string UnlockTimeUtc { get; set; }
         public int? ProgressNum { get; set; }
         public int? ProgressDenom { get; set; }

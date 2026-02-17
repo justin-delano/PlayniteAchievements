@@ -508,7 +508,7 @@ namespace PlayniteAchievements.Services.Database
                         var achievement = desired.Value;
 
                         var unlockTime = NormalizeUnlockTime(achievement.UnlockTimeUtc);
-                        var unlocked = unlockTime.HasValue;
+                        var unlocked = unlockTime.HasValue ? 1L : 0L;
                         var unlockIso = unlockTime.HasValue ? ToIso(unlockTime.Value) : null;
                         var progressNum = achievement.ProgressNum;
                         var progressDenom = achievement.ProgressDenom;
@@ -868,10 +868,10 @@ namespace PlayniteAchievements.Services.Database
                     gameId,
                     cacheKey,
                     playtimeSeconds,
-                    noAchievements,
+                    noAchievements ? 1 : 0,
                     achievementsUnlocked,
                     totalAchievements,
-                    isComplete,
+                    isComplete ? 1 : 0,
                     updatedIso,
                     nowIso,
                     nowIso);
@@ -893,10 +893,10 @@ namespace PlayniteAchievements.Services.Database
                 gameId,
                 cacheKey,
                 playtimeSeconds,
-                noAchievements,
+                noAchievements ? 1 : 0,
                 achievementsUnlocked,
                 totalAchievements,
-                isComplete,
+                isComplete ? 1 : 0,
                 updatedIso,
                 nowIso,
                 existing.Id);
@@ -956,7 +956,7 @@ namespace PlayniteAchievements.Services.Database
                         achievement.Points.HasValue ? (object)achievement.Points.Value : DBNull.Value,
                         DbValue(achievement.Category),
                         DbValue(achievement.TrophyType),
-                        achievement.Hidden,
+                        achievement.Hidden ? 1 : 0,
                         achievement.GlobalPercentUnlocked.HasValue ? (object)achievement.GlobalPercentUnlocked.Value : DBNull.Value,
                         achievement.ProgressDenom.HasValue ? (object)achievement.ProgressDenom.Value : DBNull.Value,
                         nowIso,
@@ -980,7 +980,7 @@ namespace PlayniteAchievements.Services.Database
                 var incomingPoints = achievement.Points;
                 var incomingCategory = NormalizeDbText(achievement.Category);
                 var incomingTrophyType = NormalizeDbText(achievement.TrophyType);
-                var incomingHidden = achievement.Hidden;
+                var incomingHidden = achievement.Hidden ? 1L : 0L;
                 var incomingGlobalPercent = achievement.GlobalPercentUnlocked;
                 var incomingProgressMax = achievement.ProgressDenom;
 
@@ -1463,10 +1463,10 @@ namespace PlayniteAchievements.Services.Database
             public long GameId { get; set; }
             public string CacheKey { get; set; }
             public long PlaytimeSeconds { get; set; }
-            public bool NoAchievements { get; set; }
+            public long NoAchievements { get; set; }
             public long AchievementsUnlocked { get; set; }
             public long TotalAchievements { get; set; }
-            public bool IsComplete { get; set; }
+            public long IsComplete { get; set; }
             public string LastUpdatedUtc { get; set; }
             public string CreatedUtc { get; set; }
             public string UpdatedUtc { get; set; }
@@ -1477,7 +1477,7 @@ namespace PlayniteAchievements.Services.Database
             public long Id { get; set; }
             public long UserGameProgressId { get; set; }
             public long AchievementDefinitionId { get; set; }
-            public bool Unlocked { get; set; }
+            public long Unlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
             public int? ProgressNum { get; set; }
             public int? ProgressDenom { get; set; }
@@ -1503,7 +1503,7 @@ namespace PlayniteAchievements.Services.Database
             public string ProviderName { get; set; }
             public string ExternalUserId { get; set; }
             public string DisplayName { get; set; }
-            public bool IsCurrentUser { get; set; }
+            public long IsCurrentUser { get; set; }
             public string FriendSource { get; set; }
             public string CreatedUtc { get; set; }
             public string UpdatedUtc { get; set; }
