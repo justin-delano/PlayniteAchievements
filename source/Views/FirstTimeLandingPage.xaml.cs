@@ -24,6 +24,7 @@ namespace PlayniteAchievements.Views
         private readonly AchievementManager _achievementManager;
         private readonly PlayniteAchievementsPlugin _plugin;
         private PlayniteAchievementsSettings _settings;
+        private readonly ProviderRegistry _providerRegistry;
         private readonly IPlayniteAPI _api;
         private readonly ThemeDiscoveryService _themeDiscovery;
         private readonly ThemeMigrationService _themeMigration;
@@ -182,13 +183,15 @@ namespace PlayniteAchievements.Views
             ILogger logger,
             AchievementManager achievementManager,
             PlayniteAchievementsSettings settings,
-            PlayniteAchievementsPlugin plugin)
+            PlayniteAchievementsPlugin plugin,
+            ProviderRegistry providerRegistry)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
+            _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
 
             _providers = new ObservableCollection<ProviderStatus>();
             _availableThemes = new ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
@@ -218,8 +221,8 @@ namespace PlayniteAchievements.Views
         /// </summary>
         public void RefreshProviderStatuses()
         {
-            // Reload settings from disk to get the latest persisted values
-            ReloadSettings();
+            // Sync provider registry from the latest persisted settings
+            _providerRegistry.SyncFromSettings(_settings.Persisted);
 
             var providers = _achievementManager.GetProviders();
             _providers.Clear();
@@ -230,7 +233,7 @@ namespace PlayniteAchievements.Views
                 {
                     Name = provider.ProviderName,
                     ProviderKey = provider.ProviderKey,
-                    IsEnabled = GetProviderEnabled(provider.ProviderKey),
+                    IsEnabled = _providerRegistry.IsProviderEnabled(provider.ProviderKey),
                     IsAuthenticated = provider.IsAuthenticated
                 };
                 _providers.Add(status);
@@ -243,29 +246,6 @@ namespace PlayniteAchievements.Views
             OnPropertyChanged(nameof(ShowNoAuthPanel));
             OnPropertyChanged(nameof(ShowNeedsScanPanel));
             OnPropertyChanged(nameof(ShowHasDataPanel));
-        }
-
-        /// <summary>
-        /// Reloads the settings from disk to ensure we have the latest persisted values.
-        /// This is called when settings are saved externally (e.g., via the settings dialog).
-        /// </summary>
-        private void ReloadSettings()
-        {
-            try
-            {
-                var reloaded = _plugin.LoadPluginSettings<PlayniteAchievementsSettings>();
-                if (reloaded != null)
-                {
-                    // Preserve the plugin reference for ISettings methods
-                    reloaded._plugin = _plugin;
-                    _settings = reloaded;
-                    _logger.Info("Landing page settings reloaded from disk.");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Failed to reload settings in landing page.");
-            }
         }
 
         /// <summary>
@@ -416,31 +396,21 @@ namespace PlayniteAchievements.Views
             {
                 _logger.Info($"Toggling provider: {providerKey}");
 
-                // Update the persisted setting based on provider key
-                switch (providerKey)
-                {
-                    case "Steam":
-                        _settings.Persisted.SteamEnabled = !_settings.Persisted.SteamEnabled;
-                        break;
-                    case "Epic":
-                        _settings.Persisted.EpicEnabled = !_settings.Persisted.EpicEnabled;
-                        break;
-                    case "GOG":
-                        _settings.Persisted.GogEnabled = !_settings.Persisted.GogEnabled;
-                        break;
-                    case "RetroAchievements":
-                        _settings.Persisted.RetroAchievementsEnabled = !_settings.Persisted.RetroAchievementsEnabled;
-                        break;
-                }
+                // Toggle via the registry
+                var newState = !_providerRegistry.IsProviderEnabled(providerKey);
+                _providerRegistry.SetProviderEnabled(providerKey, newState);
 
+                // Sync the registry state back to persisted settings
+                _providerRegistry.SyncToSettings(_settings.Persisted);
+
+                // Save settings to disk
                 SaveSettings();
 
                 // Update the provider status in the UI
                 var provider = _providers.FirstOrDefault(p => p.ProviderKey == providerKey);
                 if (provider != null)
                 {
-                    // Get the enabled state from settings
-                    provider.IsEnabled = GetProviderEnabled(providerKey);
+                    provider.IsEnabled = _providerRegistry.IsProviderEnabled(providerKey);
                     provider.IsAuthenticated = GetProviderAuthenticated(providerKey);
                 }
 
@@ -456,18 +426,6 @@ namespace PlayniteAchievements.Views
                 _logger.Error(ex, $"Failed to toggle provider: {providerKey}");
             }
         });
-
-        private bool GetProviderEnabled(string providerKey)
-        {
-            return providerKey switch
-            {
-                "Steam" => _settings.Persisted.SteamEnabled,
-                "Epic" => _settings.Persisted.EpicEnabled,
-                "GOG" => _settings.Persisted.GogEnabled,
-                "RetroAchievements" => _settings.Persisted.RetroAchievementsEnabled,
-                _ => true
-            };
-        }
 
         private bool GetProviderAuthenticated(string providerKey)
         {
