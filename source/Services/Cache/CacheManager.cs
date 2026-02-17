@@ -380,6 +380,11 @@ namespace PlayniteAchievements.Services
             RaiseCacheInvalidatedEvent();
         }
 
+        public string ExportDatabaseToCsv(string exportDirectory)
+        {
+            return _store.ExportToCsv(exportDirectory);
+        }
+
         public void Dispose()
         {
             try

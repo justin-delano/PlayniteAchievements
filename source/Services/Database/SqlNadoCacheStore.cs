@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Services.Database
 {
@@ -1233,6 +1235,283 @@ namespace PlayniteAchievements.Services.Database
         private static string ToIso(DateTime dateTime)
         {
             return DateTimeUtilities.AsUtcKind(dateTime).ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Exports all database tables to CSV files in the specified directory.
+        /// Returns the path to the directory containing the CSV files.
+        /// </summary>
+        public string ExportToCsv(string exportDirectory)
+        {
+            lock (_sync)
+            {
+                if (_db == null)
+                {
+                    throw new InvalidOperationException("Database not initialized.");
+                }
+
+                var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+                var dir = Path.Combine(exportDirectory, $"achievement_export_{timestamp}");
+                Directory.CreateDirectory(dir);
+
+                _logger.Info($"Exporting database to CSV: {dir}");
+
+                // Export each table using typed row classes
+                ExportAchievementDefinitions(dir);
+                ExportUserGameProgress(dir);
+                ExportUserAchievements(dir);
+                ExportGames(dir);
+                ExportUsers(dir);
+                ExportAchievementSummary(dir);
+
+                _logger.Info($"Database export completed: {dir}");
+                return dir;
+            }
+        }
+
+        private void ExportAchievementDefinitions(string dir)
+        {
+            var filePath = Path.Combine(dir, "AchievementDefinitions.csv");
+            var rows = _db.Load<AchievementDefinitionExportRow>(
+                "SELECT Id, GameId, ApiName, DisplayName, Description, " +
+                "UnlockedIconPath, LockedIconPath, Points, Category, Hidden, " +
+                "GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc " +
+                "FROM AchievementDefinitions").ToList();
+            WriteCsv(filePath, rows, new[]
+            {
+                "Id", "GameId", "ApiName", "DisplayName", "Description",
+                "UnlockedIconPath", "LockedIconPath", "Points", "Category", "Hidden",
+                "GlobalPercentUnlocked", "ProgressMax", "CreatedUtc", "UpdatedUtc"
+            }, r => new[] {
+                r.Id.ToString(), r.GameId.ToString(), r.ApiName, r.DisplayName, r.Description,
+                r.UnlockedIconPath, r.LockedIconPath, r.Points?.ToString(), r.Category, r.Hidden.ToString(),
+                r.GlobalPercentUnlocked?.ToString(), r.ProgressMax?.ToString(), r.CreatedUtc, r.UpdatedUtc
+            });
+            _logger.Info($"Exported {rows.Count} rows to {filePath}");
+        }
+
+        private void ExportUserGameProgress(string dir)
+        {
+            var filePath = Path.Combine(dir, "UserGameProgress.csv");
+            var rows = _db.Load<UserGameProgressExportRow>(
+                "SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, " +
+                "NoAchievements, AchievementsUnlocked, TotalAchievements, " +
+                "IsComplete, LastUpdatedUtc, CreatedUtc, UpdatedUtc " +
+                "FROM UserGameProgress").ToList();
+            WriteCsv(filePath, rows, new[]
+            {
+                "Id", "UserId", "GameId", "CacheKey", "PlaytimeSeconds",
+                "NoAchievements", "AchievementsUnlocked", "TotalAchievements",
+                "IsComplete", "LastUpdatedUtc", "CreatedUtc", "UpdatedUtc"
+            }, r => new[] {
+                r.Id.ToString(), r.UserId.ToString(), r.GameId.ToString(), r.CacheKey, r.PlaytimeSeconds.ToString(),
+                r.NoAchievements.ToString(), r.AchievementsUnlocked.ToString(), r.TotalAchievements.ToString(),
+                r.IsComplete.ToString(), r.LastUpdatedUtc, r.CreatedUtc, r.UpdatedUtc
+            });
+            _logger.Info($"Exported {rows.Count} rows to {filePath}");
+        }
+
+        private void ExportUserAchievements(string dir)
+        {
+            var filePath = Path.Combine(dir, "UserAchievements.csv");
+            var rows = _db.Load<UserAchievementExportRow>(
+                "SELECT Id, UserGameProgressId, AchievementDefinitionId, " +
+                "Unlocked, UnlockTimeUtc, ProgressNum, ProgressDenom, " +
+                "LastUpdatedUtc, CreatedUtc " +
+                "FROM UserAchievements").ToList();
+            WriteCsv(filePath, rows, new[]
+            {
+                "Id", "UserGameProgressId", "AchievementDefinitionId",
+                "Unlocked", "UnlockTimeUtc", "ProgressNum", "ProgressDenom",
+                "LastUpdatedUtc", "CreatedUtc"
+            }, r => new[] {
+                r.Id.ToString(), r.UserGameProgressId.ToString(), r.AchievementDefinitionId.ToString(),
+                r.Unlocked.ToString(), r.UnlockTimeUtc, r.ProgressNum?.ToString(), r.ProgressDenom?.ToString(),
+                r.LastUpdatedUtc, r.CreatedUtc
+            });
+            _logger.Info($"Exported {rows.Count} rows to {filePath}");
+        }
+
+        private void ExportGames(string dir)
+        {
+            var filePath = Path.Combine(dir, "Games.csv");
+            var rows = _db.Load<GameExportRow>(
+                "SELECT Id, ProviderName, ProviderGameId, PlayniteGameId, GameName, " +
+                "LibrarySourceName, FirstSeenUtc, LastUpdatedUtc " +
+                "FROM Games").ToList();
+            WriteCsv(filePath, rows, new[]
+            {
+                "Id", "ProviderName", "ProviderGameId", "PlayniteGameId", "GameName",
+                "LibrarySourceName", "FirstSeenUtc", "LastUpdatedUtc"
+            }, r => new[] {
+                r.Id.ToString(), r.ProviderName, r.ProviderGameId?.ToString(), r.PlayniteGameId, r.GameName,
+                r.LibrarySourceName, r.FirstSeenUtc, r.LastUpdatedUtc
+            });
+            _logger.Info($"Exported {rows.Count} rows to {filePath}");
+        }
+
+        private void ExportUsers(string dir)
+        {
+            var filePath = Path.Combine(dir, "Users.csv");
+            var rows = _db.Load<UserExportRow>(
+                "SELECT Id, ProviderName, ExternalUserId, DisplayName, IsCurrentUser, " +
+                "FriendSource, CreatedUtc, UpdatedUtc " +
+                "FROM Users").ToList();
+            WriteCsv(filePath, rows, new[]
+            {
+                "Id", "ProviderName", "ExternalUserId", "DisplayName", "IsCurrentUser",
+                "FriendSource", "CreatedUtc", "UpdatedUtc"
+            }, r => new[] {
+                r.Id.ToString(), r.ProviderName, r.ExternalUserId, r.DisplayName, r.IsCurrentUser.ToString(),
+                r.FriendSource, r.CreatedUtc, r.UpdatedUtc
+            });
+            _logger.Info($"Exported {rows.Count} rows to {filePath}");
+        }
+
+        private void ExportAchievementSummary(string dir)
+        {
+            var filePath = Path.Combine(dir, "AchievementSummary.csv");
+            var rows = _db.Load<AchievementSummaryExportRow>(
+                "SELECT g.GameName, g.ProviderName, g.PlayniteGameId, " +
+                "ad.ApiName, ad.DisplayName AS AchievementName, ad.Description, ad.Points, ad.Category, " +
+                "ad.GlobalPercentUnlocked, ad.Hidden, " +
+                "ua.Unlocked, ua.UnlockTimeUtc, u.DisplayName AS UserName " +
+                "FROM AchievementDefinitions ad " +
+                "JOIN Games g ON ad.GameId = g.Id " +
+                "LEFT JOIN UserAchievements ua ON ua.AchievementDefinitionId = ad.Id " +
+                "LEFT JOIN UserGameProgress ugp ON ua.UserGameProgressId = ugp.Id " +
+                "LEFT JOIN Users u ON ugp.UserId = u.Id " +
+                "ORDER BY g.GameName, ad.DisplayName").ToList();
+            WriteCsv(filePath, rows, new[]
+            {
+                "GameName", "ProviderName", "PlayniteGameId",
+                "ApiName", "AchievementName", "Description", "Points", "Category",
+                "GlobalPercentUnlocked", "Hidden",
+                "Unlocked", "UnlockTimeUtc", "UserName"
+            }, r => new[] {
+                r.GameName, r.ProviderName, r.PlayniteGameId,
+                r.ApiName, r.AchievementName, r.Description, r.Points?.ToString(), r.Category,
+                r.GlobalPercentUnlocked?.ToString(), r.Hidden?.ToString(),
+                r.Unlocked?.ToString(), r.UnlockTimeUtc, r.UserName
+            });
+            _logger.Info($"Exported {rows.Count} rows to {filePath}");
+        }
+
+        private static void WriteCsv<T>(string filePath, List<T> rows, string[] headers, Func<T, string[]> getValues)
+        {
+            using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+            {
+                writer.WriteLine(string.Join(",", headers.Select(EscapeCsvField)));
+                foreach (var row in rows)
+                {
+                    var values = getValues(row);
+                    writer.WriteLine(string.Join(",", values.Select(v => EscapeCsvField(v ?? ""))));
+                }
+            }
+        }
+
+        private static string EscapeCsvField(string field)
+        {
+            if (string.IsNullOrEmpty(field))
+            {
+                return "";
+            }
+
+            if (field.Contains(",") || field.Contains("\n") || field.Contains("\r") || field.Contains("\""))
+            {
+                return "\"" + field.Replace("\"", "\"\"") + "\"";
+            }
+
+            return field;
+        }
+
+        // Export row DTOs
+        private sealed class AchievementDefinitionExportRow
+        {
+            public long Id { get; set; }
+            public long GameId { get; set; }
+            public string ApiName { get; set; }
+            public string DisplayName { get; set; }
+            public string Description { get; set; }
+            public string UnlockedIconPath { get; set; }
+            public string LockedIconPath { get; set; }
+            public int? Points { get; set; }
+            public string Category { get; set; }
+            public long Hidden { get; set; }
+            public double? GlobalPercentUnlocked { get; set; }
+            public int? ProgressMax { get; set; }
+            public string CreatedUtc { get; set; }
+            public string UpdatedUtc { get; set; }
+        }
+
+        private sealed class UserGameProgressExportRow
+        {
+            public long Id { get; set; }
+            public long UserId { get; set; }
+            public long GameId { get; set; }
+            public string CacheKey { get; set; }
+            public long PlaytimeSeconds { get; set; }
+            public long NoAchievements { get; set; }
+            public long AchievementsUnlocked { get; set; }
+            public long TotalAchievements { get; set; }
+            public long IsComplete { get; set; }
+            public string LastUpdatedUtc { get; set; }
+            public string CreatedUtc { get; set; }
+            public string UpdatedUtc { get; set; }
+        }
+
+        private sealed class UserAchievementExportRow
+        {
+            public long Id { get; set; }
+            public long UserGameProgressId { get; set; }
+            public long AchievementDefinitionId { get; set; }
+            public long Unlocked { get; set; }
+            public string UnlockTimeUtc { get; set; }
+            public int? ProgressNum { get; set; }
+            public int? ProgressDenom { get; set; }
+            public string LastUpdatedUtc { get; set; }
+            public string CreatedUtc { get; set; }
+        }
+
+        private sealed class GameExportRow
+        {
+            public long Id { get; set; }
+            public string ProviderName { get; set; }
+            public long? ProviderGameId { get; set; }
+            public string PlayniteGameId { get; set; }
+            public string GameName { get; set; }
+            public string LibrarySourceName { get; set; }
+            public string FirstSeenUtc { get; set; }
+            public string LastUpdatedUtc { get; set; }
+        }
+
+        private sealed class UserExportRow
+        {
+            public long Id { get; set; }
+            public string ProviderName { get; set; }
+            public string ExternalUserId { get; set; }
+            public string DisplayName { get; set; }
+            public long IsCurrentUser { get; set; }
+            public string FriendSource { get; set; }
+            public string CreatedUtc { get; set; }
+            public string UpdatedUtc { get; set; }
+        }
+
+        private sealed class AchievementSummaryExportRow
+        {
+            public string GameName { get; set; }
+            public string ProviderName { get; set; }
+            public string PlayniteGameId { get; set; }
+            public string ApiName { get; set; }
+            public string AchievementName { get; set; }
+            public string Description { get; set; }
+            public int? Points { get; set; }
+            public string Category { get; set; }
+            public double? GlobalPercentUnlocked { get; set; }
+            public long? Hidden { get; set; }
+            public long? Unlocked { get; set; }
+            public string UnlockTimeUtc { get; set; }
+            public string UserName { get; set; }
         }
     }
 }

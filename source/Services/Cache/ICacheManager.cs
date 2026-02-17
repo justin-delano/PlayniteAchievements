@@ -21,5 +21,8 @@ namespace PlayniteAchievements.Services
         void NotifyCacheInvalidated();
 
         void ClearCache();
+
+        // Debug export
+        string ExportDatabaseToCsv(string exportDirectory);
     }
 }

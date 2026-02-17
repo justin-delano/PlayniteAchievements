@@ -1320,6 +1320,44 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void ExportDatabase_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var exportBaseDir = _plugin.GetPluginUserDataPath();
+                var cache = _plugin.AchievementManager?.Cache;
+
+                if (cache == null)
+                {
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        L("LOCPlayAch_Settings_ExportDatabaseFailed", "Database not available."),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                var exportDir = cache.ExportDatabaseToCsv(exportBaseDir);
+
+                _logger.Info($"Database exported to: {exportDir}");
+
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    LF("LOCPlayAch_Settings_ExportDatabaseDone", "Database exported to:\n{0}", exportDir),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to export database.");
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    LF("LOCPlayAch_Settings_ExportDatabaseFailed", "Failed to export database: {0}", ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         private void ForceRebuildHashIndex_Click(object sender, RoutedEventArgs e)
         {
             try

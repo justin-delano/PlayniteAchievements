@@ -237,6 +237,10 @@
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_DeletedCount">Deleted {0} hash index cache file(s).{1}{1}The hash index will be rebuilt on the next scan.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoFiles">No hash index cache files found to delete.{0}{0}The cache may have already been cleared, or no scans have been performed yet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_ClearFailed">Failed to clear hash index cache: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Export database tables to CSV for debugging</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Export CSV</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseDone">Database exported to:{0}{1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseFailed">Failed to export database: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiagnostics">Enable diagnostics logging (perf timings)</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Updating cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">No achievements cached. Click 'Scan All' to scan your games.</sys:String>
