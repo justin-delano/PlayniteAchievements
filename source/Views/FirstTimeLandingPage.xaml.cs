@@ -38,8 +38,22 @@ namespace PlayniteAchievements.Views
         public class ProviderStatus : ObservableObject
         {
             private bool _isAuthenticated;
+            private bool _isEnabled = true;
 
             public string Name { get; set; }
+            public string ProviderKey { get; set; }
+
+            public bool IsEnabled
+            {
+                get => _isEnabled;
+                set
+                {
+                    _isEnabled = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(StatusSubtitle));
+                    OnPropertyChanged(nameof(StatusBadgeText));
+                }
+            }
 
             public bool IsAuthenticated
             {
@@ -57,18 +71,38 @@ namespace PlayniteAchievements.Views
             public string StatusIcon => IsAuthenticated ? "\uE73E" : "\uE711"; // Checkmark / Cancel
 
             /// <summary>
-            /// Gets the localized subtitle text based on authentication status.
+            /// Gets the localized subtitle text based on authentication and enabled status.
             /// </summary>
-            public string StatusSubtitle => IsAuthenticated
-                ? ResourceProvider.GetString("LOCPlayAch_Landing_Status_ReadyToScan")
-                : ResourceProvider.GetString("LOCPlayAch_Landing_Status_ConfigureInSettings");
+            public string StatusSubtitle
+            {
+                get
+                {
+                    if (!IsEnabled)
+                    {
+                        return ResourceProvider.GetString("LOCPlayAch_Settings_ProviderDisabledMessage");
+                    }
+                    return IsAuthenticated
+                        ? ResourceProvider.GetString("LOCPlayAch_Landing_Status_ReadyToScan")
+                        : ResourceProvider.GetString("LOCPlayAch_Landing_Status_ConfigureInSettings");
+                }
+            }
 
             /// <summary>
-            /// Gets the localized badge text based on authentication status.
+            /// Gets the localized badge text based on authentication and enabled status.
             /// </summary>
-            public string StatusBadgeText => IsAuthenticated
-                ? ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeReady")
-                : ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeSetup");
+            public string StatusBadgeText
+            {
+                get
+                {
+                    if (!IsEnabled)
+                    {
+                        return ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeDisabled");
+                    }
+                    return IsAuthenticated
+                        ? ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeReady")
+                        : ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeSetup");
+                }
+            }
         }
 
         private readonly ObservableCollection<ProviderStatus> _providers;
@@ -94,6 +128,23 @@ namespace PlayniteAchievements.Views
                     ? ScanModeType.Installed.GetKey()
                     : value;
                 OnPropertyChanged(nameof(SelectedScanMode));
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the global language for achievement text.
+        /// </summary>
+        public string GlobalLanguage
+        {
+            get => _settings.Persisted.GlobalLanguage;
+            set
+            {
+                if (_settings.Persisted.GlobalLanguage != value)
+                {
+                    _settings.Persisted.GlobalLanguage = value;
+                    OnPropertyChanged(nameof(GlobalLanguage));
+                    SaveSettings();
+                }
             }
         }
 
@@ -178,12 +229,15 @@ namespace PlayniteAchievements.Views
                 var status = new ProviderStatus
                 {
                     Name = provider.ProviderName,
+                    ProviderKey = provider.ProviderKey,
+                    IsEnabled = GetProviderEnabled(provider.ProviderKey),
                     IsAuthenticated = provider.IsAuthenticated
                 };
                 _providers.Add(status);
             }
 
             // Raise PropertyChanged for all state-dependent properties to refresh UI
+            OnPropertyChanged(nameof(GlobalLanguage));
             OnPropertyChanged(nameof(HasAnyProviderAuth));
             OnPropertyChanged(nameof(CurrentState));
             OnPropertyChanged(nameof(ShowNoAuthPanel));
@@ -356,6 +410,92 @@ namespace PlayniteAchievements.Views
                 _logger.Error(ex, "Failed to open plugin settings from first-time landing page.");
             }
         });
+
+        /// <summary>
+        /// Command to toggle a provider's enabled state.
+        /// </summary>
+        public ICommand ToggleProviderCommand => new RelayCommand<string>(providerKey =>
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            try
+            {
+                _logger.Info($"Toggling provider: {providerKey}");
+
+                // Update the persisted setting based on provider key
+                switch (providerKey)
+                {
+                    case "Steam":
+                        _settings.Persisted.SteamEnabled = !_settings.Persisted.SteamEnabled;
+                        break;
+                    case "Epic":
+                        _settings.Persisted.EpicEnabled = !_settings.Persisted.EpicEnabled;
+                        break;
+                    case "GOG":
+                        _settings.Persisted.GogEnabled = !_settings.Persisted.GogEnabled;
+                        break;
+                    case "RetroAchievements":
+                        _settings.Persisted.RetroAchievementsEnabled = !_settings.Persisted.RetroAchievementsEnabled;
+                        break;
+                }
+
+                SaveSettings();
+
+                // Update the provider status in the UI
+                var provider = _providers.FirstOrDefault(p => p.ProviderKey == providerKey);
+                if (provider != null)
+                {
+                    // Get the enabled state from settings
+                    provider.IsEnabled = GetProviderEnabled(providerKey);
+                    provider.IsAuthenticated = GetProviderAuthenticated(providerKey);
+                }
+
+                // Refresh the state display
+                OnPropertyChanged(nameof(HasAnyProviderAuth));
+                OnPropertyChanged(nameof(CurrentState));
+                OnPropertyChanged(nameof(ShowNoAuthPanel));
+                OnPropertyChanged(nameof(ShowNeedsScanPanel));
+                OnPropertyChanged(nameof(ShowHasDataPanel));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to toggle provider: {providerKey}");
+            }
+        });
+
+        private bool GetProviderEnabled(string providerKey)
+        {
+            return providerKey switch
+            {
+                "Steam" => _settings.Persisted.SteamEnabled,
+                "Epic" => _settings.Persisted.EpicEnabled,
+                "GOG" => _settings.Persisted.GogEnabled,
+                "RetroAchievements" => _settings.Persisted.RetroAchievementsEnabled,
+                _ => true
+            };
+        }
+
+        private bool GetProviderAuthenticated(string providerKey)
+        {
+            var providers = _achievementManager.GetProviders();
+            var provider = providers.FirstOrDefault(p => p.ProviderKey == providerKey);
+            return provider?.IsAuthenticated ?? false;
+        }
+
+        private void SaveSettings()
+        {
+            try
+            {
+                _settings._plugin?.SavePluginSettings(_settings);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to save settings from landing page.");
+            }
+        }
 
         private void MarkSetupComplete()
         {
@@ -665,6 +805,41 @@ namespace PlayniteAchievements.Views
             public bool CanExecute(object parameter) => true;
 
             public void Execute(object parameter) => _execute();
+        }
+
+        /// <summary>
+        /// Generic command implementation for landing page actions with parameter.
+        /// </summary>
+        private class RelayCommand<T> : ICommand
+        {
+            private readonly Action<T> _execute;
+
+            public RelayCommand(Action<T> execute)
+            {
+                _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            }
+
+#pragma warning disable CS0067 // Event is never raised (CanExecute always returns true)
+            public event EventHandler CanExecuteChanged;
+#pragma warning restore CS0067
+
+            public bool CanExecute(object parameter) => true;
+
+            public void Execute(object parameter)
+            {
+                if (parameter is T typedParam)
+                {
+                    _execute(typedParam);
+                }
+                else if (parameter == null && default(T) == null)
+                {
+                    _execute(default);
+                }
+                else if (parameter is string strParam && typeof(T) == typeof(string))
+                {
+                    _execute((T)(object)strParam);
+                }
+            }
         }
     }
 
