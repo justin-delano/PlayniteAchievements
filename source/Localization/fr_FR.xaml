@@ -162,6 +162,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_Gog_LibraryNotLoggedIn">Bibliothèque détectée mais non connectée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Gog_RefreshFromLibrary">Actualiser depuis la bibliothèque</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Gog_LibraryHelp">PlayniteAchievements utilise les identifiants de votre plugin de bibliothèque GOG installé. Connectez-vous via les paramètres du plugin de bibliothèque pour activer le suivi des succès GOG.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_OwnAuthHelp">Cliquez sur Connexion pour vous authentifier avec GOG via une fenêtre de navigateur intégrée. Vos identifiants sont stockés de manière sécurisée dans PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_Login">Connexion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_Clear">Effacer</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicConnection">Connexion Epic Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Authentification Epic</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_NotChecked">Epic : Non vérifié</sys:String>

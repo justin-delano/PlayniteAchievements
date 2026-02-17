@@ -162,6 +162,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_Gog_LibraryNotLoggedIn">Library detected but not logged in</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Gog_RefreshFromLibrary">Refresh from Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Gog_LibraryHelp">PlayniteAchievements uses credentials from your installed GOG library plugin. Login via the library plugin's settings to enable GOG achievement tracking.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_OwnAuthHelp">Click Login to authenticate with GOG via an embedded browser window. Your credentials are stored securely within PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_Login">Login</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Gog_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicConnection">Epic Games Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Epic Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicAuth_NotChecked">Epic: Not checked</sys:String>
