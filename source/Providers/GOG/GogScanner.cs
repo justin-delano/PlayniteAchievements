@@ -149,11 +149,6 @@ namespace PlayniteAchievements.Providers.GOG
                 }
             }
 
-            progress.Emit(new ProviderScanUpdate
-            {
-                CurrentGameName = null
-            }, force: true);
-
             return new RebuildPayload { Summary = summary };
         }
 

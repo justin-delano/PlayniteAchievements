@@ -157,11 +157,6 @@ namespace PlayniteAchievements.Providers.Steam
                 }
             }
 
-            progress.Emit(new ProviderScanUpdate
-            {
-                CurrentGameName = null
-            }, force: true);
-
             return new RebuildPayload { Summary = summary };
         }
 

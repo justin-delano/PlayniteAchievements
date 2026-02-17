@@ -126,11 +126,6 @@ namespace PlayniteAchievements.Providers.Epic
                 }
             }
 
-            progress.Emit(new ProviderScanUpdate
-            {
-                CurrentGameName = null
-            }, force: true);
-
             return new RebuildPayload { Summary = summary };
         }
 
