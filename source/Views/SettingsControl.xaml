@@ -464,7 +464,7 @@
                                     <ComboBox Grid.Column="1"
                                                Width="200"
                                                SelectedValuePath="Tag"
-                                               SelectedValue="{Binding Persisted.GlobalLanguage}">
+                                               SelectedValue="{Binding Persisted.GlobalLanguage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_English}" Tag="english"/>
                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_German}" Tag="german"/>
                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_French}" Tag="french"/>
