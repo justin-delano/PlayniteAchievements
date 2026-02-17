@@ -739,7 +739,8 @@ namespace PlayniteAchievements.Providers.Epic
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        throw new EpicAuthRequiredException($"Epic token refresh failed with HTTP {(int)response.StatusCode}.");
+                        _logger?.Debug($"[EpicAuth] Token refresh error response: {body}");
+                        throw new EpicAuthRequiredException($"Epic token refresh failed with HTTP {(int)response.StatusCode}: {body}");
                     }
 
                     ApplyTokenResponse(body);
