@@ -1,0 +1,114 @@
+using System;
+using System.Collections.Generic;
+using PlayniteAchievements.Models.Settings;
+
+namespace PlayniteAchievements.Services
+{
+    /// <summary>
+    /// Central registry for provider enabled state at runtime.
+    /// Decouples the "enabled" concept from provider authentication checks,
+    /// allowing IsAuthenticated to only validate credentials.
+    /// </summary>
+    public class ProviderRegistry
+    {
+        private readonly Dictionary<string, bool> _enabledState = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Steam", true },
+            { "Epic", true },
+            { "GOG", true },
+            { "RetroAchievements", true }
+        };
+
+        /// <summary>
+        /// Event raised when a provider's enabled state changes.
+        /// </summary>
+        public event EventHandler<ProviderEnabledChangedEventArgs> ProviderEnabledChanged;
+
+        /// <summary>
+        /// Checks if a provider is enabled at runtime.
+        /// </summary>
+        /// <param name="providerKey">The provider key (e.g., "Steam", "Epic", "GOG", "RetroAchievements").</param>
+        /// <returns>True if the provider is enabled, false otherwise. Defaults to true for unknown providers.</returns>
+        public bool IsProviderEnabled(string providerKey)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return true;
+            }
+
+            return _enabledState.TryGetValue(providerKey, out var enabled) && enabled;
+        }
+
+        /// <summary>
+        /// Sets the enabled state for a provider and raises the change event.
+        /// </summary>
+        /// <param name="providerKey">The provider key.</param>
+        /// <param name="enabled">The enabled state.</param>
+        public void SetProviderEnabled(string providerKey, bool enabled)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            var previousState = IsProviderEnabled(providerKey);
+            _enabledState[providerKey] = enabled;
+
+            if (previousState != enabled)
+            {
+                ProviderEnabledChanged?.Invoke(this, new ProviderEnabledChangedEventArgs(providerKey, enabled));
+            }
+        }
+
+        /// <summary>
+        /// Synchronizes the runtime enabled state from persisted settings.
+        /// Call this after settings are loaded or saved.
+        /// </summary>
+        /// <param name="settings">The persisted settings containing provider enable flags.</param>
+        public void SyncFromSettings(PersistedSettings settings)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            _enabledState["Steam"] = settings.SteamEnabled;
+            _enabledState["Epic"] = settings.EpicEnabled;
+            _enabledState["GOG"] = settings.GogEnabled;
+            _enabledState["RetroAchievements"] = settings.RetroAchievementsEnabled;
+        }
+
+        /// <summary>
+        /// Writes the runtime enabled state back to persisted settings.
+        /// Call this when toggling providers from the landing page.
+        /// </summary>
+        /// <param name="settings">The persisted settings to update.</param>
+        public void SyncToSettings(PersistedSettings settings)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            settings.SteamEnabled = IsProviderEnabled("Steam");
+            settings.EpicEnabled = IsProviderEnabled("Epic");
+            settings.GogEnabled = IsProviderEnabled("GOG");
+            settings.RetroAchievementsEnabled = IsProviderEnabled("RetroAchievements");
+        }
+    }
+
+    /// <summary>
+    /// Event arguments for provider enabled state changes.
+    /// </summary>
+    public class ProviderEnabledChangedEventArgs : EventArgs
+    {
+        public string ProviderKey { get; }
+        public bool IsEnabled { get; }
+
+        public ProviderEnabledChangedEventArgs(string providerKey, bool isEnabled)
+        {
+            ProviderKey = providerKey;
+            IsEnabled = isEnabled;
+        }
+    }
+}
