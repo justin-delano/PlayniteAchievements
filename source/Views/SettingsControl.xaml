@@ -1344,6 +1344,11 @@
                                                         Click="EpicAuth_Login_Click"
                                                         Padding="14,6"
                                                         Margin="0,0,8,0"/>
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Epic_LoginAlternative}"
+                                                        Style="{StaticResource EpicAuthActionButtonStyle}"
+                                                        Click="EpicAuth_LoginAlternative_Click"
+                                                        Padding="14,6"
+                                                        Margin="0,0,8,0"/>
                                                 <Button Content="{DynamicResource LOCPlayAch_Settings_Epic_Clear}"
                                                         Style="{StaticResource EpicAuthActionButtonStyle}"
                                                         Click="EpicAuth_Clear_Click"
