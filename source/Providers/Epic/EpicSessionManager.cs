@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace PlayniteAchievements.Providers.Epic
 {
@@ -471,6 +472,111 @@ namespace PlayniteAchievements.Providers.Epic
             {
                 _logger?.Error(ex, "[EpicAuth] Failed to launch system browser login flow.");
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Alternative authentication flow that shows instructions first, then opens browser
+        /// and prompts user to paste the authorization code directly.
+        /// </summary>
+        public async Task<EpicAuthResult> LoginAlternativeAsync(CancellationToken ct)
+        {
+            var windowOpened = false;
+
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+
+                // Show instructions dialog first
+                var instructionsTitle = ResourceProvider.GetString("LOCPlayAch_Settings_EpicConnection");
+                var instructionsMessage = ResourceProvider.GetString("LOCPlayAch_Settings_Epic_AltAuthInstructions");
+                if (string.IsNullOrWhiteSpace(instructionsMessage))
+                {
+                    instructionsMessage = "1. Login to Epic in your default browser when it opens\n2. After logging in, find the \"authorizationCode\" value on the page\n3. Copy and paste that value in the next dialog";
+                }
+
+                var instructionsResult = _api.Dialogs.ShowMessage(
+                    instructionsMessage,
+                    instructionsTitle,
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Information);
+
+                if (instructionsResult != MessageBoxResult.OK)
+                {
+                    return EpicAuthResult.Create(
+                        EpicAuthOutcome.Cancelled,
+                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        windowOpened: false);
+                }
+
+                // Open browser to auth URL
+                windowOpened = true;
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = UrlAuthCode,
+                    UseShellExecute = true
+                });
+
+                // Prompt for authorization code
+                var codePrompt = ResourceProvider.GetString("LOCPlayAch_Settings_Epic_AltAuthCodePrompt");
+                if (string.IsNullOrWhiteSpace(codePrompt))
+                {
+                    codePrompt = "Paste the authorizationCode value here:";
+                }
+
+                var input = _api.Dialogs.SelectString(codePrompt, instructionsTitle, string.Empty);
+                if (input == null || !input.Result)
+                {
+                    return EpicAuthResult.Create(
+                        EpicAuthOutcome.Cancelled,
+                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        windowOpened: windowOpened);
+                }
+
+                var authCode = input.SelectedString?.Trim();
+                if (string.IsNullOrWhiteSpace(authCode))
+                {
+                    return EpicAuthResult.Create(
+                        EpicAuthOutcome.Cancelled,
+                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        windowOpened: windowOpened);
+                }
+
+                // Try to extract code from URL if user pasted the full URL
+                var extracted = TryExtractAuthorizationCode(authCode);
+                authCode = string.IsNullOrWhiteSpace(extracted) ? authCode : extracted;
+
+                // Exchange code for tokens
+                await AuthenticateUsingAuthCodeAsync(authCode, ct).ConfigureAwait(false);
+
+                if (!HasValidAccessToken())
+                {
+                    return EpicAuthResult.Create(
+                        EpicAuthOutcome.Failed,
+                        "LOCPlayAch_Settings_EpicAuth_Failed",
+                        windowOpened: windowOpened);
+                }
+
+                return EpicAuthResult.Create(
+                    EpicAuthOutcome.Authenticated,
+                    "LOCPlayAch_Settings_EpicAuth_Verified",
+                    _accountId,
+                    windowOpened: windowOpened);
+            }
+            catch (OperationCanceledException)
+            {
+                return EpicAuthResult.Create(
+                    EpicAuthOutcome.TimedOut,
+                    "LOCPlayAch_Settings_EpicAuth_TimedOut",
+                    windowOpened: windowOpened);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[EpicAuth] Alternative login failed with exception.");
+                return EpicAuthResult.Create(
+                    EpicAuthOutcome.Failed,
+                    "LOCPlayAch_Settings_EpicAuth_Failed",
+                    windowOpened: windowOpened);
             }
         }
 
