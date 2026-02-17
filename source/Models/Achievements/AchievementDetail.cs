@@ -9,6 +9,8 @@ namespace PlayniteAchievements.Models.Achievements
     /// </summary>
     public sealed class AchievementDetail
     {
+        private bool? _unlocked;
+
         public string ApiName { get; set; }
 
         public string DisplayName { get; set; }
@@ -56,8 +58,11 @@ namespace PlayniteAchievements.Models.Achievements
         /// </summary>
 
 
-        [IgnoreDataMember]
-        public bool Unlocked => UnlockTimeUtc.HasValue;
+        public bool Unlocked
+        {
+            get => _unlocked ?? UnlockTimeUtc.HasValue;
+            set => _unlocked = value;
+        }
 
         [IgnoreDataMember]
         public bool IsUnlock => Unlocked;

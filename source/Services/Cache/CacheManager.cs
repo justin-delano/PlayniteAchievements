@@ -725,6 +725,7 @@ namespace PlayniteAchievements.Services
                     UnlockTimeUtc = achievement.UnlockTimeUtc.HasValue
                         ? DateTimeUtilities.AsUtcKind(achievement.UnlockTimeUtc.Value)
                         : (DateTime?)null,
+                    Unlocked = achievement.Unlocked,
                     GlobalPercentUnlocked = achievement.GlobalPercentUnlocked,
                     ProgressNum = achievement.ProgressNum,
                     ProgressDenom = achievement.ProgressDenom

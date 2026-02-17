@@ -274,7 +274,8 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (!gameData.NoAchievements)
             {
-                var unlockedDict = unlocked?.UnlockTimesUtc ?? new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+                var unlockedApiNames = unlocked?.UnlockedApiNames ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var unlockedTimes = unlocked?.UnlockTimesUtc ?? new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
                 var progressNumDict = unlocked?.ProgressNum ?? new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);
                 var progressDenomDict = unlocked?.ProgressDenom ?? new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);
 
@@ -283,8 +284,9 @@ namespace PlayniteAchievements.Providers.Steam
                     if (string.IsNullOrWhiteSpace(schemaAch.Name))
                         continue;
 
+                    var isUnlocked = unlockedApiNames.Contains(schemaAch.Name);
                     DateTime? unlockTime = null;
-                    if (unlockedDict.TryGetValue(schemaAch.Name, out var time))
+                    if (unlockedTimes.TryGetValue(schemaAch.Name, out var time))
                     {
                         unlockTime = time;
                     }
@@ -312,6 +314,7 @@ namespace PlayniteAchievements.Providers.Steam
                         Hidden = schemaAch.Hidden == 1,
                         GlobalPercentUnlocked = globalPercent,
                         UnlockTimeUtc = unlockTime,
+                        Unlocked = isUnlocked,
                         ProgressNum = progressNum,
                         ProgressDenom = progressDenom
                     };
@@ -413,6 +416,7 @@ namespace PlayniteAchievements.Providers.Steam
                 LastUpdatedUtc = DateTime.UtcNow,
                 PlaytimeSeconds = (ulong)playtimeMinutes * 60,
                 AppId = appId,
+                UnlockedApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
                 UnlockTimesUtc = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase),
                 ProgressNum = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase),
                 ProgressDenom = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase)
@@ -463,8 +467,12 @@ namespace PlayniteAchievements.Providers.Steam
 
                             if (row.IsUnlocked)
                             {
-                                var unlockTime = row.UnlockTimeUtc ?? DateTime.MinValue;
-                                data.UnlockTimesUtc[apiName] = unlockTime;
+                                data.UnlockedApiNames.Add(apiName);
+                                if (row.UnlockTimeUtc.HasValue)
+                                {
+                                    data.UnlockTimesUtc[apiName] = row.UnlockTimeUtc.Value;
+                                }
+
                                 matched++;
                                 if (row.UnlockTimeUtc.HasValue) withTime++; else withoutTime++;
                             }

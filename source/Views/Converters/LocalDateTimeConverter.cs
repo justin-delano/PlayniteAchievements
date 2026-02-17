@@ -14,6 +14,11 @@ namespace PlayniteAchievements.Views.Converters
         {
             if (value is DateTime dateTime)
             {
+                if (dateTime == DateTime.MinValue)
+                {
+                    return null;
+                }
+
                 // Convert UTC to local
                 DateTime localTime = dateTime.Kind == DateTimeKind.Utc
                     ? dateTime.ToLocalTime()
@@ -25,6 +30,11 @@ namespace PlayniteAchievements.Views.Converters
 
             if (value is DateTimeOffset dateTimeOffset)
             {
+                if (dateTimeOffset == DateTimeOffset.MinValue)
+                {
+                    return null;
+                }
+
                 return dateTimeOffset.LocalDateTime.ToString("yyyy-MM-dd HH:mm");
             }
 

@@ -2076,6 +2076,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 _settings.PropertyChanged -= OnSettingsChanged;
             }
+            if (_refreshDebounceTimer != null)
+            {
+                _refreshDebounceTimer.Tick -= OnRefreshDebounceTimerTick;
+            }
+            if (_scanFullRefreshTimer != null)
+            {
+                _scanFullRefreshTimer.Tick -= OnScanFullRefreshTimerTick;
+            }
             if (_progressHideTimer != null)
             {
                 _progressHideTimer.Tick -= OnProgressHideTimerTick;

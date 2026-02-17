@@ -48,9 +48,6 @@ namespace PlayniteAchievements.Views
 
             _isActive = true;
             _viewModel?.SetActive(true);
-
-            // Kick an initial refresh without blocking sidebar open.
-            _ = _viewModel?.RefreshViewAsync();
         }
 
         public void Deactivate()

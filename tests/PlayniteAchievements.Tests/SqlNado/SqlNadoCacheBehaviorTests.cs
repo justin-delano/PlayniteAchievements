@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services.Database;
-using Xunit;
 
 namespace PlayniteAchievements.SqlNado.Tests
 {
+    [TestClass]
     public class SqlNadoCacheBehaviorTests
     {
-        [Fact]
+        [TestMethod]
         public void ComputeStaleDefinitionIds_ReturnsMissingOnly_CaseInsensitive()
         {
             var existing = new Dictionary<string, long>
@@ -21,11 +22,11 @@ namespace PlayniteAchievements.SqlNado.Tests
 
             var stale = SqlNadoCacheBehavior.ComputeStaleDefinitionIds(existing, incoming);
 
-            Assert.Single(stale);
-            Assert.Contains(2, stale);
+            Assert.AreEqual(1, stale.Count);
+            CollectionAssert.Contains(stale, 2L);
         }
 
-        [Fact]
+        [TestMethod]
         public void ComputeStaleDefinitionIds_EmptyIncoming_DeletesAllValidIds()
         {
             var existing = new Dictionary<string, long>
@@ -36,12 +37,12 @@ namespace PlayniteAchievements.SqlNado.Tests
 
             var stale = SqlNadoCacheBehavior.ComputeStaleDefinitionIds(existing, Array.Empty<string>());
 
-            Assert.Equal(2, stale.Count);
-            Assert.Contains(10, stale);
-            Assert.Contains(11, stale);
+            Assert.AreEqual(2, stale.Count);
+            CollectionAssert.Contains(stale, 10L);
+            CollectionAssert.Contains(stale, 11L);
         }
 
-        [Fact]
+        [TestMethod]
         public void ComputeStaleDefinitionIds_NullIncoming_DeletesAllValidIds()
         {
             var existing = new Dictionary<string, long>
@@ -52,12 +53,12 @@ namespace PlayniteAchievements.SqlNado.Tests
 
             var stale = SqlNadoCacheBehavior.ComputeStaleDefinitionIds(existing, null);
 
-            Assert.Equal(2, stale.Count);
-            Assert.Contains(10, stale);
-            Assert.Contains(11, stale);
+            Assert.AreEqual(2, stale.Count);
+            CollectionAssert.Contains(stale, 10L);
+            CollectionAssert.Contains(stale, 11L);
         }
 
-        [Fact]
+        [TestMethod]
         public void ComputeStaleDefinitionIds_IgnoresBlankNamesAndNonPositiveIds()
         {
             var existing = new Dictionary<string, long>
@@ -72,10 +73,10 @@ namespace PlayniteAchievements.SqlNado.Tests
 
             var stale = SqlNadoCacheBehavior.ComputeStaleDefinitionIds(existing, incoming);
 
-            Assert.Empty(stale);
+            Assert.AreEqual(0, stale.Count);
         }
 
-        [Fact]
+        [TestMethod]
         public void ComputeStaleDefinitionIds_DedupesByApiName_AndKeepsOnlyValidStaleIds()
         {
             var existing = new Dictionary<string, long>
@@ -89,33 +90,33 @@ namespace PlayniteAchievements.SqlNado.Tests
 
             var stale = SqlNadoCacheBehavior.ComputeStaleDefinitionIds(existing, incoming);
 
-            Assert.Single(stale);
-            Assert.Equal(100, stale[0]);
+            Assert.AreEqual(1, stale.Count);
+            Assert.AreEqual(100L, stale[0]);
         }
 
-        [Fact]
+        [TestMethod]
         public void ComputeStaleDefinitionIds_NullExisting_ReturnsEmpty()
         {
             var stale = SqlNadoCacheBehavior.ComputeStaleDefinitionIds(null, new[] { "A" });
-            Assert.Empty(stale);
+            Assert.AreEqual(0, stale.Count);
         }
 
-        [Fact]
+        [TestMethod]
         public void ComputeStaleDefinitionIds_EmptyExisting_ReturnsEmpty()
         {
             var stale = SqlNadoCacheBehavior.ComputeStaleDefinitionIds(new Dictionary<string, long>(), new[] { "A" });
-            Assert.Empty(stale);
+            Assert.AreEqual(0, stale.Count);
         }
 
-        [Theory]
-        [InlineData(0, 0, 0, true)]
-        [InlineData(-1, 0, 0, true)]
-        [InlineData(0, -1, 0, true)]
-        [InlineData(0, 0, -1, true)]
-        [InlineData(1, 0, 0, false)]
-        [InlineData(0, 2, 0, false)]
-        [InlineData(0, 0, 3, false)]
-        [InlineData(1, 1, 1, false)]
+        [DataTestMethod]
+        [DataRow(0, 0, 0, true)]
+        [DataRow(-1, 0, 0, true)]
+        [DataRow(0, -1, 0, true)]
+        [DataRow(0, 0, -1, true)]
+        [DataRow(1, 0, 0, false)]
+        [DataRow(0, 2, 0, false)]
+        [DataRow(0, 0, 3, false)]
+        [DataRow(1, 1, 1, false)]
         public void ShouldMarkLegacyImportDone_UsesFailureAndRemainingCounts(
             int parseFailedCount,
             int dbWriteFailedCount,
@@ -126,7 +127,7 @@ namespace PlayniteAchievements.SqlNado.Tests
                 parseFailedCount,
                 dbWriteFailedCount,
                 remainingFileCount);
-            Assert.Equal(expected, actual);
+            Assert.AreEqual(expected, actual);
         }
     }
 }

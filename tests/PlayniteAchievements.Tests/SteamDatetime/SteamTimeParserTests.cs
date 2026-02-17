@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Providers.Steam;
-using Xunit;
 
 namespace PlayniteAchievements.Tests
 {
+    [TestClass]
     public class SteamTimeParserTests
     {
         private static readonly DateTime SteamNow = new DateTime(2026, 2, 15, 12, 0, 0, DateTimeKind.Unspecified);
@@ -17,30 +18,30 @@ namespace PlayniteAchievements.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(AllLanguageCases))]
+        [DataTestMethod]
+        [DynamicData(nameof(AllLanguageCases), DynamicDataSourceType.Method)]
         public void ScrapedLanguageDateConvertsToUtc(string language, string text, DateTime expectedUtc)
         {
             var parsed = SteamTimeParser.TryParseSteamUnlockTime(text, language, SteamNow);
-            Assert.True(parsed.HasValue);
-            Assert.Equal(expectedUtc, parsed.Value);
+            Assert.IsTrue(parsed.HasValue);
+            Assert.AreEqual(expectedUtc, parsed.Value);
         }
 
-        [Fact]
+        [TestMethod]
         public void YearlessDateRollsBackBeforeUtcConversion()
         {
             var steamNow = new DateTime(2026, 1, 1, 1, 0, 0, DateTimeKind.Unspecified);
             var parsed = SteamTimeParser.TryParseSteamUnlockTime("Unlocked Dec 31 @ 11:59pm", "english", steamNow);
 
-            Assert.True(parsed.HasValue);
-            Assert.Equal(new DateTime(2026, 1, 1, 7, 59, 0, DateTimeKind.Utc), parsed.Value);
+            Assert.IsTrue(parsed.HasValue);
+            Assert.AreEqual(new DateTime(2026, 1, 1, 7, 59, 0, DateTimeKind.Utc), parsed.Value);
         }
 
-        [Fact]
+        [TestMethod]
         public void InvalidUnlockStringReturnsNull()
         {
             var parsed = SteamTimeParser.TryParseSteamUnlockTime("Unlocked recently", "english", SteamNow);
-            Assert.Null(parsed);
+            Assert.IsNull(parsed);
         }
 
         private static IEnumerable<SteamCase> Cases()
@@ -50,6 +51,8 @@ namespace PlayniteAchievements.Tests
 
             yield return new SteamCase("english", "Unlocked Apr 24, 2025 @ 5:04am", pastUtc);
             yield return new SteamCase("english", "Unlocked Jan 29 @ 5:03pm", currentUtc);
+            yield return new SteamCase("english", "Unlocked 24 Apr, 2025 @ 5:04am", pastUtc);
+            yield return new SteamCase("english", "Unlocked 29 Jan @ 5:03pm", currentUtc);
 
             yield return new SteamCase("german", "Am 24. Apr. 2025 um 5:04 freigeschaltet", pastUtc);
             yield return new SteamCase("german", "Am 29. Jan. um 17:03 freigeschaltet", currentUtc);

@@ -198,19 +198,30 @@ namespace PlayniteAchievements.Providers.Steam
                 if (row.SelectSingleNode(".//div[contains(@class,'achieveHiddenBox')]") != null) continue;
 
                 var unlockNode = row.SelectSingleNode(".//div[contains(@class,'achieveUnlockTime')]");
+                var hasUnlockMarker = unlockNode != null;
                 var unlockText = ExtractUnlockText(unlockNode);
                 var unlockUtc = SteamTimeParser.TryParseSteamUnlockTime(unlockText, language);
 
                 // Primary indicator: progress summary ordering (first N rows unlocked).
-                // Fallback if summary is missing: parseable unlock timestamp.
+                // Fallback if summary is missing: presence of Steam's unlock marker.
                 bool isUnlocked = hasProgressSummary
                     ? rowIndexInList < unlockedCountFromProgressBar
-                    : unlockNode != null && unlockUtc.HasValue;
+                    : hasUnlockMarker;
 
-                if (isUnlocked && unlockNode != null && !unlockUtc.HasValue && !string.IsNullOrWhiteSpace(unlockText))
+                if (hasUnlockMarker && !unlockUtc.HasValue && !string.IsNullOrWhiteSpace(unlockText))
                 {
                     var snippet = unlockText.Substring(0, Math.Min(50, unlockText.Length));
-                    _logger?.Warn($"[SteamAch] ParseAchievements: Failed to parse time (lang={language}) from '{unlockText}' (hex: {BitConverter.ToString(Encoding.UTF8.GetBytes(snippet))})");
+                    var message = $"[SteamAch] ParseAchievements: Failed to parse time (lang={language}) from '{unlockText}' (hex: {BitConverter.ToString(Encoding.UTF8.GetBytes(snippet))})";
+
+                    // Parsing failures are non-fatal when we have the progress summary fallback.
+                    if (hasProgressSummary)
+                    {
+                        _logger?.Debug(message);
+                    }
+                    else
+                    {
+                        _logger?.Warn(message);
+                    }
                 }
 
                 if (!includeLocked && !isUnlocked) continue;

@@ -306,8 +306,8 @@ namespace PlayniteAchievements.Providers.Steam
             return new Dictionary<string, (Regex CurrentYear, Regex PastYears)>(StringComparer.OrdinalIgnoreCase)
             {
                 ["english"] = Pair(
-                    @"^Unlocked\s+(?<month>[\p{L}]+)\s+(?<day>\d{1,2}),\s*(?<year>\d{4})\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]\.?m\.?)\s*$",
-                    @"^Unlocked\s+(?<month>[\p{L}]+)\s+(?<day>\d{1,2})\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]\.?m\.?)\s*$"),
+                    @"^Unlocked\s+(?:(?<month>[\p{L}]+)\s+(?<day>0?[1-9]|[12]\d|3[01]),\s*(?<year>\d{4})|(?<day>0?[1-9]|[12]\d|3[01])\s+(?<month>[\p{L}]+),\s*(?<year>\d{4}))\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]\.?m\.?)\s*$",
+                    @"^Unlocked\s+(?:(?<month>[\p{L}]+)\s+(?<day>0?[1-9]|[12]\d|3[01])|(?<day>0?[1-9]|[12]\d|3[01])\s+(?<month>[\p{L}]+))\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]\.?m\.?)\s*$"),
 
                 ["german"] = Pair(
                     @"^Am\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+um\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s+freigeschaltet\s*$",
@@ -442,6 +442,7 @@ namespace PlayniteAchievements.Providers.Steam
                 ["ян"] = 1,
                 ["янв"] = 1,
                 ["апр"] = 4,
+                ["квіт"] = 4,
 
                 ["يناير"] = 1,
                 ["فبراير"] = 2,

@@ -150,6 +150,12 @@ namespace PlayniteAchievements.Services.Sidebar
             var playniteGame = gameData.PlayniteGameId.HasValue
                 ? _playniteApi?.Database?.Games?.Get(gameData.PlayniteGameId.Value)
                 : null;
+            var gameIconPath = !string.IsNullOrEmpty(playniteGame?.Icon)
+                ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon)
+                : null;
+            var gameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage)
+                ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage)
+                : null;
 
             var fragment = new SidebarGameFragment
             {
@@ -250,12 +256,8 @@ namespace PlayniteAchievements.Services.Sidebar
                                 IconPath = ach.UnlockedIconPath,
                                 UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
                                 GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
-                                GameIconPath = !string.IsNullOrEmpty(playniteGame?.Icon)
-                                    ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon)
-                                    : null,
-                                GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage)
-                                    ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage)
-                                    : null,
+                                GameIconPath = gameIconPath,
+                                GameCoverPath = gameCoverPath,
                                 Hidden = ach.Hidden
                             });
                         }
@@ -274,12 +276,8 @@ namespace PlayniteAchievements.Services.Sidebar
             fragment.GameOverview = new GameOverviewItem
             {
                 GameName = gameData.GameName ?? "Unknown",
-                GameLogo = !string.IsNullOrEmpty(playniteGame?.Icon)
-                    ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon)
-                    : null,
-                GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage)
-                    ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage)
-                    : null,
+                GameLogo = gameIconPath,
+                GameCoverPath = gameCoverPath,
                 AppId = gameData.AppId,
                 PlayniteGameId = gameData.PlayniteGameId,
                 TotalAchievements = gameTotal,

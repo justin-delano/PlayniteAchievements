@@ -31,6 +31,7 @@ namespace PlayniteAchievements.Models
     public class UserUnlockedAchievements
     {
         public int AppId { get; set; }
+        public HashSet<string> UnlockedApiNames { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, DateTime> UnlockTimesUtc { get; set; } = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, int?> ProgressNum { get; set; } = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, int?> ProgressDenom { get; set; } = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net462</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <LangVersion>preview</LangVersion>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\source\Providers\Epic\EpicApiClient.cs" Link="Source\Providers\Epic\EpicApiClient.cs" />
+    <Compile Include="..\..\source\Providers\Epic\EpicAuthModels.cs" Link="Source\Providers\Epic\EpicAuthModels.cs" />
+
+    <Compile Include="..\..\source\Providers\GOG\GogApiClient.cs" Link="Source\Providers\GOG\GogApiClient.cs" />
+    <Compile Include="..\..\source\Providers\GOG\GogAuthModels.cs" Link="Source\Providers\GOG\GogAuthModels.cs" />
+    <Compile Include="..\..\source\Providers\GOG\GogClientIdCacheStore.cs" Link="Source\Providers\GOG\GogClientIdCacheStore.cs" />
+    <Compile Include="..\..\source\Providers\GOG\Models\GogAchievementResponse.cs" Link="Source\Providers\GOG\Models\GogAchievementResponse.cs" />
+    <Compile Include="..\..\source\Providers\GOG\Models\GogProductData.cs" Link="Source\Providers\GOG\Models\GogProductData.cs" />
+
+    <Compile Include="..\..\source\Services\Database\SqlNadoCacheBehavior.cs" Link="Source\Services\Database\SqlNadoCacheBehavior.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamTimeParser.cs" Link="Source\Providers\Steam\SteamTimeParser.cs" />
+
+    <Compile Include="..\..\source\Common\ObservableObject.cs" Link="Source\Common\ObservableObject.cs" />
+    <Compile Include="..\..\source\Models\Settings\PersistedSettings.cs" Link="Source\Models\Settings\PersistedSettings.cs" />
+
+    <Reference Include="Playnite.SDK">
+      <HintPath>..\..\source\packages\PlayniteSDK.6.14.0\lib\net462\Playnite.SDK.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

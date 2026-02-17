@@ -49,6 +49,7 @@ namespace PlayniteAchievements.Services.Database
             public string TrophyType { get; set; }
             public long Hidden { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
+            public long? Unlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
             public int? ProgressNum { get; set; }
             public int? ProgressDenom { get; set; }
@@ -66,6 +67,7 @@ namespace PlayniteAchievements.Services.Database
             public string TrophyType { get; set; }
             public long Hidden { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
+            public long? Unlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
             public int? ProgressNum { get; set; }
             public int? ProgressDenom { get; set; }
@@ -270,6 +272,7 @@ namespace PlayniteAchievements.Services.Database
                         ad.TrophyType AS TrophyType,
                         ad.Hidden AS Hidden,
                         ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
+                        ua.Unlocked AS Unlocked,
                         ua.UnlockTimeUtc AS UnlockTimeUtc,
                         ua.ProgressNum AS ProgressNum,
                         ua.ProgressDenom AS ProgressDenom
@@ -289,7 +292,7 @@ namespace PlayniteAchievements.Services.Database
                         continue;
                     }
 
-                    model.Achievements.Add(new AchievementDetail
+                    var detail = new AchievementDetail
                     {
                         ApiName = row.ApiName,
                         DisplayName = row.DisplayName,
@@ -304,7 +307,14 @@ namespace PlayniteAchievements.Services.Database
                         UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
                         ProgressNum = row.ProgressNum,
                         ProgressDenom = row.ProgressDenom
-                    });
+                    };
+
+                    if (row.Unlocked.HasValue)
+                    {
+                        detail.Unlocked = row.Unlocked.Value != 0;
+                    }
+
+                    model.Achievements.Add(detail);
                 }
 
                 BackfillPlayniteGameIdFromCacheKey(model, cacheKey);
@@ -411,6 +421,7 @@ namespace PlayniteAchievements.Services.Database
                         ad.TrophyType AS TrophyType,
                         ad.Hidden AS Hidden,
                         ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
+                        ua.Unlocked AS Unlocked,
                         ua.UnlockTimeUtc AS UnlockTimeUtc,
                         ua.ProgressNum AS ProgressNum,
                         ua.ProgressDenom AS ProgressDenom
@@ -432,7 +443,7 @@ namespace PlayniteAchievements.Services.Database
                         continue;
                     }
 
-                    model.Achievements.Add(new AchievementDetail
+                    var detail = new AchievementDetail
                     {
                         ApiName = row.ApiName,
                         DisplayName = row.DisplayName,
@@ -447,7 +458,14 @@ namespace PlayniteAchievements.Services.Database
                         UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
                         ProgressNum = row.ProgressNum,
                         ProgressDenom = row.ProgressDenom
-                    });
+                    };
+
+                    if (row.Unlocked.HasValue)
+                    {
+                        detail.Unlocked = row.Unlocked.Value != 0;
+                    }
+
+                    model.Achievements.Add(detail);
                 }
 
                 return selectedByCacheKey
@@ -490,7 +508,7 @@ namespace PlayniteAchievements.Services.Database
             var updatedIso = ToIso(payload.LastUpdatedUtc);
 
             var achievements = payload.Achievements ?? new List<AchievementDetail>();
-            var unlockedCount = achievements.Count(a => IsUnlocked(a?.UnlockTimeUtc));
+            var unlockedCount = achievements.Count(IsUnlocked);
             var totalCount = achievements.Count;
             var playtime = ClampPlaytime(payload.PlaytimeSeconds);
 
@@ -549,8 +567,8 @@ namespace PlayniteAchievements.Services.Database
                         var achievement = desired.Value;
 
                         var unlockTime = NormalizeUnlockTime(achievement.UnlockTimeUtc);
-                        var unlocked = unlockTime.HasValue ? 1L : 0L;
-                        var unlockIso = unlockTime.HasValue ? ToIso(unlockTime.Value) : null;
+                        var unlocked = IsUnlocked(achievement) ? 1L : 0L;
+                        var unlockIso = unlocked != 0 && unlockTime.HasValue ? ToIso(unlockTime.Value) : null;
                         var progressNum = achievement.ProgressNum;
                         var progressDenom = achievement.ProgressDenom;
 
@@ -1272,9 +1290,14 @@ namespace PlayniteAchievements.Services.Database
             return (long)seconds;
         }
 
-        private static bool IsUnlocked(DateTime? unlockTimeUtc)
+        private static bool IsUnlocked(AchievementDetail achievement)
         {
-            return NormalizeUnlockTime(unlockTimeUtc).HasValue;
+            if (achievement == null)
+            {
+                return false;
+            }
+
+            return achievement.Unlocked;
         }
 
         private static DateTime? NormalizeUnlockTime(DateTime? unlockTimeUtc)
