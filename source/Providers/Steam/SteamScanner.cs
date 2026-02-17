@@ -323,7 +323,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         private Task<SchemaAndPercentages> FetchSchemaAsync(int appId, CancellationToken cancel)
         {
-            var language = string.IsNullOrWhiteSpace(_settings.Persisted.SteamLanguage) ? "english" : _settings.Persisted.SteamLanguage.Trim();
+            var language = string.IsNullOrWhiteSpace(_settings.Persisted.GlobalLanguage) ? "english" : _settings.Persisted.GlobalLanguage.Trim();
             return _steamApiClient.GetSchemaForGameDetailedAsync(
                 _settings.Persisted.SteamApiKey.Trim(),
                 appId,
@@ -512,7 +512,7 @@ namespace PlayniteAchievements.Providers.Steam
                 return res;
             }
 
-            var language = string.IsNullOrWhiteSpace(_settings.Persisted.SteamLanguage) ? "english" : _settings.Persisted.SteamLanguage.Trim();
+            var language = string.IsNullOrWhiteSpace(_settings.Persisted.GlobalLanguage) ? "english" : _settings.Persisted.GlobalLanguage.Trim();
             var requested = BuildAchievementsUrl(resolved, appId, language);
             res.RequestedUrl = requested;
 
