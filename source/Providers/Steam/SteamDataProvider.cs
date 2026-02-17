@@ -43,14 +43,16 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
+        public string ProviderKey => "Steam";
         public string ProviderIconKey => "ProviderIconSteam";
         public string ProviderColorHex => "#B0B0B0";
 
         /// <summary>
-        /// Checks if Steam authentication is properly configured.
-        /// Requires SteamUserId, SteamApiKey, and web session auth (cached SteamId64).
+        /// Checks if Steam authentication is properly configured and enabled.
+        /// Requires SteamEnabled, SteamUserId, SteamApiKey, and web session auth (cached SteamId64).
         /// </summary>
         public bool IsAuthenticated =>
+            _settings.Persisted.SteamEnabled &&
             !string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) &&
             !string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey) &&
             !string.IsNullOrWhiteSpace(_sessionManager.GetCachedSteamId64());

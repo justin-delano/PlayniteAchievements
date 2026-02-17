@@ -20,6 +20,7 @@ namespace PlayniteAchievements.Providers.GOG
         internal static readonly Guid GogPluginId = Guid.Parse("AEBE8B7C-6DC3-4A66-AF31-E7375C6B5E9E");
         internal static readonly Guid GogOSSPluginId = Guid.Parse("03689811-3F33-4DFB-A121-2EE168FB9A5C");
 
+        private readonly PlayniteAchievementsSettings _settings;
         private readonly GogSessionManager _sessionManager;
         private readonly GogScanner _scanner;
         private readonly HttpClient _httpClient;
@@ -37,6 +38,7 @@ namespace PlayniteAchievements.Providers.GOG
             if (string.IsNullOrWhiteSpace(pluginUserDataPath)) throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
             if (sessionManager == null) throw new ArgumentNullException(nameof(sessionManager));
 
+            _settings = settings;
             _httpClient = new HttpClient();
             var clientIdCacheStore = new GogClientIdCacheStore(pluginUserDataPath, logger);
             var apiClient = new GogApiClient(_httpClient, logger, sessionManager, clientIdCacheStore);
@@ -50,11 +52,13 @@ namespace PlayniteAchievements.Providers.GOG
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_GOG");
 
+        public string ProviderKey => "GOG";
+
         public string ProviderIconKey => "ProviderIconGOG";
 
         public string ProviderColorHex => "#A855F7";
 
-        public bool IsAuthenticated => _sessionManager.IsAuthenticated;
+        public bool IsAuthenticated => _settings.Persisted.GogEnabled && _sessionManager.IsAuthenticated;
 
         public bool IsCapable(Game game) =>
             IsGogCapable(game);

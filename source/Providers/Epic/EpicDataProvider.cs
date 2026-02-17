@@ -12,6 +12,7 @@ namespace PlayniteAchievements.Providers.Epic
 {
     public sealed class EpicDataProvider : IDataProvider, IDisposable
     {
+        private readonly PlayniteAchievementsSettings _settings;
         private readonly EpicSessionManager _sessionManager;
         private readonly EpicScanner _scanner;
         private readonly HttpClient _httpClient;
@@ -30,6 +31,7 @@ namespace PlayniteAchievements.Providers.Epic
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
             if (sessionManager == null) throw new ArgumentNullException(nameof(sessionManager));
 
+            _settings = settings;
             _httpClient = new HttpClient();
             _sessionManager = sessionManager;
 
@@ -41,11 +43,13 @@ namespace PlayniteAchievements.Providers.Epic
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Epic");
 
+        public string ProviderKey => "Epic";
+
         public string ProviderIconKey => "ProviderIconEpic";
 
         public string ProviderColorHex => "#26BBFF";
 
-        public bool IsAuthenticated => _sessionManager.IsAuthenticated;
+        public bool IsAuthenticated => _settings.Persisted.EpicEnabled && _sessionManager.IsAuthenticated;
 
         public bool IsCapable(Game game) => IsEpicCapable(game);
 
