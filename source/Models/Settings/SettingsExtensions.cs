@@ -38,6 +38,11 @@ namespace PlayniteAchievements.Models.Settings
             target.EpicRefreshTokenExpiryUtc = source.EpicRefreshTokenExpiryUtc;
             target.SteamApiKey = source.SteamApiKey;
             target.SteamLanguage = source.SteamLanguage;
+            target.GlobalLanguage = source.GlobalLanguage;
+            target.SteamEnabled = source.SteamEnabled;
+            target.EpicEnabled = source.EpicEnabled;
+            target.GogEnabled = source.GogEnabled;
+            target.RetroAchievementsEnabled = source.RetroAchievementsEnabled;
 
             // Update and Refresh Settings
             target.EnablePeriodicUpdates = source.EnablePeriodicUpdates;
@@ -98,6 +103,11 @@ namespace PlayniteAchievements.Models.Settings
                 EpicRefreshTokenExpiryUtc = source.EpicRefreshTokenExpiryUtc,
                 SteamApiKey = source.SteamApiKey,
                 SteamLanguage = source.SteamLanguage,
+                GlobalLanguage = source.GlobalLanguage,
+                SteamEnabled = source.SteamEnabled,
+                EpicEnabled = source.EpicEnabled,
+                GogEnabled = source.GogEnabled,
+                RetroAchievementsEnabled = source.RetroAchievementsEnabled,
 
                 // Update and Refresh Settings
                 EnablePeriodicUpdates = source.EnablePeriodicUpdates,
