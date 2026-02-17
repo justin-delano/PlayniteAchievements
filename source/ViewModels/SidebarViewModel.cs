@@ -539,6 +539,8 @@ namespace PlayniteAchievements.ViewModels
             else
             {
                 ApplyScanStatus(_achievementManager.GetScanStatusSnapshot());
+                // Refresh data when sidebar becomes active to ensure cached changes are visible
+                _ = RefreshViewAsync();
             }
         }
 
