@@ -177,6 +177,7 @@ namespace PlayniteAchievements.Providers.GOG
 
         /// <summary>
         /// Attempts to load credentials from the GOG library plugin storage.
+        /// Also checks GOG OSS plugin paths and Heroic Games Launcher for tokens.
         /// </summary>
         /// <param name="forceRefresh">If true, bypasses the "already authenticated" check and reloads credentials.</param>
         public bool TryLoadLibraryCredentials(bool forceRefresh = false)
@@ -192,19 +193,17 @@ namespace PlayniteAchievements.Providers.GOG
 
             if (string.IsNullOrEmpty(_libraryPluginName))
             {
-                _logger?.Info("[GogAuth] No GOG library plugin installed.");
-                _usingLibraryCredentials = false;
-                _isSessionAuthenticated = false;
-                return false;
+                _logger?.Info("[GogAuth] No GOG library plugin installed. Checking GOG OSS paths.");
+                // Try GOG OSS token paths (may work even without plugin installed)
+                return TryLoadGogOssToken();
             }
 
             var storesDataPath = GetStoresDataPath();
             if (string.IsNullOrEmpty(storesDataPath) || !Directory.Exists(storesDataPath))
             {
-                _logger?.Warn($"[GogAuth] StoresData directory not found: {storesDataPath}");
-                _usingLibraryCredentials = false;
-                _isSessionAuthenticated = false;
-                return false;
+                _logger?.Warn($"[GogAuth] StoresData directory not found: {storesDataPath}. Checking GOG OSS paths.");
+                // Try GOG OSS token paths as fallback
+                return TryLoadGogOssToken();
             }
 
             _logger?.Info($"[GogAuth] Loading credentials from {storesDataPath}");
@@ -223,10 +222,9 @@ namespace PlayniteAchievements.Providers.GOG
             var cookies = TryLoadCookies(cookiesPath, password);
             if (cookies == null || cookies.Count == 0)
             {
-                _logger?.Warn("[GogAuth] Failed to load GOG cookies from library.");
-                _usingLibraryCredentials = false;
-                _isSessionAuthenticated = false;
-                return false;
+                _logger?.Warn("[GogAuth] Failed to load GOG cookies from library. Checking GOG OSS paths.");
+                // Try GOG OSS token paths as fallback
+                return TryLoadGogOssToken();
             }
 
             _logger?.Info($"[GogAuth] Loaded {cookies.Count} cookies from library.");
@@ -235,18 +233,16 @@ namespace PlayniteAchievements.Providers.GOG
             var accountInfo = GetAccountInfoAsync(cookies).GetAwaiter().GetResult();
             if (accountInfo == null || !accountInfo.IsLoggedIn)
             {
-                _logger?.Warn("[GogAuth] Account info API returned not logged in.");
-                _usingLibraryCredentials = false;
-                _isSessionAuthenticated = false;
-                return false;
+                _logger?.Warn("[GogAuth] Account info API returned not logged in. Checking GOG OSS paths.");
+                // Try GOG OSS token paths as fallback
+                return TryLoadGogOssToken();
             }
 
             if (string.IsNullOrWhiteSpace(accountInfo.AccessToken))
             {
-                _logger?.Warn("[GogAuth] Account info returned but access token is missing.");
-                _usingLibraryCredentials = false;
-                _isSessionAuthenticated = false;
-                return false;
+                _logger?.Warn("[GogAuth] Account info returned but access token is missing. Checking GOG OSS paths.");
+                // Try GOG OSS token paths as fallback
+                return TryLoadGogOssToken();
             }
 
             // Store the real access token from the API
@@ -389,6 +385,189 @@ namespace PlayniteAchievements.Providers.GOG
                 _logger?.Error(ex, "[GogAuth] Failed to get StoresData path.");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Gets the GOG OSS plugin user data path.
+        /// </summary>
+        private string GetGogOssPluginUserDataPath()
+        {
+            try
+            {
+                var extensionsDataPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Playnite",
+                    "ExtensionsData");
+
+                return Path.Combine(extensionsDataPath, GogOssLibraryPluginId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[GogAuth] Failed to get GOG OSS plugin user data path.");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Tries to load GOG OSS token from multiple possible config locations.
+        /// Checks: Heroic Games Launcher, GOG OSS plugin encrypted, GOG OSS plugin plain.
+        /// </summary>
+        private bool TryLoadGogOssToken()
+        {
+            var configPaths = new List<(string Path, string Source, bool Encrypted)>();
+
+            // Heroic Games Launcher GOG tokens path
+            var heroicGogPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "heroic", "gog_store", "tokens.json");
+            configPaths.Add((heroicGogPath, "Heroic Games Launcher", false));
+
+            // GOG OSS plugin encrypted tokens
+            var gogOssPath = GetGogOssPluginUserDataPath();
+            if (!string.IsNullOrEmpty(gogOssPath))
+            {
+                configPaths.Add((Path.Combine(gogOssPath, "tokens_encrypted.json"), "GOG OSS Library (encrypted)", true));
+                configPaths.Add((Path.Combine(gogOssPath, "tokens.json"), "GOG OSS Library (plain)", false));
+            }
+
+            foreach (var (path, source, encrypted) in configPaths)
+            {
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                GogOssToken token;
+                if (encrypted)
+                {
+                    token = TryDecryptGogOssToken(path);
+                }
+                else
+                {
+                    token = TryLoadGogOssTokenFromPath(path);
+                }
+
+                if (token != null && !string.IsNullOrWhiteSpace(token.access_token))
+                {
+                    _accessToken = token.access_token;
+                    _userId = token.user_id;
+
+                    // Calculate token expiry from expires_in or expires_at
+                    if (!string.IsNullOrWhiteSpace(token.expires_at))
+                    {
+                        var expiry = ParseGogOssExpiry(token.expires_at);
+                        if (expiry.HasValue)
+                        {
+                            _tokenExpiryUtc = expiry.Value;
+                        }
+                    }
+                    else if (token.expires_in > 0)
+                    {
+                        _tokenExpiryUtc = DateTime.UtcNow.AddSeconds(token.expires_in);
+                    }
+
+                    _libraryPluginName = source;
+                    _usingLibraryCredentials = true;
+                    _isSessionAuthenticated = true;
+
+                    if (!string.IsNullOrWhiteSpace(_userId))
+                    {
+                        _settings.Persisted.GogUserId = _userId;
+                    }
+
+                    _logger?.Info($"[GogAuth] Successfully authenticated via {source}. UserId: {_userId}");
+                    return true;
+                }
+            }
+
+            _logger?.Debug("[GogAuth] No valid GOG OSS tokens found in any location.");
+            _usingLibraryCredentials = false;
+            _isSessionAuthenticated = false;
+            return false;
+        }
+
+        /// <summary>
+        /// Loads token from GOG OSS plugin's unencrypted tokens.json format.
+        /// </summary>
+        private GogOssToken TryLoadGogOssTokenFromPath(string filePath)
+        {
+            try
+            {
+                var json = File.ReadAllText(filePath);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return null;
+                }
+
+                var token = Serialization.FromJson<GogOssToken>(json);
+                if (token == null || string.IsNullOrWhiteSpace(token.access_token))
+                {
+                    _logger?.Debug($"[GogAuth] Token parsed but access_token is missing from {filePath}.");
+                    return null;
+                }
+
+                return token;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[GogAuth] Failed to load GOG OSS token from {filePath}.");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Decrypts and loads token from GOG OSS plugin's encrypted tokens_encrypted.json format.
+        /// </summary>
+        private GogOssToken TryDecryptGogOssToken(string filePath)
+        {
+            try
+            {
+                var password = GetEncryptionPassword();
+                if (string.IsNullOrEmpty(password))
+                {
+                    _logger?.Warn("[GogAuth] Cannot decrypt GOG OSS token - no user identity available.");
+                    return null;
+                }
+
+                var json = DecryptFromFile(filePath, Encoding.UTF8, password);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    _logger?.Debug($"[GogAuth] Decrypted GOG OSS token is empty from {filePath}.");
+                    return null;
+                }
+
+                var token = Serialization.FromJson<GogOssToken>(json);
+                if (token == null || string.IsNullOrWhiteSpace(token.access_token))
+                {
+                    _logger?.Debug($"[GogAuth] Decrypted token parsed but access_token is missing from {filePath}.");
+                    return null;
+                }
+
+                return token;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[GogAuth] Failed to decrypt GOG OSS token from {filePath}.");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Parses expiry datetime string from GOG OSS token format.
+        /// </summary>
+        private static DateTime? ParseGogOssExpiry(string expiresAt)
+        {
+            if (string.IsNullOrWhiteSpace(expiresAt))
+            {
+                return null;
+            }
+
+            if (DateTime.TryParse(expiresAt, out var dt))
+            {
+                return dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+            }
+
+            return null;
         }
 
         private bool TryLoadToken(string tokenPath)
@@ -780,6 +959,31 @@ namespace PlayniteAchievements.Providers.GOG
             public string Avatar { get; set; }
             public string Link { get; set; }
             public bool IsCurrent { get; set; }
+        }
+
+        /// <summary>
+        /// Represents token data from GOG OSS Library plugin or Heroic Games Launcher.
+        /// Matches the tokens.json format from GOG OSS plugin.
+        /// </summary>
+        private class GogOssToken
+        {
+            [SerializationPropertyName("access_token")]
+            public string access_token { get; set; }
+
+            [SerializationPropertyName("refresh_token")]
+            public string refresh_token { get; set; }
+
+            [SerializationPropertyName("user_id")]
+            public string user_id { get; set; }
+
+            [SerializationPropertyName("expires_in")]
+            public long expires_in { get; set; }
+
+            [SerializationPropertyName("expires_at")]
+            public string expires_at { get; set; }
+
+            [SerializationPropertyName("token_type")]
+            public string token_type { get; set; }
         }
 
         #endregion
