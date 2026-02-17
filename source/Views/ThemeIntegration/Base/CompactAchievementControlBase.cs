@@ -91,9 +91,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 Width = IconHeight,
                 Height = IconHeight,
                 ToolTip = achievement.DisplayName,
-                // Icon is for unlocked state, IconCustom is for locked state
+                // Use UnlockedIconDisplay for both states; grayscale is applied when IsLocked=true
                 Icon = achievement.UnlockedIconDisplay,
-                IconCustom = achievement.LockedIconDisplay,
+                IconCustom = achievement.UnlockedIconDisplay,
                 IsLocked = false,
                 Percent = achievement.GlobalPercentUnlocked ?? 0,
                 EnableRaretyIndicator = true,
