@@ -191,6 +191,10 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_TabGeneral">Général</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Apparence et disposition</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Language">Langue</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GlobalLanguage">Langue des succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">Activer ce fournisseur</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">Ce fournisseur est désactivé. Activez-le pour suivre les succès.</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Synchronisation et mises à jour</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_Notifications">Notifications</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_RarityThresholds">Seuils de rareté des succès</sys:String>
@@ -459,6 +463,9 @@
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configurer dans les paramètres</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeReady">PRÊT</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">CONFIGURATION</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeDisabled">DÉSACTIVÉ</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Language">Langue des succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_EnableProvider">Activer</sys:String>
 
     <!-- ================================================================= -->
     <!-- SCAN PROGRESS WINDOW                                               -->

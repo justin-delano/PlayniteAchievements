@@ -191,6 +191,10 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_TabGeneral">General</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance and Layout</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Language">Language</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GlobalLanguage">Achievement Language</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">Enable this provider</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">This provider is disabled. Enable it to track achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Sync &amp; Updates</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_Notifications">Notifications</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_RarityThresholds">Achievement Rarity Thresholds</sys:String>
@@ -459,6 +463,9 @@
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configure in settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeReady">READY</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">SETUP</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeDisabled">DISABLED</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Language">Achievement Language</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_EnableProvider">Enable</sys:String>
 
     <!-- ================================================================= -->
     <!-- SCAN PROGRESS WINDOW                                               -->
