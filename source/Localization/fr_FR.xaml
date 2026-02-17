@@ -190,6 +190,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_Epic_GetLibrary">Obtenir le plugin Epic Games Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_OwnAuthHelp">Cliquez sur Connexion pour vous authentifier avec Epic via une fenêtre de navigateur intégrée. Vos identifiants sont stockés de manière sécurisée dans PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_Login">Connexion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Connexion alternative</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Connectez-vous à Epic dans votre navigateur par défaut\n2. Après la connexion, trouvez la valeur "authorizationCode" sur la page\n3. Copiez et collez cette valeur dans la boîte de dialogue suivante</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Collez la valeur authorizationCode ici :</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_Clear">Effacer</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
 
