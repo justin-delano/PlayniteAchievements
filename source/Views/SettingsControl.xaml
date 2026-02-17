@@ -1269,7 +1269,7 @@
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,16"
-                                           Text="{DynamicResource LOCPlayAch_Settings_Epic_LibraryHelp}"/>
+                                           Text="{DynamicResource LOCPlayAch_Settings_Epic_OwnAuthHelp}"/>
 
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
@@ -1344,25 +1344,18 @@
                                                            FontWeight="SemiBold"/>
                                             </Grid>
 
-                                            <!-- Show refresh button when library is detected -->
-                                            <StackPanel Orientation="Horizontal"
-                                                        Visibility="{Binding EpicLibraryDetected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Epic_RefreshFromLibrary}"
+                                            <!-- Login/Logout buttons -->
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Epic_Login}"
                                                         Style="{StaticResource EpicAuthActionButtonStyle}"
-                                                        Click="EpicAuth_RefreshFromLibrary_Click"
+                                                        Click="EpicAuth_Login_Click"
                                                         Padding="14,6"
                                                         Margin="0,0,8,0"/>
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Epic_Clear}"
+                                                        Style="{StaticResource EpicAuthActionButtonStyle}"
+                                                        Click="EpicAuth_Clear_Click"
+                                                        Padding="14,6"/>
                                             </StackPanel>
-
-                                            <!-- Show get library link when no library detected -->
-                                            <TextBlock Style="{StaticResource MutedTextStyle}"
-                                                       Margin="0,8,0,0"
-                                                       Visibility="{Binding EpicLibraryNotDetected, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                <Hyperlink NavigateUri="https://playnite.link/addons/#00000002-DBD1-46C6-B5D0-B1BA559D10E4"
-                                                           RequestNavigate="Hyperlink_RequestNavigate">
-                                                    <Run Text="{DynamicResource LOCPlayAch_Settings_Epic_GetLibrary}" />
-                                                </Hyperlink>
-                                            </TextBlock>
 
                                             <ProgressBar Height="3"
                                                          Margin="0,8,0,0"
