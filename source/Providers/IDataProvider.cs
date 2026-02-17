@@ -17,6 +17,8 @@ namespace PlayniteAchievements.Providers
 
         /// <summary>
         /// Gets whether this provider has valid authentication credentials configured.
+        /// This property checks credentials ONLY - it does not consider whether the provider is enabled.
+        /// The enabled state is managed separately by ProviderRegistry.
         /// Each provider implements its own validation logic appropriate to its auth requirements.
         /// </summary>
         bool IsAuthenticated { get; }
