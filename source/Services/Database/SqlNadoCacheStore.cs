@@ -573,27 +573,46 @@ namespace PlayniteAchievements.Services.Database
 
         public void ClearCacheData()
         {
-            WithDb(db =>
+            lock (_sync)
             {
-                db.RunTransaction(() =>
+                // Close the database connection
+                if (_db is IDisposable disposable)
                 {
-                    db.ExecuteNonQuery("DELETE FROM UserAchievements;");
-                    db.ExecuteNonQuery("DELETE FROM UserGameProgress;");
-                    db.ExecuteNonQuery("DELETE FROM AchievementDefinitions;");
-                    db.ExecuteNonQuery("DELETE FROM Games;");
-                });
-
+                    try
+                    {
+                        disposable.Dispose();
+                    }
+                    catch { }
+                }
+                _db = null;
+                _initialized = false;
                 _cachedCurrentUsersByProvider.Clear();
 
+                // Delete the database file and WAL-related files
                 try
                 {
-                    db.Vacuum();
+                    var dbPath = DatabasePath;
+                    var filesToDelete = new[]
+                    {
+                        dbPath,
+                        dbPath + "-wal",
+                        dbPath + "-shm"
+                    };
+
+                    foreach (var file in filesToDelete)
+                    {
+                        if (File.Exists(file))
+                        {
+                            File.Delete(file);
+                            _logger?.Info($"Deleted database file: {file}");
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, "VACUUM failed after clearing cache.");
+                    _logger?.Error(ex, $"Failed to delete database files: {DatabasePath}");
                 }
-            });
+            }
         }
 
         public void RemoveGameData(Guid playniteGameId)
