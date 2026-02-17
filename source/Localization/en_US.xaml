@@ -185,6 +185,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_Epic_RefreshFromLibrary">Refresh from Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LibraryHelp">PlayniteAchievements uses credentials from your installed Epic Games or Legendary library plugin. Login via the library plugin's settings to enable Epic achievement tracking.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_GetLibrary">Get Epic Games Library Plugin</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_OwnAuthHelp">Click Login to authenticate with Epic via an embedded browser window. Your credentials are stored securely within PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_Login">Login</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
 
     <!-- ================================================================= -->
