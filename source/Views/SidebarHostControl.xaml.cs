@@ -161,17 +161,13 @@ namespace PlayniteAchievements.Views
                 {
                     try
                     {
-                        // Force reload from disk to get latest settings (e.g., after reset in settings UI)
-                        var settings = _plugin.LoadPluginSettings<PlayniteAchievementsSettings>();
+                        // Use the shared settings object from the plugin (same instance used by providers)
+                        // This ensures settings changes in landing page are immediately visible to providers
+                        var settings = _plugin.Settings;
                         if (settings != null)
                         {
-                            // Set plugin reference on loaded settings for ISettings methods (SavePluginSettings)
+                            // Ensure plugin reference is set for ISettings methods (SavePluginSettings)
                             settings._plugin = _plugin;
-                        }
-                        else
-                        {
-                            // Fallback to cached settings if load fails
-                            settings = _plugin.Settings;
                         }
 
                         var firstTimeCompleted = settings?.Persisted?.FirstTimeSetupCompleted ?? true;
