@@ -947,12 +947,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (IsScanning)
                 {
-                    _scanRefreshPending = true;
-                    _refreshDebounceTimer.Stop();
-                    if (!_scanFullRefreshTimer.IsEnabled)
-                    {
-                        _scanFullRefreshTimer.Start();
-                    }
+                    // Don't refresh during scans - the scan completion handler will refresh
                     return;
                 }
 
