@@ -21,7 +21,7 @@
     <!-- Brushes (can be set dynamically via DynamicResource if needed, or use defaults here) -->
     <SolidColorBrush x:Key="BrushSteam" Color="#B0B0B0"/>
     <SolidColorBrush x:Key="BrushRetroAchievements" Color="#FFD700"/>
-    <SolidColorBrush x:Key="BrushGOG" Color="#5100DC"/>
+    <SolidColorBrush x:Key="BrushGOG" Color="#A855F7"/>
     <SolidColorBrush x:Key="BrushEpic" Color="#26BBFF"/>
 
     <!-- DrawingImage resources for each provider -->
