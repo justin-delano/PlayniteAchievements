@@ -165,9 +165,9 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
                     AchievementId = x.Achievement.Name,
                     Title = x.Achievement.UnlockedDisplayName,
                     Description = x.Achievement.UnlockedDescription,
-                    IconUrl = !string.IsNullOrWhiteSpace(x.Achievement.UnlockedIconLink)
-                        ? x.Achievement.UnlockedIconLink
-                        : x.Achievement.LockedIconLink,
+                    UnlockedIconUrl = x.Achievement.UnlockedIconLink,
+                    LockedIconUrl = x.Achievement.LockedIconLink,
+                    XP = x.Achievement.XP,
                     Hidden = x.Achievement.Hidden,
                     RarityPercent = x.Achievement.Rarity?.Percent
                 })
@@ -679,6 +679,9 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
             [JsonProperty("lockedIconLink")]
             public string LockedIconLink { get; set; }
 
+            [JsonProperty("XP")]
+            public int? XP { get; set; }
+
             [JsonProperty("rarity")]
             public RarityNode Rarity { get; set; }
         }
@@ -749,7 +752,9 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
         public string AchievementId { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
-        public string IconUrl { get; set; }
+        public string UnlockedIconUrl { get; set; }
+        public string LockedIconUrl { get; set; }
+        public int? XP { get; set; }
         public bool Hidden { get; set; }
         public DateTime? UnlockTimeUtc { get; set; }
         public double? RarityPercent { get; set; }

@@ -223,7 +223,10 @@ namespace PlayniteAchievements.Providers.GOG
                             ? ach.ResolvedTitle
                             : achievementId,
                         Description = ach.ResolvedDescription ?? string.Empty,
-                        IconPath = ach.ResolvedImageUrlUnlocked ?? string.Empty,
+                        UnlockedIconPath = ach.ResolvedImageUrlUnlocked ?? string.Empty,
+                        LockedIconPath = ach.ResolvedImageUrlLocked,
+                        Points = null,
+                        Category = null,
                         Hidden = !ach.ResolvedVisible,
                         GlobalPercentUnlocked = ach.ResolvedRarityPercent,
                         UnlockTimeUtc = ach.UnlockTimeUtc

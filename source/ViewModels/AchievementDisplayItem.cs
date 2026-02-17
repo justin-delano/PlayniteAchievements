@@ -323,7 +323,7 @@ namespace PlayniteAchievements.ViewModels
             PlayniteGameId = playniteGameId;
             DisplayName = source.DisplayName ?? source.ApiName ?? "Unknown Achievement";
             Description = source.Description ?? "No description";
-            IconPath = source.IconPath;
+            IconPath = source.UnlockedIconPath;
             UnlockTimeUtc = source.UnlockTimeUtc;
             GlobalPercentUnlocked = source.GlobalPercentUnlocked;
             Unlocked = source.Unlocked;

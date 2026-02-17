@@ -15,10 +15,16 @@ namespace PlayniteAchievements.Models.Achievements
 
         public string Description { get; set; }
 
-        public string IconPath { get; set; }
+        public string UnlockedIconPath { get; set; }
+
+        public string LockedIconPath { get; set; }
+
+        public int? Points { get; set; }
+
+        public string Category { get; set; }
 
         [IgnoreDataMember]
-        public string IconDisplay => IconPath ?? AchievementIconResolver.GetDefaultIcon();
+        public string IconDisplay => UnlockedIconPath ?? AchievementIconResolver.GetDefaultIcon();
 
         public bool Hidden { get; set; }
 
@@ -60,10 +66,10 @@ namespace PlayniteAchievements.Models.Achievements
         public string Icon => IconDisplay;
 
         [IgnoreDataMember]
-        public string UnlockedIconDisplay => IconDisplay;
+        public string UnlockedIconDisplay => UnlockedIconPath ?? AchievementIconResolver.GetDefaultIcon();
 
         [IgnoreDataMember]
-        public string LockedIconDisplay => IconDisplay;
+        public string LockedIconDisplay => LockedIconPath ?? UnlockedIconPath ?? IconDisplay;
 
         [IgnoreDataMember]
         public double Percent

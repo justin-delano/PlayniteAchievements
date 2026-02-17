@@ -738,15 +738,15 @@ namespace PlayniteAchievements.Services
 
             foreach (var achievement in data.Achievements)
             {
-                if (achievement == null || !IsHttpIconPath(achievement.IconPath))
+                if (achievement == null || !IsHttpIconPath(achievement.UnlockedIconPath))
                 {
                     continue;
                 }
 
-                if (!groupedByIcon.TryGetValue(achievement.IconPath, out var grouped))
+                if (!groupedByIcon.TryGetValue(achievement.UnlockedIconPath, out var grouped))
                 {
                     grouped = new List<AchievementDetail>();
-                    groupedByIcon[achievement.IconPath] = grouped;
+                    groupedByIcon[achievement.UnlockedIconPath] = grouped;
                 }
 
                 grouped.Add(achievement);
@@ -777,7 +777,7 @@ namespace PlayniteAchievements.Services
 
                 foreach (var achievement in grouped)
                 {
-                    achievement.IconPath = resolved.LocalPath;
+                    achievement.UnlockedIconPath = resolved.LocalPath;
                 }
             }
         }

@@ -7,7 +7,10 @@ namespace PlayniteAchievements.Services.Database.Rows
         public string ApiName { get; set; }
         public string DisplayName { get; set; }
         public string Description { get; set; }
-        public string IconPath { get; set; }
+        public string UnlockedIconPath { get; set; }
+        public string LockedIconPath { get; set; }
+        public int? Points { get; set; }
+        public string Category { get; set; }
         public long Hidden { get; set; }
         public double? GlobalPercentUnlocked { get; set; }
         public int? ProgressMax { get; set; }
