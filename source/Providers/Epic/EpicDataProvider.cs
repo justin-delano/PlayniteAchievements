@@ -1,4 +1,5 @@
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -35,7 +36,7 @@ namespace PlayniteAchievements.Providers.Epic
             _httpClient = new HttpClient();
             _sessionManager = sessionManager;
 
-            var apiClient = new EpicApiClient(_httpClient, logger, sessionManager);
+            var apiClient = new EpicApiClient(_httpClient, logger, sessionManager, settings.Persisted);
             _scanner = new EpicScanner(settings, apiClient, sessionManager, logger);
 
             _ = _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);

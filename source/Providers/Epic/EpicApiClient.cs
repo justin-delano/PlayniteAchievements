@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Providers.Epic
 {
@@ -97,6 +98,7 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
         private readonly IEpicSessionProvider _sessionProvider;
+        private readonly PersistedSettings _settings;
         private readonly SemaphoreSlim _cacheSemaphore = new SemaphoreSlim(1, 1);
 
         private string _cachedAssetsToken;
@@ -104,11 +106,12 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
         private readonly Dictionary<string, AchievementSchemaResponse> _schemaCache =
             new Dictionary<string, AchievementSchemaResponse>(StringComparer.OrdinalIgnoreCase);
 
-        public EpicApiClient(HttpClient httpClient, ILogger logger, IEpicSessionProvider sessionProvider)
+        public EpicApiClient(HttpClient httpClient, ILogger logger, IEpicSessionProvider sessionProvider, PersistedSettings settings)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger;
             _sessionProvider = sessionProvider ?? throw new ArgumentNullException(nameof(sessionProvider));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         public async Task<List<EpicAchievementItem>> GetAchievementsAsync(
@@ -291,13 +294,71 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
 
         private Task<AchievementSchemaResponse> QueryAchievementSchemaAsync(string sandboxId, string token, CancellationToken ct)
         {
+            var locale = MapGlobalLanguageToEpicLocale(_settings?.GlobalLanguage);
             var variables = new
             {
                 SandboxId = sandboxId,
-                Locale = "en"
+                Locale = locale
             };
 
             return QueryGraphQlAsync<AchievementSchemaResponse>(AchievementQuery, variables, token, ct);
+        }
+
+        /// <summary>
+        /// Maps the global language setting to Epic Games API locale format.
+        /// Epic uses two-letter ISO 639-1 codes (e.g., "en", "fr", "de").
+        /// </summary>
+        private static string MapGlobalLanguageToEpicLocale(string globalLanguage)
+        {
+            if (string.IsNullOrWhiteSpace(globalLanguage))
+            {
+                return "en";
+            }
+
+            var normalized = globalLanguage.Trim().ToLowerInvariant();
+
+            // Map common language names to ISO 639-1 codes
+            var localeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "english", "en" },
+                { "german", "de" },
+                { "french", "fr" },
+                { "spanish", "es" },
+                { "italian", "it" },
+                { "portuguese", "pt" },
+                { "brazilian", "pt-BR" },
+                { "brazilianportuguese", "pt-BR" },
+                { "russian", "ru" },
+                { "polish", "pl" },
+                { "dutch", "nl" },
+                { "swedish", "sv" },
+                { "finnish", "fi" },
+                { "danish", "da" },
+                { "norwegian", "no" },
+                { "hungarian", "hu" },
+                { "czech", "cs" },
+                { "romanian", "ro" },
+                { "turkish", "tr" },
+                { "greek", "el" },
+                { "bulgarian", "bg" },
+                { "ukrainian", "uk" },
+                { "thai", "th" },
+                { "vietnamese", "vi" },
+                { "japanese", "ja" },
+                { "koreana", "ko" },
+                { "korean", "ko" },
+                { "schinese", "zh-CN" },
+                { "tchinese", "zh-TW" },
+                { "arabic", "ar" }
+            };
+
+            if (localeMap.TryGetValue(normalized, out var locale))
+            {
+                return locale;
+            }
+
+            // Fallback to English
+            return "en";
         }
 
         private Task<PlayerAchievementsResponse> QueryPlayerAchievementsAsync(string epicAccountId, string productId, string token, CancellationToken ct)
