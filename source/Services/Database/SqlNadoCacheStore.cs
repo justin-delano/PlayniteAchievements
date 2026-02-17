@@ -1437,7 +1437,7 @@ namespace PlayniteAchievements.Services.Database
             public string LockedIconPath { get; set; }
             public int? Points { get; set; }
             public string Category { get; set; }
-            public long? Hidden { get; set; }
+            public bool? Hidden { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public int? ProgressMax { get; set; }
             public string CreatedUtc { get; set; }
@@ -1508,7 +1508,7 @@ namespace PlayniteAchievements.Services.Database
             public int? Points { get; set; }
             public string Category { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
-            public long? Hidden { get; set; }
+            public bool? Hidden { get; set; }
             public long? Unlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
             public string UserName { get; set; }
