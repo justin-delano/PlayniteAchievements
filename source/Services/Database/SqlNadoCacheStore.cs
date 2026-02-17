@@ -940,7 +940,7 @@ namespace PlayniteAchievements.Services.Database
                         @"INSERT INTO AchievementDefinitions
                             (GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, Hidden, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc)
                           VALUES
-                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                         gameId,
                         apiName,
                         DbValue(achievement.DisplayName),
