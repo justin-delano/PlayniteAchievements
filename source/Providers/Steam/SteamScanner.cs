@@ -114,7 +114,7 @@ namespace PlayniteAchievements.Providers.Steam
 
                 progress.Emit(new ProviderScanUpdate
                 {
-                    CurrentGameName = game.Name
+                    CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"App {appId}"
                 });
 
                 try

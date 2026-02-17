@@ -89,7 +89,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                 progress.Emit(new ProviderScanUpdate
                 {
-                    CurrentGameName = game.Name
+                    CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"Game {game.Id}"
                 });
 
                 try

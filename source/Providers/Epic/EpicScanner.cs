@@ -73,7 +73,7 @@ namespace PlayniteAchievements.Providers.Epic
 
                 progress.Emit(new ProviderScanUpdate
                 {
-                    CurrentGameName = game.Name
+                    CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : gameId
                 });
 
                 try

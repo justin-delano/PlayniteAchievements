@@ -95,7 +95,7 @@ namespace PlayniteAchievements.Providers.GOG
 
                 progress.Emit(new ProviderScanUpdate
                 {
-                    CurrentGameName = game.Name
+                    CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"Product {productId}"
                 });
 
                 try
