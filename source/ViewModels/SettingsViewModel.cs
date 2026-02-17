@@ -78,6 +78,9 @@ namespace PlayniteAchievements.ViewModels
             // Save the settings via the plugin
             _plugin.SavePluginSettings(Settings);
 
+            // Sync provider registry from the updated settings
+            _plugin.ProviderRegistry?.SyncFromSettings(Settings.Persisted);
+
             // Notify listeners that settings have been saved (e.g., to refresh provider status in landing page)
             PlayniteAchievementsPlugin.NotifySettingsSaved();
         }
