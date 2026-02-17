@@ -582,7 +582,7 @@
                     <ComboBox ItemsSource="{Binding ScanModes}"
                               DisplayMemberPath="ShortDisplayName"
                               SelectedValuePath="Key"
-                              SelectedValue="{Binding SelectedScanMode, UpdateSourceTrigger=PropertyChanged}"
+                              SelectedValue="{Binding SelectedScanMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               Width="100"
                               Margin="0,0,8,0"
                               VerticalContentAlignment="Center"/>
@@ -682,7 +682,7 @@
 
                         <ComboBox Grid.Column="1"
                                   ItemsSource="{Binding ProviderFilterOptions}"
-                                  SelectedItem="{Binding SelectedProviderFilter, UpdateSourceTrigger=PropertyChanged}"
+                                  SelectedItem="{Binding SelectedProviderFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   Width="100"
                                   Margin="4,0,0,0"
                                   VerticalContentAlignment="Center"/>

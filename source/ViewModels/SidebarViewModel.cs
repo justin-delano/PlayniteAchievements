@@ -234,7 +234,10 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _selectedProviderFilter, value))
                 {
-                    ApplyLeftFilters();
+                    // Defer filter application to avoid interfering with ComboBox selection
+                    System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
+                        new Action(() => ApplyLeftFilters()),
+                        System.Windows.Threading.DispatcherPriority.ContextIdle);
                 }
             }
         }
