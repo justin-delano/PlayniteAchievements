@@ -1283,8 +1283,8 @@ namespace PlayniteAchievements.Services.Database
                 "UnlockedIconPath", "LockedIconPath", "Points", "Category", "Hidden",
                 "GlobalPercentUnlocked", "ProgressMax", "CreatedUtc", "UpdatedUtc"
             }, r => new[] {
-                r.Id.ToString(), r.GameId.ToString(), r.ApiName, r.DisplayName, r.Description,
-                r.UnlockedIconPath, r.LockedIconPath, r.Points?.ToString(), r.Category, r.Hidden.ToString(),
+                r.Id?.ToString(), r.GameId?.ToString(), r.ApiName, r.DisplayName, r.Description,
+                r.UnlockedIconPath, r.LockedIconPath, r.Points?.ToString(), r.Category, r.Hidden?.ToString(),
                 r.GlobalPercentUnlocked?.ToString(), r.ProgressMax?.ToString(), r.CreatedUtc, r.UpdatedUtc
             });
             _logger.Info($"Exported {rows.Count} rows to {filePath}");
@@ -1428,8 +1428,8 @@ namespace PlayniteAchievements.Services.Database
         // Export row DTOs
         private sealed class AchievementDefinitionExportRow
         {
-            public long Id { get; set; }
-            public long GameId { get; set; }
+            public long? Id { get; set; }
+            public long? GameId { get; set; }
             public string ApiName { get; set; }
             public string DisplayName { get; set; }
             public string Description { get; set; }
@@ -1437,7 +1437,7 @@ namespace PlayniteAchievements.Services.Database
             public string LockedIconPath { get; set; }
             public int? Points { get; set; }
             public string Category { get; set; }
-            public long Hidden { get; set; }
+            public long? Hidden { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public int? ProgressMax { get; set; }
             public string CreatedUtc { get; set; }

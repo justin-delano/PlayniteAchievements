@@ -239,7 +239,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_ClearFailed">Échec de la suppression du cache d'index de hachage : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Exporter les tables de la base de données en CSV pour le débogage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Exporter CSV</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseDone">Base de données exportée vers :{0}{1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseDone">Base de données exportée vers :{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseFailed">Échec de l'export de la base de données : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Mise à jour du cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">Aucun succès en cache. Cliquez sur « Analyser tout » pour analyser vos jeux.</sys:String>
