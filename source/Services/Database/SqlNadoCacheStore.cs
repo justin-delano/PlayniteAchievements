@@ -46,6 +46,7 @@ namespace PlayniteAchievements.Services.Database
             public string LockedIconPath { get; set; }
             public int? Points { get; set; }
             public string Category { get; set; }
+            public string TrophyType { get; set; }
             public long Hidden { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
@@ -62,6 +63,7 @@ namespace PlayniteAchievements.Services.Database
             public string LockedIconPath { get; set; }
             public int? Points { get; set; }
             public string Category { get; set; }
+            public string TrophyType { get; set; }
             public long Hidden { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
@@ -224,6 +226,7 @@ namespace PlayniteAchievements.Services.Database
                         ad.LockedIconPath AS LockedIconPath,
                         ad.Points AS Points,
                         ad.Category AS Category,
+                        ad.TrophyType AS TrophyType,
                         ad.Hidden AS Hidden,
                         ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
                         ua.UnlockTimeUtc AS UnlockTimeUtc,
@@ -254,6 +257,7 @@ namespace PlayniteAchievements.Services.Database
                         LockedIconPath = row.LockedIconPath,
                         Points = row.Points,
                         Category = row.Category,
+                        TrophyType = row.TrophyType,
                         Hidden = row.Hidden != 0,
                         GlobalPercentUnlocked = row.GlobalPercentUnlocked,
                         UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
@@ -363,6 +367,7 @@ namespace PlayniteAchievements.Services.Database
                         ad.LockedIconPath AS LockedIconPath,
                         ad.Points AS Points,
                         ad.Category AS Category,
+                        ad.TrophyType AS TrophyType,
                         ad.Hidden AS Hidden,
                         ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
                         ua.UnlockTimeUtc AS UnlockTimeUtc,
@@ -395,6 +400,7 @@ namespace PlayniteAchievements.Services.Database
                         LockedIconPath = row.LockedIconPath,
                         Points = row.Points,
                         Category = row.Category,
+                        TrophyType = row.TrophyType,
                         Hidden = row.Hidden != 0,
                         GlobalPercentUnlocked = row.GlobalPercentUnlocked,
                         UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
@@ -918,7 +924,7 @@ namespace PlayniteAchievements.Services.Database
             var desiredApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var existingByApiName = db.Load<AchievementDefinitionRow>(
-                    @"SELECT Id, GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, Hidden, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc
+                    @"SELECT Id, GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc
                       FROM AchievementDefinitions
                       WHERE GameId = ?;",
                     gameId)
@@ -938,9 +944,9 @@ namespace PlayniteAchievements.Services.Database
                 {
                     db.ExecuteNonQuery(
                         @"INSERT INTO AchievementDefinitions
-                            (GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, Hidden, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc)
+                            (GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc)
                           VALUES
-                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                         gameId,
                         apiName,
                         DbValue(achievement.DisplayName),
@@ -949,6 +955,7 @@ namespace PlayniteAchievements.Services.Database
                         DbValue(achievement.LockedIconPath),
                         achievement.Points.HasValue ? (object)achievement.Points.Value : DBNull.Value,
                         DbValue(achievement.Category),
+                        DbValue(achievement.TrophyType),
                         achievement.Hidden ? 1 : 0,
                         achievement.GlobalPercentUnlocked.HasValue ? (object)achievement.GlobalPercentUnlocked.Value : DBNull.Value,
                         achievement.ProgressDenom.HasValue ? (object)achievement.ProgressDenom.Value : DBNull.Value,
@@ -972,6 +979,7 @@ namespace PlayniteAchievements.Services.Database
                 var incomingLockedIconPath = NormalizeDbText(achievement.LockedIconPath);
                 var incomingPoints = achievement.Points;
                 var incomingCategory = NormalizeDbText(achievement.Category);
+                var incomingTrophyType = NormalizeDbText(achievement.TrophyType);
                 var incomingHidden = achievement.Hidden ? 1L : 0L;
                 var incomingGlobalPercent = achievement.GlobalPercentUnlocked;
                 var incomingProgressMax = achievement.ProgressDenom;
@@ -982,6 +990,7 @@ namespace PlayniteAchievements.Services.Database
                               !NullableEquals(NormalizeDbText(existing.LockedIconPath), incomingLockedIconPath) ||
                               existing.Points != incomingPoints ||
                               !NullableEquals(NormalizeDbText(existing.Category), incomingCategory) ||
+                              !NullableEquals(NormalizeDbText(existing.TrophyType), incomingTrophyType) ||
                               existing.Hidden != incomingHidden ||
                               existing.GlobalPercentUnlocked != incomingGlobalPercent ||
                               existing.ProgressMax != incomingProgressMax;
@@ -1000,6 +1009,7 @@ namespace PlayniteAchievements.Services.Database
                           LockedIconPath = ?,
                           Points = ?,
                           Category = ?,
+                          TrophyType = ?,
                           Hidden = ?,
                           GlobalPercentUnlocked = ?,
                           ProgressMax = ?,
@@ -1011,6 +1021,7 @@ namespace PlayniteAchievements.Services.Database
                                         incomingLockedIconPath != null ? (object)incomingLockedIconPath : DBNull.Value,
                                         incomingPoints.HasValue ? (object)incomingPoints.Value : DBNull.Value,
                                         incomingCategory != null ? (object)incomingCategory : DBNull.Value,
+                                        incomingTrophyType != null ? (object)incomingTrophyType : DBNull.Value,
                                         incomingHidden,
                                         incomingGlobalPercent.HasValue ? (object)incomingGlobalPercent.Value : DBNull.Value,
                                         incomingProgressMax.HasValue ? (object)incomingProgressMax.Value : DBNull.Value,
@@ -1274,17 +1285,17 @@ namespace PlayniteAchievements.Services.Database
             var filePath = Path.Combine(dir, "AchievementDefinitions.csv");
             var rows = _db.Load<AchievementDefinitionExportRow>(
                 "SELECT Id, GameId, ApiName, DisplayName, Description, " +
-                "UnlockedIconPath, LockedIconPath, Points, Category, Hidden, " +
+                "UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, " +
                 "GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc " +
                 "FROM AchievementDefinitions").ToList();
             WriteCsv(filePath, rows, new[]
             {
                 "Id", "GameId", "ApiName", "DisplayName", "Description",
-                "UnlockedIconPath", "LockedIconPath", "Points", "Category", "Hidden",
+                "UnlockedIconPath", "LockedIconPath", "Points", "Category", "TrophyType", "Hidden",
                 "GlobalPercentUnlocked", "ProgressMax", "CreatedUtc", "UpdatedUtc"
             }, r => new[] {
                 r.Id?.ToString(), r.GameId?.ToString(), r.ApiName, r.DisplayName, r.Description,
-                r.UnlockedIconPath, r.LockedIconPath, r.Points?.ToString(), r.Category, r.Hidden?.ToString(),
+                r.UnlockedIconPath, r.LockedIconPath, r.Points?.ToString(), r.Category, r.TrophyType, r.Hidden?.ToString(),
                 r.GlobalPercentUnlocked?.ToString(), r.ProgressMax?.ToString(), r.CreatedUtc, r.UpdatedUtc
             });
             _logger.Info($"Exported {rows.Count} rows to {filePath}");
@@ -1373,7 +1384,7 @@ namespace PlayniteAchievements.Services.Database
             var filePath = Path.Combine(dir, "AchievementSummary.csv");
             var rows = _db.Load<AchievementSummaryExportRow>(
                 "SELECT g.GameName, g.ProviderName, g.PlayniteGameId, " +
-                "ad.ApiName, ad.DisplayName AS AchievementName, ad.Description, ad.Points, ad.Category, " +
+                "ad.ApiName, ad.DisplayName AS AchievementName, ad.Description, ad.Points, ad.Category, ad.TrophyType, " +
                 "ad.GlobalPercentUnlocked, ad.Hidden, " +
                 "ua.Unlocked, ua.UnlockTimeUtc, u.DisplayName AS UserName " +
                 "FROM AchievementDefinitions ad " +
@@ -1385,12 +1396,12 @@ namespace PlayniteAchievements.Services.Database
             WriteCsv(filePath, rows, new[]
             {
                 "GameName", "ProviderName", "PlayniteGameId",
-                "ApiName", "AchievementName", "Description", "Points", "Category",
+                "ApiName", "AchievementName", "Description", "Points", "Category", "TrophyType",
                 "GlobalPercentUnlocked", "Hidden",
                 "Unlocked", "UnlockTimeUtc", "UserName"
             }, r => new[] {
                 r.GameName, r.ProviderName, r.PlayniteGameId,
-                r.ApiName, r.AchievementName, r.Description, r.Points?.ToString(), r.Category,
+                r.ApiName, r.AchievementName, r.Description, r.Points?.ToString(), r.Category, r.TrophyType,
                 r.GlobalPercentUnlocked?.ToString(), r.Hidden?.ToString(),
                 r.Unlocked?.ToString(), r.UnlockTimeUtc, r.UserName
             });
@@ -1437,6 +1448,7 @@ namespace PlayniteAchievements.Services.Database
             public string LockedIconPath { get; set; }
             public int? Points { get; set; }
             public string Category { get; set; }
+            public string TrophyType { get; set; }
             public bool? Hidden { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public int? ProgressMax { get; set; }
@@ -1507,6 +1519,7 @@ namespace PlayniteAchievements.Services.Database
             public string Description { get; set; }
             public int? Points { get; set; }
             public string Category { get; set; }
+            public string TrophyType { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public bool? Hidden { get; set; }
             public bool? Unlocked { get; set; }
