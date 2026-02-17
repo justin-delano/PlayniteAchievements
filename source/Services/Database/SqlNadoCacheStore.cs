@@ -1509,7 +1509,7 @@ namespace PlayniteAchievements.Services.Database
             public string Category { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public bool? Hidden { get; set; }
-            public long? Unlocked { get; set; }
+            public bool? Unlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
             public string UserName { get; set; }
         }
