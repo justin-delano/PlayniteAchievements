@@ -2,42 +2,29 @@ using Newtonsoft.Json;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Common;
 using Playnite.SDK;
+using Playnite.SDK.Events;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Security.Cryptography;
-using System.Security.Principal;
-using System.Text;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Epic
 {
-    /// <summary>
-    /// Manages Epic Games authentication by reusing credentials from installed library plugins.
-    /// Supports Epic Games Library (official) and Legendary library plugins.
-    /// Falls back to legacy persisted settings when no library plugin is available.
-    /// </summary>
     public sealed class EpicSessionManager : IEpicSessionProvider
     {
-        #region Constants
-
+        private const string UrlLogin = "https://www.epicgames.com/id/login?responseType=code";
+        private const string UrlAccount = "https://www.epicgames.com/account/personal";
+        private const string UrlAuthCode = "https://www.epicgames.com/id/api/redirect?clientId=34a02cf8f4414e29b15921876da36f9a&responseType=code";
         private const string UrlAccountAuth = "https://account-public-service-prod03.ol.epicgames.com/account/api/oauth/token";
         private const string AuthEncodedString = "MzRhMDJjZjhmNDQxNGUyOWIxNTkyMTg3NmRhMzZmOWE6ZGFhZmJjY2M3Mzc3NDUwMzlkZmZlNTNkOTRmYzc2Y2Y=";
+        private const string LoginCodePattern = "localhost\\/launcher\\/authorized\\?code=([^&\\s\\\"'<>]+)";
+        private const string QueryCodePattern = "(?:\\?|&|\\b)code=([^&\\s\\\"'<>]+)";
+        private const string LooseCodePattern = "\\bcode\\s*[:=]\\s*([A-Za-z0-9_\\-\\.\\~\\%]+)";
 
         private const int TokenExpiryBufferMinutes = 5;
-
-        // Library plugin IDs
-        private const string EpicLibraryPluginId = "00000002-DBD1-46C6-B5D0-B1BA559D10E4";
-        private const string LegendaryPluginId = "EAD65C3B-2F8F-4E37-B4E6-B3DE6BE540C6";
-
-        // Credential file names in StoresData (shared by both Epic Games Library and Legendary)
-        private const string TokenFileName = "Epic_Tokens.dat";
-
-        #endregion
-
-        #region Fields
+        private static readonly TimeSpan InteractiveAuthTimeout = TimeSpan.FromMinutes(3);
 
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
@@ -50,14 +37,9 @@ namespace PlayniteAchievements.Providers.Epic
         private string _tokenType;
         private DateTime _tokenExpiryUtc;
         private DateTime _refreshTokenExpiryUtc;
+        private int _authCheckInProgress;
 
-        private bool _useLibraryCredentials;
-        private string _libraryPluginName;
-        private bool _libraryTokenValidated;
-
-        #endregion
-
-        #region Constructor
+        private (bool Success, string AccountId) _authResult;
 
         public EpicSessionManager(IPlayniteAPI api, ILogger logger, PlayniteAchievementsSettings settings)
         {
@@ -65,66 +47,21 @@ namespace PlayniteAchievements.Providers.Epic
             _logger = logger;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            // Try library credentials first
-            _libraryPluginName = GetInstalledLibraryPluginName();
-            if (_libraryPluginName != null)
-            {
-                var token = TryLoadLibraryToken();
-                if (token != null && !string.IsNullOrWhiteSpace(token.Token))
-                {
-                    _useLibraryCredentials = true;
-                    _libraryTokenValidated = false;
-                    LoadFromStoreToken(token);
-                    _logger?.Info($"[EpicAuth] Found credentials from {_libraryPluginName} library plugin. Will validate on first use.");
-                    return;
-                }
-            }
-
-            // Fall back to persisted settings (legacy mode)
-            LoadFromPersistedSettings();
+            _accountId = settings.Persisted.EpicAccountId?.Trim();
+            _accessToken = settings.Persisted.EpicAccessToken;
+            _refreshToken = settings.Persisted.EpicRefreshToken;
+            _tokenType = string.IsNullOrWhiteSpace(settings.Persisted.EpicTokenType) ? "bearer" : settings.Persisted.EpicTokenType.Trim();
+            _tokenExpiryUtc = settings.Persisted.EpicTokenExpiryUtc ?? DateTime.MinValue;
+            _refreshTokenExpiryUtc = settings.Persisted.EpicRefreshTokenExpiryUtc ?? DateTime.MinValue;
         }
 
-        #endregion
-
-        #region Public Properties
-
         public bool IsAuthenticated => HasValidAccessToken();
-
-        public bool IsUsingLibraryCredentials => _libraryPluginName != null;
-
-        public string LibraryPluginName => _libraryPluginName ?? "Epic";
-
-        #endregion
-
-        #region IEpicSessionProvider Implementation
 
         public string GetAccountId() => _accountId;
 
         public async Task<string> GetAccessTokenAsync(CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
-
-            // If using library credentials, validate the token with Epic API first
-            if (_useLibraryCredentials && !_libraryTokenValidated && !string.IsNullOrWhiteSpace(_accessToken))
-            {
-                await _tokenRefreshSemaphore.WaitAsync(ct).ConfigureAwait(false);
-                try
-                {
-                    // Double-check after acquiring lock
-                    if (!_libraryTokenValidated && !string.IsNullOrWhiteSpace(_accessToken))
-                    {
-                        if (await TryValidateLibraryTokenAsync(ct).ConfigureAwait(false))
-                        {
-                            return _accessToken;
-                        }
-                        // Validation failed - fall through to refresh logic
-                    }
-                }
-                finally
-                {
-                    _tokenRefreshSemaphore.Release();
-                }
-            }
 
             if (HasValidAccessToken())
             {
@@ -198,10 +135,6 @@ namespace PlayniteAchievements.Providers.Epic
             }
         }
 
-        #endregion
-
-        #region Authentication Methods
-
         public async Task PrimeAuthenticationStateAsync(CancellationToken ct)
         {
             try
@@ -230,14 +163,11 @@ namespace PlayniteAchievements.Providers.Epic
                 {
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.AlreadyAuthenticated,
-                        _libraryPluginName != null
-                            ? "LOCPlayAch_Settings_Epic_LibraryDetected"
-                            : "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                        "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
                         _accountId,
                         windowOpened: false);
                 }
 
-                // Try to refresh with existing refresh token
                 if (!string.IsNullOrWhiteSpace(_refreshToken) && DateTime.UtcNow < _refreshTokenExpiryUtc)
                 {
                     try
@@ -253,22 +183,25 @@ namespace PlayniteAchievements.Providers.Epic
                     {
                         return EpicAuthResult.Create(
                             EpicAuthOutcome.AlreadyAuthenticated,
-                            _libraryPluginName != null
-                                ? "LOCPlayAch_Settings_Epic_LibraryDetected"
-                                : "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                            "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
                             _accountId,
                             windowOpened: false);
                     }
                 }
 
-                // No valid tokens available
-                if (_libraryPluginName != null)
+                // Best-effort: attempt non-interactive auth-code retrieval from existing logged-in browser session.
+                var authCode = await TryGetAuthorizationCodeFromSessionAsync(ct).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(authCode))
                 {
-                    // Library is detected but not logged in
-                    return EpicAuthResult.Create(
-                        EpicAuthOutcome.NotAuthenticated,
-                        "LOCPlayAch_Settings_Epic_LibraryNotLoggedIn",
-                        windowOpened: false);
+                    await AuthenticateUsingAuthCodeAsync(authCode, ct).ConfigureAwait(false);
+                    if (HasValidAccessToken())
+                    {
+                        return EpicAuthResult.Create(
+                            EpicAuthOutcome.AlreadyAuthenticated,
+                            "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                            _accountId,
+                            windowOpened: false);
+                    }
                 }
 
                 return EpicAuthResult.Create(
@@ -293,427 +226,487 @@ namespace PlayniteAchievements.Providers.Epic
             }
         }
 
-        /// <summary>
-        /// Clears the session state. In library mode, only clears in-memory state
-        /// to preserve library plugin credentials.
-        /// </summary>
+        public async Task<EpicAuthResult> AuthenticateInteractiveAsync(
+            bool forceInteractive,
+            CancellationToken ct,
+            IProgress<EpicAuthProgressStep> progress = null,
+            EpicAuthFlow authFlow = EpicAuthFlow.AutoFallback)
+        {
+            var windowOpened = false;
+
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+                progress?.Report(EpicAuthProgressStep.CheckingExistingSession);
+
+                if (!forceInteractive)
+                {
+                    var existing = await ProbeAuthenticationAsync(ct).ConfigureAwait(false);
+                    if (existing.IsSuccess)
+                    {
+                        progress?.Report(EpicAuthProgressStep.Completed);
+                        return existing;
+                    }
+                }
+                else
+                {
+                    ClearSession();
+                }
+
+                progress?.Report(EpicAuthProgressStep.OpeningLoginWindow);
+
+                var loginTcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _ = _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        var result = LoginByFlow(authFlow);
+                        loginTcs.TrySetResult(result ?? string.Empty);
+                    }
+                    catch (Exception ex)
+                    {
+                        loginTcs.TrySetException(ex);
+                    }
+                }));
+                windowOpened = true;
+
+                progress?.Report(EpicAuthProgressStep.WaitingForUserLogin);
+                var completed = await Task.WhenAny(
+                    loginTcs.Task,
+                    Task.Delay(InteractiveAuthTimeout, ct)).ConfigureAwait(false);
+
+                if (completed != loginTcs.Task)
+                {
+                    progress?.Report(EpicAuthProgressStep.Failed);
+                    return EpicAuthResult.Create(
+                        EpicAuthOutcome.TimedOut,
+                        "LOCPlayAch_Settings_EpicAuth_TimedOut",
+                        windowOpened: windowOpened);
+                }
+
+                var extracted = await loginTcs.Task.ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(extracted))
+                {
+                    progress?.Report(EpicAuthProgressStep.VerifyingSession);
+                    extracted = await TryGetAuthorizationCodeFromSessionAsync(ct).ConfigureAwait(false);
+                }
+
+                if (string.IsNullOrWhiteSpace(extracted))
+                {
+                    progress?.Report(EpicAuthProgressStep.Failed);
+                    return EpicAuthResult.Create(
+                        EpicAuthOutcome.Cancelled,
+                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        windowOpened: windowOpened);
+                }
+
+                await AuthenticateUsingAuthCodeAsync(extracted, ct).ConfigureAwait(false);
+                if (!HasValidAccessToken())
+                {
+                    progress?.Report(EpicAuthProgressStep.Failed);
+                    return EpicAuthResult.Create(
+                        EpicAuthOutcome.Failed,
+                        "LOCPlayAch_Settings_EpicAuth_Failed",
+                        windowOpened: windowOpened);
+                }
+
+                progress?.Report(EpicAuthProgressStep.Completed);
+
+                return EpicAuthResult.Create(
+                    EpicAuthOutcome.Authenticated,
+                    "LOCPlayAch_Settings_EpicAuth_Verified",
+                    _accountId,
+                    windowOpened: windowOpened);
+            }
+            catch (OperationCanceledException)
+            {
+                progress?.Report(EpicAuthProgressStep.Failed);
+                return EpicAuthResult.Create(
+                    EpicAuthOutcome.TimedOut,
+                    "LOCPlayAch_Settings_EpicAuth_TimedOut",
+                    windowOpened: windowOpened);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[EpicAuth] Authentication failed with exception.");
+                progress?.Report(EpicAuthProgressStep.Failed);
+                return EpicAuthResult.Create(
+                    EpicAuthOutcome.Failed,
+                    "LOCPlayAch_Settings_EpicAuth_Failed",
+                    windowOpened: windowOpened);
+            }
+        }
+
         public void ClearSession()
         {
-            // Only clear persisted settings in legacy mode
-            if (!_useLibraryCredentials)
+            try
             {
-                _settings.Persisted.EpicAccountId = null;
-                _settings.Persisted.EpicAccessToken = null;
-                _settings.Persisted.EpicRefreshToken = null;
-                _settings.Persisted.EpicTokenType = null;
-                _settings.Persisted.EpicTokenExpiryUtc = null;
-                _settings.Persisted.EpicRefreshTokenExpiryUtc = null;
+                _api.MainView.UIDispatcher.Invoke(() =>
+                {
+                    using (var view = _api.WebViews.CreateOffscreenView())
+                    {
+                        view.DeleteDomainCookies("epicgames.com");
+                        view.DeleteDomainCookies(".epicgames.com");
+                        view.DeleteDomainCookies(".store.epicgames.com");
+                        view.DeleteDomainCookies("account-public-service-prod03.ol.epicgames.com");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[EpicAuth] Failed to clear Epic cookies.");
             }
 
-            // Always clear in-memory state
             _accountId = null;
             _accessToken = null;
             _refreshToken = null;
             _tokenType = "bearer";
             _tokenExpiryUtc = DateTime.MinValue;
             _refreshTokenExpiryUtc = DateTime.MinValue;
-            _libraryTokenValidated = false;
 
-            _logger?.Info("[EpicAuth] Session cleared.");
+            SavePersistedTokenState();
         }
 
-        /// <summary>
-        /// Forces a refresh of credentials from the library plugin.
-        /// Used when the user clicks "Refresh from Library" in settings.
-        /// </summary>
-        public void RefreshFromLibrary()
+        private bool HasValidAccessToken()
         {
-            _libraryPluginName = GetInstalledLibraryPluginName();
-            if (_libraryPluginName != null)
+            return !string.IsNullOrWhiteSpace(_accessToken) &&
+                   DateTime.UtcNow < _tokenExpiryUtc.AddMinutes(-TokenExpiryBufferMinutes);
+        }
+
+        private string LoginByFlow(EpicAuthFlow authFlow)
+        {
+            switch (authFlow)
             {
-                var token = TryLoadLibraryToken();
-                if (token != null && !string.IsNullOrWhiteSpace(token.Token))
+                case EpicAuthFlow.EmbeddedWindow:
+                    return LoginInteractively();
+                case EpicAuthFlow.SystemBrowser:
+                    return LoginViaSystemBrowser();
+                case EpicAuthFlow.AutoFallback:
+                default:
+                    return LoginWithFallback();
+            }
+        }
+
+        private string LoginWithFallback()
+        {
+            var code = LoginInteractively();
+            if (!string.IsNullOrWhiteSpace(code))
+            {
+                return code;
+            }
+
+            _logger?.Warn("[EpicAuth] Embedded login did not produce an auth code. Falling back to system browser flow.");
+            return LoginViaSystemBrowser();
+        }
+
+        private string LoginInteractively()
+        {
+            _authResult = (false, null);
+
+            IWebView view = null;
+            try
+            {
+                view = _api.WebViews.CreateView(new WebViewSettings
                 {
-                    _useLibraryCredentials = true;
-                    _libraryTokenValidated = false;
-                    LoadFromStoreToken(token);
-                    _logger?.Info($"[EpicAuth] Refreshed credentials from {_libraryPluginName} library plugin.");
+                    WindowWidth = 1000,
+                    WindowHeight = 800,
+                    UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) EpicGamesLauncher"
+                });
+
+                view.LoadingChanged += CloseWhenLoggedIn;
+                view.Navigate(UrlLogin);
+                view.OpenDialog();
+
+                return _authResult.Success ? _authResult.AccountId : null;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[EpicAuth] Embedded login flow failed.");
+                return null;
+            }
+            finally
+            {
+                if (view != null)
+                {
+                    view.LoadingChanged -= CloseWhenLoggedIn;
+                    view.Dispose();
+                }
+            }
+        }
+
+        private string LoginViaSystemBrowser()
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = UrlAuthCode,
+                    UseShellExecute = true
+                });
+
+                var prompt = ResourceProvider.GetString("LOCPlayAch_Settings_EpicAuth_BrowserPrompt");
+                var title = ResourceProvider.GetString("LOCPlayAch_Settings_EpicConnection");
+
+                if (string.IsNullOrWhiteSpace(prompt))
+                {
+                    prompt = "Sign in to Epic in your browser, then paste the final redirected URL (or the code value) here.";
+                }
+
+                var input = _api.Dialogs.SelectString(prompt, title, string.Empty);
+                if (input == null || !input.Result)
+                {
+                    return null;
+                }
+
+                var selected = input.SelectedString?.Trim();
+                if (string.IsNullOrWhiteSpace(selected))
+                {
+                    return null;
+                }
+
+                var extracted = TryExtractAuthorizationCode(selected);
+                return string.IsNullOrWhiteSpace(extracted) ? selected : extracted;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[EpicAuth] Failed to launch system browser login flow.");
+                return null;
+            }
+        }
+
+        private async void CloseWhenLoggedIn(object sender, WebViewLoadingChangedEventArgs e)
+        {
+            try
+            {
+                if (e.IsLoading)
+                {
                     return;
                 }
-            }
 
-            // No library credentials available
-            _useLibraryCredentials = false;
-            _libraryTokenValidated = false;
-            _logger?.Info("[EpicAuth] No library credentials available for refresh.");
-        }
-
-        #endregion
-
-        #region Library Plugin Detection
-
-        /// <summary>
-        /// Checks if an Epic library plugin is installed and returns its name.
-        /// Uses Playnite API to detect installed plugins. Epic Games Library takes precedence.
-        /// </summary>
-        public string GetInstalledLibraryPluginName()
-        {
-            try
-            {
-                var plugins = _api?.Addons?.Plugins;
-                if (plugins == null)
+                // Prevent concurrent checks (matching GOG pattern)
+                if (Interlocked.CompareExchange(ref _authCheckInProgress, 1, 0) != 0)
                 {
-                    _logger?.Debug("[EpicAuth] Could not access plugins collection.");
-                    return null;
+                    return;
                 }
 
-                var epicId = Guid.Parse(EpicLibraryPluginId);
-                var legendaryId = Guid.Parse(LegendaryPluginId);
+                var view = (IWebView)sender;
 
-                // Check for Epic Games Library first
-                foreach (var plugin in plugins)
+                // Poll for authorization code with retry (matching GOG's WaitForAuthenticatedUserAsync pattern)
+                var code = await WaitForAuthorizationCodeAsync(view, CancellationToken.None).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(code))
                 {
-                    if (plugin == null) continue;
-                    if (plugin.Id == epicId)
+                    _authResult = (true, code);
+                    _logger?.Info("[EpicAuth] Authorization code extracted, closing login dialog.");
+                    _ = _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
                     {
-                        _logger?.Debug("[EpicAuth] Found Epic Games Library plugin.");
-                        return "Epic Games Library";
-                    }
+                        try
+                        {
+                            view.Close();
+                        }
+                        catch (Exception closeEx)
+                        {
+                            _logger?.Debug(closeEx, "[EpicAuth] Failed to close login dialog.");
+                        }
+                    }));
                 }
-
-                // Check for Legendary Library
-                foreach (var plugin in plugins)
-                {
-                    if (plugin == null) continue;
-                    if (plugin.Id == legendaryId)
-                    {
-                        _logger?.Debug("[EpicAuth] Found Legendary Library plugin.");
-                        return "Legendary Library";
-                    }
-                }
-
-                _logger?.Debug("[EpicAuth] No Epic library plugin found.");
-                return null;
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "[EpicAuth] Error checking for Epic library plugin.");
-                return null;
+                _logger?.Debug(ex, "[EpicAuth] CloseWhenLoggedIn failed.");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _authCheckInProgress, 0);
             }
         }
 
-        /// <summary>
-        /// Checks if any Epic library plugin is installed.
-        /// </summary>
-        public bool IsLibraryPluginInstalled() => !string.IsNullOrEmpty(GetInstalledLibraryPluginName());
-
-        private static string GetStoresDataPath()
+        private async Task<string> WaitForAuthorizationCodeAsync(IWebView view, CancellationToken ct)
         {
-            return Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Playnite", "ExtensionsData", "StoresData");
-        }
+            const int attempts = 8;
+            const int delayMs = 500;
 
-        private static string GetExtensionsDataPath()
-        {
-            return Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Playnite", "ExtensionsData");
-        }
-
-        #endregion
-
-        #region Token Loading
-
-        private EpicStoreToken TryLoadLibraryToken()
-        {
-            // Try official Epic Games Library plugin first (stores tokens in its own directory)
-            var officialTokenPath = Path.Combine(GetExtensionsDataPath(), EpicLibraryPluginId, "tokens.json");
-            if (File.Exists(officialTokenPath))
+            for (int attempt = 1; attempt <= attempts; attempt++)
             {
-                var token = TryDecryptToken(officialTokenPath);
-                if (token != null)
-                {
-                    _logger?.Debug($"[EpicAuth] Loaded token from Epic Games Library plugin (official).");
-                    return token;
-                }
-            }
+                ct.ThrowIfCancellationRequested();
 
-            // Try Legendary Library plugin encrypted tokens
-            var legendaryEncryptedPath = Path.Combine(GetExtensionsDataPath(), LegendaryPluginId, "tokens_encrypted.json");
-            if (File.Exists(legendaryEncryptedPath))
-            {
-                var token = TryDecryptToken(legendaryEncryptedPath);
-                if (token != null)
-                {
-                    _logger?.Debug($"[EpicAuth] Loaded encrypted token from Legendary Library plugin.");
-                    return token;
-                }
-            }
-
-            // Try Legendary unencrypted tokens (from legendary launcher config)
-            // Check multiple possible locations: original legendary, Heroic variant, and env variable
-            var legendaryToken = TryLoadLegendaryTokenFromConfig();
-            if (legendaryToken != null)
-            {
-                _logger?.Debug($"[EpicAuth] Loaded token from Legendary config.");
-                return legendaryToken;
-            }
-
-            // Fallback to playnite-plugincommon format (used by SuccessStory and other plugins)
-            var pluginCommonTokenPath = Path.Combine(GetStoresDataPath(), TokenFileName);
-            if (File.Exists(pluginCommonTokenPath))
-            {
-                var token = TryDecryptToken(pluginCommonTokenPath);
-                if (token != null)
-                {
-                    _logger?.Debug($"[EpicAuth] Loaded token from {_libraryPluginName ?? "Epic"} library plugin (plugincommon).");
-                    return token;
-                }
-            }
-
-            _logger?.Debug($"[EpicAuth] No token files found.");
-            return null;
-        }
-
-        /// <summary>
-        /// Loads token from Legendary's unencrypted user.json format.
-        /// </summary>
-        private EpicStoreToken TryLoadLegendaryToken(string filePath)
-        {
-            try
-            {
-                var json = File.ReadAllText(filePath);
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    return null;
-                }
-
-                // Legendary user.json has different structure - map it to EpicStoreToken
-                var legendaryToken = JsonConvert.DeserializeObject<LegendaryUserToken>(json);
-                if (legendaryToken == null || string.IsNullOrWhiteSpace(legendaryToken.access_token))
-                {
-                    return null;
-                }
-
-                return new EpicStoreToken
-                {
-                    AccountId = legendaryToken.account_id,
-                    Token = legendaryToken.access_token,
-                    RefreshToken = legendaryToken.refresh_token,
-                    Type = legendaryToken.token_type,
-                    ExpireAt = ParseLegendaryExpiry(legendaryToken.expires_at),
-                    RefreshExpireAt = ParseLegendaryExpiry(legendaryToken.refresh_expires_at)
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"[EpicAuth] Failed to load Legendary token from {filePath}.");
-                return null;
-            }
-        }
-
-        private static DateTime? ParseLegendaryExpiry(string expiresAt)
-        {
-            if (string.IsNullOrWhiteSpace(expiresAt))
-            {
-                return null;
-            }
-
-            if (DateTime.TryParse(expiresAt, out var dt))
-            {
-                return dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Tries to load Legendary token from multiple possible config locations.
-        /// Checks: original legendary, Heroic Games Launcher variant, and LEGENDARY_CONFIG_PATH env var.
-        /// </summary>
-        private EpicStoreToken TryLoadLegendaryTokenFromConfig()
-        {
-            // Build list of possible Legendary config paths
-            var configPaths = new List<string>();
-
-            // Check for LEGENDARY_CONFIG_PATH environment variable first
-            var envConfigPath = Environment.GetEnvironmentVariable("LEGENDARY_CONFIG_PATH");
-            if (!string.IsNullOrWhiteSpace(envConfigPath) && Directory.Exists(envConfigPath))
-            {
-                configPaths.Add(Path.Combine(envConfigPath, "user.json"));
-            }
-
-            // Original legendary config path
-            var originalLegendaryPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".config", "legendary", "user.json");
-            configPaths.Add(originalLegendaryPath);
-
-            // Heroic Games Launcher's legendary config path
-            var heroicLegendaryPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "heroic", "legendaryConfig", "legendary", "user.json");
-            configPaths.Add(heroicLegendaryPath);
-
-            // Try each path, preferring the most recently modified one
-            foreach (var configPath in configPaths)
-            {
-                if (File.Exists(configPath))
-                {
-                    var token = TryLoadLegendaryToken(configPath);
-                    if (token != null)
-                    {
-                        _logger?.Debug($"[EpicAuth] Loaded Legendary token from {configPath}.");
-                        return token;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private EpicStoreToken TryDecryptToken(string filePath)
-        {
-            try
-            {
-                var password = WindowsIdentity.GetCurrent().User?.Value;
-                if (string.IsNullOrEmpty(password))
-                {
-                    _logger?.Warn("[EpicAuth] Cannot decrypt token - no user identity available.");
-                    return null;
-                }
-
-                var json = DecryptFromFile(filePath, Encoding.UTF8, password);
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    return null;
-                }
-
-                return JsonConvert.DeserializeObject<EpicStoreToken>(json);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"[EpicAuth] Failed to decrypt token from {filePath}.");
-                return null;
-            }
-        }
-
-        private void LoadFromStoreToken(EpicStoreToken token)
-        {
-            if (token == null)
-            {
-                return;
-            }
-
-            _accountId = token.AccountId?.Trim();
-            _accessToken = token.Token;
-            _refreshToken = token.RefreshToken;
-            _tokenType = string.IsNullOrWhiteSpace(token.Type) ? "bearer" : token.Type.Trim();
-            _tokenExpiryUtc = token.ExpireAt ?? DateTime.MinValue;
-            _refreshTokenExpiryUtc = token.RefreshExpireAt ?? DateTime.MinValue;
-        }
-
-        private void LoadFromPersistedSettings()
-        {
-            _accountId = _settings.Persisted.EpicAccountId?.Trim();
-            _accessToken = _settings.Persisted.EpicAccessToken;
-            _refreshToken = _settings.Persisted.EpicRefreshToken;
-            _tokenType = string.IsNullOrWhiteSpace(_settings.Persisted.EpicTokenType) ? "bearer" : _settings.Persisted.EpicTokenType.Trim();
-            _tokenExpiryUtc = _settings.Persisted.EpicTokenExpiryUtc ?? DateTime.MinValue;
-            _refreshTokenExpiryUtc = _settings.Persisted.EpicRefreshTokenExpiryUtc ?? DateTime.MinValue;
-        }
-
-        #endregion
-
-        #region Token Renewal
-
-        /// <summary>
-        /// Validates the library token with Epic's API and refreshes if needed.
-        /// Returns true if a valid access token is available after validation.
-        /// </summary>
-        private async Task<bool> TryValidateLibraryTokenAsync(CancellationToken ct)
-        {
-            if (string.IsNullOrWhiteSpace(_accessToken) || string.IsNullOrWhiteSpace(_accountId))
-            {
-                _logger?.Debug("[EpicAuth] Cannot validate - missing access token or account ID.");
-                return false;
-            }
-
-            // First, try to validate the current access token with the API
-            var accountInfo = await GetAccountInfoAsync(_accountId, _accessToken, ct).ConfigureAwait(false);
-            if (accountInfo != null)
-            {
-                _libraryTokenValidated = true;
-                _logger?.Info($"[EpicAuth] Validated credentials from {_libraryPluginName} library plugin for account {accountInfo.DisplayName}.");
-                return true;
-            }
-
-            _logger?.Debug("[EpicAuth] Access token validation failed, attempting refresh.");
-
-            // Access token is invalid, try to refresh using refresh token
-            if (!string.IsNullOrWhiteSpace(_refreshToken) && DateTime.UtcNow < _refreshTokenExpiryUtc)
-            {
                 try
                 {
-                    await RenewTokensAsync(_refreshToken, ct).ConfigureAwait(false);
-
-                    // Validate the refreshed token
-                    if (HasValidAccessToken() && !string.IsNullOrWhiteSpace(_accountId))
+                    // Check for redirect indicator before attempting extraction.
+                    // After login, Epic redirects to a page displaying localhost/launcher/authorized?code=...
+                    var pageText = await view.GetPageTextAsync().ConfigureAwait(false);
+                    if (string.IsNullOrEmpty(pageText) || !pageText.Contains("localhost"))
                     {
-                        accountInfo = await GetAccountInfoAsync(_accountId, _accessToken, ct).ConfigureAwait(false);
-                        if (accountInfo != null)
+                        if (attempt < attempts)
                         {
-                            _libraryTokenValidated = true;
-                            _logger?.Info($"[EpicAuth] Refreshed and validated credentials from {_libraryPluginName} library plugin.");
-                            return true;
+                            await Task.Delay(delayMs, ct).ConfigureAwait(false);
                         }
+                        continue;
+                    }
+
+                    var source = await view.GetPageSourceAsync().ConfigureAwait(false);
+                    var code = TryExtractAuthorizationCode(source);
+                    if (!string.IsNullOrWhiteSpace(code))
+                    {
+                        return code;
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, "[EpicAuth] Token refresh during validation failed.");
+                    _logger?.Debug(ex, $"[EpicAuth] Waiting for authorization code failed on attempt {attempt}, retrying.");
+                }
+
+                if (attempt < attempts)
+                {
+                    await Task.Delay(delayMs, ct).ConfigureAwait(false);
                 }
             }
 
-            _logger?.Warn($"[EpicAuth] Failed to validate credentials from {_libraryPluginName} library plugin.");
-            return false;
+            return null;
         }
 
-        /// <summary>
-        /// Calls Epic's account API to validate an access token.
-        /// Returns account info if the token is valid, null otherwise.
-        /// </summary>
-        private async Task<EpicAccountInfo> GetAccountInfoAsync(string accountId, string accessToken, CancellationToken ct)
+        private async Task<string> TryGetAuthorizationCodeFromSessionAsync(CancellationToken ct)
         {
-            const string accountInfoUrl = "https://account-public-service-prod03.ol.epicgames.com/account/api/public/account/{0}";
+            var dispatchOperation = _api.MainView.UIDispatcher.InvokeAsync(async () =>
+            {
+                using (var view = _api.WebViews.CreateOffscreenView())
+                {
+                    try
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        await view.NavigateAndWaitAsync(UrlAuthCode, timeoutMs: 12000);
+
+                        var source = await view.GetPageSourceAsync().ConfigureAwait(false);
+                        var code = TryExtractAuthorizationCode(source);
+                        if (!string.IsNullOrWhiteSpace(code))
+                        {
+                            return code;
+                        }
+
+                        var text = await view.GetPageTextAsync().ConfigureAwait(false);
+                        return TryExtractAuthorizationCode(text);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "[EpicAuth] Offscreen auth-code probe failed.");
+                        return null;
+                    }
+                }
+            });
+
+            var operationTask = await dispatchOperation.Task.ConfigureAwait(false);
+            return await operationTask.ConfigureAwait(false);
+        }
+
+        private static string TryExtractAuthorizationCode(string htmlOrText)
+        {
+            if (string.IsNullOrWhiteSpace(htmlOrText))
+            {
+                return null;
+            }
+
+            var candidate = htmlOrText.Trim();
+            for (int i = 0; i < 4; i++)
+            {
+                var extracted = ExtractCodeCandidate(candidate);
+                if (!string.IsNullOrWhiteSpace(extracted))
+                {
+                    return extracted;
+                }
+
+                string decoded;
+                try
+                {
+                    decoded = Uri.UnescapeDataString(candidate);
+                }
+                catch
+                {
+                    break;
+                }
+
+                if (string.Equals(decoded, candidate, StringComparison.Ordinal))
+                {
+                    break;
+                }
+
+                candidate = decoded;
+            }
+
+            return null;
+        }
+
+        private static string ExtractCodeCandidate(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var queryMatch = Regex.Match(value, QueryCodePattern, RegexOptions.IgnoreCase);
+            if (queryMatch.Success && queryMatch.Groups.Count > 1)
+            {
+                var extracted = queryMatch.Groups[1].Value;
+                return NormalizeCode(extracted);
+            }
+
+            var legacyMatch = Regex.Match(value, LoginCodePattern, RegexOptions.IgnoreCase);
+            if (!legacyMatch.Success || legacyMatch.Groups.Count < 2)
+            {
+                var looseMatch = Regex.Match(value, LooseCodePattern, RegexOptions.IgnoreCase);
+                if (looseMatch.Success && looseMatch.Groups.Count > 1)
+                {
+                    return NormalizeCode(looseMatch.Groups[1].Value);
+                }
+
+                return null;
+            }
+
+            return NormalizeCode(legacyMatch.Groups[1].Value);
+        }
+
+        private static string NormalizeCode(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
 
             try
             {
-                using (var client = new HttpClient())
+                return Uri.UnescapeDataString(value.Trim());
+            }
+            catch
+            {
+                return value.Trim();
+            }
+        }
+
+        private async Task AuthenticateUsingAuthCodeAsync(string authorizationCode, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(authorizationCode))
+            {
+                throw new EpicAuthRequiredException("Epic authorization code is missing.");
+            }
+
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.DefaultRequestHeaders.Clear();
+                httpClient.DefaultRequestHeaders.Add("Authorization", "basic " + AuthEncodedString);
+
+                using (var content = new StringContent(
+                    $"grant_type=authorization_code&code={authorizationCode}&token_type=eg1"))
                 {
-                    client.DefaultRequestHeaders.Add("Authorization", $"bearer {accessToken}");
-
-                    var url = string.Format(accountInfoUrl, accountId);
-                    _logger?.Debug($"[EpicAuth] Validating token with account API: {url}");
-
-                    var response = await client.GetAsync(url, ct).ConfigureAwait(false);
-                    var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    content.Headers.Clear();
+                    content.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
+                    var response = await httpClient.PostAsync(UrlAccountAuth, content, ct).ConfigureAwait(false);
+                    var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        _logger?.Debug($"[EpicAuth] Account API returned status {response.StatusCode}: {content}");
-                        return null;
+                        throw new EpicAuthRequiredException($"Epic token exchange failed with HTTP {(int)response.StatusCode}.");
                     }
 
-                    var accountInfo = JsonConvert.DeserializeObject<EpicAccountInfo>(content);
-                    return accountInfo;
+                    ApplyTokenResponse(body);
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[EpicAuth] Error calling account info API.");
-                return null;
             }
         }
 
@@ -739,8 +732,7 @@ namespace PlayniteAchievements.Providers.Epic
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        _logger?.Debug($"[EpicAuth] Token refresh error response: {body}");
-                        throw new EpicAuthRequiredException($"Epic token refresh failed with HTTP {(int)response.StatusCode}: {body}");
+                        throw new EpicAuthRequiredException($"Epic token refresh failed with HTTP {(int)response.StatusCode}.");
                     }
 
                     ApplyTokenResponse(body);
@@ -777,11 +769,7 @@ namespace PlayniteAchievements.Providers.Epic
             _tokenExpiryUtc = NormalizeUtc(payload.expires_at, payload.expires_in);
             _refreshTokenExpiryUtc = NormalizeUtc(payload.refresh_expires_at, payload.refresh_expires_in);
 
-            // Only save to persisted settings in legacy mode
-            if (!_useLibraryCredentials)
-            {
-                SavePersistedTokenState();
-            }
+            SavePersistedTokenState();
         }
 
         private static DateTime NormalizeUtc(DateTime? explicitUtc, int? expiresInSeconds)
@@ -811,62 +799,6 @@ namespace PlayniteAchievements.Providers.Epic
             _settings.Persisted.EpicRefreshTokenExpiryUtc = _refreshTokenExpiryUtc == DateTime.MinValue ? (DateTime?)null : _refreshTokenExpiryUtc;
         }
 
-        #endregion
-
-        #region Helper Methods
-
-        private bool HasValidAccessToken()
-        {
-            return !string.IsNullOrWhiteSpace(_accessToken) &&
-                   DateTime.UtcNow < _tokenExpiryUtc.AddMinutes(-TokenExpiryBufferMinutes);
-        }
-
-        #endregion
-
-        #region AES Decryption
-
-        /// <summary>
-        /// Decrypts a file encrypted with AES-256-CFB encryption.
-        /// Matches the encryption format used by playnite-plugincommon.
-        /// </summary>
-        private static string DecryptFromFile(string inputFile, Encoding encoding, string password)
-        {
-            // Read entire file content into memory to avoid file locking
-            byte[] encryptedData = File.ReadAllBytes(inputFile);
-
-            var passwordBytes = Encoding.UTF8.GetBytes(password);
-            var salt = new byte[32];
-
-            // Extract salt from the beginning of the file
-            Array.Copy(encryptedData, 0, salt, 0, salt.Length);
-
-            using (var AES = new RijndaelManaged())
-            {
-                AES.KeySize = 256;
-                AES.BlockSize = 128;
-                AES.Padding = PaddingMode.PKCS7;
-                AES.Mode = CipherMode.CFB;
-
-                using (var key = new Rfc2898DeriveBytes(passwordBytes, salt, 1000))
-                {
-                    AES.Key = key.GetBytes(AES.KeySize / 8);
-                    AES.IV = key.GetBytes(AES.BlockSize / 8);
-                }
-
-                // Create memory stream with encrypted data (excluding salt)
-                using (var memoryStream = new MemoryStream(encryptedData, 32, encryptedData.Length - 32))
-                using (var cs = new CryptoStream(memoryStream, AES.CreateDecryptor(), CryptoStreamMode.Read))
-                using (var reader = new StreamReader(cs, encoding))
-                {
-                    return reader.ReadToEnd();
-                }
-            }
-        }
-
-        #endregion
-
-        #region Nested Classes
-
         private sealed class OauthResponse
         {
             [JsonProperty("account_id")]
@@ -893,7 +825,5 @@ namespace PlayniteAchievements.Providers.Epic
             [JsonProperty("refresh_expires")]
             public int? refresh_expires_in { get; set; }
         }
-
-        #endregion
     }
 }
