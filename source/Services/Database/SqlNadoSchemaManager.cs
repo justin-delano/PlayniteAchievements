@@ -81,6 +81,7 @@ namespace PlayniteAchievements.Services.Database
                 LockedIconPath TEXT NULL,
                 Points INTEGER NULL,
                 Category TEXT NULL,
+                TrophyType TEXT NULL,
                 Hidden INTEGER NOT NULL DEFAULT 0,
                 GlobalPercentUnlocked REAL NULL,
                 ProgressMax INTEGER NULL,
@@ -220,6 +221,10 @@ namespace PlayniteAchievements.Services.Database
                 if (!columnNames.Contains("category"))
                 {
                     ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Category TEXT NULL;");
+                }
+                if (!columnNames.Contains("trophytype"))
+                {
+                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN TrophyType TEXT NULL;");
                 }
 
                 // Check UserGameProgress for IsComplete column
