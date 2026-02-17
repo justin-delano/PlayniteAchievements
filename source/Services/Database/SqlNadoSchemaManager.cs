@@ -77,7 +77,10 @@ namespace PlayniteAchievements.Services.Database
                 ApiName TEXT NOT NULL COLLATE NOCASE,
                 DisplayName TEXT NULL,
                 Description TEXT NULL,
-                IconPath TEXT NULL,
+                UnlockedIconPath TEXT NULL,
+                LockedIconPath TEXT NULL,
+                Points INTEGER NULL,
+                Category TEXT NULL,
                 Hidden INTEGER NOT NULL DEFAULT 0,
                 GlobalPercentUnlocked REAL NULL,
                 ProgressMax INTEGER NULL,
@@ -99,6 +102,7 @@ namespace PlayniteAchievements.Services.Database
                 NoAchievements INTEGER NOT NULL DEFAULT 0,
                 AchievementsUnlocked INTEGER NOT NULL DEFAULT 0,
                 TotalAchievements INTEGER NOT NULL DEFAULT 0,
+                IsComplete INTEGER NOT NULL DEFAULT 0,
                 LastUpdatedUtc TEXT NOT NULL,
                 CreatedUtc TEXT NOT NULL,
                 UpdatedUtc TEXT NOT NULL,
@@ -192,16 +196,41 @@ namespace PlayniteAchievements.Services.Database
         {
             try
             {
-                // Rename IconPath to UnlockedIconPath
-                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions RENAME COLUMN IconPath TO UnlockedIconPath;");
+                // Check if migration is needed by looking for old IconPath column
+                var columns = db.Load<ColumnInfoRow>(
+                    "PRAGMA table_info(AchievementDefinitions);").ToList();
+                var columnNames = columns.Select(c => c.Name?.ToLowerInvariant()).ToList();
 
-                // Add new columns to AchievementDefinitions
-                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN LockedIconPath TEXT NULL;");
-                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Points INTEGER NULL;");
-                ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Category TEXT NULL;");
+                // Rename IconPath to UnlockedIconPath if IconPath exists and UnlockedIconPath doesn't
+                if (columnNames.Contains("iconpath") && !columnNames.Contains("unlockediconpath"))
+                {
+                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions RENAME COLUMN IconPath TO UnlockedIconPath;");
+                    _logger?.Info("[Schema] Renamed IconPath to UnlockedIconPath");
+                }
 
-                // Add IsComplete column to UserGameProgress
-                ExecuteSafe(db, @"ALTER TABLE UserGameProgress ADD COLUMN IsComplete INTEGER NOT NULL DEFAULT 0;");
+                // Add new columns only if they don't exist
+                if (!columnNames.Contains("lockediconpath"))
+                {
+                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN LockedIconPath TEXT NULL;");
+                }
+                if (!columnNames.Contains("points"))
+                {
+                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Points INTEGER NULL;");
+                }
+                if (!columnNames.Contains("category"))
+                {
+                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Category TEXT NULL;");
+                }
+
+                // Check UserGameProgress for IsComplete column
+                var progressColumns = db.Load<ColumnInfoRow>(
+                    "PRAGMA table_info(UserGameProgress);").ToList();
+                var progressColumnNames = progressColumns.Select(c => c.Name?.ToLowerInvariant()).ToList();
+
+                if (!progressColumnNames.Contains("iscomplete"))
+                {
+                    ExecuteSafe(db, @"ALTER TABLE UserGameProgress ADD COLUMN IsComplete INTEGER NOT NULL DEFAULT 0;");
+                }
 
                 _logger?.Info("[Schema] Migration v1->v2 completed successfully");
             }
@@ -210,6 +239,17 @@ namespace PlayniteAchievements.Services.Database
                 _logger?.Error(ex, "[Schema] Migration v1->v2 failed");
                 throw;
             }
+        }
+
+        // Row class for PRAGMA table_info results
+        private sealed class ColumnInfoRow
+        {
+            public int Cid { get; set; }
+            public string Name { get; set; }
+            public string Type { get; set; }
+            public int NotNull { get; set; }
+            public object Default { get; set; }
+            public int PrimaryKey { get; set; }
         }
     }
 }
