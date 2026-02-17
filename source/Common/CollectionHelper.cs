@@ -15,6 +15,7 @@ namespace PlayniteAchievements.Common
         {
             var sourceList = source.ToList();
             var sourceSet = new HashSet<T>(sourceList);
+            var collectionSet = new HashSet<T>(collection);
 
             // Remove items from collection that are not in source
             for (int i = collection.Count - 1; i >= 0; i--)
@@ -24,6 +25,9 @@ namespace PlayniteAchievements.Common
                     collection.RemoveAt(i);
                 }
             }
+
+            // Rebuild collectionSet after removals
+            collectionSet = new HashSet<T>(collection);
 
             // Now sync items from source
             int sourceIndex = 0;
@@ -37,8 +41,8 @@ namespace PlayniteAchievements.Common
                 {
                     var collectionItem = collection[collectionIndex];
 
-                    // Check if they're the same item (by reference for reference types)
-                    if (ReferenceEquals(sourceItem, collectionItem))
+                    // Check if they're the same item (by value for value types and strings)
+                    if (EqualityComparer<T>.Default.Equals(sourceItem, collectionItem))
                     {
                         // Same item, same position - move to next
                         sourceIndex++;
@@ -51,7 +55,7 @@ namespace PlayniteAchievements.Common
                         int foundIndex = -1;
                         for (int j = collectionIndex + 1; j < collection.Count; j++)
                         {
-                            if (ReferenceEquals(sourceItem, collection[j]))
+                            if (EqualityComparer<T>.Default.Equals(sourceItem, collection[j]))
                             {
                                 foundIndex = j;
                                 break;
@@ -65,12 +69,18 @@ namespace PlayniteAchievements.Common
                             sourceIndex++;
                             collectionIndex++;
                         }
-                        else
+                        else if (!collectionSet.Contains(sourceItem))
                         {
-                            // sourceItem doesn't exist in collection, insert it
+                            // sourceItem doesn't exist in collection at all, insert it
                             collection.Insert(collectionIndex, sourceItem);
+                            collectionSet.Add(sourceItem);
                             sourceIndex++;
                             collectionIndex++;
+                        }
+                        else
+                        {
+                            // sourceItem exists earlier in collection (unusual), skip and continue
+                            sourceIndex++;
                         }
                     }
                     else
