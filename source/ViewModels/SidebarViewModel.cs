@@ -731,7 +731,29 @@ namespace PlayniteAchievements.ViewModels
                 .ToList();
             var providerOptions = new List<string> { "All" };
             providerOptions.AddRange(providers);
-            ProviderFilterOptions = new ObservableCollection<string>(providerOptions);
+
+            // Preserve current selection before updating collection
+            var previousProviderFilter = SelectedProviderFilter;
+
+            // Update collection in-place to avoid resetting ComboBox selection
+            if (ProviderFilterOptions == null)
+            {
+                ProviderFilterOptions = new ObservableCollection<string>(providerOptions);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(ProviderFilterOptions, providerOptions);
+            }
+
+            // Restore selection if it still exists in the new collection
+            if (previousProviderFilter != null && ProviderFilterOptions.Contains(previousProviderFilter))
+            {
+                SelectedProviderFilter = previousProviderFilter;
+            }
+            else
+            {
+                SelectedProviderFilter = "All";
+            }
 
             // Initialize filtered lists
             _filteredRecentAchievements = new List<RecentAchievementItem>(_allRecentAchievements);
