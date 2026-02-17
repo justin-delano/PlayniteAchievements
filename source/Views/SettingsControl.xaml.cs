@@ -1018,6 +1018,37 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private async void EpicAuth_LoginAlternative_Click(object sender, RoutedEventArgs e)
+        {
+            _logger?.Info("[EpicAuth] Settings: Alternative Login clicked.");
+            SetEpicAuthBusy(true);
+            SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_Checking");
+
+            try
+            {
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120)))
+                {
+                    var result = await _epicSessionManager.LoginAlternativeAsync(cts.Token).ConfigureAwait(false);
+                    ApplyEpicAuthResult(result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                SetEpicAuthenticated(false);
+                SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_TimedOut");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[EpicAuth] Alternative login failed.");
+                SetEpicAuthenticated(false);
+                SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_Failed");
+            }
+            finally
+            {
+                SetEpicAuthBusy(false);
+            }
+        }
+
         private void EpicAuth_Clear_Click(object sender, RoutedEventArgs e)
         {
             _epicSessionManager.ClearSession();
