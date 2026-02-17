@@ -23,6 +23,11 @@ namespace PlayniteAchievements.Models.Settings
         private DateTime? _epicRefreshTokenExpiryUtc;
         private string _steamApiKey;
         private string _steamLanguage = "english";
+        private string _globalLanguage = "english";
+        private bool _steamEnabled = true;
+        private bool _epicEnabled = true;
+        private bool _gogEnabled = true;
+        private bool _retroAchievementsEnabled = true;
         private bool _enablePeriodicUpdates = true;
         private int _periodicUpdateHours = 6;
         private bool _enableNotifications = true;
@@ -120,6 +125,55 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _steamLanguage;
             set => SetValue(ref _steamLanguage, value);
+        }
+
+        #endregion
+
+        #region Provider Enable/Disable Settings
+
+        /// <summary>
+        /// Global language for achievement text, used by all providers that support localization.
+        /// </summary>
+        public string GlobalLanguage
+        {
+            get => _globalLanguage;
+            set => SetValue(ref _globalLanguage, value);
+        }
+
+        /// <summary>
+        /// Enable or disable Steam achievement scanning.
+        /// </summary>
+        public bool SteamEnabled
+        {
+            get => _steamEnabled;
+            set => SetValue(ref _steamEnabled, value);
+        }
+
+        /// <summary>
+        /// Enable or disable Epic Games achievement scanning.
+        /// </summary>
+        public bool EpicEnabled
+        {
+            get => _epicEnabled;
+            set => SetValue(ref _epicEnabled, value);
+        }
+
+        /// <summary>
+        /// Enable or disable GOG achievement scanning.
+        /// </summary>
+        public bool GogEnabled
+        {
+            get => _gogEnabled;
+            set => SetValue(ref _gogEnabled, value);
+        }
+
+        /// <summary>
+        /// Enable or disable RetroAchievements scanning.
+        /// </summary>
+        public bool RetroAchievementsEnabled
+        {
+            get => _retroAchievementsEnabled;
+            set => SetValue(ref _retroAchievementsEnabled, value);
         }
 
         #endregion
@@ -399,6 +453,11 @@ namespace PlayniteAchievements.Models.Settings
                 EpicRefreshTokenExpiryUtc = this.EpicRefreshTokenExpiryUtc,
                 SteamApiKey = this.SteamApiKey,
                 SteamLanguage = this.SteamLanguage,
+                GlobalLanguage = this.GlobalLanguage,
+                SteamEnabled = this.SteamEnabled,
+                EpicEnabled = this.EpicEnabled,
+                GogEnabled = this.GogEnabled,
+                RetroAchievementsEnabled = this.RetroAchievementsEnabled,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 EnableNotifications = this.EnableNotifications,
