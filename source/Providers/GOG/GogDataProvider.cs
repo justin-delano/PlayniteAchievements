@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Providers.GOG
 
         public string ProviderColorHex => "#A855F7";
 
-        public bool IsAuthenticated => _settings.Persisted.GogEnabled && _sessionManager.IsAuthenticated;
+        public bool IsAuthenticated => _sessionManager.IsAuthenticated;
 
         public bool IsCapable(Game game) =>
             IsGogCapable(game);

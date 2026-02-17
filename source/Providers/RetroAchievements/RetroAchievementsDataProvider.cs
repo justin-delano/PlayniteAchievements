@@ -40,11 +40,11 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         public string ProviderColorHex => "#FFD700";
 
         /// <summary>
-        /// Checks if RetroAchievements authentication is properly configured and enabled.
-        /// Requires RetroAchievementsEnabled, RaUsername, and RaWebApiKey to be present.
+        /// Checks if RetroAchievements authentication is properly configured.
+        /// Requires RaUsername and RaWebApiKey to be present.
+        /// Does NOT check RetroAchievementsEnabled - that is handled by ProviderRegistry.
         /// </summary>
         public bool IsAuthenticated =>
-            _settings.Persisted.RetroAchievementsEnabled &&
             !string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername) &&
             !string.IsNullOrWhiteSpace(_settings.Persisted.RaWebApiKey);
 

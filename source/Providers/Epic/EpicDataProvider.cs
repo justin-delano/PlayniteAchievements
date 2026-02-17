@@ -50,7 +50,7 @@ namespace PlayniteAchievements.Providers.Epic
 
         public string ProviderColorHex => "#26BBFF";
 
-        public bool IsAuthenticated => _settings.Persisted.EpicEnabled && _sessionManager.IsAuthenticated;
+        public bool IsAuthenticated => _sessionManager.IsAuthenticated;
 
         public bool IsCapable(Game game) => IsEpicCapable(game);
 

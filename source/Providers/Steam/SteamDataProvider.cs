@@ -48,11 +48,11 @@ namespace PlayniteAchievements.Providers.Steam
         public string ProviderColorHex => "#B0B0B0";
 
         /// <summary>
-        /// Checks if Steam authentication is properly configured and enabled.
-        /// Requires SteamEnabled, SteamUserId, SteamApiKey, and web session auth (cached SteamId64).
+        /// Checks if Steam authentication is properly configured.
+        /// Requires SteamUserId, SteamApiKey, and web session auth (cached SteamId64).
+        /// Does NOT check SteamEnabled - that is handled by ProviderRegistry.
         /// </summary>
         public bool IsAuthenticated =>
-            _settings.Persisted.SteamEnabled &&
             !string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) &&
             !string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey) &&
             !string.IsNullOrWhiteSpace(_sessionManager.GetCachedSteamId64());
