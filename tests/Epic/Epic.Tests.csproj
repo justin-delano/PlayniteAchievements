@@ -10,16 +10,14 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
     <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
-    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\source\Providers\GOG\GogApiClient.cs" Link="GogApiClient.cs" />
-    <Compile Include="..\..\source\Providers\GOG\GogAuthModels.cs" Link="GogAuthModels.cs" />
-    <Compile Include="..\..\source\Providers\GOG\GogClientIdCacheStore.cs" Link="GogClientIdCacheStore.cs" />
-    <Compile Include="..\..\source\Providers\GOG\Models\GogAchievementResponse.cs" Link="GogAchievementResponse.cs" />
-    <Compile Include="..\..\source\Providers\GOG\Models\GogProductData.cs" Link="GogProductData.cs" />
+    <Compile Include="..\..\source\Providers\Epic\EpicApiClient.cs" Link="EpicApiClient.cs" />
+    <Compile Include="..\..\source\Providers\Epic\EpicAuthModels.cs" Link="EpicAuthModels.cs" />
+    <Compile Include="..\..\source\Common\ObservableObject.cs" Link="ObservableObject.cs" />
+    <Compile Include="..\..\source\Models\Settings\PersistedSettings.cs" Link="PersistedSettings.cs" />
     <Reference Include="Playnite.SDK">
       <HintPath>..\..\source\packages\PlayniteSDK.6.14.0\lib\net462\Playnite.SDK.dll</HintPath>
       <Private>true</Private>

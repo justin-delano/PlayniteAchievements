@@ -776,7 +776,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         private async Task<string> ResolveSteamId64Async(string steamIdMaybe, CancellationToken ct)
         {
-            return InputValidator.IsValidSteamId64(steamIdMaybe)
+            return !string.IsNullOrWhiteSpace(steamIdMaybe) && ulong.TryParse(steamIdMaybe, out _)
                 ? steamIdMaybe.Trim()
                 : (await _steamClient.GetRequiredSelfSteamId64Async(ct).ConfigureAwait(false))?.Trim();
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using PlayniteAchievements.Services.Database;
 using Xunit;
@@ -33,7 +34,7 @@ namespace PlayniteAchievements.SqlNado.Tests
                 ["B"] = 11
             };
 
-            var stale = SqlNadoCacheBehavior.ComputeStaleDefinitionIds(existing, new string[0]);
+            var stale = SqlNadoCacheBehavior.ComputeStaleDefinitionIds(existing, Array.Empty<string>());
 
             Assert.Equal(2, stale.Count);
             Assert.Contains(10, stale);

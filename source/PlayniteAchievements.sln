@@ -1,11 +1,17 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.1267
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayniteAchievements", "PlayniteAchievements.csproj", "{4FDF1E89-5BC3-4C72-8FDA-0D580E7A5D5F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayniteAchievements.Gog.Tests", "..\tests\PlayniteAchievements.Gog.Tests\PlayniteAchievements.Gog.Tests.csproj", "{13F54B50-A855-48C1-B74D-BA3847BCF1D7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GOG.Tests", "..\tests\GOG\GOG.Tests.csproj", "{0CCF45C2-7993-4241-BB8F-F4E671882008}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Epic.Tests", "..\tests\Epic\Epic.Tests.csproj", "{D406CE87-9DDA-4127-BE41-96C874CF9336}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqlNado.Tests", "..\tests\SqlNado\SqlNado.Tests.csproj", "{C6483DDC-4870-4E0E-B059-C5A997ABD20B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamDatetime.Tests", "..\tests\SteamDatetime\SteamDatetime.Tests.csproj", "{14266B32-C798-46D7-856D-76DC33280BD0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +23,22 @@ Global
 		{4FDF1E89-5BC3-4C72-8FDA-0D580E7A5D5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4FDF1E89-5BC3-4C72-8FDA-0D580E7A5D5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4FDF1E89-5BC3-4C72-8FDA-0D580E7A5D5F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{13F54B50-A855-48C1-B74D-BA3847BCF1D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{13F54B50-A855-48C1-B74D-BA3847BCF1D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{13F54B50-A855-48C1-B74D-BA3847BCF1D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{13F54B50-A855-48C1-B74D-BA3847BCF1D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0CCF45C2-7993-4241-BB8F-F4E671882008}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CCF45C2-7993-4241-BB8F-F4E671882008}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CCF45C2-7993-4241-BB8F-F4E671882008}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CCF45C2-7993-4241-BB8F-F4E671882008}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D406CE87-9DDA-4127-BE41-96C874CF9336}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D406CE87-9DDA-4127-BE41-96C874CF9336}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D406CE87-9DDA-4127-BE41-96C874CF9336}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D406CE87-9DDA-4127-BE41-96C874CF9336}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6483DDC-4870-4E0E-B059-C5A997ABD20B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6483DDC-4870-4E0E-B059-C5A997ABD20B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6483DDC-4870-4E0E-B059-C5A997ABD20B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6483DDC-4870-4E0E-B059-C5A997ABD20B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14266B32-C798-46D7-856D-76DC33280BD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14266B32-C798-46D7-856D-76DC33280BD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14266B32-C798-46D7-856D-76DC33280BD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14266B32-C798-46D7-856D-76DC33280BD0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

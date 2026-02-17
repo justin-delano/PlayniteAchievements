@@ -24,9 +24,19 @@ namespace PlayniteAchievements.Services.Database
         public void ImportIfNeeded()
         {
             _store.EnsureInitialized();
-            if (string.Equals(_store.GetMetadata("legacy_import_done"), "1", StringComparison.Ordinal))
+            var files = _storage.EnumerateUserCacheFiles()?.ToList() ?? new List<string>();
+            var isMarkedDone = string.Equals(_store.GetMetadata("legacy_import_done"), "1", StringComparison.Ordinal);
+            if (isMarkedDone && files.Count <= 0)
             {
                 return;
+            }
+
+            if (isMarkedDone && files.Count > 0)
+            {
+                _logger?.Warn(
+                    $"Legacy import was marked as complete, but found {files.Count} legacy JSON files. " +
+                    "Resetting legacy_import_done and re-running import.");
+                _store.SetMetadata("legacy_import_done", "0");
             }
 
             int imported = 0;
@@ -36,7 +46,6 @@ namespace PlayniteAchievements.Services.Database
             int deleteFailed = 0;
             int quarantined = 0;
 
-            var files = _storage.EnumerateUserCacheFiles()?.ToList() ?? new List<string>();
             for (var i = 0; i < files.Count; i++)
             {
                 var file = files[i];
