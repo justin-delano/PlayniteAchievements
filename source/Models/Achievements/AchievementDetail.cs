@@ -23,6 +23,12 @@ namespace PlayniteAchievements.Models.Achievements
 
         public string Category { get; set; }
 
+        /// <summary>
+        /// Optional provider-specific type (used by PSN: "platinum", "gold", "silver", "bronze").
+        /// Null/empty for most providers.
+        /// </summary>
+        public string TrophyType { get; set; }
+
         [IgnoreDataMember]
         public string IconDisplay => UnlockedIconPath ?? AchievementIconResolver.GetDefaultIcon();
 
