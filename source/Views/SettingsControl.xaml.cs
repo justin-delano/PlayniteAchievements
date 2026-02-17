@@ -159,45 +159,6 @@ namespace PlayniteAchievements.Views
             set => SetValue(EpicAuthenticatedProperty, value);
         }
 
-        public static readonly DependencyProperty EpicLibraryPluginNameProperty =
-            DependencyProperty.Register(
-                nameof(EpicLibraryPluginName),
-                typeof(string),
-                typeof(SettingsControl),
-                new PropertyMetadata("Epic"));
-
-        public string EpicLibraryPluginName
-        {
-            get => (string)GetValue(EpicLibraryPluginNameProperty);
-            set => SetValue(EpicLibraryPluginNameProperty, value);
-        }
-
-        public static readonly DependencyProperty EpicLibraryDetectedProperty =
-            DependencyProperty.Register(
-                nameof(EpicLibraryDetected),
-                typeof(bool),
-                typeof(SettingsControl),
-                new PropertyMetadata(false));
-
-        public bool EpicLibraryDetected
-        {
-            get => (bool)GetValue(EpicLibraryDetectedProperty);
-            set => SetValue(EpicLibraryDetectedProperty, value);
-        }
-
-        public static readonly DependencyProperty EpicLibraryNotDetectedProperty =
-            DependencyProperty.Register(
-                nameof(EpicLibraryNotDetected),
-                typeof(bool),
-                typeof(SettingsControl),
-                new PropertyMetadata(true));
-
-        public bool EpicLibraryNotDetected
-        {
-            get => (bool)GetValue(EpicLibraryNotDetectedProperty);
-            set => SetValue(EpicLibraryNotDetectedProperty, value);
-        }
-
         public static readonly DependencyProperty SteamAuthenticatedProperty =
             DependencyProperty.Register(
                 nameof(SteamAuthenticated),
@@ -1057,10 +1018,37 @@ namespace PlayniteAchievements.Views
             await CheckEpicAuthAsync().ConfigureAwait(false);
         }
 
-        private async void EpicAuth_RefreshFromLibrary_Click(object sender, RoutedEventArgs e)
+        private async void EpicAuth_Login_Click(object sender, RoutedEventArgs e)
         {
-            _logger?.Info("[EpicAuth] Settings: Refresh from Library clicked.");
-            await CheckEpicAuthAsync(forceRefresh: true).ConfigureAwait(false);
+            _logger?.Info("[EpicAuth] Settings: Login clicked.");
+            SetEpicAuthBusy(true);
+            SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_Checking");
+
+            try
+            {
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(120)))
+                {
+                    var result = await _epicSessionManager.AuthenticateInteractiveAsync(
+                        forceInteractive: true,
+                        ct: cts.Token).ConfigureAwait(false);
+                    ApplyEpicAuthResult(result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                SetEpicAuthenticated(false);
+                SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_TimedOut");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[EpicAuth] Login failed.");
+                SetEpicAuthenticated(false);
+                SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_Failed");
+            }
+            finally
+            {
+                SetEpicAuthBusy(false);
+            }
         }
 
         private void EpicAuth_Clear_Click(object sender, RoutedEventArgs e)
@@ -1070,7 +1058,7 @@ namespace PlayniteAchievements.Views
             SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_CookiesCleared");
         }
 
-        private async Task CheckEpicAuthAsync(bool forceRefresh = false)
+        private async Task CheckEpicAuthAsync()
         {
             SetEpicAuthBusy(true);
             SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_Checking");
@@ -1080,12 +1068,6 @@ namespace PlayniteAchievements.Views
 
             try
             {
-                // Force refresh credentials from library if requested
-                if (forceRefresh)
-                {
-                    _epicSessionManager.RefreshFromLibrary();
-                }
-
                 using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
                 {
                     var result = await _epicSessionManager.ProbeAuthenticationAsync(timeoutCts.Token).ConfigureAwait(false);
@@ -1114,7 +1096,6 @@ namespace PlayniteAchievements.Views
             if (result == null)
             {
                 SetEpicAuthenticated(false);
-                SetEpicLibraryDetected(false);
                 SetEpicAuthStatusByKey("LOCPlayAch_Settings_EpicAuth_Failed");
                 return;
             }
@@ -1125,26 +1106,9 @@ namespace PlayniteAchievements.Views
 
             SetEpicAuthenticated(authenticated);
 
-            // Check if library is detected (regardless of auth status)
-            var libraryName = _epicSessionManager?.GetInstalledLibraryPluginName();
-            var libraryDetected = !string.IsNullOrEmpty(libraryName);
-            SetEpicLibraryDetected(libraryDetected);
-            SetEpicLibraryPluginName(libraryName ?? "Epic");
-
             var statusKey = string.IsNullOrWhiteSpace(result.MessageKey)
                 ? GetDefaultEpicMessageKeyForOutcome(result.Outcome)
                 : result.MessageKey;
-
-            // Format the status message with library name if available
-            if (authenticated && libraryDetected && statusKey == "LOCPlayAch_Settings_Epic_LibraryDetected")
-            {
-                var format = ResourceProvider.GetString(statusKey);
-                if (!string.IsNullOrWhiteSpace(format))
-                {
-                    SetEpicAuthStatus(string.Format(format, libraryName));
-                    return;
-                }
-            }
 
             if (!result.WindowOpened &&
                 !result.IsSuccess &&
@@ -1260,35 +1224,6 @@ namespace PlayniteAchievements.Views
             else
             {
                 Dispatcher.BeginInvoke(new Action(() => EpicAuthenticated = authenticated));
-            }
-        }
-
-        private void SetEpicLibraryPluginName(string name)
-        {
-            if (Dispatcher.CheckAccess())
-            {
-                EpicLibraryPluginName = name;
-            }
-            else
-            {
-                Dispatcher.BeginInvoke(new Action(() => EpicLibraryPluginName = name));
-            }
-        }
-
-        private void SetEpicLibraryDetected(bool detected)
-        {
-            if (Dispatcher.CheckAccess())
-            {
-                EpicLibraryDetected = detected;
-                EpicLibraryNotDetected = !detected;
-            }
-            else
-            {
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    EpicLibraryDetected = detected;
-                    EpicLibraryNotDetected = !detected;
-                }));
             }
         }
 
