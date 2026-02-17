@@ -46,9 +46,14 @@ namespace PlayniteAchievements.Services.Database
             return staleIds;
         }
 
-        public static bool ShouldMarkLegacyImportDone(int failedCount)
+        public static bool ShouldMarkLegacyImportDone(
+            int parseFailedCount,
+            int dbWriteFailedCount,
+            int remainingFileCount)
         {
-            return failedCount <= 0;
+            return parseFailedCount <= 0 &&
+                   dbWriteFailedCount <= 0 &&
+                   remainingFileCount <= 0;
         }
     }
 }

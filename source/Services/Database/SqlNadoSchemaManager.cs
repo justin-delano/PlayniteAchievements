@@ -1,5 +1,9 @@
 using Playnite.SDK;
 using SqlNado;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using PlayniteAchievements.Services.Database.Rows;
 
@@ -7,12 +11,16 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 2;
+        public const int SchemaVersion = 3;
         private readonly ILogger _logger;
+        private readonly string _databasePath;
+        private readonly string _pluginDataDir;
 
-        public SqlNadoSchemaManager(ILogger logger)
+        public SqlNadoSchemaManager(ILogger logger, string databasePath, string pluginDataDir)
         {
             _logger = logger;
+            _databasePath = databasePath ?? string.Empty;
+            _pluginDataDir = pluginDataDir ?? string.Empty;
         }
 
         public void EnsureSchema(SQLiteDatabase db)
@@ -143,12 +151,25 @@ namespace PlayniteAchievements.Services.Database
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_UserAchievements_Definition
                 ON UserAchievements (AchievementDefinitionId);");
 
-            ApplyMigrations(db);
+            var storedVersion = GetStoredSchemaVersion(db);
+            var backupPath = ReconcileSchema(db);
+
+            var verification = VerifyRequiredColumns(db);
+            _logger?.Info(
+                $"[Schema] Verification Success={verification.Success} " +
+                $"StoredVersion={storedVersion} TargetVersion={SchemaVersion} " +
+                $"BackupPath={(string.IsNullOrWhiteSpace(backupPath) ? "(none)" : backupPath)}");
+
+            if (!verification.Success)
+            {
+                throw new InvalidOperationException(
+                    $"Schema verification failed after reconciliation. {verification.Message}");
+            }
 
             db.ExecuteNonQuery(
                 "INSERT OR REPLACE INTO CacheMetadata (Key, Value) VALUES (?, ?);",
                 "schema_version",
-                SchemaVersion.ToString());
+                SchemaVersion.ToString(CultureInfo.InvariantCulture));
         }
 
         private void ExecuteSafe(SQLiteDatabase db, string sql)
@@ -164,14 +185,41 @@ namespace PlayniteAchievements.Services.Database
             }
         }
 
-        private void ApplyMigrations(SQLiteDatabase db)
+        private string ReconcileSchema(SQLiteDatabase db)
         {
-            var currentVersion = GetStoredSchemaVersion(db);
-            if (currentVersion < 2)
+            var backupPath = default(string);
+            var definitionColumns = GetColumnNames(db, "AchievementDefinitions");
+
+            if (!definitionColumns.Contains("unlockediconpath"))
             {
-                _logger?.Info($"[Schema] Migrating database from version {currentVersion} to 2");
-                ApplyMigrationV1ToV2(db);
+                if (definitionColumns.Contains("iconunlockedpath"))
+                {
+                    ExecuteSchemaChangeWithBackup(
+                        db,
+                        "ALTER TABLE AchievementDefinitions RENAME COLUMN IconUnlockedPath TO UnlockedIconPath;",
+                        ref backupPath,
+                        "Renamed IconUnlockedPath to UnlockedIconPath.");
+                }
+                else if (definitionColumns.Contains("iconpath"))
+                {
+                    ExecuteSchemaChangeWithBackup(
+                        db,
+                        "ALTER TABLE AchievementDefinitions RENAME COLUMN IconPath TO UnlockedIconPath;",
+                        ref backupPath,
+                        "Renamed IconPath to UnlockedIconPath.");
+                }
             }
+
+            definitionColumns = GetColumnNames(db, "AchievementDefinitions");
+            EnsureColumn(db, "AchievementDefinitions", "LockedIconPath", "TEXT NULL", definitionColumns, ref backupPath);
+            EnsureColumn(db, "AchievementDefinitions", "Points", "INTEGER NULL", definitionColumns, ref backupPath);
+            EnsureColumn(db, "AchievementDefinitions", "Category", "TEXT NULL", definitionColumns, ref backupPath);
+            EnsureColumn(db, "AchievementDefinitions", "TrophyType", "TEXT NULL", definitionColumns, ref backupPath);
+
+            var progressColumns = GetColumnNames(db, "UserGameProgress");
+            EnsureColumn(db, "UserGameProgress", "IsComplete", "INTEGER NOT NULL DEFAULT 0", progressColumns, ref backupPath);
+
+            return backupPath;
         }
 
         private int GetStoredSchemaVersion(SQLiteDatabase db)
@@ -193,56 +241,130 @@ namespace PlayniteAchievements.Services.Database
             return 0;
         }
 
-        private void ApplyMigrationV1ToV2(SQLiteDatabase db)
+        private HashSet<string> GetColumnNames(SQLiteDatabase db, string tableName)
         {
-            try
+            var sql = $"PRAGMA table_info({tableName});";
+            var rows = db.Load<ColumnInfoRow>(sql).ToList();
+
+            return new HashSet<string>(
+                rows
+                    .Select(a => a?.Name?.Trim().ToLowerInvariant())
+                    .Where(a => !string.IsNullOrWhiteSpace(a)),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        private void EnsureColumn(
+            SQLiteDatabase db,
+            string tableName,
+            string columnName,
+            string columnDefinition,
+            HashSet<string> knownColumns,
+            ref string backupPath)
+        {
+            if (knownColumns.Contains(columnName))
             {
-                // Check if migration is needed by looking for old IconPath column
-                var columns = db.Load<ColumnInfoRow>(
-                    "PRAGMA table_info(AchievementDefinitions);").ToList();
-                var columnNames = columns.Select(c => c.Name?.ToLowerInvariant()).ToList();
-
-                // Rename IconPath to UnlockedIconPath if IconPath exists and UnlockedIconPath doesn't
-                if (columnNames.Contains("iconpath") && !columnNames.Contains("unlockediconpath"))
-                {
-                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions RENAME COLUMN IconPath TO UnlockedIconPath;");
-                    _logger?.Info("[Schema] Renamed IconPath to UnlockedIconPath");
-                }
-
-                // Add new columns only if they don't exist
-                if (!columnNames.Contains("lockediconpath"))
-                {
-                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN LockedIconPath TEXT NULL;");
-                }
-                if (!columnNames.Contains("points"))
-                {
-                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Points INTEGER NULL;");
-                }
-                if (!columnNames.Contains("category"))
-                {
-                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN Category TEXT NULL;");
-                }
-                if (!columnNames.Contains("trophytype"))
-                {
-                    ExecuteSafe(db, @"ALTER TABLE AchievementDefinitions ADD COLUMN TrophyType TEXT NULL;");
-                }
-
-                // Check UserGameProgress for IsComplete column
-                var progressColumns = db.Load<ColumnInfoRow>(
-                    "PRAGMA table_info(UserGameProgress);").ToList();
-                var progressColumnNames = progressColumns.Select(c => c.Name?.ToLowerInvariant()).ToList();
-
-                if (!progressColumnNames.Contains("iscomplete"))
-                {
-                    ExecuteSafe(db, @"ALTER TABLE UserGameProgress ADD COLUMN IsComplete INTEGER NOT NULL DEFAULT 0;");
-                }
-
-                _logger?.Info("[Schema] Migration v1->v2 completed successfully");
+                return;
             }
-            catch (System.Exception ex)
+
+            ExecuteSchemaChangeWithBackup(
+                db,
+                $"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnDefinition};",
+                ref backupPath,
+                $"Added {tableName}.{columnName}.");
+
+            knownColumns.Add(columnName);
+        }
+
+        private void ExecuteSchemaChangeWithBackup(
+            SQLiteDatabase db,
+            string sql,
+            ref string backupPath,
+            string successLog)
+        {
+            if (string.IsNullOrWhiteSpace(backupPath))
             {
-                _logger?.Error(ex, "[Schema] Migration v1->v2 failed");
-                throw;
+                backupPath = CreateMigrationBackup();
+            }
+
+            ExecuteSafe(db, sql);
+            if (!string.IsNullOrWhiteSpace(successLog))
+            {
+                _logger?.Info($"[Schema] {successLog}");
+            }
+        }
+
+        private string CreateMigrationBackup()
+        {
+            var root = string.IsNullOrWhiteSpace(_pluginDataDir)
+                ? Path.GetDirectoryName(_databasePath)
+                : _pluginDataDir;
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                throw new InvalidOperationException("Unable to create migration backup: plugin data directory is unknown.");
+            }
+
+            var backupRoot = Path.Combine(root, "migration_backups");
+            Directory.CreateDirectory(backupRoot);
+
+            var backupPath = Path.Combine(
+                backupRoot,
+                $"db-schema-{DateTime.UtcNow:yyyyMMdd_HHmmssfff}");
+            Directory.CreateDirectory(backupPath);
+
+            var filesToBackup = new[]
+            {
+                _databasePath,
+                _databasePath + "-wal",
+                _databasePath + "-shm"
+            };
+
+            for (var i = 0; i < filesToBackup.Length; i++)
+            {
+                var sourcePath = filesToBackup[i];
+                if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+                {
+                    continue;
+                }
+
+                var destinationPath = Path.Combine(backupPath, Path.GetFileName(sourcePath));
+                File.Copy(sourcePath, destinationPath, overwrite: true);
+            }
+
+            _logger?.Info($"[Schema] Migration backup created: {backupPath}");
+            return backupPath;
+        }
+
+        private (bool Success, string Message) VerifyRequiredColumns(SQLiteDatabase db)
+        {
+            var missing = new List<string>();
+
+            var definitionColumns = GetColumnNames(db, "AchievementDefinitions");
+            EnsureRequiredColumn(definitionColumns, "UnlockedIconPath", "AchievementDefinitions", missing);
+            EnsureRequiredColumn(definitionColumns, "LockedIconPath", "AchievementDefinitions", missing);
+            EnsureRequiredColumn(definitionColumns, "Points", "AchievementDefinitions", missing);
+            EnsureRequiredColumn(definitionColumns, "Category", "AchievementDefinitions", missing);
+            EnsureRequiredColumn(definitionColumns, "TrophyType", "AchievementDefinitions", missing);
+
+            var progressColumns = GetColumnNames(db, "UserGameProgress");
+            EnsureRequiredColumn(progressColumns, "IsComplete", "UserGameProgress", missing);
+
+            if (missing.Count > 0)
+            {
+                return (false, "Missing columns: " + string.Join(", ", missing));
+            }
+
+            return (true, "OK");
+        }
+
+        private static void EnsureRequiredColumn(
+            HashSet<string> columns,
+            string columnName,
+            string tableName,
+            List<string> missing)
+        {
+            if (!columns.Contains(columnName))
+            {
+                missing.Add($"{tableName}.{columnName}");
             }
         }
 

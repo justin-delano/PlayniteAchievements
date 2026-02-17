@@ -107,13 +107,24 @@ namespace PlayniteAchievements.SqlNado.Tests
         }
 
         [Theory]
-        [InlineData(-1, true)]
-        [InlineData(0, true)]
-        [InlineData(1, false)]
-        [InlineData(3, false)]
-        public void ShouldMarkLegacyImportDone_UsesFailedCount(int failedCount, bool expected)
+        [InlineData(0, 0, 0, true)]
+        [InlineData(-1, 0, 0, true)]
+        [InlineData(0, -1, 0, true)]
+        [InlineData(0, 0, -1, true)]
+        [InlineData(1, 0, 0, false)]
+        [InlineData(0, 2, 0, false)]
+        [InlineData(0, 0, 3, false)]
+        [InlineData(1, 1, 1, false)]
+        public void ShouldMarkLegacyImportDone_UsesFailureAndRemainingCounts(
+            int parseFailedCount,
+            int dbWriteFailedCount,
+            int remainingFileCount,
+            bool expected)
         {
-            var actual = SqlNadoCacheBehavior.ShouldMarkLegacyImportDone(failedCount);
+            var actual = SqlNadoCacheBehavior.ShouldMarkLegacyImportDone(
+                parseFailedCount,
+                dbWriteFailedCount,
+                remainingFileCount);
             Assert.Equal(expected, actual);
         }
     }

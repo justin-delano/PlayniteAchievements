@@ -9,6 +9,7 @@ namespace PlayniteAchievements.ViewModels
         private const string DefaultIconPackUri = "pack://application:,,,/PlayniteAchievements;component/Resources/HiddenAchIcon.png";
 
         public string ApiName { get; set; }
+        public Guid? PlayniteGameId { get; set; }
 
         private bool _hidden;
         public bool Hidden
@@ -123,6 +124,7 @@ namespace PlayniteAchievements.ViewModels
 
             // ApiName is immutable/key
             if (ApiName != other.ApiName) ApiName = other.ApiName;
+            PlayniteGameId = other.PlayniteGameId;
 
             Name = other.Name;
             Description = other.Description;

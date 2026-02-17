@@ -50,14 +50,19 @@ namespace PlayniteAchievements.ViewModels
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
         private System.Windows.Threading.DispatcherTimer _scanFullRefreshTimer;
         private System.Windows.Threading.DispatcherTimer _progressHideTimer;
+        private System.Windows.Threading.DispatcherTimer _deltaBatchTimer;
         private bool _scanRefreshPending;
         private bool _scanRefreshRunning;
         private bool _showCompletedProgress;
         private bool _scanAttemptInProgress;
         private static readonly TimeSpan ProgressHideDelay = TimeSpan.FromSeconds(3);
+        private readonly object _deltaSync = new object();
+        private readonly HashSet<string> _pendingDeltaKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private bool _pendingFullResetFromDelta;
 
         private List<RecentAchievementItem> _filteredRecentAchievements = new List<RecentAchievementItem>();
         private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
+        private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
         private List<string> _availableProviders = new List<string>();
 
         // Sort state tracking for quick reverse
@@ -96,6 +101,12 @@ namespace PlayniteAchievements.ViewModels
             };
             _progressHideTimer.Tick += OnProgressHideTimerTick;
 
+            _deltaBatchTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(300)
+            };
+            _deltaBatchTimer.Tick += OnDeltaBatchTimerTick;
+
             // Initialize collections
             AllAchievements = new BulkObservableCollection<AchievementDisplayItem>();
             GamesOverview = new BulkObservableCollection<GameOverviewItem>();
@@ -128,6 +139,7 @@ namespace PlayniteAchievements.ViewModels
 
             // Subscribe to progress events
             _achievementManager.RebuildProgress += OnRebuildProgress;
+            _achievementManager.CacheDeltaUpdated += OnCacheDeltaUpdated;
             _achievementManager.CacheInvalidated += OnCacheInvalidated;
             if (_settings != null)
             {
@@ -533,6 +545,12 @@ namespace PlayniteAchievements.ViewModels
             if (!isActive)
             {
                 StopScanRefreshScheduler();
+                _deltaBatchTimer?.Stop();
+                lock (_deltaSync)
+                {
+                    _pendingDeltaKeys.Clear();
+                    _pendingFullResetFromDelta = false;
+                }
                 CancelProgressHideTimer(clearCompletedProgress: true);
                 CancelPendingRefresh();
             }
@@ -715,14 +733,15 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _latestSnapshot = snapshot;
+            _allAchievements = snapshot.Achievements ?? new List<AchievementDisplayItem>();
 
             if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulkAll)
             {
-                bulkAll.ReplaceAll(snapshot.Achievements);
+                bulkAll.ReplaceAll(_allAchievements);
             }
             else
             {
-                CollectionHelper.SynchronizeCollection(AllAchievements, snapshot.Achievements);
+                CollectionHelper.SynchronizeCollection(AllAchievements, _allAchievements);
             }
 
             _allGamesOverview = snapshot.GamesOverview ?? new List<GameOverviewItem>();
@@ -851,6 +870,250 @@ namespace PlayniteAchievements.ViewModels
             UpdateFilteredStatus();
         }
 
+        private bool ApplyFragmentDelta(string key, SidebarGameFragment fragment)
+        {
+            Guid gameId;
+            if (!Guid.TryParse(key, out gameId))
+            {
+                if (fragment?.PlayniteGameId.HasValue == true)
+                {
+                    gameId = fragment.PlayniteGameId.Value;
+                }
+                else
+                {
+                    _logger?.Warn($"Incremental sidebar delta ignored because key is not a valid game id: {key}");
+                    return false;
+                }
+            }
+
+            _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
+            _allGamesOverview.RemoveAll(g => g?.PlayniteGameId == gameId);
+            _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
+
+            if (fragment == null)
+            {
+                if (SelectedGame?.PlayniteGameId == gameId)
+                {
+                    SelectedGame = null;
+                }
+
+                return true;
+            }
+
+            if (fragment.Achievements != null && fragment.Achievements.Count > 0)
+            {
+                _allAchievements.AddRange(fragment.Achievements);
+            }
+
+            if (fragment.GameOverview != null)
+            {
+                _allGamesOverview.Add(fragment.GameOverview);
+            }
+
+            if (fragment.RecentAchievements != null && fragment.RecentAchievements.Count > 0)
+            {
+                _allRecentAchievements.AddRange(fragment.RecentAchievements);
+            }
+
+            return true;
+        }
+
+        private SidebarDataSnapshot BuildSnapshotFromSourceLists()
+        {
+            var snapshot = new SidebarDataSnapshot
+            {
+                Achievements = _allAchievements ?? new List<AchievementDisplayItem>(),
+                GamesOverview = _allGamesOverview ?? new List<GameOverviewItem>(),
+                RecentAchievements = _allRecentAchievements ?? new List<RecentAchievementItem>(),
+                GlobalUnlockCountsByDate = new Dictionary<DateTime, int>(),
+                UnlockCountsByDateByGame = new Dictionary<Guid, Dictionary<DateTime, int>>(),
+                UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            };
+
+            for (var i = 0; i < snapshot.RecentAchievements.Count; i++)
+            {
+                var item = snapshot.RecentAchievements[i];
+                if (item == null)
+                {
+                    continue;
+                }
+
+                var date = item.UnlockTime.Date;
+                if (snapshot.GlobalUnlockCountsByDate.TryGetValue(date, out var existing))
+                {
+                    snapshot.GlobalUnlockCountsByDate[date] = existing + 1;
+                }
+                else
+                {
+                    snapshot.GlobalUnlockCountsByDate[date] = 1;
+                }
+
+                if (item.PlayniteGameId.HasValue)
+                {
+                    var gameId = item.PlayniteGameId.Value;
+                    if (!snapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var gameCounts))
+                    {
+                        gameCounts = new Dictionary<DateTime, int>();
+                        snapshot.UnlockCountsByDateByGame[gameId] = gameCounts;
+                    }
+
+                    if (gameCounts.TryGetValue(date, out var gameExisting))
+                    {
+                        gameCounts[date] = gameExisting + 1;
+                    }
+                    else
+                    {
+                        gameCounts[date] = 1;
+                    }
+                }
+            }
+
+            snapshot.TotalGames = snapshot.GamesOverview.Count;
+            snapshot.TotalAchievements = snapshot.GamesOverview.Sum(g => g?.TotalAchievements ?? 0);
+            snapshot.TotalUnlocked = snapshot.GamesOverview.Sum(g => g?.UnlockedAchievements ?? 0);
+            snapshot.TotalCommon = snapshot.GamesOverview.Sum(g => g?.CommonCount ?? 0);
+            snapshot.TotalUncommon = snapshot.GamesOverview.Sum(g => g?.UncommonCount ?? 0);
+            snapshot.TotalRare = snapshot.GamesOverview.Sum(g => g?.RareCount ?? 0);
+            snapshot.TotalUltraRare = snapshot.GamesOverview.Sum(g => g?.UltraRareCount ?? 0);
+            snapshot.PerfectGames = snapshot.GamesOverview.Count(g => g?.IsPerfect == true);
+            snapshot.TotalLocked = Math.Max(0, snapshot.TotalAchievements - snapshot.TotalUnlocked);
+            snapshot.GlobalProgressionPercent = snapshot.TotalAchievements > 0
+                ? (double)snapshot.TotalUnlocked / snapshot.TotalAchievements * 100
+                : 0;
+
+            for (var i = 0; i < snapshot.GamesOverview.Count; i++)
+            {
+                var game = snapshot.GamesOverview[i];
+                if (game == null)
+                {
+                    continue;
+                }
+
+                var provider = string.IsNullOrWhiteSpace(game.Provider) ? "Unknown" : game.Provider;
+                if (!snapshot.UnlockedByProvider.ContainsKey(provider))
+                {
+                    snapshot.UnlockedByProvider[provider] = 0;
+                }
+
+                snapshot.UnlockedByProvider[provider] += game.UnlockedAchievements;
+            }
+
+            return snapshot;
+        }
+
+        private void ApplyOverviewSummaryFromSnapshot(SidebarDataSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            _latestSnapshot = snapshot;
+
+            UpdateProviderFilterOptions(snapshot.GamesOverview ?? new List<GameOverviewItem>());
+
+            _totalCount = snapshot.TotalAchievements;
+            _unlockedCount = snapshot.TotalUnlocked;
+            _gamesCount = snapshot.TotalGames;
+
+            TotalGamesOverview = snapshot.TotalGames;
+            TotalAchievementsOverview = snapshot.TotalAchievements;
+            TotalUnlockedOverview = snapshot.TotalUnlocked;
+            TotalCommon = snapshot.TotalCommon;
+            TotalUncommon = snapshot.TotalUncommon;
+            TotalRare = snapshot.TotalRare;
+            TotalUltraRare = snapshot.TotalUltraRare;
+            PerfectGames = snapshot.PerfectGames;
+            GlobalProgression = snapshot.GlobalProgressionPercent;
+
+            var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
+            foreach (var provider in _achievementManager.GetProviders())
+            {
+                providerLookup[provider.ProviderName] = (provider.ProviderIconKey, provider.ProviderColorHex);
+            }
+
+            var perfectLabel = ResourceProvider.GetString("LOCPlayAch_Perfect");
+            var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Incomplete");
+            var commonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Common");
+            var uncommonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Uncommon");
+            var rareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Rare");
+            var ultraRareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_UltraRare");
+            var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Locked");
+
+            ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
+
+            GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.PerfectGames, perfectLabel, incompleteLabel);
+            RarityPieChart.SetRarityData(
+                snapshot.TotalCommon,
+                snapshot.TotalUncommon,
+                snapshot.TotalRare,
+                snapshot.TotalUltraRare,
+                snapshot.TotalLocked,
+                commonLabel,
+                uncommonLabel,
+                rareLabel,
+                ultraRareLabel,
+                lockedLabel
+            );
+
+            OnPropertyChanged(nameof(CommonPercentage));
+            OnPropertyChanged(nameof(UncommonPercentage));
+            OnPropertyChanged(nameof(RarePercentage));
+            OnPropertyChanged(nameof(UltraRarePercentage));
+
+            IDictionary<DateTime, int> selectedTimelineCounts = null;
+            IDictionary<DateTime, int> timelineCountsToShow = snapshot.GlobalUnlockCountsByDate;
+
+            if (SelectedGame?.PlayniteGameId.HasValue == true)
+            {
+                if (snapshot.UnlockCountsByDateByGame != null &&
+                    snapshot.UnlockCountsByDateByGame.TryGetValue(SelectedGame.PlayniteGameId.Value, out var selectedCounts))
+                {
+                    selectedTimelineCounts = selectedCounts;
+                }
+                else
+                {
+                    selectedTimelineCounts = new Dictionary<DateTime, int>();
+                }
+
+                timelineCountsToShow = selectedTimelineCounts;
+            }
+
+            GlobalTimeline.SetCounts(timelineCountsToShow);
+            SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+        }
+
+        private void UpdateProviderFilterOptions(List<GameOverviewItem> games)
+        {
+            var providers = (games ?? new List<GameOverviewItem>())
+                .Select(g => g?.Provider)
+                .Where(p => !string.IsNullOrEmpty(p))
+                .Distinct()
+                .ToList();
+            var providerOptions = new List<string> { "All" };
+            providerOptions.AddRange(providers);
+
+            var previousProviderFilter = SelectedProviderFilter;
+
+            if (ProviderFilterOptions == null)
+            {
+                ProviderFilterOptions = new ObservableCollection<string>(providerOptions);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(ProviderFilterOptions, providerOptions);
+            }
+
+            if (previousProviderFilter != null && ProviderFilterOptions.Contains(previousProviderFilter))
+            {
+                SelectedProviderFilter = previousProviderFilter;
+            }
+            else
+            {
+                SelectedProviderFilter = "All";
+            }
+        }
+
         private static string MakeRevealKey(Guid? playniteGameId, string apiName, string gameName)
         {
             var gamePart = playniteGameId?.ToString() ?? (gameName ?? string.Empty);
@@ -936,6 +1199,33 @@ namespace PlayniteAchievements.ViewModels
             }));
         }
 
+        private void OnCacheDeltaUpdated(object sender, CacheDeltaEventArgs e)
+        {
+            if (!_isActive || e == null)
+            {
+                return;
+            }
+
+            System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
+            {
+                lock (_deltaSync)
+                {
+                    if (e.IsFullReset)
+                    {
+                        _pendingFullResetFromDelta = true;
+                        _pendingDeltaKeys.Clear();
+                    }
+                    else if (!string.IsNullOrWhiteSpace(e.Key))
+                    {
+                        _pendingDeltaKeys.Add(e.Key.Trim());
+                    }
+                }
+
+                _deltaBatchTimer.Stop();
+                _deltaBatchTimer.Start();
+            });
+        }
+
         private void OnCacheInvalidated(object sender, EventArgs e)
         {
             if (!_isActive)
@@ -943,14 +1233,147 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
+            bool shouldRefresh;
+            lock (_deltaSync)
+            {
+                shouldRefresh = _pendingFullResetFromDelta;
+            }
+
+            if (!shouldRefresh)
+            {
+                return;
+            }
+
+            if (_deltaBatchTimer != null && _deltaBatchTimer.IsEnabled)
+            {
+                return;
+            }
+
             System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
             {
-                // Use debounced refresh for both during and after scans
-                // This batches multiple invalidation events into a single refresh
                 StopScanRefreshScheduler();
                 _refreshDebounceTimer.Stop();
                 _refreshDebounceTimer.Start();
             });
+        }
+
+        private async void OnDeltaBatchTimerTick(object sender, EventArgs e)
+        {
+            _deltaBatchTimer.Stop();
+            try
+            {
+                await ApplyPendingDeltasAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed applying incremental cache deltas.");
+            }
+        }
+
+        private async Task ApplyPendingDeltasAsync()
+        {
+            bool fullReset;
+            List<string> keys;
+            lock (_deltaSync)
+            {
+                fullReset = _pendingFullResetFromDelta;
+                keys = _pendingDeltaKeys.ToList();
+                _pendingDeltaKeys.Clear();
+
+                if (fullReset)
+                {
+                    _pendingFullResetFromDelta = false;
+                }
+            }
+
+            if (fullReset)
+            {
+                await RefreshViewAsync();
+                return;
+            }
+
+            if (keys.Count == 0)
+            {
+                return;
+            }
+
+            var showIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
+            var showTitle = _settings?.Persisted?.ShowHiddenTitle ?? false;
+            var showDescription = _settings?.Persisted?.ShowHiddenDescription ?? false;
+            var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
+            var revealedCopy = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (anyHidingEnabled)
+            {
+                lock (_revealedKeys)
+                {
+                    if (_revealedKeys.Count > 0)
+                    {
+                        revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
+                    }
+                }
+            }
+
+            var fragments = await Task.Run(() =>
+            {
+                var dict = new Dictionary<string, SidebarGameFragment>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < keys.Count; i++)
+                {
+                    var key = keys[i];
+                    if (string.IsNullOrWhiteSpace(key))
+                    {
+                        continue;
+                    }
+
+                    var gameData = _achievementManager.GetGameAchievementData(key);
+                    dict[key] = gameData == null
+                        ? null
+                        : _dataBuilder.BuildGameFragment(_settings, revealedCopy, gameData);
+                }
+
+                return dict;
+            }).ConfigureAwait(true);
+
+            if (!_isActive || _disposed)
+            {
+                return;
+            }
+
+            var requiresFallbackRefresh = false;
+            foreach (var key in keys)
+            {
+                if (!ApplyFragmentDelta(key, fragments.TryGetValue(key, out var fragment) ? fragment : null))
+                {
+                    requiresFallbackRefresh = true;
+                    break;
+                }
+            }
+
+            if (requiresFallbackRefresh)
+            {
+                await RefreshViewAsync();
+                return;
+            }
+
+            if (string.IsNullOrEmpty(_overviewSortPath))
+            {
+                _allGamesOverview = _allGamesOverview
+                    .OrderByDescending(g => g.LastPlayed ?? DateTime.MinValue)
+                    .ToList();
+            }
+
+            if (string.IsNullOrEmpty(_recentSortPath))
+            {
+                _allRecentAchievements = _allRecentAchievements
+                    .OrderByDescending(r => r.UnlockTime)
+                    .ToList();
+            }
+
+            var snapshot = BuildSnapshotFromSourceLists();
+            ApplyOverviewSummaryFromSnapshot(snapshot);
+            RefreshFilter();
+            ApplyLeftFilters();
+            ApplyRightFilters();
+            UpdateFilteredStatus();
         }
 
         private async void OnRefreshDebounceTimerTick(object sender, EventArgs e)
@@ -1100,7 +1523,8 @@ namespace PlayniteAchievements.ViewModels
 
         public void RefreshFilter()
         {
-            var filtered = ApplySort(AllAchievements.Where(FilterAchievement)).ToList();
+            var source = _allAchievements ?? new List<AchievementDisplayItem>();
+            var filtered = ApplySort(source.Where(FilterAchievement)).ToList();
             if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
             {
                 bulk.ReplaceAll(filtered);
@@ -1131,9 +1555,10 @@ namespace PlayniteAchievements.ViewModels
 
         private void UpdateStats()
         {
-            _totalCount = AllAchievements.Count;
-            _unlockedCount = AllAchievements.Count(a => a.Unlocked);
-            _gamesCount = AllAchievements.Select(a => a.GameName).Distinct().Count();
+            var source = _allAchievements ?? new List<AchievementDisplayItem>();
+            _totalCount = source.Count;
+            _unlockedCount = source.Count(a => a.Unlocked);
+            _gamesCount = source.Select(a => a.GameName).Distinct().Count();
 
             UpdateFilteredStatus();
         }
@@ -1223,13 +1648,20 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _filteredGamesOverview = filtered.ToList();
-            if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulk)
+            if (!string.IsNullOrEmpty(_overviewSortPath))
             {
-                bulk.ReplaceAll(_filteredGamesOverview);
+                SortGamesOverview(_overviewSortPath, _overviewSortDirection);
             }
             else
             {
-                CollectionHelper.SynchronizeCollection(GamesOverview, _filteredGamesOverview);
+                if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulk)
+                {
+                    bulk.ReplaceAll(_filteredGamesOverview);
+                }
+                else
+                {
+                    CollectionHelper.SynchronizeCollection(GamesOverview, _filteredGamesOverview);
+                }
             }
             RecalculateOverviewStats();
 
@@ -1266,13 +1698,20 @@ namespace PlayniteAchievements.ViewModels
                         (a.Description?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0));
                 }
                 _filteredSelectedGameAchievements = filtered.ToList();
-                if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+                if (!string.IsNullOrEmpty(_selectedGameSortPath))
                 {
-                    bulk.ReplaceAll(_filteredSelectedGameAchievements);
+                    SortSelectedGameAchievements(_selectedGameSortPath, _selectedGameSortDirection);
                 }
                 else
                 {
-                    CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+                    if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+                    {
+                        bulk.ReplaceAll(_filteredSelectedGameAchievements);
+                    }
+                    else
+                    {
+                        CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+                    }
                 }
             }
             else
@@ -1286,13 +1725,20 @@ namespace PlayniteAchievements.ViewModels
                         (r.Name?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0));
                 }
                 _filteredRecentAchievements = filtered.ToList();
-                if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulk)
+                if (!string.IsNullOrEmpty(_recentSortPath))
                 {
-                    bulk.ReplaceAll(_filteredRecentAchievements);
+                    SortRecentAchievements(_recentSortPath, _recentSortDirection);
                 }
                 else
                 {
-                    CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
+                    if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulk)
+                    {
+                        bulk.ReplaceAll(_filteredRecentAchievements);
+                    }
+                    else
+                    {
+                        CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
+                    }
                 }
             }
         }
@@ -1400,13 +1846,20 @@ namespace PlayniteAchievements.ViewModels
 
                 _allSelectedGameAchievements = items;
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>(_allSelectedGameAchievements);
-                if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+                if (!string.IsNullOrEmpty(_selectedGameSortPath))
                 {
-                    bulk.ReplaceAll(_filteredSelectedGameAchievements);
+                    SortSelectedGameAchievements(_selectedGameSortPath, _selectedGameSortDirection);
                 }
                 else
                 {
-                    CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+                    if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+                    {
+                        bulk.ReplaceAll(_filteredSelectedGameAchievements);
+                    }
+                    else
+                    {
+                        CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+                    }
                 }
             }
             catch (Exception ex)
@@ -1611,10 +2064,12 @@ namespace PlayniteAchievements.ViewModels
             _refreshDebounceTimer?.Stop();
             _scanFullRefreshTimer?.Stop();
             _progressHideTimer?.Stop();
+            _deltaBatchTimer?.Stop();
             CancelPendingRefresh();
             if (_achievementManager != null)
             {
                 _achievementManager.RebuildProgress -= OnRebuildProgress;
+                _achievementManager.CacheDeltaUpdated -= OnCacheDeltaUpdated;
                 _achievementManager.CacheInvalidated -= OnCacheInvalidated;
             }
             if (_settings != null)
@@ -1624,6 +2079,10 @@ namespace PlayniteAchievements.ViewModels
             if (_progressHideTimer != null)
             {
                 _progressHideTimer.Tick -= OnProgressHideTimerTick;
+            }
+            if (_deltaBatchTimer != null)
+            {
+                _deltaBatchTimer.Tick -= OnDeltaBatchTimerTick;
             }
         }
     }

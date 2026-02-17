@@ -19,6 +19,7 @@ namespace PlayniteAchievements.Views
         private readonly AchievementManager _achievementManager;
         private bool _isActive;
         private bool _ignoreNextSelectionChange;
+        private Guid? _lastSelectedOverviewGameId;
 
         public SidebarControl()
         {
@@ -102,6 +103,7 @@ namespace PlayniteAchievements.Views
         private void ClearGameSelection_Click(object sender, RoutedEventArgs e)
         {
             _viewModel?.ClearGameSelection();
+            _lastSelectedOverviewGameId = null;
             ResetRecentAchievementsSortDirection();
         }
 
@@ -125,6 +127,7 @@ namespace PlayniteAchievements.Views
             {
                 grid.SelectedItem = null;
                 _viewModel.ClearGameSelection();
+                _lastSelectedOverviewGameId = null;
                 ResetRecentAchievementsSortDirection();
                 e.Handled = true;
             }
@@ -146,9 +149,22 @@ namespace PlayniteAchievements.Views
 
             if (grid.SelectedItem is GameOverviewItem item)
             {
+                var currentGameId = item.PlayniteGameId;
+                var gameChanged = !_lastSelectedOverviewGameId.HasValue ||
+                                  currentGameId != _lastSelectedOverviewGameId.Value;
+
                 _viewModel.SelectedGame = item;
-                ResetAchievementsSortDirection();
-                ResetAchievementsScrollPosition();
+                _lastSelectedOverviewGameId = currentGameId;
+
+                if (gameChanged)
+                {
+                    ResetAchievementsSortDirection();
+                    ResetAchievementsScrollPosition();
+                }
+            }
+            else
+            {
+                _lastSelectedOverviewGameId = null;
             }
         }
 

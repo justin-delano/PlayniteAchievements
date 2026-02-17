@@ -85,6 +85,12 @@ namespace PlayniteAchievements.Services.Database
             public long UserId { get; set; }
         }
 
+        private sealed class CurrentUserScopeRow
+        {
+            public string ProviderName { get; set; }
+            public string ExternalUserId { get; set; }
+        }
+
         private readonly object _sync = new object();
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsPlugin _plugin;
@@ -100,8 +106,8 @@ namespace PlayniteAchievements.Services.Database
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
-            _schemaManager = new SqlNadoSchemaManager(logger);
             DatabasePath = Path.Combine(baseDir ?? string.Empty, "achievement_cache.db");
+            _schemaManager = new SqlNadoSchemaManager(logger, DatabasePath, baseDir);
         }
 
         public void EnsureInitialized()
@@ -157,6 +163,41 @@ namespace PlayniteAchievements.Services.Database
                         LIMIT 1
                       );");
                 return exists != 0;
+            });
+        }
+
+        public string GetCurrentUserScopeToken()
+        {
+            return WithDb(db =>
+            {
+                var rows = db.Load<CurrentUserScopeRow>(
+                    @"SELECT ProviderName, ExternalUserId
+                      FROM Users
+                      WHERE IsCurrentUser = 1
+                      ORDER BY ProviderName, ExternalUserId;").ToList();
+
+                if (rows.Count == 0)
+                {
+                    return "none";
+                }
+
+                var parts = rows
+                    .Select(a =>
+                    {
+                        var provider = a?.ProviderName?.Trim().ToLowerInvariant();
+                        var user = a?.ExternalUserId?.Trim().ToLowerInvariant();
+                        if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(user))
+                        {
+                            return null;
+                        }
+
+                        return $"{provider}:{user}";
+                    })
+                    .Where(a => !string.IsNullOrWhiteSpace(a))
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+
+                return parts.Count == 0 ? "none" : string.Join("|", parts);
             });
         }
 
@@ -653,15 +694,35 @@ namespace PlayniteAchievements.Services.Database
                 Directory.CreateDirectory(parent);
             }
 
-            _db = new SQLiteDatabase(
-                DatabasePath,
-                SQLiteOpenOptions.SQLITE_OPEN_READWRITE |
-                SQLiteOpenOptions.SQLITE_OPEN_CREATE |
-                SQLiteOpenOptions.SQLITE_OPEN_FULLMUTEX);
+            try
+            {
+                _db = new SQLiteDatabase(
+                    DatabasePath,
+                    SQLiteOpenOptions.SQLITE_OPEN_READWRITE |
+                    SQLiteOpenOptions.SQLITE_OPEN_CREATE |
+                    SQLiteOpenOptions.SQLITE_OPEN_FULLMUTEX);
 
-            _db.EnableStatementsCache = true;
-            _schemaManager.EnsureSchema(_db);
-            _initialized = true;
+                _db.EnableStatementsCache = true;
+                _schemaManager.EnsureSchema(_db);
+                _initialized = true;
+            }
+            catch
+            {
+                if (_db is IDisposable disposable)
+                {
+                    try
+                    {
+                        disposable.Dispose();
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                _db = null;
+                _initialized = false;
+                throw;
+            }
         }
 
         private T WithDb<T>(Func<SQLiteDatabase, T> action)

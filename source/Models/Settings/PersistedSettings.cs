@@ -22,7 +22,6 @@ namespace PlayniteAchievements.Models.Settings
         private DateTime? _epicTokenExpiryUtc;
         private DateTime? _epicRefreshTokenExpiryUtc;
         private string _steamApiKey;
-        private string _steamLanguage = "english";
         private string _globalLanguage = "english";
         private bool _steamEnabled = true;
         private bool _epicEnabled = true;
@@ -115,15 +114,6 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _steamApiKey;
             set => SetValue(ref _steamApiKey, value ?? string.Empty);
-        }
-
-        /// <summary>
-        /// Preferred Steam language code for schema/achievement text (e.g. "english", "spanish").
-        /// </summary>
-        public string SteamLanguage
-        {
-            get => _steamLanguage;
-            set => SetValue(ref _steamLanguage, value);
         }
 
         #endregion
@@ -442,7 +432,6 @@ namespace PlayniteAchievements.Models.Settings
                 EpicTokenExpiryUtc = this.EpicTokenExpiryUtc,
                 EpicRefreshTokenExpiryUtc = this.EpicRefreshTokenExpiryUtc,
                 SteamApiKey = this.SteamApiKey,
-                SteamLanguage = this.SteamLanguage,
                 GlobalLanguage = this.GlobalLanguage,
                 SteamEnabled = this.SteamEnabled,
                 EpicEnabled = this.EpicEnabled,

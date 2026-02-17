@@ -39,6 +39,7 @@ Packages:
       - Steam and RetroAchievements - improved icon fallback, emulator path expansion, and console/path resolution
       - Performance and stability - improved async threading and added Steam session warmup for smoother scans
       - GOG support coming soon!
+
   - Version: 1.0.4
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-12

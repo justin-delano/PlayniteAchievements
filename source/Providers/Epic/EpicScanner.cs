@@ -114,6 +114,10 @@ namespace PlayniteAchievements.Providers.Epic
                 {
                     throw;
                 }
+                catch (CachePersistenceException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     consecutiveErrors++;

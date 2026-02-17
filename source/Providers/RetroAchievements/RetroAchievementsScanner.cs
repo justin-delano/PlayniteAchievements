@@ -122,6 +122,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 {
                     throw;
                 }
+                catch (CachePersistenceException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     consecutiveErrors++;

@@ -136,6 +136,10 @@ namespace PlayniteAchievements.Providers.GOG
                 {
                     throw;
                 }
+                catch (CachePersistenceException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     consecutiveErrors++;

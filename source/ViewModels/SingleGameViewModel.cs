@@ -24,6 +24,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Guid _gameId;
+        private volatile bool _fullResetRequested;
 
         // Sort state tracking for quick reverse
         private string _currentSortPath;
@@ -97,6 +98,7 @@ namespace PlayniteAchievements.ViewModels
                 _settings.PropertyChanged += OnSettingsChanged;
             }
             _achievementManager.GameCacheUpdated += OnGameCacheUpdated;
+            _achievementManager.CacheDeltaUpdated += OnCacheDeltaUpdated;
             _achievementManager.CacheInvalidated += OnCacheInvalidated;
             _achievementManager.RebuildProgress += OnRebuildProgress;
 
@@ -438,6 +440,23 @@ namespace PlayniteAchievements.ViewModels
 
         private void OnCacheInvalidated(object sender, EventArgs e)
         {
+            if (!_fullResetRequested)
+            {
+                return;
+            }
+
+            _fullResetRequested = false;
+            System.Windows.Application.Current?.Dispatcher?.Invoke(LoadGameData);
+        }
+
+        private void OnCacheDeltaUpdated(object sender, CacheDeltaEventArgs e)
+        {
+            if (e?.IsFullReset != true)
+            {
+                return;
+            }
+
+            _fullResetRequested = true;
             System.Windows.Application.Current?.Dispatcher?.Invoke(LoadGameData);
         }
 
@@ -597,6 +616,7 @@ namespace PlayniteAchievements.ViewModels
                 _settings.PropertyChanged -= OnSettingsChanged;
             }
             _achievementManager.GameCacheUpdated -= OnGameCacheUpdated;
+            _achievementManager.CacheDeltaUpdated -= OnCacheDeltaUpdated;
             _achievementManager.CacheInvalidated -= OnCacheInvalidated;
             _achievementManager.RebuildProgress -= OnRebuildProgress;
         }

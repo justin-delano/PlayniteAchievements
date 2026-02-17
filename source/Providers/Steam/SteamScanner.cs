@@ -144,6 +144,10 @@ namespace PlayniteAchievements.Providers.Steam
                 {
                     throw;
                 }
+                catch (CachePersistenceException)
+                {
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     consecutiveErrors++;

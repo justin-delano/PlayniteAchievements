@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
@@ -15,6 +16,7 @@ namespace PlayniteAchievements.Services
 
         public string BaseDir { get; }
         public string UserCacheRootDir { get; }  // Legacy per-game JSON cache directory
+        public string LegacyQuarantineRootDir { get; }
 
         public CacheStorage(PlayniteAchievementsPlugin plugin, ILogger logger)
         {
@@ -23,6 +25,7 @@ namespace PlayniteAchievements.Services
 
             BaseDir = plugin.GetPluginUserDataPath();
             UserCacheRootDir = Path.Combine(BaseDir, "achievement_cache");  // Legacy per-game JSON cache
+            LegacyQuarantineRootDir = Path.Combine(BaseDir, "achievement_cache_quarantine");
 
             EnsureDir(BaseDir);
         }
@@ -65,6 +68,31 @@ namespace PlayniteAchievements.Services
         public void DeleteDirectoryIfExists(string dir)
         {
             if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+
+        public string MoveFileToLegacyQuarantine(string sourcePath, string reasonSuffix = null)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+            {
+                return null;
+            }
+
+            EnsureDir(LegacyQuarantineRootDir);
+
+            var name = Path.GetFileNameWithoutExtension(sourcePath) ?? "legacy";
+            var ext = Path.GetExtension(sourcePath);
+            if (string.IsNullOrWhiteSpace(ext))
+            {
+                ext = ".json";
+            }
+
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmssfff", CultureInfo.InvariantCulture);
+            var reason = string.IsNullOrWhiteSpace(reasonSuffix) ? "parse-failed" : reasonSuffix.Trim();
+            var destName = $"{name}.{timestamp}.{reason}{ext}";
+            var destPath = Path.Combine(LegacyQuarantineRootDir, destName);
+
+            File.Move(sourcePath, destPath);
+            return destPath;
         }
 
         private static class AtomicJson

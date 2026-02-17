@@ -93,7 +93,7 @@ namespace PlayniteAchievements.Providers.GOG
                 Uri.EscapeDataString(clientId),
                 Uri.EscapeDataString(userId));
 
-            _logger?.Debug($"[GogApi] Fetching achievements from: {url.Replace(clientId, "***").Replace(userId, "***")}");
+            // _logger?.Debug($"[GogApi] Fetching achievements from: {url.Replace(clientId, "***").Replace(userId, "***")}");
 
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))
             {
@@ -172,7 +172,7 @@ namespace PlayniteAchievements.Providers.GOG
             if (_clientIdCacheStore.TryGetClientId(productId, out var cachedClientId) &&
                 !string.IsNullOrWhiteSpace(cachedClientId))
             {
-                _logger?.Debug($"[GogApi] client_id cache hit for productId={productId}.");
+                // _logger?.Debug($"[GogApi] client_id cache hit for productId={productId}.");
                 return cachedClientId;
             }
 

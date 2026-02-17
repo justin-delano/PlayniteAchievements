@@ -37,7 +37,6 @@ namespace PlayniteAchievements.Models.Settings
             target.EpicTokenExpiryUtc = source.EpicTokenExpiryUtc;
             target.EpicRefreshTokenExpiryUtc = source.EpicRefreshTokenExpiryUtc;
             target.SteamApiKey = source.SteamApiKey;
-            target.SteamLanguage = source.SteamLanguage;
             target.GlobalLanguage = source.GlobalLanguage;
             target.SteamEnabled = source.SteamEnabled;
             target.EpicEnabled = source.EpicEnabled;
@@ -101,7 +100,6 @@ namespace PlayniteAchievements.Models.Settings
                 EpicTokenExpiryUtc = source.EpicTokenExpiryUtc,
                 EpicRefreshTokenExpiryUtc = source.EpicRefreshTokenExpiryUtc,
                 SteamApiKey = source.SteamApiKey,
-                SteamLanguage = source.SteamLanguage,
                 GlobalLanguage = source.GlobalLanguage,
                 SteamEnabled = source.SteamEnabled,
                 EpicEnabled = source.EpicEnabled,

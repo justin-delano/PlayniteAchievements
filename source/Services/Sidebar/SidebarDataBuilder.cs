@@ -49,151 +49,58 @@ namespace PlayniteAchievements.Services.Sidebar
             int perfectGames = 0;
 
             var unlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            var showIcon = settings.Persisted?.ShowHiddenIcon ?? false;
-            var showTitle = settings.Persisted?.ShowHiddenTitle ?? false;
-            var showDescription = settings.Persisted?.ShowHiddenDescription ?? false;
-            var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
-            var canResolveReveals = anyHidingEnabled && revealedKeys.Count > 0;
 
-            List<GameAchievementData> allGameData;
-            allGameData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
-
-            foreach (var gameData in allGameData)
+            var allGameData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
+            for (var i = 0; i < allGameData.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
-                if (gameData?.Achievements == null || gameData.NoAchievements || gameData.Achievements.Count == 0)
+
+                var fragment = BuildGameFragment(settings, revealedKeys, allGameData[i]);
+                if (fragment == null)
                 {
                     continue;
                 }
 
-                var playniteGame = gameData.PlayniteGameId.HasValue
-                    ? _playniteApi?.Database?.Games?.Get(gameData.PlayniteGameId.Value)
-                    : null;
+                allAchievements.AddRange(fragment.Achievements);
 
-                // Build overview stats for this game.
-                var achievements = gameData.Achievements;
-                int gameTotal = achievements.Count;
-                int gameUnlocked = 0;
-                int gameCommon = 0, gameUncommon = 0, gameRare = 0, gameUltraRare = 0;
-
-                for (int i = 0; i < achievements.Count; i++)
+                if (fragment.GameOverview != null)
                 {
-                    cancel.ThrowIfCancellationRequested();
-
-                    var ach = achievements[i];
-                    if (ach == null)
-                    {
-                        continue;
-                    }
-
-                    var item = new AchievementDisplayItem
-                    {
-                        GameName = gameData.GameName ?? "Unknown",
-                        PlayniteGameId = gameData.PlayniteGameId,
-                        DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
-                        Description = ach.Description ?? string.Empty,
-                        IconPath = ach.UnlockedIconPath,
-                        UnlockTimeUtc = ach.UnlockTimeUtc,
-                        GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
-                        Unlocked = ach.Unlocked,
-                        Hidden = ach.Hidden,
-                        ApiName = ach.ApiName,
-                        ShowHiddenIcon = showIcon,
-                        ShowHiddenTitle = showTitle,
-                        ShowHiddenDescription = showDescription,
-                        ProgressNum = ach.ProgressNum,
-                        ProgressDenom = ach.ProgressDenom
-                    };
-
-                    if (canResolveReveals && ach.Hidden && !ach.Unlocked)
-                    {
-                        var revealKey = MakeRevealKey(gameData.PlayniteGameId, ach.ApiName, gameData.GameName);
-                        item.IsRevealed = revealedKeys.Contains(revealKey);
-                    }
-                    else
-                    {
-                        item.IsRevealed = false;
-                    }
-
-                    allAchievements.Add(item);
-
-                    if (ach.Unlocked)
-                    {
-                        gameUnlocked++;
-
-                        var pct = ach.GlobalPercentUnlocked ?? 100;
-                        var tier = RarityHelper.GetRarityTier(pct);
-                        switch (tier)
-                        {
-                            case RarityTier.UltraRare: ultraRareCount++; gameUltraRare++; break;
-                            case RarityTier.Rare: rareCount++; gameRare++; break;
-                            case RarityTier.Uncommon: uncommonCount++; gameUncommon++; break;
-                            default: commonCount++; gameCommon++; break;
-                        }
-
-                        if (ach.UnlockTimeUtc.HasValue)
-                        {
-                            var unlockDate = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value).Date;
-                            Increment(globalCounts, unlockDate);
-
-                            if (gameData.PlayniteGameId.HasValue)
-                            {
-                                if (!singleGameCounts.TryGetValue(gameData.PlayniteGameId.Value, out var dict))
-                                {
-                                    dict = new Dictionary<DateTime, int>();
-                                    singleGameCounts[gameData.PlayniteGameId.Value] = dict;
-                                }
-                                Increment(dict, unlockDate);
-
-                                recentAchievements.Add(new RecentAchievementItem
-                                {
-                                    ApiName = ach.ApiName,
-                                    Name = ach.DisplayName ?? ach.ApiName ?? "Unknown",
-                                    Description = ach.Description ?? string.Empty,
-                                    GameName = gameData.GameName ?? "Unknown",
-                                    IconPath = ach.UnlockedIconPath,
-                                    UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
-                                    GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
-                                    GameIconPath = !string.IsNullOrEmpty(playniteGame?.Icon) ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon) : null,
-                                    GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage) ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage) : null,
-                                    Hidden = ach.Hidden
-                                });
-                            }
-                        }
-                    }
+                    gamesOverview.Add(fragment.GameOverview);
                 }
 
-                totalAchievements += gameTotal;
-                totalUnlocked += gameUnlocked;
+                if (fragment.RecentAchievements != null && fragment.RecentAchievements.Count > 0)
+                {
+                    recentAchievements.AddRange(fragment.RecentAchievements);
+                }
 
-                // Track unlocked achievements by provider
-                var provider = gameData.ProviderName ?? "Unknown";
-                if (!unlockedByProvider.ContainsKey(provider))
-                    unlockedByProvider[provider] = 0;
-                unlockedByProvider[provider] += gameUnlocked;
+                if (fragment.PlayniteGameId.HasValue)
+                {
+                    singleGameCounts[fragment.PlayniteGameId.Value] = fragment.UnlockCountsByDate;
+                }
 
-                if (gameUnlocked == gameTotal && gameTotal > 0)
+                foreach (var kvp in fragment.UnlockCountsByDate)
+                {
+                    IncrementBy(globalCounts, kvp.Key, kvp.Value);
+                }
+
+                totalAchievements += fragment.TotalAchievements;
+                totalUnlocked += fragment.UnlockedAchievements;
+                commonCount += fragment.CommonCount;
+                uncommonCount += fragment.UncommonCount;
+                rareCount += fragment.RareCount;
+                ultraRareCount += fragment.UltraRareCount;
+                if (fragment.IsPerfect)
                 {
                     perfectGames++;
                 }
 
-                gamesOverview.Add(new GameOverviewItem
+                var provider = fragment.ProviderName ?? "Unknown";
+                if (!unlockedByProvider.ContainsKey(provider))
                 {
-                    GameName = gameData.GameName ?? "Unknown",
-                    GameLogo = !string.IsNullOrEmpty(playniteGame?.Icon) ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon) : null,
-                    GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage) ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage) : null,
-                    AppId = gameData.AppId,
-                    PlayniteGameId = gameData.PlayniteGameId,
-                    TotalAchievements = gameTotal,
-                    UnlockedAchievements = gameUnlocked,
-                    CommonCount = gameCommon,
-                    UncommonCount = gameUncommon,
-                    RareCount = gameRare,
-                    UltraRareCount = gameUltraRare,
-                    LastPlayed = playniteGame?.LastActivity,
-                    IsPerfect = gameUnlocked == gameTotal && gameTotal > 0,
-                    Provider = gameData.ProviderName ?? "Unknown"
-                });
+                    unlockedByProvider[provider] = 0;
+                }
+
+                unlockedByProvider[provider] += fragment.UnlockedAchievements;
             }
 
             // Sort stable outputs once so UI work is minimal.
@@ -221,11 +128,172 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.PerfectGames = perfectGames;
             snapshot.GlobalProgressionPercent = totalAchievements > 0 ? (double)totalUnlocked / totalAchievements * 100 : 0;
 
-            // Calculate total locked as difference between total and unlocked
             snapshot.TotalLocked = totalAchievements - totalUnlocked;
             snapshot.UnlockedByProvider = unlockedByProvider;
 
             return snapshot;
+        }
+
+        public SidebarGameFragment BuildGameFragment(
+            PlayniteAchievementsSettings settings,
+            ISet<string> revealedKeys,
+            GameAchievementData gameData)
+        {
+            settings ??= new PlayniteAchievementsSettings();
+            revealedKeys ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (gameData?.Achievements == null || gameData.NoAchievements || gameData.Achievements.Count == 0)
+            {
+                return null;
+            }
+
+            var playniteGame = gameData.PlayniteGameId.HasValue
+                ? _playniteApi?.Database?.Games?.Get(gameData.PlayniteGameId.Value)
+                : null;
+
+            var fragment = new SidebarGameFragment
+            {
+                CacheKey = gameData.PlayniteGameId?.ToString(),
+                PlayniteGameId = gameData.PlayniteGameId,
+                ProviderName = gameData.ProviderName ?? "Unknown"
+            };
+
+            var showIcon = settings.Persisted?.ShowHiddenIcon ?? false;
+            var showTitle = settings.Persisted?.ShowHiddenTitle ?? false;
+            var showDescription = settings.Persisted?.ShowHiddenDescription ?? false;
+            var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
+            var canResolveReveals = anyHidingEnabled && revealedKeys.Count > 0;
+
+            var achievements = gameData.Achievements;
+            int gameTotal = achievements.Count;
+            int gameUnlocked = 0;
+            int gameCommon = 0;
+            int gameUncommon = 0;
+            int gameRare = 0;
+            int gameUltraRare = 0;
+
+            for (var i = 0; i < achievements.Count; i++)
+            {
+                var ach = achievements[i];
+                if (ach == null)
+                {
+                    continue;
+                }
+
+                var item = new AchievementDisplayItem
+                {
+                    GameName = gameData.GameName ?? "Unknown",
+                    PlayniteGameId = gameData.PlayniteGameId,
+                    DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
+                    Description = ach.Description ?? string.Empty,
+                    IconPath = ach.UnlockedIconPath,
+                    UnlockTimeUtc = ach.UnlockTimeUtc,
+                    GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
+                    Unlocked = ach.Unlocked,
+                    Hidden = ach.Hidden,
+                    ApiName = ach.ApiName,
+                    ShowHiddenIcon = showIcon,
+                    ShowHiddenTitle = showTitle,
+                    ShowHiddenDescription = showDescription,
+                    ProgressNum = ach.ProgressNum,
+                    ProgressDenom = ach.ProgressDenom
+                };
+
+                if (canResolveReveals && ach.Hidden && !ach.Unlocked)
+                {
+                    var revealKey = MakeRevealKey(gameData.PlayniteGameId, ach.ApiName, gameData.GameName);
+                    item.IsRevealed = revealedKeys.Contains(revealKey);
+                }
+                else
+                {
+                    item.IsRevealed = false;
+                }
+
+                fragment.Achievements.Add(item);
+
+                if (ach.Unlocked)
+                {
+                    gameUnlocked++;
+
+                    var pct = ach.GlobalPercentUnlocked ?? 100;
+                    var tier = RarityHelper.GetRarityTier(pct);
+                    switch (tier)
+                    {
+                        case RarityTier.UltraRare:
+                            gameUltraRare++;
+                            break;
+                        case RarityTier.Rare:
+                            gameRare++;
+                            break;
+                        case RarityTier.Uncommon:
+                            gameUncommon++;
+                            break;
+                        default:
+                            gameCommon++;
+                            break;
+                    }
+
+                    if (ach.UnlockTimeUtc.HasValue)
+                    {
+                        var unlockDate = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value).Date;
+                        Increment(fragment.UnlockCountsByDate, unlockDate);
+
+                        if (gameData.PlayniteGameId.HasValue)
+                        {
+                            fragment.RecentAchievements.Add(new RecentAchievementItem
+                            {
+                                ApiName = ach.ApiName,
+                                PlayniteGameId = gameData.PlayniteGameId,
+                                Name = ach.DisplayName ?? ach.ApiName ?? "Unknown",
+                                Description = ach.Description ?? string.Empty,
+                                GameName = gameData.GameName ?? "Unknown",
+                                IconPath = ach.UnlockedIconPath,
+                                UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
+                                GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
+                                GameIconPath = !string.IsNullOrEmpty(playniteGame?.Icon)
+                                    ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon)
+                                    : null,
+                                GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage)
+                                    ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage)
+                                    : null,
+                                Hidden = ach.Hidden
+                            });
+                        }
+                    }
+                }
+            }
+
+            fragment.TotalAchievements = gameTotal;
+            fragment.UnlockedAchievements = gameUnlocked;
+            fragment.CommonCount = gameCommon;
+            fragment.UncommonCount = gameUncommon;
+            fragment.RareCount = gameRare;
+            fragment.UltraRareCount = gameUltraRare;
+            fragment.IsPerfect = gameUnlocked == gameTotal && gameTotal > 0;
+
+            fragment.GameOverview = new GameOverviewItem
+            {
+                GameName = gameData.GameName ?? "Unknown",
+                GameLogo = !string.IsNullOrEmpty(playniteGame?.Icon)
+                    ? _playniteApi.Database.GetFullFilePath(playniteGame.Icon)
+                    : null,
+                GameCoverPath = !string.IsNullOrEmpty(playniteGame?.CoverImage)
+                    ? _playniteApi.Database.GetFullFilePath(playniteGame.CoverImage)
+                    : null,
+                AppId = gameData.AppId,
+                PlayniteGameId = gameData.PlayniteGameId,
+                TotalAchievements = gameTotal,
+                UnlockedAchievements = gameUnlocked,
+                CommonCount = gameCommon,
+                UncommonCount = gameUncommon,
+                RareCount = gameRare,
+                UltraRareCount = gameUltraRare,
+                LastPlayed = playniteGame?.LastActivity,
+                IsPerfect = gameUnlocked == gameTotal && gameTotal > 0,
+                Provider = gameData.ProviderName ?? "Unknown"
+            };
+
+            return fragment;
         }
 
         private static void Increment(Dictionary<DateTime, int> dict, DateTime date)
@@ -237,6 +305,18 @@ namespace PlayniteAchievements.Services.Sidebar
             else
             {
                 dict[date] = 1;
+            }
+        }
+
+        private static void IncrementBy(Dictionary<DateTime, int> dict, DateTime date, int count)
+        {
+            if (dict.TryGetValue(date, out var existing))
+            {
+                dict[date] = existing + count;
+            }
+            else
+            {
+                dict[date] = count;
             }
         }
 

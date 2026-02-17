@@ -119,6 +119,12 @@ namespace PlayniteAchievements.Services
             remove => _cacheService.GameCacheUpdated -= value;
         }
 
+        public event EventHandler<CacheDeltaEventArgs> CacheDeltaUpdated
+        {
+            add => _cacheService.CacheDeltaUpdated += value;
+            remove => _cacheService.CacheDeltaUpdated -= value;
+        }
+
         public event EventHandler CacheInvalidated
         {
             add => _cacheService.CacheInvalidated += value;
@@ -682,7 +688,20 @@ namespace PlayniteAchievements.Services
 
             if (!string.IsNullOrWhiteSpace(key))
             {
-                _cacheService.SaveGameData(key, data);
+                var writeResult = _cacheService.SaveGameData(key, data);
+                if (writeResult == null || !writeResult.Success)
+                {
+                    var errorCode = writeResult?.ErrorCode ?? "unknown";
+                    var errorMessage = writeResult?.ErrorMessage ?? "Unknown cache persistence failure.";
+
+                    throw new CachePersistenceException(
+                        key,
+                        provider?.ProviderName ?? data.ProviderName,
+                        errorCode,
+                        $"Persisting scanned game data failed. key={key}, provider={provider?.ProviderName ?? data.ProviderName}, code={errorCode}, message={errorMessage}",
+                        writeResult?.Exception);
+                }
+
                 Interlocked.Increment(ref _savedGamesInCurrentRun);
                 NotifyCacheInvalidatedThrottled(force: false);
             }
