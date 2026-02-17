@@ -429,7 +429,11 @@ namespace PlayniteAchievements.Services
             RebuildPayload payload = null;
             try
             {
-                payload = await runner(cts.Token).ConfigureAwait(false);
+                // Run scan setup/execution on background thread so UI commands are never blocked
+                // by synchronous pre-scan work (game filtering, capability checks, etc.).
+                payload = await Task.Run(
+                    async () => await runner(cts.Token).ConfigureAwait(false),
+                    cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -989,6 +993,17 @@ namespace PlayniteAchievements.Services
             return missingGameIds;
         }
 
+        private async Task StartManagedMissingScanAsync()
+        {
+            var missingGameIds = await Task.Run(GetMissingGameIds).ConfigureAwait(false);
+            await StartManagedGameIdScanAsync(
+                ScanModeType.Missing,
+                missingGameIds,
+                payload => FormatScanCompletionWithModeAndCount(ScanModeType.Missing, payload?.Summary?.GamesScanned ?? 0),
+                ResourceProvider.GetString("LOCPlayAch_Log_ScanMissingFailed"))
+                .ConfigureAwait(false);
+        }
+
         private Task StartManagedRebuildAsync()
         {
             return StartManagedScanCoreAsync(
@@ -1092,11 +1107,7 @@ namespace PlayniteAchievements.Services
                         ResourceProvider.GetString("LOCPlayAch_Log_ScanNoSelectedGames"));
 
                 case ScanModeType.Missing:
-                    return StartManagedGameIdScanAsync(
-                        ScanModeType.Missing,
-                        GetMissingGameIds(),
-                        payload => FormatScanCompletionWithModeAndCount(ScanModeType.Missing, payload?.Summary?.GamesScanned ?? 0),
-                        ResourceProvider.GetString("LOCPlayAch_Log_ScanMissingFailed"));
+                    return StartManagedMissingScanAsync();
 
                 default:
                     _logger.Warn(string.Format(

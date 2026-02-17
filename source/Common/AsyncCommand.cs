@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -31,6 +32,21 @@ namespace PlayniteAchievements.Common
                 _isExecuting = true;
                 RaiseCanExecuteChanged();
                 await _executeAsync(parameter).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Cancellation is expected for some command paths; do not surface as unhandled.
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    Trace.TraceError($"AsyncCommand execution failed: {ex}");
+                }
+                catch
+                {
+                    // Never let diagnostics throw from command execution.
+                }
             }
             finally
             {

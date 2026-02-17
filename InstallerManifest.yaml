@@ -1,5 +1,20 @@
 AddonId: PlayniteAchievements
 Packages:
+  - Version: 1.3.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-02-17
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.3.0/PlayniteAchievements_1_3_0.pext
+    Changelog:
+      - Epic Games support! XP is being tracked, but UI is not quite prepared for displaying it yet.
+      - Critical Fix - database syncing fix, where scans could show achievements for single games, but not appear in the sidebar overview, or disappear completely.
+      - The database has changed again, and data should automatically migrate. If you encounter any issues, please report them, and try clearing your cache from settings and rescanning for achievements. 
+      - Steam - progress bar fallback should actually work now.
+      - More language fixes and global language setting. Please report any other datetime parsing issues you encounter.
+      - Per-provider disable options for scanning.
+      - Option to export data to CSV in settings.
+      - Next up is PSN+Xbox support and more UI polish with XP/gamerscore data. 
+
+
   - Version: 1.2.0
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-16
