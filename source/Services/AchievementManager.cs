@@ -519,6 +519,7 @@ namespace PlayniteAchievements.Services
             var targets = new List<ScanGameTarget>();
             var seenGameIds = new HashSet<Guid>();
             var quickLimit = Math.Max(1, options.QuickRefreshRecentGamesCount);
+            var skippedNoProvider = 0;
 
             foreach (var game in candidates)
             {
@@ -530,6 +531,7 @@ namespace PlayniteAchievements.Services
                 var provider = ResolveProviderForGame(game, providers);
                 if (provider == null)
                 {
+                    skippedNoProvider++;
                     continue;
                 }
 
@@ -539,6 +541,11 @@ namespace PlayniteAchievements.Services
                 {
                     break;
                 }
+            }
+
+            if (skippedNoProvider > 0)
+            {
+                _logger?.Debug($"Skipped {skippedNoProvider} games without a capable provider.");
             }
 
             return targets;

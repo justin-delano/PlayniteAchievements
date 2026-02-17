@@ -135,7 +135,7 @@ namespace PlayniteAchievements.Providers.Steam
             var result = await GetSchemaForGameDetailedInternalAsync(apiKey, appId, language, ct).ConfigureAwait(false);
             if (result == null && !string.Equals(language, "english", StringComparison.OrdinalIgnoreCase))
             {
-                _logger?.Info("Schema fetch failed for '{language}', retrying with 'english' for appId={appId}");
+                _logger?.Info($"Schema fetch failed for '{language}', retrying with 'english' for appId={appId}");
                 result = await GetSchemaForGameDetailedInternalAsync(apiKey, appId, "english", ct).ConfigureAwait(false);
             }
             return result;
