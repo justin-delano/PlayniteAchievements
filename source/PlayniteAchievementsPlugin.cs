@@ -51,6 +51,7 @@ namespace PlayniteAchievements
         private readonly SteamSessionManager _steamSessionManager;
         private readonly GogSessionManager _gogSessionManager;
         private readonly EpicSessionManager _epicSessionManager;
+        private readonly ProviderRegistry _providerRegistry;
 
         private readonly BackgroundUpdater _backgroundUpdates;
 
@@ -87,6 +88,7 @@ namespace PlayniteAchievements
             Guid.Parse("e6aad2c9-6e06-4d8d-ac55-ac3b252b5f7b");
 
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
+        public ProviderRegistry ProviderRegistry => _providerRegistry;
         public AchievementManager AchievementManager => _achievementManager;
         public MemoryImageService ImageService => _imageService;
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
@@ -171,7 +173,12 @@ namespace PlayniteAchievements
 
             _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
             _imageService = new MemoryImageService(_logger, _diskImageService);
-            _achievementManager = new AchievementManager(api, settings, _logger, this, providers, _diskImageService);
+
+            // Create provider registry and sync from persisted settings
+            _providerRegistry = new ProviderRegistry();
+            _providerRegistry.SyncFromSettings(settings.Persisted);
+
+            _achievementManager = new AchievementManager(api, settings, _logger, this, providers, _diskImageService, _providerRegistry);
             _notifications = new NotificationPublisher(api, settings, _logger);
             _backgroundUpdates = new BackgroundUpdater(_achievementManager, settings, _logger, _notifications, null);
 
