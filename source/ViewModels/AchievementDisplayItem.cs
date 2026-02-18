@@ -29,6 +29,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     OnPropertyChanged(nameof(Name));
                     OnPropertyChanged(nameof(DisplayNameResolved));
+                    OnPropertyChanged(nameof(HiddenTitleSuffix));
                 }
             }
         }
@@ -117,6 +118,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(DisplayIcon));
                     OnPropertyChanged(nameof(Icon));
                     OnPropertyChanged(nameof(DisplayNameResolved));
+                    OnPropertyChanged(nameof(HiddenTitleSuffix));
                     OnPropertyChanged(nameof(DescriptionResolved));
                     OnPropertyChanged(nameof(IsUnlock));
                 }
@@ -136,6 +138,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(DisplayIcon));
                     OnPropertyChanged(nameof(Icon));
                     OnPropertyChanged(nameof(DisplayNameResolved));
+                    OnPropertyChanged(nameof(HiddenTitleSuffix));
                     OnPropertyChanged(nameof(DescriptionResolved));
                 }
             }
@@ -174,6 +177,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(IsHidden));
                     OnPropertyChanged(nameof(IsTitleHidden));
                     OnPropertyChanged(nameof(DisplayNameResolved));
+                    OnPropertyChanged(nameof(HiddenTitleSuffix));
                 }
             }
         }
@@ -217,6 +221,7 @@ namespace PlayniteAchievements.ViewModels
                     if (!ShowHiddenTitle)
                     {
                         OnPropertyChanged(nameof(DisplayNameResolved));
+                        OnPropertyChanged(nameof(HiddenTitleSuffix));
                     }
                     // Only notify description changes if description hiding is enabled
                     if (!ShowHiddenDescription)
@@ -304,6 +309,15 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (IsHidden && !ShowHiddenTitle) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle");
                 return DisplayName;
+            }
+        }
+
+        public string HiddenTitleSuffix
+        {
+            get
+            {
+                if (Hidden && !IsTitleHidden) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle_WithParens");
+                return string.Empty;
             }
         }
 

@@ -1440,29 +1440,15 @@
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Margin="12,10" VerticalAlignment="Center"> <!-- was 8,8 -->
-                                                        <StackPanel Orientation="Horizontal">
-                                                            <TextBlock Text="{Binding Name}"
-                                                                    Style="{DynamicResource BaseTextBlockStyle}"
-                                                                    Foreground="{DynamicResource TextBrush}"
-                                                                    TextTrimming="CharacterEllipsis"/>
-                                                                <TextBlock Text="{DynamicResource LOCPlayAch_Achievements_HiddenTitle_WithParens}"
-                                                                    FontStyle="Italic"
-                                                                    FontSize="{DynamicResource FontSizeSmall}"
-                                                                    Foreground="{DynamicResource TextBrush}"
-                                                                    Opacity="0.7"
-                                                                    Margin="0,1,0,0">
-                                                                <TextBlock.Style>
-                                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-                                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                                        <Style.Triggers>
-                                                                            <DataTrigger Binding="{Binding Hidden}" Value="True">
-                                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                                            </DataTrigger>
-                                                                        </Style.Triggers>
-                                                                    </Style>
-                                                                </TextBlock.Style>
-                                                            </TextBlock>
-                                                        </StackPanel>
+                                                        <TextBlock Style="{DynamicResource BaseTextBlockStyle}"
+                                                                   Foreground="{DynamicResource TextBrush}"
+                                                                   TextWrapping="Wrap">
+                                                            <Run Text="{Binding Name}"/>
+                                                            <Run Text="{Binding HiddenTitleSuffix}"
+                                                                 FontStyle="Italic"
+                                                                 FontSize="{DynamicResource FontSizeSmall}"
+                                                                 Foreground="{DynamicResource TextBrush}"/>
+                                                        </TextBlock>
 
                                                         <TextBlock Text="{Binding Description}"
                                                                 FontSize="{DynamicResource FontSizeSmall}"
@@ -1753,48 +1739,28 @@
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Margin="12,10" VerticalAlignment="Center" Background="Transparent">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{Binding DisplayNameResolved}"
-                                                                   FontWeight="SemiBold"
-                                                                   Foreground="{DynamicResource TextBrush}"
-                                                                   TextTrimming="CharacterEllipsis">
-                                                            <TextBlock.Style>
-                                                                <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-                                                                    <Setter Property="Opacity" Value="0.7"/>
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                                                            <Setter Property="Opacity" Value="1"/>
-                                                                        </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
-                                                                            <Setter Property="FontStyle" Value="Italic"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBlock.Style>
-                                                        </TextBlock>
-                                                        <TextBlock Text="{DynamicResource LOCPlayAch_Achievements_HiddenTitle_WithParens}"
-                                                                   FontStyle="Italic"
-                                                                   FontSize="{DynamicResource FontSizeSmall}"
-                                                                   Foreground="{DynamicResource TextBrush}"
-                                                                   Opacity="0.7"
-                                                                   FontWeight="SemiBold"
-                                                                   Margin="0,1,0,0">
-                                                            <TextBlock.Style>
-                                                                <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-                                                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                                                    <Style.Triggers>
-                                                                        <MultiDataTrigger>
-                                                                            <MultiDataTrigger.Conditions>
-                                                                                <Condition Binding="{Binding Hidden}" Value="True"/>
-                                                                                <Condition Binding="{Binding IsTitleHidden}" Value="False"/>
-                                                                            </MultiDataTrigger.Conditions>
-                                                                            <Setter Property="Visibility" Value="Visible"/>
-                                                                        </MultiDataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </TextBlock.Style>
-                                                        </TextBlock>
-                                                    </StackPanel>
+                                                    <TextBlock FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               TextWrapping="Wrap">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                                                                <Setter Property="Opacity" Value="0.7"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                                                        <Setter Property="Opacity" Value="1"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
+                                                                        <Setter Property="FontStyle" Value="Italic"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                        <Run Text="{Binding DisplayNameResolved}"/>
+                                                        <Run Text="{Binding HiddenTitleSuffix}"
+                                                             FontStyle="Italic"
+                                                             FontSize="{DynamicResource FontSizeSmall}"
+                                                             Foreground="{DynamicResource TextBrush}"/>
+                                                    </TextBlock>
 
                                                     <TextBlock Text="{Binding DescriptionResolved}"
                                                                FontSize="{DynamicResource FontSizeSmall}"

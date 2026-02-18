@@ -1,6 +1,7 @@
 using System;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
+using Playnite.SDK;
 
 namespace PlayniteAchievements.ViewModels
 {
@@ -15,7 +16,13 @@ namespace PlayniteAchievements.ViewModels
         public bool Hidden
         {
             get => _hidden;
-            set => SetValue(ref _hidden, value);
+            set
+            {
+                if (SetValueAndReturn(ref _hidden, value))
+                {
+                    OnPropertyChanged(nameof(HiddenTitleSuffix));
+                }
+            }
         }
 
         private string _name;
@@ -147,6 +154,7 @@ namespace PlayniteAchievements.ViewModels
         public string RarityIconKey => RarityHelper.GetRarityIconKey(GlobalPercent);
 
         public System.Windows.Media.SolidColorBrush RarityBrush => RarityHelper.GetRarityBrush(GlobalPercent);
+        public string HiddenTitleSuffix => Hidden ? ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle_WithParens") : string.Empty;
 
         public void UpdateFrom(RecentAchievementItem other)
         {
