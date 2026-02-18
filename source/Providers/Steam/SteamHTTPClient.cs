@@ -4,6 +4,8 @@ using Playnite.SDK;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -25,8 +27,26 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly ILogger _logger;
         private readonly SteamSessionManager _sessionManager;
         private readonly SteamApiClient _steamApiClient;
+        private readonly string _failedSteamDateTimesCsvPath;
+        private readonly object _failedSteamDateTimesLock = new object();
+        private readonly ConcurrentQueue<SteamDatetimeParseFailureEntry> _pendingSteamDatetimeParseFailures =
+            new ConcurrentQueue<SteamDatetimeParseFailureEntry>();
         private readonly CookieContainer _cookieJar = new CookieContainer();
         private readonly object _cookieLock = new object();
+        private int _steamDatetimeParseFailuresInCurrentScan;
+
+        private const string FailedSteamDateTimesFileName = "failed_steam_datetimes.csv";
+        private const string FailedSteamDateTimesHeaderLegacy = "error_time_utc,steam_language,raw_scraped_time";
+        private const string FailedSteamDateTimesHeaderCurrent = "error_time_utc,steam_language,game_name,achievement_name,raw_scraped_time";
+
+        private struct SteamDatetimeParseFailureEntry
+        {
+            public string ErrorTimeUtc { get; set; }
+            public string SteamLanguage { get; set; }
+            public string GameName { get; set; }
+            public string AchievementName { get; set; }
+            public string RawScrapedTime { get; set; }
+        }
 
         private HttpClient _http;
         private HttpClientHandler _handler;
@@ -38,11 +58,14 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly ConcurrentDictionary<int, Lazy<Task<bool?>>> _hasAchievementsCache =
             new ConcurrentDictionary<int, Lazy<Task<bool?>>>();
 
-        public SteamHttpClient(IPlayniteAPI api, ILogger logger, SteamSessionManager sessionManager)
+        public SteamHttpClient(IPlayniteAPI api, ILogger logger, SteamSessionManager sessionManager, string pluginUserDataPath)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+            _failedSteamDateTimesCsvPath = string.IsNullOrWhiteSpace(pluginUserDataPath)
+                ? null
+                : Path.Combine(pluginUserDataPath, FailedSteamDateTimesFileName);
 
             BuildHttpClientsOnce();
             _steamApiClient = new SteamApiClient(_apiHttp, _logger);
@@ -165,7 +188,7 @@ namespace PlayniteAchievements.Providers.Steam
         // Parsing / Schema
         // ---------------------------------------------------------------------
 
-        public List<ScrapedAchievement> ParseAchievements(string html, bool includeLocked, string language = "english")
+        public List<ScrapedAchievement> ParseAchievements(string html, bool includeLocked, string language = "english", string gameName = null)
         {
             var safe = html ?? string.Empty;
             if (safe.Length < 200) return new List<ScrapedAchievement>();
@@ -201,6 +224,7 @@ namespace PlayniteAchievements.Providers.Steam
                 var hasUnlockMarker = unlockNode != null;
                 var unlockText = ExtractUnlockText(unlockNode);
                 var unlockUtc = SteamTimeParser.TryParseSteamUnlockTime(unlockText, language);
+                var title = WebUtility.HtmlDecode(row.SelectSingleNode(".//h3")?.InnerText ?? "").Trim();
 
                 // Primary indicator: progress summary ordering (first N rows unlocked).
                 // Fallback if summary is missing: presence of Steam's unlock marker.
@@ -210,6 +234,8 @@ namespace PlayniteAchievements.Providers.Steam
 
                 if (hasUnlockMarker && !unlockUtc.HasValue && !string.IsNullOrWhiteSpace(unlockText))
                 {
+                    RecordDatetimeParseFailure(language, unlockText, gameName, title);
+
                     var snippet = unlockText.Substring(0, Math.Min(50, unlockText.Length));
                     var message = $"[SteamAch] ParseAchievements: Failed to parse time (lang={language}) from '{unlockText}' (hex: {BitConverter.ToString(Encoding.UTF8.GetBytes(snippet))})";
 
@@ -226,7 +252,6 @@ namespace PlayniteAchievements.Providers.Steam
 
                 if (!includeLocked && !isUnlocked) continue;
 
-                var title = WebUtility.HtmlDecode(row.SelectSingleNode(".//h3")?.InnerText ?? "").Trim();
                 var desc = WebUtility.HtmlDecode(row.SelectSingleNode(".//h5")?.InnerText ?? "").Trim();
                 var img = row.SelectSingleNode(".//div[contains(@class,'achieveImgHolder')]//img") ??
                           row.SelectSingleNode(".//img");
@@ -495,6 +520,144 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             return hasHiddenRow;
+        }
+
+        public void ResetSteamDatetimeParseFailuresForScan()
+        {
+            Interlocked.Exchange(ref _steamDatetimeParseFailuresInCurrentScan, 0);
+            while (_pendingSteamDatetimeParseFailures.TryDequeue(out _))
+            {
+            }
+        }
+
+        public int ConsumeSteamDatetimeParseFailuresForScan()
+        {
+            return Interlocked.Exchange(ref _steamDatetimeParseFailuresInCurrentScan, 0);
+        }
+
+        public int FlushSteamDatetimeParseFailuresForScan()
+        {
+            if (string.IsNullOrWhiteSpace(_failedSteamDateTimesCsvPath))
+            {
+                while (_pendingSteamDatetimeParseFailures.TryDequeue(out _))
+                {
+                }
+                return 0;
+            }
+
+            var drained = new List<SteamDatetimeParseFailureEntry>();
+            while (_pendingSteamDatetimeParseFailures.TryDequeue(out var pending))
+            {
+                drained.Add(pending);
+            }
+
+            if (drained.Count == 0)
+            {
+                return 0;
+            }
+
+            try
+            {
+                var directory = Path.GetDirectoryName(_failedSteamDateTimesCsvPath);
+                if (!string.IsNullOrWhiteSpace(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                lock (_failedSteamDateTimesLock)
+                {
+                    RotateLegacyDatetimeCsvIfNeeded();
+
+                    var writeHeader = !File.Exists(_failedSteamDateTimesCsvPath);
+                    using (var stream = new FileStream(_failedSteamDateTimesCsvPath, FileMode.Append, FileAccess.Write, FileShare.Read))
+                    using (var writer = new StreamWriter(stream, Encoding.UTF8))
+                    {
+                        if (writeHeader)
+                        {
+                            writer.WriteLine(FailedSteamDateTimesHeaderCurrent);
+                        }
+
+                        foreach (var entry in drained)
+                        {
+                            writer.WriteLine(string.Join(",",
+                                EscapeCsv(entry.ErrorTimeUtc),
+                                EscapeCsv(entry.SteamLanguage),
+                                EscapeCsv(entry.GameName),
+                                EscapeCsv(entry.AchievementName),
+                                EscapeCsv(entry.RawScrapedTime)));
+                        }
+                    }
+                }
+
+                return drained.Count;
+            }
+            catch (Exception ex)
+            {
+                // Requeue so a later scan can retry persistence instead of losing the data.
+                foreach (var entry in drained)
+                {
+                    _pendingSteamDatetimeParseFailures.Enqueue(entry);
+                }
+
+                _logger?.Warn(ex, "[SteamAch] Failed to flush datetime parse failures to CSV.");
+                return 0;
+            }
+        }
+
+        private void RecordDatetimeParseFailure(string language, string rawUnlockTime, string gameName, string achievementName)
+        {
+            Interlocked.Increment(ref _steamDatetimeParseFailuresInCurrentScan);
+            _pendingSteamDatetimeParseFailures.Enqueue(new SteamDatetimeParseFailureEntry
+            {
+                ErrorTimeUtc = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
+                SteamLanguage = string.IsNullOrWhiteSpace(language) ? "english" : language.Trim(),
+                GameName = string.IsNullOrWhiteSpace(gameName) ? string.Empty : gameName.Trim(),
+                AchievementName = string.IsNullOrWhiteSpace(achievementName) ? string.Empty : achievementName.Trim(),
+                RawScrapedTime = rawUnlockTime ?? string.Empty
+            });
+        }
+
+        private void RotateLegacyDatetimeCsvIfNeeded()
+        {
+            if (string.IsNullOrWhiteSpace(_failedSteamDateTimesCsvPath) || !File.Exists(_failedSteamDateTimesCsvPath))
+            {
+                return;
+            }
+
+            try
+            {
+                string firstLine;
+                using (var stream = new FileStream(_failedSteamDateTimesCsvPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(stream, Encoding.UTF8, true))
+                {
+                    firstLine = reader.ReadLine();
+                }
+
+                if (!string.Equals(firstLine?.Trim(), FailedSteamDateTimesHeaderLegacy, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                var directory = Path.GetDirectoryName(_failedSteamDateTimesCsvPath) ?? string.Empty;
+                var legacyName = "failed_steam_datetimes_legacy_" + DateTime.UtcNow.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture) + ".csv";
+                var legacyPath = Path.Combine(directory, legacyName);
+                File.Move(_failedSteamDateTimesCsvPath, legacyPath);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[SteamAch] Failed to rotate legacy Steam datetime CSV format.");
+            }
+        }
+
+        private static string EscapeCsv(string value)
+        {
+            var safe = value ?? string.Empty;
+            if (safe.IndexOfAny(new[] { ',', '"', '\r', '\n' }) < 0)
+            {
+                return safe;
+            }
+
+            return "\"" + safe.Replace("\"", "\"\"") + "\"";
         }
     }
 }

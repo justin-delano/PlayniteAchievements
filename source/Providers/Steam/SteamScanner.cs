@@ -62,106 +62,115 @@ namespace PlayniteAchievements.Providers.Steam
             Func<GameAchievementData, Task> onGameScanned,
             CancellationToken cancel)
         {
-            if (string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) || string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey))
+            _steamClient.ResetSteamDatetimeParseFailuresForScan();
+
+            try
             {
-                _logger?.Warn("[SteamAch] Missing Steam credentials - cannot scan achievements.");
-                return new RebuildPayload { Summary = new RebuildSummary() };
-            }
-
-            var report = progressCallback ?? (_ => { });
-
-            _logger?.Info("[SteamAch] Probing Steam login status before scan...");
-            var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(cancel).ConfigureAwait(false);
-            if (!isLoggedIn)
-            {
-                _logger?.Warn("[SteamAch] Steam web auth check failed: not logged in. Aborting scan.");
-                report(new ProviderScanUpdate { AuthRequired = true });
-                return new RebuildPayload { Summary = new RebuildSummary() };
-            }
-            _logger?.Info("[SteamAch] Steam web auth verified.");
-
-            if (gamesToScan is null || gamesToScan.Count == 0)
-            {
-                _logger?.Info("[SteamAch] No games found to scan.");
-                return new RebuildPayload { Summary = new RebuildSummary() };
-            }
-
-            var playtimes = await GetPlaytimesAsync(_settings.Persisted.SteamUserId.Trim(), cancel).ConfigureAwait(false)
-                ?? new Dictionary<int, int>();
-
-            var progress = new RebuildProgressReporter(report, gamesToScan.Count);
-            var summary = new RebuildSummary();
-
-            // Create rate limiter with exponential backoff
-            var rateLimiter = new RateLimiter(
-                _settings.Persisted.ScanDelayMs,
-                _settings.Persisted.MaxRetryAttempts);
-
-            int consecutiveErrors = 0;
-
-            for (int i = 0; i < gamesToScan.Count; i++)
-            {
-                cancel.ThrowIfCancellationRequested();
-                progress.Step();
-
-                var game = gamesToScan[i];
-
-                if (!TryGetPlatformAppId(game, out var appId))
+                if (string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) || string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey))
                 {
-                    _logger?.Warn($"Skipping game without valid AppId: {game.Name}");
-                    continue;
+                    _logger?.Warn("[SteamAch] Missing Steam credentials - cannot scan achievements.");
+                    return new RebuildPayload { Summary = new RebuildSummary() };
                 }
 
-                progress.Emit(new ProviderScanUpdate
-                {
-                    CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"App {appId}"
-                });
+                var report = progressCallback ?? (_ => { });
 
-                try
+                _logger?.Info("[SteamAch] Probing Steam login status before scan...");
+                var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(cancel).ConfigureAwait(false);
+                if (!isLoggedIn)
                 {
-                    var data = await rateLimiter.ExecuteWithRetryAsync(
-                        () => FetchGameDataAsync(game, playtimes, cancel),
-                        IsTransientError,
-                        cancel).ConfigureAwait(false);
+                    _logger?.Warn("[SteamAch] Steam web auth check failed: not logged in. Aborting scan.");
+                    report(new ProviderScanUpdate { AuthRequired = true });
+                    return new RebuildPayload { Summary = new RebuildSummary() };
+                }
+                _logger?.Info("[SteamAch] Steam web auth verified.");
 
-                    if (onGameScanned != null && data != null)
+                if (gamesToScan is null || gamesToScan.Count == 0)
+                {
+                    _logger?.Info("[SteamAch] No games found to scan.");
+                    return new RebuildPayload { Summary = new RebuildSummary() };
+                }
+
+                var playtimes = await GetPlaytimesAsync(_settings.Persisted.SteamUserId.Trim(), cancel).ConfigureAwait(false)
+                    ?? new Dictionary<int, int>();
+
+                var progress = new RebuildProgressReporter(report, gamesToScan.Count);
+                var summary = new RebuildSummary();
+
+                // Create rate limiter with exponential backoff
+                var rateLimiter = new RateLimiter(
+                    _settings.Persisted.ScanDelayMs,
+                    _settings.Persisted.MaxRetryAttempts);
+
+                int consecutiveErrors = 0;
+
+                for (int i = 0; i < gamesToScan.Count; i++)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                    progress.Step();
+
+                    var game = gamesToScan[i];
+
+                    if (!TryGetPlatformAppId(game, out var appId))
                     {
-                        await onGameScanned(data).ConfigureAwait(false);
+                        _logger?.Warn($"Skipping game without valid AppId: {game.Name}");
+                        continue;
                     }
 
-                    summary.GamesScanned++;
-
-                    if (data != null && !data.NoAchievements)
-                        summary.GamesWithAchievements++;
-                    else
-                        summary.GamesWithoutAchievements++;
-
-                    // Reset consecutive errors on success
-                    consecutiveErrors = 0;
-
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (CachePersistenceException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    consecutiveErrors++;
-                    _logger?.Warn($"[SteamAch] Skipping game after retries: {game.Name} (appId={appId}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
-
-                    // If we've hit too many consecutive errors, apply exponential backoff before continuing
-                    if (consecutiveErrors >= 3)
+                    progress.Emit(new ProviderScanUpdate
                     {
-                        await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
+                        CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"App {appId}"
+                    });
+
+                    try
+                    {
+                        var data = await rateLimiter.ExecuteWithRetryAsync(
+                            () => FetchGameDataAsync(game, playtimes, cancel),
+                            IsTransientError,
+                            cancel).ConfigureAwait(false);
+
+                        if (onGameScanned != null && data != null)
+                        {
+                            await onGameScanned(data).ConfigureAwait(false);
+                        }
+
+                        summary.GamesScanned++;
+
+                        if (data != null && !data.NoAchievements)
+                            summary.GamesWithAchievements++;
+                        else
+                            summary.GamesWithoutAchievements++;
+
+                        // Reset consecutive errors on success
+                        consecutiveErrors = 0;
+
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (CachePersistenceException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        consecutiveErrors++;
+                        _logger?.Warn($"[SteamAch] Skipping game after retries: {game.Name} (appId={appId}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
+
+                        // If we've hit too many consecutive errors, apply exponential backoff before continuing
+                        if (consecutiveErrors >= 3)
+                        {
+                            await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
+                        }
                     }
                 }
-            }
 
-            return new RebuildPayload { Summary = summary };
+                return new RebuildPayload { Summary = summary };
+            }
+            finally
+            {
+                ShowDatetimeParseFailureToastIfNeeded();
+            }
         }
 
         /// <summary>
@@ -195,6 +204,37 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             return false;
+        }
+
+        private void ShowDatetimeParseFailureToastIfNeeded()
+        {
+            var parseFailureCount = _steamClient.ConsumeSteamDatetimeParseFailuresForScan();
+            if (parseFailureCount <= 0)
+            {
+                return;
+            }
+
+            var persistedCount = _steamClient.FlushSteamDatetimeParseFailuresForScan();
+            if (persistedCount < parseFailureCount)
+            {
+                _logger?.Warn($"[SteamAch] Datetime parse failures detected={parseFailureCount}, persisted_to_csv={persistedCount}. CSV write may have failed for some entries.");
+            }
+
+            var message = $"Steam unlock datetime parsing failed {parseFailureCount} time(s) during this scan. Check the log and failed_steam_datetimes.csv, then submit an issue on GitHub.";
+            _logger?.Warn($"[SteamAch] {message}");
+
+            try
+            {
+                var title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
+                _api?.Notifications?.Add(new NotificationMessage(
+                    $"PlayniteAchievements-SteamDatetimeParse-{Guid.NewGuid()}",
+                    $"{title}\n{message}",
+                    NotificationType.Error));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[SteamAch] Failed to show datetime parse failure toast.");
+            }
         }
 
         private static bool TryGetPlatformAppId(Game game, out int appId)
@@ -257,7 +297,7 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             var schema = await FetchSchemaAsync(appId, cancel).ConfigureAwait(false);
-            var unlocked = await FetchUnlockedAsync(appId, ownedGamesPlaytime, schema, cancel).ConfigureAwait(false);
+            var unlocked = await FetchUnlockedAsync(appId, game?.Name, ownedGamesPlaytime, schema, cancel).ConfigureAwait(false);
 
             var gameData = new GameAchievementData
             {
@@ -338,6 +378,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         private async Task<UserUnlockedAchievements> FetchUnlockedAsync(
             int appId,
+            string gameName,
             Dictionary<int, int> ownedGamesPlaytime,
             SchemaAndPercentages schema,
             CancellationToken cancel)
@@ -354,7 +395,7 @@ namespace PlayniteAchievements.Providers.Steam
             AchievementsScrapeResponse scraped = null;
             try
             {
-                scraped = await ScrapeAchievementsAsync(_settings.Persisted.SteamUserId.Trim(), appId, cancel, includeLocked: true)
+                scraped = await ScrapeAchievementsAsync(_settings.Persisted.SteamUserId.Trim(), appId, cancel, includeLocked: true, gameName: gameName)
                     .ConfigureAwait(false);
             }
             catch (OperationCanceledException) { throw; }
@@ -509,7 +550,8 @@ namespace PlayniteAchievements.Providers.Steam
             string steamId64,
             int appId,
             CancellationToken cancel,
-            bool includeLocked = false)
+            bool includeLocked = false,
+            string gameName = null)
         {
             var res = new AchievementsScrapeResponse();
 
@@ -539,6 +581,48 @@ namespace PlayniteAchievements.Providers.Steam
                 return res;
             }
 
+            // Some Steam redirects (for example appId->stats key redirects) can drop or change
+            // the language query parameter. When that happens, unlock time strings can come back
+            // in a different locale than parser expectations. Retry once with explicit language.
+            if (ShouldRetryForRedirectLanguageLoss(res.FinalUrl, language))
+            {
+                var redirectedStatsKey = ExtractStatsKey(res.FinalUrl);
+                if (string.IsNullOrWhiteSpace(redirectedStatsKey))
+                {
+                    redirectedStatsKey = appId.ToString();
+                }
+
+                var languageRetryUrl = BuildAchievementsUrl(resolved, redirectedStatsKey, language);
+                _logger?.Debug(
+                    $"[SteamAch] Redirect dropped/changed language (requested={language}, finalUrl={res.FinalUrl}). " +
+                    $"Retrying once with explicit language. Url={languageRetryUrl}");
+
+                SteamPageResult languageRetryPage;
+                if (string.Equals(redirectedStatsKey, appId.ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    languageRetryPage = await _steamClient.GetAchievementsPageAsync(resolved, appId, language, cancel).ConfigureAwait(false);
+                }
+                else
+                {
+                    languageRetryPage = await _steamClient.GetAchievementsPageByKeyAsync(resolved, redirectedStatsKey, language, cancel).ConfigureAwait(false);
+                }
+
+                if (languageRetryPage != null)
+                {
+                    res.RequestedUrl = languageRetryUrl;
+                    res.StatusCode = (int)languageRetryPage.StatusCode;
+                    res.FinalUrl = languageRetryPage.FinalUrl ?? languageRetryUrl;
+                    html = languageRetryPage.Html ?? string.Empty;
+
+                    if (res.StatusCode == 429)
+                    {
+                        res.TransientFailure = true;
+                        res.SetDetail(SteamScrapeDetail.TooManyRequests);
+                        return res;
+                    }
+                }
+            }
+
             if (LooksLoggedOutHeuristic(html, res.FinalUrl))
             {
                 if (TryGetPrivateOrUnavailable(html, out var reason))
@@ -562,7 +646,7 @@ namespace PlayniteAchievements.Providers.Steam
                 return res;
             }
 
-            var result = ClassifyScrapeOrPrivate(res, html, includeLocked, language);
+            var result = ClassifyScrapeOrPrivate(res, html, includeLocked, language, gameName);
 
             if (result.TransientFailure && result.DetailCode == SteamScrapeDetail.NoRowsUnknown)
             {
@@ -591,7 +675,7 @@ namespace PlayniteAchievements.Providers.Steam
 
                     if (!LooksLoggedOutHeuristic(fallbackHtml, fallbackResponse.FinalUrl))
                     {
-                        var fallbackClassified = ClassifyScrapeOrPrivate(fallbackResponse, fallbackHtml, includeLocked, language);
+                        var fallbackClassified = ClassifyScrapeOrPrivate(fallbackResponse, fallbackHtml, includeLocked, language, gameName);
                         if (fallbackClassified.SuccessWithRows)
                         {
                             await MaybeClassifyNoAchievementsBySchemaAsync(fallbackClassified, appId, cancel).ConfigureAwait(false);
@@ -630,6 +714,78 @@ namespace PlayniteAchievements.Providers.Steam
             return null;
         }
 
+        private static bool ShouldRetryForRedirectLanguageLoss(string finalUrl, string requestedLanguage)
+        {
+            if (string.IsNullOrWhiteSpace(finalUrl) || string.IsNullOrWhiteSpace(requestedLanguage))
+            {
+                return false;
+            }
+
+            // For english responses, losing l=english is usually harmless.
+            if (string.Equals(requestedLanguage.Trim(), "english", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (!Uri.TryCreate(finalUrl, UriKind.Absolute, out var uri))
+            {
+                return false;
+            }
+
+            if (uri.AbsolutePath.IndexOf("/stats/", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return false;
+            }
+
+            var expected = requestedLanguage.Trim();
+            if (!TryGetQueryValue(finalUrl, "l", out var actualLanguage))
+            {
+                return true;
+            }
+
+            return !string.Equals(actualLanguage, expected, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool TryGetQueryValue(string url, string key, out string value)
+        {
+            value = null;
+
+            if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(key))
+            {
+                return false;
+            }
+
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                return false;
+            }
+
+            var query = uri.Query;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return false;
+            }
+
+            var parts = query.TrimStart('?')
+                .Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var part in parts)
+            {
+                var kv = part.Split(new[] { '=' }, 2);
+                var currentKey = Uri.UnescapeDataString(kv[0] ?? string.Empty);
+                if (!string.Equals(currentKey, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var currentValue = kv.Length > 1 ? Uri.UnescapeDataString(kv[1]) : string.Empty;
+                value = currentValue;
+                return true;
+            }
+
+            return false;
+        }
+
         private async Task MaybeClassifyNoAchievementsBySchemaAsync(AchievementsScrapeResponse res, int appId, CancellationToken ct)
         {
             if (res == null || appId <= 0) return;
@@ -658,14 +814,15 @@ namespace PlayniteAchievements.Providers.Steam
             AchievementsScrapeResponse res,
             string html,
             bool includeLocked,
-            string language = "english")
+            string language = "english",
+            string gameName = null)
         {
             res.Rows = new List<ScrapedAchievement>();
             res.TransientFailure = true;
             res.StatsUnavailable = false;
             res.SetDetail(SteamScrapeDetail.NoRowsUnknown);
 
-            var parsed = _steamClient.ParseAchievements(html, includeLocked, language) ?? new List<ScrapedAchievement>();
+            var parsed = _steamClient.ParseAchievements(html, includeLocked, language, gameName) ?? new List<ScrapedAchievement>();
 
             if (parsed.Count > 0)
             {

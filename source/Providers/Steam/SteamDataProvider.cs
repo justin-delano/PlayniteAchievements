@@ -25,7 +25,8 @@ namespace PlayniteAchievements.Providers.Steam
             ILogger logger,
             PlayniteAchievementsSettings settings,
             IPlayniteAPI api,
-            SteamSessionManager sessionManager)
+            SteamSessionManager sessionManager,
+            string pluginUserDataPath)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
@@ -36,7 +37,7 @@ namespace PlayniteAchievements.Providers.Steam
             _sessionManager = sessionManager;
 
             // Create Steam-specific dependencies
-            _steamClient = new SteamHttpClient(api, logger, _sessionManager);
+            _steamClient = new SteamHttpClient(api, logger, _sessionManager, pluginUserDataPath);
             _steamApiClient = new SteamApiClient(_steamClient.ApiHttpClient, logger);
 
             _scanner = new SteamScanner(settings, _steamClient, _sessionManager, _steamApiClient, api, logger);
