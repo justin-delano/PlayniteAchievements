@@ -151,7 +151,8 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
                 return new List<EpicAchievementItem>();
             }
 
-            var schema = await GetCachedAchievementSchemaAsync(asset.Namespace, token, ct).ConfigureAwait(false);
+            var locale = MapGlobalLanguageToEpicLocale(_settings?.GlobalLanguage);
+            var schema = await GetCachedAchievementSchemaAsync(asset.Namespace, locale, token, ct).ConfigureAwait(false);
             if (schema?.Data?.Achievement?.ProductAchievementsRecordBySandbox?.Achievements == null)
             {
                 _logger?.Debug($"[EpicApi] No achievement schema found for namespace={asset.Namespace}.");
@@ -262,29 +263,31 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
             }
         }
 
-        private async Task<AchievementSchemaResponse> GetCachedAchievementSchemaAsync(string sandboxId, string token, CancellationToken ct)
+        private async Task<AchievementSchemaResponse> GetCachedAchievementSchemaAsync(string sandboxId, string locale, string token, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(sandboxId))
             {
                 return null;
             }
 
-            if (_schemaCache.TryGetValue(sandboxId, out var cached))
+            var cacheKey = BuildSchemaCacheKey(sandboxId, locale);
+
+            if (_schemaCache.TryGetValue(cacheKey, out var cached))
             {
                 return cached;
             }
 
-            var fetched = await QueryAchievementSchemaAsync(sandboxId, token, ct).ConfigureAwait(false);
+            var fetched = await QueryAchievementSchemaAsync(sandboxId, locale, token, ct).ConfigureAwait(false);
 
             await _cacheSemaphore.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                if (!_schemaCache.ContainsKey(sandboxId))
+                if (!_schemaCache.ContainsKey(cacheKey))
                 {
-                    _schemaCache[sandboxId] = fetched;
+                    _schemaCache[cacheKey] = fetched;
                 }
 
-                return _schemaCache[sandboxId];
+                return _schemaCache[cacheKey];
             }
             finally
             {
@@ -292,9 +295,15 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
             }
         }
 
-        private Task<AchievementSchemaResponse> QueryAchievementSchemaAsync(string sandboxId, string token, CancellationToken ct)
+        private static string BuildSchemaCacheKey(string sandboxId, string locale)
         {
-            var locale = MapGlobalLanguageToEpicLocale(_settings?.GlobalLanguage);
+            var safeSandboxId = string.IsNullOrWhiteSpace(sandboxId) ? string.Empty : sandboxId.Trim();
+            var safeLocale = string.IsNullOrWhiteSpace(locale) ? "en-US" : locale.Trim();
+            return safeSandboxId + "|" + safeLocale;
+        }
+
+        private Task<AchievementSchemaResponse> QueryAchievementSchemaAsync(string sandboxId, string locale, string token, CancellationToken ct)
+        {
             var variables = new
             {
                 SandboxId = sandboxId,
@@ -306,49 +315,58 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
 
         /// <summary>
         /// Maps the global language setting to Epic Games API locale format.
-        /// Epic uses two-letter ISO 639-1 codes (e.g., "en", "fr", "de").
+        /// Epic GraphQL locale is typically a BCP-47 style value (for example "en-US", "de-DE", "pt-BR").
         /// </summary>
         private static string MapGlobalLanguageToEpicLocale(string globalLanguage)
         {
             if (string.IsNullOrWhiteSpace(globalLanguage))
             {
-                return "en";
+                return "en-US";
             }
 
-            var normalized = globalLanguage.Trim().ToLowerInvariant();
+            var normalizedRaw = globalLanguage.Trim();
 
-            // Map common language names to ISO 639-1 codes
+            // If caller already provided an explicit locale, pass it through.
+            if (normalizedRaw.IndexOf('-') > 0)
+            {
+                return normalizedRaw;
+            }
+
+            var normalized = normalizedRaw.ToLowerInvariant();
+
+            // Map Steam-style language keys to Epic locale values.
             var localeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                { "english", "en" },
-                { "german", "de" },
-                { "french", "fr" },
-                { "spanish", "es" },
-                { "italian", "it" },
-                { "portuguese", "pt" },
+                { "english", "en-US" },
+                { "german", "de-DE" },
+                { "french", "fr-FR" },
+                { "spanish", "es-ES" },
+                { "latam", "es-419" },
+                { "italian", "it-IT" },
+                { "portuguese", "pt-PT" },
                 { "brazilian", "pt-BR" },
                 { "brazilianportuguese", "pt-BR" },
-                { "russian", "ru" },
-                { "polish", "pl" },
-                { "dutch", "nl" },
-                { "swedish", "sv" },
-                { "finnish", "fi" },
-                { "danish", "da" },
-                { "norwegian", "no" },
-                { "hungarian", "hu" },
-                { "czech", "cs" },
-                { "romanian", "ro" },
-                { "turkish", "tr" },
-                { "greek", "el" },
-                { "bulgarian", "bg" },
-                { "ukrainian", "uk" },
-                { "thai", "th" },
-                { "vietnamese", "vi" },
-                { "japanese", "ja" },
-                { "koreana", "ko" },
-                { "korean", "ko" },
+                { "russian", "ru-RU" },
+                { "polish", "pl-PL" },
+                { "dutch", "nl-NL" },
+                { "swedish", "sv-SE" },
+                { "finnish", "fi-FI" },
+                { "danish", "da-DK" },
+                { "norwegian", "nb-NO" },
+                { "hungarian", "hu-HU" },
+                { "czech", "cs-CZ" },
+                { "romanian", "ro-RO" },
+                { "turkish", "tr-TR" },
+                { "greek", "el-GR" },
+                { "bulgarian", "bg-BG" },
+                { "ukrainian", "uk-UA" },
+                { "thai", "th-TH" },
+                { "vietnamese", "vi-VN" },
+                { "japanese", "ja-JP" },
+                { "koreana", "ko-KR" },
+                { "korean", "ko-KR" },
                 { "schinese", "zh-CN" },
-                { "tchinese", "zh-TW" },
+                { "tchinese", "zh-Hant" },
                 { "arabic", "ar" }
             };
 
@@ -358,7 +376,7 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
             }
 
             // Fallback to English
-            return "en";
+            return "en-US";
         }
 
         private Task<PlayerAchievementsResponse> QueryPlayerAchievementsAsync(string epicAccountId, string productId, string token, CancellationToken ct)
@@ -416,10 +434,11 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
             };
 
             var json = JsonConvert.SerializeObject(payload);
+            var locale = MapGlobalLanguageToEpicLocale(_settings?.GlobalLanguage);
             using (var request = new HttpRequestMessage(HttpMethod.Post, UrlGraphQl))
             {
                 request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-                AddStandardHeaders(request, token);
+                AddStandardHeaders(request, token, locale);
 
                 using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
                 {
@@ -488,9 +507,10 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
         private async Task<RequestResult<T>> TrySendGetAsync<T>(string url, string token, CancellationToken ct)
             where T : class
         {
+            var locale = MapGlobalLanguageToEpicLocale(_settings?.GlobalLanguage);
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))
             {
-                AddStandardHeaders(request, token);
+                AddStandardHeaders(request, token, locale);
 
                 using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
                 {
@@ -547,11 +567,15 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
             return null;
         }
 
-        private static void AddStandardHeaders(HttpRequestMessage request, string token)
+        private static void AddStandardHeaders(HttpRequestMessage request, string token, string locale = null)
         {
             request.Headers.TryAddWithoutValidation("User-Agent", UserAgent);
             request.Headers.TryAddWithoutValidation("Accept", "application/json");
             request.Headers.TryAddWithoutValidation("Authorization", "bearer " + token);
+            if (!string.IsNullOrWhiteSpace(locale))
+            {
+                request.Headers.TryAddWithoutValidation("Accept-Language", locale);
+            }
         }
 
         private static void ThrowForStatusCode(HttpStatusCode statusCode, string endpointName)

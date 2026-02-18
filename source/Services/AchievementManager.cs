@@ -24,6 +24,7 @@ namespace PlayniteAchievements.Services
     public class AchievementManager : IDisposable
     {
         private readonly object _runLock = new object();
+        private readonly object _pointsColumnVisibilityLock = new object();
         private CancellationTokenSource _activeRunCts;
 
         public event EventHandler<ProgressReport> RebuildProgress;
@@ -49,6 +50,8 @@ namespace PlayniteAchievements.Services
         private int _savedGamesInCurrentRun;
         private long _lastCacheInvalidationTimestamp = -1;
         private const long CacheInvalidationThrottleMs = 500;
+        private const string PointsColumnKey = "Points";
+        private const string EpicProviderKey = "Epic";
 
         // Dependencies that need disposal
         private readonly IReadOnlyList<IDataProvider> _providers;
@@ -151,6 +154,8 @@ namespace PlayniteAchievements.Services
             _cacheService = new CacheManager(api, logger, _plugin);
             _providers = providers.ToList();
             _progressMapper = new RebuildProgressMapper();
+
+            InitializePointsColumnVisibilityDefaults();
         }
 
         public void Dispose()
@@ -686,6 +691,8 @@ namespace PlayniteAchievements.Services
             {
             }
 
+            TryAutoEnablePointsColumnForEpic(provider, data);
+
             await PopulateAchievementIconCacheAsync(data, cancel).ConfigureAwait(false);
 
             var key = data.PlayniteGameId.Value.ToString();
@@ -708,6 +715,142 @@ namespace PlayniteAchievements.Services
 
                 Interlocked.Increment(ref _savedGamesInCurrentRun);
                 NotifyCacheInvalidatedThrottled(force: false);
+            }
+        }
+
+        private void InitializePointsColumnVisibilityDefaults()
+        {
+            if (_settings?.Persisted == null)
+            {
+                return;
+            }
+
+            var hasEpicAchievements = HasCachedEpicAchievements();
+            var changed = false;
+            lock (_pointsColumnVisibilityLock)
+            {
+                var map = _settings.Persisted.DataGridColumnVisibility;
+                if (map == null)
+                {
+                    map = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                    _settings.Persisted.DataGridColumnVisibility = map;
+                }
+
+                if (!map.TryGetValue(PointsColumnKey, out var pointsVisible))
+                {
+                    map[PointsColumnKey] = hasEpicAchievements;
+                    changed = true;
+                }
+                else if (pointsVisible && !_settings.Persisted.PointsColumnAutoEnabled)
+                {
+                    _settings.Persisted.PointsColumnAutoEnabled = true;
+                    changed = true;
+                }
+
+                if (hasEpicAchievements && !_settings.Persisted.PointsColumnAutoEnabled)
+                {
+                    _settings.Persisted.PointsColumnAutoEnabled = true;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                TryPersistSettings(notifySettingsSaved: false);
+            }
+        }
+
+        private void TryAutoEnablePointsColumnForEpic(IDataProvider provider, GameAchievementData data)
+        {
+            if (!IsEpicProvider(provider, data) || data?.Achievements == null || data.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            var changed = false;
+            lock (_pointsColumnVisibilityLock)
+            {
+                if (_settings?.Persisted == null || _settings.Persisted.PointsColumnAutoEnabled)
+                {
+                    return;
+                }
+
+                var map = _settings.Persisted.DataGridColumnVisibility;
+                if (map == null)
+                {
+                    map = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                    _settings.Persisted.DataGridColumnVisibility = map;
+                }
+
+                _settings.Persisted.PointsColumnAutoEnabled = true;
+                changed = true;
+
+                if (!map.TryGetValue(PointsColumnKey, out var pointsVisible) || !pointsVisible)
+                {
+                    map[PointsColumnKey] = true;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                TryPersistSettings(notifySettingsSaved: true);
+            }
+        }
+
+        private bool HasCachedEpicAchievements()
+        {
+            try
+            {
+                var allGameData = GetAllGameAchievementData();
+                if (allGameData == null || allGameData.Count == 0)
+                {
+                    return false;
+                }
+
+                return allGameData.Any(data =>
+                    data?.Achievements != null &&
+                    data.Achievements.Count > 0 &&
+                    IsEpicProvider(provider: null, data));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed while checking cached Epic achievement data for Points-column defaults.");
+                return false;
+            }
+        }
+
+        private static bool IsEpicProvider(IDataProvider provider, GameAchievementData data)
+        {
+            if (provider != null &&
+                string.Equals(provider.ProviderKey, EpicProviderKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return ContainsEpicToken(data?.ProviderName) || ContainsEpicToken(data?.LibrarySourceName);
+        }
+
+        private static bool ContainsEpicToken(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                   value.IndexOf("epic", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private void TryPersistSettings(bool notifySettingsSaved)
+        {
+            try
+            {
+                _plugin?.SavePluginSettings(_settings);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to persist Points-column visibility defaults.");
+            }
+
+            if (notifySettingsSaved)
+            {
+                PostToUi(() => PlayniteAchievementsPlugin.NotifySettingsSaved());
             }
         }
 

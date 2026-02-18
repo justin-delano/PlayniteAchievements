@@ -26,6 +26,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
         private string _clientUsername;
         private string _clientApiKey;
+        private string _clientLanguage;
 
         public RetroAchievementsDataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath)
         {
@@ -87,22 +88,25 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         {
             var username = _settings.Persisted.RaUsername?.Trim() ?? string.Empty;
             var apiKey = _settings.Persisted.RaWebApiKey?.Trim() ?? string.Empty;
+            var language = _settings.Persisted.GlobalLanguage?.Trim() ?? string.Empty;
 
             lock (_initLock)
             {
                 if (_scanner != null && string.Equals(username, _clientUsername, StringComparison.Ordinal) &&
-                    string.Equals(apiKey, _clientApiKey, StringComparison.Ordinal))
+                    string.Equals(apiKey, _clientApiKey, StringComparison.Ordinal) &&
+                    string.Equals(language, _clientLanguage, StringComparison.OrdinalIgnoreCase))
                 {
                     return;
                 }
 
                 _apiClient?.Dispose();
-                _apiClient = new RetroAchievementsApiClient(_logger, username, apiKey);
+                _apiClient = new RetroAchievementsApiClient(_logger, username, apiKey, language);
                 _hashIndexStore = new RetroAchievementsHashIndexStore(_logger, _settings, _apiClient, _pluginUserDataPath);
                 _scanner = new RetroAchievementsScanner(_logger, _settings, _apiClient, _hashIndexStore, _pathResolver);
 
                 _clientUsername = username;
                 _clientApiKey = apiKey;
+                _clientLanguage = language;
             }
         }
 

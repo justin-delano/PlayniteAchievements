@@ -87,6 +87,7 @@ namespace PlayniteAchievements.Models.Settings
             target.GamesOverviewColumnWidths = source.GamesOverviewColumnWidths != null
                 ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.PointsColumnAutoEnabled = source.PointsColumnAutoEnabled;
 
             // Rarity Threshold Settings (order matters due to cross-property validation)
             target.UncommonThreshold = source.UncommonThreshold;
@@ -168,6 +169,7 @@ namespace PlayniteAchievements.Models.Settings
                 GamesOverviewColumnWidths = source.GamesOverviewColumnWidths != null
                     ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                PointsColumnAutoEnabled = source.PointsColumnAutoEnabled,
 
                 // Rarity Threshold Settings (order matters due to cross-property validation)
                 UncommonThreshold = source.UncommonThreshold,

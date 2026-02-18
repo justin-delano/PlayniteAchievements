@@ -46,6 +46,7 @@ namespace PlayniteAchievements.Providers.GOG
     {
         private const string AchievementsEndpoint = "https://gameplay.gog.com/clients/{0}/users/{1}/achievements";
         private const string GogDbProductEndpoint = "https://www.gogdb.org/data/products/{0}/product.json";
+        private const string DefaultAchievementsLocale = "en-US";
 
         private const string DefaultUserAgent =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -70,9 +71,21 @@ namespace PlayniteAchievements.Providers.GOG
         /// <summary>
         /// Fetches achievements for a specific game.
         /// </summary>
+        public Task<List<GogAchievementItem>> GetAchievementsAsync(
+            string clientId,
+            string userId,
+            CancellationToken ct)
+        {
+            return GetAchievementsAsync(clientId, userId, null, ct);
+        }
+
+        /// <summary>
+        /// Fetches achievements for a specific game, requesting localized strings when supported by the API.
+        /// </summary>
         public async Task<List<GogAchievementItem>> GetAchievementsAsync(
             string clientId,
             string userId,
+            string globalLanguage,
             CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(clientId))
@@ -88,18 +101,17 @@ namespace PlayniteAchievements.Providers.GOG
             }
 
             var token = _tokenProvider.GetAccessToken();
-            var url = string.Format(
-                AchievementsEndpoint,
-                Uri.EscapeDataString(clientId),
-                Uri.EscapeDataString(userId));
+            var locale = MapGlobalLanguageToGogLocale(globalLanguage);
+            var url = BuildAchievementsUrl(clientId, userId, locale);
 
-            // _logger?.Debug($"[GogApi] Fetching achievements from: {url.Replace(clientId, "***").Replace(userId, "***")}");
+            // _logger?.Debug($"[GogApi] Fetching achievements from: {url.Replace(clientId, "***").Replace(userId, "***")} (locale={locale})");
 
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))
             {
                 request.Headers.TryAddWithoutValidation("User-Agent", DefaultUserAgent);
                 request.Headers.TryAddWithoutValidation("Accept", "application/json");
                 request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {token}");
+                request.Headers.TryAddWithoutValidation("Accept-Language", locale);
 
                 using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
                 {
@@ -152,6 +164,73 @@ namespace PlayniteAchievements.Providers.GOG
                     return items;
                 }
             }
+        }
+
+        private static string BuildAchievementsUrl(string clientId, string userId, string locale)
+        {
+            var safeLocale = string.IsNullOrWhiteSpace(locale) ? DefaultAchievementsLocale : locale.Trim();
+            return string.Format(
+                AchievementsEndpoint + "?locale={2}",
+                Uri.EscapeDataString(clientId),
+                Uri.EscapeDataString(userId),
+                Uri.EscapeDataString(safeLocale));
+        }
+
+        private static string MapGlobalLanguageToGogLocale(string globalLanguage)
+        {
+            if (string.IsNullOrWhiteSpace(globalLanguage))
+            {
+                return DefaultAchievementsLocale;
+            }
+
+            var normalizedRaw = globalLanguage.Trim();
+            if (normalizedRaw.IndexOf('-') > 0)
+            {
+                return normalizedRaw;
+            }
+
+            var normalized = normalizedRaw.ToLowerInvariant();
+            var localeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "english", "en-US" },
+                { "german", "de-DE" },
+                { "french", "fr-FR" },
+                { "spanish", "es-ES" },
+                { "latam", "es-419" },
+                { "italian", "it-IT" },
+                { "portuguese", "pt-PT" },
+                { "brazilian", "pt-BR" },
+                { "brazilianportuguese", "pt-BR" },
+                { "russian", "ru-RU" },
+                { "polish", "pl-PL" },
+                { "dutch", "nl-NL" },
+                { "swedish", "sv-SE" },
+                { "finnish", "fi-FI" },
+                { "danish", "da-DK" },
+                { "norwegian", "nb-NO" },
+                { "hungarian", "hu-HU" },
+                { "czech", "cs-CZ" },
+                { "romanian", "ro-RO" },
+                { "turkish", "tr-TR" },
+                { "greek", "el-GR" },
+                { "bulgarian", "bg-BG" },
+                { "ukrainian", "uk-UA" },
+                { "thai", "th-TH" },
+                { "vietnamese", "vi-VN" },
+                { "japanese", "ja-JP" },
+                { "koreana", "ko-KR" },
+                { "korean", "ko-KR" },
+                { "schinese", "zh-CN" },
+                { "tchinese", "zh-Hant" },
+                { "arabic", "ar" }
+            };
+
+            if (localeMap.TryGetValue(normalized, out var locale))
+            {
+                return locale;
+            }
+
+            return DefaultAchievementsLocale;
         }
 
         /// <summary>

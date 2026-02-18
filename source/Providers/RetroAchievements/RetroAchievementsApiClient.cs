@@ -20,12 +20,14 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
         private readonly string _username;
         private readonly string _apiKey;
+        private readonly string _acceptLanguage;
 
-        public RetroAchievementsApiClient(ILogger logger, string username, string apiKey)
+        public RetroAchievementsApiClient(ILogger logger, string username, string apiKey, string globalLanguage = null)
         {
             _logger = logger;
             _username = username?.Trim() ?? string.Empty;
             _apiKey = apiKey?.Trim() ?? string.Empty;
+            _acceptLanguage = MapGlobalLanguageToRetroAchievementsLocale(globalLanguage);
 
             _handler = new HttpClientHandler
             {
@@ -77,6 +79,12 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 var req = new HttpRequestMessage(HttpMethod.Get, uri);
                 req.Headers.TryAddWithoutValidation("Accept", "application/json");
                 req.Headers.TryAddWithoutValidation("User-Agent", "PlayniteAchievements/RetroAchievements");
+                if (!string.IsNullOrWhiteSpace(_acceptLanguage))
+                {
+                    // RetroAchievements API does not document a locale query parameter.
+                    // Send Accept-Language as best-effort localization hint.
+                    req.Headers.TryAddWithoutValidation("Accept-Language", _acceptLanguage);
+                }
                 return req;
             }, cancel).ConfigureAwait(false);
 
@@ -166,6 +174,59 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             }
 
             return null;
+        }
+
+        private static string MapGlobalLanguageToRetroAchievementsLocale(string globalLanguage)
+        {
+            if (string.IsNullOrWhiteSpace(globalLanguage))
+            {
+                return "en-US";
+            }
+
+            var normalizedRaw = globalLanguage.Trim();
+            if (normalizedRaw.IndexOf('-') > 0)
+            {
+                return normalizedRaw;
+            }
+
+            var normalized = normalizedRaw.ToLowerInvariant();
+            switch (normalized)
+            {
+                case "english": return "en-US";
+                case "german": return "de-DE";
+                case "french": return "fr-FR";
+                case "spanish": return "es-ES";
+                case "latam": return "es-419";
+                case "italian": return "it-IT";
+                case "portuguese": return "pt-PT";
+                case "brazilian":
+                case "brazilianportuguese":
+                    return "pt-BR";
+                case "russian": return "ru-RU";
+                case "polish": return "pl-PL";
+                case "dutch": return "nl-NL";
+                case "swedish": return "sv-SE";
+                case "finnish": return "fi-FI";
+                case "danish": return "da-DK";
+                case "norwegian": return "nb-NO";
+                case "hungarian": return "hu-HU";
+                case "czech": return "cs-CZ";
+                case "romanian": return "ro-RO";
+                case "turkish": return "tr-TR";
+                case "greek": return "el-GR";
+                case "bulgarian": return "bg-BG";
+                case "ukrainian": return "uk-UA";
+                case "thai": return "th-TH";
+                case "vietnamese": return "vi-VN";
+                case "japanese": return "ja-JP";
+                case "koreana":
+                case "korean":
+                    return "ko-KR";
+                case "schinese": return "zh-CN";
+                case "tchinese": return "zh-Hant";
+                case "arabic": return "ar";
+                default: return "en-US";
+            }
         }
     }
 }

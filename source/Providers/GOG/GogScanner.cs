@@ -197,7 +197,11 @@ namespace PlayniteAchievements.Providers.GOG
             }
 
             // Fetch achievements
-            var achievements = await _apiClient.GetAchievementsAsync(clientId, userId, cancel).ConfigureAwait(false);
+            var achievements = await _apiClient.GetAchievementsAsync(
+                clientId,
+                userId,
+                _settings?.Persisted?.GlobalLanguage,
+                cancel).ConfigureAwait(false);
 
             var gameData = new GameAchievementData
             {
