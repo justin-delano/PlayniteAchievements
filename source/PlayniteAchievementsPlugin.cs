@@ -152,7 +152,8 @@ namespace PlayniteAchievements
                     _logger,
                     settings,
                     PlayniteApi,
-                    _steamSessionManager),
+                    _steamSessionManager,
+                    pluginUserDataPath),
                 new GogDataProvider(
                     _logger,
                     settings,
@@ -287,6 +288,12 @@ namespace PlayniteAchievements
             // Multiple games selected - offer "Scan Selected"
             if (args.Games.Count > 1)
             {
+                var selectedGames = args.Games.Where(g => g != null).ToList();
+                if (selectedGames.Count == 0)
+                {
+                    yield break;
+                }
+
                 yield return new GameMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_Menu_ScanSelected"),
@@ -296,6 +303,17 @@ namespace PlayniteAchievements
                         ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
                     }
                 };
+
+                yield return new GameMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearData"),
+                    MenuSection = "Playnite Achievements",
+                    Action = (a) =>
+                    {
+                        ClearSelectedGamesData(selectedGames);
+                    }
+                };
+
                 yield break;
             }
 
@@ -322,9 +340,104 @@ namespace PlayniteAchievements
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id));
+                    ShowScanProgressControlAndRun(
+                        () => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id),
+                        game.Id);
                 }
             };
+
+            yield return new GameMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearData"),
+                MenuSection = "Playnite Achievements",
+                Action = (a) =>
+                {
+                    ClearSingleGameData(game);
+                }
+            };
+        }
+
+        private void ClearSingleGameData(Game game)
+        {
+            if (game == null || game.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            var result = PlayniteApi?.Dialogs?.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_ConfirmSingle"),game.Name),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                _achievementManager.RemoveGameCache(game.Id);
+                PlayniteApi?.Dialogs?.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_ConfirmSingle"), game.Name),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to clear cached data for game '{game.Name}' ({game.Id}).");
+                PlayniteApi?.Dialogs?.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_Failed"), ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private void ClearSelectedGamesData(IEnumerable<Game> selectedGames)
+        {
+            var targets = selectedGames?
+                .Where(g => g != null && g.Id != Guid.Empty)
+                .GroupBy(g => g.Id)
+                .Select(g => g.First())
+                .ToList() ?? new List<Game>();
+
+            if (targets.Count == 0)
+            {
+                return;
+            }
+
+            var result = PlayniteApi?.Dialogs?.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_ConfirmSelected"), targets.Count),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            var clearedCount = 0;
+            foreach (var game in targets)
+            {
+                try
+                {
+                    _achievementManager.RemoveGameCache(game.Id);
+                    clearedCount++;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Warn(ex, $"Failed to clear cached data for game '{game.Name}' ({game.Id}).");
+                }
+            }
+
+            PlayniteApi?.Dialogs?.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_SuccessSelected"), clearedCount),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
 
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
@@ -528,7 +641,7 @@ namespace PlayniteAchievements
             _themeUpdateService?.RequestUpdate(gameContext?.Id);
         }
 
-        private void ShowScanProgressControlAndRun(Func<Task> scanTask)
+        private void ShowScanProgressControlAndRun(Func<Task> scanTask, Guid? singleGameScanId = null)
         {
             try
             {
@@ -540,7 +653,11 @@ namespace PlayniteAchievements
 
                 EnsureWpfFallbackResources();
 
-                var progressWindow = new ScanProgressControl(_achievementManager, _logger);
+                var progressWindow = new ScanProgressControl(
+                    _achievementManager,
+                    _logger,
+                    singleGameScanId,
+                    OpenSingleGameAchievementsView);
 
                 var windowOptions = new WindowOptions
                 {

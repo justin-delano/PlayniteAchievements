@@ -42,6 +42,12 @@
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">Voir les succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scanner un jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scanner la sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData">Effacer les données</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Effacer les données en cache pour "{0}" ?&#10;&#10;Cela supprime les succès et icônes en cache pour ce jeu. Relancez une analyse pour récupérer des données à jour.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Effacer les données en cache pour {0} jeu(x) sélectionné(s) ?&#10;&#10;Cela supprime les succès et icônes en cache pour ces jeux. Relancez une analyse pour récupérer des données à jour.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSingle">Données en cache effacées pour "{0}".</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSelected">Données en cache effacées pour {0} jeu(x).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_Failed">Échec de la suppression des données en cache : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Ouvrir le jeu dans la bibliothèque</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInSidebar">Ouvrir le jeu dans la barre latérale</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RevealAchievement">Révéler les détails du succès</sys:String>
@@ -481,6 +487,7 @@
     <sys:String x:Key="LOCPlayAch_Progress_ScanRunningNote">Vous pouvez toujours consulter la progression dans la barre latérale.</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonHide">Masquer</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonContinue">Continuer</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress_ButtonOpenGame">Ouvrir le jeu</sys:String>
 
     <!-- ================================================================= -->
     <!-- THEME MIGRATION                                                   -->

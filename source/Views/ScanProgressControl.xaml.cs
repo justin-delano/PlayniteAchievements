@@ -15,12 +15,20 @@ namespace PlayniteAchievements.Views
         private readonly AchievementManager _achievementManager;
         private readonly ILogger _logger;
 
-        public ScanProgressControl(AchievementManager achievementManager, ILogger logger)
+        public ScanProgressControl(
+            AchievementManager achievementManager,
+            ILogger logger,
+            Guid? singleGameScanId = null,
+            Action<Guid> openSingleGameAction = null)
         {
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _logger = logger;
 
-            _viewModel = new ScanProgressViewModel(achievementManager, logger);
+            _viewModel = new ScanProgressViewModel(
+                achievementManager,
+                logger,
+                singleGameScanId,
+                openSingleGameAction);
             DataContext = _viewModel;
 
             InitializeComponent();

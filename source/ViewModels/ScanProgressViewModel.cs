@@ -11,10 +11,13 @@ namespace PlayniteAchievements.ViewModels
     public class ScanProgressViewModel : ObservableObject
     {
         private readonly AchievementManager _achievementManager;
+        private readonly Guid? _singleGameScanId;
+        private readonly Action<Guid> _openSingleGameAction;
 
         private double _progressPercent;
         private string _progressMessage;
         private bool _isComplete;
+        private bool _completedSuccessfully;
 
         public bool IsScanning => _achievementManager.IsRebuilding;
 
@@ -39,12 +42,17 @@ namespace PlayniteAchievements.ViewModels
                 {
                     OnPropertyChanged(nameof(ShowInProgressButtons));
                     OnPropertyChanged(nameof(ShowCompleteButtons));
+                    OnPropertyChanged(nameof(ShowOpenSingleGameButton));
                 }
             }
         }
 
         public bool ShowInProgressButtons => !IsComplete && IsScanning;
         public bool ShowCompleteButtons => IsComplete;
+        public bool ShowOpenSingleGameButton => IsComplete &&
+                                                _completedSuccessfully &&
+                                                _singleGameScanId.HasValue &&
+                                                _openSingleGameAction != null;
 
         public string ScanRunningNote => ResourceProvider.GetString("LOCPlayAch_Progress_ScanRunningNote");
 
@@ -53,14 +61,22 @@ namespace PlayniteAchievements.ViewModels
         public ICommand HideCommand { get; }
         public RelayCommand CancelCommand { get; }
         public ICommand ContinueCommand { get; }
+        public RelayCommand OpenSingleGameCommand { get; }
 
-        public ScanProgressViewModel(AchievementManager achievementManager, ILogger logger)
+        public ScanProgressViewModel(
+            AchievementManager achievementManager,
+            ILogger logger,
+            Guid? singleGameScanId = null,
+            Action<Guid> openSingleGameAction = null)
         {
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _singleGameScanId = singleGameScanId;
+            _openSingleGameAction = openSingleGameAction;
 
             HideCommand = new RelayCommand(_ => HideWindow());
             CancelCommand = new RelayCommand(_ => CancelScan(), _ => _achievementManager.IsRebuilding);
             ContinueCommand = new RelayCommand(_ => Continue());
+            OpenSingleGameCommand = new RelayCommand(_ => OpenSingleGame(), _ => ShowOpenSingleGameButton);
 
             IsComplete = false;
             ApplyScanStatus(_achievementManager.GetScanStatusSnapshot());
@@ -83,6 +99,13 @@ namespace PlayniteAchievements.ViewModels
             ProgressPercent = status.ProgressPercent;
             ProgressMessage = status.Message ?? string.Empty;
 
+            var completedSuccessfully = status.IsFinal && !status.IsCanceled;
+            if (_completedSuccessfully != completedSuccessfully)
+            {
+                _completedSuccessfully = completedSuccessfully;
+                OnPropertyChanged(nameof(ShowOpenSingleGameButton));
+            }
+
             if (status.IsFinal || status.IsCanceled)
             {
                 IsComplete = true;
@@ -95,8 +118,10 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(IsScanning));
             OnPropertyChanged(nameof(ShowInProgressButtons));
             OnPropertyChanged(nameof(ShowCompleteButtons));
+            OnPropertyChanged(nameof(ShowOpenSingleGameButton));
 
             CancelCommand?.RaiseCanExecuteChanged();
+            OpenSingleGameCommand?.RaiseCanExecuteChanged();
         }
 
         private void HideWindow()
@@ -112,6 +137,17 @@ namespace PlayniteAchievements.ViewModels
         private void Continue()
         {
             RequestClose?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void OpenSingleGame()
+        {
+            if (!ShowOpenSingleGameButton || !_singleGameScanId.HasValue)
+            {
+                return;
+            }
+
+            RequestClose?.Invoke(this, EventArgs.Empty);
+            _openSingleGameAction?.Invoke(_singleGameScanId.Value);
         }
 
         public event EventHandler RequestClose;

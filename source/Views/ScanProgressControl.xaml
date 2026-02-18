@@ -140,8 +140,15 @@
                         Command="{Binding ContinueCommand}"
                         Padding="12,6"
                         MinWidth="80"
+                        Margin="0,0,6,0"
                         IsDefault="True"
                         Visibility="{Binding ShowCompleteButtons, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <Button Content="{DynamicResource LOCPlayAch_Progress_ButtonOpenGame}"
+                        Command="{Binding OpenSingleGameCommand}"
+                        Padding="12,6"
+                        MinWidth="120"
+                        Visibility="{Binding ShowOpenSingleGameButton, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </StackPanel>
         </Border>
     </Grid>

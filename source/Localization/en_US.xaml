@@ -42,6 +42,12 @@
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scan Single Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scan Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Clear cached data for "{0}"?&#10;&#10;This removes cached achievements and icons for this game. Scan again to fetch fresh data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear cached data for {0} selected game(s)?&#10;&#10;This removes cached achievements and icons for those games. Scan again to fetch fresh data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSingle">Cleared cached data for "{0}".</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSelected">Cleared cached data for {0} game(s).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_Failed">Failed to clear cached data: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Open Game in Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInSidebar">Open Game in Sidebar</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RevealAchievement">Reveal Achievement Details</sys:String>
@@ -481,6 +487,7 @@
     <sys:String x:Key="LOCPlayAch_Progress_ScanRunningNote">You can still check progress in the sidebar.</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonHide">Hide</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonContinue">Continue</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress_ButtonOpenGame">Open Game</sys:String>
 
     <!-- ================================================================= -->
     <!-- THEME MIGRATION                                                   -->
