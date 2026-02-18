@@ -2,6 +2,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
+using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     /// </summary>
     public sealed class GameInfo
     {
+        public Game Game { get; set; }
         public string Name { get; set; }
         public string Platform { get; set; }
         public string CoverImagePath { get; set; }
@@ -62,6 +64,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     info = new GameInfo
                     {
+                        Game = null,
                         Name = data.GameName ?? string.Empty,
                         Platform = "Unknown",
                         CoverImagePath = string.Empty
@@ -157,10 +160,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     token.ThrowIfCancellationRequested();
                     if (data?.Achievements == null) continue;
+                    var info = ResolveGameInfo(gameInfo, data.PlayniteGameId);
                     foreach (var achievement in data.Achievements)
                     {
                         if (achievement != null)
                         {
+                            achievement.Game = info?.Game;
                             allAchievements.Add(achievement);
                         }
                     }
@@ -206,6 +211,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         continue;
                     }
 
+                    var info = ResolveGameInfo(gameInfo, data.PlayniteGameId);
                     for (int i = 0; i < data.Achievements.Count; i++)
                     {
                         var achievement = data.Achievements[i];
@@ -216,6 +222,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                             continue;
                         }
 
+                        achievement.Game = info?.Game;
                         unlockedAchievements.Add(achievement);
                     }
                 }
@@ -266,6 +273,16 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             return timestamp.Kind == DateTimeKind.Local ? timestamp.ToUniversalTime() : timestamp;
+        }
+
+        private static GameInfo ResolveGameInfo(Dictionary<Guid, GameInfo> gameInfo, Guid? gameId)
+        {
+            if (gameInfo == null || !gameId.HasValue)
+            {
+                return null;
+            }
+
+            return gameInfo.TryGetValue(gameId.Value, out var info) ? info : null;
         }
 
         private static void GetTrophyCounts(GameAchievementData data, out int gold, out int silver, out int bronze)

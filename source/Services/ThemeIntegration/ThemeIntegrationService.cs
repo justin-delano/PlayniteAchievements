@@ -662,6 +662,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                 gameInfo[id] = new GameInfo
                 {
+                    Game = game,
                     Name = game.Name ?? string.Empty,
                     Platform = game.Source?.Name ?? "Unknown",
                     CoverImagePath = cover ?? string.Empty
@@ -776,8 +777,48 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
+            AttachGameReferenceToSnapshot(snapshot);
             ApplySingleGameToTheme(snapshot);
             ApplySingleGameToLegacyTheme(snapshot);
+        }
+
+        private void AttachGameReferenceToSnapshot(SingleGameSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            Game game = null;
+            try
+            {
+                game = _api?.Database?.Games?.Get(snapshot.GameId);
+            }
+            catch
+            {
+            }
+
+            SetGameReference(snapshot.AllAchievements, game);
+            SetGameReference(snapshot.UnlockDateAsc, game);
+            SetGameReference(snapshot.UnlockDateDesc, game);
+            SetGameReference(snapshot.RarityAsc, game);
+            SetGameReference(snapshot.RarityDesc, game);
+        }
+
+        private static void SetGameReference(List<AchievementDetail> achievements, Game game)
+        {
+            if (achievements == null || achievements.Count == 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < achievements.Count; i++)
+            {
+                if (achievements[i] != null)
+                {
+                    achievements[i].Game = game;
+                }
+            }
         }
 
         private void ApplySingleGameToTheme(SingleGameSnapshot snapshot)
