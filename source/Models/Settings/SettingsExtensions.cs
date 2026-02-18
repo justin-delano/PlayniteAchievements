@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace PlayniteAchievements.Models.Settings
 {
@@ -68,6 +69,24 @@ namespace PlayniteAchievements.Models.Settings
             target.EnableArchiveScanning = source.EnableArchiveScanning;
             target.EnableDiscHashing = source.EnableDiscHashing;
             target.EnableRaNameFallback = source.EnableRaNameFallback;
+            target.DataGridColumnVisibility = source.DataGridColumnVisibility != null
+                ? new Dictionary<string, bool>(source.DataGridColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.DataGridColumnWidths = source.DataGridColumnWidths != null
+                ? new Dictionary<string, double>(source.DataGridColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.SidebarAchievementColumnWidths = source.SidebarAchievementColumnWidths != null
+                ? new Dictionary<string, double>(source.SidebarAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.SingleGameColumnWidths = source.SingleGameColumnWidths != null
+                ? new Dictionary<string, double>(source.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.GamesOverviewColumnVisibility = source.GamesOverviewColumnVisibility != null
+                ? new Dictionary<string, bool>(source.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.GamesOverviewColumnWidths = source.GamesOverviewColumnWidths != null
+                ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
             // Rarity Threshold Settings (order matters due to cross-property validation)
             target.UncommonThreshold = source.UncommonThreshold;
@@ -131,6 +150,24 @@ namespace PlayniteAchievements.Models.Settings
                 EnableArchiveScanning = source.EnableArchiveScanning,
                 EnableDiscHashing = source.EnableDiscHashing,
                 EnableRaNameFallback = source.EnableRaNameFallback,
+                DataGridColumnVisibility = source.DataGridColumnVisibility != null
+                    ? new Dictionary<string, bool>(source.DataGridColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
+                DataGridColumnWidths = source.DataGridColumnWidths != null
+                    ? new Dictionary<string, double>(source.DataGridColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SidebarAchievementColumnWidths = source.SidebarAchievementColumnWidths != null
+                    ? new Dictionary<string, double>(source.SidebarAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SingleGameColumnWidths = source.SingleGameColumnWidths != null
+                    ? new Dictionary<string, double>(source.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                GamesOverviewColumnVisibility = source.GamesOverviewColumnVisibility != null
+                    ? new Dictionary<string, bool>(source.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
+                GamesOverviewColumnWidths = source.GamesOverviewColumnWidths != null
+                    ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
 
                 // Rarity Threshold Settings (order matters due to cross-property validation)
                 UncommonThreshold = source.UncommonThreshold,

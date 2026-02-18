@@ -202,7 +202,8 @@ namespace PlayniteAchievements.Services.Sidebar
                     ShowHiddenTitle = showTitle,
                     ShowHiddenDescription = showDescription,
                     ProgressNum = ach.ProgressNum,
-                    ProgressDenom = ach.ProgressDenom
+                    ProgressDenom = ach.ProgressDenom,
+                    PointsValue = ach.Points
                 };
 
                 if (canResolveReveals && ach.Hidden && !ach.Unlocked)
@@ -256,6 +257,9 @@ namespace PlayniteAchievements.Services.Sidebar
                                 IconPath = ach.UnlockedIconPath,
                                 UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
                                 GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
+                                PointsValue = ach.Points,
+                                ProgressNum = ach.ProgressNum,
+                                ProgressDenom = ach.ProgressDenom,
                                 GameIconPath = gameIconPath,
                                 GameCoverPath = gameCoverPath,
                                 Hidden = ach.Hidden

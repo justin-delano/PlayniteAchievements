@@ -522,7 +522,8 @@
         </Grid>
 
         <!-- Achievements List -->
-        <DataGrid Grid.Row="3"
+        <DataGrid x:Name="AchievementsDataGrid"
+                  Grid.Row="3"
                   Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}"
                   ItemsSource="{Binding Achievements}"
                   Sorting="DataGrid_Sorting"
@@ -548,7 +549,9 @@
                   ScrollViewer.IsDeferredScrollingEnabled="False"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   Padding="0"
-                  ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
+                  ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+                  ToolTip="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"
+                  PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell">
@@ -668,7 +671,7 @@
                 </DataGridTemplateColumn>
 
                 <!-- Achievement Info -->
-                <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName">
+                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName" helpers:ColumnVisibilityHelper.ColumnKey="Achievement">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Margin="12,10" VerticalAlignment="Center" Background="Transparent">
@@ -739,7 +742,7 @@
                 </DataGridTemplateColumn>
 
                 <!-- Unlock Date / Progress -->
-                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending">
+                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid>
@@ -774,7 +777,7 @@
                 </DataGridTemplateColumn>
 
                 <!-- Rarity -->
-                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent">
+                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -806,6 +809,21 @@
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.8"/>
                             </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points" helpers:ColumnVisibilityHelper.ColumnKey="Points">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding PointsText}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.8"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

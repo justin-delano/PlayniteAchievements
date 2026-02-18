@@ -133,6 +133,9 @@ namespace PlayniteAchievements.ViewModels
             ScanCommand = new AsyncCommand(_ => ExecuteScanAsync(), _ => CanExecuteScan());
             CancelScanCommand = new RelayCommand(_ => CancelScan(), _ => IsScanning);
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
+            OpenGameInLibraryCommand = new RelayCommand(OpenGameInLibrary);
+            OpenGameInSidebarCommand = new RelayCommand(OpenGameInSidebar);
+            ScanSingleGameCommand = new AsyncCommand(ExecuteSingleGameScanAsync);
             CloseViewCommand = new RelayCommand(_ => PlayniteUiProvider.RestoreMainView());
             ClearGameSelectionCommand = new RelayCommand(_ => ClearGameSelection());
             NavigateToGameCommand = new RelayCommand(param => NavigateToGame(param as GameOverviewItem));
@@ -366,8 +369,16 @@ namespace PlayniteAchievements.ViewModels
             get => _selectedGame;
             set
             {
+                var previousGameId = _selectedGame?.PlayniteGameId;
+                var newGameId = value?.PlayniteGameId;
+
                 if (SetValueAndReturn(ref _selectedGame, value))
                 {
+                    if (previousGameId != newGameId)
+                    {
+                        ResetSelectedGameSortToDefault();
+                    }
+
                     ResetSelectedGameAchievementVisibilityFilters();
                     OnPropertyChanged(nameof(IsGameSelected));
                     (ScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
@@ -531,6 +542,9 @@ namespace PlayniteAchievements.ViewModels
         public ICommand ScanCommand { get; }
         public ICommand CancelScanCommand { get; }
         public ICommand RevealAchievementCommand { get; }
+        public ICommand OpenGameInLibraryCommand { get; }
+        public ICommand OpenGameInSidebarCommand { get; }
+        public ICommand ScanSingleGameCommand { get; }
         public ICommand CloseViewCommand { get; }
         public ICommand ClearGameSelectionCommand { get; }
         public ICommand NavigateToGameCommand { get; }
@@ -701,16 +715,104 @@ namespace PlayniteAchievements.ViewModels
 
         private void NavigateToGame(GameOverviewItem game)
         {
-            if (game == null || !game.PlayniteGameId.HasValue) return;
+            OpenGameInLibrary(game);
+        }
+
+        private async Task ExecuteSingleGameScanAsync(object parameter)
+        {
+            if (!TryGetPlayniteGameId(parameter, out var gameId) || IsScanning)
+            {
+                return;
+            }
+
+            try
+            {
+                CancelProgressHideTimer(clearCompletedProgress: false);
+                ApplyScanStatus(_achievementManager.GetStartingScanStatusSnapshot());
+                _scanAttemptInProgress = true;
+
+                await _achievementManager.ExecuteScanAsync(ScanModeType.Single, gameId);
+                await RefreshViewAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Single game scan failed for game ID {gameId}");
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
+            }
+            finally
+            {
+                ApplyScanStatus(_achievementManager.GetScanStatusSnapshot());
+            }
+        }
+
+        private void OpenGameInLibrary(object parameter)
+        {
+            if (!TryGetPlayniteGameId(parameter, out var gameId))
+            {
+                return;
+            }
 
             try
             {
                 PlayniteUiProvider.RestoreMainView();
-                _playniteApi.MainView.SelectGame(game.PlayniteGameId.Value);
+                _playniteApi?.MainView?.SelectGame(gameId);
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"Failed to navigate to game {game.GameName}");
+                _logger?.Error(ex, $"Failed to open game in Playnite library: {gameId}");
+            }
+        }
+
+        private void OpenGameInSidebar(object parameter)
+        {
+            if (!TryGetPlayniteGameId(parameter, out var gameId))
+            {
+                return;
+            }
+
+            try
+            {
+                var targetGame =
+                    GamesOverview.FirstOrDefault(g => g?.PlayniteGameId == gameId) ??
+                    _allGamesOverview.FirstOrDefault(g => g?.PlayniteGameId == gameId);
+
+                if (targetGame != null)
+                {
+                    SelectedGame = targetGame;
+                }
+                else
+                {
+                    _logger?.Warn($"Sidebar game view target not found for game ID {gameId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to open game in sidebar view: {gameId}");
+            }
+        }
+
+        private static bool TryGetPlayniteGameId(object parameter, out Guid gameId)
+        {
+            switch (parameter)
+            {
+                case GameOverviewItem game when game.PlayniteGameId.HasValue:
+                    gameId = game.PlayniteGameId.Value;
+                    return true;
+                case AchievementDisplayItem achievement when achievement.PlayniteGameId.HasValue:
+                    gameId = achievement.PlayniteGameId.Value;
+                    return true;
+                case RecentAchievementItem recent when recent.PlayniteGameId.HasValue:
+                    gameId = recent.PlayniteGameId.Value;
+                    return true;
+                case Guid id when id != Guid.Empty:
+                    gameId = id;
+                    return true;
+                case string text when Guid.TryParse(text, out var parsed):
+                    gameId = parsed;
+                    return true;
+                default:
+                    gameId = Guid.Empty;
+                    return false;
             }
         }
 
@@ -1607,6 +1709,9 @@ namespace PlayniteAchievements.ViewModels
         {
             (ScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
             (CancelScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (ScanSingleGameCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+            (OpenGameInLibraryCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (OpenGameInSidebarCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         #endregion
@@ -1750,6 +1855,12 @@ namespace PlayniteAchievements.ViewModels
             ShowSelectedGameHidden = true;
         }
 
+        private void ResetSelectedGameSortToDefault()
+        {
+            _selectedGameSortPath = nameof(AchievementDisplayItem.UnlockTime);
+            _selectedGameSortDirection = ListSortDirection.Descending;
+        }
+
         private async void LoadSelectedGameAchievements()
         {
             // Reset right search when selecting a game
@@ -1822,7 +1933,8 @@ namespace PlayniteAchievements.ViewModels
                             ShowHiddenTitle = showTitle,
                             ShowHiddenDescription = showDescription,
                             ProgressNum = ach.ProgressNum,
-                            ProgressDenom = ach.ProgressDenom
+                            ProgressDenom = ach.ProgressDenom,
+                            PointsValue = ach.Points
                         };
 
                         if (canResolveReveals && ach.Hidden && !ach.Unlocked)
@@ -1978,8 +2090,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 "Name" => (a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase),
                 "GameName" => (a, b) => string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase),
-                "UnlockTime" => (a, b) => a.UnlockTime.CompareTo(b.UnlockTime),
+                "UnlockTime" => CompareRecentAchievementsByUnlockColumn,
                 "GlobalPercent" => (a, b) => a.GlobalPercent.CompareTo(b.GlobalPercent),
+                "Points" => (a, b) => a.Points.CompareTo(b.Points),
                 _ => null
             };
 
@@ -2007,44 +2120,60 @@ namespace PlayniteAchievements.ViewModels
 
         private void SortSelectedGameAchievements(string sortMemberPath, ListSortDirection direction)
         {
-            // Quick reverse if same column
-            if (_selectedGameSortPath == sortMemberPath && _selectedGameSortDirection == ListSortDirection.Ascending &&
-                direction == ListSortDirection.Descending)
-            {
-                _filteredSelectedGameAchievements.Reverse();
-                _selectedGameSortDirection = direction;
-                if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulkSelected)
-                {
-                    bulkSelected.ReplaceAll(_filteredSelectedGameAchievements);
-                }
-                else
-                {
-                    CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
-                }
-                return;
-            }
-
             _selectedGameSortPath = sortMemberPath;
             _selectedGameSortDirection = direction;
 
             Comparison<AchievementDisplayItem> comparison = sortMemberPath switch
             {
                 "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
-                "UnlockTime" => (a, b) => (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue),
-                "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
+                "UnlockTime" => CompareSelectedGameAchievementsByUnlockColumn,
+                "GlobalPercent" => (a, b) => a.GlobalPercent.CompareTo(b.GlobalPercent),
+                "Points" => (a, b) => a.Points.CompareTo(b.Points),
                 _ => null
             };
 
             if (comparison != null)
             {
-                if (direction == ListSortDirection.Descending)
+                // Keep tie ordering stable so refiltering doesn't appear to "lose" sort.
+                var existingAllOrder = _allSelectedGameAchievements
+                    .Select((item, index) => new { item, index })
+                    .ToDictionary(x => x.item, x => x.index);
+
+                _allSelectedGameAchievements.Sort((a, b) =>
                 {
-                    _filteredSelectedGameAchievements.Sort((a, b) => comparison(b, a));
-                }
-                else
+                    var result = direction == ListSortDirection.Descending ? comparison(b, a) : comparison(a, b);
+                    if (result != 0)
+                    {
+                        return result;
+                    }
+
+                    if (existingAllOrder.TryGetValue(a, out var aIndex) && existingAllOrder.TryGetValue(b, out var bIndex))
+                    {
+                        return aIndex.CompareTo(bIndex);
+                    }
+
+                    return 0;
+                });
+
+                var sortedAllOrder = _allSelectedGameAchievements
+                    .Select((item, index) => new { item, index })
+                    .ToDictionary(x => x.item, x => x.index);
+
+                _filteredSelectedGameAchievements.Sort((a, b) =>
                 {
-                    _filteredSelectedGameAchievements.Sort(comparison);
-                }
+                    var result = direction == ListSortDirection.Descending ? comparison(b, a) : comparison(a, b);
+                    if (result != 0)
+                    {
+                        return result;
+                    }
+
+                    if (sortedAllOrder.TryGetValue(a, out var aIndex) && sortedAllOrder.TryGetValue(b, out var bIndex))
+                    {
+                        return aIndex.CompareTo(bIndex);
+                    }
+
+                    return 0;
+                });
             }
 
             if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulkSelected2)
@@ -2055,6 +2184,100 @@ namespace PlayniteAchievements.ViewModels
             {
                 CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
             }
+        }
+
+        private static int CompareRecentAchievementsByUnlockColumn(RecentAchievementItem a, RecentAchievementItem b)
+        {
+            var dateComparison = a.UnlockTime.CompareTo(b.UnlockTime);
+            if (dateComparison != 0)
+            {
+                return dateComparison;
+            }
+
+            var progressComparison = CompareProgressFraction(a.ProgressNum, a.ProgressDenom, b.ProgressNum, b.ProgressDenom);
+            if (progressComparison != 0)
+            {
+                return progressComparison;
+            }
+
+            var pointsComparison = a.Points.CompareTo(b.Points);
+            if (pointsComparison != 0)
+            {
+                return pointsComparison;
+            }
+
+            var rarityComparison = a.GlobalPercent.CompareTo(b.GlobalPercent);
+            if (rarityComparison != 0)
+            {
+                return rarityComparison;
+            }
+
+            var gameComparison = string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase);
+            if (gameComparison != 0)
+            {
+                return gameComparison;
+            }
+
+            return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int CompareSelectedGameAchievementsByUnlockColumn(AchievementDisplayItem a, AchievementDisplayItem b)
+        {
+            var dateComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
+            if (dateComparison != 0)
+            {
+                return dateComparison;
+            }
+
+            var progressComparison = CompareProgressFraction(a.ProgressNum, a.ProgressDenom, b.ProgressNum, b.ProgressDenom);
+            if (progressComparison != 0)
+            {
+                return progressComparison;
+            }
+
+            var unlockedComparison = a.Unlocked.CompareTo(b.Unlocked);
+            if (unlockedComparison != 0)
+            {
+                return unlockedComparison;
+            }
+
+            var pointsComparison = a.Points.CompareTo(b.Points);
+            if (pointsComparison != 0)
+            {
+                return pointsComparison;
+            }
+
+            var rarityComparison = a.GlobalPercent.CompareTo(b.GlobalPercent);
+            if (rarityComparison != 0)
+            {
+                return rarityComparison;
+            }
+
+            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int CompareProgressFraction(int? aNum, int? aDenom, int? bNum, int? bDenom)
+        {
+            var aHasProgress = aNum.HasValue && aDenom.HasValue && aDenom.Value > 0;
+            var bHasProgress = bNum.HasValue && bDenom.HasValue && bDenom.Value > 0;
+
+            if (aHasProgress && bHasProgress)
+            {
+                var aFraction = (double)aNum.Value / aDenom.Value;
+                var bFraction = (double)bNum.Value / bDenom.Value;
+                var fractionComparison = aFraction.CompareTo(bFraction);
+                if (fractionComparison != 0)
+                {
+                    return fractionComparison;
+                }
+            }
+
+            if (aHasProgress != bHasProgress)
+            {
+                return aHasProgress ? 1 : -1;
+            }
+
+            return 0;
         }
 
         public void Dispose()

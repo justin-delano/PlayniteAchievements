@@ -391,7 +391,8 @@ namespace PlayniteAchievements.ViewModels
                         ShowHiddenTitle = showTitle,
                         ShowHiddenDescription = showDescription,
                         ProgressNum = ach.ProgressNum,
-                        ProgressDenom = ach.ProgressDenom
+                        ProgressDenom = ach.ProgressDenom,
+                        PointsValue = ach.Points
                     });
                 }
 
@@ -558,8 +559,9 @@ namespace PlayniteAchievements.ViewModels
             Comparison<AchievementDisplayItem> comparison = sortMemberPath switch
             {
                 "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
-                "UnlockTime" => (a, b) => (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue),
+                "UnlockTime" => CompareAchievementsByUnlockColumn,
                 "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
+                "Points" => (a, b) => a.Points.CompareTo(b.Points),
                 _ => null
             };
 
@@ -576,6 +578,65 @@ namespace PlayniteAchievements.ViewModels
                 }
                 CollectionHelper.SynchronizeCollection(Achievements, items);
             }
+        }
+
+        private static int CompareAchievementsByUnlockColumn(AchievementDisplayItem a, AchievementDisplayItem b)
+        {
+            var dateComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
+            if (dateComparison != 0)
+            {
+                return dateComparison;
+            }
+
+            var progressComparison = CompareProgressFraction(a.ProgressNum, a.ProgressDenom, b.ProgressNum, b.ProgressDenom);
+            if (progressComparison != 0)
+            {
+                return progressComparison;
+            }
+
+            var unlockedComparison = a.Unlocked.CompareTo(b.Unlocked);
+            if (unlockedComparison != 0)
+            {
+                return unlockedComparison;
+            }
+
+            var pointsComparison = a.Points.CompareTo(b.Points);
+            if (pointsComparison != 0)
+            {
+                return pointsComparison;
+            }
+
+            var rarityComparison = a.GlobalPercent.CompareTo(b.GlobalPercent);
+            if (rarityComparison != 0)
+            {
+                return rarityComparison;
+            }
+
+            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int CompareProgressFraction(int? aNum, int? aDenom, int? bNum, int? bDenom)
+        {
+            var aHasProgress = aNum.HasValue && aDenom.HasValue && aDenom.Value > 0;
+            var bHasProgress = bNum.HasValue && bDenom.HasValue && bDenom.Value > 0;
+
+            if (aHasProgress && bHasProgress)
+            {
+                var aFraction = (double)aNum.Value / aDenom.Value;
+                var bFraction = (double)bNum.Value / bDenom.Value;
+                var fractionComparison = aFraction.CompareTo(bFraction);
+                if (fractionComparison != 0)
+                {
+                    return fractionComparison;
+                }
+            }
+
+            if (aHasProgress != bHasProgress)
+            {
+                return aHasProgress ? 1 : -1;
+            }
+
+            return 0;
         }
 
         private void ApplySearchFilter()

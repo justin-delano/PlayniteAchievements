@@ -90,6 +90,20 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private int? _pointsValue;
+        public int? PointsValue
+        {
+            get => _pointsValue;
+            set
+            {
+                if (SetValueAndReturn(ref _pointsValue, value))
+                {
+                    OnPropertyChanged(nameof(Points));
+                    OnPropertyChanged(nameof(PointsText));
+                }
+            }
+        }
+
         private bool _unlocked;
         public bool Unlocked
         {
@@ -334,6 +348,7 @@ namespace PlayniteAchievements.ViewModels
             ShowHiddenDescription = !hideDescription;
             ProgressNum = source.ProgressNum;
             ProgressDenom = source.ProgressDenom;
+            PointsValue = source.Points;
         }
 
         public string UnlockTimeText =>
@@ -341,6 +356,10 @@ namespace PlayniteAchievements.ViewModels
 
         public string GlobalPercentText =>
             GlobalPercentUnlocked.HasValue ? $"{GlobalPercentUnlocked.Value:F1}%" : "?%";
+
+        public int Points => PointsValue ?? 0;
+
+        public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
 
         public string RarityIconKey => RarityHelper.GetRarityIconKey(GlobalPercentUnlocked ?? 100);
 

@@ -12,8 +12,7 @@ Packages:
       - More language fixes and global language setting. Please report any other datetime parsing issues you encounter.
       - Per-provider disable options for scanning.
       - Option to export data to CSV in settings.
-      - Next up is PSN+Xbox support and more UI polish with XP/gamerscore data. 
-
+      - Next up is PSN+Xbox support and more UI polish with XP/gamerscore data.
 
   - Version: 1.2.0
     RequiredApiVersion: 6.14.0

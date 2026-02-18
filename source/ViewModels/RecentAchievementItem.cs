@@ -97,6 +97,34 @@ namespace PlayniteAchievements.ViewModels
             } 
         }
 
+        private int? _pointsValue;
+        public int? PointsValue
+        {
+            get => _pointsValue;
+            set
+            {
+                if (SetValueAndReturn(ref _pointsValue, value))
+                {
+                    OnPropertyChanged(nameof(Points));
+                    OnPropertyChanged(nameof(PointsText));
+                }
+            }
+        }
+
+        private int? _progressNum;
+        public int? ProgressNum
+        {
+            get => _progressNum;
+            set => SetValue(ref _progressNum, value);
+        }
+
+        private int? _progressDenom;
+        public int? ProgressDenom
+        {
+            get => _progressDenom;
+            set => SetValue(ref _progressDenom, value);
+        }
+
         private string _gameIconPath;
         public string GameIconPath 
         { 
@@ -113,6 +141,8 @@ namespace PlayniteAchievements.ViewModels
 
         public string UnlockTimeText => UnlockTime.ToLocalTime().ToString("g");
         public string GlobalPercentText => $"{GlobalPercent:F1}%";
+        public int Points => PointsValue ?? 0;
+        public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
 
         public string RarityIconKey => RarityHelper.GetRarityIconKey(GlobalPercent);
 
@@ -132,6 +162,9 @@ namespace PlayniteAchievements.ViewModels
             IconPath = other.IconPath;
             UnlockTime = other.UnlockTime;
             GlobalPercent = other.GlobalPercent;
+            PointsValue = other.PointsValue;
+            ProgressNum = other.ProgressNum;
+            ProgressDenom = other.ProgressDenom;
             GameIconPath = other.GameIconPath;
             GameCoverPath = other.GameCoverPath;
         }

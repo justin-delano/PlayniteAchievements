@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
@@ -48,6 +49,12 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableArchiveScanning = true;
         private bool _enableDiscHashing = true;
         private bool _enableRaNameFallback = true;
+        private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _sidebarAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _singleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _gamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
         private double _ultraRareThreshold = 5;
         private double _rareThreshold = 10;
@@ -360,6 +367,150 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _enableRaNameFallback, value);
         }
 
+        /// <summary>
+        /// Persisted visibility state for shared achievement DataGrid columns.
+        /// Key is a stable column identifier, value indicates whether the column is visible.
+        /// </summary>
+        public Dictionary<string, bool> DataGridColumnVisibility
+        {
+            get => _dataGridColumnVisibility;
+            set
+            {
+                var normalized = value != null
+                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                SetValue(ref _dataGridColumnVisibility, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Legacy shared width storage for achievement DataGrid columns.
+        /// New installs use scope-specific maps; this remains for backward compatibility fallback.
+        /// </summary>
+        public Dictionary<string, double> DataGridColumnWidths
+        {
+            get => _dataGridColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _dataGridColumnWidths, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Persisted widths for sidebar achievement columns (recent + selected game panels).
+        /// Key is a stable column identifier, value is pixel width.
+        /// </summary>
+        public Dictionary<string, double> SidebarAchievementColumnWidths
+        {
+            get => _sidebarAchievementColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _sidebarAchievementColumnWidths, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Persisted widths for the single-game achievement columns.
+        /// Key is a stable column identifier, value is pixel width.
+        /// </summary>
+        public Dictionary<string, double> SingleGameColumnWidths
+        {
+            get => _singleGameColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _singleGameColumnWidths, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Persisted visibility state for games overview columns in the sidebar.
+        /// Key is a stable column identifier, value indicates whether the column is visible.
+        /// </summary>
+        public Dictionary<string, bool> GamesOverviewColumnVisibility
+        {
+            get => _gamesOverviewColumnVisibility;
+            set
+            {
+                var normalized = value != null
+                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                SetValue(ref _gamesOverviewColumnVisibility, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Persisted widths for games overview columns in the sidebar.
+        /// Key is a stable column identifier, value is pixel width.
+        /// </summary>
+        public Dictionary<string, double> GamesOverviewColumnWidths
+        {
+            get => _gamesOverviewColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _gamesOverviewColumnWidths, normalized);
+            }
+        }
+
         #endregion
 
         #region Rarity Threshold Settings
@@ -457,6 +608,24 @@ namespace PlayniteAchievements.Models.Settings
                 EnableArchiveScanning = this.EnableArchiveScanning,
                 EnableDiscHashing = this.EnableDiscHashing,
                 EnableRaNameFallback = this.EnableRaNameFallback,
+                DataGridColumnVisibility = this.DataGridColumnVisibility != null
+                    ? new Dictionary<string, bool>(this.DataGridColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
+                DataGridColumnWidths = this.DataGridColumnWidths != null
+                    ? new Dictionary<string, double>(this.DataGridColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SidebarAchievementColumnWidths = this.SidebarAchievementColumnWidths != null
+                    ? new Dictionary<string, double>(this.SidebarAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SingleGameColumnWidths = this.SingleGameColumnWidths != null
+                    ? new Dictionary<string, double>(this.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                GamesOverviewColumnVisibility = this.GamesOverviewColumnVisibility != null
+                    ? new Dictionary<string, bool>(this.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
+                GamesOverviewColumnWidths = this.GamesOverviewColumnWidths != null
+                    ? new Dictionary<string, double>(this.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
                 UltraRareThreshold = this.UltraRareThreshold,
                 RareThreshold = this.RareThreshold,
                 UncommonThreshold = this.UncommonThreshold,

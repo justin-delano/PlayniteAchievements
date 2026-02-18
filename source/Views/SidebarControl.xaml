@@ -825,7 +825,8 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                        <DataGrid Grid.Row="0"
+                        <DataGrid x:Name="GamesOverviewDataGrid"
+                            Grid.Row="0"
                             ItemsSource="{Binding GamesOverview}"
                             SelectedItem="{Binding SelectedGame, Mode=OneWay}"
                             SelectionChanged="GamesOverview_SelectionChanged"
@@ -849,18 +850,23 @@
                             ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
                             VirtualizingStackPanel.ScrollUnit="Pixel"
                             ScrollViewer.CanContentScroll="True"
-                            ScrollViewer.IsDeferredScrollingEnabled="False">
+                            ScrollViewer.IsDeferredScrollingEnabled="False"
+                            ToolTip="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"
+                            PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
                             <DataGrid.CellStyle>
-                                <Style TargetType="DataGridCell">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
-                                            <Setter Property="Background" Value="#30FFFFFF"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
-                                            <Setter Property="Background" Value="#40FFFFFF"/>
+                                    <Style TargetType="DataGridCell">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
+                                                <Setter Property="Background" Value="#30FFFFFF"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
+                                                <Setter Property="Background" Value="#30FFFFFF"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
+                                                <Setter Property="Background" Value="#40FFFFFF"/>
                                         </DataTrigger>
                                         <MultiDataTrigger>
                                             <MultiDataTrigger.Conditions>
@@ -880,11 +886,13 @@
                                     <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                                     <Setter Property="Cursor" Value="Hand"/>
                                     <Setter Property="Height" Value="112"/>
+                                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
+                                    <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
                                 </Style>
                             </DataGrid.RowStyle>
                            <DataGrid.Columns>
                             <!-- Perfect indicator (slightly larger) -->
-                            <DataGridTemplateColumn Width="34" Header="">
+                            <DataGridTemplateColumn Width="34" Header="" helpers:ColumnVisibilityHelper.ColumnKey="OverviewPerfect">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -914,7 +922,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Game Icon/Cover (BIGGER) -->
-                            <DataGridTemplateColumn Width="92"> <!-- was 56 -->
+                            <DataGridTemplateColumn Width="92" helpers:ColumnVisibilityHelper.ColumnKey="OverviewImage"> <!-- was 56 -->
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -938,7 +946,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Game Name (a bit larger) -->
-                            <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName" MinWidth="160">
+                            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName" MinWidth="160" helpers:ColumnVisibilityHelper.ColumnKey="OverviewGameName">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -954,24 +962,24 @@
                                                     </Style>
                                                 </Border.Style>
                                             </Border>
-                                            <Button Content="{Binding GameName}"
-                                                    Command="{Binding DataContext.NavigateToGameCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                    CommandParameter="{Binding}"
-                                                    PreviewMouseDown="GameNameButton_PreviewMouseDown"
-                                                    Click="GameNameButton_Click"
-                                                    HorizontalAlignment="Left"
-                                                    Style="{StaticResource GameNameButtonStyle}">
-                                                <Button.ToolTip>
-                                                    <ToolTip Content="{DynamicResource LOCPlayAch_Tooltip_OpenGameInLibrary}"/>
-                                                </Button.ToolTip>
-                                            </Button>
+                                            <TextBlock Text="{Binding GameName}"
+                                                       HorizontalAlignment="Left"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
                                         </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
                             <!-- Last Played (slightly larger) -->
-                            <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_LastPlayed}" SortMemberPath="LastPlayed" SortDirection="Descending">
+                            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_LastPlayed}" SortMemberPath="LastPlayed" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="OverviewLastPlayed">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -999,7 +1007,7 @@
                             </DataGridTemplateColumn>
 
                                 <!-- Progression with Rarity UNDER the bar -->
-                                <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Progress}" SortMemberPath="Progression">
+                                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Progress}" SortMemberPath="Progression" helpers:ColumnVisibilityHelper.ColumnKey="OverviewProgression">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid>
@@ -1361,7 +1369,9 @@
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                       Padding="0"
                                       ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
-                                      ScrollViewer.IsDeferredScrollingEnabled="False">
+                                      ScrollViewer.IsDeferredScrollingEnabled="False"
+                                      ToolTip="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"
+                                      PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
                                 <DataGrid.CellStyle>
                                     <Style TargetType="DataGridCell">
@@ -1370,6 +1380,9 @@
                                         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                                         <Setter Property="Focusable" Value="False"/>
                                         <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
+                                                <Setter Property="Background" Value="#30FFFFFF"/>
+                                            </DataTrigger>
                                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
                                                 <Setter Property="Background" Value="#30FFFFFF"/>
                                             </DataTrigger>
@@ -1396,6 +1409,8 @@
                                         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                                         <Setter Property="Cursor" Value="Hand"/>
                                         <Setter Property="MinHeight" Value="88"/>
+                                        <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
+                                        <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
                                     </Style>
                                 </DataGrid.RowStyle>
 
@@ -1419,7 +1434,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Achievement Info (give a bit more vertical breathing room) -->
-                                    <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="Name">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="Name" helpers:ColumnVisibilityHelper.ColumnKey="Achievement">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Margin="12,10" VerticalAlignment="Center"> <!-- was 8,8 -->
@@ -1461,7 +1476,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Game Icon/Cover (bigger) -->
-                                    <DataGridTemplateColumn Width="64" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName"> <!-- was 40 -->
+                                    <DataGridTemplateColumn Width="64" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName" helpers:ColumnVisibilityHelper.ColumnKey="Game"> <!-- was 40 -->
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Border CornerRadius="6"
@@ -1504,7 +1519,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Date -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding UnlockTimeText}"
@@ -1518,7 +1533,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Rarity -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -1552,6 +1567,21 @@
                                                                Foreground="{DynamicResource TextBrush}"
                                                                Opacity="0.8"/>
                                                 </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points" helpers:ColumnVisibilityHelper.ColumnKey="Points">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding PointsText}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                                           FontSize="{DynamicResource FontSizeSmall}"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           Opacity="0.8"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -1593,7 +1623,9 @@
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                       ScrollViewer.IsDeferredScrollingEnabled="False"
                                       Padding="0"
-                                      ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}">
+                                      ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+                                      ToolTip="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"
+                                      PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
                                 <DataGrid.CellStyle>
                                     <Style TargetType="DataGridCell">
@@ -1602,6 +1634,9 @@
                                         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                                         <Setter Property="Focusable" Value="False"/>
                                         <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
+                                                <Setter Property="Background" Value="#30FFFFFF"/>
+                                            </DataTrigger>
                                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
                                                 <Setter Property="Background" Value="#30FFFFFF"/>
                                             </DataTrigger>
@@ -1628,6 +1663,8 @@
                                         <Setter Property="Cursor" Value="Hand"/>
                                         <Setter Property="MinHeight" Value="88"/>
                                         <EventSetter Event="PreviewMouseLeftButtonDown" Handler="AchievementRow_PreviewMouseLeftButtonDown"/>
+                                        <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
+                                        <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
                                     </Style>
                                 </DataGrid.RowStyle>
 
@@ -1710,7 +1747,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Achievement Info -->
-                                    <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName" helpers:ColumnVisibilityHelper.ColumnKey="Achievement">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Margin="12,10" VerticalAlignment="Center" Background="Transparent">
@@ -1781,7 +1818,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Date / Progress -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Grid>
@@ -1816,7 +1853,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Rarity -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent">
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -1848,6 +1885,21 @@
                                                                Foreground="{DynamicResource TextBrush}"
                                                                Opacity="0.8"/>
                                                 </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+
+                                    <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points" helpers:ColumnVisibilityHelper.ColumnKey="Points">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding PointsText}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                                           FontSize="{DynamicResource FontSizeSmall}"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           Opacity="0.8"/>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
