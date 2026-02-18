@@ -75,6 +75,7 @@
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Padding" Value="10,6"/>
                 <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="DataGridColumnHeader">
@@ -100,7 +101,7 @@
                                     Focusable="False"/>
                                 <Thumb x:Name="PART_RightHeaderGripper"
                                     HorizontalAlignment="Right"
-                                    Width="4"
+                                    Width="8"
                                     Cursor="SizeWE"
                                     Background="Transparent"/>
                             </Grid>
@@ -550,7 +551,6 @@
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   Padding="0"
                   ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
-                  ToolTip="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"
                   PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
             <DataGrid.CellStyle>

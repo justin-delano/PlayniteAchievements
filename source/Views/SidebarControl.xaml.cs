@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
@@ -20,7 +21,6 @@ namespace PlayniteAchievements.Views
     {
         private readonly SidebarViewModel _viewModel;
         private readonly ILogger _logger;
-        private readonly AchievementManager _achievementManager;
         private readonly PlayniteAchievementsSettings _settings;
         private bool _isActive;
         private Guid? _lastSelectedOverviewGameId;
@@ -33,7 +33,25 @@ namespace PlayniteAchievements.Views
         private bool _isColumnResizeInProgress;
         private string _lastSidebarAchievementResizedColumnKey;
         private string _lastGamesOverviewResizedColumnKey;
-        private const double MinimumNormalizedColumnWidth = 40;
+        private Dictionary<string, double> _pendingRecentAchievementToggleWidths;
+        private Dictionary<string, double> _pendingGameAchievementToggleWidths;
+        private const double MinimumColumnWidthRatio = 0.1;
+        private const double WidthNormalizationSafetyPadding = 1.0;
+        private static readonly IReadOnlyDictionary<string, double> DefaultSidebarAchievementColumnWidthSeeds =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Achievement"] = 520,
+                ["UnlockDate"] = 230,
+                ["Rarity"] = 170,
+                ["Points"] = 120
+            };
+        private static readonly IReadOnlyDictionary<string, double> DefaultGamesOverviewColumnWidthSeeds =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["OverviewGameName"] = 500,
+                ["OverviewLastPlayed"] = 240,
+                ["OverviewProgression"] = 360
+            };
 
         public SidebarControl()
         {
@@ -47,7 +65,6 @@ namespace PlayniteAchievements.Views
             InitializeColumnWidthPersistence();
 
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _achievementManager = achievementManager;
             _settings = settings;
 
             _viewModel = new SidebarViewModel(achievementManager, api, logger, settings);
@@ -89,6 +106,8 @@ namespace PlayniteAchievements.Views
         /// </summary>
         public void RefreshView()
         {
+            ApplyPersistedColumnVisibilityToSidebarGrids();
+            ApplyPersistedColumnWidthsToSidebarGrids();
             _ = _viewModel?.RefreshViewAsync();
         }
 
@@ -203,7 +222,29 @@ namespace PlayniteAchievements.Views
 
             if (sender is DataGrid grid)
             {
-                NormalizeGridColumnsToContainer(grid);
+                if (!grid.IsVisible || grid.ActualWidth <= 1)
+                {
+                    return;
+                }
+
+                var isSharedAchievementGrid = grid == RecentAchievementsDataGrid || grid == GameAchievementsDataGrid;
+                var isVisibilityActivation = e.PreviousSize.Width <= 1;
+                if (isSharedAchievementGrid && isVisibilityActivation && HasPendingSharedAchievementToggleWidths())
+                {
+                    return;
+                }
+
+                var shouldRescaleAll = !isSharedAchievementGrid || !isVisibilityActivation;
+
+                Dispatcher.BeginInvoke(
+                    new Action(() =>
+                    {
+                        if (grid.IsLoaded && !_isColumnResizeInProgress)
+                        {
+                            NormalizeGridColumnsToContainer(grid, rescaleAll: shouldRescaleAll);
+                        }
+                    }),
+                    DispatcherPriority.Render);
             }
         }
 
@@ -285,7 +326,12 @@ namespace PlayniteAchievements.Views
 
         private void OnColumnWidthChanged(DataGrid sourceGrid, DataGridColumn sourceColumn)
         {
-            if (_isApplyingPersistedColumnWidths)
+            if (_isApplyingPersistedColumnWidths || !_isColumnResizeInProgress)
+            {
+                return;
+            }
+
+            if (sourceColumn == null || !sourceColumn.CanUserResize)
             {
                 return;
             }
@@ -293,10 +339,6 @@ namespace PlayniteAchievements.Views
             var columnKey = GetPersistedColumnKey(sourceColumn);
             if (string.IsNullOrWhiteSpace(columnKey))
             {
-                if (!_isColumnResizeInProgress)
-                {
-                    NormalizeGridColumnsToContainer(sourceGrid);
-                }
                 return;
             }
 
@@ -312,10 +354,6 @@ namespace PlayniteAchievements.Views
                 QueueColumnWidthPersistence(_pendingSidebarAchievementWidthUpdates, columnKey, width);
                 ApplyColumnWidthToGridByKey(RecentAchievementsDataGrid, columnKey, width);
                 ApplyColumnWidthToGridByKey(GameAchievementsDataGrid, columnKey, width);
-                if (!_isColumnResizeInProgress)
-                {
-                    NormalizeSharedAchievementColumnsToContainer(sourceGrid);
-                }
                 return;
             }
 
@@ -323,10 +361,6 @@ namespace PlayniteAchievements.Views
             {
                 _lastGamesOverviewResizedColumnKey = columnKey;
                 QueueColumnWidthPersistence(_pendingGamesOverviewWidthUpdates, columnKey, width);
-                if (!_isColumnResizeInProgress)
-                {
-                    NormalizeGridColumnsToContainer(sourceGrid);
-                }
             }
         }
 
@@ -420,11 +454,6 @@ namespace PlayniteAchievements.Views
             return !double.IsNaN(width) && !double.IsInfinity(width) && width > 0;
         }
 
-        private void ClearSearch_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel?.ClearSearch();
-        }
-
         private void ClearLeftSearch_Click(object sender, RoutedEventArgs e)
         {
             _viewModel?.ClearLeftSearch();
@@ -437,6 +466,11 @@ namespace PlayniteAchievements.Views
 
         private void ClearGameSelection_Click(object sender, RoutedEventArgs e)
         {
+            if (_viewModel?.IsGameSelected == true)
+            {
+                PrecomputeSharedAchievementColumnsForToggle(toGameSelected: false);
+            }
+
             _viewModel?.ClearGameSelection();
             _lastSelectedOverviewGameId = null;
         }
@@ -460,6 +494,11 @@ namespace PlayniteAchievements.Views
             if (current is DataGridRow row && row.IsSelected)
             {
                 grid.SelectedItem = null;
+                if (_viewModel.IsGameSelected)
+                {
+                    PrecomputeSharedAchievementColumnsForToggle(toGameSelected: false);
+                }
+
                 _viewModel.ClearGameSelection();
                 _lastSelectedOverviewGameId = null;
                 e.Handled = true;
@@ -477,6 +516,12 @@ namespace PlayniteAchievements.Views
                 var currentGameId = item.PlayniteGameId;
                 var gameChanged = !_lastSelectedOverviewGameId.HasValue ||
                                   currentGameId != _lastSelectedOverviewGameId.Value;
+                var wasGameSelected = _viewModel.IsGameSelected;
+
+                if (!wasGameSelected)
+                {
+                    PrecomputeSharedAchievementColumnsForToggle(toGameSelected: true);
+                }
 
                 _viewModel.SelectedGame = item;
                 _lastSelectedOverviewGameId = currentGameId;
@@ -490,6 +535,30 @@ namespace PlayniteAchievements.Views
             else
             {
                 _lastSelectedOverviewGameId = null;
+            }
+        }
+
+        private void PrecomputeSharedAchievementColumnsForToggle(bool toGameSelected)
+        {
+            _pendingRecentAchievementToggleWidths = null;
+            _pendingGameAchievementToggleWidths = null;
+
+            var sourceGrid = toGameSelected ? RecentAchievementsDataGrid : GameAchievementsDataGrid;
+            if (sourceGrid == null || !sourceGrid.IsLoaded)
+            {
+                sourceGrid = toGameSelected ? GameAchievementsDataGrid : RecentAchievementsDataGrid;
+            }
+
+            if (sourceGrid == null || !sourceGrid.IsLoaded)
+            {
+                return;
+            }
+
+            if (TryBuildSharedAchievementWidthPlans(sourceGrid, rescaleAll: true, out var recentPlan, out var gamePlan))
+            {
+                _pendingRecentAchievementToggleWidths = recentPlan;
+                _pendingGameAchievementToggleWidths = gamePlan;
+                ApplySharedAchievementWidthPlans(recentPlan, gamePlan);
             }
         }
 
@@ -563,8 +632,43 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
+            if (IsRecentAchievementsDefaultSortApplied())
+            {
+                return;
+            }
+
             _viewModel.SortDataGrid(RecentAchievementsDataGrid, "UnlockTime", ListSortDirection.Descending);
             ResetRecentAchievementsSortDirection();
+        }
+
+        private bool IsRecentAchievementsDefaultSortApplied()
+        {
+            if (RecentAchievementsDataGrid == null || RecentAchievementsDataGrid.Columns == null)
+            {
+                return false;
+            }
+
+            var unlockTimeColumn = RecentAchievementsDataGrid.Columns
+                .FirstOrDefault(c => c?.SortMemberPath == "UnlockTime");
+            if (unlockTimeColumn?.SortDirection != ListSortDirection.Descending)
+            {
+                return false;
+            }
+
+            foreach (var column in RecentAchievementsDataGrid.Columns)
+            {
+                if (column == null || column == unlockTimeColumn)
+                {
+                    continue;
+                }
+
+                if (column.SortDirection != null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -574,10 +678,52 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (e.PropertyName == nameof(SidebarViewModel.IsGameSelected) && !_viewModel.IsGameSelected)
+            if (e.PropertyName != nameof(SidebarViewModel.IsGameSelected))
+            {
+                return;
+            }
+
+            if (!_viewModel.IsGameSelected)
             {
                 ResetRecentAchievementsToDefaultSort();
             }
+
+            if (TryApplyPendingSharedAchievementToggleWidths())
+            {
+                return;
+            }
+
+            QueueActiveAchievementGridNormalization(rescaleAll: false);
+        }
+
+        private void QueueActiveAchievementGridNormalization(bool rescaleAll)
+        {
+            Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    if (_viewModel == null)
+                    {
+                        return;
+                    }
+
+                    var activeGrid = _viewModel.IsGameSelected ? GameAchievementsDataGrid : RecentAchievementsDataGrid;
+                    TryNormalizeActiveAchievementGrid(activeGrid, rescaleAll);
+                }),
+                DispatcherPriority.Loaded);
+        }
+
+        private bool TryNormalizeActiveAchievementGrid(DataGrid activeGrid, bool rescaleAll)
+        {
+            if (activeGrid == null ||
+                !activeGrid.IsLoaded ||
+                !activeGrid.IsVisible ||
+                activeGrid.ActualWidth <= 1)
+            {
+                return false;
+            }
+
+            NormalizeSharedAchievementColumnsToContainer(activeGrid, rescaleAll);
+            return true;
         }
 
         private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
@@ -905,12 +1051,71 @@ namespace PlayniteAchievements.Views
 
         private void ApplyPersistedColumnWidthsToSidebarGrids()
         {
+            EnsureDefaultColumnWidthSeeds();
+
             var sidebarMap = GetSidebarAchievementColumnWidthsForRead();
             ApplyPersistedColumnWidths(RecentAchievementsDataGrid, sidebarMap);
             ApplyPersistedColumnWidths(GameAchievementsDataGrid, sidebarMap);
             ApplyPersistedColumnWidths(GamesOverviewDataGrid, _settings?.Persisted?.GamesOverviewColumnWidths);
             NormalizeSharedAchievementColumnsToContainer(RecentAchievementsDataGrid);
             NormalizeGridColumnsToContainer(GamesOverviewDataGrid);
+        }
+
+        private void EnsureDefaultColumnWidthSeeds()
+        {
+            if (_settings?.Persisted == null)
+            {
+                return;
+            }
+
+            var changed = false;
+
+            var sidebarMap = _settings.Persisted.SidebarAchievementColumnWidths;
+            if (sidebarMap == null)
+            {
+                sidebarMap = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                _settings.Persisted.SidebarAchievementColumnWidths = sidebarMap;
+                changed = true;
+            }
+
+            changed |= EnsureDefaultColumnWidthSeeds(sidebarMap, DefaultSidebarAchievementColumnWidthSeeds);
+
+            var overviewMap = _settings.Persisted.GamesOverviewColumnWidths;
+            if (overviewMap == null)
+            {
+                overviewMap = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                _settings.Persisted.GamesOverviewColumnWidths = overviewMap;
+                changed = true;
+            }
+
+            changed |= EnsureDefaultColumnWidthSeeds(overviewMap, DefaultGamesOverviewColumnWidthSeeds);
+
+            if (changed)
+            {
+                SavePluginSettings();
+            }
+        }
+
+        private static bool EnsureDefaultColumnWidthSeeds(
+            Dictionary<string, double> targetMap,
+            IReadOnlyDictionary<string, double> defaultWidths)
+        {
+            if (targetMap == null || defaultWidths == null || defaultWidths.Count == 0)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var pair in defaultWidths)
+            {
+                if (!targetMap.TryGetValue(pair.Key, out var width) || !IsValidPersistedColumnWidth(width))
+                {
+                    targetMap[pair.Key] = pair.Value;
+                    changed = true;
+                }
+            }
+
+            return changed;
         }
 
         private void ApplyPersistedColumnVisibility(DataGrid grid, Dictionary<string, bool> map)
@@ -964,6 +1169,11 @@ namespace PlayniteAchievements.Views
             {
                 foreach (var column in grid.Columns)
                 {
+                    if (column == null || !column.CanUserResize)
+                    {
+                        continue;
+                    }
+
                     var key = GetPersistedColumnKey(column);
                     if (string.IsNullOrWhiteSpace(key))
                     {
@@ -1025,6 +1235,11 @@ namespace PlayniteAchievements.Views
             {
                 foreach (var column in grid.Columns)
                 {
+                    if (column == null || !column.CanUserResize)
+                    {
+                        continue;
+                    }
+
                     var key = GetPersistedColumnKey(column);
                     if (string.Equals(key, columnKey, StringComparison.OrdinalIgnoreCase))
                     {
@@ -1041,7 +1256,7 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void NormalizeGridColumnsToContainer(DataGrid grid)
+        private void NormalizeGridColumnsToContainer(DataGrid grid, bool rescaleAll = false)
         {
             if (grid == null || !grid.IsLoaded)
             {
@@ -1050,33 +1265,213 @@ namespace PlayniteAchievements.Views
 
             if (grid == RecentAchievementsDataGrid || grid == GameAchievementsDataGrid)
             {
-                NormalizeSharedAchievementColumnsToContainer(grid);
+                NormalizeSharedAchievementColumnsToContainer(grid, rescaleAll);
                 return;
             }
 
-            if (TryBuildNormalizedPersistedWidths(grid, _lastGamesOverviewResizedColumnKey, out var normalized))
+            if (TryBuildNormalizedPersistedWidths(grid, _lastGamesOverviewResizedColumnKey, rescaleAll, preferredWidthsByKey: null, fallbackAvailableWidth: 0, out var normalized))
             {
                 ApplyColumnWidthsByKey(grid, normalized);
             }
         }
 
-        private void NormalizeSharedAchievementColumnsToContainer(DataGrid referenceGrid)
+        private void NormalizeSharedAchievementColumnsToContainer(DataGrid referenceGrid, bool rescaleAll = false)
         {
-            if (referenceGrid == null || !referenceGrid.IsLoaded)
+            if (!TryBuildSharedAchievementWidthPlans(referenceGrid, rescaleAll, out var recentNormalized, out var gameNormalized))
             {
                 return;
             }
 
-            if (!TryBuildNormalizedPersistedWidths(referenceGrid, _lastSidebarAchievementResizedColumnKey, out var normalized))
-            {
-                return;
-            }
-
-            ApplyColumnWidthsByKey(RecentAchievementsDataGrid, normalized);
-            ApplyColumnWidthsByKey(GameAchievementsDataGrid, normalized);
+            ApplySharedAchievementWidthPlans(recentNormalized, gameNormalized);
         }
 
-        private bool TryBuildNormalizedPersistedWidths(DataGrid grid, string protectedColumnKey, out Dictionary<string, double> normalized)
+        private bool TryBuildSharedAchievementWidthPlans(
+            DataGrid referenceGrid,
+            bool rescaleAll,
+            out Dictionary<string, double> recentNormalized,
+            out Dictionary<string, double> gameNormalized)
+        {
+            recentNormalized = null;
+            gameNormalized = null;
+            if (referenceGrid == null || !referenceGrid.IsLoaded)
+            {
+                return false;
+            }
+
+            var fallbackAvailableWidth = GetPreferredSharedAchievementAvailableWidth(referenceGrid);
+            var preferredWidthsByKey = GetPreferredSharedAchievementWidths(referenceGrid, fallbackAvailableWidth);
+            var protectedColumnKey = _lastSidebarAchievementResizedColumnKey;
+
+            var hasRecentPlan = TryBuildNormalizedPersistedWidths(
+                RecentAchievementsDataGrid,
+                protectedColumnKey,
+                rescaleAll,
+                preferredWidthsByKey,
+                fallbackAvailableWidth,
+                out recentNormalized);
+            var hasGamePlan = TryBuildNormalizedPersistedWidths(
+                GameAchievementsDataGrid,
+                protectedColumnKey,
+                rescaleAll,
+                preferredWidthsByKey,
+                fallbackAvailableWidth,
+                out gameNormalized);
+
+            if (!hasRecentPlan && !hasGamePlan)
+            {
+                if (TryBuildNormalizedPersistedWidths(referenceGrid, _lastSidebarAchievementResizedColumnKey, rescaleAll, preferredWidthsByKey, fallbackAvailableWidth, out var fallbackNormalized))
+                {
+                    if (referenceGrid == RecentAchievementsDataGrid)
+                    {
+                        recentNormalized = fallbackNormalized;
+                        hasRecentPlan = true;
+                    }
+                    else if (referenceGrid == GameAchievementsDataGrid)
+                    {
+                        gameNormalized = fallbackNormalized;
+                        hasGamePlan = true;
+                    }
+                }
+            }
+
+            return hasRecentPlan || hasGamePlan;
+        }
+
+        private void ApplySharedAchievementWidthPlans(
+            Dictionary<string, double> recentNormalized,
+            Dictionary<string, double> gameNormalized)
+        {
+            if (recentNormalized != null &&
+                recentNormalized.Count > 0 &&
+                RecentAchievementsDataGrid != null &&
+                RecentAchievementsDataGrid.IsLoaded)
+            {
+                ApplyColumnWidthsByKey(RecentAchievementsDataGrid, recentNormalized);
+            }
+
+            if (gameNormalized != null &&
+                gameNormalized.Count > 0 &&
+                GameAchievementsDataGrid != null &&
+                GameAchievementsDataGrid.IsLoaded)
+            {
+                ApplyColumnWidthsByKey(GameAchievementsDataGrid, gameNormalized);
+            }
+        }
+
+        private bool HasPendingSharedAchievementToggleWidths()
+        {
+            return (_pendingRecentAchievementToggleWidths != null && _pendingRecentAchievementToggleWidths.Count > 0) ||
+                   (_pendingGameAchievementToggleWidths != null && _pendingGameAchievementToggleWidths.Count > 0);
+        }
+
+        private bool TryApplyPendingSharedAchievementToggleWidths()
+        {
+            if (!HasPendingSharedAchievementToggleWidths())
+            {
+                return false;
+            }
+
+            var hasActivePlan = _viewModel?.IsGameSelected == true
+                ? _pendingGameAchievementToggleWidths != null && _pendingGameAchievementToggleWidths.Count > 0
+                : _pendingRecentAchievementToggleWidths != null && _pendingRecentAchievementToggleWidths.Count > 0;
+
+            ApplySharedAchievementWidthPlans(_pendingRecentAchievementToggleWidths, _pendingGameAchievementToggleWidths);
+            _pendingRecentAchievementToggleWidths = null;
+            _pendingGameAchievementToggleWidths = null;
+            return hasActivePlan;
+        }
+
+        private double GetPreferredSharedAchievementAvailableWidth(DataGrid referenceGrid)
+        {
+            var availableWidth = GetGridAvailableWidth(referenceGrid);
+            if (IsValidPersistedColumnWidth(availableWidth))
+            {
+                return availableWidth;
+            }
+
+            var alternateGrid = referenceGrid == RecentAchievementsDataGrid ? GameAchievementsDataGrid : RecentAchievementsDataGrid;
+            var alternateWidth = GetGridAvailableWidth(alternateGrid);
+            if (IsValidPersistedColumnWidth(alternateWidth))
+            {
+                return alternateWidth;
+            }
+
+            return 0;
+        }
+
+        private Dictionary<string, double> GetPreferredSharedAchievementWidths(DataGrid referenceGrid, double fallbackAvailableWidth)
+        {
+            var preferred = CaptureResizableColumnWidths(referenceGrid, fallbackAvailableWidth);
+            if (preferred.Count > 0)
+            {
+                return preferred;
+            }
+
+            var alternateGrid = referenceGrid == RecentAchievementsDataGrid ? GameAchievementsDataGrid : RecentAchievementsDataGrid;
+            preferred = CaptureResizableColumnWidths(alternateGrid, fallbackAvailableWidth);
+            if (preferred.Count > 0)
+            {
+                return preferred;
+            }
+
+            var persisted = GetSidebarAchievementColumnWidthsForRead();
+            return persisted ?? new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private Dictionary<string, double> CaptureResizableColumnWidths(DataGrid grid, double fallbackAvailableWidth)
+        {
+            var captured = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            if (grid == null || !grid.IsLoaded || grid.Columns == null || grid.Columns.Count == 0)
+            {
+                return captured;
+            }
+
+            var visibleColumns = grid.Columns
+                .Where(column => column != null && column.Visibility == Visibility.Visible)
+                .ToList();
+            if (visibleColumns.Count == 0)
+            {
+                return captured;
+            }
+
+            var availableWidth = GetGridAvailableWidth(grid, fallbackAvailableWidth);
+            if (!IsValidPersistedColumnWidth(availableWidth))
+            {
+                return captured;
+            }
+
+            var minimumColumnWidth = ResolveResizableMinimumColumnWidth(
+                visibleColumns,
+                GetContainerRelativeMinimumColumnWidth(availableWidth),
+                availableWidth);
+            var minimumColumnWidths = ApplyMinimumColumnWidth(visibleColumns, minimumColumnWidth);
+            foreach (var column in visibleColumns)
+            {
+                if (column == null || !column.CanUserResize)
+                {
+                    continue;
+                }
+
+                var key = GetPersistedColumnKey(column);
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                var minWidth = GetColumnMinimumWidth(minimumColumnWidths, column, minimumColumnWidth);
+                captured[key] = Math.Max(minWidth, GetCurrentColumnWidth(column));
+            }
+
+            return captured;
+        }
+
+        private bool TryBuildNormalizedPersistedWidths(
+            DataGrid grid,
+            string protectedColumnKey,
+            bool rescaleAll,
+            IReadOnlyDictionary<string, double> preferredWidthsByKey,
+            double fallbackAvailableWidth,
+            out Dictionary<string, double> normalized)
         {
             normalized = null;
             if (grid == null || grid.Columns == null || grid.Columns.Count == 0)
@@ -1092,83 +1487,125 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
+            var availableWidth = GetGridAvailableWidth(grid, fallbackAvailableWidth);
+            if (!IsValidPersistedColumnWidth(availableWidth))
+            {
+                return false;
+            }
+
+            var minimumColumnWidth = ResolveResizableMinimumColumnWidth(
+                visibleColumns,
+                GetContainerRelativeMinimumColumnWidth(availableWidth),
+                availableWidth);
+            var minimumColumnWidths = ApplyMinimumColumnWidth(visibleColumns, minimumColumnWidth);
+
             var keyColumns = visibleColumns
-                .Select(column => new { Column = column, Key = GetPersistedColumnKey(column) })
-                .Where(entry => !string.IsNullOrWhiteSpace(entry.Key))
+                .Select(column => new
+                {
+                    Column = column,
+                    Key = GetPersistedColumnKey(column),
+                    MinimumWidth = GetColumnMinimumWidth(minimumColumnWidths, column, minimumColumnWidth),
+                    IsResizable = column.CanUserResize,
+                    SeedWidth = ResolveSeedWidth(
+                        GetPersistedColumnKey(column),
+                        column,
+                        preferredWidthsByKey,
+                        GetColumnMinimumWidth(minimumColumnWidths, column, minimumColumnWidth))
+                })
+                .Where(entry => !string.IsNullOrWhiteSpace(entry.Key) && entry.IsResizable)
                 .ToList();
             if (keyColumns.Count == 0)
             {
                 return false;
             }
 
-            var availableWidth = GetGridAvailableWidth(grid);
-            if (!IsValidPersistedColumnWidth(availableWidth))
-            {
-                return false;
-            }
-
             var fixedWidth = visibleColumns
-                .Where(column => string.IsNullOrWhiteSpace(GetPersistedColumnKey(column)))
-                .Sum(GetCurrentColumnWidth);
+                .Where(column => string.IsNullOrWhiteSpace(GetPersistedColumnKey(column)) || !column.CanUserResize)
+                .Sum(column => Math.Max(GetColumnMinimumWidth(minimumColumnWidths, column, minimumColumnWidth), GetCurrentColumnWidth(column)));
 
-            var targetWidth = availableWidth - fixedWidth;
+            var targetWidth = Math.Max(0, availableWidth - fixedWidth - WidthNormalizationSafetyPadding);
             if (targetWidth <= 0)
             {
                 return false;
             }
 
-            var floorWidth = Math.Max(1, Math.Min(MinimumNormalizedColumnWidth, targetWidth / keyColumns.Count));
             var keys = new List<string>(keyColumns.Count);
+            var floorWidths = new List<double>(keyColumns.Count);
             var widths = new List<double>(keyColumns.Count);
             for (var i = 0; i < keyColumns.Count; i++)
             {
                 var entry = keyColumns[i];
-                if (entry.Column.MinWidth > floorWidth)
-                {
-                    entry.Column.MinWidth = floorWidth;
-                }
-
                 keys.Add(entry.Key);
-                widths.Add(Math.Max(floorWidth, GetCurrentColumnWidth(entry.Column)));
+                floorWidths.Add(entry.MinimumWidth);
+                widths.Add(Math.Max(entry.MinimumWidth, entry.SeedWidth));
             }
 
             var totalWidth = widths.Sum();
             var delta = targetWidth - totalWidth;
             if (Math.Abs(delta) > 0.2)
             {
-                var absorberOrder = BuildAbsorberOrder(keys, protectedColumnKey);
-                if (absorberOrder.Count == 0)
+                if (rescaleAll)
                 {
-                    absorberOrder.Add(keys.Count - 1);
-                }
+                    var weights = widths.Select(w => Math.Max(1, w)).ToList();
+                    var remainingTarget = targetWidth;
+                    var remainingWeight = weights.Sum();
+                    var remainingMinimum = floorWidths.Sum();
+                    for (var i = 0; i < widths.Count; i++)
+                    {
+                        var floorWidth = floorWidths[i];
+                        remainingMinimum -= floorWidth;
+                        var next = i == widths.Count - 1
+                            ? remainingTarget
+                            : remainingTarget * (weights[i] / remainingWeight);
 
-                if (delta > 0)
-                {
-                    widths[absorberOrder[0]] += delta;
+                        next = Math.Max(floorWidth, next);
+                        var maxForCurrent = remainingTarget - remainingMinimum;
+                        if (next > maxForCurrent)
+                        {
+                            next = maxForCurrent;
+                        }
+
+                        widths[i] = next;
+                        remainingTarget -= next;
+                        remainingWeight -= weights[i];
+                    }
                 }
                 else
                 {
-                    foreach (var index in absorberOrder)
+                    var absorberOrder = BuildAbsorberOrder(keys, protectedColumnKey);
+                    if (absorberOrder.Count == 0)
                     {
-                        var capacity = widths[index] - floorWidth;
-                        if (capacity <= 0)
-                        {
-                            continue;
-                        }
-
-                        var take = Math.Min(capacity, -delta);
-                        widths[index] -= take;
-                        delta += take;
-                        if (delta >= -0.2)
-                        {
-                            break;
-                        }
+                        absorberOrder.Add(keys.Count - 1);
                     }
 
-                    if (delta < -0.2)
+                    if (delta > 0)
                     {
-                        var fallback = absorberOrder[0];
-                        widths[fallback] = Math.Max(1, widths[fallback] + delta);
+                        widths[absorberOrder[0]] += delta;
+                    }
+                    else
+                    {
+                        foreach (var index in absorberOrder)
+                        {
+                            var capacity = widths[index] - floorWidths[index];
+                            if (capacity <= 0)
+                            {
+                                continue;
+                            }
+
+                            var take = Math.Min(capacity, -delta);
+                            widths[index] -= take;
+                            delta += take;
+                            if (delta >= -0.2)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (delta < -0.2)
+                        {
+                            var fallback = absorberOrder[0];
+                            widths[fallback] = Math.Max(floorWidths[fallback], widths[fallback] + delta);
+                        }
                     }
                 }
             }
@@ -1176,10 +1613,160 @@ namespace PlayniteAchievements.Views
             normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < keys.Count; i++)
             {
-                normalized[keys[i]] = Math.Max(1, widths[i]);
+                normalized[keys[i]] = Math.Max(floorWidths[i], widths[i]);
             }
 
             return true;
+        }
+
+        private static double ResolveSeedWidth(
+            string key,
+            DataGridColumn column,
+            IReadOnlyDictionary<string, double> preferredWidthsByKey,
+            double fallbackMinimumWidth)
+        {
+            if (!string.IsNullOrWhiteSpace(key) &&
+                preferredWidthsByKey != null &&
+                preferredWidthsByKey.TryGetValue(key, out var preferredWidth) &&
+                IsValidPersistedColumnWidth(preferredWidth))
+            {
+                return preferredWidth;
+            }
+
+            var currentWidth = GetCurrentColumnWidth(column);
+            if (IsValidPersistedColumnWidth(currentWidth))
+            {
+                return currentWidth;
+            }
+
+            return fallbackMinimumWidth;
+        }
+
+        private static double GetContainerRelativeMinimumColumnWidth(double availableWidth)
+        {
+            if (!IsValidPersistedColumnWidth(availableWidth))
+            {
+                return 1;
+            }
+
+            return Math.Max(1, Math.Round(availableWidth * MinimumColumnWidthRatio, 2));
+        }
+
+        private static double ResolveResizableMinimumColumnWidth(
+            IReadOnlyList<DataGridColumn> visibleColumns,
+            double preferredMinimumWidth,
+            double availableWidth)
+        {
+            if (!IsValidPersistedColumnWidth(preferredMinimumWidth) ||
+                !IsValidPersistedColumnWidth(availableWidth) ||
+                visibleColumns == null ||
+                visibleColumns.Count == 0)
+            {
+                return Math.Max(1, preferredMinimumWidth);
+            }
+
+            var resizableColumns = visibleColumns
+                .Where(column =>
+                    column != null &&
+                    column.CanUserResize &&
+                    !string.IsNullOrWhiteSpace(GetPersistedColumnKey(column)))
+                .ToList();
+            if (resizableColumns.Count == 0)
+            {
+                return Math.Max(1, preferredMinimumWidth);
+            }
+
+            var fixedWidth = visibleColumns
+                .Where(column => column == null || !column.CanUserResize || string.IsNullOrWhiteSpace(GetPersistedColumnKey(column)))
+                .Sum(GetCurrentColumnWidth);
+            var availableForResizable = Math.Max(1, availableWidth - fixedWidth - WidthNormalizationSafetyPadding);
+            var maxFittableMinimum = Math.Max(1, availableForResizable / resizableColumns.Count);
+            return Math.Max(1, Math.Min(preferredMinimumWidth, maxFittableMinimum));
+        }
+
+        private static Dictionary<DataGridColumn, double> ApplyMinimumColumnWidth(IReadOnlyList<DataGridColumn> columns, double minimumColumnWidth)
+        {
+            var result = new Dictionary<DataGridColumn, double>();
+            if (columns == null || !IsValidPersistedColumnWidth(minimumColumnWidth))
+            {
+                return result;
+            }
+
+            for (var i = 0; i < columns.Count; i++)
+            {
+                var column = columns[i];
+                if (column == null)
+                {
+                    continue;
+                }
+
+                var resolvedMinWidth = ResolveColumnMinimumWidth(column, minimumColumnWidth);
+                result[column] = resolvedMinWidth;
+
+                if (Math.Abs(column.MinWidth - resolvedMinWidth) > 0.2)
+                {
+                    column.MinWidth = resolvedMinWidth;
+                }
+
+                if (!column.CanUserResize)
+                {
+                    var resolvedMaxWidth = ResolveFixedColumnMaximumWidth(column, resolvedMinWidth);
+                    if (Math.Abs(column.MaxWidth - resolvedMaxWidth) > 0.2)
+                    {
+                        column.MaxWidth = resolvedMaxWidth;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private static double ResolveColumnMinimumWidth(DataGridColumn column, double fallbackMinWidth)
+        {
+            if (column != null && !column.CanUserResize)
+            {
+                if (IsValidPersistedColumnWidth(column.MinWidth))
+                {
+                    return column.MinWidth;
+                }
+
+                var currentWidth = GetCurrentColumnWidth(column);
+                if (IsValidPersistedColumnWidth(currentWidth))
+                {
+                    return currentWidth;
+                }
+            }
+
+            return fallbackMinWidth;
+        }
+
+        private static double ResolveFixedColumnMaximumWidth(DataGridColumn column, double fallbackWidth)
+        {
+            if (column != null && IsValidPersistedColumnWidth(column.MaxWidth))
+            {
+                return column.MaxWidth;
+            }
+
+            var currentWidth = GetCurrentColumnWidth(column);
+            if (IsValidPersistedColumnWidth(currentWidth))
+            {
+                return currentWidth;
+            }
+
+            return fallbackWidth;
+        }
+
+        private static double GetColumnMinimumWidth(Dictionary<DataGridColumn, double> minimumColumnWidths, DataGridColumn column, double fallbackMinWidth)
+        {
+            if (minimumColumnWidths != null &&
+                column != null &&
+                minimumColumnWidths.TryGetValue(column, out var resolvedWidth) &&
+                IsValidPersistedColumnWidth(resolvedWidth))
+            {
+                return resolvedWidth;
+            }
+
+            return fallbackMinWidth;
         }
 
         private static List<int> BuildAbsorberOrder(IReadOnlyList<string> keys, string protectedColumnKey)
@@ -1190,7 +1777,18 @@ namespace PlayniteAchievements.Views
                 return order;
             }
 
-            var preferredIndex = FindPreferredAbsorberIndex(keys, protectedColumnKey);
+            var preferredIndex = -1;
+            for (var i = keys.Count - 1; i >= 0; i--)
+            {
+                if (KeysEqual(keys[i], protectedColumnKey))
+                {
+                    continue;
+                }
+
+                preferredIndex = i;
+                break;
+            }
+
             if (preferredIndex >= 0)
             {
                 order.Add(preferredIndex);
@@ -1206,61 +1804,12 @@ namespace PlayniteAchievements.Views
                 order.Add(i);
             }
 
-            for (var i = keys.Count - 1; i >= 0; i--)
-            {
-                if (i == preferredIndex || !KeysEqual(keys[i], protectedColumnKey))
-                {
-                    continue;
-                }
-
-                order.Add(i);
-            }
-
             if (order.Count == 0)
             {
                 order.Add(keys.Count - 1);
             }
 
             return order;
-        }
-
-        private static int FindPreferredAbsorberIndex(IReadOnlyList<string> keys, string protectedColumnKey)
-        {
-            if (keys == null || keys.Count == 0)
-            {
-                return -1;
-            }
-
-            var preferredKeys = new[]
-            {
-                "Achievement",
-                "OverviewGameName",
-                "Game",
-                "OverviewProgression"
-            };
-
-            for (var p = 0; p < preferredKeys.Length; p++)
-            {
-                for (var i = 0; i < keys.Count; i++)
-                {
-                    if (!KeysEqual(keys[i], preferredKeys[p]) || KeysEqual(keys[i], protectedColumnKey))
-                    {
-                        continue;
-                    }
-
-                    return i;
-                }
-            }
-
-            for (var i = keys.Count - 1; i >= 0; i--)
-            {
-                if (!KeysEqual(keys[i], protectedColumnKey))
-                {
-                    return i;
-                }
-            }
-
-            return keys.Count - 1;
         }
 
         private static bool KeysEqual(string a, string b)
@@ -1280,6 +1829,11 @@ namespace PlayniteAchievements.Views
             {
                 foreach (var column in grid.Columns)
                 {
+                    if (column == null || !column.CanUserResize)
+                    {
+                        continue;
+                    }
+
                     var key = GetPersistedColumnKey(column);
                     if (string.IsNullOrWhiteSpace(key))
                     {
@@ -1305,24 +1859,45 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private double GetGridAvailableWidth(DataGrid grid)
+        private double GetGridAvailableWidth(DataGrid grid, double fallbackWidth = 0)
         {
             var width = grid?.ActualWidth ?? 0;
             if (!IsValidPersistedColumnWidth(width))
             {
-                return 0;
+                return IsValidPersistedColumnWidth(fallbackWidth) ? fallbackWidth : 0;
+            }
+
+            var scrollViewer = FindVisualChild<ScrollViewer>(grid);
+            var viewportWidth = scrollViewer?.ViewportWidth ?? 0;
+            if (IsValidPersistedColumnWidth(viewportWidth))
+            {
+                return Math.Max(0, viewportWidth);
             }
 
             var chrome = grid.BorderThickness.Left + grid.BorderThickness.Right + grid.Padding.Left + grid.Padding.Right + 2;
             width -= chrome;
 
-            var scrollViewer = FindVisualChild<ScrollViewer>(grid);
-            if (scrollViewer?.ComputedVerticalScrollBarVisibility == Visibility.Visible)
+            if (scrollViewer != null)
             {
-                width -= SystemParameters.VerticalScrollBarWidth;
+                var computedScrollBarWidth = scrollViewer.ActualWidth - scrollViewer.ViewportWidth;
+                if (IsValidPersistedColumnWidth(computedScrollBarWidth))
+                {
+                    width -= computedScrollBarWidth;
+                }
+                else if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible ||
+                         scrollViewer.VerticalScrollBarVisibility == ScrollBarVisibility.Visible)
+                {
+                    width -= SystemParameters.VerticalScrollBarWidth;
+                }
             }
 
-            return Math.Max(0, width);
+            var resolved = Math.Max(0, width);
+            if (!IsValidPersistedColumnWidth(resolved) && IsValidPersistedColumnWidth(fallbackWidth))
+            {
+                return fallbackWidth;
+            }
+
+            return resolved;
         }
 
         private static double GetCurrentColumnWidth(DataGridColumn column)
@@ -1352,10 +1927,35 @@ namespace PlayniteAchievements.Views
                     return true;
                 }
 
-                source = VisualTreeHelper.GetParent(source);
+                source = GetParentForHitTesting(source);
             }
 
             return false;
+        }
+
+        private static DependencyObject GetParentForHitTesting(DependencyObject source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            if (source is Visual || source is Visual3D)
+            {
+                return VisualTreeHelper.GetParent(source);
+            }
+
+            if (source is FrameworkContentElement frameworkContentElement)
+            {
+                return frameworkContentElement.Parent;
+            }
+
+            if (source is ContentElement contentElement)
+            {
+                return ContentOperations.GetParent(contentElement);
+            }
+
+            return null;
         }
 
         private void PersistColumnVisibility(Dictionary<string, bool> map, string columnKey, bool isVisible)

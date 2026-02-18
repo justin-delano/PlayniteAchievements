@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
@@ -27,6 +28,14 @@ namespace PlayniteAchievements.Views
         private bool _isColumnResizeInProgress;
         private string _lastResizedColumnKey;
         private const double MinimumNormalizedColumnWidth = 40;
+        private static readonly IReadOnlyDictionary<string, double> DefaultSingleGameColumnWidthSeeds =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Achievement"] = 520,
+                ["UnlockDate"] = 230,
+                ["Rarity"] = 170,
+                ["Points"] = 120
+            };
 
         public SingleGameControl()
         {
@@ -177,7 +186,15 @@ namespace PlayniteAchievements.Views
 
             if (sender is DataGrid grid)
             {
-                NormalizeColumnsToContainer(grid);
+                Dispatcher.BeginInvoke(
+                    new Action(() =>
+                    {
+                        if (grid.IsLoaded && !_isColumnResizeInProgress)
+                        {
+                            NormalizeColumnsToContainer(grid, rescaleAll: true);
+                        }
+                    }),
+                    DispatcherPriority.Render);
             }
         }
 
@@ -246,7 +263,7 @@ namespace PlayniteAchievements.Views
 
         private void OnColumnWidthChanged(DataGrid sourceGrid, DataGridColumn column)
         {
-            if (_isApplyingPersistedColumnWidths || sourceGrid == null || column == null)
+            if (_isApplyingPersistedColumnWidths || !_isColumnResizeInProgress || sourceGrid == null || column == null)
             {
                 return;
             }
@@ -254,10 +271,6 @@ namespace PlayniteAchievements.Views
             var key = GetPersistedColumnKey(column);
             if (string.IsNullOrWhiteSpace(key))
             {
-                if (!_isColumnResizeInProgress)
-                {
-                    NormalizeColumnsToContainer(sourceGrid);
-                }
                 return;
             }
 
@@ -269,10 +282,6 @@ namespace PlayniteAchievements.Views
 
             _lastResizedColumnKey = key;
             QueueColumnWidthPersistence(key, width);
-            if (!_isColumnResizeInProgress)
-            {
-                NormalizeColumnsToContainer(sourceGrid);
-            }
         }
 
         private void ColumnWidthSaveTimer_Tick(object sender, EventArgs e)
@@ -499,6 +508,8 @@ namespace PlayniteAchievements.Views
 
         private void ApplyPersistedColumnWidths(DataGrid grid)
         {
+            EnsureDefaultSingleGameColumnWidthSeeds();
+
             var map = GetSingleGameColumnWidthsForRead();
             if (grid == null)
             {
@@ -536,6 +547,36 @@ namespace PlayniteAchievements.Views
             NormalizeColumnsToContainer(grid);
         }
 
+        private void EnsureDefaultSingleGameColumnWidthSeeds()
+        {
+            if (_settings?.Persisted == null)
+            {
+                return;
+            }
+
+            var map = _settings.Persisted.SingleGameColumnWidths;
+            if (map == null)
+            {
+                map = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                _settings.Persisted.SingleGameColumnWidths = map;
+            }
+
+            var changed = false;
+            foreach (var pair in DefaultSingleGameColumnWidthSeeds)
+            {
+                if (!map.TryGetValue(pair.Key, out var width) || !IsValidPersistedColumnWidth(width))
+                {
+                    map[pair.Key] = pair.Value;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                SavePluginSettings();
+            }
+        }
+
         private Dictionary<string, double> GetSingleGameColumnWidthsForRead()
         {
             var merged = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -567,20 +608,20 @@ namespace PlayniteAchievements.Views
             return merged;
         }
 
-        private void NormalizeColumnsToContainer(DataGrid grid)
+        private void NormalizeColumnsToContainer(DataGrid grid, bool rescaleAll = false)
         {
             if (grid == null || !grid.IsLoaded)
             {
                 return;
             }
 
-            if (TryBuildNormalizedPersistedWidths(grid, _lastResizedColumnKey, out var normalized))
+            if (TryBuildNormalizedPersistedWidths(grid, _lastResizedColumnKey, rescaleAll, out var normalized))
             {
                 ApplyColumnWidthsByKey(grid, normalized);
             }
         }
 
-        private bool TryBuildNormalizedPersistedWidths(DataGrid grid, string protectedColumnKey, out Dictionary<string, double> normalized)
+        private bool TryBuildNormalizedPersistedWidths(DataGrid grid, string protectedColumnKey, bool rescaleAll, out Dictionary<string, double> normalized)
         {
             normalized = null;
             if (grid == null || grid.Columns == null || grid.Columns.Count == 0)
@@ -640,39 +681,67 @@ namespace PlayniteAchievements.Views
             var delta = targetWidth - totalWidth;
             if (Math.Abs(delta) > 0.2)
             {
-                var absorberOrder = BuildAbsorberOrder(keys, protectedColumnKey);
-                if (absorberOrder.Count == 0)
+                if (rescaleAll)
                 {
-                    absorberOrder.Add(keys.Count - 1);
-                }
+                    var weights = widths.Select(w => Math.Max(1, w)).ToList();
+                    var remainingTarget = targetWidth;
+                    var remainingWeight = weights.Sum();
+                    for (var i = 0; i < widths.Count; i++)
+                    {
+                        var remainingColumns = widths.Count - i;
+                        var minForOthers = floorWidth * Math.Max(0, remainingColumns - 1);
+                        var next = i == widths.Count - 1
+                            ? remainingTarget
+                            : remainingTarget * (weights[i] / remainingWeight);
 
-                if (delta > 0)
-                {
-                    widths[absorberOrder[0]] += delta;
+                        next = Math.Max(floorWidth, next);
+                        var maxForCurrent = remainingTarget - minForOthers;
+                        if (next > maxForCurrent)
+                        {
+                            next = maxForCurrent;
+                        }
+
+                        widths[i] = next;
+                        remainingTarget -= next;
+                        remainingWeight -= weights[i];
+                    }
                 }
                 else
                 {
-                    foreach (var index in absorberOrder)
+                    var absorberOrder = BuildAbsorberOrder(keys, protectedColumnKey);
+                    if (absorberOrder.Count == 0)
                     {
-                        var capacity = widths[index] - floorWidth;
-                        if (capacity <= 0)
-                        {
-                            continue;
-                        }
-
-                        var take = Math.Min(capacity, -delta);
-                        widths[index] -= take;
-                        delta += take;
-                        if (delta >= -0.2)
-                        {
-                            break;
-                        }
+                        absorberOrder.Add(keys.Count - 1);
                     }
 
-                    if (delta < -0.2)
+                    if (delta > 0)
                     {
-                        var fallback = absorberOrder[0];
-                        widths[fallback] = Math.Max(1, widths[fallback] + delta);
+                        widths[absorberOrder[0]] += delta;
+                    }
+                    else
+                    {
+                        foreach (var index in absorberOrder)
+                        {
+                            var capacity = widths[index] - floorWidth;
+                            if (capacity <= 0)
+                            {
+                                continue;
+                            }
+
+                            var take = Math.Min(capacity, -delta);
+                            widths[index] -= take;
+                            delta += take;
+                            if (delta >= -0.2)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (delta < -0.2)
+                        {
+                            var fallback = absorberOrder[0];
+                            widths[fallback] = Math.Max(1, widths[fallback] + delta);
+                        }
                     }
                 }
             }
@@ -694,7 +763,18 @@ namespace PlayniteAchievements.Views
                 return order;
             }
 
-            var preferredIndex = FindPreferredAbsorberIndex(keys, protectedColumnKey);
+            var preferredIndex = -1;
+            for (var i = keys.Count - 1; i >= 0; i--)
+            {
+                if (KeysEqual(keys[i], protectedColumnKey))
+                {
+                    continue;
+                }
+
+                preferredIndex = i;
+                break;
+            }
+
             if (preferredIndex >= 0)
             {
                 order.Add(preferredIndex);
@@ -710,59 +790,12 @@ namespace PlayniteAchievements.Views
                 order.Add(i);
             }
 
-            for (var i = keys.Count - 1; i >= 0; i--)
-            {
-                if (i == preferredIndex || !KeysEqual(keys[i], protectedColumnKey))
-                {
-                    continue;
-                }
-
-                order.Add(i);
-            }
-
             if (order.Count == 0)
             {
                 order.Add(keys.Count - 1);
             }
 
             return order;
-        }
-
-        private static int FindPreferredAbsorberIndex(IReadOnlyList<string> keys, string protectedColumnKey)
-        {
-            if (keys == null || keys.Count == 0)
-            {
-                return -1;
-            }
-
-            var preferredKeys = new[]
-            {
-                "Achievement",
-                "Game"
-            };
-
-            for (var p = 0; p < preferredKeys.Length; p++)
-            {
-                for (var i = 0; i < keys.Count; i++)
-                {
-                    if (!KeysEqual(keys[i], preferredKeys[p]) || KeysEqual(keys[i], protectedColumnKey))
-                    {
-                        continue;
-                    }
-
-                    return i;
-                }
-            }
-
-            for (var i = keys.Count - 1; i >= 0; i--)
-            {
-                if (!KeysEqual(keys[i], protectedColumnKey))
-                {
-                    return i;
-                }
-            }
-
-            return keys.Count - 1;
         }
 
         private static bool KeysEqual(string a, string b)
@@ -815,13 +848,24 @@ namespace PlayniteAchievements.Views
                 return 0;
             }
 
+            var scrollViewer = FindVisualChild<ScrollViewer>(grid);
             var chrome = grid.BorderThickness.Left + grid.BorderThickness.Right + grid.Padding.Left + grid.Padding.Right + 2;
             width -= chrome;
 
-            var scrollViewer = FindVisualChild<ScrollViewer>(grid);
-            if (scrollViewer?.ComputedVerticalScrollBarVisibility == Visibility.Visible)
+            if (scrollViewer?.ComputedVerticalScrollBarVisibility == Visibility.Visible ||
+                scrollViewer?.VerticalScrollBarVisibility == ScrollBarVisibility.Visible)
             {
                 width -= SystemParameters.VerticalScrollBarWidth;
+            }
+
+            var viewportWidth = scrollViewer?.ViewportWidth ?? 0;
+            if (IsValidPersistedColumnWidth(viewportWidth))
+            {
+                var tolerance = SystemParameters.VerticalScrollBarWidth + 4;
+                if (Math.Abs(viewportWidth - width) <= tolerance)
+                {
+                    width = viewportWidth;
+                }
             }
 
             return Math.Max(0, width);
@@ -879,10 +923,35 @@ namespace PlayniteAchievements.Views
                     return true;
                 }
 
-                source = VisualTreeHelper.GetParent(source);
+                source = GetParentForHitTesting(source);
             }
 
             return false;
+        }
+
+        private static DependencyObject GetParentForHitTesting(DependencyObject source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            if (source is Visual || source is Visual3D)
+            {
+                return VisualTreeHelper.GetParent(source);
+            }
+
+            if (source is FrameworkContentElement frameworkContentElement)
+            {
+                return frameworkContentElement.Parent;
+            }
+
+            if (source is ContentElement contentElement)
+            {
+                return ContentOperations.GetParent(contentElement);
+            }
+
+            return null;
         }
 
         private void PersistColumnVisibility(string columnKey, bool isVisible)

@@ -262,6 +262,7 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridColumnHeader">
@@ -289,7 +290,7 @@
 
                             <Thumb x:Name="PART_RightHeaderGripper"
                                 HorizontalAlignment="Right"
-                                Width="4"
+                                Width="8"
                                 Cursor="SizeWE"
                                 Background="Transparent"/>
                         </Grid>
@@ -850,8 +851,9 @@
                             ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
                             VirtualizingStackPanel.ScrollUnit="Pixel"
                             ScrollViewer.CanContentScroll="True"
+                            ScrollViewer.VerticalScrollBarVisibility="Visible"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                             ScrollViewer.IsDeferredScrollingEnabled="False"
-                            ToolTip="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"
                             PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
                             <DataGrid.CellStyle>
                                     <Style TargetType="DataGridCell">
@@ -892,7 +894,7 @@
                             </DataGrid.RowStyle>
                            <DataGrid.Columns>
                             <!-- Perfect indicator (slightly larger) -->
-                            <DataGridTemplateColumn Width="34" Header="" helpers:ColumnVisibilityHelper.ColumnKey="OverviewPerfect">
+                            <DataGridTemplateColumn Width="34" MinWidth="34" MaxWidth="34" CanUserResize="False" Header="" helpers:ColumnVisibilityHelper.ColumnKey="OverviewPerfect">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -922,7 +924,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Game Icon/Cover (BIGGER) -->
-                            <DataGridTemplateColumn Width="92" helpers:ColumnVisibilityHelper.ColumnKey="OverviewImage"> <!-- was 56 -->
+                            <DataGridTemplateColumn Width="92" MinWidth="92" MaxWidth="92" CanUserResize="False" helpers:ColumnVisibilityHelper.ColumnKey="OverviewImage"> <!-- was 56 -->
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -1123,7 +1125,7 @@
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid>
-                                                <Border BorderBrush="#2196F3" BorderThickness="0,2,2,2">
+                                                <Border BorderBrush="#2196F3" BorderThickness="0,2,2,2" Margin="0,0,1,0">
                                                     <Border.Style>
                                                         <Style TargetType="Border">
                                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -1328,14 +1330,14 @@
                     </Grid>
                     
                     <!-- RIGHT: Content (Recent List OR Game Details) -->
-                    <Grid Grid.Row="2" Grid.Column="2">
+                    <Grid Grid.Row="2" Grid.Column="2" ClipToBounds="True">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <!-- Content Area: Recent List OR Game Details -->
-                        <Grid Grid.Row="0">
+                        <Grid Grid.Row="0" ClipToBounds="True">
                             <!-- Default Panel: When no game selected -->
                             <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource InverseBoolToVis}}">
                                 <Grid.RowDefinitions>
@@ -1345,6 +1347,7 @@
 
                             <DataGrid x:Name="RecentAchievementsDataGrid"
                                       Grid.Row="0"
+                                      ClipToBounds="True"
                                       ItemsSource="{Binding RecentAchievements}"
                                       Sorting="DataGrid_Sorting"
                                       AutoGenerateColumns="False"
@@ -1370,7 +1373,6 @@
                                       Padding="0"
                                       ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
                                       ScrollViewer.IsDeferredScrollingEnabled="False"
-                                      ToolTip="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"
                                       PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
                                 <DataGrid.CellStyle>
@@ -1416,7 +1418,7 @@
 
                                 <DataGrid.Columns>
                                     <!-- Achievement Icon (bigger) -->
-                                    <DataGridTemplateColumn Width="78"> <!-- was 56 -->
+                                    <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False"> <!-- was 56 -->
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">
@@ -1476,7 +1478,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Game Icon/Cover (bigger) -->
-                                    <DataGridTemplateColumn Width="64" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName" helpers:ColumnVisibilityHelper.ColumnKey="Game"> <!-- was 40 -->
+                                    <DataGridTemplateColumn Width="64" MinWidth="64" MaxWidth="64" CanUserResize="False" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName" helpers:ColumnVisibilityHelper.ColumnKey="Game"> <!-- was 40 -->
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Border CornerRadius="6"
@@ -1599,6 +1601,7 @@
                             <!-- Game Achievements List -->
                             <DataGrid x:Name="GameAchievementsDataGrid"
                                       Grid.Row="0"
+                                      ClipToBounds="True"
                                       ItemsSource="{Binding SelectedGameAchievements}"
                                       Sorting="DataGrid_Sorting"
                                       AutoGenerateColumns="False"
@@ -1624,7 +1627,6 @@
                                       ScrollViewer.IsDeferredScrollingEnabled="False"
                                       Padding="0"
                                       ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
-                                      ToolTip="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"
                                       PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
                                 <DataGrid.CellStyle>
@@ -1670,7 +1672,7 @@
 
                                 <DataGrid.Columns>
                                     <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
-                                    <DataGridTemplateColumn Width="36" CanUserSort="False">
+                                    <DataGridTemplateColumn Width="36" MinWidth="36" MaxWidth="36" CanUserSort="False" CanUserResize="False">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -1715,7 +1717,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Achievement Icon -->
-                                    <DataGridTemplateColumn Width="78">
+                                    <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">
