@@ -88,6 +88,46 @@ namespace PlayniteAchievements.Gog.Tests
             }
         }
 
+        [TestMethod]
+        public async Task GetAchievementsAsync_SendsLocaleQueryAndAcceptLanguageHeader()
+        {
+            var tempRoot = CreateTempRoot();
+            try
+            {
+                var cache = new GogClientIdCacheStore(tempRoot, logger: null, ttl: TimeSpan.FromDays(30));
+                Uri capturedUri = null;
+                string capturedAcceptLanguage = null;
+
+                var handler = new StubHttpMessageHandler((request, callCount) =>
+                {
+                    capturedUri = request.RequestUri;
+                    if (request.Headers.TryGetValues("Accept-Language", out var languageValues))
+                    {
+                        capturedAcceptLanguage = string.Join(",", languageValues);
+                    }
+
+                    return JsonResponse(
+                        HttpStatusCode.OK,
+                        "{ \"items\": [ { \"id\": \"1\", \"achievement_key\": \"first_win\", \"name\": \"Erster Sieg\", \"description\": \"Gewinne einmal\", \"visible\": true } ] }");
+                });
+
+                using (var httpClient = new HttpClient(handler))
+                {
+                    var apiClient = new GogApiClient(httpClient, logger: null, tokenProvider: new StubTokenProvider(), clientIdCacheStore: cache);
+                    var items = await apiClient.GetAchievementsAsync("client-123", "user-456", "german", CancellationToken.None).ConfigureAwait(false);
+
+                    Assert.AreEqual(1, items.Count);
+                    Assert.IsNotNull(capturedUri);
+                    StringAssert.Contains(capturedUri.Query, "locale=de-DE");
+                    Assert.AreEqual("de-DE", capturedAcceptLanguage);
+                }
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
         private static HttpResponseMessage JsonResponse(HttpStatusCode statusCode, string json)
         {
             return new HttpResponseMessage(statusCode)

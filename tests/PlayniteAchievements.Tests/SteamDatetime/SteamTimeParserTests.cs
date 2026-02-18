@@ -56,6 +56,8 @@ namespace PlayniteAchievements.Tests
 
             yield return new SteamCase("german", "Am 24. Apr. 2025 um 5:04 freigeschaltet", pastUtc);
             yield return new SteamCase("german", "Am 29. Jan. um 17:03 freigeschaltet", currentUtc);
+            yield return new SteamCase("german", "Am 17. Mai 2025 um 19:45 freigeschaltet", new DateTime(2025, 5, 18, 2, 45, 0, DateTimeKind.Utc));
+            yield return new SteamCase("german", "Am 3. Mai um 20:10 freigeschaltet", new DateTime(2025, 5, 4, 3, 10, 0, DateTimeKind.Utc));
 
             yield return new SteamCase("french", "Débloqué le 24 avr. 2025 à 5h04", pastUtc);
             yield return new SteamCase("french", "Débloqué le 29 janv. à 17h03", currentUtc);
@@ -94,9 +96,13 @@ namespace PlayniteAchievements.Tests
 
             yield return new SteamCase("danish", "Låst op: 24. apr. 2025 kl. 5:04", pastUtc);
             yield return new SteamCase("danish", "Låst op: 29. jan. kl. 17:03", currentUtc);
+            yield return new SteamCase("danish", "Låst op: 19. juni 2025 kl. 19:22", new DateTime(2025, 6, 20, 2, 22, 0, DateTimeKind.Utc));
+            yield return new SteamCase("danish", "Låst op: 29. januar kl. 17:03", currentUtc);
 
             yield return new SteamCase("norwegian", "Låst opp 24. apr. 2025 kl. 5.04", pastUtc);
             yield return new SteamCase("norwegian", "Låst opp 29. jan. kl. 17.03", currentUtc);
+            yield return new SteamCase("norwegian", "Låst opp 15. juni 2013 kl. 4.47", new DateTime(2013, 6, 15, 11, 47, 0, DateTimeKind.Utc));
+            yield return new SteamCase("norwegian", "Låst opp 29. januar kl. 17.03", currentUtc);
 
             yield return new SteamCase("hungarian", "Feloldva: 2025. ápr. 24., 5:04", pastUtc);
             yield return new SteamCase("hungarian", "Feloldva: jan. 29., 17:03", currentUtc);
@@ -106,6 +112,8 @@ namespace PlayniteAchievements.Tests
 
             yield return new SteamCase("romanian", "Obținută la 24 apr. 2025 la 5:04", pastUtc);
             yield return new SteamCase("romanian", "Obținută la 29 ian. la 17:03", currentUtc);
+            yield return new SteamCase("romanian", "Obținută la 4 mai 2014 la 4:17", new DateTime(2014, 5, 4, 11, 17, 0, DateTimeKind.Utc));
+            yield return new SteamCase("romanian", "Obținută la 29 ianuarie la 17:03", currentUtc);
 
             yield return new SteamCase("turkish", "Kazanma Tarihi 24 Nis 2025 @ 5:04", pastUtc);
             yield return new SteamCase("turkish", "Kazanma Tarihi 29 Oca @ 17:03", currentUtc);
@@ -115,12 +123,21 @@ namespace PlayniteAchievements.Tests
 
             yield return new SteamCase("bulgarian", "Откл. на 24 апр. 2025 в 5:04", pastUtc);
             yield return new SteamCase("bulgarian", "Откл. на 29 ян. в 17:03", currentUtc);
+            yield return new SteamCase("bulgarian", "Откл. на 17 февр. в 19:08", new DateTime(2025, 2, 18, 3, 8, 0, DateTimeKind.Utc));
+            yield return new SteamCase("bulgarian", "Откл. на 11 март 2025 в 11:29", new DateTime(2025, 3, 11, 18, 29, 0, DateTimeKind.Utc));
+            yield return new SteamCase("bulgarian", "Откл. на 15 юни 2013 в 4:47", new DateTime(2013, 6, 15, 11, 47, 0, DateTimeKind.Utc));
+            yield return new SteamCase("bulgarian", "Откл. на 4 май в 4:17", new DateTime(2025, 5, 4, 11, 17, 0, DateTimeKind.Utc));
 
             yield return new SteamCase("ukrainian", "Здобуто 24 квіт. 2025 о 5:04", pastUtc);
             yield return new SteamCase("ukrainian", "Здобуто 29 січ. о 17:03", currentUtc);
+            yield return new SteamCase("ukrainian", "Здобуто 2 верес. 2025 о 19:24", new DateTime(2025, 9, 3, 2, 24, 0, DateTimeKind.Utc));
+            yield return new SteamCase("ukrainian", "Здобуто 25 листоп. 2024 о 6:19", new DateTime(2024, 11, 25, 14, 19, 0, DateTimeKind.Utc));
+            yield return new SteamCase("ukrainian", "Здобуто 11 берез. 2025 о 11:29", new DateTime(2025, 3, 11, 18, 29, 0, DateTimeKind.Utc));
 
             yield return new SteamCase("thai", "ปลดล็อก 24 เม.ย. 2025 @ 5: 04am", pastUtc);
             yield return new SteamCase("thai", "ปลดล็อก 29 ม.ค. @ 5: 03pm", currentUtc);
+            yield return new SteamCase("thai", "ปลดล็อก 19 มิ.ย. 2025 @ 7: 22pm", new DateTime(2025, 6, 20, 2, 22, 0, DateTimeKind.Utc));
+            yield return new SteamCase("thai", "ปลดล็อก 11 มี.ค. 2025 @ 11: 29am", new DateTime(2025, 3, 11, 18, 29, 0, DateTimeKind.Utc));
 
             yield return new SteamCase("vietnamese", "Mở khóa vào 24 Thg04, 2025 @ 5:04am", pastUtc);
             yield return new SteamCase("vietnamese", "Mở khóa vào 29 Thg01 @ 5:03pm", currentUtc);
@@ -136,6 +153,9 @@ namespace PlayniteAchievements.Tests
 
             yield return new SteamCase("arabic", "Unlocked 24 أبريل, 2025 @ 5:04صباحًا", pastUtc);
             yield return new SteamCase("arabic", "Unlocked 29 يناير @ 5:03مساءً", currentUtc);
+            yield return new SteamCase("arabic", "Unlocked 2 سبتمبر, 2025 @ 7:24مساءً", new DateTime(2025, 9, 3, 2, 24, 0, DateTimeKind.Utc));
+            yield return new SteamCase("arabic", "Unlocked 19 ديسمبر, 2015 @ 7:01مساءً", new DateTime(2015, 12, 20, 3, 1, 0, DateTimeKind.Utc));
+            yield return new SteamCase("arabic", "Unlocked 11 مارس, 2025 @ 11:29صباحًا", new DateTime(2025, 3, 11, 18, 29, 0, DateTimeKind.Utc));
         }
 
         private sealed class SteamCase

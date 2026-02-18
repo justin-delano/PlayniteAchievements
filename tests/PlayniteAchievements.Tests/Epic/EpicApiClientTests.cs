@@ -1,7 +1,14 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json.Linq;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Epic;
 using System;
+using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Epic.Tests
 {
@@ -41,6 +48,113 @@ namespace PlayniteAchievements.Epic.Tests
             Assert.IsTrue(ok.IsSuccess);
             Assert.IsTrue(already.IsSuccess);
             Assert.IsFalse(fail.IsSuccess);
+        }
+
+        [TestMethod]
+        public async Task GetAchievementsAsync_RequeriesSchemaWhenLanguageChanges()
+        {
+            var settings = new PersistedSettings
+            {
+                GlobalLanguage = "english"
+            };
+
+            var session = new StubEpicSessionProvider("stub-token", "stub-account");
+            var handler = new EpicLocalizationStubHandler();
+
+            using (var httpClient = new HttpClient(handler))
+            {
+                var api = new EpicApiClient(httpClient, logger: null, sessionProvider: session, settings: settings);
+
+                var english = await api.GetAchievementsAsync("test-game", "stub-account", CancellationToken.None).ConfigureAwait(false);
+
+                settings.GlobalLanguage = "german";
+                var german = await api.GetAchievementsAsync("test-game", "stub-account", CancellationToken.None).ConfigureAwait(false);
+
+                Assert.AreEqual(1, english.Count);
+                Assert.AreEqual(1, german.Count);
+                Assert.AreEqual("Title-en-US", english[0].Title);
+                Assert.AreEqual("Title-de-DE", german[0].Title);
+                Assert.AreEqual(2, handler.SchemaCallCount);
+                CollectionAssert.AreEqual(new List<string> { "en-US", "de-DE" }, handler.SchemaLocales);
+            }
+        }
+
+        private sealed class StubEpicSessionProvider : IEpicSessionProvider
+        {
+            private readonly string _token;
+            private readonly string _accountId;
+
+            public StubEpicSessionProvider(string token, string accountId)
+            {
+                _token = token;
+                _accountId = accountId;
+            }
+
+            public string GetAccountId()
+            {
+                return _accountId;
+            }
+
+            public Task<string> GetAccessTokenAsync(CancellationToken ct)
+            {
+                return Task.FromResult(_token);
+            }
+
+            public Task<bool> TryRefreshTokenAsync(CancellationToken ct)
+            {
+                return Task.FromResult(false);
+            }
+        }
+
+        private sealed class EpicLocalizationStubHandler : HttpMessageHandler
+        {
+            public int SchemaCallCount { get; private set; }
+            public List<string> SchemaLocales { get; } = new List<string>();
+
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                var url = request.RequestUri?.AbsoluteUri ?? string.Empty;
+
+                if (url.IndexOf("library-service.live.use1a.on.epicgames.com", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    const string assetsJson = "{ \"responseMetadata\": { }, \"records\": [ { \"namespace\": \"sandbox-test\", \"appName\": \"test-game\" } ] }";
+                    return JsonResponse(HttpStatusCode.OK, assetsJson);
+                }
+
+                if (url.IndexOf("launcher.store.epicgames.com/graphql", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    var payload = await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    if (payload.IndexOf("productAchievementsRecordBySandbox", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        var parsed = JObject.Parse(payload);
+                        var locale = parsed["variables"]?["Locale"]?.ToString() ?? "unknown";
+                        SchemaCallCount++;
+                        SchemaLocales.Add(locale);
+
+                        var schemaJson =
+                            "{ \"data\": { \"Achievement\": { \"productAchievementsRecordBySandbox\": { \"productId\": \"product-test\", \"achievements\": [ { \"achievement\": { \"name\": \"ach-1\", \"hidden\": false, \"unlockedDisplayName\": \"Title-" + locale + "\", \"unlockedDescription\": \"Desc-" + locale + "\", \"unlockedIconLink\": \"https://example.com/u.png\", \"lockedIconLink\": \"https://example.com/l.png\", \"XP\": 10, \"rarity\": { \"percent\": 1.5 } } } ] } } } }";
+                        return JsonResponse(HttpStatusCode.OK, schemaJson);
+                    }
+
+                    if (payload.IndexOf("playerProfileAchievementsByProductId", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        const string progressJson = "{ \"data\": { \"PlayerProfile\": { \"playerProfile\": { \"productAchievements\": { \"data\": { \"playerAchievements\": [] } } } } } }";
+                        return JsonResponse(HttpStatusCode.OK, progressJson);
+                    }
+
+                    return JsonResponse(HttpStatusCode.BadRequest, "{ \"error\": \"unknown query\" }");
+                }
+
+                return JsonResponse(HttpStatusCode.NotFound, "{ \"error\": \"not found\" }");
+            }
+
+            private static HttpResponseMessage JsonResponse(HttpStatusCode statusCode, string json)
+            {
+                return new HttpResponseMessage(statusCode)
+                {
+                    Content = new StringContent(json ?? string.Empty, Encoding.UTF8, "application/json")
+                };
+            }
         }
     }
 }
