@@ -59,6 +59,8 @@ namespace PlayniteAchievements.Tests
 
             yield return new SteamCase("french", "Débloqué le 24 avr. 2025 à 5h04", pastUtc);
             yield return new SteamCase("french", "Débloqué le 29 janv. à 17h03", currentUtc);
+            yield return new SteamCase("french", "Débloqué le 1 mars 2025 à 8h57", new DateTime(2025, 3, 1, 16, 57, 0, DateTimeKind.Utc));
+            yield return new SteamCase("french", "Débloqué le 7 mars à 17h45", new DateTime(2025, 3, 8, 1, 45, 0, DateTimeKind.Utc));
 
             yield return new SteamCase("spanish", "Se desbloqueó el 24 ABR 2025 a las 5:04", pastUtc);
             yield return new SteamCase("spanish", "Se desbloqueó el 29 ENE a las 17:03", currentUtc);

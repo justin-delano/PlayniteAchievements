@@ -314,8 +314,8 @@ namespace PlayniteAchievements.Providers.Steam
                     @"^Am\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+um\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s+freigeschaltet\s*$"),
 
                 ["french"] = Pair(
-                    @"^Débloqué\s+le\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+à\s+(?<hour>\d{1,2})h(?<minute>\d{2})\s*$",
-                    @"^Débloqué\s+le\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+à\s+(?<hour>\d{1,2})h(?<minute>\d{2})\s*$"),
+                    @"^Débloqué\s+le\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.?\s+(?<year>\d{4})\s+à\s+(?<hour>\d{1,2})h(?<minute>\d{2})\s*$",
+                    @"^Débloqué\s+le\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.?\s+à\s+(?<hour>\d{1,2})h(?<minute>\d{2})\s*$"),
 
                 ["spanish"] = Pair(
                     @"^Se\s+desbloqueó\s+el\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+(?<year>\d{4})\s+a\s+las\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
