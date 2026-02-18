@@ -310,8 +310,8 @@ namespace PlayniteAchievements.Providers.Steam
                     @"^Unlocked\s+(?:(?<month>[\p{L}]+)\s+(?<day>0?[1-9]|[12]\d|3[01])|(?<day>0?[1-9]|[12]\d|3[01])\s+(?<month>[\p{L}]+))\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]\.?m\.?)\s*$"),
 
                 ["german"] = Pair(
-                    @"^Am\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+um\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s+freigeschaltet\s*$",
-                    @"^Am\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+um\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s+freigeschaltet\s*$"),
+                    @"^Am\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.?\s+(?<year>\d{4})\s+um\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s+freigeschaltet\s*$",
+                    @"^Am\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.?\s+um\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s+freigeschaltet\s*$"),
 
                 ["french"] = Pair(
                     @"^Débloqué\s+le\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.?\s+(?<year>\d{4})\s+à\s+(?<hour>\d{1,2})h(?<minute>\d{2})\s*$",
@@ -358,12 +358,12 @@ namespace PlayniteAchievements.Providers.Steam
                     @"^Avattu\s+(?<day>\d{1,2})\.(?<month>\d{1,2})\.\s+klo\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$"),
 
                 ["danish"] = Pair(
-                    @"^Låst\s+op:\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+kl\.\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
-                    @"^Låst\s+op:\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+kl\.\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+                    @"^Låst\s+op:\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.?\s+(?<year>\d{4})\s+kl\.\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Låst\s+op:\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.?\s+kl\.\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
 
                 ["norwegian"] = Pair(
-                    @"^Låst\s+opp\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+kl\.\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$",
-                    @"^Låst\s+opp\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+kl\.\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$"),
+                    @"^Låst\s+opp\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.?\s+(?<year>\d{4})\s+kl\.\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$",
+                    @"^Låst\s+opp\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.?\s+kl\.\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$"),
 
                 ["hungarian"] = Pair(
                     @"^Feloldva:\s*(?<year>\d{4})\.\s*(?<month>[\p{L}]+)\.\s*(?<day>\d{1,2})\.,\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
@@ -374,8 +374,8 @@ namespace PlayniteAchievements.Providers.Steam
                     @"^Odemčeno\s+(?<day>\d{1,2})\.\s+(?<month>[\p{L}]+)\.\s+v\s+(?<hour>\d{1,2})\.(?<minute>\d{2})\s*$"),
 
                 ["romanian"] = Pair(
-                    @"^Obținută\s+la\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+la\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
-                    @"^Obținută\s+la\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+la\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+                    @"^Obținută\s+la\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.?\s+(?<year>\d{4})\s+la\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Obținută\s+la\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.?\s+la\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
 
                 ["turkish"] = Pair(
                     @"^Kazanma\s+Tarihi\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\s+(?<year>\d{4})\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
@@ -386,16 +386,16 @@ namespace PlayniteAchievements.Providers.Steam
                     @"^Ξεκλειδώθηκε\s+στις\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+),\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
 
                 ["bulgarian"] = Pair(
-                    @"^Откл\.\s+на\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+в\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
-                    @"^Откл\.\s+на\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+в\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
+                    @"^Откл\.\s+на\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.?\s+(?<year>\d{4})\s+в\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
+                    @"^Откл\.\s+на\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.?\s+в\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
 
                 ["ukrainian"] = Pair(
                     @"^Здобуто\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+(?<year>\d{4})\s+о\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$",
                     @"^Здобуто\s+(?<day>\d{1,2})\s+(?<month>[\p{L}]+)\.\s+о\s+(?<hour>\d{1,2}):(?<minute>\d{2})\s*$"),
 
                 ["thai"] = Pair(
-                    @"^ปลดล็อก\s+(?<day>\d{1,2})\s+(?<month>[\p{L}\.]+)\s+(?<year>\d{4})\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]m)\s*$",
-                    @"^ปลดล็อก\s+(?<day>\d{1,2})\s+(?<month>[\p{L}\.]+)\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]m)\s*$"),
+                    @"^ปลดล็อก\s+(?<day>\d{1,2})\s+(?<month>[\p{L}\p{M}\.]+)\s+(?<year>\d{4})\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]m)\s*$",
+                    @"^ปลดล็อก\s+(?<day>\d{1,2})\s+(?<month>[\p{L}\p{M}\.]+)\s*@\s*(?<hour>\d{1,2})\s*:\s*(?<minute>\d{2})\s*(?<meridiem>[ap]m)\s*$"),
 
                 ["vietnamese"] = Pair(
                     @"^Mở\s+khóa\s+vào\s+(?<day>\d{1,2})\s+(?<month>[\p{L}\d]+),\s*(?<year>\d{4})\s*@\s*(?<hour>\d{1,2}):(?<minute>\d{2})\s*(?<meridiem>[ap]m)\s*$",
@@ -443,8 +443,42 @@ namespace PlayniteAchievements.Providers.Steam
                 ["янв"] = 1,
                 ["апр"] = 4,
                 ["квіт"] = 4,
+                ["січ"] = 1,
+                ["лют"] = 2,
+                ["берез"] = 3,
+                ["трав"] = 5,
+                ["черв"] = 6,
+                ["лип"] = 7,
+                ["серп"] = 8,
+                ["верес"] = 9,
+                ["жовт"] = 10,
+                ["листоп"] = 11,
+                ["груд"] = 12,
+                ["фев"] = 2,
+                ["февр"] = 2,
+                ["март"] = 3,
+                ["май"] = 5,
+                ["юни"] = 6,
+                ["юли"] = 7,
+                ["авг"] = 8,
+                ["сеп"] = 9,
+                ["септ"] = 9,
+                ["окт"] = 10,
+                ["ноем"] = 11,
+                ["дек"] = 12,
 
                 ["يناير"] = 1,
+                ["مارس"] = 3,
+                ["مايو"] = 5,
+                ["يونيو"] = 6,
+                ["يوليو"] = 7,
+                ["أغسطس"] = 8,
+                ["اغسطس"] = 8,
+                ["سبتمبر"] = 9,
+                ["أكتوبر"] = 10,
+                ["اكتوبر"] = 10,
+                ["نوفمبر"] = 11,
+                ["ديسمبر"] = 12,
                 ["فبراير"] = 2,
                 ["أبريل"] = 4,
                 ["ابريل"] = 4,
@@ -463,7 +497,7 @@ namespace PlayniteAchievements.Providers.Steam
                 ["ธ.ค"] = 12
             })
             {
-                map[kvp.Key] = kvp.Value;
+                AddMonthToken(map, kvp.Key, kvp.Value);
             }
 
             return map;
@@ -520,10 +554,19 @@ namespace PlayniteAchievements.Providers.Steam
 
         private static string NormalizeMonthToken(string raw)
         {
-            return RemoveDiacritics(raw ?? string.Empty)
+            var token = (raw ?? string.Empty)
                 .ToLowerInvariant()
                 .Trim()
                 .Trim('.', ',', ';', ':', '،');
+
+            // Thai combining marks are integral to month abbreviations (e.g. "มี.ค.").
+            // Stripping them merges distinct tokens and breaks parsing.
+            if (token.Any(c => c >= '\u0E00' && c <= '\u0E7F'))
+            {
+                return token;
+            }
+
+            return RemoveDiacritics(token);
         }
 
         public static DateTime GetSteamNow()
