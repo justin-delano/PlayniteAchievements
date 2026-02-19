@@ -65,7 +65,7 @@
 
   <!-- Note: FacetBrush removed (it adds a tiled "grid" over platinum). -->
 
-  <!-- Iridescent rainbow gradient for Perfect Game badge -->
+  <!-- Iridescent rainbow gradient for Completed Game badge -->
   <LinearGradientBrush x:Key="FillRainbow" StartPoint="0,0" EndPoint="1,1">
     <GradientStop Offset="0.00" Color="#E91E63"/>
     <GradientStop Offset="0.20" Color="#9C27B0"/>
@@ -156,8 +156,8 @@
     </DrawingImage.Drawing>
   </DrawingImage>
 
-  <!-- Perfect Game iridescent rainbow hexagon -->
-  <DrawingImage x:Key="BadgePerfectGame">
+  <!-- Completed Game iridescent rainbow hexagon -->
+  <DrawingImage x:Key="BadgeCompletedGame">
     <DrawingImage.Drawing>
       <DrawingGroup>
         <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource FillRainbow}">
