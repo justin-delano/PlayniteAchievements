@@ -53,10 +53,19 @@ namespace PlayniteAchievements.Providers.Steam
 
         public async Task<string> GetUserSteamId64Async(CancellationToken ct)
         {
-            // 1. Refresh if interval elapsed or ID missing
+            // Always attempt a lightweight CEF cookie read first so account switches are
+            // picked up immediately, even when a full refresh is not yet due.
+            TryHydrateSteamIdFromCurrentCefCookies();
+
+            // Refresh if interval elapsed or ID missing.
             if (NeedsRefresh)
             {
                 await RefreshCookiesHeadlessAsync(ct).ConfigureAwait(false);
+            }
+
+            if (string.IsNullOrWhiteSpace(_selfSteamId64))
+            {
+                TryHydrateSteamIdFromCurrentCefCookies();
             }
             
             if (string.IsNullOrWhiteSpace(_selfSteamId64))
@@ -64,6 +73,47 @@ namespace PlayniteAchievements.Providers.Steam
                 throw new InvalidOperationException("Could not determine SteamID64. Please ensure you are logged into Steam.");
             }
             return _selfSteamId64;
+        }
+
+        private void TryHydrateSteamIdFromCurrentCefCookies()
+        {
+            try
+            {
+                using (var view = _api.WebViews.CreateOffscreenView())
+                {
+                    var cookies = view.GetCookies();
+                    if (cookies == null)
+                    {
+                        return;
+                    }
+
+                    var authCookie = cookies.FirstOrDefault(c =>
+                        c != null &&
+                        !string.IsNullOrWhiteSpace(c.Domain) &&
+                        IsSteamDomain(c.Domain) &&
+                        c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
+                    if (authCookie == null)
+                    {
+                        return;
+                    }
+
+                    var extractedId = TryExtractSteamId64FromSteamLoginSecure(authCookie.Value);
+                    if (string.IsNullOrWhiteSpace(extractedId))
+                    {
+                        return;
+                    }
+
+                    _selfSteamId64 = extractedId;
+                    if (_settings?.Persisted != null)
+                    {
+                        _settings.Persisted.SteamUserId = extractedId;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to hydrate SteamID64 from current CEF cookies.");
+            }
         }
 
         public async Task<bool> RefreshCookiesHeadlessAsync(CancellationToken ct, bool force = false)
@@ -489,6 +539,10 @@ namespace PlayniteAchievements.Providers.Steam
                         if (!string.IsNullOrWhiteSpace(id))
                         {
                             _selfSteamId64 = id;
+                            if (_settings?.Persisted != null)
+                            {
+                                _settings.Persisted.SteamUserId = id;
+                            }
                         }
                     }
 

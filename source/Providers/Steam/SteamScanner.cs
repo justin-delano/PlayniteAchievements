@@ -392,6 +392,22 @@ namespace PlayniteAchievements.Providers.Steam
                 playtimeMinutes = ownedGamesPlaytime[appId];
             }
 
+            // If the schema confirms no achievements, skip HTML scraping entirely.
+            // This avoids locale-dependent "no achievements" page handling.
+            if (schema != null && (schema.Achievements == null || schema.Achievements.Count == 0))
+            {
+                return new UserUnlockedAchievements
+                {
+                    LastUpdatedUtc = DateTime.UtcNow,
+                    PlaytimeSeconds = (ulong)playtimeMinutes * 60,
+                    AppId = appId,
+                    UnlockedApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                    UnlockTimesUtc = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase),
+                    ProgressNum = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase),
+                    ProgressDenom = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase)
+                };
+            }
+
             AchievementsScrapeResponse scraped = null;
             try
             {
@@ -625,7 +641,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (LooksLoggedOutHeuristic(html, res.FinalUrl))
             {
-                if (TryGetPrivateOrUnavailable(html, out var reason))
+                if (TryGetPrivateOrUnavailable(html, out var reason, res.FinalUrl))
                 {
                     res.TransientFailure = false;
                     res.StatsUnavailable = true;
@@ -832,7 +848,7 @@ namespace PlayniteAchievements.Providers.Steam
                 return res;
             }
 
-            if (TryGetPrivateOrUnavailable(html, out var why))
+            if (TryGetPrivateOrUnavailable(html, out var why, res.FinalUrl))
             {
                 res.TransientFailure = false;
                 res.StatsUnavailable = true;
@@ -880,8 +896,7 @@ namespace PlayniteAchievements.Providers.Steam
         {
             if (string.IsNullOrWhiteSpace(url)) return false;
             return url.IndexOf("/login", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   url.IndexOf("openid", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   url.IndexOf("sign in", StringComparison.OrdinalIgnoreCase) >= 0;
+                   url.IndexOf("openid", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static bool LooksLoggedOutHeuristic(string html, string finalUrl)
@@ -890,45 +905,48 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (string.IsNullOrEmpty(html)) return false;
 
-            if (html.IndexOf("This profile is private", StringComparison.OrdinalIgnoreCase) >= 0) return false;
-            if (html.IndexOf("no achievements", StringComparison.OrdinalIgnoreCase) >= 0) return false;
-
-            if (html.IndexOf("global_action_menu", StringComparison.OrdinalIgnoreCase) >= 0) return false;
+            if (SteamHttpClient.LooksUnauthenticatedStatsPayload(html, finalUrl)) return true;
 
             if (SteamHttpClient.LooksLoggedOutHeader(html)) return true;
 
-            if (html.IndexOf("g_steamID = \"0\"", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            var hasLoggedOutSteamIdMarker =
+                html.IndexOf("g_steamID = \"0\"", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                html.IndexOf("g_steamID = false", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (hasLoggedOutSteamIdMarker && !SteamHttpClient.HasAnyAchievementRows(html))
+            {
+                return true;
+            }
 
             return false;
         }
 
-        private static bool TryGetPrivateOrUnavailable(string html, out SteamScrapeDetail detail)
+        private static bool TryGetPrivateOrUnavailable(string html, out SteamScrapeDetail detail, string finalUrl = null)
         {
             detail = SteamScrapeDetail.None;
             if (string.IsNullOrEmpty(html)) return false;
 
-            if (html.IndexOf("This profile is private", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                detail = SteamScrapeDetail.ProfilePrivate;
-                return true;
-            }
-
-            if (html.IndexOf("You must be logged in to view this user's stats", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (SteamHttpClient.LooksUnauthenticatedStatsPayload(html, finalUrl))
             {
                 detail = SteamScrapeDetail.RequiresLoginForStats;
                 return true;
             }
 
-            if (html.IndexOf("The specified profile could not be found", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (SteamHttpClient.LooksPrivateOrRestrictedStatsPayload(html, finalUrl))
+            {
+                detail = SteamScrapeDetail.ProfilePrivate;
+                return true;
+            }
+
+            if (SteamHttpClient.LooksProfileNotFoundStatsPayload(html, finalUrl))
             {
                 detail = SteamScrapeDetail.ProfileNotFound;
                 return true;
             }
 
-            if (html.IndexOf("no achievements", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                html.IndexOf("achievement", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (SteamHttpClient.LooksStructurallyUnavailableStatsPayload(html, finalUrl))
             {
-                detail = SteamScrapeDetail.NoAchievements;
+                detail = SteamScrapeDetail.Unavailable;
                 return true;
             }
 
@@ -941,6 +959,12 @@ namespace PlayniteAchievements.Providers.Steam
 
         private async Task<string> ResolveSteamId64Async(string steamIdMaybe, CancellationToken ct)
         {
+            var cached = _sessionManager?.GetCachedSteamId64()?.Trim();
+            if (!string.IsNullOrWhiteSpace(cached) && ulong.TryParse(cached, out _))
+            {
+                return cached;
+            }
+
             return !string.IsNullOrWhiteSpace(steamIdMaybe) && ulong.TryParse(steamIdMaybe, out _)
                 ? steamIdMaybe.Trim()
                 : (await _steamClient.GetRequiredSelfSteamId64Async(ct).ConfigureAwait(false))?.Trim();

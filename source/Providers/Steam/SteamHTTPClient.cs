@@ -1,4 +1,5 @@
 using HtmlAgilityPack;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers.Steam.Models;
 using Playnite.SDK;
 using System;
@@ -33,11 +34,14 @@ namespace PlayniteAchievements.Providers.Steam
             new ConcurrentQueue<SteamDatetimeParseFailureEntry>();
         private readonly CookieContainer _cookieJar = new CookieContainer();
         private readonly object _cookieLock = new object();
+        private readonly object _cookieSyncStateLock = new object();
+        private DateTime _lastCefCookieSyncUtc = DateTime.MinValue;
         private int _steamDatetimeParseFailuresInCurrentScan;
 
         private const string FailedSteamDateTimesFileName = "failed_steam_datetimes.csv";
         private const string FailedSteamDateTimesHeaderLegacy = "error_time_utc,steam_language,raw_scraped_time";
         private const string FailedSteamDateTimesHeaderCurrent = "error_time_utc,steam_language,game_name,achievement_name,raw_scraped_time";
+        private static readonly TimeSpan CEFJarSyncInterval = TimeSpan.FromSeconds(30);
 
         private struct SteamDatetimeParseFailureEntry
         {
@@ -94,34 +98,61 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (!forceRefresh && !_sessionManager.NeedsRefresh)
             {
-                lock (_cookieLock)
-                {
-                    if (HasCookiesInJar()) return true;
-                }
-
-                LoadCookiesFromCefIntoJar();
+                // Keep HttpClient cookie jar in sync with CEF cookies even when a full
+                // session refresh isn't due yet. This avoids stale-cookie drift where
+                // browser pages are authenticated but scraper requests look logged out.
+                SyncCookieJarFromCefIfNeeded(force: false);
                 lock (_cookieLock)
                 {
                     if (HasCookiesInJar()) return true;
                 }
             }
 
-            _logger?.Debug($"[FAF] Refreshing Steam session (Force={forceRefresh})...");
+            _logger?.Debug($"[SteamAch] Refreshing Steam session (Force={forceRefresh})...");
             var refreshed = await _sessionManager.RefreshCookiesHeadlessAsync(ct).ConfigureAwait(false);
-
-            if (refreshed)
+            SyncCookieJarFromCefIfNeeded(force: true);
+            lock (_cookieLock)
             {
-                LoadCookiesFromCefIntoJar();
+                if (HasCookiesInJar()) return true;
             }
 
             return refreshed;
         }
 
+        private void SyncCookieJarFromCefIfNeeded(bool force)
+        {
+            if (!force)
+            {
+                var now = DateTime.UtcNow;
+                lock (_cookieSyncStateLock)
+                {
+                    if ((now - _lastCefCookieSyncUtc) < CEFJarSyncInterval)
+                    {
+                        return;
+                    }
+
+                    _lastCefCookieSyncUtc = now;
+                }
+            }
+            else
+            {
+                lock (_cookieSyncStateLock)
+                {
+                    _lastCefCookieSyncUtc = DateTime.UtcNow;
+                }
+            }
+
+            LoadCookiesFromCefIntoJar();
+        }
+
         private void LoadCookiesFromCefIntoJar()
         {
-            lock (_cookieLock)
+            using (PerfScope.Start(_logger, "Steam.LoadCookiesFromCefIntoJar", thresholdMs: 50))
             {
-                _sessionManager.LoadCefCookiesIntoJar(_api, _cookieJar, _logger);
+                lock (_cookieLock)
+                {
+                    _sessionManager.LoadCefCookiesIntoJar(_api, _cookieJar, _logger);
+                }
             }
         }
 
@@ -176,7 +207,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                _logger?.Warn("[FAF] An API key is required to fetch Steam friend data.");
+                _logger?.Warn("[SteamAch] An API key is required to fetch Steam friend data.");
                 return new List<SteamPlayerSummaries>();
             }
 
@@ -551,19 +582,29 @@ namespace PlayniteAchievements.Providers.Steam
                                 bool softRedirect = result.FinalUrl.Contains("/login") || result.FinalUrl.Contains("openid");
                                 if (resp.StatusCode == HttpStatusCode.Unauthorized || resp.StatusCode == HttpStatusCode.Forbidden || softRedirect)
                                 {
-                                    _logger.Warn($"[FAF] Auth failed for {url} (Status={resp.StatusCode}, Url={result.FinalUrl}). Forcing session refresh.");
+                                    _logger.Warn($"[SteamAch] Auth failed for {url} (Status={resp.StatusCode}, Url={result.FinalUrl}). Forcing session refresh.");
                                     await EnsureSessionAsync(ct, forceRefresh: true).ConfigureAwait(false);
                                     continue;
                                 }
                             }
 
-                            result.Html = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var responseHtml = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                            if (requiresCookies && isSteamAuth && attempt == 1 &&
+                                LooksUnauthenticatedStatsPayload(responseHtml, result.FinalUrl))
+                            {
+                                _logger?.Warn($"[SteamAch] Auth-like stats payload detected for {url} (Status={resp.StatusCode}, Url={result.FinalUrl}). Forcing session refresh and retrying once.");
+                                await EnsureSessionAsync(ct, forceRefresh: true).ConfigureAwait(false);
+                                continue;
+                            }
+
+                            result.Html = responseHtml;
                             return result;
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error(ex, $"[FAF] GetSteamPageAsync: Exception on attempt {attempt} for {url}");
+                        _logger.Error(ex, $"[SteamAch] GetSteamPageAsync: Exception on attempt {attempt} for {url}");
                         if (attempt < MaxAttempts) continue;
                         return result;
                     }
@@ -601,19 +642,29 @@ namespace PlayniteAchievements.Providers.Steam
         // Static Helpers
         // ---------------------------------------------------------------------
 
+        public static bool LooksUnauthenticatedStatsPayload(string html, string finalUrl = null)
+        {
+            return SteamStatsPageClassifier.LooksUnauthenticatedStatsPayload(html, finalUrl);
+        }
+
+        public static bool LooksPrivateOrRestrictedStatsPayload(string html, string finalUrl = null)
+        {
+            return SteamStatsPageClassifier.LooksPrivateOrRestrictedStatsPayload(html, finalUrl);
+        }
+
+        public static bool LooksProfileNotFoundStatsPayload(string html, string finalUrl = null)
+        {
+            return SteamStatsPageClassifier.LooksProfileNotFoundStatsPayload(html, finalUrl);
+        }
+
+        public static bool LooksStructurallyUnavailableStatsPayload(string html, string finalUrl = null)
+        {
+            return SteamStatsPageClassifier.LooksStructurallyUnavailableStatsPayload(html, finalUrl);
+        }
+
         public static bool LooksLoggedOutHeader(string html)
         {
-            if (string.IsNullOrWhiteSpace(html)) return false;
-
-            if (html.IndexOf("global_action_menu", StringComparison.OrdinalIgnoreCase) >= 0)
-                return false;
-
-            if (Regex.IsMatch(html, @"<a[^>]+class\s*=\s*[""'][^""']*\bglobal_action_link\b[^""']*[""'][^>]+href\s*=\s*[""'][^""']*/login[^""']*[""']", RegexOptions.IgnoreCase | RegexOptions.Singleline))
-                return true;
-
-            return html.IndexOf("Sign In", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                   html.IndexOf("/login", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                   html.IndexOf("global_action", StringComparison.OrdinalIgnoreCase) >= 0;
+            return SteamStatsPageClassifier.LooksLoggedOutHeader(html);
         }
 
         public static bool HasAnyAchievementRows(string html)
