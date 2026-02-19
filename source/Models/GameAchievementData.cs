@@ -28,7 +28,7 @@ namespace PlayniteAchievements.Models
         public bool NoAchievements { get; set; }
 
         /// <summary>
-        /// Computed completion status based on provider signal, 100% progress, or completion marker.
+        /// Computed completion status based on provider signal, all achievements unlocked, or completion marker.
         /// </summary>
         public bool IsCompleted =>
             ProviderIsCompleted ||
