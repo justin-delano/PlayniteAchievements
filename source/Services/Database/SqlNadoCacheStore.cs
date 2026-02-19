@@ -539,12 +539,14 @@ namespace PlayniteAchievements.Services.Database
                     }
 
                     var providerIsCompleted = payload.ProviderIsCompleted || payload.IsCompleted;
+                    var hasMarker = !string.IsNullOrWhiteSpace(completedMarkerApiName);
                     var markerUnlocked = IsMarkerUnlocked(completedMarkerApiName, achievements);
                     var isCompleted = SqlNadoCacheBehavior.ComputeIsCompleted(
                         providerIsCompleted,
                         unlockedCount,
                         totalCount,
-                        markerUnlocked);
+                        markerUnlocked,
+                        hasMarker);
                     payload.ProviderIsCompleted = providerIsCompleted;
                     payload.CompletedMarkerApiName = completedMarkerApiName;
                     payload.IsCompleted = isCompleted;
@@ -766,11 +768,13 @@ namespace PlayniteAchievements.Services.Database
                         var providerIsCompleted = progress.ProviderIsCompleted != 0;
                         var unlockedCount = (int)Math.Max(0, progress.AchievementsUnlocked);
                         var totalCount = (int)Math.Max(0, progress.TotalAchievements);
+                        var hasMarker = !string.IsNullOrWhiteSpace(normalizedMarkerApiName);
                         var isCompleted = SqlNadoCacheBehavior.ComputeIsCompleted(
                             providerIsCompleted,
                             unlockedCount,
                             totalCount,
-                            markerUnlocked);
+                            markerUnlocked,
+                            hasMarker);
 
                         db.ExecuteNonQuery(
                             @"UPDATE UserGameProgress
