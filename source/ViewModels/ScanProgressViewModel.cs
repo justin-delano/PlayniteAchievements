@@ -16,7 +16,7 @@ namespace PlayniteAchievements.ViewModels
 
         private double _progressPercent;
         private string _progressMessage;
-        private bool _isComplete;
+        private bool _isCompleted;
         private bool _completedSuccessfully;
 
         public bool IsScanning => _achievementManager.IsRebuilding;
@@ -33,12 +33,12 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _progressMessage, value);
         }
 
-        public bool IsComplete
+        public bool IsCompleted
         {
-            get => _isComplete;
+            get => _isCompleted;
             set
             {
-                if (SetValueAndReturn(ref _isComplete, value))
+                if (SetValueAndReturn(ref _isCompleted, value))
                 {
                     OnPropertyChanged(nameof(ShowInProgressButtons));
                     OnPropertyChanged(nameof(ShowCompleteButtons));
@@ -47,9 +47,9 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public bool ShowInProgressButtons => !IsComplete && IsScanning;
-        public bool ShowCompleteButtons => IsComplete;
-        public bool ShowOpenSingleGameButton => IsComplete &&
+        public bool ShowInProgressButtons => !IsCompleted && IsScanning;
+        public bool ShowCompleteButtons => IsCompleted;
+        public bool ShowOpenSingleGameButton => IsCompleted &&
                                                 _completedSuccessfully &&
                                                 _singleGameScanId.HasValue &&
                                                 _openSingleGameAction != null;
@@ -78,7 +78,7 @@ namespace PlayniteAchievements.ViewModels
             ContinueCommand = new RelayCommand(_ => Continue());
             OpenSingleGameCommand = new RelayCommand(_ => OpenSingleGame(), _ => ShowOpenSingleGameButton);
 
-            IsComplete = false;
+            IsCompleted = false;
             ApplyScanStatus(_achievementManager.GetScanStatusSnapshot());
         }
 
@@ -108,11 +108,11 @@ namespace PlayniteAchievements.ViewModels
 
             if (status.IsFinal || status.IsCanceled)
             {
-                IsComplete = true;
+                IsCompleted = true;
             }
             else if (status.IsScanning)
             {
-                IsComplete = false;
+                IsCompleted = false;
             }
 
             OnPropertyChanged(nameof(IsScanning));
@@ -153,3 +153,4 @@ namespace PlayniteAchievements.ViewModels
         public event EventHandler RequestClose;
     }
 }
+

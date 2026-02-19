@@ -56,20 +56,23 @@ namespace PlayniteAchievements.Services
 
         private void InitializeCacheStartup()
         {
-            try
+            using (PerfScope.Start(_logger, "Cache.InitializeCacheStartup", thresholdMs: 25))
             {
-                _store.EnsureInitialized();
-                _importer.ImportIfNeeded();
-
-                lock (_sync)
+                try
                 {
-                    _initializationFailure = null;
-                    RefreshScopeToken_Locked(clearMemoryOnChange: true);
+                    _store.EnsureInitialized();
+                    _importer.ImportIfNeeded();
+
+                    lock (_sync)
+                    {
+                        _initializationFailure = null;
+                        RefreshScopeToken_Locked(clearMemoryOnChange: true);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                HandleInitializationFailure(ex);
+                catch (Exception ex)
+                {
+                    HandleInitializationFailure(ex);
+                }
             }
         }
 
@@ -278,7 +281,15 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                HandleInitializationFailure(ex);
+                using (PerfScope.Start(
+                    _logger,
+                    "Cache.EnsureReady.Exception",
+                    thresholdMs: 25,
+                    context: $"phase={operationPhase}"))
+                {
+                    HandleInitializationFailure(ex);
+                }
+
                 throw new InvalidOperationException(
                     $"Cache manager failed to initialize (phase={operationPhase}).",
                     ex);
@@ -411,173 +422,195 @@ namespace PlayniteAchievements.Services
 
         internal List<GameAchievementData> LoadAllGameDataFast()
         {
-            var scopeChanged = false;
-
-            try
+            using (PerfScope.Start(_logger, "Cache.LoadAllGameDataFast", thresholdMs: 25))
             {
-                lock (_sync)
+                var scopeChanged = false;
+
+                try
                 {
-                    EnsureReady_Locked("LoadAllGameDataFast");
-                    scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
-
-                    var records = _store.LoadAllCurrentUserGameDataByCacheKey() ??
-                                  new List<KeyValuePair<string, GameAchievementData>>();
-                    var result = new List<GameAchievementData>(records.Count);
-                    var validKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    for (var i = 0; i < records.Count; i++)
+                    lock (_sync)
                     {
-                        var record = records[i];
-                        var cacheKey = UserKey(record.Key);
-                        if (string.IsNullOrWhiteSpace(cacheKey))
+                        EnsureReady_Locked("LoadAllGameDataFast");
+                        scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
+
+                        var records = _store.LoadAllCurrentUserGameDataByCacheKey() ??
+                                      new List<KeyValuePair<string, GameAchievementData>>();
+                        var result = new List<GameAchievementData>(records.Count);
+                        var validKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                        for (var i = 0; i < records.Count; i++)
                         {
-                            continue;
-                        }
-
-                        validKeys.Add(cacheKey);
-
-                        var dbData = record.Value;
-                        if (dbData == null)
-                        {
-                            RemoveMemoryGameData_Locked(cacheKey);
-                            continue;
-                        }
-
-                        NormalizeLoadedData(cacheKey, dbData);
-
-                        if (TryGetMemoryGameData_Locked(cacheKey, out var memoryData) && memoryData != null)
-                        {
-                            var memoryUpdated = DateTimeUtilities.AsUtcKind(memoryData.LastUpdatedUtc);
-                            var dbUpdated = DateTimeUtilities.AsUtcKind(dbData.LastUpdatedUtc);
-                            if (memoryUpdated >= dbUpdated)
+                            var record = records[i];
+                            var cacheKey = UserKey(record.Key);
+                            if (string.IsNullOrWhiteSpace(cacheKey))
                             {
-                                result.Add(CloneGameData(memoryData));
                                 continue;
                             }
+
+                            validKeys.Add(cacheKey);
+
+                            var dbData = record.Value;
+                            if (dbData == null)
+                            {
+                                RemoveMemoryGameData_Locked(cacheKey);
+                                continue;
+                            }
+
+                            NormalizeLoadedData(cacheKey, dbData);
+
+                            if (TryGetMemoryGameData_Locked(cacheKey, out var memoryData) && memoryData != null)
+                            {
+                                var memoryUpdated = DateTimeUtilities.AsUtcKind(memoryData.LastUpdatedUtc);
+                                var dbUpdated = DateTimeUtilities.AsUtcKind(dbData.LastUpdatedUtc);
+                                if (memoryUpdated >= dbUpdated)
+                                {
+                                    result.Add(CloneGameData(memoryData));
+                                    continue;
+                                }
+                            }
+
+                            SetMemoryGameData_Locked(cacheKey, dbData);
+                            result.Add(CloneGameData(dbData));
                         }
 
-                        SetMemoryGameData_Locked(cacheKey, dbData);
-                        result.Add(CloneGameData(dbData));
+                        RemoveStaleMemoryEntries_Locked(validKeys);
+                        return result;
                     }
-
-                    RemoveStaleMemoryEntries_Locked(validKeys);
-                    return result;
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed loading all game data from cache.");
-                return new List<GameAchievementData>();
-            }
-            finally
-            {
-                if (scopeChanged)
+                catch (Exception ex)
                 {
-                    RaiseCacheDeltaUpdatedEvent(string.Empty, CacheDeltaOperationType.FullReset);
+                    _logger?.Error(ex, "Failed loading all game data from cache.");
+                    return new List<GameAchievementData>();
+                }
+                finally
+                {
+                    if (scopeChanged)
+                    {
+                        RaiseCacheDeltaUpdatedEvent(string.Empty, CacheDeltaOperationType.FullReset);
+                    }
                 }
             }
         }
 
         public GameAchievementData LoadGameData(string key)
         {
-            var scopeChanged = false;
-            var normalizedKey = UserKey(key);
-
-            try
+            using (PerfScope.Start(_logger, "Cache.LoadGameData", thresholdMs: 25, context: key))
             {
-                if (string.IsNullOrWhiteSpace(normalizedKey))
-                {
-                    return null;
-                }
+                var scopeChanged = false;
+                var normalizedKey = UserKey(key);
 
-                lock (_sync)
+                try
                 {
-                    EnsureReady_Locked("LoadGameData");
-                    scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
-
-                    var dbData = _store.LoadCurrentUserGameData(normalizedKey);
-                    if (dbData == null)
+                    if (string.IsNullOrWhiteSpace(normalizedKey))
                     {
-                        RemoveMemoryGameData_Locked(normalizedKey);
                         return null;
                     }
 
-                    NormalizeLoadedData(normalizedKey, dbData);
-
-                    if (TryGetMemoryGameData_Locked(normalizedKey, out var memoryData) && memoryData != null)
+                    lock (_sync)
                     {
-                        var memoryUpdated = DateTimeUtilities.AsUtcKind(memoryData.LastUpdatedUtc);
-                        var dbUpdated = DateTimeUtilities.AsUtcKind(dbData.LastUpdatedUtc);
-                        if (memoryUpdated >= dbUpdated)
-                        {
-                            return CloneGameData(memoryData);
-                        }
-                    }
+                        EnsureReady_Locked("LoadGameData");
+                        scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
 
-                    SetMemoryGameData_Locked(normalizedKey, dbData);
-                    return CloneGameData(dbData);
+                        var dbData = _store.LoadCurrentUserGameData(normalizedKey);
+                        if (dbData == null)
+                        {
+                            RemoveMemoryGameData_Locked(normalizedKey);
+                            return null;
+                        }
+
+                        NormalizeLoadedData(normalizedKey, dbData);
+
+                        if (TryGetMemoryGameData_Locked(normalizedKey, out var memoryData) && memoryData != null)
+                        {
+                            var memoryUpdated = DateTimeUtilities.AsUtcKind(memoryData.LastUpdatedUtc);
+                            var dbUpdated = DateTimeUtilities.AsUtcKind(dbData.LastUpdatedUtc);
+                            if (memoryUpdated >= dbUpdated)
+                            {
+                                return CloneGameData(memoryData);
+                            }
+                        }
+
+                        SetMemoryGameData_Locked(normalizedKey, dbData);
+                        return CloneGameData(dbData);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, $"Cache read failed. key={normalizedKey}, phase=LoadGameData");
-                return null;
-            }
-            finally
-            {
-                if (scopeChanged)
+                catch (Exception ex)
                 {
-                    RaiseCacheDeltaUpdatedEvent(string.Empty, CacheDeltaOperationType.FullReset);
+                    _logger?.Error(ex, $"Cache read failed. key={normalizedKey}, phase=LoadGameData");
+                    return null;
+                }
+                finally
+                {
+                    if (scopeChanged)
+                    {
+                        RaiseCacheDeltaUpdatedEvent(string.Empty, CacheDeltaOperationType.FullReset);
+                    }
                 }
             }
         }
 
         public CacheWriteResult SaveGameData(string key, GameAchievementData data)
         {
-            if (string.IsNullOrWhiteSpace(key))
+            using (PerfScope.Start(_logger, "Cache.SaveGameData", thresholdMs: 25, context: key))
             {
-                return CacheWriteResult.CreateFailure(
-                    key,
-                    "invalid_key",
-                    "Cache key is missing.");
-            }
-
-            var normalizedKey = UserKey(key);
-            var writeTime = DateTime.UtcNow;
-            var providerName = data?.ProviderName;
-            var scopeChanged = false;
-
-            if (_initializationFailure != null)
-            {
-                return CacheWriteResult.CreateFailure(
-                    normalizedKey,
-                    "cache_unavailable",
-                    "Cache initialization failed; writes are disabled to prevent data loss.",
-                    _initializationFailure);
-            }
-
-            try
-            {
-                lock (_sync)
+                if (string.IsNullOrWhiteSpace(key))
                 {
-                    EnsureReady_Locked("SaveGameData");
+                    return CacheWriteResult.CreateFailure(
+                        key,
+                        "invalid_key",
+                        "Cache key is missing.");
+                }
 
-                    var toWrite = data != null ? CloneGameData(data) : new GameAchievementData();
-                    if (toWrite.LastUpdatedUtc == default(DateTime))
+                var normalizedKey = UserKey(key);
+                var writeTime = DateTime.UtcNow;
+                var providerName = data?.ProviderName;
+                var scopeChanged = false;
+
+                if (_initializationFailure != null)
+                {
+                    return CacheWriteResult.CreateFailure(
+                        normalizedKey,
+                        "cache_unavailable",
+                        "Cache initialization failed; writes are disabled to prevent data loss.",
+                        _initializationFailure);
+                }
+
+                try
+                {
+                    lock (_sync)
                     {
-                        toWrite.LastUpdatedUtc = writeTime;
+                        EnsureReady_Locked("SaveGameData");
+
+                        var toWrite = data != null ? CloneGameData(data) : new GameAchievementData();
+                        if (toWrite.LastUpdatedUtc == default(DateTime))
+                        {
+                            toWrite.LastUpdatedUtc = writeTime;
+                        }
+                        toWrite.LastUpdatedUtc = DateTimeUtilities.AsUtcKind(toWrite.LastUpdatedUtc);
+
+                        if (toWrite.PlayniteGameId == null && Guid.TryParse(normalizedKey, out var parsedId))
+                        {
+                            toWrite.PlayniteGameId = parsedId;
+                        }
+
+                        _store.SaveCurrentUserGameData(normalizedKey, toWrite);
+
+                        scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
+                        SetMemoryGameData_Locked(normalizedKey, toWrite);
                     }
-                    toWrite.LastUpdatedUtc = DateTimeUtilities.AsUtcKind(toWrite.LastUpdatedUtc);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(
+                        ex,
+                        $"Cache write failed. key={normalizedKey}, provider={providerName ?? "unknown"}, " +
+                        "phase=SaveGameData, operation=SaveCurrentUserGameData");
 
-                    if (toWrite.PlayniteGameId == null && Guid.TryParse(normalizedKey, out var parsedId))
-                    {
-                        toWrite.PlayniteGameId = parsedId;
-                    }
-
-                    _store.SaveCurrentUserGameData(normalizedKey, toWrite);
-
-                    scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
-                    SetMemoryGameData_Locked(normalizedKey, toWrite);
+                    return CacheWriteResult.CreateFailure(
+                        normalizedKey,
+                        "sql_write_failed",
+                        ex.Message,
+                        ex);
                 }
 
                 if (scopeChanged)
@@ -589,19 +622,6 @@ namespace PlayniteAchievements.Services
                 RaiseCacheDeltaUpdatedEvent(normalizedKey, CacheDeltaOperationType.Upsert);
 
                 return CacheWriteResult.CreateSuccess(normalizedKey, writeTime);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(
-                    ex,
-                    $"Cache write failed. key={normalizedKey}, provider={providerName ?? "unknown"}, " +
-                    "phase=SaveGameData, operation=SaveCurrentUserGameData");
-
-                return CacheWriteResult.CreateFailure(
-                    normalizedKey,
-                    "sql_write_failed",
-                    ex.Message,
-                    ex);
             }
         }
 
@@ -690,7 +710,7 @@ namespace PlayniteAchievements.Services
                 ProviderName = source.ProviderName,
                 LibrarySourceName = source.LibrarySourceName,
                 NoAchievements = source.NoAchievements,
-                IsComplete = source.IsComplete,
+                IsCompleted = source.IsCompleted,
                 PlaytimeSeconds = source.PlaytimeSeconds,
                 GameName = source.GameName,
                 AppId = source.AppId,
@@ -745,3 +765,4 @@ namespace PlayniteAchievements.Services
         }
     }
 }
+

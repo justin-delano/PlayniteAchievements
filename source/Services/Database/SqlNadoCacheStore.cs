@@ -28,6 +28,7 @@ namespace PlayniteAchievements.Services.Database
             public string CacheKey { get; set; }
             public long PlaytimeSeconds { get; set; }
             public long NoAchievements { get; set; }
+            public long IsCompleted { get; set; }
             public string LastUpdatedUtc { get; set; }
             public string ProviderName { get; set; }
             public long? ProviderGameId { get; set; }
@@ -239,6 +240,7 @@ namespace PlayniteAchievements.Services.Database
                         ugp.CacheKey AS CacheKey,
                         ugp.PlaytimeSeconds AS PlaytimeSeconds,
                         ugp.NoAchievements AS NoAchievements,
+                        ugp.IsCompleted AS IsCompleted,
                         ugp.LastUpdatedUtc AS LastUpdatedUtc,
                         g.ProviderName AS ProviderName,
                         g.ProviderGameId AS ProviderGameId,
@@ -335,6 +337,7 @@ namespace PlayniteAchievements.Services.Database
                             TRIM(ugp.CacheKey) AS CacheKey,
                             ugp.PlaytimeSeconds AS PlaytimeSeconds,
                             ugp.NoAchievements AS NoAchievements,
+                            ugp.IsCompleted AS IsCompleted,
                             ugp.LastUpdatedUtc AS LastUpdatedUtc,
                             g.ProviderName AS ProviderName,
                             g.ProviderGameId AS ProviderGameId,
@@ -358,6 +361,7 @@ namespace PlayniteAchievements.Services.Database
                         CacheKey,
                         PlaytimeSeconds,
                         NoAchievements,
+                        IsCompleted,
                         LastUpdatedUtc,
                         ProviderName,
                         ProviderGameId,
@@ -510,6 +514,9 @@ namespace PlayniteAchievements.Services.Database
             var achievements = payload.Achievements ?? new List<AchievementDetail>();
             var unlockedCount = achievements.Count(IsUnlocked);
             var totalCount = achievements.Count;
+            var computedIsCompleted = totalCount > 0 && unlockedCount == totalCount;
+            var isCompleted = payload.IsCompleted || computedIsCompleted;
+            payload.IsCompleted = isCompleted;
             var playtime = ClampPlaytime(payload.PlaytimeSeconds);
 
             WithDb(db =>
@@ -527,7 +534,7 @@ namespace PlayniteAchievements.Services.Database
                         payload.NoAchievements,
                         unlockedCount,
                         totalCount,
-                        false,
+                        isCompleted,
                         updatedIso,
                         nowIso);
 
@@ -932,12 +939,12 @@ namespace PlayniteAchievements.Services.Database
             bool noAchievements,
             int achievementsUnlocked,
             int totalAchievements,
-            bool isComplete,
+            bool isCompleted,
             string updatedIso,
             string nowIso)
         {
             var existing = db.Load<UserGameProgressRow>(
-                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsComplete, LastUpdatedUtc, CreatedUtc, UpdatedUtc
+                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, LastUpdatedUtc, CreatedUtc, UpdatedUtc
                   FROM UserGameProgress
                   WHERE UserId = ? AND CacheKey = ?
                   LIMIT 1;",
@@ -947,7 +954,7 @@ namespace PlayniteAchievements.Services.Database
             if (existing == null)
             {
                 existing = db.Load<UserGameProgressRow>(
-                    @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsComplete, LastUpdatedUtc, CreatedUtc, UpdatedUtc
+                    @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, LastUpdatedUtc, CreatedUtc, UpdatedUtc
                       FROM UserGameProgress
                       WHERE UserId = ? AND GameId = ?
                       LIMIT 1;",
@@ -959,7 +966,7 @@ namespace PlayniteAchievements.Services.Database
             {
                 db.ExecuteNonQuery(
                     @"INSERT INTO UserGameProgress
-                        (UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsComplete, LastUpdatedUtc, CreatedUtc, UpdatedUtc)
+                        (UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, LastUpdatedUtc, CreatedUtc, UpdatedUtc)
                       VALUES
                         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                     userId,
@@ -969,7 +976,7 @@ namespace PlayniteAchievements.Services.Database
                     noAchievements ? 1 : 0,
                     achievementsUnlocked,
                     totalAchievements,
-                    isComplete ? 1 : 0,
+                    isCompleted ? 1 : 0,
                     updatedIso,
                     nowIso,
                     nowIso);
@@ -984,7 +991,7 @@ namespace PlayniteAchievements.Services.Database
                       NoAchievements = ?,
                       AchievementsUnlocked = ?,
                       TotalAchievements = ?,
-                      IsComplete = ?,
+                      IsCompleted = ?,
                       LastUpdatedUtc = ?,
                       UpdatedUtc = ?
                   WHERE Id = ?;",
@@ -994,7 +1001,7 @@ namespace PlayniteAchievements.Services.Database
                 noAchievements ? 1 : 0,
                 achievementsUnlocked,
                 totalAchievements,
-                isComplete ? 1 : 0,
+                isCompleted ? 1 : 0,
                 updatedIso,
                 nowIso,
                 existing.Id);
@@ -1178,6 +1185,7 @@ namespace PlayniteAchievements.Services.Database
                 ProviderName = progress?.ProviderName,
                 LibrarySourceName = progress?.LibrarySourceName,
                 NoAchievements = progress != null && progress.NoAchievements != 0,
+                IsCompleted = progress != null && progress.IsCompleted != 0,
                 PlaytimeSeconds = (ulong)Math.Max(0, progress?.PlaytimeSeconds ?? 0),
                 GameName = progress?.GameName,
                 AppId = (int)Math.Max(0, progress?.ProviderGameId ?? 0),
@@ -1410,17 +1418,17 @@ namespace PlayniteAchievements.Services.Database
             var rows = _db.Load<UserGameProgressExportRow>(
                 "SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, " +
                 "NoAchievements, AchievementsUnlocked, TotalAchievements, " +
-                "IsComplete, LastUpdatedUtc, CreatedUtc, UpdatedUtc " +
+                "IsCompleted, LastUpdatedUtc, CreatedUtc, UpdatedUtc " +
                 "FROM UserGameProgress").ToList();
             WriteCsv(filePath, rows, new[]
             {
                 "Id", "UserId", "GameId", "CacheKey", "PlaytimeSeconds",
                 "NoAchievements", "AchievementsUnlocked", "TotalAchievements",
-                "IsComplete", "LastUpdatedUtc", "CreatedUtc", "UpdatedUtc"
+                "IsCompleted", "LastUpdatedUtc", "CreatedUtc", "UpdatedUtc"
             }, r => new[] {
                 r.Id.ToString(), r.UserId.ToString(), r.GameId.ToString(), r.CacheKey, r.PlaytimeSeconds.ToString(),
                 r.NoAchievements.ToString(), r.AchievementsUnlocked.ToString(), r.TotalAchievements.ToString(),
-                r.IsComplete.ToString(), r.LastUpdatedUtc, r.CreatedUtc, r.UpdatedUtc
+                r.IsCompleted.ToString(), r.LastUpdatedUtc, r.CreatedUtc, r.UpdatedUtc
             });
             _logger.Info($"Exported {rows.Count} rows to {filePath}");
         }
@@ -1569,7 +1577,7 @@ namespace PlayniteAchievements.Services.Database
             public long NoAchievements { get; set; }
             public long AchievementsUnlocked { get; set; }
             public long TotalAchievements { get; set; }
-            public long IsComplete { get; set; }
+            public long IsCompleted { get; set; }
             public string LastUpdatedUtc { get; set; }
             public string CreatedUtc { get; set; }
             public string UpdatedUtc { get; set; }
@@ -1631,3 +1639,4 @@ namespace PlayniteAchievements.Services.Database
         }
     }
 }
+

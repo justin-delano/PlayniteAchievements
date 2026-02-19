@@ -26,7 +26,7 @@ namespace PlayniteAchievements.Models
 
         public bool NoAchievements { get; set; }
 
-        public bool IsComplete { get; set; }
+        public bool IsCompleted { get; set; }
 
         public ulong PlaytimeSeconds { get; set; }
 
@@ -39,3 +39,4 @@ namespace PlayniteAchievements.Models
         public List<AchievementDetail> Achievements { get; set; } = new List<AchievementDetail>();
     }
 }
+

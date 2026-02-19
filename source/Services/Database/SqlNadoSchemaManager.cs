@@ -111,7 +111,7 @@ namespace PlayniteAchievements.Services.Database
                 NoAchievements INTEGER NOT NULL DEFAULT 0,
                 AchievementsUnlocked INTEGER NOT NULL DEFAULT 0,
                 TotalAchievements INTEGER NOT NULL DEFAULT 0,
-                IsComplete INTEGER NOT NULL DEFAULT 0,
+                IsCompleted INTEGER NOT NULL DEFAULT 0,
                 LastUpdatedUtc TEXT NOT NULL,
                 CreatedUtc TEXT NOT NULL,
                 UpdatedUtc TEXT NOT NULL,
@@ -217,7 +217,40 @@ namespace PlayniteAchievements.Services.Database
             EnsureColumn(db, "AchievementDefinitions", "TrophyType", "TEXT NULL", definitionColumns, ref backupPath);
 
             var progressColumns = GetColumnNames(db, "UserGameProgress");
-            EnsureColumn(db, "UserGameProgress", "IsComplete", "INTEGER NOT NULL DEFAULT 0", progressColumns, ref backupPath);
+            var legacyCompletedColumn = "Is" + "Complete";
+            if (!progressColumns.Contains("iscompleted"))
+            {
+                if (progressColumns.Contains(legacyCompletedColumn))
+                {
+                    try
+                    {
+                        ExecuteSchemaChangeWithBackup(
+                            db,
+                            $"ALTER TABLE UserGameProgress RENAME COLUMN {legacyCompletedColumn} TO IsCompleted;",
+                            ref backupPath,
+                            "Renamed UserGameProgress legacy completion column to IsCompleted.");
+
+                        progressColumns.Remove(legacyCompletedColumn);
+                        progressColumns.Add("iscompleted");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Warn(ex, "[Schema] Failed to rename legacy UserGameProgress completion column. Falling back to add+copy migration.");
+
+                        EnsureColumn(db, "UserGameProgress", "IsCompleted", "INTEGER NOT NULL DEFAULT 0", progressColumns, ref backupPath);
+
+                        ExecuteSchemaChangeWithBackup(
+                            db,
+                            $"UPDATE UserGameProgress SET IsCompleted = {legacyCompletedColumn} WHERE {legacyCompletedColumn} <> 0;",
+                            ref backupPath,
+                            "Backfilled UserGameProgress.IsCompleted from legacy completion values.");
+                    }
+                }
+                else
+                {
+                    EnsureColumn(db, "UserGameProgress", "IsCompleted", "INTEGER NOT NULL DEFAULT 0", progressColumns, ref backupPath);
+                }
+            }
 
             return backupPath;
         }
@@ -346,7 +379,7 @@ namespace PlayniteAchievements.Services.Database
             EnsureRequiredColumn(definitionColumns, "TrophyType", "AchievementDefinitions", missing);
 
             var progressColumns = GetColumnNames(db, "UserGameProgress");
-            EnsureRequiredColumn(progressColumns, "IsComplete", "UserGameProgress", missing);
+            EnsureRequiredColumn(progressColumns, "IsCompleted", "UserGameProgress", missing);
 
             if (missing.Count > 0)
             {
@@ -380,3 +413,4 @@ namespace PlayniteAchievements.Services.Database
         }
     }
 }
+
