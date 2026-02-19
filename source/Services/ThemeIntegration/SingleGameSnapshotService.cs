@@ -46,6 +46,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             int locked = total - unlocked;
             double percent = total > 0 ? Math.Round(unlocked * 100.0 / total, 2) : 0;
             bool is100Percent = unlocked == total && total > 0;
+            bool isCompleted = data.IsCompleted || is100Percent;
 
             // Make exactly one copy for theme bindings.
             // This avoids exposing provider-owned lists while also avoiding duplicate copies.
@@ -121,7 +122,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 unlocked,
                 locked,
                 percent,
-                is100Percent,
+                isCompleted,
                 all,
                 asc,
                 desc,

@@ -337,7 +337,8 @@ namespace PlayniteAchievements.ViewModels
                 var achievements = gameData.Achievements;
                 TotalAchievements = achievements.Count;
                 UnlockedAchievements = achievements.Count(a => a.Unlocked);
-                IsPerfect = UnlockedAchievements == TotalAchievements && TotalAchievements > 0;
+                var is100Percent = UnlockedAchievements == TotalAchievements && TotalAchievements > 0;
+                IsPerfect = gameData.IsCompleted || is100Percent;
 
                 // Calculate rarity counts
                 int common = 0, uncommon = 0, rare = 0, ultraRare = 0;

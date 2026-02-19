@@ -18,7 +18,11 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public int Locked { get; }
         public double Percent { get; }
 
-        public bool Is100Percent { get; }
+        /// <summary>
+        /// Provider-aware completion status. True when provider marks complete (e.g., PSN platinum)
+        /// or when all achievements are unlocked.
+        /// </summary>
+        public bool IsCompleted { get; }
 
         public List<AchievementDetail> AllAchievements { get; }
         public List<AchievementDetail> UnlockDateAsc { get; }
@@ -38,7 +42,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             int unlocked,
             int locked,
             double percent,
-            bool is100Percent,
+            bool isCompleted,
             List<AchievementDetail> allAchievements,
             List<AchievementDetail> unlockDateAsc,
             List<AchievementDetail> unlockDateDesc,
@@ -55,7 +59,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             Unlocked = unlocked;
             Locked = locked;
             Percent = percent;
-            Is100Percent = is100Percent;
+            IsCompleted = isCompleted;
             AllAchievements = allAchievements ?? new List<AchievementDetail>();
             UnlockDateAsc = unlockDateAsc ?? new List<AchievementDetail>();
             UnlockDateDesc = unlockDateDesc ?? new List<AchievementDetail>();

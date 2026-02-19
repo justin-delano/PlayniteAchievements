@@ -88,7 +88,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.UnlockedCount),
             nameof(PlayniteAchievementsSettings.LockedCount),
             nameof(PlayniteAchievementsSettings.ProgressPercentage),
-            nameof(PlayniteAchievementsSettings.AllUnlocked)
+            nameof(PlayniteAchievementsSettings.IsCompleted)
         };
 
         private static readonly string[] SingleGameLegacyDelegatedProperties =
@@ -832,7 +832,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void ApplySingleGameToTheme(SingleGameSnapshot snapshot)
         {
             _settings.Theme.HasAchievements = true;
-            _settings.Theme.AllUnlocked = snapshot.Is100Percent;
+            _settings.Theme.IsCompleted = snapshot.IsCompleted;
             _settings.Theme.AchievementCount = snapshot.Total;
             _settings.Theme.UnlockedCount = snapshot.Unlocked;
             _settings.Theme.LockedCount = snapshot.Locked;
@@ -860,7 +860,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.Unlocked = snapshot.Unlocked;
             _settings.LegacyTheme.Percent = snapshot.Percent;
 
-            _settings.LegacyTheme.Is100Percent = snapshot.Is100Percent;
+            _settings.LegacyTheme.Is100Percent = snapshot.Unlocked == snapshot.Total && snapshot.Total > 0;
             _settings.LegacyTheme.Locked = snapshot.Locked;
             _settings.LegacyTheme.TotalGamerScore = 0;
             _settings.LegacyTheme.EstimateTimeToUnlock = string.Empty;
@@ -890,7 +890,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private void ClearSingleGameTheme()
         {
             _settings.Theme.HasAchievements = false;
-            _settings.Theme.AllUnlocked = false;
+            _settings.Theme.IsCompleted = false;
             _settings.Theme.AchievementCount = 0;
             _settings.Theme.UnlockedCount = 0;
             _settings.Theme.LockedCount = 0;

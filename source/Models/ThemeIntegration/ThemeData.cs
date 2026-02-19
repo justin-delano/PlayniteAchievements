@@ -18,7 +18,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private bool _hasAchievements;
         [DontSerialize]
-        private bool _allUnlocked;
+        private bool _isCompleted;
         [DontSerialize]
         private int _achievementCount;
         [DontSerialize]
@@ -99,13 +99,14 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
 
         /// <summary>
-        /// Whether all achievements are unlocked for the currently selected game.
+        /// Whether the currently selected game is completed.
+        /// Provider-aware: true when provider marks complete (e.g., PSN platinum) or all achievements unlocked.
         /// </summary>
         [DontSerialize]
-        public bool AllUnlocked
+        public bool IsCompleted
         {
-            get => _allUnlocked;
-            set => SetValue(ref _allUnlocked, value);
+            get => _isCompleted;
+            set => SetValue(ref _isCompleted, value);
         }
 
         /// <summary>

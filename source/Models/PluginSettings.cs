@@ -169,7 +169,7 @@ namespace PlayniteAchievements.Models
         public double ProgressPercentage => Theme.ProgressPercentage;
 
         [DontSerialize]
-        public bool AllUnlocked => Theme.AllUnlocked;
+        public bool IsCompleted => Theme.IsCompleted;
 
         [DontSerialize]
         public List<AchievementDetail> Achievements => Theme.AllAchievements ?? EmptyAchievementList;

@@ -29,6 +29,9 @@ namespace PlayniteAchievements.Providers.PSN.Models
 
     internal sealed class PsnUserTrophy
     {
+        [JsonProperty("trophyGroupId")]
+        public string TrophyGroupId { get; set; }
+
         [JsonProperty("trophyId")]
         public int TrophyId { get; set; }
 
@@ -50,6 +53,9 @@ namespace PlayniteAchievements.Providers.PSN.Models
 
     internal sealed class PsnTrophyDetail
     {
+        [JsonProperty("trophyGroupId")]
+        public string TrophyGroupId { get; set; }
+
         [JsonProperty("trophyId")]
         public int TrophyId { get; set; }
 

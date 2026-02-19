@@ -160,20 +160,23 @@ namespace PlayniteAchievements.Providers.PSN
 
             var details = JsonConvert.DeserializeObject<PsnTrophiesDetailResponse>(detailsJson);
 
-            var userById = (user?.Trophies ?? new List<PsnUserTrophy>())
-                .GroupBy(t => t.TrophyId)
-                .ToDictionary(g => g.Key, g => g.First());
+            var userByKey = (user?.Trophies ?? new List<PsnUserTrophy>())
+                .GroupBy(GetTrophyKey)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.FirstOrDefault(t => t != null && t.Earned) ?? g.First());
 
             var achievements = new List<AchievementDetail>();
             var unlockedCount = 0;
             foreach (var detail in (details?.Trophies ?? new List<PsnTrophyDetail>())
-                .GroupBy(t => t.TrophyId)
+                .GroupBy(GetTrophyKey)
                 .Select(g => g.First()))
             {
-                userById.TryGetValue(detail.TrophyId, out var userEntry);
+                userByKey.TryGetValue(GetTrophyKey(detail), out var userEntry);
 
                 DateTime? unlockUtc = null;
-                if (userEntry != null && userEntry.Earned)
+                var unlocked = userEntry != null && userEntry.Earned;
+                if (unlocked)
                 {
                     unlockedCount++;
 
@@ -205,6 +208,7 @@ namespace PlayniteAchievements.Providers.PSN
                     Description = detail.TrophyDetail,
                     UnlockedIconPath = detail.TrophyIconUrl,
                     Hidden = detail.Hidden,
+                    Unlocked = unlocked,
                     UnlockTimeUtc = unlockUtc,
                     GlobalPercentUnlocked = userEntry?.TrophyEarnedRate,
                     TrophyType = detail.TrophyType
@@ -214,7 +218,7 @@ namespace PlayniteAchievements.Providers.PSN
             var hasUnlockedPlatinum = achievements.Any(a =>
                 a != null &&
                 a.Unlocked &&
-                string.Equals(a.TrophyType, "platinum", StringComparison.OrdinalIgnoreCase));
+                string.Equals((a.TrophyType ?? string.Empty).Trim(), "platinum", StringComparison.OrdinalIgnoreCase));
             var isCompleted = hasUnlockedPlatinum ||
                 (achievements.Count > 0 && unlockedCount == achievements.Count);
 
@@ -249,6 +253,22 @@ namespace PlayniteAchievements.Providers.PSN
         {
             var value = ResourceProvider.GetString("LOCPlayAch_Provider_PlayStation");
             return string.IsNullOrWhiteSpace(value) ? "PlayStation" : value;
+        }
+
+        private static string GetTrophyKey(PsnUserTrophy trophy)
+        {
+            return BuildTrophyKey(trophy?.TrophyGroupId, trophy?.TrophyId ?? 0);
+        }
+
+        private static string GetTrophyKey(PsnTrophyDetail trophy)
+        {
+            return BuildTrophyKey(trophy?.TrophyGroupId, trophy?.TrophyId ?? 0);
+        }
+
+        private static string BuildTrophyKey(string trophyGroupId, int trophyId)
+        {
+            var group = string.IsNullOrWhiteSpace(trophyGroupId) ? "default" : trophyGroupId.Trim();
+            return string.Concat(group, ":", trophyId.ToString(CultureInfo.InvariantCulture));
         }
 
         private static string NormalizeGameId(string raw)
