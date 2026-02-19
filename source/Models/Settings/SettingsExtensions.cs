@@ -42,6 +42,7 @@ namespace PlayniteAchievements.Models.Settings
             target.SteamEnabled = source.SteamEnabled;
             target.EpicEnabled = source.EpicEnabled;
             target.GogEnabled = source.GogEnabled;
+            target.PsnEnabled = source.PsnEnabled;
             target.RetroAchievementsEnabled = source.RetroAchievementsEnabled;
 
             // Update and Refresh Settings
@@ -124,6 +125,7 @@ namespace PlayniteAchievements.Models.Settings
                 SteamEnabled = source.SteamEnabled,
                 EpicEnabled = source.EpicEnabled,
                 GogEnabled = source.GogEnabled,
+                PsnEnabled = source.PsnEnabled,
                 RetroAchievementsEnabled = source.RetroAchievementsEnabled,
 
                 // Update and Refresh Settings

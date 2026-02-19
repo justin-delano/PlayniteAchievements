@@ -16,6 +16,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.GOG;
 using PlayniteAchievements.Providers.Epic;
+using PlayniteAchievements.Providers.PSN;
 using PlayniteAchievements.Services.ThemeMigration;
 using Playnite.SDK;
 using System.Diagnostics;
@@ -131,6 +132,45 @@ namespace PlayniteAchievements.Views
         {
             get => (bool)GetValue(EpicAuthenticatedProperty);
             set => SetValue(EpicAuthenticatedProperty, value);
+        }
+
+        public static readonly DependencyProperty PsnAuthStatusProperty =
+            DependencyProperty.Register(
+                nameof(PsnAuthStatus),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_PsnAuth_NotChecked")));
+
+        public string PsnAuthStatus
+        {
+            get => (string)GetValue(PsnAuthStatusProperty);
+            set => SetValue(PsnAuthStatusProperty, value);
+        }
+
+        public static readonly DependencyProperty PsnAuthBusyProperty =
+            DependencyProperty.Register(
+                nameof(PsnAuthBusy),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool PsnAuthBusy
+        {
+            get => (bool)GetValue(PsnAuthBusyProperty);
+            set => SetValue(PsnAuthBusyProperty, value);
+        }
+
+        public static readonly DependencyProperty PsnAuthenticatedProperty =
+            DependencyProperty.Register(
+                nameof(PsnAuthenticated),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool PsnAuthenticated
+        {
+            get => (bool)GetValue(PsnAuthenticatedProperty);
+            set => SetValue(PsnAuthenticatedProperty, value);
         }
 
         public static readonly DependencyProperty SteamAuthenticatedProperty =
@@ -298,8 +338,9 @@ namespace PlayniteAchievements.Views
         private readonly SteamSessionManager _steamSessionManager;
         private readonly GogSessionManager _gogSessionManager;
         private readonly EpicSessionManager _epicSessionManager;
+        private readonly PsnSessionManager _psnSessionManager;
 
-        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager, GogSessionManager gogSessionManager, EpicSessionManager epicSessionManager)
+        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager, GogSessionManager gogSessionManager, EpicSessionManager epicSessionManager, PsnSessionManager psnSessionManager)
         {
             _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
@@ -307,6 +348,7 @@ namespace PlayniteAchievements.Views
             _steamSessionManager = steamSessionManager ?? throw new ArgumentNullException(nameof(steamSessionManager));
             _gogSessionManager = gogSessionManager ?? throw new ArgumentNullException(nameof(gogSessionManager));
             _epicSessionManager = epicSessionManager ?? throw new ArgumentNullException(nameof(epicSessionManager));
+            _psnSessionManager = psnSessionManager ?? throw new ArgumentNullException(nameof(psnSessionManager));
 
             _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
             _themeMigration = new ThemeMigrationService(_logger);
@@ -341,6 +383,7 @@ namespace PlayniteAchievements.Views
                 await CheckSteamAuthAsync().ConfigureAwait(false);
                 await CheckGogAuthAsync().ConfigureAwait(false);
                 await CheckEpicAuthAsync().ConfigureAwait(false);
+                await CheckPsnAuthAsync().ConfigureAwait(false);
                 UpdateRaAuthState();
 
                 // Load themes on initial load
@@ -1226,6 +1269,229 @@ namespace PlayniteAchievements.Views
         }
 
         // -----------------------------
+        // PSN auth UI
+        // -----------------------------
+
+        private async void PsnAuth_Check_Click(object sender, RoutedEventArgs e)
+        {
+            _logger?.Info("[PSNAch] Settings: Check Auth clicked.");
+            await CheckPsnAuthAsync().ConfigureAwait(false);
+        }
+
+        private async void PsnAuth_Login_Click(object sender, RoutedEventArgs e)
+        {
+            _logger?.Info("[PSNAch] Settings: Login clicked.");
+            SetPsnAuthBusy(true);
+            SetPsnAuthStatusByKey("LOCPlayAch_Settings_PsnAuth_Checking");
+
+            var progress = new Progress<PsnAuthProgressStep>(step =>
+            {
+                SetPsnAuthStatusByKey(GetPsnProgressMessageKey(step));
+            });
+
+            try
+            {
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180)))
+                {
+                    var result = await _psnSessionManager
+                        .AuthenticateInteractiveAsync(forceInteractive: true, ct: cts.Token, progress: progress)
+                        .ConfigureAwait(false);
+                    ApplyPsnAuthResult(result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                SetPsnAuthenticated(false);
+                SetPsnAuthStatusByKey("LOCPlayAch_Settings_PsnAuth_TimedOut");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[PSNAch] Login failed.");
+                SetPsnAuthenticated(false);
+                SetPsnAuthStatusByKey("LOCPlayAch_Settings_PsnAuth_Failed");
+            }
+            finally
+            {
+                SetPsnAuthBusy(false);
+            }
+        }
+
+        private void PsnAuth_Clear_Click(object sender, RoutedEventArgs e)
+        {
+            _psnSessionManager.ClearSession();
+            SetPsnAuthenticated(false);
+            SetPsnAuthStatusByKey("LOCPlayAch_Settings_PsnAuth_CookiesCleared");
+        }
+
+        private async Task CheckPsnAuthAsync()
+        {
+            SetPsnAuthBusy(true);
+            SetPsnAuthStatusByKey("LOCPlayAch_Settings_PsnAuth_Checking");
+
+            await Task.Delay(300).ConfigureAwait(false);
+
+            try
+            {
+                using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+                {
+                    var result = await _psnSessionManager.ProbeAuthenticationAsync(timeoutCts.Token).ConfigureAwait(false);
+                    ApplyPsnAuthResult(result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                SetPsnAuthenticated(false);
+                SetPsnAuthStatusByKey("LOCPlayAch_Settings_PsnAuth_TimedOut");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "PSN auth check failed.");
+                SetPsnAuthenticated(false);
+                SetPsnAuthStatusByKey("LOCPlayAch_Settings_PsnAuth_ProbeFailed");
+            }
+            finally
+            {
+                SetPsnAuthBusy(false);
+            }
+        }
+
+        private void ApplyPsnAuthResult(PsnAuthResult result)
+        {
+            if (result == null)
+            {
+                SetPsnAuthenticated(false);
+                SetPsnAuthStatusByKey("LOCPlayAch_Settings_PsnAuth_Failed");
+                return;
+            }
+
+            var authenticated =
+                result.Outcome == PsnAuthOutcome.Authenticated ||
+                result.Outcome == PsnAuthOutcome.AlreadyAuthenticated;
+
+            SetPsnAuthenticated(authenticated);
+
+            var statusKey = string.IsNullOrWhiteSpace(result.MessageKey)
+                ? GetDefaultPsnMessageKeyForOutcome(result.Outcome)
+                : result.MessageKey;
+
+            if (!result.WindowOpened &&
+                !result.IsSuccess &&
+                (result.Outcome == PsnAuthOutcome.Failed || result.Outcome == PsnAuthOutcome.Cancelled))
+            {
+                statusKey = "LOCPlayAch_Settings_PsnAuth_WindowNotOpened";
+            }
+
+            SetPsnAuthStatusByKey(statusKey);
+        }
+
+        private static string GetDefaultPsnMessageKeyForOutcome(PsnAuthOutcome outcome)
+        {
+            switch (outcome)
+            {
+                case PsnAuthOutcome.Authenticated:
+                    return "LOCPlayAch_Settings_PsnAuth_Verified";
+                case PsnAuthOutcome.AlreadyAuthenticated:
+                    return "LOCPlayAch_Settings_PsnAuth_AlreadyAuthenticated";
+                case PsnAuthOutcome.NotAuthenticated:
+                    return "LOCPlayAch_Settings_PsnAuth_NotAuthenticated";
+                case PsnAuthOutcome.Cancelled:
+                    return "LOCPlayAch_Settings_PsnAuth_Cancelled";
+                case PsnAuthOutcome.TimedOut:
+                    return "LOCPlayAch_Settings_PsnAuth_TimedOut";
+                case PsnAuthOutcome.ProbeFailed:
+                    return "LOCPlayAch_Settings_PsnAuth_ProbeFailed";
+                case PsnAuthOutcome.LibraryMissing:
+                    return "LOCPlayAch_Settings_PsnAuth_LibraryMissing";
+                case PsnAuthOutcome.Failed:
+                default:
+                    return "LOCPlayAch_Settings_PsnAuth_Failed";
+            }
+        }
+
+        private static string GetPsnProgressMessageKey(PsnAuthProgressStep step)
+        {
+            switch (step)
+            {
+                case PsnAuthProgressStep.CheckingExistingSession:
+                    return "LOCPlayAch_Settings_PsnAuth_CheckingExistingSession";
+                case PsnAuthProgressStep.OpeningLoginWindow:
+                    return "LOCPlayAch_Settings_PsnAuth_OpeningWindow";
+                case PsnAuthProgressStep.WaitingForUserLogin:
+                    return "LOCPlayAch_Settings_PsnAuth_WaitingForLogin";
+                case PsnAuthProgressStep.Completed:
+                    return "LOCPlayAch_Settings_PsnAuth_Completed";
+                case PsnAuthProgressStep.Failed:
+                default:
+                    return "LOCPlayAch_Settings_PsnAuth_Failed";
+            }
+        }
+
+        private void SetPsnAuthStatusByKey(string key, params object[] args)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            var value = ResourceProvider.GetString(key);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                SetPsnAuthStatus(key);
+            }
+            else if (args != null && args.Length > 0)
+            {
+                try
+                {
+                    SetPsnAuthStatus(string.Format(value, args));
+                }
+                catch
+                {
+                    SetPsnAuthStatus(value);
+                }
+            }
+            else
+            {
+                SetPsnAuthStatus(value);
+            }
+        }
+
+        private void SetPsnAuthStatus(string status)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                PsnAuthStatus = status;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => PsnAuthStatus = status));
+            }
+        }
+
+        private void SetPsnAuthBusy(bool busy)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                PsnAuthBusy = busy;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => PsnAuthBusy = busy));
+            }
+        }
+
+        private void SetPsnAuthenticated(bool authenticated)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                PsnAuthenticated = authenticated;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => PsnAuthenticated = authenticated));
+            }
+        }
+
+        // -----------------------------
         // Cache actions
         // -----------------------------
 
@@ -1445,6 +1711,11 @@ namespace PlayniteAchievements.Views
             {
                 await CheckEpicAuthAsync().ConfigureAwait(false);
                 _logger?.Info("Checked Epic auth for Epic tab.");
+            }
+            else if (string.Equals(name, "PsnTab", StringComparison.OrdinalIgnoreCase))
+            {
+                await CheckPsnAuthAsync().ConfigureAwait(false);
+                _logger?.Info("Checked PSN auth for PSN tab.");
             }
             else if (string.Equals(name, "ThemeMigrationTab", StringComparison.OrdinalIgnoreCase))
             {

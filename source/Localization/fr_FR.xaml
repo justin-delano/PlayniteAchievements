@@ -35,6 +35,7 @@
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_PlayStation">PlayStation</sys:String>
 
     <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
@@ -195,6 +196,28 @@
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Connectez-vous à Epic dans votre navigateur par défaut\n2. Après la connexion, trouvez la valeur "authorizationCode" sur la page\n3. Copiez et collez cette valeur dans la boîte de dialogue suivante</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Collez la valeur authorizationCode ici :</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_Clear">Effacer</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnConnection">Connexion PlayStation</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_PsnAuth">Authentification PlayStation</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_NotChecked">PlayStation : Non vérifié</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_Checking">Vérification de l'authentification PlayStation...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_CheckingExistingSession">Vérification de la session PlayStation existante...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_OpeningWindow">Ouverture du flux de connexion PlayStation...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_WaitingForLogin">En attente de confirmation de connexion PlayStation...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_Completed">Flux d'authentification terminé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_Verified">Authentification PlayStation vérifiée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_NotAuthenticated">PlayStation n'est pas authentifié.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_TimedOut">Délai d'authentification PlayStation dépassé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_Failed">Échec de l'authentification PlayStation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_Cancelled">L'authentification PlayStation a été annulée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_CookiesCleared">Session PlayStation effacée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_AlreadyAuthenticated">PlayStation configuré avec succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_ProbeFailed">Impossible de vérifier l'état d'authentification PlayStation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_WindowNotOpened">Impossible d'ouvrir le flux de connexion PlayStation. Vérifiez l'installation de PSN Library puis réessayez.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_LibraryMissing">Plugin PSN Library introuvable. Installez-le et configurez-le d'abord.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">Cliquez sur Connexion pour ouvrir le flux d'authentification PSN Library. Après connexion, PlayniteAchievements détectera et utilisera votre session PlayStation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Login">Connexion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Check">Vérifier</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Clear">Effacer</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
 
     <!-- ================================================================= -->

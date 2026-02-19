@@ -15,6 +15,7 @@ using PlayniteAchievements.Providers.RetroAchievements;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.GOG;
 using PlayniteAchievements.Providers.Epic;
+using PlayniteAchievements.Providers.PSN;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -51,6 +52,7 @@ namespace PlayniteAchievements
         private readonly SteamSessionManager _steamSessionManager;
         private readonly GogSessionManager _gogSessionManager;
         private readonly EpicSessionManager _epicSessionManager;
+        private readonly PsnSessionManager _psnSessionManager;
         private readonly ProviderRegistry _providerRegistry;
 
         private readonly BackgroundUpdater _backgroundUpdates;
@@ -145,6 +147,7 @@ namespace PlayniteAchievements
             _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, settings);
             _gogSessionManager = new GogSessionManager(PlayniteApi, _logger, settings);
             _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
+            _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger);
 
             var providers = new List<IDataProvider>
             {
@@ -165,6 +168,9 @@ namespace PlayniteAchievements
                     settings,
                     PlayniteApi,
                     _epicSessionManager),
+                new PsnDataProvider(
+                    _logger,
+                    _psnSessionManager),
                 new RetroAchievementsDataProvider(
                     _logger,
                     settings,
@@ -265,7 +271,7 @@ namespace PlayniteAchievements
             try
             {
                 _logger.Info($"GetSettingsView called, firstRunView={firstRunView}");
-                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager, _gogSessionManager, _epicSessionManager);
+                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager, _gogSessionManager, _epicSessionManager, _psnSessionManager);
                 _logger.Info("GetSettingsView succeeded");
                 return control;
             }

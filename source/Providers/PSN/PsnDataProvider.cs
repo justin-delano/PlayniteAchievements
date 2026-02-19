@@ -1,0 +1,95 @@
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Providers;
+using Playnite.SDK;
+using Playnite.SDK.Models;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace PlayniteAchievements.Providers.PSN
+{
+    internal sealed class PsnDataProvider : IDataProvider
+    {
+        private readonly PsnSessionManager _sessionManager;
+        private readonly PsnScanner _scanner;
+
+        public PsnDataProvider(ILogger logger, PsnSessionManager sessionManager)
+        {
+            if (logger == null) throw new ArgumentNullException(nameof(logger));
+            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+
+            _scanner = new PsnScanner(logger, _sessionManager);
+            _ = _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);
+        }
+
+        public string ProviderName
+        {
+            get
+            {
+                var value = ResourceProvider.GetString("LOCPlayAch_Provider_PlayStation");
+                return string.IsNullOrWhiteSpace(value) ? "PlayStation" : value;
+            }
+        }
+
+        public string ProviderKey => "PSN";
+
+        // Reuse an existing icon key so older sidebar icon templates keep rendering without additional XAML edits.
+        public string ProviderIconKey => "ProviderIconPSN";
+
+        public string ProviderColorHex => "#003791";
+
+        public bool IsAuthenticated => _sessionManager.IsAuthenticated;
+
+        public bool IsCapable(Game game)
+        {
+            if (game == null)
+            {
+                return false;
+            }
+
+            var id = (game.GameId ?? string.Empty).Trim();
+            if (LooksLikePsnId(id))
+            {
+                return true;
+            }
+
+            var src = (game.Source?.Name ?? string.Empty).Trim();
+            if (src.IndexOf("PlayStation", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                src.Equals("PSN", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public Task<RebuildPayload> ScanAsync(
+            List<Game> gamesToScan,
+            Action<ProviderScanUpdate> progressCallback,
+            Func<GameAchievementData, Task> onGameScanned,
+            CancellationToken cancel)
+        {
+            return _scanner.ScanAsync(gamesToScan, progressCallback, onGameScanned, cancel);
+        }
+
+        private static bool LooksLikePsnId(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return false;
+            }
+
+            if (id.StartsWith("CUSA", StringComparison.OrdinalIgnoreCase) ||
+                id.StartsWith("PPSA", StringComparison.OrdinalIgnoreCase) ||
+                id.StartsWith("NPWR", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return id.IndexOf("#CUSA", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   id.IndexOf("#PPSA", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   id.IndexOf("#NPWR", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+    }
+}

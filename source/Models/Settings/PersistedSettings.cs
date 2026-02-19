@@ -27,6 +27,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _steamEnabled = true;
         private bool _epicEnabled = true;
         private bool _gogEnabled = true;
+        private bool _psnEnabled = true;
         private bool _retroAchievementsEnabled = true;
         private bool _enablePeriodicUpdates = true;
         private int _periodicUpdateHours = 6;
@@ -162,6 +163,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _gogEnabled;
             set => SetValue(ref _gogEnabled, value);
+        }
+
+        /// <summary>
+        /// Enable or disable PlayStation achievement scanning.
+        /// </summary>
+        public bool PsnEnabled
+        {
+            get => _psnEnabled;
+            set => SetValue(ref _psnEnabled, value);
         }
 
         /// <summary>
@@ -598,6 +608,7 @@ namespace PlayniteAchievements.Models.Settings
                 SteamEnabled = this.SteamEnabled,
                 EpicEnabled = this.EpicEnabled,
                 GogEnabled = this.GogEnabled,
+                PsnEnabled = this.PsnEnabled,
                 RetroAchievementsEnabled = this.RetroAchievementsEnabled,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
