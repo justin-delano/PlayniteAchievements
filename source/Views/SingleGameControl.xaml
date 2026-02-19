@@ -244,16 +244,16 @@
                     <TextBlock Text="{Binding ScanStatusMessage}" VerticalAlignment="Center" Margin="10,0,0,0" Visibility="{Binding IsStatusMessageVisible, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource TextBrush}"/>
                 </StackPanel>
 
-                <!-- Perfect Badge -->
+                <!-- Complete Badge -->
                 <StackPanel Grid.Column="2"
                             Orientation="Horizontal"
                             VerticalAlignment="Center"
                             Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}">
-                    <Image Source="{StaticResource BadgePerfectGame}"
+                    <Image Source="{StaticResource BadgeCompletedGame}"
                            Style="{StaticResource RarityIcon}"
                            Effect="{StaticResource BadgeShadow}"
                            Width="24" Height="24"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Perfect}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Completed}"
                                Style="{DynamicResource BaseTextBlockStyle}"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource TextBrush}"
