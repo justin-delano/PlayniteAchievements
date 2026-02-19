@@ -8,7 +8,7 @@
 
     <!-- Common Labels -->
     <sys:String x:Key="LOCPlayAch_Achievements">Succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Perfect">Parfait</sys:String>
+    <sys:String x:Key="LOCPlayAch_Completed">Terminé</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progression</sys:String>
 
     <!-- Label with Colon (for labels that need trailing punctuation) -->
