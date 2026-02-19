@@ -15,7 +15,7 @@
     <sys:String x:Key="LOCPlayAch_Label_Rarity">Rareté :</sys:String>
 
     <!-- Common Statuses -->
-    <sys:String x:Key="LOCPlayAch_Status_Scanning">Analyse...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_Refreshing">Actualisation...</sys:String>
 
     <!-- Common Compound Phrases -->
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Succès récents</sys:String>
@@ -25,7 +25,7 @@
     <!-- PLUGIN                                                             -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Title_PluginName">Playnite Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Title_Scan">Analyse Playnite Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_Refresh">Actualisation Playnite Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Paramètres Playnite Achievements</sys:String>
 
     <!-- ================================================================= -->
@@ -42,11 +42,11 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">Voir les succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Définir le succès couronnement</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scanner un jeu</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scanner la sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Actualiser un jeu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Actualiser la sélection</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">Effacer les données</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Effacer les données en cache pour "{0}" ?&#10;&#10;Cela supprime les succès et icônes en cache pour ce jeu. Relancez une analyse pour récupérer des données à jour.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Effacer les données en cache pour {0} jeu(x) sélectionné(s) ?&#10;&#10;Cela supprime les succès et icônes en cache pour ces jeux. Relancez une analyse pour récupérer des données à jour.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Effacer les données en cache pour "{0}" ?&#10;&#10;Cela supprime les succès et icônes en cache pour ce jeu. Relancez une actualisation pour récupérer des données à jour.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Effacer les données en cache pour {0} jeu(x) sélectionné(s) ?&#10;&#10;Cela supprime les succès et icônes en cache pour ces jeux. Relancez une actualisation pour récupérer des données à jour.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSingle">Données en cache effacées pour "{0}".</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSelected">Données en cache effacées pour {0} jeu(x).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_Failed">Échec de la suppression des données en cache : {0}</sys:String>
@@ -58,30 +58,30 @@
     <!-- BUTTONS                                                            -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Button_Clear">Effacer</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Scan">Analyser</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Scan">Actualiser</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Annuler</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_Clear">Effacer</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_OpenGameInLibrary">Ouvrir le jeu dans la bibliothèque</sys:String>
 
     <!-- Scan Modes -->
     <!-- Short versions for sidebar dropdown -->
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Quick">Rapide</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Full">Complet</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Installed">Installé</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Favorites">Favoris</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Single">Unique</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Selected">Sélection</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_LibrarySelected">Sélection</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Missing">Manquants</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Quick">Rapide</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Full">Complet</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Installed">Installé</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Favorites">Favoris</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Single">Unique</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Selected">Sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_LibrarySelected">Sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Missing">Manquants</sys:String>
     <!-- Long versions for menus -->
-    <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Analyse rapide</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Full">Analyse complète</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Analyser les jeux installés</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Analyser les favoris</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Single">Analyser un jeu</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Analyser la sélection</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_LibrarySelected">Analyser la sélection</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Missing">Analyser les jeux manquants</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Quick">Actualisation rapide</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Actualisation complète</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Installed">Actualiser les jeux installés</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Actualiser les favoris</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Single">Actualiser un jeu</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Selected">Actualiser la sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_LibrarySelected">Actualiser la sélection</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Missing">Actualiser les jeux manquants</sys:String>
 
     <!-- ================================================================= -->
     <!-- COLUMNS (using common strings)                                    -->
@@ -243,9 +243,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Décontracté (Softcore)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Combined">Global (Casual + Hardcore)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Contrôle la manière dont les pourcentages de rareté sont calculés. Modifier ce réglage nécessite un nouveau scan pour mettre à jour les valeurs en cache.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Analyse et hachage</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Activer l'analyse des archives (.zip/.7z/.rar/.cso/.ciso)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Contrôle la manière dont les pourcentages de rareté sont calculés. Modifier ce réglage nécessite une nouvelle actualisation pour mettre à jour les valeurs en cache.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Actualisation et hachage</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Activer l'actualisation des archives (.zip/.7z/.rar/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Activer le hachage des disques (pour les consoles à disque)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Âge maximal de l'index de hachage (jours)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Forcer la reconstruction de l'index de hachage</sys:String>
@@ -270,15 +270,15 @@
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupVerifyFailed">Impossible de vérifier la réinitialisation. Les paramètres n'ont peut-être pas été enregistrés correctement.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupFailed">Échec de la réinitialisation de la configuration initiale : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoCacheDir">Aucun dossier de cache RetroAchievements trouvé.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_DeletedCount">{0} fichier(s) de cache d'index de hachage supprimé(s).{1}{1}L'index de hachage sera reconstruit lors du prochain scan.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoFiles">Aucun fichier de cache d'index de hachage à supprimer.{0}{0}Le cache a peut-être déjà été vidé, ou aucun scan n'a encore été effectué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_DeletedCount">{0} fichier(s) de cache d'index de hachage supprimé(s).{1}{1}L'index de hachage sera reconstruit lors de la prochaine actualisation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoFiles">Aucun fichier de cache d'index de hachage à supprimer.{0}{0}Le cache a peut-être déjà été vidé, ou aucune actualisation n'a encore été effectuée.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_ClearFailed">Échec de la suppression du cache d'index de hachage : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Exporter les tables de la base de données en CSV pour le débogage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Exporter CSV</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseDone">Base de données exportée vers :{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseFailed">Échec de l'export de la base de données : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Mise à jour du cache...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">Aucun succès en cache. Cliquez sur « Analyser tout » pour analyser vos jeux.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">Aucun succès en cache. Cliquez sur « Actualiser tout » pour actualiser vos jeux.</sys:String>
 
     <!-- ================================================================= -->
     <!-- BACKGROUND UPDATES                                                 -->
@@ -287,7 +287,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Intervalle entre les mises à jour (heures) :</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableNotifications">Activer les notifications du plugin</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotifyPeriodicUpdates">Afficher une notification pour les mises à jour automatiques</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_NotifyOnRebuild">Afficher une notification à la fin ou en cas d'échec d'une analyse</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NotifyOnRebuild">Afficher une notification à la fin ou en cas d'échec d'une actualisation</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_InitialCheckFailed">Échec de la vérification initiale des mises à jour automatiques.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Échec de la mise à jour automatique.</sys:String>
 
@@ -295,8 +295,8 @@
     <!-- QUICK REFRESH                                                      -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Title">Actualisation rapide</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Description">Analyser uniquement vos jeux récemment joués avec des succès.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_RecentGames">Jeux récents à analyser</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Description">Actualiser uniquement vos jeux récemment joués avec des succès.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_RecentGames">Jeux récents à actualiser</sys:String>
 
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
@@ -307,7 +307,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenTitle">Révéler le titre caché</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Révéler la description cachée</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Inclure les jeux non joués</sys:String>
-    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">Si décoché, les jeux avec 0 temps de jeu seront ignorés lors des analyses.</sys:String>
+    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">Si décoché, les jeux avec 0 temps de jeu seront ignorés lors des actualisations.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Utiliser les images de couverture au lieu des icônes dans la liste des jeux</sys:String>
 
     <!-- ================================================================= -->
@@ -342,63 +342,63 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Status_Starting">Démarrage...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingAchievements">Chargement des succès...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_Canceled">Analyse annulée.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_ScanCompleteWithModeAndCount">Analyse {0} terminée : {1} jeux analysés</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_ScanComplete">Analyse terminée !</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_Canceled">Actualisation annulée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteWithModeAndCount">Actualisation {0} terminée : {1} jeux actualisés</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">Actualisation terminée !</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">{0} sur {1} ({2} débloqués) de {3} jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} succès ({1} débloqués) de {2} jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Actualisation des succès pour {0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingSelfAchievements">Actualisation des succès pour {0}...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_LoadingOwnedGames">Chargement des jeux possédés...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_LoadingExistingCache">Chargement depuis le cache...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rebuild_Completed">Analyse terminée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rebuild_Completed">Actualisation terminée</sys:String>
     <sys:String x:Key="LOCPlayAch_Rebuild_YourCacheUpToDate">Votre cache de succès est à jour.</sys:String>
 
     <!-- ================================================================= -->
     <!-- ERRORS                                                             -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Échec de l'analyse</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Échec de l'actualisation</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_SteamNotConfigured">La clé Steam Web API ou l'authentification web n'est pas configurée</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_MissingSteamUserId">SteamID64 est requis.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_FileOperationFailed">Échec d'une opération de fichier.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_ScanFailed">Échec de l'analyse : {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Authentification Steam requise. Analyse annulée.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">Aucun fournisseur n'est authentifié. Veuillez configurer au moins un fournisseur dans les paramètres avant d'analyser.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">Échec de l'actualisation : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Authentification Steam requise. Actualisation annulée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">Aucun fournisseur n'est authentifié. Veuillez configurer au moins un fournisseur dans les paramètres avant d'actualiser.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_NotifySubscribers">Échec de notification des abonnés.</sys:String>
 
     <!-- ================================================================= -->
     <!-- LOG MESSAGES                                                       -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Log_ScanAttemptedNoProviders">Analyse tentée mais aucun fournisseur n'est authentifié.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanAlreadyInProgress">Une analyse est déjà en cours.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanStarting">Démarrage d'une nouvelle analyse.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanEndRun">Analyse terminée.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanRequestedNoProviders">Analyse demandée mais aucun fournisseur n'est authentifié.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanCanceled">L'analyse des succès a été annulée par l'utilisateur.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanProviderCapabilityCheckFailed">La vérification de compatibilité du fournisseur a échoué pour le jeu '{0}'.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoAuthenticatedProviders">Aucun fournisseur authentifié disponible pour l'analyse.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanSummary">Jeux à analyser : {0}, Fournisseurs : {1}, Fournisseurs groupés : {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoMatchingProviders">Aucun fournisseur correspondant disponible pour les options d'analyse.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanResolveIconPathFailed">Échec de résolution du chemin d'icône de succès pour {0}.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanMissingNoAuthenticatedProviders">Aucun fournisseur authentifié disponible pour l'analyse des jeux manquants.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanMissingNoGames">Aucun jeu avec des données de succès manquantes trouvé.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanMissingFoundGames">Trouvé {0} jeux avec des données de succès manquantes.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanFullFailed">L'analyse complète des succès a échoué.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanSingleFailed">L'analyse du jeu unique a échoué.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanQuickFailed">L'analyse d'actualisation rapide a échoué.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanInstalledFailed">L'analyse des jeux installés a échoué.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoInstalledGames">Aucun jeu installé trouvé pour l'analyse.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanFavoritesFailed">L'analyse des favoris a échoué.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoFavoriteGames">Aucun jeu favori trouvé pour l'analyse.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanSingleNoGameId">Le mode d'analyse unique a été demandé sans ID de jeu.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanSelectedFailed">L'analyse des jeux sélectionnés dans la bibliothèque a échoué.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoSelectedGames">Aucun jeu sélectionné dans la bibliothèque Playnite pour l'analyse.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanMissingFailed">L'analyse des jeux manquants a échoué.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanUnknownModeKey">Clé de mode d'analyse inconnue : {0}. Retour au mode Rapide.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanUnknownModeEnum">Mode d'analyse inconnu : {0}. Retour au mode Rapide.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanCancelRequested">Annulation de l'analyse demandée.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanGetGameDataFailed">Échec de récupération des données de succès pour gameId={0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanGetAllGameDataFailed">Échec de récupération de toutes les données de succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshAttemptedNoProviders">Actualisation tentée mais aucun fournisseur n'est authentifié.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshAlreadyInProgress">Une actualisation est déjà en cours.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshStarting">Démarrage d'une nouvelle actualisation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshEndRun">Actualisation terminée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshRequestedNoProviders">Actualisation demandée mais aucun fournisseur n'est authentifié.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshCanceled">L'actualisation des succès a été annulée par l'utilisateur.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshProviderCapabilityCheckFailed">La vérification de compatibilité du fournisseur a échoué pour le jeu '{0}'.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoAuthenticatedProviders">Aucun fournisseur authentifié disponible pour l'actualisation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshSummary">Jeux à actualiser : {0}, Fournisseurs : {1}, Fournisseurs groupés : {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoMatchingProviders">Aucun fournisseur correspondant disponible pour les options d'actualisation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshResolveIconPathFailed">Échec de résolution du chemin d'icône de succès pour {0}.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingNoAuthenticatedProviders">Aucun fournisseur authentifié disponible pour l'actualisation des jeux manquants.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingNoGames">Aucun jeu avec des données de succès manquantes trouvé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingFoundGames">Trouvé {0} jeux avec des données de succès manquantes.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshFullFailed">L'actualisation complète des succès a échoué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshSingleFailed">L'actualisation du jeu unique a échoué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshQuickFailed">L'actualisation rapide a échoué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshInstalledFailed">L'actualisation des jeux installés a échoué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoInstalledGames">Aucun jeu installé trouvé pour l'actualisation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshFavoritesFailed">L'actualisation des favoris a échoué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoFavoriteGames">Aucun jeu favori trouvé pour l'actualisation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshSingleNoGameId">Le mode d'actualisation unique a été demandé sans ID de jeu.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshSelectedFailed">L'actualisation des jeux sélectionnés dans la bibliothèque a échoué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoSelectedGames">Aucun jeu sélectionné dans la bibliothèque Playnite pour l'actualisation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingFailed">L'actualisation des jeux manquants a échoué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeKey">Clé de mode d'actualisation inconnue : {0}. Retour au mode Rapide.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeEnum">Mode d'actualisation inconnu : {0}. Retour au mode Rapide.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshCancelRequested">Annulation de l'actualisation demandée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshGetGameDataFailed">Échec de récupération des données de succès pour gameId={0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshGetAllGameDataFailed">Échec de récupération de toutes les données de succès</sys:String>
 
     <!-- ================================================================= -->
     <!-- TIME RANGE                                                         -->
@@ -488,9 +488,9 @@
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configurez vos comptes</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">Pour suivre vos succès, connectez-vous à l'un de vos fournisseurs.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Ouvrir les paramètres du plugin</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NeedsScanTitle">Prêt à analyser</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NeedsScanMessage">Vos identifiants sont configurés. Commencez votre première analyse pour suivre les succès de votre bibliothèque.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_BeginScan">Commencer l'analyse</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshTitle">Prêt à actualiser</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Vos identifiants sont configurés. Commencez votre première actualisation pour suivre les succès de votre bibliothèque.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_BeginScan">Commencer l'actualisation</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">Bon retour</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">Nous avons trouvé vos données de succès existantes. Continuez vers la vue des succès pour commencer le suivi.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataFound">Vos données de succès existantes ont été trouvées</sys:String>
@@ -498,7 +498,7 @@
 
     <!-- Provider Status Cards -->
     <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">STATUT DU FOURNISSEUR</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToScan">Prêt à analyser</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToRefresh">Prêt à actualiser</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configurer dans les paramètres</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeReady">PRÊT</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">CONFIGURATION</sys:String>
@@ -507,9 +507,9 @@
     <sys:String x:Key="LOCPlayAch_Landing_EnableProvider">Activer</sys:String>
 
     <!-- ================================================================= -->
-    <!-- SCAN PROGRESS WINDOW                                               -->
+    <!-- REFRESH PROGRESS WINDOW                                               -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Progress_ScanRunningNote">Vous pouvez toujours consulter la progression dans la barre latérale.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">Vous pouvez toujours consulter la progression dans la barre latérale.</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonHide">Masquer</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonContinue">Continuer</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonOpenGame">Ouvrir le jeu</sys:String>
@@ -537,7 +537,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Section_Stats">Statistiques des succès</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">Aucun succès trouvé</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">Ce jeu n'a pas encore de succès suivis. Cliquez sur le bouton Scanner pour vérifier les données de succès.</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">Ce jeu n'a pas encore de succès suivis. Cliquez sur le bouton Actualiser pour vérifier les données de succès.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">Ce jeu ne prend peut-être pas en charge les succès, ou ils ne sont pas disponibles pour cette plateforme.</sys:String>
 
     <!-- ================================================================= -->
@@ -554,7 +554,7 @@
     <sys:String x:Key="LOCPlayAch_Capstone_ButtonClear">Effacer le couronnement</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_ButtonDone">Terminé</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_SearchPlaceholder">Rechercher des succès...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_NoCachedData">Aucun succès en cache n'est disponible pour "{0}". Analysez d'abord ce jeu.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_NoCachedData">Aucun succès en cache n'est disponible pour "{0}". Actualisez d'abord ce jeu.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Error_InvalidGame">Sélection de jeu invalide.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Error_NotCached">Aucune donnée de succès en cache n'est disponible pour ce jeu.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Error_MarkerNotFound">Le succès sélectionné n'est plus disponible dans les données en cache.</sys:String>
