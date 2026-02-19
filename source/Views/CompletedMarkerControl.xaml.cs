@@ -41,24 +41,44 @@ namespace PlayniteAchievements.Views
             RequestClose?.Invoke(this, EventArgs.Empty);
         }
 
+        private void MarkerCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.DataContext is CompletedMarkerOptionItem item)
+            {
+                if (item.IsCurrentMarker)
+                {
+                    _viewModel?.ClearMarker();
+                }
+                else
+                {
+                    _viewModel?.SetMarker(item);
+                }
+            }
+        }
+
+        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel?.ClearMarker();
+        }
+
         private void DataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (!(sender is DataGrid grid))
+            var source = e.OriginalSource as DependencyObject;
+
+            if (source is CheckBox || FindVisualParent<CheckBox>(source) != null)
             {
                 return;
             }
 
-            var source = e.OriginalSource as DependencyObject;
             var row = FindVisualParent<DataGridRow>(source);
             if (row == null)
             {
                 return;
             }
 
-            if (row.DataContext is CompletedMarkerOptionItem item && item.Hidden && !item.Unlocked)
+            if (row.DataContext is CompletedMarkerOptionItem item)
             {
-                _viewModel?.ToggleRevealCommand?.Execute(item);
-                e.Handled = true;
+                _viewModel?.ToggleReveal(item);
             }
         }
 

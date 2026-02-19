@@ -15,13 +15,11 @@ namespace PlayniteAchievements.ViewModels
     public sealed class CompletedMarkerViewModel : ObservableObject
     {
         private const string HiddenIconPath = "pack://application:,,,/PlayniteAchievements;component/Resources/HiddenAchIcon.png";
-        private const string HiddenDescription = "???";
 
         private readonly Guid _gameId;
         private readonly AchievementManager _achievementManager;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
-        private readonly HashSet<string> _revealedApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public event EventHandler RequestClose;
 
@@ -36,34 +34,13 @@ namespace PlayniteAchievements.ViewModels
             _playniteApi = playniteApi;
             _logger = logger;
 
-            SetMarkerCommand = new RelayCommand(
-                _ => SetCompletedMarker(),
-                _ => SelectedOption != null);
-
-            ClearMarkerCommand = new RelayCommand(_ => ClearCompletedMarker());
-
             DoneCommand = new RelayCommand(_ => RequestClose?.Invoke(this, EventArgs.Empty));
-
-            ToggleRevealCommand = new RelayCommand(ToggleReveal);
 
             LoadData();
         }
 
         public ObservableCollection<CompletedMarkerOptionItem> AchievementOptions { get; } =
             new ObservableCollection<CompletedMarkerOptionItem>();
-
-        private CompletedMarkerOptionItem _selectedOption;
-        public CompletedMarkerOptionItem SelectedOption
-        {
-            get => _selectedOption;
-            set
-            {
-                if (SetValueAndReturn(ref _selectedOption, value))
-                {
-                    (SetMarkerCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                }
-            }
-        }
 
         private string _gameName;
         public string GameName
@@ -99,10 +76,54 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public ICommand SetMarkerCommand { get; }
-        public ICommand ClearMarkerCommand { get; }
         public ICommand DoneCommand { get; }
-        public ICommand ToggleRevealCommand { get; }
+
+        public void SetMarker(CompletedMarkerOptionItem item)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(item.ApiName))
+            {
+                return;
+            }
+
+            var result = _achievementManager.SetCompletedMarker(_gameId, item.ApiName);
+            if (!result.Success)
+            {
+                ShowError(ResolveErrorMessage(result));
+                return;
+            }
+
+            UpdateMarkerSelection(item);
+        }
+
+        public void ClearMarker()
+        {
+            var result = _achievementManager.SetCompletedMarker(_gameId, null);
+            if (!result.Success)
+            {
+                ShowError(ResolveErrorMessage(result));
+                return;
+            }
+
+            UpdateMarkerSelection(null);
+        }
+
+        public void ToggleReveal(CompletedMarkerOptionItem item)
+        {
+            if (item != null && item.CanReveal)
+            {
+                item.ToggleReveal();
+            }
+        }
+
+        private void UpdateMarkerSelection(CompletedMarkerOptionItem newMarker)
+        {
+            foreach (var option in AchievementOptions)
+            {
+                option.IsCurrentMarker = option == newMarker;
+            }
+
+            SetCurrentMarkerText(newMarker?.DisplayName);
+        }
 
         private void LoadData()
         {
@@ -126,21 +147,7 @@ namespace PlayniteAchievements.ViewModels
                 for (int i = 0; i < sortedAchievements.Count; i++)
                 {
                     var achievement = sortedAchievements[i];
-                    var isRevealed = _revealedApiNames.Contains(achievement.ApiName);
-                    var option = new CompletedMarkerOptionItem
-                    {
-                        ApiName = achievement.ApiName.Trim(),
-                        DisplayName = ResolveDisplayName(achievement, isRevealed),
-                        Description = ResolveDescription(achievement, isRevealed),
-                        IconPath = ResolveIconPath(achievement, isRevealed),
-                        Unlocked = achievement.Unlocked,
-                        Hidden = achievement.Hidden,
-                        IsRevealed = isRevealed,
-                        IsCurrentMarker = string.Equals(
-                            achievement.ApiName.Trim(),
-                            currentMarkerApiName,
-                            StringComparison.OrdinalIgnoreCase)
-                    };
+                    var option = CreateOptionItem(achievement, currentMarkerApiName);
 
                     if (option.IsCurrentMarker)
                     {
@@ -150,7 +157,6 @@ namespace PlayniteAchievements.ViewModels
                     AchievementOptions.Add(option);
                 }
 
-                SelectedOption = currentMarkerOption;
                 SetCurrentMarkerText(currentMarkerOption?.DisplayName);
             }
             catch (Exception ex)
@@ -160,72 +166,53 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void ToggleReveal(object parameter)
+        private CompletedMarkerOptionItem CreateOptionItem(AchievementDetail achievement, string currentMarkerApiName)
         {
-            if (parameter is CompletedMarkerOptionItem item && item.Hidden)
-            {
-                if (_revealedApiNames.Contains(item.ApiName))
-                {
-                    _revealedApiNames.Remove(item.ApiName);
-                }
-                else
-                {
-                    _revealedApiNames.Add(item.ApiName);
-                }
+            var actualIcon = ResolveActualIconPath(achievement);
+            var hidden = achievement.Hidden && !achievement.Unlocked;
 
-                ReloadSingleItem(item);
-            }
+            return new CompletedMarkerOptionItem
+            {
+                ApiName = achievement.ApiName.Trim(),
+                DisplayName = string.IsNullOrWhiteSpace(achievement.DisplayName)
+                    ? achievement.ApiName
+                    : achievement.DisplayName.Trim(),
+                Description = string.IsNullOrWhiteSpace(achievement.Description)
+                    ? string.Empty
+                    : achievement.Description.Trim(),
+                ActualIconPath = actualIcon,
+                HiddenIconPath = HiddenIconPath,
+                Unlocked = achievement.Unlocked,
+                Hidden = hidden,
+                IsCurrentMarker = string.Equals(
+                    achievement.ApiName.Trim(),
+                    currentMarkerApiName,
+                    StringComparison.OrdinalIgnoreCase)
+            };
         }
 
-        private void ReloadSingleItem(CompletedMarkerOptionItem item)
+        private static string ResolveActualIconPath(AchievementDetail achievement)
         {
-            var gameData = _achievementManager.GetGameAchievementData(_gameId);
-            var achievements = gameData?.Achievements ?? new List<AchievementDetail>();
-            var achievement = achievements.FirstOrDefault(a =>
-                string.Equals(a?.ApiName?.Trim(), item.ApiName, StringComparison.OrdinalIgnoreCase));
-
             if (achievement == null)
             {
-                return;
+                return HiddenIconPath;
             }
 
-            var isRevealed = _revealedApiNames.Contains(item.ApiName);
-            item.DisplayName = ResolveDisplayName(achievement, isRevealed);
-            item.Description = ResolveDescription(achievement, isRevealed);
-            item.IconPath = ResolveIconPath(achievement, isRevealed);
-            item.IsRevealed = isRevealed;
+            var icon = achievement.Unlocked
+                ? FirstNonEmpty(achievement.UnlockedIconPath, achievement.LockedIconPath)
+                : FirstNonEmpty(achievement.LockedIconPath, achievement.UnlockedIconPath);
 
-            OnPropertyChanged(nameof(AchievementOptions));
-        }
-
-        private void SetCompletedMarker()
-        {
-            if (SelectedOption == null || string.IsNullOrWhiteSpace(SelectedOption.ApiName))
+            if (string.IsNullOrWhiteSpace(icon))
             {
-                ShowError(ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_SelectRequired"));
-                return;
+                return HiddenIconPath;
             }
 
-            var result = _achievementManager.SetCompletedMarker(_gameId, SelectedOption.ApiName);
-            if (!result.Success)
+            if (!achievement.Unlocked)
             {
-                ShowError(ResolveErrorMessage(result));
-                return;
+                return AchievementIconResolver.ApplyGrayPrefix(icon);
             }
 
-            LoadData();
-        }
-
-        private void ClearCompletedMarker()
-        {
-            var result = _achievementManager.SetCompletedMarker(_gameId, null);
-            if (!result.Success)
-            {
-                ShowError(ResolveErrorMessage(result));
-                return;
-            }
-
-            LoadData();
+            return icon;
         }
 
         private string ResolveErrorMessage(CacheWriteResult result)
@@ -261,59 +248,6 @@ namespace PlayniteAchievements.ViewModels
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Error);
-        }
-
-        private static string ResolveDisplayName(AchievementDetail achievement, bool isRevealed)
-        {
-            if (achievement.Hidden && !achievement.Unlocked && !isRevealed)
-            {
-                return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle") ?? "Hidden Achievement";
-            }
-
-            return string.IsNullOrWhiteSpace(achievement.DisplayName)
-                ? achievement.ApiName
-                : achievement.DisplayName.Trim();
-        }
-
-        private static string ResolveDescription(AchievementDetail achievement, bool isRevealed)
-        {
-            if (achievement.Hidden && !achievement.Unlocked && !isRevealed)
-            {
-                return HiddenDescription;
-            }
-
-            return string.IsNullOrWhiteSpace(achievement.Description)
-                ? string.Empty
-                : achievement.Description.Trim();
-        }
-
-        private static string ResolveIconPath(AchievementDetail achievement, bool isRevealed)
-        {
-            if (achievement == null)
-            {
-                return HiddenIconPath;
-            }
-
-            if (achievement.Hidden && !achievement.Unlocked && !isRevealed)
-            {
-                return HiddenIconPath;
-            }
-
-            var icon = achievement.Unlocked
-                ? FirstNonEmpty(achievement.UnlockedIconPath, achievement.LockedIconPath)
-                : FirstNonEmpty(achievement.LockedIconPath, achievement.UnlockedIconPath);
-
-            if (string.IsNullOrWhiteSpace(icon))
-            {
-                return HiddenIconPath;
-            }
-
-            if (!achievement.Unlocked)
-            {
-                return AchievementIconResolver.ApplyGrayPrefix(icon);
-            }
-
-            return icon;
         }
 
         private static string NormalizeText(string value)
@@ -359,33 +293,133 @@ namespace PlayniteAchievements.ViewModels
         public string DisplayName
         {
             get => _displayName;
-            set => SetValue(ref _displayName, value);
+            set
+            {
+                if (SetValueAndReturn(ref _displayName, value))
+                {
+                    OnPropertyChanged(nameof(DisplayNameResolved));
+                }
+            }
         }
 
         private string _description;
         public string Description
         {
             get => _description;
-            set => SetValue(ref _description, value);
+            set
+            {
+                if (SetValueAndReturn(ref _description, value))
+                {
+                    OnPropertyChanged(nameof(DescriptionResolved));
+                }
+            }
         }
 
-        private string _iconPath;
-        public string IconPath
+        private string _actualIconPath;
+        public string ActualIconPath
         {
-            get => _iconPath;
-            set => SetValue(ref _iconPath, value);
+            get => _actualIconPath;
+            set
+            {
+                if (SetValueAndReturn(ref _actualIconPath, value))
+                {
+                    OnPropertyChanged(nameof(DisplayIcon));
+                }
+            }
+        }
+
+        private string _hiddenIconPath;
+        public string HiddenIconPath
+        {
+            get => _hiddenIconPath;
+            set
+            {
+                if (SetValueAndReturn(ref _hiddenIconPath, value))
+                {
+                    OnPropertyChanged(nameof(DisplayIcon));
+                }
+            }
         }
 
         private bool _isRevealed;
         public bool IsRevealed
         {
             get => _isRevealed;
-            set => SetValue(ref _isRevealed, value);
+            set
+            {
+                if (SetValueAndReturn(ref _isRevealed, value))
+                {
+                    OnPropertyChanged(nameof(CanReveal));
+                    OnPropertyChanged(nameof(IsEffectivelyHidden));
+                    OnPropertyChanged(nameof(DisplayIcon));
+                    OnPropertyChanged(nameof(DisplayNameResolved));
+                    OnPropertyChanged(nameof(DescriptionResolved));
+                }
+            }
+        }
+
+        private bool _isCurrentMarker;
+        public bool IsCurrentMarker
+        {
+            get => _isCurrentMarker;
+            set => SetValue(ref _isCurrentMarker, value);
         }
 
         public string ApiName { get; set; }
         public bool Unlocked { get; set; }
         public bool Hidden { get; set; }
-        public bool IsCurrentMarker { get; set; }
+
+        /// <summary>
+        /// True if the achievement can be revealed (hidden and not unlocked).
+        /// </summary>
+        public bool CanReveal => Hidden && !Unlocked;
+
+        /// <summary>
+        /// True if the achievement is hidden and not yet revealed.
+        /// </summary>
+        public bool IsEffectivelyHidden => CanReveal && !IsRevealed;
+
+        /// <summary>
+        /// The icon to display - shows hidden icon if effectively hidden, otherwise actual icon.
+        /// </summary>
+        public string DisplayIcon => IsEffectivelyHidden ? HiddenIconPath : ActualIconPath;
+
+        /// <summary>
+        /// Display name - shows "Hidden Achievement" if effectively hidden.
+        /// </summary>
+        public string DisplayNameResolved
+        {
+            get
+            {
+                if (IsEffectivelyHidden)
+                {
+                    return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle") ?? "Hidden Achievement";
+                }
+                return DisplayName;
+            }
+        }
+
+        /// <summary>
+        /// Description - shows "???" if effectively hidden.
+        /// </summary>
+        public string DescriptionResolved
+        {
+            get
+            {
+                if (IsEffectivelyHidden)
+                {
+                    return "???";
+                }
+                return Description;
+            }
+        }
+
+        public void ToggleReveal()
+        {
+            if (CanReveal)
+            {
+                IsRevealed = !IsRevealed;
+            }
+        }
     }
 }

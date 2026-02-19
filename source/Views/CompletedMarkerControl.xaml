@@ -18,6 +18,39 @@
                 <Setter Property="Padding" Value="10,6"/>
                 <Setter Property="HorizontalContentAlignment" Value="Left"/>
             </Style>
+
+            <!-- Checkbox style for marker selection -->
+            <Style x:Key="MarkerCheckBoxStyle" TargetType="CheckBox">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Grid Background="Transparent">
+                                <Ellipse x:Name="OuterEllipse"
+                                         Width="20" Height="20"
+                                         Stroke="{DynamicResource TextBrush}"
+                                         StrokeThickness="2"
+                                         Fill="Transparent"/>
+                                <Ellipse x:Name="InnerCheck"
+                                         Width="12" Height="12"
+                                         Fill="{DynamicResource GlyphBrush}"
+                                         Visibility="Collapsed"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="InnerCheck" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="OuterEllipse" Property="Stroke" Value="{DynamicResource GlyphBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="OuterEllipse" Property="StrokeThickness" Value="3"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -63,7 +96,6 @@
                   Grid.Row="1"
                   Margin="0,10,0,10"
                   ItemsSource="{Binding AchievementOptions}"
-                  SelectedItem="{Binding SelectedOption, Mode=TwoWay}"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   SelectionMode="Single"
@@ -126,6 +158,17 @@
             </DataGrid.RowStyle>
 
             <DataGrid.Columns>
+                <!-- Marker Selection Checkbox -->
+                <DataGridTemplateColumn Width="44" MinWidth="44" MaxWidth="44" CanUserSort="False" CanUserResize="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox Style="{StaticResource MarkerCheckBoxStyle}"
+                                      IsChecked="{Binding IsCurrentMarker, Mode=OneWay}"
+                                      Click="MarkerCheckBox_Click"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
                 <DataGridTemplateColumn Width="36" MinWidth="36" MaxWidth="36" CanUserSort="False" CanUserResize="False">
                     <DataGridTemplateColumn.CellTemplate>
@@ -178,7 +221,7 @@
                             <Grid Width="52" Height="52" VerticalAlignment="Center" Margin="4,7,0,7">
                                 <Border CornerRadius="6" ClipToBounds="True" Opacity="0.95">
                                     <Image Stretch="UniformToFill"
-                                           helpers:AsyncImage.Uri="{Binding IconPath}"
+                                           helpers:AsyncImage.Uri="{Binding DisplayIcon}"
                                            helpers:AsyncImage.DecodePixel="64"/>
                                 </Border>
                             </Grid>
@@ -186,51 +229,44 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <!-- Achievement Name with Current Marker Icon -->
+                <!-- Achievement Name with Badge -->
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_CompletedMarker_Column_Achievement}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel VerticalAlignment="Center" Margin="10,6">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding DisplayName}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               TextWrapping="Wrap"
-                                               VerticalAlignment="Center">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-                                                <Style.Triggers>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding Hidden}" Value="True"/>
-                                                            <Condition Binding="{Binding Unlocked}" Value="False"/>
-                                                            <Condition Binding="{Binding IsRevealed}" Value="False"/>
-                                                        </MultiDataTrigger.Conditions>
-                                                        <Setter Property="FontStyle" Value="Italic"/>
-                                                    </MultiDataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,6">
+                                <!-- Perfect game badge for current marker -->
+                                <Image Source="{StaticResource BadgePerfectGame}"
+                                       Width="18"
+                                       Height="18"
+                                       Margin="0,0,8,0"
+                                       VerticalAlignment="Center"
+                                       Effect="{StaticResource BadgeShadow}">
+                                    <Image.Style>
+                                        <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCurrentMarker}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
 
-                                    <!-- Perfect game icon for current marker -->
-                                    <Image Source="{StaticResource BadgePerfectGame}"
-                                           Width="18"
-                                           Height="18"
-                                           Margin="8,0,0,0"
-                                           VerticalAlignment="Center"
-                                           Effect="{StaticResource BadgeShadow}">
-                                        <Image.Style>
-                                            <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsCurrentMarker}" Value="True">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Image.Style>
-                                    </Image>
-                                </StackPanel>
+                                <TextBlock Text="{Binding DisplayNameResolved}"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           TextWrapping="Wrap"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEffectivelyHidden}" Value="True">
+                                                    <Setter Property="FontStyle" Value="Italic"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
@@ -240,7 +276,7 @@
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_CompletedMarker_Column_Description}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Description}"
+                            <TextBlock Text="{Binding DescriptionResolved}"
                                        Foreground="{DynamicResource TextBrush}"
                                        Opacity="0.7"
                                        TextWrapping="Wrap"
@@ -249,14 +285,9 @@
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
                                         <Style.Triggers>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding Hidden}" Value="True"/>
-                                                    <Condition Binding="{Binding Unlocked}" Value="False"/>
-                                                    <Condition Binding="{Binding IsRevealed}" Value="False"/>
-                                                </MultiDataTrigger.Conditions>
+                                            <DataTrigger Binding="{Binding IsEffectivelyHidden}" Value="True">
                                                 <Setter Property="FontStyle" Value="Italic"/>
-                                            </MultiDataTrigger>
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </TextBlock.Style>
@@ -273,13 +304,8 @@
                 BorderThickness="0,1,0,0"
                 Padding="12,10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="{DynamicResource LOCPlayAch_CompletedMarker_ButtonSet}"
-                        Command="{Binding SetMarkerCommand}"
-                        Margin="0,0,8,0"
-                        Padding="12,6"
-                        MinWidth="95"/>
                 <Button Content="{DynamicResource LOCPlayAch_CompletedMarker_ButtonClear}"
-                        Command="{Binding ClearMarkerCommand}"
+                        Click="ClearButton_Click"
                         Margin="0,0,8,0"
                         Padding="12,6"
                         MinWidth="95"/>
