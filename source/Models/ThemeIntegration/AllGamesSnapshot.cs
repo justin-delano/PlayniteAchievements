@@ -31,13 +31,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
 
         /// <summary>
         /// Completed games sorted by last unlock date (newest first).
-        /// Completion is provider-aware or 100% unlocked.
+        /// Completion is provider-aware or all achievements unlocked.
         /// </summary>
         public List<GameAchievementSummary> CompletedGamesDesc { get; set; } = new List<GameAchievementSummary>();
 
         /// <summary>
         /// Completed games sorted by last unlock date (oldest first).
-        /// Completion is provider-aware or 100% unlocked.
+        /// Completion is provider-aware or all achievements unlocked.
         /// </summary>
         public List<GameAchievementSummary> CompletedGamesAsc { get; set; } = new List<GameAchievementSummary>();
 
