@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public List<GameAchievementSummary> All { get; set; } = new List<GameAchievementSummary>();
 
         /// <summary>
-        /// Games with 100% achievement completion, sorted by last unlock date (newest first).
+        /// Provider-completed games (for example, PSN platinum earned) sorted by last unlock date (newest first).
         /// </summary>
         public List<GameAchievementSummary> Platinum { get; set; } = new List<GameAchievementSummary>();
 
@@ -29,12 +29,34 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         /// </summary>
         public List<GameAchievementSummary> PlatinumAscending { get; set; } = new List<GameAchievementSummary>();
 
+        /// <summary>
+        /// Completed games sorted by last unlock date (newest first).
+        /// Completion is provider-aware or 100% unlocked.
+        /// </summary>
+        public List<GameAchievementSummary> CompletedGamesDesc { get; set; } = new List<GameAchievementSummary>();
+
+        /// <summary>
+        /// Completed games sorted by last unlock date (oldest first).
+        /// Completion is provider-aware or 100% unlocked.
+        /// </summary>
+        public List<GameAchievementSummary> CompletedGamesAsc { get; set; } = new List<GameAchievementSummary>();
+
+        /// <summary>
+        /// All game summaries sorted by last unlock date (newest first).
+        /// </summary>
+        public List<GameAchievementSummary> GameSummariesDesc { get; set; } = new List<GameAchievementSummary>();
+
+        /// <summary>
+        /// All game summaries sorted by last unlock date (oldest first).
+        /// </summary>
+        public List<GameAchievementSummary> GameSummariesAsc { get; set; } = new List<GameAchievementSummary>();
+
         #endregion
 
         #region Trophy Counts
 
         /// <summary>
-        /// Number of 100% completed games (platinum trophies).
+        /// Number of provider-completed games in the platinum list.
         /// </summary>
         public int PlatCount { get; set; }
 
@@ -178,6 +200,38 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public ObservableCollection<GameAchievementSummary> CreatePlatinumAscendingObservable()
         {
             return new ObservableCollection<GameAchievementSummary>(PlatinumAscending ?? new List<GameAchievementSummary>());
+        }
+
+        /// <summary>
+        /// Creates an observable collection of completed games in descending order for theme binding.
+        /// </summary>
+        public ObservableCollection<GameAchievementSummary> CreateCompletedGamesDescObservable()
+        {
+            return new ObservableCollection<GameAchievementSummary>(CompletedGamesDesc ?? new List<GameAchievementSummary>());
+        }
+
+        /// <summary>
+        /// Creates an observable collection of completed games in ascending order for theme binding.
+        /// </summary>
+        public ObservableCollection<GameAchievementSummary> CreateCompletedGamesAscObservable()
+        {
+            return new ObservableCollection<GameAchievementSummary>(CompletedGamesAsc ?? new List<GameAchievementSummary>());
+        }
+
+        /// <summary>
+        /// Creates an observable collection of all game summaries in descending order for theme binding.
+        /// </summary>
+        public ObservableCollection<GameAchievementSummary> CreateGameSummariesDescObservable()
+        {
+            return new ObservableCollection<GameAchievementSummary>(GameSummariesDesc ?? new List<GameAchievementSummary>());
+        }
+
+        /// <summary>
+        /// Creates an observable collection of all game summaries in ascending order for theme binding.
+        /// </summary>
+        public ObservableCollection<GameAchievementSummary> CreateGameSummariesAscObservable()
+        {
+            return new ObservableCollection<GameAchievementSummary>(GameSummariesAsc ?? new List<GameAchievementSummary>());
         }
 
         #endregion

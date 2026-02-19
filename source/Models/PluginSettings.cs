@@ -199,82 +199,32 @@ namespace PlayniteAchievements.Models
         public AchievementRarityStats UltraRareStats => Theme.UltraRareStats ?? EmptyRarityStats;
 
         // === All-Games Overview Data ===
-
         [DontSerialize]
-        public bool HasData
+        public ObservableCollection<GameAchievementSummary> CompletedGamesAsc
         {
-            get => Theme.HasAchievements;
-            set => Theme.HasData = value;
+            get => Theme.CompletedGamesAsc;
+            set => Theme.CompletedGamesAsc = value;
         }
 
         [DontSerialize]
-        public ObservableCollection<GameAchievementSummary> GamesWithAchievements
+        public ObservableCollection<GameAchievementSummary> CompletedGamesDesc
         {
-            get => Theme.GamesWithAchievements;
-            set => Theme.GamesWithAchievements = value;
+            get => Theme.CompletedGamesDesc;
+            set => Theme.CompletedGamesDesc = value;
         }
 
         [DontSerialize]
-        public ObservableCollection<GameAchievementSummary> PlatinumGames
+        public ObservableCollection<GameAchievementSummary> GameSummariesAsc
         {
-            get => Theme.PlatinumGames;
-            set => Theme.PlatinumGames = value;
+            get => Theme.GameSummariesAsc;
+            set => Theme.GameSummariesAsc = value;
         }
 
         [DontSerialize]
-        public int TotalTrophies
+        public ObservableCollection<GameAchievementSummary> GameSummariesDesc
         {
-            get => Theme.TotalTrophies;
-            set => Theme.TotalTrophies = value;
-        }
-
-        [DontSerialize]
-        public int PlatinumTrophies
-        {
-            get => Theme.PlatinumTrophies;
-            set => Theme.PlatinumTrophies = value;
-        }
-
-        [DontSerialize]
-        public int GoldTrophies
-        {
-            get => Theme.GoldTrophies;
-            set => Theme.GoldTrophies = value;
-        }
-
-        [DontSerialize]
-        public int SilverTrophies
-        {
-            get => Theme.SilverTrophies;
-            set => Theme.SilverTrophies = value;
-        }
-
-        [DontSerialize]
-        public int BronzeTrophies
-        {
-            get => Theme.BronzeTrophies;
-            set => Theme.BronzeTrophies = value;
-        }
-
-        [DontSerialize]
-        public int Level
-        {
-            get => Theme.Level;
-            set => Theme.Level = value;
-        }
-
-        [DontSerialize]
-        public double LevelProgress
-        {
-            get => Theme.LevelProgress;
-            set => Theme.LevelProgress = value;
-        }
-
-        [DontSerialize]
-        public string Rank
-        {
-            get => Theme.Rank;
-            set => Theme.Rank = value;
+            get => Theme.GameSummariesDesc;
+            set => Theme.GameSummariesDesc = value;
         }
 
         [DontSerialize]
@@ -369,6 +319,83 @@ namespace PlayniteAchievements.Models
 
         // === SuccessStory Compatibility ===
         private ICommand _refreshSelectedGameCommand;
+
+        [DontSerialize]
+        public bool HasData
+        {
+            get => LegacyTheme.HasDataAllGames;
+            set => LegacyTheme.HasDataAllGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> GamesWithAchievements
+        {
+            get => LegacyTheme.GamesWithAchievements;
+            set => LegacyTheme.GamesWithAchievements = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> PlatinumGames
+        {
+            get => LegacyTheme.PlatinumGames;
+            set => LegacyTheme.PlatinumGames = value;
+        }
+
+        [DontSerialize]
+        public int TotalTrophies
+        {
+            get => LegacyTheme.TotalTrophies;
+            set => LegacyTheme.TotalTrophies = value;
+        }
+
+        [DontSerialize]
+        public int PlatinumTrophies
+        {
+            get => LegacyTheme.PlatinumTrophies;
+            set => LegacyTheme.PlatinumTrophies = value;
+        }
+
+        [DontSerialize]
+        public int GoldTrophies
+        {
+            get => LegacyTheme.GoldTrophies;
+            set => LegacyTheme.GoldTrophies = value;
+        }
+
+        [DontSerialize]
+        public int SilverTrophies
+        {
+            get => LegacyTheme.SilverTrophies;
+            set => LegacyTheme.SilverTrophies = value;
+        }
+
+        [DontSerialize]
+        public int BronzeTrophies
+        {
+            get => LegacyTheme.BronzeTrophies;
+            set => LegacyTheme.BronzeTrophies = value;
+        }
+
+        [DontSerialize]
+        public int Level
+        {
+            get => LegacyTheme.Level;
+            set => LegacyTheme.Level = value;
+        }
+
+        [DontSerialize]
+        public double LevelProgress
+        {
+            get => LegacyTheme.LevelProgress;
+            set => LegacyTheme.LevelProgress = value;
+        }
+
+        [DontSerialize]
+        public string Rank
+        {
+            get => LegacyTheme.Rank;
+            set => LegacyTheme.Rank = value;
+        }
 
         [DontSerialize]
         public ICommand RefreshSelectedGameCommand

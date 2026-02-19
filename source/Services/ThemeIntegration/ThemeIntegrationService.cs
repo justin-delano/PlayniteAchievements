@@ -49,6 +49,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private static readonly string[] NativeAllGamesCoreDelegatedProperties =
         {
             nameof(PlayniteAchievementsSettings.HasData),
+            nameof(PlayniteAchievementsSettings.CompletedGamesAsc),
+            nameof(PlayniteAchievementsSettings.CompletedGamesDesc),
+            nameof(PlayniteAchievementsSettings.GameSummariesAsc),
+            nameof(PlayniteAchievementsSettings.GameSummariesDesc),
             nameof(PlayniteAchievementsSettings.GamesWithAchievements),
             nameof(PlayniteAchievementsSettings.TotalTrophies),
             nameof(PlayniteAchievementsSettings.PlatinumTrophies),
@@ -720,19 +724,23 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void ApplyNativeSurface(AllGamesSnapshot snapshot)
         {
-            _settings.Theme.HasData = snapshot.TotalCount > 0;
-            _settings.Theme.GamesWithAchievements = snapshot.CreateAllGamesObservable();
-            _settings.Theme.PlatinumGames = snapshot.CreatePlatinumObservable();
+            _settings.Theme.CompletedGamesAsc = snapshot.CreateCompletedGamesAscObservable();
+            _settings.Theme.CompletedGamesDesc = snapshot.CreateCompletedGamesDescObservable();
+            _settings.Theme.GameSummariesAsc = snapshot.CreateGameSummariesAscObservable();
+            _settings.Theme.GameSummariesDesc = snapshot.CreateGameSummariesDescObservable();
 
-            _settings.Theme.TotalTrophies = snapshot.TotalCount;
-            _settings.Theme.PlatinumTrophies = snapshot.PlatCount;
-            _settings.Theme.GoldTrophies = snapshot.GoldCount;
-            _settings.Theme.SilverTrophies = snapshot.SilverCount;
-            _settings.Theme.BronzeTrophies = snapshot.BronzeCount;
+            _settings.LegacyTheme.HasDataAllGames = snapshot.TotalCount > 0;
+            _settings.LegacyTheme.GamesWithAchievements = snapshot.CreateGameSummariesDescObservable();
 
-            _settings.Theme.Level = snapshot.Level;
-            _settings.Theme.LevelProgress = snapshot.LevelProgress;
-            _settings.Theme.Rank = !string.IsNullOrWhiteSpace(snapshot.Rank) ? snapshot.Rank : "Bronze1";
+            _settings.LegacyTheme.TotalTrophies = snapshot.TotalCount;
+            _settings.LegacyTheme.PlatinumTrophies = snapshot.PlatCount;
+            _settings.LegacyTheme.GoldTrophies = snapshot.GoldCount;
+            _settings.LegacyTheme.SilverTrophies = snapshot.SilverCount;
+            _settings.LegacyTheme.BronzeTrophies = snapshot.BronzeCount;
+
+            _settings.LegacyTheme.Level = snapshot.Level;
+            _settings.LegacyTheme.LevelProgress = snapshot.LevelProgress;
+            _settings.LegacyTheme.Rank = !string.IsNullOrWhiteSpace(snapshot.Rank) ? snapshot.Rank : "Bronze1";
 
             // Lightweight all-games lists (always updated)
             _settings.Theme.MostRecentUnlocksTop3 = snapshot.MostRecentUnlocksTop3;

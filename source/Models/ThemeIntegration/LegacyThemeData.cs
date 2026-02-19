@@ -60,7 +60,29 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private ObservableCollection<GameAchievementSummary> _allGamesWithAchievements = new ObservableCollection<GameAchievementSummary>();
         [DontSerialize]
+        private ObservableCollection<GameAchievementSummary> _gamesWithAchievements = new ObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private ObservableCollection<GameAchievementSummary> _platinumGames = new ObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
         private ObservableCollection<GameAchievementSummary> _platinumGamesAscending = new ObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private bool _hasDataAllGames;
+        [DontSerialize]
+        private int _totalTrophies;
+        [DontSerialize]
+        private int _platinumTrophies;
+        [DontSerialize]
+        private int _goldTrophies;
+        [DontSerialize]
+        private int _silverTrophies;
+        [DontSerialize]
+        private int _bronzeTrophies;
+        [DontSerialize]
+        private int _level;
+        [DontSerialize]
+        private double _levelProgress;
+        [DontSerialize]
+        private string _rank = "Bronze1";
         [DontSerialize]
         private string _gsTotal = "0";
         [DontSerialize]
@@ -253,7 +275,117 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
 
         /// <summary>
-        /// Games with 100% completion sorted ascending (Aniki ReMake compatibility).
+        /// Whether all-games achievement overview data is available.
+        /// </summary>
+        [DontSerialize]
+        public bool HasDataAllGames
+        {
+            get => _hasDataAllGames;
+            set => SetValue(ref _hasDataAllGames, value);
+        }
+
+        /// <summary>
+        /// All games with achievements, sorted by last unlock date.
+        /// </summary>
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> GamesWithAchievements
+        {
+            get => _gamesWithAchievements;
+            set => SetValue(ref _gamesWithAchievements, value);
+        }
+
+        /// <summary>
+        /// Provider-completed games (for example, PSN platinum earned), sorted by last unlock date (newest first).
+        /// </summary>
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> PlatinumGames
+        {
+            get => _platinumGames;
+            set => SetValue(ref _platinumGames, value);
+        }
+
+        /// <summary>
+        /// Total trophy count across all games.
+        /// </summary>
+        [DontSerialize]
+        public int TotalTrophies
+        {
+            get => _totalTrophies;
+            set => SetValue(ref _totalTrophies, value < 0 ? 0 : value);
+        }
+
+        /// <summary>
+        /// Number of provider-completed games in the platinum list.
+        /// </summary>
+        [DontSerialize]
+        public int PlatinumTrophies
+        {
+            get => _platinumTrophies;
+            set => SetValue(ref _platinumTrophies, value < 0 ? 0 : value);
+        }
+
+        /// <summary>
+        /// Gold trophy count (ultra-rare achievements).
+        /// </summary>
+        [DontSerialize]
+        public int GoldTrophies
+        {
+            get => _goldTrophies;
+            set => SetValue(ref _goldTrophies, value < 0 ? 0 : value);
+        }
+
+        /// <summary>
+        /// Silver trophy count (uncommon achievements).
+        /// </summary>
+        [DontSerialize]
+        public int SilverTrophies
+        {
+            get => _silverTrophies;
+            set => SetValue(ref _silverTrophies, value < 0 ? 0 : value);
+        }
+
+        /// <summary>
+        /// Bronze trophy count (common achievements).
+        /// </summary>
+        [DontSerialize]
+        public int BronzeTrophies
+        {
+            get => _bronzeTrophies;
+            set => SetValue(ref _bronzeTrophies, value < 0 ? 0 : value);
+        }
+
+        /// <summary>
+        /// Player level calculated from total score.
+        /// </summary>
+        [DontSerialize]
+        public int Level
+        {
+            get => _level;
+            set => SetValue(ref _level, value < 0 ? 0 : value);
+        }
+
+        /// <summary>
+        /// Progress toward next level (0-100).
+        /// </summary>
+        [DontSerialize]
+        public double LevelProgress
+        {
+            get => _levelProgress;
+            set => SetValue(ref _levelProgress, value);
+        }
+
+        /// <summary>
+        /// Player rank based on level (Bronze1 through Plat).
+        /// </summary>
+        [DontSerialize]
+        public string Rank
+        {
+            get => _rank;
+            set => SetValue(ref _rank, value ?? "Bronze1");
+        }
+
+        /// <summary>
+        /// Provider-completed games sorted ascending (Aniki ReMake compatibility).
         /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> PlatinumGamesAscending

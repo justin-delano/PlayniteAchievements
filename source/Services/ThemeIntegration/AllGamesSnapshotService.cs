@@ -102,6 +102,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
 
                 var progress = unlocked == total ? 100 : (int)Math.Floor(100.0 * unlocked / total);
+                var isCompleted = data.IsCompleted || (total > 0 && unlocked == total);
                 var latestUnlockLocal = latestUnlockUtc == DateTime.MinValue ? DateTime.MinValue : latestUnlockUtc.ToLocalTime();
 
                 GetTrophyCounts(data, out var gold, out var silver, out var bronze);
@@ -117,6 +118,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     gold,
                     silver,
                     bronze,
+                    isCompleted,
                     latestUnlockLocal,
                     openCmd));
             }
@@ -128,8 +130,23 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 .ToList();
 
             snapshot.All = items;
+            snapshot.GameSummariesDesc = items;
+            snapshot.GameSummariesAsc = items
+                .OrderBy(i => i.LastUnlockDate)
+                .ThenByDescending(i => i.Progress)
+                .ThenBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            snapshot.CompletedGamesDesc = snapshot.GameSummariesDesc
+                .Where(i => i.IsCompleted)
+                .ToList();
+
+            snapshot.CompletedGamesAsc = snapshot.GameSummariesAsc
+                .Where(i => i.IsCompleted)
+                .ToList();
+
             snapshot.Platinum = items
-                .Where(i => i.Progress >= 100)
+                .Where(i => i.IsCompleted)
                 .Where(i => i.LastUnlockDate != DateTime.MinValue)
                 .OrderByDescending(i => i.LastUnlockDate)
                 .ToList();
@@ -368,3 +385,4 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         }
     }
 }
+

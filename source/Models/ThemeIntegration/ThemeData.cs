@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Playnite.SDK;
@@ -52,27 +51,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         #region Backing Fields - All-Games Overview Data
 
         [DontSerialize]
-        private bool _hasData;
+        private ObservableCollection<GameAchievementSummary> _completedGamesAsc = new ObservableCollection<GameAchievementSummary>();
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _gamesWithAchievements = new ObservableCollection<GameAchievementSummary>();
+        private ObservableCollection<GameAchievementSummary> _completedGamesDesc = new ObservableCollection<GameAchievementSummary>();
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _platinumGames = new ObservableCollection<GameAchievementSummary>();
+        private ObservableCollection<GameAchievementSummary> _gameSummariesAsc = new ObservableCollection<GameAchievementSummary>();
         [DontSerialize]
-        private int _totalTrophies;
-        [DontSerialize]
-        private int _platinumTrophies;
-        [DontSerialize]
-        private int _goldTrophies;
-        [DontSerialize]
-        private int _silverTrophies;
-        [DontSerialize]
-        private int _bronzeTrophies;
-        [DontSerialize]
-        private int _level;
-        [DontSerialize]
-        private double _levelProgress;
-        [DontSerialize]
-        private string _rank = "Bronze1";
+        private ObservableCollection<GameAchievementSummary> _gameSummariesDesc = new ObservableCollection<GameAchievementSummary>();
 
         [DontSerialize]
         private List<AchievementDetail> _allAchievementsUnlockAsc = new List<AchievementDetail>();
@@ -258,113 +243,45 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         #region All-Games Overview Properties
 
         /// <summary>
-        /// Whether all-games achievement overview data is available.
+        /// Completed games sorted by last unlock date ascending (oldest first).
+        /// Completion is provider-aware or 100% unlocked.
         /// </summary>
         [DontSerialize]
-        public bool HasData
+        public ObservableCollection<GameAchievementSummary> CompletedGamesAsc
         {
-            get => _hasData;
-            set => SetValue(ref _hasData, value);
+            get => _completedGamesAsc;
+            set => SetValue(ref _completedGamesAsc, value);
         }
 
         /// <summary>
-        /// All games with achievements, sorted by last unlock date.
+        /// Completed games sorted by last unlock date descending (newest first).
+        /// Completion is provider-aware or 100% unlocked.
         /// </summary>
         [DontSerialize]
-        public ObservableCollection<GameAchievementSummary> GamesWithAchievements
+        public ObservableCollection<GameAchievementSummary> CompletedGamesDesc
         {
-            get => _gamesWithAchievements;
-            set => SetValue(ref _gamesWithAchievements, value);
+            get => _completedGamesDesc;
+            set => SetValue(ref _completedGamesDesc, value);
         }
 
         /// <summary>
-        /// Games with 100% achievement completion, sorted by last unlock date (newest first).
+        /// All game summaries sorted by last unlock date ascending (oldest first).
         /// </summary>
         [DontSerialize]
-        public ObservableCollection<GameAchievementSummary> PlatinumGames
+        public ObservableCollection<GameAchievementSummary> GameSummariesAsc
         {
-            get => _platinumGames;
-            set => SetValue(ref _platinumGames, value);
+            get => _gameSummariesAsc;
+            set => SetValue(ref _gameSummariesAsc, value);
         }
 
         /// <summary>
-        /// Total trophy count across all games.
+        /// All game summaries sorted by last unlock date descending (newest first).
         /// </summary>
         [DontSerialize]
-        public int TotalTrophies
+        public ObservableCollection<GameAchievementSummary> GameSummariesDesc
         {
-            get => _totalTrophies;
-            set => SetValue(ref _totalTrophies, Math.Max(0, value));
-        }
-
-        /// <summary>
-        /// Platinum trophy count (100% completed games).
-        /// </summary>
-        [DontSerialize]
-        public int PlatinumTrophies
-        {
-            get => _platinumTrophies;
-            set => SetValue(ref _platinumTrophies, Math.Max(0, value));
-        }
-
-        /// <summary>
-        /// Gold trophy count (ultra-rare achievements).
-        /// </summary>
-        [DontSerialize]
-        public int GoldTrophies
-        {
-            get => _goldTrophies;
-            set => SetValue(ref _goldTrophies, Math.Max(0, value));
-        }
-
-        /// <summary>
-        /// Silver trophy count (uncommon achievements).
-        /// </summary>
-        [DontSerialize]
-        public int SilverTrophies
-        {
-            get => _silverTrophies;
-            set => SetValue(ref _silverTrophies, Math.Max(0, value));
-        }
-
-        /// <summary>
-        /// Bronze trophy count (common achievements).
-        /// </summary>
-        [DontSerialize]
-        public int BronzeTrophies
-        {
-            get => _bronzeTrophies;
-            set => SetValue(ref _bronzeTrophies, Math.Max(0, value));
-        }
-
-        /// <summary>
-        /// Player level calculated from total score.
-        /// </summary>
-        [DontSerialize]
-        public int Level
-        {
-            get => _level;
-            set => SetValue(ref _level, Math.Max(0, value));
-        }
-
-        /// <summary>
-        /// Progress toward next level (0-100).
-        /// </summary>
-        [DontSerialize]
-        public double LevelProgress
-        {
-            get => _levelProgress;
-            set => SetValue(ref _levelProgress, value);
-        }
-
-        /// <summary>
-        /// Player rank based on level (Bronze1 through Plat).
-        /// </summary>
-        [DontSerialize]
-        public string Rank
-        {
-            get => _rank;
-            set => SetValue(ref _rank, value ?? "Bronze1");
+            get => _gameSummariesDesc;
+            set => SetValue(ref _gameSummariesDesc, value);
         }
 
         /// <summary>

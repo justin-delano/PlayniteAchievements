@@ -77,6 +77,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
 
         /// <summary>
+        /// Provider-aware completion flag for the game.
+        /// True when the provider marks the game complete (for example, PSN platinum earned)
+        /// or when all tracked achievements are unlocked.
+        /// </summary>
+        public bool IsCompleted { get; }
+
+        /// <summary>
         /// Date of the most recent achievement unlock.
         /// </summary>
         public DateTime LastUnlockDate { get; }
@@ -119,6 +126,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             int goldCount,
             int silverCount,
             int bronzeCount,
+            bool isCompleted,
             DateTime lastUnlockDate,
             ICommand openAchievementWindow)
         {
@@ -130,8 +138,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             _goldCount = Math.Max(0, goldCount);
             _silverCount = Math.Max(0, silverCount);
             _bronzeCount = Math.Max(0, bronzeCount);
+            IsCompleted = isCompleted;
             LastUnlockDate = lastUnlockDate;
             OpenAchievementWindow = openAchievementWindow;
         }
     }
 }
+

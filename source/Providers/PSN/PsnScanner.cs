@@ -165,6 +165,7 @@ namespace PlayniteAchievements.Providers.PSN
                 .ToDictionary(g => g.Key, g => g.First());
 
             var achievements = new List<AchievementDetail>();
+            var unlockedCount = 0;
             foreach (var detail in (details?.Trophies ?? new List<PsnTrophyDetail>())
                 .GroupBy(t => t.TrophyId)
                 .Select(g => g.First()))
@@ -174,6 +175,8 @@ namespace PlayniteAchievements.Providers.PSN
                 DateTime? unlockUtc = null;
                 if (userEntry != null && userEntry.Earned)
                 {
+                    unlockedCount++;
+
                     if (!string.IsNullOrWhiteSpace(userEntry.EarnedDateTime))
                     {
                         if (DateTime.TryParse(
@@ -208,6 +211,13 @@ namespace PlayniteAchievements.Providers.PSN
                 });
             }
 
+            var hasUnlockedPlatinum = achievements.Any(a =>
+                a != null &&
+                a.Unlocked &&
+                string.Equals(a.TrophyType, "platinum", StringComparison.OrdinalIgnoreCase));
+            var isCompleted = hasUnlockedPlatinum ||
+                (achievements.Count > 0 && unlockedCount == achievements.Count);
+
             return new GameAchievementData
             {
                 ProviderName = providerName,
@@ -215,6 +225,7 @@ namespace PlayniteAchievements.Providers.PSN
                 GameName = game?.Name,
                 PlayniteGameId = game?.Id,
                 NoAchievements = achievements.Count == 0,
+                IsCompleted = isCompleted,
                 Achievements = achievements,
                 LastUpdatedUtc = DateTime.UtcNow,
                 PlaytimeSeconds = (ulong)(game?.Playtime ?? 0) * 60UL
@@ -312,3 +323,4 @@ namespace PlayniteAchievements.Providers.PSN
         }
     }
 }
+
