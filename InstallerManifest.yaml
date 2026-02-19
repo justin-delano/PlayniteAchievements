@@ -1,5 +1,14 @@
 AddonId: PlayniteAchievements
 Packages:
+  - Version: 1.4.1
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-02-19
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.4.1/PlayniteAchievements_1_4_1.pext
+    Changelog:
+      - Critical Hotfix - Desktop themes show achievement data again
+      - PSN platinums now classify a game as perfect/completed
+
+
   - Version: 1.4.0
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-19

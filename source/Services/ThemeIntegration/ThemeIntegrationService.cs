@@ -48,7 +48,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         // NOTE: PlatinumGames is notified via compatibility surface only to avoid duplicate notifications.
         private static readonly string[] NativeAllGamesCoreDelegatedProperties =
         {
-            nameof(PlayniteAchievementsSettings.HasData),
+            nameof(PlayniteAchievementsSettings.HasDataAllGames),
             nameof(PlayniteAchievementsSettings.CompletedGamesAsc),
             nameof(PlayniteAchievementsSettings.CompletedGamesDesc),
             nameof(PlayniteAchievementsSettings.GameSummariesAsc),

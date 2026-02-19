@@ -323,6 +323,15 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         public bool HasData
         {
+            // Legacy themes (including migrated SuccessStory themes) use HasData as a
+            // selected-game flag, so keep this bound to per-game achievement state.
+            get => Theme.HasAchievements;
+            set => Theme.HasAchievements = value;
+        }
+
+        [DontSerialize]
+        public bool HasDataAllGames
+        {
             get => LegacyTheme.HasDataAllGames;
             set => LegacyTheme.HasDataAllGames = value;
         }
