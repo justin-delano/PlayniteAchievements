@@ -549,7 +549,6 @@ namespace PlayniteAchievements.Services.Database
                         hasMarker);
                     payload.ProviderIsCompleted = providerIsCompleted;
                     payload.CompletedMarkerApiName = completedMarkerApiName;
-                    payload.IsCompleted = isCompleted;
 
                     var userProgressId = UpsertUserGameProgress(
                         db,
@@ -1403,7 +1402,6 @@ namespace PlayniteAchievements.Services.Database
                 ProviderName = progress?.ProviderName,
                 LibrarySourceName = progress?.LibrarySourceName,
                 NoAchievements = progress != null && progress.NoAchievements != 0,
-                IsCompleted = progress != null && progress.IsCompleted != 0,
                 ProviderIsCompleted = progress != null && progress.ProviderIsCompleted != 0,
                 CompletedMarkerApiName = NormalizeDbText(progress?.CompletedMarkerApiName),
                 PlaytimeSeconds = (ulong)Math.Max(0, progress?.PlaytimeSeconds ?? 0),
