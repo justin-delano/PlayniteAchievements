@@ -321,11 +321,11 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _totalUnlockedOverview, value);
         }
 
-        private int _perfectGames;
-        public int PerfectGames
+        private int _completedGames;
+        public int CompletedGames
         {
-            get => _perfectGames;
-            private set => SetValue(ref _perfectGames, value);
+            get => _completedGames;
+            private set => SetValue(ref _completedGames, value);
         }
 
         private int _totalCommon;
@@ -896,7 +896,7 @@ namespace PlayniteAchievements.ViewModels
             TotalUncommon = snapshot.TotalUncommon;
             TotalRare = snapshot.TotalRare;
             TotalUltraRare = snapshot.TotalUltraRare;
-            PerfectGames = snapshot.PerfectGames;
+            CompletedGames = snapshot.CompletedGames;
             GlobalProgression = snapshot.GlobalProgressionPercent;
 
             // Build provider lookup dictionary from AchievementManager
@@ -907,7 +907,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             // Get localized strings
-            var perfectLabel = ResourceProvider.GetString("LOCPlayAch_Perfect");
+            var completedLabel = ResourceProvider.GetString("LOCPlayAch_Completed");
             var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Incomplete");
             var commonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Common");
             var uncommonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Uncommon");
@@ -918,7 +918,7 @@ namespace PlayniteAchievements.ViewModels
             // Update charts
             ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
 
-            GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.PerfectGames, perfectLabel, incompleteLabel);
+            GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.CompletedGames, completedLabel, incompleteLabel);
             RarityPieChart.SetRarityData(
                 snapshot.TotalCommon,
                 snapshot.TotalUncommon,
@@ -1077,7 +1077,7 @@ namespace PlayniteAchievements.ViewModels
             snapshot.TotalUncommon = snapshot.GamesOverview.Sum(g => g?.UncommonCount ?? 0);
             snapshot.TotalRare = snapshot.GamesOverview.Sum(g => g?.RareCount ?? 0);
             snapshot.TotalUltraRare = snapshot.GamesOverview.Sum(g => g?.UltraRareCount ?? 0);
-            snapshot.PerfectGames = snapshot.GamesOverview.Count(g => g?.IsCompleted == true);
+            snapshot.CompletedGames = snapshot.GamesOverview.Count(g => g?.IsCompleted == true);
             snapshot.TotalLocked = Math.Max(0, snapshot.TotalAchievements - snapshot.TotalUnlocked);
             snapshot.GlobalProgressionPercent = snapshot.TotalAchievements > 0
                 ? (double)snapshot.TotalUnlocked / snapshot.TotalAchievements * 100
@@ -1125,7 +1125,7 @@ namespace PlayniteAchievements.ViewModels
             TotalUncommon = snapshot.TotalUncommon;
             TotalRare = snapshot.TotalRare;
             TotalUltraRare = snapshot.TotalUltraRare;
-            PerfectGames = snapshot.PerfectGames;
+            CompletedGames = snapshot.CompletedGames;
             GlobalProgression = snapshot.GlobalProgressionPercent;
 
             var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
@@ -1134,7 +1134,7 @@ namespace PlayniteAchievements.ViewModels
                 providerLookup[provider.ProviderName] = (provider.ProviderIconKey, provider.ProviderColorHex);
             }
 
-            var perfectLabel = ResourceProvider.GetString("LOCPlayAch_Perfect");
+            var completedLabel = ResourceProvider.GetString("LOCPlayAch_Completed");
             var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Incomplete");
             var commonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Common");
             var uncommonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Uncommon");
@@ -1144,7 +1144,7 @@ namespace PlayniteAchievements.ViewModels
 
             ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
 
-            GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.PerfectGames, perfectLabel, incompleteLabel);
+            GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.CompletedGames, completedLabel, incompleteLabel);
             RarityPieChart.SetRarityData(
                 snapshot.TotalCommon,
                 snapshot.TotalUncommon,
@@ -1700,7 +1700,7 @@ namespace PlayniteAchievements.ViewModels
             TotalUncommon = sourceList.Sum(g => g.UncommonCount);
             TotalRare = sourceList.Sum(g => g.RareCount);
             TotalUltraRare = sourceList.Sum(g => g.UltraRareCount);
-            PerfectGames = sourceList.Count(g => g.IsCompleted);
+            CompletedGames = sourceList.Count(g => g.IsCompleted);
 
             GlobalProgression = TotalAchievementsOverview > 0 ? (double)TotalUnlockedOverview / TotalAchievementsOverview * 100 : 0;
         }
