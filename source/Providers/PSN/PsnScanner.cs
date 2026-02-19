@@ -230,7 +230,6 @@ namespace PlayniteAchievements.Providers.PSN
                 PlayniteGameId = game?.Id,
                 NoAchievements = achievements.Count == 0,
                 ProviderIsCompleted = isCompleted,
-                IsCompleted = isCompleted,
                 Achievements = achievements,
                 LastUpdatedUtc = DateTime.UtcNow,
                 PlaytimeSeconds = (ulong)(game?.Playtime ?? 0) * 60UL
