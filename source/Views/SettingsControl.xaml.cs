@@ -217,7 +217,7 @@ namespace PlayniteAchievements.Views
                 nameof(RaAuthStatus),
                 typeof(string),
                 typeof(SettingsControl),
-                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_Status_NotChecked")));
+                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_Ra_NotChecked")));
 
         public string RaAuthStatus
         {

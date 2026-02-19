@@ -1547,29 +1547,7 @@ namespace PlayniteAchievements.Views
             {
                 if (rescaleAll)
                 {
-                    var weights = widths.Select(w => Math.Max(1, w)).ToList();
-                    var remainingTarget = targetWidth;
-                    var remainingWeight = weights.Sum();
-                    var remainingMinimum = floorWidths.Sum();
-                    for (var i = 0; i < widths.Count; i++)
-                    {
-                        var floorWidth = floorWidths[i];
-                        remainingMinimum -= floorWidth;
-                        var next = i == widths.Count - 1
-                            ? remainingTarget
-                            : remainingTarget * (weights[i] / remainingWeight);
-
-                        next = Math.Max(floorWidth, next);
-                        var maxForCurrent = remainingTarget - remainingMinimum;
-                        if (next > maxForCurrent)
-                        {
-                            next = maxForCurrent;
-                        }
-
-                        widths[i] = next;
-                        remainingTarget -= next;
-                        remainingWeight -= weights[i];
-                    }
+                    RescaleWidthsProportionally(widths, floorWidths, targetWidth);
                 }
                 else
                 {
@@ -1605,7 +1583,38 @@ namespace PlayniteAchievements.Views
                         if (delta < -0.2)
                         {
                             var fallback = absorberOrder[0];
+                            var fallbackBefore = widths[fallback];
                             widths[fallback] = Math.Max(floorWidths[fallback], widths[fallback] + delta);
+                            delta += widths[fallback] - fallbackBefore;
+                        }
+
+                        if (delta < -0.2)
+                        {
+                            var protectedIndex = -1;
+                            for (var i = 0; i < keys.Count; i++)
+                            {
+                                if (KeysEqual(keys[i], protectedColumnKey))
+                                {
+                                    protectedIndex = i;
+                                    break;
+                                }
+                            }
+
+                            if (protectedIndex >= 0)
+                            {
+                                var protectedCapacity = widths[protectedIndex] - floorWidths[protectedIndex];
+                                if (protectedCapacity > 0)
+                                {
+                                    var take = Math.Min(protectedCapacity, -delta);
+                                    widths[protectedIndex] -= take;
+                                    delta += take;
+                                }
+                            }
+                        }
+
+                        if (delta < -0.2)
+                        {
+                            RescaleWidthsProportionally(widths, floorWidths, targetWidth);
                         }
                     }
                 }
@@ -1811,6 +1820,42 @@ namespace PlayniteAchievements.Views
             }
 
             return order;
+        }
+
+        private static void RescaleWidthsProportionally(IList<double> widths, IReadOnlyList<double> floorWidths, double targetWidth)
+        {
+            if (widths == null ||
+                floorWidths == null ||
+                widths.Count == 0 ||
+                widths.Count != floorWidths.Count ||
+                !IsValidPersistedColumnWidth(targetWidth))
+            {
+                return;
+            }
+
+            var weights = widths.Select(w => Math.Max(1, w)).ToList();
+            var remainingTarget = targetWidth;
+            var remainingWeight = weights.Sum();
+            var remainingMinimum = floorWidths.Sum();
+            for (var i = 0; i < widths.Count; i++)
+            {
+                var floorWidth = floorWidths[i];
+                remainingMinimum -= floorWidth;
+                var next = i == widths.Count - 1
+                    ? remainingTarget
+                    : remainingTarget * (weights[i] / remainingWeight);
+
+                next = Math.Max(floorWidth, next);
+                var maxForCurrent = remainingTarget - remainingMinimum;
+                if (next > maxForCurrent)
+                {
+                    next = maxForCurrent;
+                }
+
+                widths[i] = next;
+                remainingTarget -= next;
+                remainingWeight -= weights[i];
+            }
         }
 
         private static bool KeysEqual(string a, string b)

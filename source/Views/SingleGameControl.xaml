@@ -594,7 +594,7 @@
 
             <DataGrid.Columns>
                 <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
-                <DataGridTemplateColumn Width="36" CanUserSort="False">
+                <DataGridTemplateColumn Width="36" MinWidth="36" MaxWidth="36" CanUserSort="False" CanUserResize="False">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -639,7 +639,7 @@
                 </DataGridTemplateColumn>
 
                 <!-- Achievement Icon -->
-                <DataGridTemplateColumn Width="78">
+                <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">

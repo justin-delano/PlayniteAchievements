@@ -26,15 +26,17 @@ namespace PlayniteAchievements.Views
         private DispatcherTimer _columnWidthSaveTimer;
         private bool _isApplyingPersistedColumnWidths;
         private bool _isColumnResizeInProgress;
+        private bool _shouldRescaleAllOnInitialLoad;
         private string _lastResizedColumnKey;
-        private const double MinimumNormalizedColumnWidth = 40;
+        private const double MinimumColumnWidthRatio = 0.1;
+        private const double WidthNormalizationSafetyPadding = 1.0;
         private static readonly IReadOnlyDictionary<string, double> DefaultSingleGameColumnWidthSeeds =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
-                ["Achievement"] = 520,
-                ["UnlockDate"] = 230,
+                ["Achievement"] = 460,
+                ["UnlockDate"] = 240,
                 ["Rarity"] = 170,
-                ["Points"] = 120
+                ["Points"] = 100
             };
 
         public SingleGameControl()
@@ -173,7 +175,12 @@ namespace PlayniteAchievements.Views
         {
             if (sender is DataGrid grid)
             {
-                NormalizeColumnsToContainer(grid);
+                var shouldRescaleAll = _shouldRescaleAllOnInitialLoad;
+                NormalizeColumnsToContainer(grid, rescaleAll: shouldRescaleAll);
+                if (shouldRescaleAll && IsValidPersistedColumnWidth(GetGridAvailableWidth(grid)))
+                {
+                    _shouldRescaleAllOnInitialLoad = false;
+                }
             }
         }
 
@@ -186,12 +193,26 @@ namespace PlayniteAchievements.Views
 
             if (sender is DataGrid grid)
             {
+                if (!grid.IsVisible || grid.ActualWidth <= 1)
+                {
+                    return;
+                }
+
+                var isVisibilityActivation = e.PreviousSize.Width <= 1;
+                var shouldRescaleAll = _shouldRescaleAllOnInitialLoad || !isVisibilityActivation;
+
                 Dispatcher.BeginInvoke(
                     new Action(() =>
                     {
                         if (grid.IsLoaded && !_isColumnResizeInProgress)
                         {
-                            NormalizeColumnsToContainer(grid, rescaleAll: true);
+                            NormalizeColumnsToContainer(grid, rescaleAll: shouldRescaleAll);
+                            if (shouldRescaleAll &&
+                                _shouldRescaleAllOnInitialLoad &&
+                                IsValidPersistedColumnWidth(GetGridAvailableWidth(grid)))
+                            {
+                                _shouldRescaleAllOnInitialLoad = false;
+                            }
                         }
                     }),
                     DispatcherPriority.Render);
@@ -263,7 +284,11 @@ namespace PlayniteAchievements.Views
 
         private void OnColumnWidthChanged(DataGrid sourceGrid, DataGridColumn column)
         {
-            if (_isApplyingPersistedColumnWidths || !_isColumnResizeInProgress || sourceGrid == null || column == null)
+            if (_isApplyingPersistedColumnWidths ||
+                !_isColumnResizeInProgress ||
+                sourceGrid == null ||
+                column == null ||
+                !column.CanUserResize)
             {
                 return;
             }
@@ -527,6 +552,11 @@ namespace PlayniteAchievements.Views
             {
                 foreach (var column in grid.Columns)
                 {
+                    if (column == null || !column.CanUserResize)
+                    {
+                        continue;
+                    }
+
                     var key = GetPersistedColumnKey(column);
                     if (string.IsNullOrWhiteSpace(key))
                     {
@@ -573,6 +603,7 @@ namespace PlayniteAchievements.Views
 
             if (changed)
             {
+                _shouldRescaleAllOnInitialLoad = true;
                 SavePluginSettings();
             }
         }
@@ -637,44 +668,57 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            var keyColumns = visibleColumns
-                .Select(column => new { Column = column, Key = GetPersistedColumnKey(column) })
-                .Where(entry => !string.IsNullOrWhiteSpace(entry.Key))
-                .ToList();
-            if (keyColumns.Count == 0)
-            {
-                return false;
-            }
-
             var availableWidth = GetGridAvailableWidth(grid);
             if (!IsValidPersistedColumnWidth(availableWidth))
             {
                 return false;
             }
 
-            var fixedWidth = visibleColumns
-                .Where(column => string.IsNullOrWhiteSpace(GetPersistedColumnKey(column)))
-                .Sum(GetCurrentColumnWidth);
+            var minimumColumnWidth = ResolveResizableMinimumColumnWidth(
+                visibleColumns,
+                GetContainerRelativeMinimumColumnWidth(availableWidth),
+                availableWidth);
+            var minimumColumnWidths = ApplyMinimumColumnWidth(visibleColumns, minimumColumnWidth);
 
-            var targetWidth = availableWidth - fixedWidth;
+            var keyColumns = visibleColumns
+                .Select(column => new
+                {
+                    Column = column,
+                    Key = GetPersistedColumnKey(column),
+                    MinimumWidth = GetColumnMinimumWidth(minimumColumnWidths, column, minimumColumnWidth),
+                    IsResizable = column.CanUserResize,
+                    SeedWidth = ResolveSeedWidth(
+                        GetPersistedColumnKey(column),
+                        column,
+                        preferredWidthsByKey: null,
+                        GetColumnMinimumWidth(minimumColumnWidths, column, minimumColumnWidth))
+                })
+                .Where(entry => !string.IsNullOrWhiteSpace(entry.Key) && entry.IsResizable)
+                .ToList();
+            if (keyColumns.Count == 0)
+            {
+                return false;
+            }
+
+            var fixedWidth = visibleColumns
+                .Where(column => string.IsNullOrWhiteSpace(GetPersistedColumnKey(column)) || !column.CanUserResize)
+                .Sum(column => Math.Max(GetColumnMinimumWidth(minimumColumnWidths, column, minimumColumnWidth), GetCurrentColumnWidth(column)));
+
+            var targetWidth = Math.Max(0, availableWidth - fixedWidth - WidthNormalizationSafetyPadding);
             if (targetWidth <= 0)
             {
                 return false;
             }
 
-            var floorWidth = Math.Max(1, Math.Min(MinimumNormalizedColumnWidth, targetWidth / keyColumns.Count));
             var keys = new List<string>(keyColumns.Count);
+            var floorWidths = new List<double>(keyColumns.Count);
             var widths = new List<double>(keyColumns.Count);
             for (var i = 0; i < keyColumns.Count; i++)
             {
                 var entry = keyColumns[i];
-                if (entry.Column.MinWidth > floorWidth)
-                {
-                    entry.Column.MinWidth = floorWidth;
-                }
-
                 keys.Add(entry.Key);
-                widths.Add(Math.Max(floorWidth, GetCurrentColumnWidth(entry.Column)));
+                floorWidths.Add(entry.MinimumWidth);
+                widths.Add(Math.Max(entry.MinimumWidth, entry.SeedWidth));
             }
 
             var totalWidth = widths.Sum();
@@ -683,28 +727,7 @@ namespace PlayniteAchievements.Views
             {
                 if (rescaleAll)
                 {
-                    var weights = widths.Select(w => Math.Max(1, w)).ToList();
-                    var remainingTarget = targetWidth;
-                    var remainingWeight = weights.Sum();
-                    for (var i = 0; i < widths.Count; i++)
-                    {
-                        var remainingColumns = widths.Count - i;
-                        var minForOthers = floorWidth * Math.Max(0, remainingColumns - 1);
-                        var next = i == widths.Count - 1
-                            ? remainingTarget
-                            : remainingTarget * (weights[i] / remainingWeight);
-
-                        next = Math.Max(floorWidth, next);
-                        var maxForCurrent = remainingTarget - minForOthers;
-                        if (next > maxForCurrent)
-                        {
-                            next = maxForCurrent;
-                        }
-
-                        widths[i] = next;
-                        remainingTarget -= next;
-                        remainingWeight -= weights[i];
-                    }
+                    RescaleWidthsProportionally(widths, floorWidths, targetWidth);
                 }
                 else
                 {
@@ -722,7 +745,7 @@ namespace PlayniteAchievements.Views
                     {
                         foreach (var index in absorberOrder)
                         {
-                            var capacity = widths[index] - floorWidth;
+                            var capacity = widths[index] - floorWidths[index];
                             if (capacity <= 0)
                             {
                                 continue;
@@ -740,7 +763,38 @@ namespace PlayniteAchievements.Views
                         if (delta < -0.2)
                         {
                             var fallback = absorberOrder[0];
-                            widths[fallback] = Math.Max(1, widths[fallback] + delta);
+                            var fallbackBefore = widths[fallback];
+                            widths[fallback] = Math.Max(floorWidths[fallback], widths[fallback] + delta);
+                            delta += widths[fallback] - fallbackBefore;
+                        }
+
+                        if (delta < -0.2)
+                        {
+                            var protectedIndex = -1;
+                            for (var i = 0; i < keys.Count; i++)
+                            {
+                                if (KeysEqual(keys[i], protectedColumnKey))
+                                {
+                                    protectedIndex = i;
+                                    break;
+                                }
+                            }
+
+                            if (protectedIndex >= 0)
+                            {
+                                var protectedCapacity = widths[protectedIndex] - floorWidths[protectedIndex];
+                                if (protectedCapacity > 0)
+                                {
+                                    var take = Math.Min(protectedCapacity, -delta);
+                                    widths[protectedIndex] -= take;
+                                    delta += take;
+                                }
+                            }
+                        }
+
+                        if (delta < -0.2)
+                        {
+                            RescaleWidthsProportionally(widths, floorWidths, targetWidth);
                         }
                     }
                 }
@@ -749,10 +803,196 @@ namespace PlayniteAchievements.Views
             normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < keys.Count; i++)
             {
-                normalized[keys[i]] = Math.Max(1, widths[i]);
+                normalized[keys[i]] = Math.Max(floorWidths[i], widths[i]);
             }
 
             return true;
+        }
+
+        private static double ResolveSeedWidth(
+            string key,
+            DataGridColumn column,
+            IReadOnlyDictionary<string, double> preferredWidthsByKey,
+            double fallbackMinimumWidth)
+        {
+            if (!string.IsNullOrWhiteSpace(key) &&
+                preferredWidthsByKey != null &&
+                preferredWidthsByKey.TryGetValue(key, out var preferredWidth) &&
+                IsValidPersistedColumnWidth(preferredWidth))
+            {
+                return preferredWidth;
+            }
+
+            var currentWidth = GetCurrentColumnWidth(column);
+            if (IsValidPersistedColumnWidth(currentWidth))
+            {
+                return currentWidth;
+            }
+
+            return fallbackMinimumWidth;
+        }
+
+        private static double GetContainerRelativeMinimumColumnWidth(double availableWidth)
+        {
+            if (!IsValidPersistedColumnWidth(availableWidth))
+            {
+                return 1;
+            }
+
+            return Math.Max(1, Math.Round(availableWidth * MinimumColumnWidthRatio, 2));
+        }
+
+        private static double ResolveResizableMinimumColumnWidth(
+            IReadOnlyList<DataGridColumn> visibleColumns,
+            double preferredMinimumWidth,
+            double availableWidth)
+        {
+            if (!IsValidPersistedColumnWidth(preferredMinimumWidth) ||
+                !IsValidPersistedColumnWidth(availableWidth) ||
+                visibleColumns == null ||
+                visibleColumns.Count == 0)
+            {
+                return Math.Max(1, preferredMinimumWidth);
+            }
+
+            var resizableColumns = visibleColumns
+                .Where(column =>
+                    column != null &&
+                    column.CanUserResize &&
+                    !string.IsNullOrWhiteSpace(GetPersistedColumnKey(column)))
+                .ToList();
+            if (resizableColumns.Count == 0)
+            {
+                return Math.Max(1, preferredMinimumWidth);
+            }
+
+            var fixedWidth = visibleColumns
+                .Where(column => column == null || !column.CanUserResize || string.IsNullOrWhiteSpace(GetPersistedColumnKey(column)))
+                .Sum(GetCurrentColumnWidth);
+            var availableForResizable = Math.Max(1, availableWidth - fixedWidth - WidthNormalizationSafetyPadding);
+            var maxFittableMinimum = Math.Max(1, availableForResizable / resizableColumns.Count);
+            return Math.Max(1, Math.Min(preferredMinimumWidth, maxFittableMinimum));
+        }
+
+        private static Dictionary<DataGridColumn, double> ApplyMinimumColumnWidth(IReadOnlyList<DataGridColumn> columns, double minimumColumnWidth)
+        {
+            var result = new Dictionary<DataGridColumn, double>();
+            if (columns == null || !IsValidPersistedColumnWidth(minimumColumnWidth))
+            {
+                return result;
+            }
+
+            for (var i = 0; i < columns.Count; i++)
+            {
+                var column = columns[i];
+                if (column == null)
+                {
+                    continue;
+                }
+
+                var resolvedMinWidth = ResolveColumnMinimumWidth(column, minimumColumnWidth);
+                result[column] = resolvedMinWidth;
+
+                if (Math.Abs(column.MinWidth - resolvedMinWidth) > 0.2)
+                {
+                    column.MinWidth = resolvedMinWidth;
+                }
+
+                if (!column.CanUserResize)
+                {
+                    var resolvedMaxWidth = ResolveFixedColumnMaximumWidth(column, resolvedMinWidth);
+                    if (Math.Abs(column.MaxWidth - resolvedMaxWidth) > 0.2)
+                    {
+                        column.MaxWidth = resolvedMaxWidth;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private static double ResolveColumnMinimumWidth(DataGridColumn column, double fallbackMinWidth)
+        {
+            if (column != null && !column.CanUserResize)
+            {
+                if (IsValidPersistedColumnWidth(column.MinWidth))
+                {
+                    return column.MinWidth;
+                }
+
+                var currentWidth = GetCurrentColumnWidth(column);
+                if (IsValidPersistedColumnWidth(currentWidth))
+                {
+                    return currentWidth;
+                }
+            }
+
+            return fallbackMinWidth;
+        }
+
+        private static double ResolveFixedColumnMaximumWidth(DataGridColumn column, double fallbackWidth)
+        {
+            if (column != null && IsValidPersistedColumnWidth(column.MaxWidth))
+            {
+                return column.MaxWidth;
+            }
+
+            var currentWidth = GetCurrentColumnWidth(column);
+            if (IsValidPersistedColumnWidth(currentWidth))
+            {
+                return currentWidth;
+            }
+
+            return fallbackWidth;
+        }
+
+        private static double GetColumnMinimumWidth(Dictionary<DataGridColumn, double> minimumColumnWidths, DataGridColumn column, double fallbackMinWidth)
+        {
+            if (minimumColumnWidths != null &&
+                column != null &&
+                minimumColumnWidths.TryGetValue(column, out var resolvedWidth) &&
+                IsValidPersistedColumnWidth(resolvedWidth))
+            {
+                return resolvedWidth;
+            }
+
+            return fallbackMinWidth;
+        }
+
+        private static void RescaleWidthsProportionally(IList<double> widths, IReadOnlyList<double> floorWidths, double targetWidth)
+        {
+            if (widths == null ||
+                floorWidths == null ||
+                widths.Count == 0 ||
+                widths.Count != floorWidths.Count ||
+                !IsValidPersistedColumnWidth(targetWidth))
+            {
+                return;
+            }
+
+            var weights = widths.Select(w => Math.Max(1, w)).ToList();
+            var remainingTarget = targetWidth;
+            var remainingWeight = weights.Sum();
+            var remainingMinimum = floorWidths.Sum();
+            for (var i = 0; i < widths.Count; i++)
+            {
+                var floorWidth = floorWidths[i];
+                remainingMinimum -= floorWidth;
+                var next = i == widths.Count - 1
+                    ? remainingTarget
+                    : remainingTarget * (weights[i] / remainingWeight);
+
+                next = Math.Max(floorWidth, next);
+                var maxForCurrent = remainingTarget - remainingMinimum;
+                if (next > maxForCurrent)
+                {
+                    next = maxForCurrent;
+                }
+
+                widths[i] = next;
+                remainingTarget -= next;
+                remainingWeight -= weights[i];
+            }
         }
 
         private static List<int> BuildAbsorberOrder(IReadOnlyList<string> keys, string protectedColumnKey)
@@ -815,6 +1055,11 @@ namespace PlayniteAchievements.Views
             {
                 foreach (var column in grid.Columns)
                 {
+                    if (column == null || !column.CanUserResize)
+                    {
+                        continue;
+                    }
+
                     var key = GetPersistedColumnKey(column);
                     if (string.IsNullOrWhiteSpace(key))
                     {
@@ -849,22 +1094,26 @@ namespace PlayniteAchievements.Views
             }
 
             var scrollViewer = FindVisualChild<ScrollViewer>(grid);
-            var chrome = grid.BorderThickness.Left + grid.BorderThickness.Right + grid.Padding.Left + grid.Padding.Right + 2;
-            width -= chrome;
-
-            if (scrollViewer?.ComputedVerticalScrollBarVisibility == Visibility.Visible ||
-                scrollViewer?.VerticalScrollBarVisibility == ScrollBarVisibility.Visible)
-            {
-                width -= SystemParameters.VerticalScrollBarWidth;
-            }
-
             var viewportWidth = scrollViewer?.ViewportWidth ?? 0;
             if (IsValidPersistedColumnWidth(viewportWidth))
             {
-                var tolerance = SystemParameters.VerticalScrollBarWidth + 4;
-                if (Math.Abs(viewportWidth - width) <= tolerance)
+                return Math.Max(0, viewportWidth);
+            }
+
+            var chrome = grid.BorderThickness.Left + grid.BorderThickness.Right + grid.Padding.Left + grid.Padding.Right + 2;
+            width -= chrome;
+
+            if (scrollViewer != null)
+            {
+                var computedScrollBarWidth = scrollViewer.ActualWidth - scrollViewer.ViewportWidth;
+                if (IsValidPersistedColumnWidth(computedScrollBarWidth))
                 {
-                    width = viewportWidth;
+                    width -= computedScrollBarWidth;
+                }
+                else if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible ||
+                         scrollViewer.VerticalScrollBarVisibility == ScrollBarVisibility.Visible)
+                {
+                    width -= SystemParameters.VerticalScrollBarWidth;
                 }
             }
 

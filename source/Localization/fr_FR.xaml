@@ -145,6 +145,7 @@
     <sys:String x:Key="LOCPlayAch_Label_SteamAuth">Authentification Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamWebAuth">Authentification web Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_RaAuth">Authentification RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Ra_NotChecked">RetroAchievements non vérifié</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Ra_Configured">RetroAchievements configuré avec succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Ra_BothNeeded">Nom d'utilisateur et clé API requis</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Ra_UsernameNeeded">Nom d'utilisateur requis</sys:String>

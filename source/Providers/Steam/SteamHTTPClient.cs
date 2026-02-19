@@ -412,11 +412,9 @@ namespace PlayniteAchievements.Providers.Steam
             var summaryNode = doc.DocumentNode.SelectSingleNode("//div[@id='topSummaryAchievements']");
             if (summaryNode == null) return false;
 
-            // Get the first text-containing div (before the progress bar)
+            // Newer pages store the summary in a child div; older pages store text directly in topSummaryAchievements.
             var textNode = summaryNode.SelectSingleNode("./div[not(contains(@class,'achieveBar'))]");
-            if (textNode == null) return false;
-
-            var text = WebUtility.HtmlDecode(textNode.InnerText ?? string.Empty);
+            var text = WebUtility.HtmlDecode((textNode?.InnerText ?? summaryNode.InnerText) ?? string.Empty);
             return TryParseUnlockedAndTotalFromText(text, out unlockedCount, out totalCount);
         }
 
