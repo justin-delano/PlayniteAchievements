@@ -794,7 +794,6 @@ namespace PlayniteAchievements.Services
                 ProviderName = source.ProviderName,
                 LibrarySourceName = source.LibrarySourceName,
                 NoAchievements = source.NoAchievements,
-                IsCompleted = source.IsCompleted,
                 ProviderIsCompleted = source.ProviderIsCompleted,
                 CompletedMarkerApiName = source.CompletedMarkerApiName,
                 PlaytimeSeconds = source.PlaytimeSeconds,
