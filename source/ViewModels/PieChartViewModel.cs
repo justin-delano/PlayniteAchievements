@@ -29,9 +29,9 @@ namespace PlayniteAchievements.ViewModels
         private const string LockedLegendColor = "#666666";
 
         /// <summary>
-        /// Sets the pie chart data for Games completion (Perfect vs Incomplete).
+        /// Sets the pie chart data for Games completion (Completed vs Incomplete).
         /// </summary>
-        public void SetGameData(int totalGames, int perfectGames, string perfectLabel, string incompleteLabel)
+        public void SetGameData(int totalGames, int completedGames, string completedLabel, string incompleteLabel)
         {
             if (totalGames == 0)
             {
@@ -39,11 +39,11 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var incomplete = totalGames - perfectGames;
+            var incomplete = totalGames - completedGames;
 
             var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex)>
             {
-                (perfectLabel, perfectGames, "BadgePerfectGame", Color.FromRgb(33, 150, 243), string.Empty)
+                (completedLabel, completedGames, "BadgeCompletedGame", Color.FromRgb(33, 150, 243), string.Empty)
             };
 
             if (incomplete > 0)
