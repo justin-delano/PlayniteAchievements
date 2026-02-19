@@ -30,7 +30,7 @@ namespace PlayniteAchievements.Services.Database
             public long NoAchievements { get; set; }
             public long IsCompleted { get; set; }
             public long ProviderIsCompleted { get; set; }
-            public string CompletedMarkerApiName { get; set; }
+            public string CapstoneApiName { get; set; }
             public string LastUpdatedUtc { get; set; }
             public string ProviderName { get; set; }
             public long? ProviderGameId { get; set; }
@@ -244,7 +244,7 @@ namespace PlayniteAchievements.Services.Database
                         ugp.NoAchievements AS NoAchievements,
                         ugp.IsCompleted AS IsCompleted,
                         ugp.ProviderIsCompleted AS ProviderIsCompleted,
-                        ugp.CompletedMarkerApiName AS CompletedMarkerApiName,
+                        ugp.CapstoneApiName AS CapstoneApiName,
                         ugp.LastUpdatedUtc AS LastUpdatedUtc,
                         g.ProviderName AS ProviderName,
                         g.ProviderGameId AS ProviderGameId,
@@ -343,7 +343,7 @@ namespace PlayniteAchievements.Services.Database
                             ugp.NoAchievements AS NoAchievements,
                             ugp.IsCompleted AS IsCompleted,
                             ugp.ProviderIsCompleted AS ProviderIsCompleted,
-                            ugp.CompletedMarkerApiName AS CompletedMarkerApiName,
+                            ugp.CapstoneApiName AS CapstoneApiName,
                             ugp.LastUpdatedUtc AS LastUpdatedUtc,
                             g.ProviderName AS ProviderName,
                             g.ProviderGameId AS ProviderGameId,
@@ -369,7 +369,7 @@ namespace PlayniteAchievements.Services.Database
                         NoAchievements,
                         IsCompleted,
                         ProviderIsCompleted,
-                        CompletedMarkerApiName,
+                        CapstoneApiName,
                         LastUpdatedUtc,
                         ProviderName,
                         ProviderGameId,
@@ -532,15 +532,15 @@ namespace PlayniteAchievements.Services.Database
                     var gameId = UpsertGame(db, providerName, payload, nowIso, updatedIso);
                     var existingProgress = LoadUserGameProgress(db, userId, gameId, cacheKey);
 
-                    var completedMarkerApiName = NormalizeMarkerApiName(payload.CompletedMarkerApiName);
-                    if (string.IsNullOrWhiteSpace(completedMarkerApiName))
+                    var capstoneApiName = NormalizeMarkerApiName(payload.CapstoneApiName);
+                    if (string.IsNullOrWhiteSpace(capstoneApiName))
                     {
-                        completedMarkerApiName = NormalizeMarkerApiName(existingProgress?.CompletedMarkerApiName);
+                        capstoneApiName = NormalizeMarkerApiName(existingProgress?.CapstoneApiName);
                     }
 
                     var providerIsCompleted = payload.ProviderIsCompleted || payload.IsCompleted;
-                    var hasMarker = !string.IsNullOrWhiteSpace(completedMarkerApiName);
-                    var markerUnlocked = IsMarkerUnlocked(completedMarkerApiName, achievements);
+                    var hasMarker = !string.IsNullOrWhiteSpace(capstoneApiName);
+                    var markerUnlocked = IsMarkerUnlocked(capstoneApiName, achievements);
                     var isCompleted = SqlNadoCacheBehavior.ComputeIsCompleted(
                         providerIsCompleted,
                         unlockedCount,
@@ -548,7 +548,7 @@ namespace PlayniteAchievements.Services.Database
                         markerUnlocked,
                         hasMarker);
                     payload.ProviderIsCompleted = providerIsCompleted;
-                    payload.CompletedMarkerApiName = completedMarkerApiName;
+                    payload.CapstoneApiName = capstoneApiName;
 
                     var userProgressId = UpsertUserGameProgress(
                         db,
@@ -562,7 +562,7 @@ namespace PlayniteAchievements.Services.Database
                         totalCount,
                         isCompleted,
                         providerIsCompleted,
-                        completedMarkerApiName,
+                        capstoneApiName,
                         updatedIso,
                         nowIso);
 
@@ -665,20 +665,20 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
-        public CacheWriteResult SetCompletedMarker(Guid playniteGameId, string markerApiName)
+        public CacheWriteResult SetCapstone(Guid playniteGameId, string capstoneApiName)
         {
             if (playniteGameId == Guid.Empty)
             {
                 return CacheWriteResult.CreateFailure(
                     string.Empty,
                     "invalid_game_id",
-                    ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_InvalidGame"));
+                    ResourceProvider.GetString("LOCPlayAch_Capstone_Error_InvalidGame"));
             }
 
             var playniteGameIdText = playniteGameId.ToString();
             var writeUtc = DateTime.UtcNow;
             var updatedIso = ToIso(writeUtc);
-            var normalizedMarkerApiName = NormalizeMarkerApiName(markerApiName);
+            var normalizedCapstoneApiName = NormalizeMarkerApiName(capstoneApiName);
 
             try
             {
@@ -700,7 +700,7 @@ namespace PlayniteAchievements.Services.Database
                                     ugp.TotalAchievements AS TotalAchievements,
                                     ugp.IsCompleted AS IsCompleted,
                                     ugp.ProviderIsCompleted AS ProviderIsCompleted,
-                                    ugp.CompletedMarkerApiName AS CompletedMarkerApiName,
+                                    ugp.CapstoneApiName AS CapstoneApiName,
                                     ugp.LastUpdatedUtc AS LastUpdatedUtc,
                                     ugp.CreatedUtc AS CreatedUtc,
                                     ugp.UpdatedUtc AS UpdatedUtc
@@ -718,11 +718,11 @@ namespace PlayniteAchievements.Services.Database
                             result = CacheWriteResult.CreateFailure(
                                 playniteGameIdText,
                                 "game_not_cached",
-                                ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_NotCached"));
+                                ResourceProvider.GetString("LOCPlayAch_Capstone_Error_NotCached"));
                             return;
                         }
 
-                        if (!string.IsNullOrWhiteSpace(normalizedMarkerApiName))
+                        if (!string.IsNullOrWhiteSpace(normalizedCapstoneApiName))
                         {
                             var markerExists = db.ExecuteScalar<long>(
                                 @"SELECT EXISTS(
@@ -734,20 +734,20 @@ namespace PlayniteAchievements.Services.Database
                                     LIMIT 1
                                   );",
                                 playniteGameIdText,
-                                normalizedMarkerApiName);
+                                normalizedCapstoneApiName);
 
                             if (markerExists == 0)
                             {
                                 result = CacheWriteResult.CreateFailure(
                                     progress.CacheKey,
                                     "marker_not_found",
-                                    ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_MarkerNotFound"));
+                                    ResourceProvider.GetString("LOCPlayAch_Capstone_Error_MarkerNotFound"));
                                 return;
                             }
                         }
 
                         var markerUnlocked = false;
-                        if (!string.IsNullOrWhiteSpace(normalizedMarkerApiName))
+                        if (!string.IsNullOrWhiteSpace(normalizedCapstoneApiName))
                         {
                             var unlockedValue = db.ExecuteScalar<long>(
                                 @"SELECT COALESCE(ua.Unlocked, 0)
@@ -759,7 +759,7 @@ namespace PlayniteAchievements.Services.Database
                                   LIMIT 1;",
                                 progress.Id,
                                 progress.GameId,
-                                normalizedMarkerApiName);
+                                normalizedCapstoneApiName);
 
                             markerUnlocked = unlockedValue != 0;
                         }
@@ -767,7 +767,7 @@ namespace PlayniteAchievements.Services.Database
                         var providerIsCompleted = progress.ProviderIsCompleted != 0;
                         var unlockedCount = (int)Math.Max(0, progress.AchievementsUnlocked);
                         var totalCount = (int)Math.Max(0, progress.TotalAchievements);
-                        var hasMarker = !string.IsNullOrWhiteSpace(normalizedMarkerApiName);
+                        var hasMarker = !string.IsNullOrWhiteSpace(normalizedCapstoneApiName);
                         var isCompleted = SqlNadoCacheBehavior.ComputeIsCompleted(
                             providerIsCompleted,
                             unlockedCount,
@@ -777,12 +777,12 @@ namespace PlayniteAchievements.Services.Database
 
                         db.ExecuteNonQuery(
                             @"UPDATE UserGameProgress
-                              SET CompletedMarkerApiName = ?,
+                              SET CapstoneApiName = ?,
                                   IsCompleted = ?,
                                   LastUpdatedUtc = ?,
                                   UpdatedUtc = ?
                               WHERE Id = ?;",
-                            normalizedMarkerApiName != null ? (object)normalizedMarkerApiName : DBNull.Value,
+                            normalizedCapstoneApiName != null ? (object)normalizedCapstoneApiName : DBNull.Value,
                             isCompleted ? 1 : 0,
                             updatedIso,
                             updatedIso,
@@ -794,7 +794,7 @@ namespace PlayniteAchievements.Services.Database
                     return result ?? CacheWriteResult.CreateFailure(
                         playniteGameIdText,
                         "sql_write_failed",
-                        ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_SaveFailed"));
+                        ResourceProvider.GetString("LOCPlayAch_Capstone_Error_SaveFailed"));
                 });
             }
             catch (Exception ex)
@@ -1134,7 +1134,7 @@ namespace PlayniteAchievements.Services.Database
             string cacheKey)
         {
             var existing = db.Load<UserGameProgressRow>(
-                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, ProviderIsCompleted, CompletedMarkerApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc
+                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, ProviderIsCompleted, CapstoneApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc
                   FROM UserGameProgress
                   WHERE UserId = ? AND CacheKey = ?
                   LIMIT 1;",
@@ -1147,7 +1147,7 @@ namespace PlayniteAchievements.Services.Database
             }
 
             return db.Load<UserGameProgressRow>(
-                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, ProviderIsCompleted, CompletedMarkerApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc
+                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, ProviderIsCompleted, CapstoneApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc
                   FROM UserGameProgress
                   WHERE UserId = ? AND GameId = ?
                   LIMIT 1;",
@@ -1167,17 +1167,17 @@ namespace PlayniteAchievements.Services.Database
             int totalAchievements,
             bool isCompleted,
             bool providerIsCompleted,
-            string completedMarkerApiName,
+            string capstoneApiName,
             string updatedIso,
             string nowIso)
         {
-            completedMarkerApiName = NormalizeDbText(completedMarkerApiName);
+            capstoneApiName = NormalizeDbText(capstoneApiName);
 
             if (existing == null)
             {
                 db.ExecuteNonQuery(
                     @"INSERT INTO UserGameProgress
-                        (UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, ProviderIsCompleted, CompletedMarkerApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc)
+                        (UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, ProviderIsCompleted, CapstoneApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc)
                       VALUES
                         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                     userId,
@@ -1189,7 +1189,7 @@ namespace PlayniteAchievements.Services.Database
                     totalAchievements,
                     isCompleted ? 1 : 0,
                     providerIsCompleted ? 1 : 0,
-                    completedMarkerApiName != null ? (object)completedMarkerApiName : DBNull.Value,
+                    capstoneApiName != null ? (object)capstoneApiName : DBNull.Value,
                     updatedIso,
                     nowIso,
                     nowIso);
@@ -1206,7 +1206,7 @@ namespace PlayniteAchievements.Services.Database
                       TotalAchievements = ?,
                       IsCompleted = ?,
                       ProviderIsCompleted = ?,
-                      CompletedMarkerApiName = ?,
+                      CapstoneApiName = ?,
                       LastUpdatedUtc = ?,
                       UpdatedUtc = ?
                   WHERE Id = ?;",
@@ -1218,7 +1218,7 @@ namespace PlayniteAchievements.Services.Database
                 totalAchievements,
                 isCompleted ? 1 : 0,
                 providerIsCompleted ? 1 : 0,
-                completedMarkerApiName != null ? (object)completedMarkerApiName : DBNull.Value,
+                capstoneApiName != null ? (object)capstoneApiName : DBNull.Value,
                 updatedIso,
                 nowIso,
                 existing.Id);
@@ -1403,7 +1403,7 @@ namespace PlayniteAchievements.Services.Database
                 LibrarySourceName = progress?.LibrarySourceName,
                 NoAchievements = progress != null && progress.NoAchievements != 0,
                 ProviderIsCompleted = progress != null && progress.ProviderIsCompleted != 0,
-                CompletedMarkerApiName = NormalizeDbText(progress?.CompletedMarkerApiName),
+                CapstoneApiName = NormalizeDbText(progress?.CapstoneApiName),
                 PlaytimeSeconds = (ulong)Math.Max(0, progress?.PlaytimeSeconds ?? 0),
                 GameName = progress?.GameName,
                 AppId = (int)Math.Max(0, progress?.ProviderGameId ?? 0),
@@ -1670,17 +1670,17 @@ namespace PlayniteAchievements.Services.Database
             var rows = _db.Load<UserGameProgressExportRow>(
                 "SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, " +
                 "NoAchievements, AchievementsUnlocked, TotalAchievements, " +
-                "IsCompleted, ProviderIsCompleted, CompletedMarkerApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc " +
+                "IsCompleted, ProviderIsCompleted, CapstoneApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc " +
                 "FROM UserGameProgress").ToList();
             WriteCsv(filePath, rows, new[]
             {
                 "Id", "UserId", "GameId", "CacheKey", "PlaytimeSeconds",
                 "NoAchievements", "AchievementsUnlocked", "TotalAchievements",
-                "IsCompleted", "ProviderIsCompleted", "CompletedMarkerApiName", "LastUpdatedUtc", "CreatedUtc", "UpdatedUtc"
+                "IsCompleted", "ProviderIsCompleted", "CapstoneApiName", "LastUpdatedUtc", "CreatedUtc", "UpdatedUtc"
             }, r => new[] {
                 r.Id.ToString(), r.UserId.ToString(), r.GameId.ToString(), r.CacheKey, r.PlaytimeSeconds.ToString(),
                 r.NoAchievements.ToString(), r.AchievementsUnlocked.ToString(), r.TotalAchievements.ToString(),
-                r.IsCompleted.ToString(), r.ProviderIsCompleted.ToString(), r.CompletedMarkerApiName, r.LastUpdatedUtc, r.CreatedUtc, r.UpdatedUtc
+                r.IsCompleted.ToString(), r.ProviderIsCompleted.ToString(), r.CapstoneApiName, r.LastUpdatedUtc, r.CreatedUtc, r.UpdatedUtc
             });
             _logger.Info($"Exported {rows.Count} rows to {filePath}");
         }
@@ -1831,7 +1831,7 @@ namespace PlayniteAchievements.Services.Database
             public long TotalAchievements { get; set; }
             public long IsCompleted { get; set; }
             public long ProviderIsCompleted { get; set; }
-            public string CompletedMarkerApiName { get; set; }
+            public string CapstoneApiName { get; set; }
             public string LastUpdatedUtc { get; set; }
             public string CreatedUtc { get; set; }
             public string UpdatedUtc { get; set; }

@@ -37,11 +37,11 @@ namespace PlayniteAchievements.Models
 
         private bool IsMarkerUnlocked()
         {
-            if (string.IsNullOrWhiteSpace(CompletedMarkerApiName) || Achievements == null)
+            if (string.IsNullOrWhiteSpace(CapstoneApiName) || Achievements == null)
                 return false;
 
             return Achievements.Any(a =>
-                string.Equals(a?.ApiName?.Trim(), CompletedMarkerApiName.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(a?.ApiName?.Trim(), CapstoneApiName.Trim(), StringComparison.OrdinalIgnoreCase) &&
                 a.Unlocked);
         }
 
@@ -56,7 +56,7 @@ namespace PlayniteAchievements.Models
         /// Optional per-game achievement ApiName selected as manual completion marker.
         /// When set, IsCompleted becomes true if this achievement is unlocked.
         /// </summary>
-        public string CompletedMarkerApiName { get; set; }
+        public string CapstoneApiName { get; set; }
 
         public ulong PlaytimeSeconds { get; set; }
 
