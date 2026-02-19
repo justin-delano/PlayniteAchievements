@@ -245,7 +245,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
 
         /// <summary>
         /// Completed games sorted by last unlock date ascending (oldest first).
-        /// Completion is provider-aware or 100% unlocked.
+        /// Completion is provider-aware or all achievements unlocked.
         /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> CompletedGamesAsc
@@ -256,7 +256,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
 
         /// <summary>
         /// Completed games sorted by last unlock date descending (newest first).
-        /// Completion is provider-aware or 100% unlocked.
+        /// Completion is provider-aware or all achievements unlocked.
         /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> CompletedGamesDesc
