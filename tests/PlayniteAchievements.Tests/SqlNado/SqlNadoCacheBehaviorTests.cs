@@ -129,5 +129,64 @@ namespace PlayniteAchievements.SqlNado.Tests
                 remainingFileCount);
             Assert.AreEqual(expected, actual);
         }
+
+        [TestMethod]
+        public void ShouldFallbackToProviderGameIdLookup_RetroAchievementsWithPlayniteId_ReturnsFalse()
+        {
+            var shouldFallback = SqlNadoCacheBehavior.ShouldFallbackToProviderGameIdLookup(
+                "RetroAchievements",
+                Guid.NewGuid().ToString(),
+                12345);
+
+            Assert.IsFalse(shouldFallback);
+        }
+
+        [TestMethod]
+        public void ShouldFallbackToProviderGameIdLookup_RetroAchievementsWithoutPlayniteId_ReturnsTrue()
+        {
+            var shouldFallback = SqlNadoCacheBehavior.ShouldFallbackToProviderGameIdLookup(
+                "RetroAchievements",
+                null,
+                12345);
+
+            Assert.IsTrue(shouldFallback);
+        }
+
+        [TestMethod]
+        public void ShouldFallbackToProviderGameIdLookup_NonRetroAchievementsWithPlayniteId_ReturnsTrue()
+        {
+            var shouldFallback = SqlNadoCacheBehavior.ShouldFallbackToProviderGameIdLookup(
+                "Steam",
+                Guid.NewGuid().ToString(),
+                12345);
+
+            Assert.IsTrue(shouldFallback);
+        }
+
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow(0L)]
+        [DataRow(-5L)]
+        public void ShouldFallbackToProviderGameIdLookup_MissingOrInvalidProviderGameId_ReturnsFalse(long? providerGameId)
+        {
+            var shouldFallback = SqlNadoCacheBehavior.ShouldFallbackToProviderGameIdLookup(
+                "Steam",
+                Guid.NewGuid().ToString(),
+                providerGameId);
+
+            Assert.IsFalse(shouldFallback);
+        }
+
+        [DataTestMethod]
+        [DataRow("RetroAchievements", true)]
+        [DataRow(" retroachievements ", true)]
+        [DataRow("Steam", false)]
+        [DataRow("", false)]
+        [DataRow(null, false)]
+        public void IsRetroAchievementsProvider_DetectsExpectedProviders(string providerName, bool expected)
+        {
+            var actual = SqlNadoCacheBehavior.IsRetroAchievementsProvider(providerName);
+            Assert.AreEqual(expected, actual);
+        }
     }
 }

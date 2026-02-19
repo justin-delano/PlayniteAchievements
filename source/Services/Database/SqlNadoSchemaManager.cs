@@ -11,7 +11,10 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 3;
+        public const int SchemaVersion = 4;
+        private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
+        private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
+        private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
         private readonly ILogger _logger;
         private readonly string _databasePath;
         private readonly string _pluginDataDir;
@@ -69,7 +72,12 @@ namespace PlayniteAchievements.Services.Database
                 ON Games (ProviderName, PlayniteGameId)
                 WHERE PlayniteGameId IS NOT NULL;");
 
-            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId
+            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
+                ON Games (ProviderName, ProviderGameId)
+                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
+                  AND ProviderName <> 'RetroAchievements';");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
                 ON Games (ProviderName, ProviderGameId)
                 WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;");
 
@@ -252,7 +260,40 @@ namespace PlayniteAchievements.Services.Database
                 }
             }
 
+            ReconcileGamesProviderGameIdIndexes(db, ref backupPath);
+
             return backupPath;
+        }
+
+        private void ReconcileGamesProviderGameIdIndexes(SQLiteDatabase db, ref string backupPath)
+        {
+            if (IndexExists(db, LegacyGamesProviderGameIdIndexName))
+            {
+                ExecuteSchemaChangeWithBackup(
+                    db,
+                    $"DROP INDEX IF EXISTS {LegacyGamesProviderGameIdIndexName};",
+                    ref backupPath,
+                    $"Dropped legacy index {LegacyGamesProviderGameIdIndexName}.");
+            }
+
+            EnsureIndex(
+                db,
+                GamesProviderGameIdNonRaIndexName,
+                @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
+                    ON Games (ProviderName, ProviderGameId)
+                    WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
+                      AND ProviderName <> 'RetroAchievements';",
+                ref backupPath,
+                $"Ensured index {GamesProviderGameIdNonRaIndexName}.");
+
+            EnsureIndex(
+                db,
+                GamesProviderGameIdLookupIndexName,
+                @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
+                    ON Games (ProviderName, ProviderGameId)
+                    WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;",
+                ref backupPath,
+                $"Ensured index {GamesProviderGameIdLookupIndexName}.");
         }
 
         private int GetStoredSchemaVersion(SQLiteDatabase db)
@@ -284,6 +325,41 @@ namespace PlayniteAchievements.Services.Database
                     .Select(a => a?.Name?.Trim().ToLowerInvariant())
                     .Where(a => !string.IsNullOrWhiteSpace(a)),
                 StringComparer.OrdinalIgnoreCase);
+        }
+
+        private bool IndexExists(SQLiteDatabase db, string indexName)
+        {
+            if (string.IsNullOrWhiteSpace(indexName))
+            {
+                return false;
+            }
+
+            var exists = db.ExecuteScalar<long>(
+                @"SELECT EXISTS(
+                    SELECT 1
+                    FROM sqlite_master
+                    WHERE type = 'index'
+                      AND name = ?
+                    LIMIT 1
+                  );",
+                indexName.Trim());
+
+            return exists != 0;
+        }
+
+        private void EnsureIndex(
+            SQLiteDatabase db,
+            string indexName,
+            string createIndexSql,
+            ref string backupPath,
+            string successLog)
+        {
+            if (IndexExists(db, indexName))
+            {
+                return;
+            }
+
+            ExecuteSchemaChangeWithBackup(db, createIndexSql, ref backupPath, successLog);
         }
 
         private void EnsureColumn(
@@ -381,9 +457,17 @@ namespace PlayniteAchievements.Services.Database
             var progressColumns = GetColumnNames(db, "UserGameProgress");
             EnsureRequiredColumn(progressColumns, "IsCompleted", "UserGameProgress", missing);
 
+            if (IndexExists(db, LegacyGamesProviderGameIdIndexName))
+            {
+                missing.Add($"Unexpected legacy index: {LegacyGamesProviderGameIdIndexName}");
+            }
+
+            EnsureRequiredIndex(db, GamesProviderGameIdNonRaIndexName, missing);
+            EnsureRequiredIndex(db, GamesProviderGameIdLookupIndexName, missing);
+
             if (missing.Count > 0)
             {
-                return (false, "Missing columns: " + string.Join(", ", missing));
+                return (false, "Schema verification failures: " + string.Join(", ", missing));
             }
 
             return (true, "OK");
@@ -398,6 +482,17 @@ namespace PlayniteAchievements.Services.Database
             if (!columns.Contains(columnName))
             {
                 missing.Add($"{tableName}.{columnName}");
+            }
+        }
+
+        private void EnsureRequiredIndex(
+            SQLiteDatabase db,
+            string indexName,
+            List<string> missing)
+        {
+            if (!IndexExists(db, indexName))
+            {
+                missing.Add($"Missing index: {indexName}");
             }
         }
 

@@ -871,6 +871,7 @@ namespace PlayniteAchievements.Services.Database
         {
             var playniteGameId = data.PlayniteGameId?.ToString();
             long? providerGameId = data.AppId > 0 ? data.AppId : (long?)null;
+            var isRetroAchievements = SqlNadoCacheBehavior.IsRetroAchievementsProvider(providerName);
 
             GameRow game = null;
             if (!string.IsNullOrWhiteSpace(playniteGameId))
@@ -884,7 +885,8 @@ namespace PlayniteAchievements.Services.Database
                     playniteGameId).FirstOrDefault();
             }
 
-            if (game == null && providerGameId.HasValue)
+            if (game == null &&
+                SqlNadoCacheBehavior.ShouldFallbackToProviderGameIdLookup(providerName, playniteGameId, providerGameId))
             {
                 game = db.Load<GameRow>(
                     @"SELECT Id, ProviderName, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
@@ -897,6 +899,31 @@ namespace PlayniteAchievements.Services.Database
 
             if (game == null)
             {
+                if (isRetroAchievements && providerGameId.HasValue && !string.IsNullOrWhiteSpace(playniteGameId))
+                {
+                    var mirroredRows = db.Load<GameRow>(
+                        @"SELECT Id, ProviderName, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                          FROM Games
+                          WHERE ProviderName = ?
+                            AND ProviderGameId = ?
+                            AND (PlayniteGameId IS NULL OR PlayniteGameId <> ?)
+                          ORDER BY LastUpdatedUtc DESC, Id DESC
+                          LIMIT 5;",
+                        providerName,
+                        providerGameId.Value,
+                        playniteGameId).ToList();
+
+                    if (mirroredRows.Count > 0)
+                    {
+                        var existingIds = string.Join(
+                            ",",
+                            mirroredRows.Select(a => string.IsNullOrWhiteSpace(a?.PlayniteGameId) ? "(null)" : a.PlayniteGameId));
+                        _logger?.Debug(
+                            $"[Cache][RA] Mirroring providerGameId={providerGameId.Value} to playniteGameId={playniteGameId}; " +
+                            $"existingPlayniteGameIds={existingIds}");
+                    }
+                }
+
                 db.ExecuteNonQuery(
                     @"INSERT INTO Games
                         (ProviderName, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)

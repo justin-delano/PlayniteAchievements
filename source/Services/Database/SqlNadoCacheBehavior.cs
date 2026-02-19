@@ -55,5 +55,30 @@ namespace PlayniteAchievements.Services.Database
                    dbWriteFailedCount <= 0 &&
                    remainingFileCount <= 0;
         }
+
+        public static bool ShouldFallbackToProviderGameIdLookup(
+            string providerName,
+            string playniteGameId,
+            long? providerGameId)
+        {
+            if (!providerGameId.HasValue || providerGameId.Value <= 0)
+            {
+                return false;
+            }
+
+            var hasPlayniteGameId = !string.IsNullOrWhiteSpace(playniteGameId);
+            if (hasPlayniteGameId && IsRetroAchievementsProvider(providerName))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static bool IsRetroAchievementsProvider(string providerName)
+        {
+            return !string.IsNullOrWhiteSpace(providerName) &&
+                   string.Equals(providerName.Trim(), "RetroAchievements", StringComparison.OrdinalIgnoreCase);
+        }
     }
 }
