@@ -908,8 +908,8 @@
                                 </Style>
                             </DataGrid.RowStyle>
                            <DataGrid.Columns>
-                            <!-- Complete indicator (slightly larger) -->
-                            <DataGridTemplateColumn Width="34" MinWidth="34" MaxWidth="34" CanUserResize="False" Header="" helpers:ColumnVisibilityHelper.ColumnKey="OverviewPerfect">
+                            <!-- Completed indicator (slightly larger) -->
+                            <DataGridTemplateColumn Width="34" MinWidth="34" MaxWidth="34" CanUserResize="False" Header="" helpers:ColumnVisibilityHelper.ColumnKey="OverviewCompleted">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
