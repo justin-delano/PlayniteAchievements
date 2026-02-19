@@ -69,7 +69,7 @@
                        Margin="3"
                        SnapsToDevicePixels="True"
                        RenderOptions.BitmapScalingMode="NearestNeighbor"/>
-                <Image Source="{StaticResource BadgePerfectGame}"
+                <Image Source="{StaticResource BadgeCompletedGame}"
                        Width="28"
                        Height="28"
                        Margin="3"
@@ -395,7 +395,7 @@
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Center"
                                         Margin="0,0,0,6">
-                                <Image Source="{StaticResource BadgePerfectGame}"
+                                <Image Source="{StaticResource BadgeCompletedGame}"
                                        Width="20"
                                        Height="20"
                                        Margin="1"
