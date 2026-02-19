@@ -46,7 +46,7 @@ namespace PlayniteAchievements.Services.Sidebar
             int uncommonCount = 0;
             int rareCount = 0;
             int ultraRareCount = 0;
-            int perfectGames = 0;
+            int completedGames = 0;
 
             var unlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -91,7 +91,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 ultraRareCount += fragment.UltraRareCount;
                 if (fragment.IsCompleted)
                 {
-                    perfectGames++;
+                    completedGames++;
                 }
 
                 var provider = fragment.ProviderName ?? "Unknown";
@@ -125,7 +125,7 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.TotalUncommon = uncommonCount;
             snapshot.TotalRare = rareCount;
             snapshot.TotalUltraRare = ultraRareCount;
-            snapshot.PerfectGames = perfectGames;
+            snapshot.CompletedGames = completedGames;
             snapshot.GlobalProgressionPercent = totalAchievements > 0 ? (double)totalUnlocked / totalAchievements * 100 : 0;
 
             snapshot.TotalLocked = totalAchievements - totalUnlocked;
