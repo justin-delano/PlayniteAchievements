@@ -102,7 +102,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
 
                 var progress = unlocked == total ? 100 : (int)Math.Floor(100.0 * unlocked / total);
-                var isCompleted = data.IsCompleted || (total > 0 && unlocked == total);
+                var isCompleted = data.IsCompleted;
                 var latestUnlockLocal = latestUnlockUtc == DateTime.MinValue ? DateTime.MinValue : latestUnlockUtc.ToLocalTime();
 
                 GetTrophyCounts(data, out var gold, out var silver, out var bronze);
