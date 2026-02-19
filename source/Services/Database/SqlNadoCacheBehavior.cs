@@ -88,13 +88,8 @@ namespace PlayniteAchievements.Services.Database
             bool markerUnlocked,
             bool hasMarker)
         {
-            if (hasMarker && !markerUnlocked)
-            {
-                return false;
-            }
-
             var isHundredPercent = totalCount > 0 && unlockedCount == totalCount;
-            return providerIsCompleted || isHundredPercent || markerUnlocked;
+            return providerIsCompleted || isHundredPercent || (hasMarker && markerUnlocked);
         }
     }
 }

@@ -269,16 +269,13 @@ namespace PlayniteAchievements.Services.Sidebar
                 }
             }
 
-            var is100Percent = gameUnlocked == gameTotal && gameTotal > 0;
-            var isPerfect = gameData.IsCompleted || is100Percent;
-
             fragment.TotalAchievements = gameTotal;
             fragment.UnlockedAchievements = gameUnlocked;
             fragment.CommonCount = gameCommon;
             fragment.UncommonCount = gameUncommon;
             fragment.RareCount = gameRare;
             fragment.UltraRareCount = gameUltraRare;
-            fragment.IsPerfect = isPerfect;
+            fragment.IsPerfect = gameData.IsCompleted;
 
             fragment.GameOverview = new GameOverviewItem
             {
@@ -294,7 +291,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 RareCount = gameRare,
                 UltraRareCount = gameUltraRare,
                 LastPlayed = playniteGame?.LastActivity,
-                IsPerfect = isPerfect,
+                IsPerfect = gameData.IsCompleted,
                 Provider = gameData.ProviderName ?? "Unknown"
             };
 
