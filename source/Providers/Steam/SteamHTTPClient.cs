@@ -196,12 +196,43 @@ namespace PlayniteAchievements.Providers.Steam
             var doc = new HtmlDocument();
             doc.LoadHtml(safe);
 
-            var nodes = doc.DocumentNode.SelectNodes("//div[contains(@class,'achieveRow')]") ??
-                        doc.DocumentNode.SelectNodes("//*[contains(@class,'achievement') and (.//h3 or .//div[contains(@class,'achieveUnlockTime')])]");
+            var modernNodes = doc.DocumentNode.SelectNodes("//div[contains(@class,'achieveRow')]");
+            if (modernNodes != null && modernNodes.Count > 0)
+            {
+                return ParseAchievementRows(doc, modernNodes, includeLocked, language, gameName, preferLegacySiblingIcon: false);
+            }
 
-            if (nodes == null || nodes.Count == 0) return new List<ScrapedAchievement>();
+            // Legacy stats pages (e.g., TF2/L4D era) don't wrap rows in a single container.
+            // They store title/description in achieveTxtHolder and icon in a preceding achieveImgHolder sibling.
+            var legacyNodes = doc.DocumentNode.SelectNodes("//div[contains(@class,'achieveTxtHolder')]");
+            if (legacyNodes != null && legacyNodes.Count > 0)
+            {
+                return ParseAchievementRows(doc, legacyNodes, includeLocked, language, gameName, preferLegacySiblingIcon: true);
+            }
 
-            // Parse the summary progress bar and use it as the primary unlock source:
+            var fallbackNodes = doc.DocumentNode.SelectNodes("//*[contains(@class,'achievement') and (.//h3 or .//div[contains(@class,'achieveUnlockTime')])]");
+            if (fallbackNodes != null && fallbackNodes.Count > 0)
+            {
+                return ParseAchievementRows(doc, fallbackNodes, includeLocked, language, gameName, preferLegacySiblingIcon: false);
+            }
+
+            return new List<ScrapedAchievement>();
+        }
+
+        private List<ScrapedAchievement> ParseAchievementRows(
+            HtmlDocument doc,
+            HtmlNodeCollection nodes,
+            bool includeLocked,
+            string language,
+            string gameName,
+            bool preferLegacySiblingIcon)
+        {
+            if (doc == null || nodes == null || nodes.Count == 0)
+            {
+                return new List<ScrapedAchievement>();
+            }
+
+            // Parse the summary progress and use it as the primary unlock source:
             // Steam orders unlocked achievements first, so the first N rows are unlocked.
             var hasProgressSummary = TryParseAchievementCountsFromProgressBar(doc, out var unlockedCountFromProgressBar, out var totalCountFromProgressBar);
             if (hasProgressSummary)
@@ -218,13 +249,17 @@ namespace PlayniteAchievements.Providers.Steam
                 var rowIndexInList = rowIndex;
                 rowIndex++;
 
-                if (row.SelectSingleNode(".//div[contains(@class,'achieveHiddenBox')]") != null) continue;
+                if (row.SelectSingleNode(".//div[contains(@class,'achieveHiddenBox')]") != null)
+                {
+                    continue;
+                }
 
                 var unlockNode = row.SelectSingleNode(".//div[contains(@class,'achieveUnlockTime')]");
                 var hasUnlockMarker = unlockNode != null;
                 var unlockText = ExtractUnlockText(unlockNode);
                 var unlockUtc = SteamTimeParser.TryParseSteamUnlockTime(unlockText, language);
                 var title = WebUtility.HtmlDecode(row.SelectSingleNode(".//h3")?.InnerText ?? "").Trim();
+                var desc = WebUtility.HtmlDecode(row.SelectSingleNode(".//h5")?.InnerText ?? "").Trim();
 
                 // Primary indicator: progress summary ordering (first N rows unlocked).
                 // Fallback if summary is missing: presence of Steam's unlock marker.
@@ -250,15 +285,10 @@ namespace PlayniteAchievements.Providers.Steam
                     }
                 }
 
-                if (!includeLocked && !isUnlocked) continue;
-
-                var desc = WebUtility.HtmlDecode(row.SelectSingleNode(".//h5")?.InnerText ?? "").Trim();
-                var img = row.SelectSingleNode(".//div[contains(@class,'achieveImgHolder')]//img") ??
-                          row.SelectSingleNode(".//img");
-                var iconUrl = img?.GetAttributeValue("src", "")?.Trim() ?? "";
-
-                var primaryKeyPart = !string.IsNullOrWhiteSpace(title) ? title : iconUrl;
-                var secondaryKeyPart = !string.IsNullOrWhiteSpace(desc) ? desc : (unlockUtc.HasValue ? unlockUtc.Value.ToString("O") : "");
+                if (!includeLocked && !isUnlocked)
+                {
+                    continue;
+                }
 
                 int? progressNum = null;
                 int? progressDenom = null;
@@ -279,6 +309,10 @@ namespace PlayniteAchievements.Providers.Steam
                     }
                 }
 
+                var iconUrl = ResolveAchievementIconUrl(row, preferLegacySiblingIcon);
+                var primaryKeyPart = !string.IsNullOrWhiteSpace(title) ? title : iconUrl;
+                var secondaryKeyPart = !string.IsNullOrWhiteSpace(desc) ? desc : (unlockUtc.HasValue ? unlockUtc.Value.ToString("O") : "");
+
                 results.Add(new ScrapedAchievement
                 {
                     Key = (primaryKeyPart + "|" + secondaryKeyPart).Trim(),
@@ -291,7 +325,59 @@ namespace PlayniteAchievements.Providers.Steam
                     ProgressDenom = progressDenom
                 });
             }
+
             return results;
+        }
+
+        private static string ResolveAchievementIconUrl(HtmlNode row, bool preferLegacySiblingIcon)
+        {
+            if (row == null)
+            {
+                return string.Empty;
+            }
+
+            if (preferLegacySiblingIcon)
+            {
+                var legacyImg = row.SelectSingleNode("./preceding-sibling::div[contains(@class,'achieveImgHolder')][1]//img");
+                var legacyIconUrl = legacyImg?.GetAttributeValue("src", "")?.Trim() ?? string.Empty;
+                if (!IsDecorativeAchievementImage(legacyIconUrl))
+                {
+                    return legacyIconUrl;
+                }
+            }
+
+            var primaryImg = row.SelectSingleNode(".//div[contains(@class,'achieveImgHolder')]//img");
+            var primaryIconUrl = primaryImg?.GetAttributeValue("src", "")?.Trim() ?? string.Empty;
+            if (!IsDecorativeAchievementImage(primaryIconUrl))
+            {
+                return primaryIconUrl;
+            }
+
+            var allImgs = row.SelectNodes(".//img");
+            if (allImgs != null)
+            {
+                foreach (var img in allImgs)
+                {
+                    var candidate = img?.GetAttributeValue("src", "")?.Trim() ?? string.Empty;
+                    if (!IsDecorativeAchievementImage(candidate))
+                    {
+                        return candidate;
+                    }
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static bool IsDecorativeAchievementImage(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return true;
+            }
+
+            return url.IndexOf("achieveBG", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   url.IndexOf("/trans.gif", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>
@@ -300,6 +386,24 @@ namespace PlayniteAchievements.Providers.Steam
         /// This works across languages by finding the first two numbers in the summary text.
         /// </summary>
         private static bool TryParseAchievementCountsFromProgressBar(HtmlDocument doc, out int unlockedCount, out int totalCount)
+        {
+            unlockedCount = 0;
+            totalCount = 0;
+
+            if (TryParseAchievementCountsFromModernSummary(doc, out unlockedCount, out totalCount))
+            {
+                return true;
+            }
+
+            if (TryParseAchievementCountsFromLegacySummary(doc, out unlockedCount, out totalCount))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryParseAchievementCountsFromModernSummary(HtmlDocument doc, out int unlockedCount, out int totalCount)
         {
             unlockedCount = 0;
             totalCount = 0;
@@ -313,7 +417,40 @@ namespace PlayniteAchievements.Providers.Steam
             if (textNode == null) return false;
 
             var text = WebUtility.HtmlDecode(textNode.InnerText ?? string.Empty);
-            if (string.IsNullOrWhiteSpace(text)) return false;
+            return TryParseUnlockedAndTotalFromText(text, out unlockedCount, out totalCount);
+        }
+
+        private static bool TryParseAchievementCountsFromLegacySummary(HtmlDocument doc, out int unlockedCount, out int totalCount)
+        {
+            unlockedCount = 0;
+            totalCount = 0;
+
+            var summaryNode = doc.DocumentNode.SelectSingleNode("//div[@id='achievementStats_all']");
+            if (summaryNode == null)
+            {
+                summaryNode = doc.DocumentNode.SelectSingleNode(
+                    "//div[starts-with(@id,'achievementStats_') and not(contains(translate(@style,'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'display:none'))]");
+            }
+
+            if (summaryNode == null)
+            {
+                return false;
+            }
+
+            var statusTextNode = summaryNode.SelectSingleNode(".//div[contains(@class,'achievementStatusText')]") ?? summaryNode;
+            var text = WebUtility.HtmlDecode(statusTextNode.InnerText ?? string.Empty);
+            return TryParseUnlockedAndTotalFromText(text, out unlockedCount, out totalCount);
+        }
+
+        private static bool TryParseUnlockedAndTotalFromText(string text, out int unlockedCount, out int totalCount)
+        {
+            unlockedCount = 0;
+            totalCount = 0;
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return false;
+            }
 
             // Find first two numbers - they represent (unlocked, total) regardless of language
             // English: "12 of 15 (80%) achievements earned"
@@ -500,6 +637,7 @@ namespace PlayniteAchievements.Providers.Steam
             doc.LoadHtml(html);
 
             var nodes = doc.DocumentNode.SelectNodes("//div[contains(@class,'achieveRow')]") ??
+                        doc.DocumentNode.SelectNodes("//div[contains(@class,'achieveTxtHolder')]") ??
                         doc.DocumentNode.SelectNodes("//*[contains(@class,'achievement') and (.//h3 or .//div[contains(@class,'achieveUnlockTime')])]");
 
             if (nodes == null || nodes.Count == 0)
