@@ -23,7 +23,7 @@ namespace PlayniteAchievements.Services.Sidebar
         public int TotalUncommon { get; set; }
         public int TotalRare { get; set; }
         public int TotalUltraRare { get; set; }
-        public int PerfectGames { get; set; }
+        public int CompletedGames { get; set; }
         public double GlobalProgressionPercent { get; set; }
 
         /// <summary>
