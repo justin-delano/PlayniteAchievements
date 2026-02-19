@@ -73,8 +73,8 @@ namespace PlayniteAchievements.ViewModels
             } 
         }
 
-        private bool _isPerfect;
-        public bool IsPerfect { get => _isPerfect; set => SetValue(ref _isPerfect, value); }
+        private bool _isCompleted;
+        public bool IsCompleted { get => _isCompleted; set => SetValue(ref _isCompleted, value); }
 
         private string _provider;
         public string Provider { get => _provider; set => SetValue(ref _provider, value); }

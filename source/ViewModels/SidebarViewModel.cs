@@ -1077,7 +1077,7 @@ namespace PlayniteAchievements.ViewModels
             snapshot.TotalUncommon = snapshot.GamesOverview.Sum(g => g?.UncommonCount ?? 0);
             snapshot.TotalRare = snapshot.GamesOverview.Sum(g => g?.RareCount ?? 0);
             snapshot.TotalUltraRare = snapshot.GamesOverview.Sum(g => g?.UltraRareCount ?? 0);
-            snapshot.PerfectGames = snapshot.GamesOverview.Count(g => g?.IsPerfect == true);
+            snapshot.PerfectGames = snapshot.GamesOverview.Count(g => g?.IsCompleted == true);
             snapshot.TotalLocked = Math.Max(0, snapshot.TotalAchievements - snapshot.TotalUnlocked);
             snapshot.GlobalProgressionPercent = snapshot.TotalAchievements > 0
                 ? (double)snapshot.TotalUnlocked / snapshot.TotalAchievements * 100
@@ -1700,7 +1700,7 @@ namespace PlayniteAchievements.ViewModels
             TotalUncommon = sourceList.Sum(g => g.UncommonCount);
             TotalRare = sourceList.Sum(g => g.RareCount);
             TotalUltraRare = sourceList.Sum(g => g.UltraRareCount);
-            PerfectGames = sourceList.Count(g => g.IsPerfect);
+            PerfectGames = sourceList.Count(g => g.IsCompleted);
 
             GlobalProgression = TotalAchievementsOverview > 0 ? (double)TotalUnlockedOverview / TotalAchievementsOverview * 100 : 0;
         }

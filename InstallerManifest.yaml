@@ -8,7 +8,6 @@ Packages:
       - Critical Hotfix - Desktop themes show achievement data again
       - PSN platinums now classify a game as perfect/completed
 
-
   - Version: 1.4.0
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-19

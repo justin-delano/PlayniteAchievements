@@ -89,7 +89,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 uncommonCount += fragment.UncommonCount;
                 rareCount += fragment.RareCount;
                 ultraRareCount += fragment.UltraRareCount;
-                if (fragment.IsPerfect)
+                if (fragment.IsCompleted)
                 {
                     perfectGames++;
                 }
@@ -275,7 +275,7 @@ namespace PlayniteAchievements.Services.Sidebar
             fragment.UncommonCount = gameUncommon;
             fragment.RareCount = gameRare;
             fragment.UltraRareCount = gameUltraRare;
-            fragment.IsPerfect = gameData.IsCompleted;
+            fragment.IsCompleted = gameData.IsCompleted;
 
             fragment.GameOverview = new GameOverviewItem
             {
@@ -291,7 +291,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 RareCount = gameRare,
                 UltraRareCount = gameUltraRare,
                 LastPlayed = playniteGame?.LastActivity,
-                IsPerfect = gameData.IsCompleted,
+                IsCompleted = gameData.IsCompleted,
                 Provider = gameData.ProviderName ?? "Unknown"
             };
 

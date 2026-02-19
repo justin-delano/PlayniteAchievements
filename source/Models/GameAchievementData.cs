@@ -28,6 +28,19 @@ namespace PlayniteAchievements.Models
 
         public bool IsCompleted { get; set; }
 
+        /// <summary>
+        /// Provider-native completion signal (for example, PSN platinum unlocked).
+        /// Persisted separately from computed completion so manual marker logic can
+        /// recompute IsCompleted strictly from current marker state.
+        /// </summary>
+        public bool ProviderIsCompleted { get; set; }
+
+        /// <summary>
+        /// Optional per-game achievement ApiName selected as manual completion marker.
+        /// When set, IsCompleted becomes true if this achievement is unlocked.
+        /// </summary>
+        public string CompletedMarkerApiName { get; set; }
+
         public ulong PlaytimeSeconds { get; set; }
 
         public string GameName { get; set; }

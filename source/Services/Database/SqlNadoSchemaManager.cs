@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 4;
+        public const int SchemaVersion = 5;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -120,6 +120,8 @@ namespace PlayniteAchievements.Services.Database
                 AchievementsUnlocked INTEGER NOT NULL DEFAULT 0,
                 TotalAchievements INTEGER NOT NULL DEFAULT 0,
                 IsCompleted INTEGER NOT NULL DEFAULT 0,
+                ProviderIsCompleted INTEGER NOT NULL DEFAULT 0,
+                CompletedMarkerApiName TEXT NULL,
                 LastUpdatedUtc TEXT NOT NULL,
                 CreatedUtc TEXT NOT NULL,
                 UpdatedUtc TEXT NOT NULL,
@@ -258,6 +260,32 @@ namespace PlayniteAchievements.Services.Database
                 {
                     EnsureColumn(db, "UserGameProgress", "IsCompleted", "INTEGER NOT NULL DEFAULT 0", progressColumns, ref backupPath);
                 }
+            }
+
+            var hadProviderIsCompleted = progressColumns.Contains("provideriscompleted");
+            EnsureColumn(
+                db,
+                "UserGameProgress",
+                "ProviderIsCompleted",
+                "INTEGER NOT NULL DEFAULT 0",
+                progressColumns,
+                ref backupPath);
+
+            EnsureColumn(
+                db,
+                "UserGameProgress",
+                "CompletedMarkerApiName",
+                "TEXT NULL",
+                progressColumns,
+                ref backupPath);
+
+            if (!hadProviderIsCompleted)
+            {
+                ExecuteSchemaChangeWithBackup(
+                    db,
+                    "UPDATE UserGameProgress SET ProviderIsCompleted = IsCompleted WHERE IsCompleted <> 0 AND ProviderIsCompleted = 0;",
+                    ref backupPath,
+                    "Backfilled UserGameProgress.ProviderIsCompleted from existing completion values.");
             }
 
             ReconcileGamesProviderGameIdIndexes(db, ref backupPath);
@@ -456,6 +484,8 @@ namespace PlayniteAchievements.Services.Database
 
             var progressColumns = GetColumnNames(db, "UserGameProgress");
             EnsureRequiredColumn(progressColumns, "IsCompleted", "UserGameProgress", missing);
+            EnsureRequiredColumn(progressColumns, "ProviderIsCompleted", "UserGameProgress", missing);
+            EnsureRequiredColumn(progressColumns, "CompletedMarkerApiName", "UserGameProgress", missing);
 
             if (IndexExists(db, LegacyGamesProviderGameIdIndexName))
             {

@@ -229,6 +229,7 @@ namespace PlayniteAchievements.Providers.PSN
                 GameName = game?.Name,
                 PlayniteGameId = game?.Id,
                 NoAchievements = achievements.Count == 0,
+                ProviderIsCompleted = isCompleted,
                 IsCompleted = isCompleted,
                 Achievements = achievements,
                 LastUpdatedUtc = DateTime.UtcNow,

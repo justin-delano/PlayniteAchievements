@@ -142,11 +142,11 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _unlockedAchievements, value);
         }
 
-        private bool _isPerfect;
-        public bool IsPerfect
+        private bool _isCompleted;
+        public bool IsCompleted
         {
-            get => _isPerfect;
-            private set => SetValue(ref _isPerfect, value);
+            get => _isCompleted;
+            private set => SetValue(ref _isCompleted, value);
         }
 
         private int _commonCount;
@@ -315,7 +315,7 @@ namespace PlayniteAchievements.ViewModels
 
                     TotalAchievements = 0;
                     UnlockedAchievements = 0;
-                    IsPerfect = false;
+                    IsCompleted = false;
                     CommonCount = 0;
                     UncommonCount = 0;
                     RareCount = 0;
@@ -337,7 +337,7 @@ namespace PlayniteAchievements.ViewModels
                 var achievements = gameData.Achievements;
                 TotalAchievements = achievements.Count;
                 UnlockedAchievements = achievements.Count(a => a.Unlocked);
-                IsPerfect = gameData.IsCompleted;
+                IsCompleted = gameData.IsCompleted;
 
                 // Calculate rarity counts
                 int common = 0, uncommon = 0, rare = 0, ultraRare = 0;

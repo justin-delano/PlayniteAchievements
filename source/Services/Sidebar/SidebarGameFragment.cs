@@ -21,6 +21,6 @@ namespace PlayniteAchievements.Services.Sidebar
         public int UncommonCount { get; set; }
         public int RareCount { get; set; }
         public int UltraRareCount { get; set; }
-        public bool IsPerfect { get; set; }
+        public bool IsCompleted { get; set; }
     }
 }

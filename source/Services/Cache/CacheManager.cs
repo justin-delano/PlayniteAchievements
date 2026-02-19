@@ -625,6 +625,90 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        public CacheWriteResult SetCompletedMarker(Guid playniteGameId, string markerApiName)
+        {
+            using (PerfScope.Start(_logger, "Cache.SetCompletedMarker", thresholdMs: 25, context: playniteGameId.ToString()))
+            {
+                if (playniteGameId == Guid.Empty)
+                {
+                    return CacheWriteResult.CreateFailure(
+                        string.Empty,
+                        "invalid_game_id",
+                        ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_InvalidGame"));
+                }
+
+                var normalizedKey = UserKey(playniteGameId.ToString());
+                var scopeChanged = false;
+                CacheWriteResult result;
+
+                if (_initializationFailure != null)
+                {
+                    return CacheWriteResult.CreateFailure(
+                        normalizedKey,
+                        "cache_unavailable",
+                        "Cache initialization failed; writes are disabled to prevent data loss.",
+                        _initializationFailure);
+                }
+
+                try
+                {
+                    lock (_sync)
+                    {
+                        EnsureReady_Locked("SetCompletedMarker");
+                        result = _store.SetCompletedMarker(playniteGameId, markerApiName);
+                        if (result == null)
+                        {
+                            result = CacheWriteResult.CreateFailure(
+                                normalizedKey,
+                                "sql_write_failed",
+                                ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_SaveFailed"));
+                        }
+
+                        if (result.Success)
+                        {
+                            var dbData = _store.LoadCurrentUserGameData(normalizedKey);
+                            if (dbData != null)
+                            {
+                                NormalizeLoadedData(normalizedKey, dbData);
+                                SetMemoryGameData_Locked(normalizedKey, dbData);
+                            }
+                            else
+                            {
+                                RemoveMemoryGameData_Locked(normalizedKey);
+                            }
+                        }
+
+                        scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, $"Failed setting completed marker for gameId={playniteGameId}");
+                    return CacheWriteResult.CreateFailure(
+                        normalizedKey,
+                        "sql_write_failed",
+                        ex.Message,
+                        ex);
+                }
+
+                if (scopeChanged)
+                {
+                    RaiseCacheDeltaUpdatedEvent(string.Empty, CacheDeltaOperationType.FullReset);
+                }
+
+                if (!result.Success)
+                {
+                    return result;
+                }
+
+                RaiseGameCacheUpdatedEvent(normalizedKey);
+                RaiseCacheDeltaUpdatedEvent(normalizedKey, CacheDeltaOperationType.Upsert);
+                RaiseCacheInvalidatedEvent();
+
+                return result;
+            }
+        }
+
         public void RemoveGameData(Guid playniteGameId)
         {
             if (playniteGameId == Guid.Empty)
@@ -711,6 +795,8 @@ namespace PlayniteAchievements.Services
                 LibrarySourceName = source.LibrarySourceName,
                 NoAchievements = source.NoAchievements,
                 IsCompleted = source.IsCompleted,
+                ProviderIsCompleted = source.ProviderIsCompleted,
+                CompletedMarkerApiName = source.CompletedMarkerApiName,
                 PlaytimeSeconds = source.PlaytimeSeconds,
                 GameName = source.GameName,
                 AppId = source.AppId,

@@ -188,5 +188,27 @@ namespace PlayniteAchievements.SqlNado.Tests
             var actual = SqlNadoCacheBehavior.IsRetroAchievementsProvider(providerName);
             Assert.AreEqual(expected, actual);
         }
+
+        [DataTestMethod]
+        [DataRow(false, 1, 10, false, false)]
+        [DataRow(true, 1, 10, false, true)]
+        [DataRow(false, 10, 10, false, true)]
+        [DataRow(false, 1, 10, true, true)]
+        [DataRow(false, 0, 0, false, false)]
+        public void ComputeIsCompleted_UsesProviderHundredPercentOrMarker(
+            bool providerIsCompleted,
+            int unlockedCount,
+            int totalCount,
+            bool markerUnlocked,
+            bool expected)
+        {
+            var actual = SqlNadoCacheBehavior.ComputeIsCompleted(
+                providerIsCompleted,
+                unlockedCount,
+                totalCount,
+                markerUnlocked);
+
+            Assert.AreEqual(expected, actual);
+        }
     }
 }
