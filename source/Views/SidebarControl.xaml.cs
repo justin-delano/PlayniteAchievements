@@ -812,6 +812,8 @@ namespace PlayniteAchievements.Views
             var menu = new ContextMenu();
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ScanGame",
                 () => ExecuteViewModelCommand(_viewModel?.ScanSingleGameCommand, rowData)));
+            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_SetCompletedMarker",
+                () => OpenCompletedMarkerForRow(rowData)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_OpenGameInLibrary",
                 () => ExecuteViewModelCommand(_viewModel?.OpenGameInLibraryCommand, rowData)));
             return menu;
@@ -892,6 +894,16 @@ namespace PlayniteAchievements.Views
             {
                 command.Execute(parameter);
             }
+        }
+
+        private void OpenCompletedMarkerForRow(object rowData)
+        {
+            if (!TryGetPlayniteGameId(rowData, out var gameId))
+            {
+                return;
+            }
+
+            PlayniteAchievementsPlugin.Instance?.OpenCompletedMarkerView(gameId);
         }
 
         private void DataGridColumnMenu_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)

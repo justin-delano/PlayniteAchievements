@@ -1310,6 +1310,36 @@ namespace PlayniteAchievements.Services
             NotifyCacheInvalidatedThrottled(force: true);
         }
 
+        public CacheWriteResult SetCompletedMarker(Guid playniteGameId, string markerApiName)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return CacheWriteResult.CreateFailure(
+                    string.Empty,
+                    "invalid_game_id",
+                    ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_InvalidGame"));
+            }
+
+            try
+            {
+                var result = _cacheService.SetCompletedMarker(playniteGameId, markerApiName);
+                if (result.Success)
+                {
+                    NotifyCacheInvalidatedThrottled(force: true);
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed setting completed marker for gameId={playniteGameId}.");
+                return CacheWriteResult.CreateFailure(
+                    playniteGameId.ToString(),
+                    "sql_write_failed",
+                    ex.Message,
+                    ex);
+            }
+        }
+
         // -----------------------------
         // Get combined achievement data
         // -----------------------------
