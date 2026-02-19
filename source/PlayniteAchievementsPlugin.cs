@@ -119,145 +119,162 @@ namespace PlayniteAchievements
 
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
         {
-            Properties = _pluginProperties;
-
-            Instance = this;
-            _logger.Info("PlayniteAchievementsPlugin initializing...");
-            _settingsViewModel = new PlayniteAchievementsSettingsViewModel(this);
-
-            EnsureWpfFallbackResources();
-
-
-            // NECESSARY TO MAKE SURE CHARTS WORK
-            var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
-            var panel = new WpfToolkit.Controls.VirtualizingWrapPanel();
-            // NECESSARY DO NOT REMOVE
-
-
-            // Configure rarity thresholds from settings
-            RarityHelper.Configure(
-                _settingsViewModel.Settings.Persisted.UltraRareThreshold,
-                _settingsViewModel.Settings.Persisted.RareThreshold,
-                _settingsViewModel.Settings.Persisted.UncommonThreshold);
-
-            var settings = _settingsViewModel.Settings;
-            var pluginUserDataPath = GetPluginUserDataPath();
-
-            // Create shared Steam session manager for use by provider and settings UI
-            _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, settings);
-            _gogSessionManager = new GogSessionManager(PlayniteApi, _logger, settings);
-            _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
-            _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger);
-
-            var providers = new List<IDataProvider>
+            using (PerfScope.StartStartup(_logger, "PluginCtor.Total", thresholdMs: 50))
             {
-                new SteamDataProvider(
-                    _logger,
-                    settings,
-                    PlayniteApi,
-                    _steamSessionManager,
-                    pluginUserDataPath),
-                new GogDataProvider(
-                    _logger,
-                    settings,
-                    PlayniteApi,
-                    pluginUserDataPath,
-                    _gogSessionManager),
-                new EpicDataProvider(
-                    _logger,
-                    settings,
-                    PlayniteApi,
-                    _epicSessionManager),
-                new PsnDataProvider(
-                    _logger,
-                    _psnSessionManager),
-                new RetroAchievementsDataProvider(
-                    _logger,
-                    settings,
-                    PlayniteApi,
-                    pluginUserDataPath)
-            };
+                Properties = _pluginProperties;
 
-            _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
-            _imageService = new MemoryImageService(_logger, _diskImageService);
+                Instance = this;
+                _logger.Info("PlayniteAchievementsPlugin initializing...");
 
-            // Create provider registry and sync from persisted settings
-            _providerRegistry = new ProviderRegistry();
-            _providerRegistry.SyncFromSettings(settings.Persisted);
-
-            _achievementManager = new AchievementManager(api, settings, _logger, this, providers, _diskImageService, _providerRegistry);
-            _notifications = new NotificationPublisher(api, settings, _logger);
-            _backgroundUpdates = new BackgroundUpdater(_achievementManager, settings, _logger, _notifications, null);
-
-            // Create theme integration services
-            // Note: We need to create _themeIntegrationService before _themeUpdateService,
-            // but _themeIntegrationService needs a callback to _themeUpdateService.
-            // We resolve this by using a local variable for the callback.
-            ThemeIntegrationUpdateService themeUpdateService = null;
-            Action<Guid?> requestUpdate = (id) => themeUpdateService?.RequestUpdate(id);
-
-            _fullscreenWindowService = new FullscreenWindowService(
-                PlayniteApi,
-                _settingsViewModel.Settings,
-                requestUpdate);
-
-            _themeIntegrationService = new ThemeIntegrationService(
-                PlayniteApi,
-                _achievementManager,
-                _settingsViewModel.Settings,
-                _fullscreenWindowService,
-                requestUpdate,
-                _logger);
-
-            themeUpdateService = new ThemeIntegrationUpdateService(
-                _themeIntegrationService,
-                _achievementManager,
-                _settingsViewModel.Settings,
-                _logger,
-                PlayniteApi?.MainView?.UIDispatcher ?? System.Windows.Application.Current.Dispatcher);
-            _themeUpdateService = themeUpdateService;
-
-            // Listen for new games entering the database to auto-scan .
-            PlayniteApi?.Database?.Games?.ItemCollectionChanged += Games_ItemCollectionChanged;
-
-            // Theme integration - settings support
-            // SettingsRoot = "Settings" tells Playnite to access the Settings property on the ViewModel
-            // Theme bindings like {PluginSettings Plugin=PlayniteAchievements, Path=HasAchievements}
-            // will resolve to ViewModel.Settings.HasAchievements
-            AddSettingsSupport(new AddSettingsSupportArgs
-            {
-                SourceName = "PlayniteAchievements",
-                SettingsRoot = "Settings"
-            });
-
-            // Custom elements integration
-            AddCustomElementSupport(new AddCustomElementSupportArgs
-            {
-                ElementList = new List<string>
+                using (PerfScope.StartStartup(_logger, "PluginCtor.SettingsLoad", thresholdMs: 50))
                 {
-                    // SuccessStory-compatible controls (legacy naming; properties are also exposed via native keys)
-                    "PluginButton",
-                    "PluginProgressBar",
-                    "PluginCompactList",
-                    "PluginCompactLocked",
-                    "PluginCompactUnlocked",
-                    "PluginChart",
-                    "PluginUserStats",
-                    "PluginList",
-                    "PluginViewItem",
+                    _settingsViewModel = new PlayniteAchievementsSettingsViewModel(this);
+                    EnsureWpfFallbackResources();
+                }
 
-                    // Native PlayniteAchievements controls (always available)
-                    "AchievementButton",
-                    "AchievementProgressBar",
-                    "AchievementCompactList",
-                    "AchievementChart",
-                    "AchievementStats",
-                    "AchievementList"
-                },
-                SourceName = "PlayniteAchievements"
-            });
+                // NECESSARY TO MAKE SURE CHARTS WORK
+                var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
+                var panel = new WpfToolkit.Controls.VirtualizingWrapPanel();
+                // NECESSARY DO NOT REMOVE
 
-            _logger.Info("PlayniteAchievementsPlugin initialized.");
+                // Configure rarity thresholds from settings
+                RarityHelper.Configure(
+                    _settingsViewModel.Settings.Persisted.UltraRareThreshold,
+                    _settingsViewModel.Settings.Persisted.RareThreshold,
+                    _settingsViewModel.Settings.Persisted.UncommonThreshold);
+
+                var settings = _settingsViewModel.Settings;
+                var pluginUserDataPath = GetPluginUserDataPath();
+
+                using (PerfScope.StartStartup(_logger, "PluginCtor.SessionManagers", thresholdMs: 50))
+                {
+                    // Create shared Steam session manager for use by provider and settings UI
+                    _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, settings);
+                    _gogSessionManager = new GogSessionManager(PlayniteApi, _logger, settings);
+                    _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
+                    _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger);
+                }
+
+                List<IDataProvider> providers;
+                using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
+                {
+                    providers = new List<IDataProvider>
+                    {
+                        new SteamDataProvider(
+                            _logger,
+                            settings,
+                            PlayniteApi,
+                            _steamSessionManager,
+                            pluginUserDataPath),
+                        new GogDataProvider(
+                            _logger,
+                            settings,
+                            PlayniteApi,
+                            pluginUserDataPath,
+                            _gogSessionManager),
+                        new EpicDataProvider(
+                            _logger,
+                            settings,
+                            PlayniteApi,
+                            _epicSessionManager),
+                        new PsnDataProvider(
+                            _logger,
+                            _psnSessionManager),
+                        new RetroAchievementsDataProvider(
+                            _logger,
+                            settings,
+                            PlayniteApi,
+                            pluginUserDataPath)
+                    };
+                }
+
+                using (PerfScope.StartStartup(_logger, "PluginCtor.AchievementManagerCreation", thresholdMs: 50))
+                {
+                    _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
+                    _imageService = new MemoryImageService(_logger, _diskImageService);
+
+                    // Create provider registry and sync from persisted settings
+                    _providerRegistry = new ProviderRegistry();
+                    _providerRegistry.SyncFromSettings(settings.Persisted);
+
+                    _achievementManager = new AchievementManager(api, settings, _logger, this, providers, _diskImageService, _providerRegistry);
+                    _notifications = new NotificationPublisher(api, settings, _logger);
+                    _backgroundUpdates = new BackgroundUpdater(_achievementManager, settings, _logger, _notifications, null);
+                }
+
+                using (PerfScope.StartStartup(_logger, "PluginCtor.ThemeServicesWiring", thresholdMs: 50))
+                {
+                    // Create theme integration services
+                    // Note: We need to create _themeIntegrationService before _themeUpdateService,
+                    // but _themeIntegrationService needs a callback to _themeUpdateService.
+                    // We resolve this by using a local variable for the callback.
+                    ThemeIntegrationUpdateService themeUpdateService = null;
+                    Action<Guid?> requestUpdate = (id) => themeUpdateService?.RequestUpdate(id);
+
+                    _fullscreenWindowService = new FullscreenWindowService(
+                        PlayniteApi,
+                        _settingsViewModel.Settings,
+                        requestUpdate);
+
+                    _themeIntegrationService = new ThemeIntegrationService(
+                        PlayniteApi,
+                        _achievementManager,
+                        _settingsViewModel.Settings,
+                        _fullscreenWindowService,
+                        requestUpdate,
+                        _logger);
+
+                    themeUpdateService = new ThemeIntegrationUpdateService(
+                        _themeIntegrationService,
+                        _achievementManager,
+                        _settingsViewModel.Settings,
+                        _logger,
+                        PlayniteApi?.MainView?.UIDispatcher ?? System.Windows.Application.Current.Dispatcher);
+                    _themeUpdateService = themeUpdateService;
+
+                    // Listen for new games entering the database to auto-scan .
+                    PlayniteApi?.Database?.Games?.ItemCollectionChanged += Games_ItemCollectionChanged;
+
+                    // Theme integration - settings support
+                    // SettingsRoot = "Settings" tells Playnite to access the Settings property on the ViewModel
+                    // Theme bindings like {PluginSettings Plugin=PlayniteAchievements, Path=HasAchievements}
+                    // will resolve to ViewModel.Settings.HasAchievements
+                    AddSettingsSupport(new AddSettingsSupportArgs
+                    {
+                        SourceName = "PlayniteAchievements",
+                        SettingsRoot = "Settings"
+                    });
+
+                    // Custom elements integration
+                    AddCustomElementSupport(new AddCustomElementSupportArgs
+                    {
+                        ElementList = new List<string>
+                        {
+                            // SuccessStory-compatible controls (legacy naming; properties are also exposed via native keys)
+                            "PluginButton",
+                            "PluginProgressBar",
+                            "PluginCompactList",
+                            "PluginCompactLocked",
+                            "PluginCompactUnlocked",
+                            "PluginChart",
+                            "PluginUserStats",
+                            "PluginList",
+                            "PluginViewItem",
+
+                            // Native PlayniteAchievements controls (always available)
+                            "AchievementButton",
+                            "AchievementProgressBar",
+                            "AchievementCompactList",
+                            "AchievementChart",
+                            "AchievementStats",
+                            "AchievementList"
+                        },
+                        SourceName = "PlayniteAchievements"
+                    });
+                }
+
+                _logger.Info("PlayniteAchievementsPlugin initialized.");
+            }
         }
 
         public override ISettings GetSettings(bool firstRunSettings)
@@ -555,13 +572,16 @@ namespace PlayniteAchievements
 
         public override void OnApplicationStarted(OnApplicationStartedEventArgs args)
         {
-            try
+            using (PerfScope.StartStartup(_logger, "OnApplicationStarted", thresholdMs: 50))
             {
-                EnsureWpfFallbackResources();
-            }
-            catch
-            {
-                // ignore
+                try
+                {
+                    EnsureWpfFallbackResources();
+                }
+                catch
+                {
+                    // ignore
+                }
             }
         }
 

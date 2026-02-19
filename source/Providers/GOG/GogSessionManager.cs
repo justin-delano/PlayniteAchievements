@@ -73,19 +73,22 @@ namespace PlayniteAchievements.Providers.GOG
         /// </summary>
         public async Task PrimeAuthenticationStateAsync(CancellationToken ct)
         {
-            try
+            using (PerfScope.Start(_logger, "GOG.PrimeAuthenticationStateAsync", thresholdMs: 50))
             {
-                ct.ThrowIfCancellationRequested();
-                var result = await ProbeAuthenticationAsync(ct).ConfigureAwait(false);
-                _logger?.Debug($"[GogAuth] Startup auth probe completed with outcome={result?.Outcome}.");
-            }
-            catch (OperationCanceledException)
-            {
-                _logger?.Debug("[GogAuth] Startup auth probe cancelled.");
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[GogAuth] Startup auth probe failed.");
+                try
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var result = await ProbeAuthenticationAsync(ct).ConfigureAwait(false);
+                    _logger?.Debug($"[GogAuth] Startup auth probe completed with outcome={result?.Outcome}.");
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger?.Debug("[GogAuth] Startup auth probe cancelled.");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "[GogAuth] Startup auth probe failed.");
+                }
             }
         }
 
@@ -272,33 +275,36 @@ namespace PlayniteAchievements.Providers.GOG
         /// </summary>
         private async Task<string> QuickAuthCheckAsync(CancellationToken ct)
         {
-            // Check existing token validity
-            if (HasValidToken())
+            using (PerfScope.Start(_logger, "GOG.QuickAuthCheckAsync", thresholdMs: 50))
             {
-                _logger?.Debug("[GogAuth] Existing token is still valid.");
-                return _userId;
+                // Check existing token validity
+                if (HasValidToken())
+                {
+                    _logger?.Debug("[GogAuth] Existing token is still valid.");
+                    return _userId;
+                }
+
+                ct.ThrowIfCancellationRequested();
+
+                var responseTask = CallAccountInfoApiAsync(timeoutMs: 6000);
+                var completed = await Task.WhenAny(
+                    responseTask,
+                    Task.Delay(Timeout.Infinite, ct)).ConfigureAwait(false);
+                if (completed != responseTask)
+                {
+                    throw new OperationCanceledException(ct);
+                }
+
+                var response = await responseTask.ConfigureAwait(false);
+                if (TryApplyAuthResponse(response, requireToken: true))
+                {
+                    _logger?.Info("[GogAuth] Quick check validated existing session.");
+                    return _userId;
+                }
+
+                _logger?.Debug("[GogAuth] Quick check - not logged in.");
+                return null;
             }
-
-            ct.ThrowIfCancellationRequested();
-
-            var responseTask = CallAccountInfoApiAsync(timeoutMs: 6000);
-            var completed = await Task.WhenAny(
-                responseTask,
-                Task.Delay(Timeout.Infinite, ct)).ConfigureAwait(false);
-            if (completed != responseTask)
-            {
-                throw new OperationCanceledException(ct);
-            }
-
-            var response = await responseTask.ConfigureAwait(false);
-            if (TryApplyAuthResponse(response, requireToken: true))
-            {
-                _logger?.Info("[GogAuth] Quick check validated existing session.");
-                return _userId;
-            }
-
-            _logger?.Debug("[GogAuth] Quick check - not logged in.");
-            return null;
         }
 
         private async Task<string> WaitForAuthenticatedUserAsync(CancellationToken ct)
@@ -337,22 +343,25 @@ namespace PlayniteAchievements.Providers.GOG
         /// </summary>
         private async Task<GogAccountInfoResponse> CallAccountInfoApiAsync(int timeoutMs = 15000)
         {
-            var dispatchOperation = _api.MainView.UIDispatcher.InvokeAsync(async () =>
+            using (PerfScope.Start(_logger, "GOG.CallAccountInfoApiAsync", thresholdMs: 50, context: $"timeoutMs={timeoutMs}"))
             {
-                using (var view = _api.WebViews.CreateOffscreenView())
+                var dispatchOperation = _api.MainView.UIDispatcher.InvokeAsync(async () =>
                 {
-                    await view.NavigateAndWaitAsync(UrlAccountInfo, timeoutMs: timeoutMs);
-                    var responseText = await view.GetPageTextAsync();
-                    if (TryParseAccountInfo(responseText, out var response))
+                    using (var view = _api.WebViews.CreateOffscreenView())
                     {
-                        return response;
+                        await view.NavigateAndWaitAsync(UrlAccountInfo, timeoutMs: timeoutMs);
+                        var responseText = await view.GetPageTextAsync();
+                        if (TryParseAccountInfo(responseText, out var response))
+                        {
+                            return response;
+                        }
                     }
-                }
-                return null;
-            });
+                    return null;
+                });
 
-            var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
-            return await responseTask.ConfigureAwait(false);
+                var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
+                return await responseTask.ConfigureAwait(false);
+            }
         }
 
         private bool TryApplyAuthResponse(GogAccountInfoResponse response, bool requireToken)

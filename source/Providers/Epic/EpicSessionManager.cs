@@ -138,92 +138,98 @@ namespace PlayniteAchievements.Providers.Epic
 
         public async Task PrimeAuthenticationStateAsync(CancellationToken ct)
         {
-            try
+            using (PerfScope.Start(_logger, "Epic.PrimeAuthenticationStateAsync", thresholdMs: 50))
             {
-                ct.ThrowIfCancellationRequested();
-                var result = await ProbeAuthenticationAsync(ct).ConfigureAwait(false);
-                _logger?.Debug($"[EpicAuth] Startup auth probe completed with outcome={result?.Outcome}.");
-            }
-            catch (OperationCanceledException)
-            {
-                _logger?.Debug("[EpicAuth] Startup auth probe cancelled.");
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[EpicAuth] Startup auth probe failed.");
+                try
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var result = await ProbeAuthenticationAsync(ct).ConfigureAwait(false);
+                    _logger?.Debug($"[EpicAuth] Startup auth probe completed with outcome={result?.Outcome}.");
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger?.Debug("[EpicAuth] Startup auth probe cancelled.");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "[EpicAuth] Startup auth probe failed.");
+                }
             }
         }
 
         public async Task<EpicAuthResult> ProbeAuthenticationAsync(CancellationToken ct)
         {
-            try
+            using (PerfScope.Start(_logger, "Epic.ProbeAuthenticationAsync", thresholdMs: 50))
             {
-                ct.ThrowIfCancellationRequested();
-
-                if (HasValidAccessToken())
+                try
                 {
+                    ct.ThrowIfCancellationRequested();
+
+                    if (HasValidAccessToken())
+                    {
+                        return EpicAuthResult.Create(
+                            EpicAuthOutcome.AlreadyAuthenticated,
+                            "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                            _accountId,
+                            windowOpened: false);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(_refreshToken) && DateTime.UtcNow < _refreshTokenExpiryUtc)
+                    {
+                        try
+                        {
+                            await RenewTokensAsync(_refreshToken, ct).ConfigureAwait(false);
+                        }
+                        catch (Exception renewEx)
+                        {
+                            _logger?.Debug(renewEx, "[EpicAuth] Refresh token probe failed.");
+                        }
+
+                        if (HasValidAccessToken())
+                        {
+                            return EpicAuthResult.Create(
+                                EpicAuthOutcome.AlreadyAuthenticated,
+                                "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                                _accountId,
+                                windowOpened: false);
+                        }
+                    }
+
+                    // Best-effort: attempt non-interactive auth-code retrieval from existing logged-in browser session.
+                    var authCode = await TryGetAuthorizationCodeFromSessionAsync(ct).ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(authCode))
+                    {
+                        await AuthenticateUsingAuthCodeAsync(authCode, ct).ConfigureAwait(false);
+                        if (HasValidAccessToken())
+                        {
+                            return EpicAuthResult.Create(
+                                EpicAuthOutcome.AlreadyAuthenticated,
+                                "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                                _accountId,
+                                windowOpened: false);
+                        }
+                    }
+
                     return EpicAuthResult.Create(
-                        EpicAuthOutcome.AlreadyAuthenticated,
-                        "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
-                        _accountId,
+                        EpicAuthOutcome.NotAuthenticated,
+                        "LOCPlayAch_Settings_EpicAuth_NotAuthenticated",
                         windowOpened: false);
                 }
-
-                if (!string.IsNullOrWhiteSpace(_refreshToken) && DateTime.UtcNow < _refreshTokenExpiryUtc)
+                catch (OperationCanceledException)
                 {
-                    try
-                    {
-                        await RenewTokensAsync(_refreshToken, ct).ConfigureAwait(false);
-                    }
-                    catch (Exception renewEx)
-                    {
-                        _logger?.Debug(renewEx, "[EpicAuth] Refresh token probe failed.");
-                    }
-
-                    if (HasValidAccessToken())
-                    {
-                        return EpicAuthResult.Create(
-                            EpicAuthOutcome.AlreadyAuthenticated,
-                            "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
-                            _accountId,
-                            windowOpened: false);
-                    }
+                    return EpicAuthResult.Create(
+                        EpicAuthOutcome.Cancelled,
+                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        windowOpened: false);
                 }
-
-                // Best-effort: attempt non-interactive auth-code retrieval from existing logged-in browser session.
-                var authCode = await TryGetAuthorizationCodeFromSessionAsync(ct).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(authCode))
+                catch (Exception ex)
                 {
-                    await AuthenticateUsingAuthCodeAsync(authCode, ct).ConfigureAwait(false);
-                    if (HasValidAccessToken())
-                    {
-                        return EpicAuthResult.Create(
-                            EpicAuthOutcome.AlreadyAuthenticated,
-                            "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
-                            _accountId,
-                            windowOpened: false);
-                    }
+                    _logger?.Error(ex, "[EpicAuth] Probe failed with exception.");
+                    return EpicAuthResult.Create(
+                        EpicAuthOutcome.ProbeFailed,
+                        "LOCPlayAch_Settings_EpicAuth_ProbeFailed",
+                        windowOpened: false);
                 }
-
-                return EpicAuthResult.Create(
-                    EpicAuthOutcome.NotAuthenticated,
-                    "LOCPlayAch_Settings_EpicAuth_NotAuthenticated",
-                    windowOpened: false);
-            }
-            catch (OperationCanceledException)
-            {
-                return EpicAuthResult.Create(
-                    EpicAuthOutcome.Cancelled,
-                    "LOCPlayAch_Settings_EpicAuth_Cancelled",
-                    windowOpened: false);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "[EpicAuth] Probe failed with exception.");
-                return EpicAuthResult.Create(
-                    EpicAuthOutcome.ProbeFailed,
-                    "LOCPlayAch_Settings_EpicAuth_ProbeFailed",
-                    windowOpened: false);
             }
         }
 
@@ -672,35 +678,38 @@ namespace PlayniteAchievements.Providers.Epic
 
         private async Task<string> TryGetAuthorizationCodeFromSessionAsync(CancellationToken ct)
         {
-            var dispatchOperation = _api.MainView.UIDispatcher.InvokeAsync(async () =>
+            using (PerfScope.Start(_logger, "Epic.TryGetAuthorizationCodeFromSessionAsync", thresholdMs: 50))
             {
-                using (var view = _api.WebViews.CreateOffscreenView())
+                var dispatchOperation = _api.MainView.UIDispatcher.InvokeAsync(async () =>
                 {
-                    try
+                    using (var view = _api.WebViews.CreateOffscreenView())
                     {
-                        ct.ThrowIfCancellationRequested();
-                        await view.NavigateAndWaitAsync(UrlAuthCode, timeoutMs: 12000);
-
-                        var source = await view.GetPageSourceAsync().ConfigureAwait(false);
-                        var code = TryExtractAuthorizationCode(source);
-                        if (!string.IsNullOrWhiteSpace(code))
+                        try
                         {
-                            return code;
+                            ct.ThrowIfCancellationRequested();
+                            await view.NavigateAndWaitAsync(UrlAuthCode, timeoutMs: 12000);
+
+                            var source = await view.GetPageSourceAsync().ConfigureAwait(false);
+                            var code = TryExtractAuthorizationCode(source);
+                            if (!string.IsNullOrWhiteSpace(code))
+                            {
+                                return code;
+                            }
+
+                            var text = await view.GetPageTextAsync().ConfigureAwait(false);
+                            return TryExtractAuthorizationCode(text);
                         }
-
-                        var text = await view.GetPageTextAsync().ConfigureAwait(false);
-                        return TryExtractAuthorizationCode(text);
+                        catch (Exception ex)
+                        {
+                            _logger?.Debug(ex, "[EpicAuth] Offscreen auth-code probe failed.");
+                            return null;
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger?.Debug(ex, "[EpicAuth] Offscreen auth-code probe failed.");
-                        return null;
-                    }
-                }
-            });
+                });
 
-            var operationTask = await dispatchOperation.Task.ConfigureAwait(false);
-            return await operationTask.ConfigureAwait(false);
+                var operationTask = await dispatchOperation.Task.ConfigureAwait(false);
+                return await operationTask.ConfigureAwait(false);
+            }
         }
 
         private static string TryExtractAuthorizationCode(string htmlOrText)

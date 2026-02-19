@@ -1,4 +1,5 @@
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -278,53 +279,56 @@ namespace PlayniteAchievements.Providers.PSN
 
         private bool TryInitialize()
         {
-            if (!string.IsNullOrWhiteSpace(_psnLibraryDllPath) &&
-                !string.IsNullOrWhiteSpace(_psnExtensionFolderName) &&
-                !string.IsNullOrWhiteSpace(_psnExtensionFolderPath))
+            using (PerfScope.Start(_logger, "PSN.TryInitialize", thresholdMs: 50))
             {
-                return true;
-            }
-
-            try
-            {
-                var extensionsRoot = Path.Combine(_api.Paths.ConfigurationPath, "Extensions");
-                if (!Directory.Exists(extensionsRoot))
+                if (!string.IsNullOrWhiteSpace(_psnLibraryDllPath) &&
+                    !string.IsNullOrWhiteSpace(_psnExtensionFolderName) &&
+                    !string.IsNullOrWhiteSpace(_psnExtensionFolderPath))
                 {
-                    _logger?.Warn($"[PSNAch] Extensions folder not found: {extensionsRoot}");
-                    return false;
+                    return true;
                 }
 
-                var dll = Directory.EnumerateFiles(extensionsRoot, "*.dll", SearchOption.AllDirectories)
-                    .FirstOrDefault(p =>
-                        string.Equals(Path.GetFileName(p), "PSNLibrary.dll", StringComparison.OrdinalIgnoreCase) ||
-                        p.IndexOf("PSNLibrary", StringComparison.OrdinalIgnoreCase) >= 0);
-
-                if (string.IsNullOrWhiteSpace(dll))
+                try
                 {
-                    _logger?.Info("[PSNAch] PSNLibrary not found (no PSNLibrary*.dll).");
+                    var extensionsRoot = Path.Combine(_api.Paths.ConfigurationPath, "Extensions");
+                    if (!Directory.Exists(extensionsRoot))
+                    {
+                        _logger?.Warn($"[PSNAch] Extensions folder not found: {extensionsRoot}");
+                        return false;
+                    }
+
+                    var dll = Directory.EnumerateFiles(extensionsRoot, "*.dll", SearchOption.AllDirectories)
+                        .FirstOrDefault(p =>
+                            string.Equals(Path.GetFileName(p), "PSNLibrary.dll", StringComparison.OrdinalIgnoreCase) ||
+                            p.IndexOf("PSNLibrary", StringComparison.OrdinalIgnoreCase) >= 0);
+
+                    if (string.IsNullOrWhiteSpace(dll))
+                    {
+                        _logger?.Info("[PSNAch] PSNLibrary not found (no PSNLibrary*.dll).");
+                        return false;
+                    }
+
+                    _psnLibraryDllPath = dll;
+
+                    var dllDir = new DirectoryInfo(Path.GetDirectoryName(dll));
+                    var folderName = ResolveExtensionFolderNameFromDllPath(dllDir);
+                    if (string.IsNullOrWhiteSpace(folderName))
+                    {
+                        _logger?.Warn($"[PSNAch] Could not resolve PSNLibrary extension folder from: {dll}");
+                        return false;
+                    }
+
+                    _psnExtensionFolderName = folderName;
+                    _psnExtensionFolderPath = Path.Combine(extensionsRoot, _psnExtensionFolderName);
+
+                    _logger?.Info($"[PSNAch] PSNLibrary detected. ExtensionFolder='{_psnExtensionFolderName}' (dll='{dll}')");
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "[PSNAch] Failed to locate PSNLibrary.");
                     return false;
                 }
-
-                _psnLibraryDllPath = dll;
-
-                var dllDir = new DirectoryInfo(Path.GetDirectoryName(dll));
-                var folderName = ResolveExtensionFolderNameFromDllPath(dllDir);
-                if (string.IsNullOrWhiteSpace(folderName))
-                {
-                    _logger?.Warn($"[PSNAch] Could not resolve PSNLibrary extension folder from: {dll}");
-                    return false;
-                }
-
-                _psnExtensionFolderName = folderName;
-                _psnExtensionFolderPath = Path.Combine(extensionsRoot, _psnExtensionFolderName);
-
-                _logger?.Info($"[PSNAch] PSNLibrary detected. ExtensionFolder='{_psnExtensionFolderName}' (dll='{dll}')");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "[PSNAch] Failed to locate PSNLibrary.");
-                return false;
             }
         }
 

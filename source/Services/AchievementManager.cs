@@ -155,7 +155,20 @@ namespace PlayniteAchievements.Services
             _providers = providers.ToList();
             _progressMapper = new RebuildProgressMapper();
 
-            InitializePointsColumnVisibilityDefaults();
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    using (PerfScope.Start(_logger, "AchievementManager.InitializePointsColumnVisibilityDefaults.Async", thresholdMs: 25))
+                    {
+                        InitializePointsColumnVisibilityDefaults();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed to initialize Points-column visibility defaults asynchronously.");
+                }
+            });
         }
 
         public void Dispose()

@@ -7,6 +7,7 @@ using Playnite.SDK;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Models;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 {
@@ -17,6 +18,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
     /// </summary>
     public partial class PluginViewItemControl : PluginUserControl
     {
+        private static readonly ILogger _logger = LogManager.GetLogger(nameof(PluginViewItemControl));
         private PlayniteAchievementsPlugin Plugin => PlayniteAchievementsPlugin.Instance;
 
         #region IntegrationViewItemWithProgressBar Property
@@ -87,14 +89,17 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
         private void TryUpdateFromDataContext()
         {
-            var game = GetGameFromDataContext(DataContext);
-            if (game != null && game.Id != Guid.Empty)
+            using (PerfScope.Start(_logger, "Theme.PluginViewItemControl.TryUpdateFromDataContext", thresholdMs: 16))
             {
-                UpdateForGame(game.Id);
-            }
-            else
-            {
-                ClearData();
+                var game = GetGameFromDataContext(DataContext);
+                if (game != null && game.Id != Guid.Empty)
+                {
+                    UpdateForGame(game.Id);
+                }
+                else
+                {
+                    ClearData();
+                }
             }
         }
 
@@ -128,18 +133,25 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
         private void UpdateForGame(Guid gameId)
         {
-            var gameData = Plugin?.AchievementManager?.GetGameAchievementData(gameId);
-
-            if (gameData == null || gameData.NoAchievements || (gameData.Achievements?.Count ?? 0) == 0)
+            using (PerfScope.Start(_logger, "Theme.PluginViewItemControl.UpdateForGame", thresholdMs: 16, context: gameId.ToString()))
             {
-                ClearData();
-                return;
-            }
+                var gameData = default(GameAchievementData);
+                using (PerfScope.Start(_logger, "Theme.PluginViewItemControl.GetGameAchievementData", thresholdMs: 16, context: gameId.ToString()))
+                {
+                    gameData = Plugin?.AchievementManager?.GetGameAchievementData(gameId);
+                }
 
-            var achievements = gameData.Achievements;
-            UnlockedCount = achievements.Count(a => a.Unlocked);
-            AchievementCount = achievements.Count;
-            Visibility = Visibility.Visible;
+                if (gameData == null || gameData.NoAchievements || (gameData.Achievements?.Count ?? 0) == 0)
+                {
+                    ClearData();
+                    return;
+                }
+
+                var achievements = gameData.Achievements;
+                UnlockedCount = achievements.Count(a => a.Unlocked);
+                AchievementCount = achievements.Count;
+                Visibility = Visibility.Visible;
+            }
         }
 
         private void ClearData()
