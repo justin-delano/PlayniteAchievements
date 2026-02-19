@@ -58,7 +58,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0"
@@ -66,35 +65,68 @@
                 BorderBrush="{DynamicResource NormalBorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="14,10">
-            <StackPanel>
-                <TextBlock Text="{DynamicResource LOCPlayAch_CompletedMarker_Header}"
-                           Style="{DynamicResource BaseTextBlockStyle}"
-                           FontSize="{DynamicResource FontSizeLarge}"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextBrush}"/>
-                <TextBlock Text="{Binding GameName}"
-                           Style="{DynamicResource BaseTextBlockStyle}"
-                           Foreground="{DynamicResource TextBrush}"
-                           Margin="0,2,0,0"
-                           FontWeight="SemiBold"
-                           Opacity="0.9"/>
-                <TextBlock Text="{DynamicResource LOCPlayAch_CompletedMarker_Subtitle}"
-                           Style="{DynamicResource BaseTextBlockStyle}"
-                           Foreground="{DynamicResource TextBrush}"
-                           Margin="0,6,0,0"
-                           Opacity="0.75"/>
-                <TextBlock Text="{Binding CurrentMarkerText}"
-                           Style="{DynamicResource BaseTextBlockStyle}"
-                           Foreground="{DynamicResource TextBrush}"
-                           Margin="0,8,0,0"
-                           FontStyle="Italic"
-                           Opacity="0.75"/>
-            </StackPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Game Image (Cover or Icon based on settings) -->
+                <Border Grid.Column="0"
+                        Margin="0,0,14,0"
+                        CornerRadius="4"
+                        ClipToBounds="True"
+                        Background="{DynamicResource ControlBackgroundBrush}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Width" Value="48"/>
+                            <Setter Property="Height" Value="48"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding UseCoverAspect}" Value="True">
+                                    <Setter Property="Width" Value="80"/>
+                                    <Setter Property="Height" Value="108"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <Image Stretch="UniformToFill"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           helpers:AsyncImage.Uri="{Binding GameImagePath}"
+                           helpers:AsyncImage.DecodePixel="160"/>
+                </Border>
+
+                <!-- Game Info -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource LOCPlayAch_CompletedMarker_Header}"
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               FontSize="{DynamicResource FontSizeLarge}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextBrush}"/>
+                    <TextBlock Text="{Binding GameName}"
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               Foreground="{DynamicResource TextBrush}"
+                               Margin="0,2,0,0"
+                               FontWeight="SemiBold"
+                               Opacity="0.9"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_CompletedMarker_Subtitle}"
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               Foreground="{DynamicResource TextBrush}"
+                               Margin="0,6,0,0"
+                               Opacity="0.75"/>
+                    <TextBlock Text="{Binding CurrentMarkerText}"
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               Foreground="{DynamicResource TextBrush}"
+                               Margin="0,8,0,0"
+                               FontStyle="Italic"
+                               Opacity="0.75"/>
+                </StackPanel>
+            </Grid>
         </Border>
 
         <DataGrid x:Name="AchievementsDataGrid"
                   Grid.Row="1"
-                  Margin="0,10,0,10"
+                  Margin="0,10,0,0"
                   ItemsSource="{Binding AchievementOptions}"
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
@@ -297,24 +329,5 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
-
-        <Border Grid.Row="2"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="0,1,0,0"
-                Padding="12,10">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="{DynamicResource LOCPlayAch_CompletedMarker_ButtonClear}"
-                        Click="ClearButton_Click"
-                        Margin="0,0,8,0"
-                        Padding="12,6"
-                        MinWidth="95"/>
-                <Button Content="{DynamicResource LOCPlayAch_CompletedMarker_ButtonDone}"
-                        Command="{Binding DoneCommand}"
-                        Padding="12,6"
-                        MinWidth="80"
-                        IsCancel="True"/>
-            </StackPanel>
-        </Border>
     </Grid>
 </UserControl>

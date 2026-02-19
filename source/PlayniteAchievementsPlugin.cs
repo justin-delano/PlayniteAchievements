@@ -359,6 +359,16 @@ namespace PlayniteAchievements
 
             yield return new GameMenuItem
             {
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_SetCompletedMarker"),
+                MenuSection = "Playnite Achievements",
+                Action = (a) =>
+                {
+                    OpenCompletedMarkerView(game.Id);
+                }
+            };
+
+            yield return new GameMenuItem
+            {
                 Description = ResourceProvider.GetString("LOCPlayAch_Menu_ScanGame"),
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
@@ -853,6 +863,102 @@ namespace PlayniteAchievements
                 PlayniteApi?.Dialogs?.ShowErrorMessage(
                     $"Failed to open achievements view: {ex.Message}",
                     "Playnite Achievements");
+            }
+        }
+
+        public void OpenCompletedMarkerView(Guid gameId)
+        {
+            try
+            {
+                var game = PlayniteApi?.Database?.Games?.Get(gameId);
+                if (game == null)
+                {
+                    PlayniteApi?.Dialogs?.ShowErrorMessage(
+                        ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame"),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+                    return;
+                }
+
+                var gameData = _achievementManager.GetGameAchievementData(gameId);
+                if (gameData == null || gameData.NoAchievements || gameData.Achievements == null || gameData.Achievements.Count == 0)
+                {
+                    PlayniteApi?.Dialogs?.ShowMessage(
+                        string.Format(
+                            ResourceProvider.GetString("LOCPlayAch_CompletedMarker_NoCachedData"),
+                            game.Name),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
+                EnsureWpfFallbackResources();
+
+                var view = new CompletedMarkerControl(
+                    gameId,
+                    _achievementManager,
+                    PlayniteApi,
+                    _logger,
+                    _settingsViewModel.Settings);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 760,
+                    Height = 640
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    view.WindowTitle,
+                    view,
+                    windowOptions);
+
+                window.MinWidth = 560;
+                window.MinHeight = 480;
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch { }
+
+                view.RequestClose += (s, e) => window.Close();
+                window.Closed += (s, e) => view.Cleanup();
+
+                var isFullscreen = false;
+                try
+                {
+                    isFullscreen = PlayniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+                }
+                catch { }
+
+                if (isFullscreen)
+                {
+                    window.Show();
+                    try
+                    {
+                        window.Topmost = true;
+                        window.Activate();
+                        window.Topmost = false;
+                    }
+                    catch { }
+                }
+                else
+                {
+                    window.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open completed marker view for gameId={gameId}");
+                PlayniteApi?.Dialogs?.ShowErrorMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_OpenFailed"), ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
             }
         }
 

@@ -20,6 +20,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly AchievementManager _achievementManager;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
+        private readonly PlayniteAchievementsSettings _settings;
 
         public event EventHandler RequestClose;
 
@@ -27,12 +28,14 @@ namespace PlayniteAchievements.ViewModels
             Guid gameId,
             AchievementManager achievementManager,
             IPlayniteAPI playniteApi,
-            ILogger logger)
+            ILogger logger,
+            PlayniteAchievementsSettings settings)
         {
             _gameId = gameId;
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _playniteApi = playniteApi;
             _logger = logger;
+            _settings = settings;
 
             DoneCommand = new RelayCommand(_ => RequestClose?.Invoke(this, EventArgs.Empty));
 
@@ -53,6 +56,20 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(WindowTitle));
                 }
             }
+        }
+
+        private string _gameImagePath;
+        public string GameImagePath
+        {
+            get => _gameImagePath;
+            private set => SetValue(ref _gameImagePath, value);
+        }
+
+        private bool _useCoverAspect;
+        public bool UseCoverAspect
+        {
+            get => _useCoverAspect;
+            private set => SetValue(ref _useCoverAspect, value);
         }
 
         private string _currentMarkerText;
@@ -131,6 +148,20 @@ namespace PlayniteAchievements.ViewModels
             {
                 var game = _playniteApi?.Database?.Games?.Get(_gameId);
                 GameName = game?.Name ?? ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame") ?? "Unknown Game";
+
+                UseCoverAspect = _settings?.Persisted?.UseCoverImages ?? false;
+
+                if (game != null)
+                {
+                    if (UseCoverAspect && !string.IsNullOrEmpty(game.CoverImage))
+                    {
+                        GameImagePath = _playniteApi?.Database?.GetFullFilePath(game.CoverImage);
+                    }
+                    else if (!string.IsNullOrEmpty(game.Icon))
+                    {
+                        GameImagePath = _playniteApi?.Database?.GetFullFilePath(game.Icon);
+                    }
+                }
 
                 var gameData = _achievementManager.GetGameAchievementData(_gameId);
                 var achievements = gameData?.Achievements ?? new List<AchievementDetail>();

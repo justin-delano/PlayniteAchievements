@@ -1,4 +1,5 @@
 using Playnite.SDK;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using System;
@@ -16,9 +17,10 @@ namespace PlayniteAchievements.Views
             Guid gameId,
             AchievementManager achievementManager,
             IPlayniteAPI playniteApi,
-            ILogger logger)
+            ILogger logger,
+            PlayniteAchievementsSettings settings)
         {
-            _viewModel = new CompletedMarkerViewModel(gameId, achievementManager, playniteApi, logger);
+            _viewModel = new CompletedMarkerViewModel(gameId, achievementManager, playniteApi, logger, settings);
             DataContext = _viewModel;
             InitializeComponent();
             _viewModel.RequestClose += ViewModel_RequestClose;
@@ -54,11 +56,6 @@ namespace PlayniteAchievements.Views
                     _viewModel?.SetMarker(item);
                 }
             }
-        }
-
-        private void ClearButton_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel?.ClearMarker();
         }
 
         private void DataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
