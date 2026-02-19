@@ -121,7 +121,7 @@ namespace PlayniteAchievements.Services.Database
                 TotalAchievements INTEGER NOT NULL DEFAULT 0,
                 IsCompleted INTEGER NOT NULL DEFAULT 0,
                 ProviderIsCompleted INTEGER NOT NULL DEFAULT 0,
-                CompletedMarkerApiName TEXT NULL,
+                CapstoneApiName TEXT NULL,
                 LastUpdatedUtc TEXT NOT NULL,
                 CreatedUtc TEXT NOT NULL,
                 UpdatedUtc TEXT NOT NULL,
@@ -274,7 +274,7 @@ namespace PlayniteAchievements.Services.Database
             EnsureColumn(
                 db,
                 "UserGameProgress",
-                "CompletedMarkerApiName",
+                "CapstoneApiName",
                 "TEXT NULL",
                 progressColumns,
                 ref backupPath);
@@ -485,7 +485,7 @@ namespace PlayniteAchievements.Services.Database
             var progressColumns = GetColumnNames(db, "UserGameProgress");
             EnsureRequiredColumn(progressColumns, "IsCompleted", "UserGameProgress", missing);
             EnsureRequiredColumn(progressColumns, "ProviderIsCompleted", "UserGameProgress", missing);
-            EnsureRequiredColumn(progressColumns, "CompletedMarkerApiName", "UserGameProgress", missing);
+            EnsureRequiredColumn(progressColumns, "CapstoneApiName", "UserGameProgress", missing);
 
             if (IndexExists(db, LegacyGamesProviderGameIdIndexName))
             {

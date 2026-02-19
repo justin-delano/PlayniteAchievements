@@ -18,15 +18,20 @@ namespace PlayniteAchievements.Providers.PSN
     {
         private readonly ILogger _logger;
         private readonly PsnSessionManager _sessionManager;
+        private readonly PlayniteAchievementsSettings _settings;
 
         private const string UrlBase = "https://m.np.playstation.com/api/trophy/v1";
         private const string UrlTrophiesDetailsAll = UrlBase + "/npCommunicationIds/{0}/trophyGroups/all/trophies";
         private const string UrlTrophiesUserAll = UrlBase + "/users/me/npCommunicationIds/{0}/trophyGroups/all/trophies";
         private const string UrlTitlesWithIdsMobile = UrlBase + "/users/me/titles/trophyTitles?npTitleIds={0}";
 
-        public PsnScanner(ILogger logger, PsnSessionManager sessionManager)
+        public PsnScanner(
+            ILogger logger,
+            PlayniteAchievementsSettings settings,
+            PsnSessionManager sessionManager)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
         }
 
@@ -68,6 +73,12 @@ namespace PlayniteAchievements.Providers.PSN
                 http.Timeout = TimeSpan.FromSeconds(45);
                 http.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                var acceptLanguage = MapGlobalLanguageToPsnLocale(_settings?.Persisted?.GlobalLanguage);
+                if (!string.IsNullOrWhiteSpace(acceptLanguage))
+                {
+                    http.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Language", acceptLanguage);
+                }
 
                 for (var i = 0; i < gamesToScan.Count; i++)
                 {
@@ -281,6 +292,67 @@ namespace PlayniteAchievements.Providers.PSN
             var parts = raw.Split('#');
             var normalized = parts.Length > 0 ? parts[parts.Length - 1] : raw;
             return (normalized ?? string.Empty).Trim();
+        }
+
+        /// <summary>
+        /// Maps the global language setting to a PSN-compatible Accept-Language header value.
+        /// PSN uses standard HTTP Accept-Language format (e.g., "en-US", "fr-FR").
+        /// </summary>
+        private static string MapGlobalLanguageToPsnLocale(string globalLanguage)
+        {
+            if (string.IsNullOrWhiteSpace(globalLanguage))
+            {
+                return "en-US";
+            }
+
+            var normalizedRaw = globalLanguage.Trim();
+            if (normalizedRaw.IndexOf('-') > 0)
+            {
+                return normalizedRaw;
+            }
+
+            var normalized = normalizedRaw.ToLowerInvariant();
+            var localeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "english", "en-US" },
+                { "german", "de-DE" },
+                { "french", "fr-FR" },
+                { "spanish", "es-ES" },
+                { "latam", "es-419" },
+                { "italian", "it-IT" },
+                { "portuguese", "pt-PT" },
+                { "brazilian", "pt-BR" },
+                { "brazilianportuguese", "pt-BR" },
+                { "russian", "ru-RU" },
+                { "polish", "pl-PL" },
+                { "dutch", "nl-NL" },
+                { "swedish", "sv-SE" },
+                { "finnish", "fi-FI" },
+                { "danish", "da-DK" },
+                { "norwegian", "nb-NO" },
+                { "hungarian", "hu-HU" },
+                { "czech", "cs-CZ" },
+                { "romanian", "ro-RO" },
+                { "turkish", "tr-TR" },
+                { "greek", "el-GR" },
+                { "bulgarian", "bg-BG" },
+                { "ukrainian", "uk-UA" },
+                { "thai", "th-TH" },
+                { "vietnamese", "vi-VN" },
+                { "japanese", "ja-JP" },
+                { "koreana", "ko-KR" },
+                { "korean", "ko-KR" },
+                { "schinese", "zh-CN" },
+                { "tchinese", "zh-Hant" },
+                { "arabic", "ar" }
+            };
+
+            if (localeMap.TryGetValue(normalized, out var locale))
+            {
+                return locale;
+            }
+
+            return "en-US";
         }
 
         private async Task<string> ResolveNpCommunicationIdAsync(HttpClient http, Game game, CancellationToken cancel)

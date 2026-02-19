@@ -18,7 +18,7 @@ namespace PlayniteAchievements.Services
         List<string> GetCachedGameIds();
         GameAchievementData LoadGameData(string key);
         CacheWriteResult SaveGameData(string key, GameAchievementData data);
-        CacheWriteResult SetCompletedMarker(Guid playniteGameId, string markerApiName);
+        CacheWriteResult SetCapstone(Guid playniteGameId, string capstoneApiName);
         void RemoveGameData(Guid playniteGameId);
         void NotifyCacheInvalidated();
 

@@ -13,13 +13,19 @@ namespace PlayniteAchievements.Providers.PSN
     {
         private readonly PsnSessionManager _sessionManager;
         private readonly PsnScanner _scanner;
+        private readonly PlayniteAchievementsSettings _settings;
 
-        public PsnDataProvider(ILogger logger, PsnSessionManager sessionManager)
+        public PsnDataProvider(
+            ILogger logger,
+            PlayniteAchievementsSettings settings,
+            PsnSessionManager sessionManager)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
+            _settings = settings;
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
 
-            _scanner = new PsnScanner(logger, _sessionManager);
+            _scanner = new PsnScanner(logger, _settings, _sessionManager);
             _ = _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);
         }
 

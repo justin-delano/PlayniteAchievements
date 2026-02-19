@@ -625,16 +625,16 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        public CacheWriteResult SetCompletedMarker(Guid playniteGameId, string markerApiName)
+        public CacheWriteResult SetCapstone(Guid playniteGameId, string capstoneApiName)
         {
-            using (PerfScope.Start(_logger, "Cache.SetCompletedMarker", thresholdMs: 25, context: playniteGameId.ToString()))
+            using (PerfScope.Start(_logger, "Cache.SetCapstone", thresholdMs: 25, context: playniteGameId.ToString()))
             {
                 if (playniteGameId == Guid.Empty)
                 {
                     return CacheWriteResult.CreateFailure(
                         string.Empty,
                         "invalid_game_id",
-                        ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_InvalidGame"));
+                        ResourceProvider.GetString("LOCPlayAch_Capstone_Error_InvalidGame"));
                 }
 
                 var normalizedKey = UserKey(playniteGameId.ToString());
@@ -654,14 +654,14 @@ namespace PlayniteAchievements.Services
                 {
                     lock (_sync)
                     {
-                        EnsureReady_Locked("SetCompletedMarker");
-                        result = _store.SetCompletedMarker(playniteGameId, markerApiName);
+                        EnsureReady_Locked("SetCapstone");
+                        result = _store.SetCapstone(playniteGameId, capstoneApiName);
                         if (result == null)
                         {
                             result = CacheWriteResult.CreateFailure(
                                 normalizedKey,
                                 "sql_write_failed",
-                                ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_SaveFailed"));
+                                ResourceProvider.GetString("LOCPlayAch_Capstone_Error_SaveFailed"));
                         }
 
                         if (result.Success)
@@ -683,7 +683,7 @@ namespace PlayniteAchievements.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Error(ex, $"Failed setting completed marker for gameId={playniteGameId}");
+                    _logger?.Error(ex, $"Failed setting capstone for gameId={playniteGameId}");
                     return CacheWriteResult.CreateFailure(
                         normalizedKey,
                         "sql_write_failed",
@@ -795,7 +795,7 @@ namespace PlayniteAchievements.Services
                 LibrarySourceName = source.LibrarySourceName,
                 NoAchievements = source.NoAchievements,
                 ProviderIsCompleted = source.ProviderIsCompleted,
-                CompletedMarkerApiName = source.CompletedMarkerApiName,
+                CapstoneApiName = source.CapstoneApiName,
                 PlaytimeSeconds = source.PlaytimeSeconds,
                 GameName = source.GameName,
                 AppId = source.AppId,

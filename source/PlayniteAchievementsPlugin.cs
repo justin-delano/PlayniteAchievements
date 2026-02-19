@@ -179,6 +179,7 @@ namespace PlayniteAchievements
                             _epicSessionManager),
                         new PsnDataProvider(
                             _logger,
+                            settings,
                             _psnSessionManager),
                         new RetroAchievementsDataProvider(
                             _logger,
@@ -359,11 +360,11 @@ namespace PlayniteAchievements
 
             yield return new GameMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_SetCompletedMarker"),
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_SetCapstone"),
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
-                    OpenCompletedMarkerView(game.Id);
+                    OpenCapstoneView(game.Id);
                 }
             };
 
@@ -866,7 +867,7 @@ namespace PlayniteAchievements
             }
         }
 
-        public void OpenCompletedMarkerView(Guid gameId)
+        public void OpenCapstoneView(Guid gameId)
         {
             try
             {
@@ -884,7 +885,7 @@ namespace PlayniteAchievements
                 {
                     PlayniteApi?.Dialogs?.ShowMessage(
                         string.Format(
-                            ResourceProvider.GetString("LOCPlayAch_CompletedMarker_NoCachedData"),
+                            ResourceProvider.GetString("LOCPlayAch_Capstone_NoCachedData"),
                             game.Name),
                         ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                         MessageBoxButton.OK,
@@ -894,7 +895,7 @@ namespace PlayniteAchievements
 
                 EnsureWpfFallbackResources();
 
-                var view = new CompletedMarkerControl(
+                var view = new CapstoneControl(
                     gameId,
                     _achievementManager,
                     PlayniteApi,
@@ -955,9 +956,9 @@ namespace PlayniteAchievements
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, $"Failed to open completed marker view for gameId={gameId}");
+                _logger.Error(ex, $"Failed to open capstone view for gameId={gameId}");
                 PlayniteApi?.Dialogs?.ShowErrorMessage(
-                    string.Format(ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_OpenFailed"), ex.Message),
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Capstone_Error_OpenFailed"), ex.Message),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
             }
         }

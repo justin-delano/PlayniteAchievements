@@ -41,7 +41,7 @@
     <!-- CONTEXT MENU                                                       -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_SetCompletedMarker">Set Completed Marker</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scan Single Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scan Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
@@ -541,25 +541,26 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">This game may not support achievements, or achievements may not be available for this platform.</sys:String>
 
     <!-- ================================================================= -->
-    <!-- COMPLETED MARKER POPUP                                             -->
+    <!-- CAPSTONE ACHIEVEMENT POPUP                                         -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_WindowTitle">Completed Marker - {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Header">Manual Completed Marker</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Subtitle">Choose one achievement to count as this game's completion marker.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_CurrentMarker">Current marker: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_CurrentMarker_None">None</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Column_Achievement">Achievement</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Column_Description">Description</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_ButtonSet">Set Marker</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_ButtonClear">Clear Marker</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_ButtonDone">Done</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_NoCachedData">No cached achievements are available for "{0}". Scan this game first.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Error_InvalidGame">Invalid game selection.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Error_NotCached">No cached achievement data is available for this game.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Error_MarkerNotFound">The selected achievement is no longer available in cached data.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Error_SelectRequired">Select an achievement before setting a marker.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Error_SaveFailed">Failed to save completed marker.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CompletedMarker_Error_OpenFailed">Failed to open completed marker view: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_WindowTitle">Capstone Achievement - {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Header">Capstone Achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">Choose one achievement to mark as this game's capstone.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Current">Current capstone: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Current_None">None</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Column_Achievement">Achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Column_Description">Description</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_ButtonSet">Set Capstone</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_ButtonClear">Clear Capstone</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_ButtonDone">Done</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_SearchPlaceholder">Search achievements...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_NoCachedData">No cached achievements are available for "{0}". Scan this game first.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Error_InvalidGame">Invalid game selection.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Error_NotCached">No cached achievement data is available for this game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Error_MarkerNotFound">The selected achievement is no longer available in cached data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Error_SelectRequired">Select an achievement before setting a capstone.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Error_SaveFailed">Failed to save capstone.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Error_OpenFailed">Failed to open capstone view: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_NoLockedAchievements">No locked achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">No unlocked achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_ChartCut">Cut</sys:String>

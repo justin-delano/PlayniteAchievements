@@ -1310,19 +1310,19 @@ namespace PlayniteAchievements.Services
             NotifyCacheInvalidatedThrottled(force: true);
         }
 
-        public CacheWriteResult SetCompletedMarker(Guid playniteGameId, string markerApiName)
+        public CacheWriteResult SetCapstone(Guid playniteGameId, string capstoneApiName)
         {
             if (playniteGameId == Guid.Empty)
             {
                 return CacheWriteResult.CreateFailure(
                     string.Empty,
                     "invalid_game_id",
-                    ResourceProvider.GetString("LOCPlayAch_CompletedMarker_Error_InvalidGame"));
+                    ResourceProvider.GetString("LOCPlayAch_Capstone_Error_InvalidGame"));
             }
 
             try
             {
-                var result = _cacheService.SetCompletedMarker(playniteGameId, markerApiName);
+                var result = _cacheService.SetCapstone(playniteGameId, capstoneApiName);
                 if (result.Success)
                 {
                     NotifyCacheInvalidatedThrottled(force: true);
@@ -1331,7 +1331,7 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"Failed setting completed marker for gameId={playniteGameId}.");
+                _logger?.Error(ex, $"Failed setting capstone for gameId={playniteGameId}.");
                 return CacheWriteResult.CreateFailure(
                     playniteGameId.ToString(),
                     "sql_write_failed",

@@ -12,7 +12,7 @@ namespace PlayniteAchievements.Services.Database.Rows
         public long TotalAchievements { get; set; }
         public long IsCompleted { get; set; }
         public long ProviderIsCompleted { get; set; }
-        public string CompletedMarkerApiName { get; set; }
+        public string CapstoneApiName { get; set; }
         public string LastUpdatedUtc { get; set; }
         public string CreatedUtc { get; set; }
         public string UpdatedUtc { get; set; }

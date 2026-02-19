@@ -9,24 +9,24 @@ using System.Windows.Input;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class CompletedMarkerControl : UserControl
+    public partial class CapstoneControl : UserControl
     {
-        private readonly CompletedMarkerViewModel _viewModel;
+        private readonly CapstoneViewModel _viewModel;
 
-        public CompletedMarkerControl(
+        public CapstoneControl(
             Guid gameId,
             AchievementManager achievementManager,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)
         {
-            _viewModel = new CompletedMarkerViewModel(gameId, achievementManager, playniteApi, logger, settings);
+            _viewModel = new CapstoneViewModel(gameId, achievementManager, playniteApi, logger, settings);
             DataContext = _viewModel;
             InitializeComponent();
             _viewModel.RequestClose += ViewModel_RequestClose;
         }
 
-        public string WindowTitle => _viewModel?.WindowTitle ?? "Completed Marker";
+        public string WindowTitle => _viewModel?.WindowTitle ?? "Capstone Achievement";
 
         public event EventHandler RequestClose;
 
@@ -45,7 +45,7 @@ namespace PlayniteAchievements.Views
 
         private void MarkerCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.DataContext is CompletedMarkerOptionItem item)
+            if (sender is CheckBox checkBox && checkBox.DataContext is CapstoneOptionItem item)
             {
                 if (item.IsCurrentMarker)
                 {
@@ -73,7 +73,7 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (row.DataContext is CompletedMarkerOptionItem item)
+            if (row.DataContext is CapstoneOptionItem item)
             {
                 _viewModel?.ToggleReveal(item);
             }
