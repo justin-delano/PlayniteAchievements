@@ -95,8 +95,8 @@
                                 </Style>
                             </Image.Style>
                         </Image>
-                        <!-- Perfect Game -->
-                        <Image Source="{StaticResource BadgePerfectGame}"
+                        <!-- Completed Game -->
+                        <Image Source="{StaticResource BadgeCompletedGame}"
                                Effect="{StaticResource BadgeShadow}"
                                SnapsToDevicePixels="True"
                                RenderOptions.BitmapScalingMode="NearestNeighbor">
@@ -104,7 +104,7 @@
                                 <Style TargetType="Image">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IconKey}" Value="BadgePerfectGame">
+                                        <DataTrigger Binding="{Binding IconKey}" Value="BadgeCompletedGame">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -908,7 +908,7 @@
                                 </Style>
                             </DataGrid.RowStyle>
                            <DataGrid.Columns>
-                            <!-- Perfect indicator (slightly larger) -->
+                            <!-- Complete indicator (slightly larger) -->
                             <DataGridTemplateColumn Width="34" MinWidth="34" MaxWidth="34" CanUserResize="False" Header="" helpers:ColumnVisibilityHelper.ColumnKey="OverviewPerfect">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -925,13 +925,13 @@
                                                     </Style>
                                                 </Border.Style>
                                             </Border>
-                                            <Image Source="{StaticResource BadgePerfectGame}"
+                                            <Image Source="{StaticResource BadgeCompletedGame}"
                                                 Style="{StaticResource RarityIcon}"
                                                 Effect="{StaticResource BadgeShadow}"
                                                 Width="20" Height="20"
                                                 HorizontalAlignment="Center"
                                                 VerticalAlignment="Center"
-                                                ToolTip="Perfect Game"
+                                                ToolTip="Completed Game"
                                                 Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>
                                         </Grid>
                                     </DataTemplate>
