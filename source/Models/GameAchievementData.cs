@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PlayniteAchievements.Models
 {
@@ -26,7 +27,23 @@ namespace PlayniteAchievements.Models
 
         public bool NoAchievements { get; set; }
 
-        public bool IsCompleted { get; set; }
+        /// <summary>
+        /// Computed completion status based on provider signal, 100% progress, or completion marker.
+        /// </summary>
+        public bool IsCompleted =>
+            ProviderIsCompleted ||
+            (Achievements?.Count > 0 && Achievements.All(a => a?.Unlocked == true)) ||
+            IsMarkerUnlocked();
+
+        private bool IsMarkerUnlocked()
+        {
+            if (string.IsNullOrWhiteSpace(CompletedMarkerApiName) || Achievements == null)
+                return false;
+
+            return Achievements.Any(a =>
+                string.Equals(a?.ApiName?.Trim(), CompletedMarkerApiName.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                a.Unlocked);
+        }
 
         /// <summary>
         /// Provider-native completion signal (for example, PSN platinum unlocked).
