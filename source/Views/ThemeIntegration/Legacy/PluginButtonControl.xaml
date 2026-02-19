@@ -42,7 +42,7 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- 100% complete indicator -->
+                <!-- Completed game indicator -->
                 <TextBlock Grid.Column="0" Grid.Row="0" Grid.RowSpan="3" Text="&#xea33;" FontFamily="{DynamicResource CommonFont}"
                            Visibility="{Binding Theme.IsCompleted, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"
                            VerticalAlignment="Center" Padding="5,3,5,5"
