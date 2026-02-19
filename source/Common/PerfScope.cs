@@ -9,6 +9,8 @@ namespace PlayniteAchievements.Common
     internal sealed class PerfScope : IDisposable
     {
         private const int SevereThresholdMs = 250;
+        // Local diagnostic toggle: set true when you want perf tracing.
+        private const bool PerfTracingEnabled = false;
 
         private readonly ILogger _logger;
         private readonly string _tag;
@@ -30,11 +32,21 @@ namespace PlayniteAchievements.Common
 
         public static PerfScope Start(ILogger logger, string tag, int thresholdMs = 50, string context = null)
         {
+            if (!PerfTracingEnabled)
+            {
+                return null;
+            }
+
             return new PerfScope(logger, tag, thresholdMs, context, startupVariant: false);
         }
 
         public static PerfScope StartStartup(ILogger logger, string tag, int thresholdMs = 50, string context = null)
         {
+            if (!PerfTracingEnabled)
+            {
+                return null;
+            }
+
             return new PerfScope(logger, tag, thresholdMs, context, startupVariant: true);
         }
 
