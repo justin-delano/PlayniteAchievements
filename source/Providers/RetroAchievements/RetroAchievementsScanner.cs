@@ -39,10 +39,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
         }
 
-        public async Task<RebuildPayload> ScanAsync(
-            List<Game> gamesToScan,
-            Action<ProviderScanUpdate> progressCallback,
-            Func<GameAchievementData, Task> onGameScanned,
+        public async Task<RebuildPayload> RefreshAsync(
+            List<Game> gamesToRefresh,
+            Action<ProviderRefreshUpdate> progressCallback,
+            Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
             if (string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername) || string.IsNullOrWhiteSpace(_settings.Persisted.RaWebApiKey))
@@ -51,14 +51,14 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            if (gamesToScan is null || gamesToScan.Count == 0)
+            if (gamesToRefresh is null || gamesToRefresh.Count == 0)
             {
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
             var report = progressCallback ?? (_ => { });
 
-            var progress = new RebuildProgressReporter(report, gamesToScan.Count);
+            var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
             var summary = new RebuildSummary();
 
             // Create rate limiter with exponential backoff
@@ -68,12 +68,12 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
             int consecutiveErrors = 0;
 
-            for (var i = 0; i < gamesToScan.Count; i++)
+            for (var i = 0; i < gamesToRefresh.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
                 progress.Step();
 
-                var game = gamesToScan[i];
+                var game = gamesToRefresh[i];
                 if (game == null) continue;
 
                 if (!RaConsoleIdResolver.TryResolve(game, out var consoleId))
@@ -87,7 +87,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     continue;
                 }
 
-                progress.Emit(new ProviderScanUpdate
+                progress.Emit(new ProviderRefreshUpdate
                 {
                     CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"Game {game.Id}"
                 });
@@ -99,12 +99,12 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                         IsTransientError,
                         cancel).ConfigureAwait(false);
 
-                    if (onGameScanned != null && data != null)
+                    if (OnGameRefreshed != null && data != null)
                     {
-                        await onGameScanned(data).ConfigureAwait(false);
+                        await OnGameRefreshed(data).ConfigureAwait(false);
                     }
 
-                    summary.GamesScanned++;
+                    summary.GamesRefreshed++;
                     if (data != null && !data.NoAchievements)
                     {
                         summary.GamesWithAchievements++;
@@ -210,6 +210,36 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                         catch (Exception ex)
                         {
                             _logger?.Warn(ex, $"[RA] Failed to decompress CSO file '{candidate}': {ex.Message}");
+                        }
+                        continue;
+                    }
+
+                    // RVZ files need to be decompressed before hashing
+                    if (ArchiveUtils.IsRvzPath(candidate) && _settings.Persisted.EnableArchiveScanning)
+                    {
+                        if (!File.Exists(candidate))
+                        {
+                            continue;
+                        }
+
+                        _logger?.Info($"[RA] Decompressing RVZ file: '{candidate}'");
+                        try
+                        {
+                            using (var tmpIso = RvzUtils.DecompressToTempFile(candidate))
+                            {
+                                var hashes = await hasher.ComputeHashesAsync(tmpIso.Path, cancel).ConfigureAwait(false);
+                                var match = TryMatchHash(index, hashes, out var matchedHash, out var gameId);
+                                _logger?.Info($"[RA] RVZ file '{candidate}' hashes={FormatHashesForLog(hashes)} matched={match} gameId={gameId}");
+
+                                if (match)
+                                {
+                                    return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.Warn(ex, $"[RA] Failed to decompress RVZ file '{candidate}': {ex.Message}");
                         }
                         continue;
                     }

@@ -19,12 +19,18 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing
                    (ext.Equals(".zip", StringComparison.OrdinalIgnoreCase) ||
                     ext.Equals(".7z", StringComparison.OrdinalIgnoreCase) ||
                     ext.Equals(".rar", StringComparison.OrdinalIgnoreCase) ||
-                    CsoUtils.IsCsoPath(filePath));
+                    CsoUtils.IsCsoPath(filePath) ||
+                    RvzUtils.IsRvzPath(filePath));
         }
 
         public static bool IsCsoPath(string filePath)
         {
             return CsoUtils.IsCsoPath(filePath);
+        }
+
+        public static bool IsRvzPath(string filePath)
+        {
+            return RvzUtils.IsRvzPath(filePath);
         }
 
         public static IReadOnlyList<ArchiveEntryInfo> GetCandidateEntries(string archivePath, int maxEntries = 25)
