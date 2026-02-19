@@ -1121,7 +1121,7 @@
                                 </DataGridTemplateColumn>
 
                                 <!-- Achievement Count -->
-                                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Total}" SortMemberPath="TotalAchievements">
+                                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Total}" SortMemberPath="TotalAchievements" helpers:ColumnVisibilityHelper.ColumnKey="TotalAchievements">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid>
@@ -1443,11 +1443,11 @@
                                                         <TextBlock Style="{DynamicResource BaseTextBlockStyle}"
                                                                    Foreground="{DynamicResource TextBrush}"
                                                                    TextWrapping="Wrap">
-                                                            <Run Text="{Binding Name}"/>
-                                                            <Run Text="{Binding HiddenTitleSuffix}"
+                                                            <Run Text="{Binding Name, Mode=OneWay}"/>
+                                                            <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
                                                                  FontStyle="Italic"
                                                                  FontSize="{DynamicResource FontSizeSmall}"
-                                                                 Foreground="{DynamicResource TextBrush}"/>
+                                                                 Foreground="{DynamicResource TextBrushDarker}"/>
                                                         </TextBlock>
 
                                                         <TextBlock Text="{Binding Description}"
@@ -1755,11 +1755,11 @@
                                                                 </Style.Triggers>
                                                             </Style>
                                                         </TextBlock.Style>
-                                                        <Run Text="{Binding DisplayNameResolved}"/>
-                                                        <Run Text="{Binding HiddenTitleSuffix}"
+                                                        <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
+                                                        <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
                                                              FontStyle="Italic"
                                                              FontSize="{DynamicResource FontSizeSmall}"
-                                                             Foreground="{DynamicResource TextBrush}"/>
+                                                             Foreground="{DynamicResource TextBrushDarker}"/>
                                                     </TextBlock>
 
                                                     <TextBlock Text="{Binding DescriptionResolved}"

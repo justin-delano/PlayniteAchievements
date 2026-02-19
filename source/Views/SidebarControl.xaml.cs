@@ -50,7 +50,8 @@ namespace PlayniteAchievements.Views
             {
                 ["OverviewGameName"] = 500,
                 ["OverviewLastPlayed"] = 240,
-                ["OverviewProgression"] = 360
+                ["OverviewProgression"] = 360,
+                ["TotalAchievements"] = 180
             };
 
         public SidebarControl()

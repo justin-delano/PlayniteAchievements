@@ -691,11 +691,11 @@
                                             </Style.Triggers>
                                         </Style>
                                     </TextBlock.Style>
-                                    <Run Text="{Binding DisplayNameResolved}"/>
-                                    <Run Text="{Binding HiddenTitleSuffix}"
+                                    <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
+                                    <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
                                          FontStyle="Italic"
                                          FontSize="{DynamicResource FontSizeSmall}"
-                                         Foreground="{DynamicResource TextBrush}"/>
+                                         Foreground="{DynamicResource TextBrushDarker}"/>
                                 </TextBlock>
 
                                 <TextBlock Text="{Binding DescriptionResolved}"
