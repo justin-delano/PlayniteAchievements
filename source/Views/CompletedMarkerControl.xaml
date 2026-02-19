@@ -266,8 +266,8 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="10,6">
-                                <!-- Perfect game badge for current marker -->
-                                <Image Source="{StaticResource BadgePerfectGame}"
+                                <!-- Completed game badge for current marker -->
+                                <Image Source="{StaticResource BadgeCompletedGame}"
                                        Width="18"
                                        Height="18"
                                        Margin="0,0,8,0"
