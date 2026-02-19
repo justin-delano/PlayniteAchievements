@@ -28,7 +28,7 @@
     <SolidColorBrush x:Key="BrushRetroAchievements" Color="#FFD700"/>
     <SolidColorBrush x:Key="BrushGOG" Color="#A855F7"/>
     <SolidColorBrush x:Key="BrushEpic" Color="#26BBFF"/>
-    <SolidColorBrush x:Key="BrushPSN" Color="#003791"/>
+    <SolidColorBrush x:Key="BrushPSN" Color="#0070D1"/>
 
     <!-- DrawingImage resources for each provider -->
     <DrawingImage x:Key="ProviderIconSteam">

@@ -37,7 +37,7 @@ namespace PlayniteAchievements.Providers.PSN
         // Reuse an existing icon key so older sidebar icon templates keep rendering without additional XAML edits.
         public string ProviderIconKey => "ProviderIconPSN";
 
-        public string ProviderColorHex => "#003791";
+        public string ProviderColorHex => "#0070D1";
 
         public bool IsAuthenticated => _sessionManager.IsAuthenticated;
 
