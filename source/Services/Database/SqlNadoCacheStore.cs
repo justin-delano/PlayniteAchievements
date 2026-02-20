@@ -539,8 +539,21 @@ namespace PlayniteAchievements.Services.Database
             {
                 db.RunTransaction(() =>
                 {
-                    var userId = UpsertCurrentUser(db, resolvedUser, nowIso);
-                    var gameId = UpsertGame(db, providerName, payload, nowIso, updatedIso);
+                    // If creating an Unmapped stub, check for existing real provider data and use that instead
+                    string effectiveProviderName = providerName;
+                    ResolvedUser effectiveUser = resolvedUser;
+                    if (string.Equals(providerName, "Unmapped", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var existingRealProvider = FindExistingRealProviderGame(db, cacheKey);
+                        if (existingRealProvider != null)
+                        {
+                            effectiveProviderName = existingRealProvider.ProviderName;
+                            effectiveUser = ResolveCurrentUser(effectiveProviderName);
+                        }
+                    }
+
+                    var userId = UpsertCurrentUser(db, effectiveUser, nowIso);
+                    var gameId = UpsertGame(db, effectiveProviderName, payload, nowIso, updatedIso);
                     var existingProgress = LoadUserGameProgress(db, userId, gameId, cacheKey);
 
                     // Use payload.HasAchievements directly - callers are responsible for setting it correctly
@@ -655,8 +668,102 @@ namespace PlayniteAchievements.Services.Database
                               WHERE Id = ?;",
                             stale.Id);
                     }
+
+                    // Deduplication: When saving real provider data, remove Unmapped stubs for the same game
+                    if (!string.Equals(effectiveProviderName, "Unmapped", StringComparison.OrdinalIgnoreCase))
+                    {
+                        RemoveUnmappedStubsForGame(db, cacheKey, userProgressId, payload.ExcludedByUser, nowIso);
+                    }
                 });
             });
+        }
+
+        private GameRow FindExistingRealProviderGame(SQLiteDatabase db, string cacheKey)
+        {
+            // Find a Game entry for this CacheKey from a non-Unmapped provider
+            return db.Load<GameRow>(
+                @"SELECT g.Id, g.ProviderName, g.ProviderGameId, g.PlayniteGameId, g.GameName, g.LibrarySourceName, g.FirstSeenUtc, g.LastUpdatedUtc
+                  FROM Games g
+                  WHERE g.PlayniteGameId = ?
+                    AND g.ProviderName <> 'Unmapped'
+                    AND g.ProviderName IS NOT NULL
+                  ORDER BY g.LastUpdatedUtc DESC
+                  LIMIT 1;",
+                cacheKey).FirstOrDefault();
+        }
+
+        private void RemoveUnmappedStubsForGame(
+            SQLiteDatabase db,
+            string cacheKey,
+            long realProgressId,
+            bool preserveExcludedFlag,
+            string nowIso)
+        {
+            // Find Unmapped UserGameProgress entries for the same CacheKey
+            var unmappedProgress = db.Load<UserGameProgressRow>(
+                @"SELECT ugp.Id, ugp.UserId, ugp.GameId, ugp.CacheKey, ugp.HasAchievements,
+                         ugp.ExcludedByUser, ugp.AchievementsUnlocked, ugp.TotalAchievements,
+                         ugp.LastUpdatedUtc, ugp.CreatedUtc, ugp.UpdatedUtc
+                  FROM UserGameProgress ugp
+                  INNER JOIN Users u ON ugp.UserId = u.Id
+                  WHERE ugp.CacheKey = ?
+                    AND u.ProviderName = 'Unmapped'
+                    AND ugp.Id <> ?;",
+                cacheKey,
+                realProgressId).ToList();
+
+            if (unmappedProgress.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var stub in unmappedProgress)
+            {
+                // If the stub has ExcludedByUser=true and the real entry doesn't, preserve it
+                if (stub.ExcludedByUser != 0 && !preserveExcludedFlag)
+                {
+                    db.ExecuteNonQuery(
+                        @"UPDATE UserGameProgress
+                          SET ExcludedByUser = 1,
+                              UpdatedUtc = ?
+                          WHERE Id = ?;",
+                        nowIso,
+                        realProgressId);
+                }
+
+                // Delete UserAchievements for the stub
+                db.ExecuteNonQuery(
+                    @"DELETE FROM UserAchievements
+                      WHERE UserGameProgressId = ?;",
+                    stub.Id);
+
+                // Delete the stub's UserGameProgress
+                db.ExecuteNonQuery(
+                    @"DELETE FROM UserGameProgress
+                      WHERE Id = ?;",
+                    stub.Id);
+
+                // Delete the stub's Game entry if no other progress references it
+                db.ExecuteNonQuery(
+                    @"DELETE FROM Games
+                      WHERE Id = ?
+                        AND NOT EXISTS (SELECT 1 FROM UserGameProgress WHERE GameId = Games.Id);",
+                    stub.GameId);
+
+                // Delete AchievementDefinitions for the stub's game if no other progress references them
+                db.ExecuteNonQuery(
+                    @"DELETE FROM AchievementDefinitions
+                      WHERE GameId = ?
+                        AND NOT EXISTS (
+                            SELECT 1 FROM UserAchievements ua
+                            INNER JOIN UserGameProgress ugp ON ua.UserGameProgressId = ugp.Id
+                            WHERE ua.AchievementDefinitionId = AchievementDefinitions.Id
+                        );",
+                    stub.GameId);
+
+                _logger?.Debug($"Removed Unmapped stub for CacheKey={cacheKey}, stubProgressId={stub.Id}, " +
+                              $"replaced by realProgressId={realProgressId}");
+            }
         }
 
         public CacheWriteResult SetCapstone(Guid playniteGameId, string capstoneApiName)
@@ -1412,7 +1519,7 @@ namespace PlayniteAchievements.Services.Database
 
             if (string.IsNullOrWhiteSpace(externalId))
             {
-                externalId = "legacy";
+                externalId = "unmapped";
             }
 
             displayName = externalId;
@@ -1429,7 +1536,7 @@ namespace PlayniteAchievements.Services.Database
         {
             if (string.IsNullOrWhiteSpace(providerName))
             {
-                return "LegacyUnknown";
+                return "Unmapped";
             }
 
             var value = providerName.Trim();
