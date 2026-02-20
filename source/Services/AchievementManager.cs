@@ -361,7 +361,8 @@ namespace PlayniteAchievements.Services
             return new CacheRefreshOptions
             {
                 PlayniteGameIds = new[] { playniteGameId },
-                IncludeUnplayedGames = true
+                IncludeUnplayedGames = true,
+                BypassExclusions = true
             };
         }
 
@@ -529,9 +530,9 @@ namespace PlayniteAchievements.Services
         {
             options ??= new CacheRefreshOptions();
 
-            // Pre-load excluded games for efficient skipping (bulk scans only, not targeted)
+            // Pre-load excluded games for efficient skipping (unless bypass requested)
             HashSet<string> excludedGameIds = null;
-            if (options.SkipNoAchievementsGames && (options.PlayniteGameIds == null || options.PlayniteGameIds.Count == 0))
+            if (options.SkipNoAchievementsGames && !options.BypassExclusions)
             {
                 excludedGameIds = _cacheService.GetExcludedGameIds();
             }
@@ -1072,7 +1073,8 @@ namespace PlayniteAchievements.Services
             List<Guid> gameIds,
             Func<RebuildPayload, string> finalMessage,
             string errorLogMessage,
-            string emptySelectionLogMessage = null)
+            string emptySelectionLogMessage = null,
+            bool bypassExclusions = false)
         {
             if (gameIds == null || gameIds.Count == 0)
             {
@@ -1086,7 +1088,7 @@ namespace PlayniteAchievements.Services
             }
 
             return StartManagedRefreshCoreAsync(
-                new CacheRefreshOptions { PlayniteGameIds = gameIds, IncludeUnplayedGames = true },
+                new CacheRefreshOptions { PlayniteGameIds = gameIds, IncludeUnplayedGames = true, BypassExclusions = bypassExclusions },
                 finalMessage,
                 errorLogMessage
             );
@@ -1244,7 +1246,8 @@ namespace PlayniteAchievements.Services
                 ids,
                 payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.LibrarySelected, payload?.Summary?.GamesRefreshed ?? 0),
                 ResourceProvider.GetString("LOCPlayAch_Log_RefreshSelectedFailed"),
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoSelectedGames"));
+                ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoSelectedGames"),
+                bypassExclusions: true);
         }
 
         /// <summary>
@@ -1288,7 +1291,8 @@ namespace PlayniteAchievements.Services
                         GetLibrarySelectedGameIds(),
                         payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.LibrarySelected, payload?.Summary?.GamesRefreshed ?? 0),
                         ResourceProvider.GetString("LOCPlayAch_Log_RefreshSelectedFailed"),
-                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoSelectedGames"));
+                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoSelectedGames"),
+                        bypassExclusions: true);
 
                 case RefreshModeType.Missing:
                     return StartManagedMissingRefreshAsync();

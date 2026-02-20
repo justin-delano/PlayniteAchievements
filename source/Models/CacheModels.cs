@@ -32,6 +32,13 @@ namespace PlayniteAchievements.Models
         /// Default is true to avoid unnecessary API calls for games without achievements.
         /// </summary>
         public bool SkipNoAchievementsGames { get; set; } = true;
+
+        /// <summary>
+        /// When true, bypass exclusion checks even for targeted scans.
+        /// Use for explicit user-targeted scans (Single game, Library Selected) where user wants to force a rescan.
+        /// Default is false (exclusions are respected).
+        /// </summary>
+        public bool BypassExclusions { get; set; } = false;
     }
 
     public class UserUnlockedAchievements
