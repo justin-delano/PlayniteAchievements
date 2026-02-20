@@ -35,10 +35,10 @@ namespace PlayniteAchievements.Providers.PSN
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
         }
 
-        public async Task<RebuildPayload> ScanAsync(
-            List<Game> gamesToScan,
-            Action<ProviderScanUpdate> progressCallback,
-            Func<GameAchievementData, Task> onGameScanned,
+        public async Task<RebuildPayload> RefreshAsync(
+            List<Game> gamesToRefresh,
+            Action<ProviderRefreshUpdate> progressCallback,
+            Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
             var report = progressCallback ?? (_ => { });
@@ -52,18 +52,18 @@ namespace PlayniteAchievements.Providers.PSN
             catch (PsnAuthRequiredException)
             {
                 _logger?.Warn("[PSNAch] Not authenticated (PSN token missing).");
-                report(new ProviderScanUpdate { AuthRequired = true });
+                report(new ProviderRefreshUpdate { AuthRequired = true });
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "[PSNAch] Failed to acquire PSN token.");
-                report(new ProviderScanUpdate { AuthRequired = true });
+                report(new ProviderRefreshUpdate { AuthRequired = true });
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
             var summary = new RebuildSummary();
-            if (gamesToScan == null || gamesToScan.Count == 0)
+            if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
                 return new RebuildPayload { Summary = summary };
             }
@@ -80,21 +80,21 @@ namespace PlayniteAchievements.Providers.PSN
                     http.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Language", acceptLanguage);
                 }
 
-                for (var i = 0; i < gamesToScan.Count; i++)
+                for (var i = 0; i < gamesToRefresh.Count; i++)
                 {
                     cancel.ThrowIfCancellationRequested();
-                    var game = gamesToScan[i];
-                    report(new ProviderScanUpdate { CurrentGameName = game?.Name });
+                    var game = gamesToRefresh[i];
+                    report(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
 
                     try
                     {
                         var data = await FetchGameDataAsync(http, game, providerName, cancel).ConfigureAwait(false);
-                        if (data != null && onGameScanned != null)
+                        if (data != null && OnGameRefreshed != null)
                         {
-                            await onGameScanned(data).ConfigureAwait(false);
+                            await OnGameRefreshed(data).ConfigureAwait(false);
                         }
 
-                        summary.GamesScanned++;
+                        summary.GamesRefreshed++;
                         if (data != null && !data.NoAchievements)
                         {
                             summary.GamesWithAchievements++;
@@ -111,7 +111,7 @@ namespace PlayniteAchievements.Providers.PSN
                 }
             }
 
-            report(new ProviderScanUpdate { CurrentGameName = null });
+            report(new ProviderRefreshUpdate { CurrentGameName = null });
             return new RebuildPayload { Summary = summary };
         }
 
@@ -230,8 +230,6 @@ namespace PlayniteAchievements.Providers.PSN
                 a != null &&
                 a.Unlocked &&
                 string.Equals((a.TrophyType ?? string.Empty).Trim(), "platinum", StringComparison.OrdinalIgnoreCase));
-            var isCompleted = hasUnlockedPlatinum ||
-                (achievements.Count > 0 && unlockedCount == achievements.Count);
 
             return new GameAchievementData
             {
@@ -240,7 +238,6 @@ namespace PlayniteAchievements.Providers.PSN
                 GameName = game?.Name,
                 PlayniteGameId = game?.Id,
                 NoAchievements = achievements.Count == 0,
-                ProviderIsCompleted = isCompleted,
                 Achievements = achievements,
                 LastUpdatedUtc = DateTime.UtcNow,
                 PlaytimeSeconds = (ulong)(game?.Playtime ?? 0) * 60UL

@@ -13,6 +13,7 @@ namespace PlayniteAchievements.Services.Database.Rows
         public string Category { get; set; }
         public string TrophyType { get; set; }
         public long Hidden { get; set; }
+        public long IsCapstone { get; set; }
         public double? GlobalPercentUnlocked { get; set; }
         public int? ProgressMax { get; set; }
         public string CreatedUtc { get; set; }

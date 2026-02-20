@@ -29,8 +29,6 @@ namespace PlayniteAchievements.Services.Database
             public long PlaytimeSeconds { get; set; }
             public long NoAchievements { get; set; }
             public long IsCompleted { get; set; }
-            public long ProviderIsCompleted { get; set; }
-            public string CapstoneApiName { get; set; }
             public string LastUpdatedUtc { get; set; }
             public string ProviderName { get; set; }
             public long? ProviderGameId { get; set; }
@@ -51,6 +49,7 @@ namespace PlayniteAchievements.Services.Database
             public string Category { get; set; }
             public string TrophyType { get; set; }
             public long Hidden { get; set; }
+            public long IsCapstone { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public long? Unlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
@@ -69,6 +68,7 @@ namespace PlayniteAchievements.Services.Database
             public string Category { get; set; }
             public string TrophyType { get; set; }
             public long Hidden { get; set; }
+            public long IsCapstone { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public long? Unlocked { get; set; }
             public string UnlockTimeUtc { get; set; }
@@ -243,8 +243,6 @@ namespace PlayniteAchievements.Services.Database
                         ugp.PlaytimeSeconds AS PlaytimeSeconds,
                         ugp.NoAchievements AS NoAchievements,
                         ugp.IsCompleted AS IsCompleted,
-                        ugp.ProviderIsCompleted AS ProviderIsCompleted,
-                        ugp.CapstoneApiName AS CapstoneApiName,
                         ugp.LastUpdatedUtc AS LastUpdatedUtc,
                         g.ProviderName AS ProviderName,
                         g.ProviderGameId AS ProviderGameId,
@@ -277,6 +275,7 @@ namespace PlayniteAchievements.Services.Database
                         ad.Category AS Category,
                         ad.TrophyType AS TrophyType,
                         ad.Hidden AS Hidden,
+                        ad.IsCapstone AS IsCapstone,
                         ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
                         ua.Unlocked AS Unlocked,
                         ua.UnlockTimeUtc AS UnlockTimeUtc,
@@ -309,6 +308,7 @@ namespace PlayniteAchievements.Services.Database
                         Category = row.Category,
                         TrophyType = row.TrophyType,
                         Hidden = row.Hidden != 0,
+                        IsCapstone = row.IsCapstone != 0,
                         GlobalPercentUnlocked = row.GlobalPercentUnlocked,
                         UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
                         ProgressNum = row.ProgressNum,
@@ -342,8 +342,6 @@ namespace PlayniteAchievements.Services.Database
                             ugp.PlaytimeSeconds AS PlaytimeSeconds,
                             ugp.NoAchievements AS NoAchievements,
                             ugp.IsCompleted AS IsCompleted,
-                            ugp.ProviderIsCompleted AS ProviderIsCompleted,
-                            ugp.CapstoneApiName AS CapstoneApiName,
                             ugp.LastUpdatedUtc AS LastUpdatedUtc,
                             g.ProviderName AS ProviderName,
                             g.ProviderGameId AS ProviderGameId,
@@ -368,8 +366,6 @@ namespace PlayniteAchievements.Services.Database
                         PlaytimeSeconds,
                         NoAchievements,
                         IsCompleted,
-                        ProviderIsCompleted,
-                        CapstoneApiName,
                         LastUpdatedUtc,
                         ProviderName,
                         ProviderGameId,
@@ -432,6 +428,7 @@ namespace PlayniteAchievements.Services.Database
                         ad.Category AS Category,
                         ad.TrophyType AS TrophyType,
                         ad.Hidden AS Hidden,
+                        ad.IsCapstone AS IsCapstone,
                         ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
                         ua.Unlocked AS Unlocked,
                         ua.UnlockTimeUtc AS UnlockTimeUtc,
@@ -466,6 +463,7 @@ namespace PlayniteAchievements.Services.Database
                         Category = row.Category,
                         TrophyType = row.TrophyType,
                         Hidden = row.Hidden != 0,
+                        IsCapstone = row.IsCapstone != 0,
                         GlobalPercentUnlocked = row.GlobalPercentUnlocked,
                         UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
                         ProgressNum = row.ProgressNum,
@@ -532,23 +530,11 @@ namespace PlayniteAchievements.Services.Database
                     var gameId = UpsertGame(db, providerName, payload, nowIso, updatedIso);
                     var existingProgress = LoadUserGameProgress(db, userId, gameId, cacheKey);
 
-                    var capstoneApiName = NormalizeMarkerApiName(payload.CapstoneApiName);
-                    if (string.IsNullOrWhiteSpace(capstoneApiName))
-                    {
-                        capstoneApiName = NormalizeMarkerApiName(existingProgress?.CapstoneApiName);
-                    }
-
-                    var providerIsCompleted = payload.ProviderIsCompleted || payload.IsCompleted;
-                    var hasMarker = !string.IsNullOrWhiteSpace(capstoneApiName);
-                    var markerUnlocked = IsMarkerUnlocked(capstoneApiName, achievements);
+                    var anyCapstoneUnlocked = achievements.Any(a => a?.IsCapstone == true && a.Unlocked);
                     var isCompleted = SqlNadoCacheBehavior.ComputeIsCompleted(
-                        providerIsCompleted,
                         unlockedCount,
                         totalCount,
-                        markerUnlocked,
-                        hasMarker);
-                    payload.ProviderIsCompleted = providerIsCompleted;
-                    payload.CapstoneApiName = capstoneApiName;
+                        anyCapstoneUnlocked);
 
                     var userProgressId = UpsertUserGameProgress(
                         db,
@@ -561,8 +547,6 @@ namespace PlayniteAchievements.Services.Database
                         unlockedCount,
                         totalCount,
                         isCompleted,
-                        providerIsCompleted,
-                        capstoneApiName,
                         updatedIso,
                         nowIso);
 
@@ -699,8 +683,6 @@ namespace PlayniteAchievements.Services.Database
                                     ugp.AchievementsUnlocked AS AchievementsUnlocked,
                                     ugp.TotalAchievements AS TotalAchievements,
                                     ugp.IsCompleted AS IsCompleted,
-                                    ugp.ProviderIsCompleted AS ProviderIsCompleted,
-                                    ugp.CapstoneApiName AS CapstoneApiName,
                                     ugp.LastUpdatedUtc AS LastUpdatedUtc,
                                     ugp.CreatedUtc AS CreatedUtc,
                                     ugp.UpdatedUtc AS UpdatedUtc
@@ -722,6 +704,7 @@ namespace PlayniteAchievements.Services.Database
                             return;
                         }
 
+                        // Validate that the capstone achievement exists if specified
                         if (!string.IsNullOrWhiteSpace(normalizedCapstoneApiName))
                         {
                             var markerExists = db.ExecuteScalar<long>(
@@ -746,7 +729,30 @@ namespace PlayniteAchievements.Services.Database
                             }
                         }
 
-                        var markerUnlocked = false;
+                        // Clear all capstones for this game
+                        db.ExecuteNonQuery(
+                            @"UPDATE AchievementDefinitions
+                              SET IsCapstone = 0,
+                                  UpdatedUtc = ?
+                              WHERE GameId = ?;",
+                            updatedIso,
+                            progress.GameId);
+
+                        // Set the new capstone if specified
+                        if (!string.IsNullOrWhiteSpace(normalizedCapstoneApiName))
+                        {
+                            db.ExecuteNonQuery(
+                                @"UPDATE AchievementDefinitions
+                                  SET IsCapstone = 1,
+                                      UpdatedUtc = ?
+                                  WHERE GameId = ? AND ApiName = ?;",
+                                updatedIso,
+                                progress.GameId,
+                                normalizedCapstoneApiName);
+                        }
+
+                        // Check if the capstone is unlocked to recompute IsCompleted
+                        var anyCapstoneUnlocked = false;
                         if (!string.IsNullOrWhiteSpace(normalizedCapstoneApiName))
                         {
                             var unlockedValue = db.ExecuteScalar<long>(
@@ -756,33 +762,29 @@ namespace PlayniteAchievements.Services.Database
                                   WHERE ua.UserGameProgressId = ?
                                     AND ad.GameId = ?
                                     AND ad.ApiName = ?
+                                    AND ad.IsCapstone = 1
                                   LIMIT 1;",
                                 progress.Id,
                                 progress.GameId,
                                 normalizedCapstoneApiName);
 
-                            markerUnlocked = unlockedValue != 0;
+                            anyCapstoneUnlocked = unlockedValue != 0;
                         }
 
-                        var providerIsCompleted = progress.ProviderIsCompleted != 0;
                         var unlockedCount = (int)Math.Max(0, progress.AchievementsUnlocked);
                         var totalCount = (int)Math.Max(0, progress.TotalAchievements);
-                        var hasMarker = !string.IsNullOrWhiteSpace(normalizedCapstoneApiName);
                         var isCompleted = SqlNadoCacheBehavior.ComputeIsCompleted(
-                            providerIsCompleted,
                             unlockedCount,
                             totalCount,
-                            markerUnlocked,
-                            hasMarker);
+                            anyCapstoneUnlocked);
 
+                        // Update progress record
                         db.ExecuteNonQuery(
                             @"UPDATE UserGameProgress
-                              SET CapstoneApiName = ?,
-                                  IsCompleted = ?,
+                              SET IsCompleted = ?,
                                   LastUpdatedUtc = ?,
                                   UpdatedUtc = ?
                               WHERE Id = ?;",
-                            normalizedCapstoneApiName != null ? (object)normalizedCapstoneApiName : DBNull.Value,
                             isCompleted ? 1 : 0,
                             updatedIso,
                             updatedIso,
@@ -1134,7 +1136,7 @@ namespace PlayniteAchievements.Services.Database
             string cacheKey)
         {
             var existing = db.Load<UserGameProgressRow>(
-                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, ProviderIsCompleted, CapstoneApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc
+                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, LastUpdatedUtc, CreatedUtc, UpdatedUtc
                   FROM UserGameProgress
                   WHERE UserId = ? AND CacheKey = ?
                   LIMIT 1;",
@@ -1147,7 +1149,7 @@ namespace PlayniteAchievements.Services.Database
             }
 
             return db.Load<UserGameProgressRow>(
-                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, ProviderIsCompleted, CapstoneApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc
+                @"SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, LastUpdatedUtc, CreatedUtc, UpdatedUtc
                   FROM UserGameProgress
                   WHERE UserId = ? AND GameId = ?
                   LIMIT 1;",
@@ -1166,20 +1168,16 @@ namespace PlayniteAchievements.Services.Database
             int achievementsUnlocked,
             int totalAchievements,
             bool isCompleted,
-            bool providerIsCompleted,
-            string capstoneApiName,
             string updatedIso,
             string nowIso)
         {
-            capstoneApiName = NormalizeDbText(capstoneApiName);
-
             if (existing == null)
             {
                 db.ExecuteNonQuery(
                     @"INSERT INTO UserGameProgress
-                        (UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, ProviderIsCompleted, CapstoneApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc)
+                        (UserId, GameId, CacheKey, PlaytimeSeconds, NoAchievements, AchievementsUnlocked, TotalAchievements, IsCompleted, LastUpdatedUtc, CreatedUtc, UpdatedUtc)
                       VALUES
-                        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                     userId,
                     gameId,
                     cacheKey,
@@ -1188,8 +1186,6 @@ namespace PlayniteAchievements.Services.Database
                     achievementsUnlocked,
                     totalAchievements,
                     isCompleted ? 1 : 0,
-                    providerIsCompleted ? 1 : 0,
-                    capstoneApiName != null ? (object)capstoneApiName : DBNull.Value,
                     updatedIso,
                     nowIso,
                     nowIso);
@@ -1205,8 +1201,6 @@ namespace PlayniteAchievements.Services.Database
                       AchievementsUnlocked = ?,
                       TotalAchievements = ?,
                       IsCompleted = ?,
-                      ProviderIsCompleted = ?,
-                      CapstoneApiName = ?,
                       LastUpdatedUtc = ?,
                       UpdatedUtc = ?
                   WHERE Id = ?;",
@@ -1217,8 +1211,6 @@ namespace PlayniteAchievements.Services.Database
                 achievementsUnlocked,
                 totalAchievements,
                 isCompleted ? 1 : 0,
-                providerIsCompleted ? 1 : 0,
-                capstoneApiName != null ? (object)capstoneApiName : DBNull.Value,
                 updatedIso,
                 nowIso,
                 existing.Id);
@@ -1246,7 +1238,7 @@ namespace PlayniteAchievements.Services.Database
             var desiredApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var existingByApiName = db.Load<AchievementDefinitionRow>(
-                    @"SELECT Id, GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc
+                    @"SELECT Id, GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, IsCapstone, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc
                       FROM AchievementDefinitions
                       WHERE GameId = ?;",
                     gameId)
@@ -1262,13 +1254,18 @@ namespace PlayniteAchievements.Services.Database
 
                 var apiName = achievement.ApiName.Trim();
                 desiredApiNames.Add(apiName);
+
+                // Compute IsCapstone: use provided value, or default to true for platinum trophies
+                var isCapstone = achievement.IsCapstone ||
+                    string.Equals(achievement.TrophyType?.Trim(), "platinum", StringComparison.OrdinalIgnoreCase);
+
                 if (!existingByApiName.TryGetValue(apiName, out var existing))
                 {
                     db.ExecuteNonQuery(
                         @"INSERT INTO AchievementDefinitions
-                            (GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc)
+                            (GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, IsCapstone, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc)
                           VALUES
-                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                         gameId,
                         apiName,
                         DbValue(achievement.DisplayName),
@@ -1279,6 +1276,7 @@ namespace PlayniteAchievements.Services.Database
                         DbValue(achievement.Category),
                         DbValue(achievement.TrophyType),
                         achievement.Hidden ? 1 : 0,
+                        isCapstone ? 1 : 0,
                         achievement.GlobalPercentUnlocked.HasValue ? (object)achievement.GlobalPercentUnlocked.Value : DBNull.Value,
                         achievement.ProgressDenom.HasValue ? (object)achievement.ProgressDenom.Value : DBNull.Value,
                         nowIso,
@@ -1303,6 +1301,7 @@ namespace PlayniteAchievements.Services.Database
                 var incomingCategory = NormalizeDbText(achievement.Category);
                 var incomingTrophyType = NormalizeDbText(achievement.TrophyType);
                 var incomingHidden = achievement.Hidden ? 1L : 0L;
+                var incomingIsCapstone = isCapstone ? 1L : 0L;
                 var incomingGlobalPercent = achievement.GlobalPercentUnlocked;
                 var incomingProgressMax = achievement.ProgressDenom;
 
@@ -1314,6 +1313,7 @@ namespace PlayniteAchievements.Services.Database
                               !NullableEquals(NormalizeDbText(existing.Category), incomingCategory) ||
                               !NullableEquals(NormalizeDbText(existing.TrophyType), incomingTrophyType) ||
                               existing.Hidden != incomingHidden ||
+                              existing.IsCapstone != incomingIsCapstone ||
                               existing.GlobalPercentUnlocked != incomingGlobalPercent ||
                               existing.ProgressMax != incomingProgressMax;
 
@@ -1333,6 +1333,7 @@ namespace PlayniteAchievements.Services.Database
                           Category = ?,
                           TrophyType = ?,
                           Hidden = ?,
+                          IsCapstone = ?,
                           GlobalPercentUnlocked = ?,
                           ProgressMax = ?,
                           UpdatedUtc = ?
@@ -1345,6 +1346,7 @@ namespace PlayniteAchievements.Services.Database
                                         incomingCategory != null ? (object)incomingCategory : DBNull.Value,
                                         incomingTrophyType != null ? (object)incomingTrophyType : DBNull.Value,
                                         incomingHidden,
+                                        incomingIsCapstone,
                                         incomingGlobalPercent.HasValue ? (object)incomingGlobalPercent.Value : DBNull.Value,
                                         incomingProgressMax.HasValue ? (object)incomingProgressMax.Value : DBNull.Value,
                     updatedIso,
@@ -1402,8 +1404,6 @@ namespace PlayniteAchievements.Services.Database
                 ProviderName = progress?.ProviderName,
                 LibrarySourceName = progress?.LibrarySourceName,
                 NoAchievements = progress != null && progress.NoAchievements != 0,
-                ProviderIsCompleted = progress != null && progress.ProviderIsCompleted != 0,
-                CapstoneApiName = NormalizeDbText(progress?.CapstoneApiName),
                 PlaytimeSeconds = (ulong)Math.Max(0, progress?.PlaytimeSeconds ?? 0),
                 GameName = progress?.GameName,
                 AppId = (int)Math.Max(0, progress?.ProviderGameId ?? 0),
@@ -1531,35 +1531,6 @@ namespace PlayniteAchievements.Services.Database
             return achievement.Unlocked;
         }
 
-        private static bool IsMarkerUnlocked(string markerApiName, IEnumerable<AchievementDetail> achievements)
-        {
-            var normalizedMarker = NormalizeDbText(markerApiName);
-            if (string.IsNullOrWhiteSpace(normalizedMarker) || achievements == null)
-            {
-                return false;
-            }
-
-            foreach (var achievement in achievements)
-            {
-                if (achievement == null || string.IsNullOrWhiteSpace(achievement.ApiName))
-                {
-                    continue;
-                }
-
-                if (!string.Equals(
-                        achievement.ApiName.Trim(),
-                        normalizedMarker,
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                return IsUnlocked(achievement);
-            }
-
-            return false;
-        }
-
         private static DateTime? NormalizeUnlockTime(DateTime? unlockTimeUtc)
         {
             if (!unlockTimeUtc.HasValue)
@@ -1648,17 +1619,17 @@ namespace PlayniteAchievements.Services.Database
             var filePath = Path.Combine(dir, "AchievementDefinitions.csv");
             var rows = _db.Load<AchievementDefinitionExportRow>(
                 "SELECT Id, GameId, ApiName, DisplayName, Description, " +
-                "UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, " +
+                "UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, IsCapstone, " +
                 "GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc " +
                 "FROM AchievementDefinitions").ToList();
             WriteCsv(filePath, rows, new[]
             {
                 "Id", "GameId", "ApiName", "DisplayName", "Description",
-                "UnlockedIconPath", "LockedIconPath", "Points", "Category", "TrophyType", "Hidden",
+                "UnlockedIconPath", "LockedIconPath", "Points", "Category", "TrophyType", "Hidden", "IsCapstone",
                 "GlobalPercentUnlocked", "ProgressMax", "CreatedUtc", "UpdatedUtc"
             }, r => new[] {
                 r.Id?.ToString(), r.GameId?.ToString(), r.ApiName, r.DisplayName, r.Description,
-                r.UnlockedIconPath, r.LockedIconPath, r.Points?.ToString(), r.Category, r.TrophyType, r.Hidden?.ToString(),
+                r.UnlockedIconPath, r.LockedIconPath, r.Points?.ToString(), r.Category, r.TrophyType, r.Hidden?.ToString(), r.IsCapstone?.ToString(),
                 r.GlobalPercentUnlocked?.ToString(), r.ProgressMax?.ToString(), r.CreatedUtc, r.UpdatedUtc
             });
             _logger.Info($"Exported {rows.Count} rows to {filePath}");
@@ -1670,17 +1641,17 @@ namespace PlayniteAchievements.Services.Database
             var rows = _db.Load<UserGameProgressExportRow>(
                 "SELECT Id, UserId, GameId, CacheKey, PlaytimeSeconds, " +
                 "NoAchievements, AchievementsUnlocked, TotalAchievements, " +
-                "IsCompleted, ProviderIsCompleted, CapstoneApiName, LastUpdatedUtc, CreatedUtc, UpdatedUtc " +
+                "IsCompleted, LastUpdatedUtc, CreatedUtc, UpdatedUtc " +
                 "FROM UserGameProgress").ToList();
             WriteCsv(filePath, rows, new[]
             {
                 "Id", "UserId", "GameId", "CacheKey", "PlaytimeSeconds",
                 "NoAchievements", "AchievementsUnlocked", "TotalAchievements",
-                "IsCompleted", "ProviderIsCompleted", "CapstoneApiName", "LastUpdatedUtc", "CreatedUtc", "UpdatedUtc"
+                "IsCompleted", "LastUpdatedUtc", "CreatedUtc", "UpdatedUtc"
             }, r => new[] {
                 r.Id.ToString(), r.UserId.ToString(), r.GameId.ToString(), r.CacheKey, r.PlaytimeSeconds.ToString(),
                 r.NoAchievements.ToString(), r.AchievementsUnlocked.ToString(), r.TotalAchievements.ToString(),
-                r.IsCompleted.ToString(), r.ProviderIsCompleted.ToString(), r.CapstoneApiName, r.LastUpdatedUtc, r.CreatedUtc, r.UpdatedUtc
+                r.IsCompleted.ToString(), r.LastUpdatedUtc, r.CreatedUtc, r.UpdatedUtc
             });
             _logger.Info($"Exported {rows.Count} rows to {filePath}");
         }
@@ -1813,6 +1784,7 @@ namespace PlayniteAchievements.Services.Database
             public string Category { get; set; }
             public string TrophyType { get; set; }
             public bool? Hidden { get; set; }
+            public bool? IsCapstone { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public int? ProgressMax { get; set; }
             public string CreatedUtc { get; set; }
@@ -1830,8 +1802,6 @@ namespace PlayniteAchievements.Services.Database
             public long AchievementsUnlocked { get; set; }
             public long TotalAchievements { get; set; }
             public long IsCompleted { get; set; }
-            public long ProviderIsCompleted { get; set; }
-            public string CapstoneApiName { get; set; }
             public string LastUpdatedUtc { get; set; }
             public string CreatedUtc { get; set; }
             public string UpdatedUtc { get; set; }

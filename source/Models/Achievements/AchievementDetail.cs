@@ -32,6 +32,12 @@ namespace PlayniteAchievements.Models.Achievements
         /// </summary>
         public string TrophyType { get; set; }
 
+        /// <summary>
+        /// Indicates this achievement marks game completion.
+        /// Auto-set to true for platinum trophies; can be manually configured via Capstone control.
+        /// </summary>
+        public bool IsCapstone { get; set; }
+
         [IgnoreDataMember]
         public string IconDisplay => UnlockedIconPath ?? AchievementIconResolver.GetDefaultIcon();
 

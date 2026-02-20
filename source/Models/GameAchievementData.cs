@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Models
         public string ProviderName { get; set; }
 
         /// <summary>
-        /// Playnite library source name for the game at scan time (e.g. Steam, GOG).
+        /// Playnite library source name for the game at refresh time (e.g. Steam, GOG).
         /// Best-effort metadata; may be empty for some entries.
         /// </summary>
         public string LibrarySourceName { get; set; }
@@ -28,35 +28,18 @@ namespace PlayniteAchievements.Models
         public bool NoAchievements { get; set; }
 
         /// <summary>
-        /// Computed completion status based on provider signal, all achievements unlocked, or completion marker.
+        /// Computed completion status based on all achievements unlocked or capstone.
         /// </summary>
         public bool IsCompleted =>
-            ProviderIsCompleted ||
             (Achievements?.Count > 0 && Achievements.All(a => a?.Unlocked == true)) ||
-            IsMarkerUnlocked();
+            IsCapstoneUnlocked();
 
-        private bool IsMarkerUnlocked()
+        private bool IsCapstoneUnlocked()
         {
-            if (string.IsNullOrWhiteSpace(CapstoneApiName) || Achievements == null)
+            if (Achievements == null || Achievements.Count == 0)
                 return false;
-
-            return Achievements.Any(a =>
-                string.Equals(a?.ApiName?.Trim(), CapstoneApiName.Trim(), StringComparison.OrdinalIgnoreCase) &&
-                a.Unlocked);
+            return Achievements.Any(a => a?.IsCapstone == true && a.Unlocked);
         }
-
-        /// <summary>
-        /// Provider-native completion signal (for example, PSN platinum unlocked).
-        /// Persisted separately from computed completion so manual marker logic can
-        /// recompute IsCompleted strictly from current marker state.
-        /// </summary>
-        public bool ProviderIsCompleted { get; set; }
-
-        /// <summary>
-        /// Optional per-game achievement ApiName selected as manual completion marker.
-        /// When set, IsCompleted becomes true if this achievement is unlocked.
-        /// </summary>
-        public string CapstoneApiName { get; set; }
 
         public ulong PlaytimeSeconds { get; set; }
 

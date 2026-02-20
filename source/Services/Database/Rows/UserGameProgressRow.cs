@@ -11,8 +11,6 @@ namespace PlayniteAchievements.Services.Database.Rows
         public long AchievementsUnlocked { get; set; }
         public long TotalAchievements { get; set; }
         public long IsCompleted { get; set; }
-        public long ProviderIsCompleted { get; set; }
-        public string CapstoneApiName { get; set; }
         public string LastUpdatedUtc { get; set; }
         public string CreatedUtc { get; set; }
         public string UpdatedUtc { get; set; }

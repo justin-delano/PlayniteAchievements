@@ -82,14 +82,12 @@ namespace PlayniteAchievements.Services.Database
         }
 
         public static bool ComputeIsCompleted(
-            bool providerIsCompleted,
             int unlockedCount,
             int totalCount,
-            bool markerUnlocked,
-            bool hasMarker)
+            bool anyCapstoneUnlocked)
         {
             var isHundredPercent = totalCount > 0 && unlockedCount == totalCount;
-            return providerIsCompleted || isHundredPercent || (hasMarker && markerUnlocked);
+            return isHundredPercent || anyCapstoneUnlocked;
         }
     }
 }

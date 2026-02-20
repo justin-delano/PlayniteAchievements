@@ -95,7 +95,7 @@ namespace PlayniteAchievements.Services
             try
             {
                 _api?.Dialogs?.ShowMessage(
-                    "Achievement cache migration/repair failed. Scans are blocked to prevent silent data loss. " +
+                    "Achievement cache migration/repair failed. Refreshes are blocked to prevent silent data loss. " +
                     "Check logs for details and restore from migration backups if needed.",
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
@@ -794,8 +794,6 @@ namespace PlayniteAchievements.Services
                 ProviderName = source.ProviderName,
                 LibrarySourceName = source.LibrarySourceName,
                 NoAchievements = source.NoAchievements,
-                ProviderIsCompleted = source.ProviderIsCompleted,
-                CapstoneApiName = source.CapstoneApiName,
                 PlaytimeSeconds = source.PlaytimeSeconds,
                 GameName = source.GameName,
                 AppId = source.AppId,
@@ -827,6 +825,7 @@ namespace PlayniteAchievements.Services
                     Category = achievement.Category,
                     TrophyType = achievement.TrophyType,
                     Hidden = achievement.Hidden,
+                    IsCapstone = achievement.IsCapstone,
                     UnlockTimeUtc = achievement.UnlockTimeUtc.HasValue
                         ? DateTimeUtilities.AsUtcKind(achievement.UnlockTimeUtc.Value)
                         : (DateTime?)null,

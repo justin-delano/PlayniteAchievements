@@ -204,7 +204,10 @@ namespace PlayniteAchievements.ViewModels
 
                 var gameData = _achievementManager.GetGameAchievementData(_gameId);
                 var achievements = gameData?.Achievements ?? new List<AchievementDetail>();
-                var currentMarkerApiName = NormalizeText(gameData?.CapstoneApiName);
+
+                // Find the current capstone by checking IsCapstone on achievements
+                var currentCapstone = achievements.FirstOrDefault(a => a?.IsCapstone == true);
+                var currentCapstoneApiName = NormalizeText(currentCapstone?.ApiName);
 
                 var sortedAchievements = achievements
                     .Where(a => a != null && !string.IsNullOrWhiteSpace(a.ApiName))
@@ -217,7 +220,7 @@ namespace PlayniteAchievements.ViewModels
                 for (int i = 0; i < sortedAchievements.Count; i++)
                 {
                     var achievement = sortedAchievements[i];
-                    var option = CreateOptionItem(achievement, currentMarkerApiName);
+                    var option = CreateOptionItem(achievement, currentCapstoneApiName);
 
                     if (option.IsCurrentMarker)
                     {
@@ -237,7 +240,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private CapstoneOptionItem CreateOptionItem(AchievementDetail achievement, string currentMarkerApiName)
+        private CapstoneOptionItem CreateOptionItem(AchievementDetail achievement, string currentCapstoneApiName)
         {
             var actualIcon = ResolveActualIconPath(achievement);
             var hidden = achievement.Hidden && !achievement.Unlocked;
@@ -255,9 +258,10 @@ namespace PlayniteAchievements.ViewModels
                 HiddenIconPath = HiddenIconPath,
                 Unlocked = achievement.Unlocked,
                 Hidden = hidden,
+                IsCapstone = achievement.IsCapstone,
                 IsCurrentMarker = string.Equals(
                     achievement.ApiName.Trim(),
-                    currentMarkerApiName,
+                    currentCapstoneApiName,
                     StringComparison.OrdinalIgnoreCase)
             };
         }
@@ -439,6 +443,7 @@ namespace PlayniteAchievements.ViewModels
         public string ApiName { get; set; }
         public bool Unlocked { get; set; }
         public bool Hidden { get; set; }
+        public bool IsCapstone { get; set; }
 
         /// <summary>
         /// True if the achievement can be revealed (hidden and not unlocked).

@@ -99,6 +99,7 @@ namespace PlayniteAchievements.Services.Database
                 Category TEXT NULL,
                 TrophyType TEXT NULL,
                 Hidden INTEGER NOT NULL DEFAULT 0,
+                IsCapstone INTEGER NOT NULL DEFAULT 0,
                 GlobalPercentUnlocked REAL NULL,
                 ProgressMax INTEGER NULL,
                 CreatedUtc TEXT NOT NULL,
@@ -120,8 +121,6 @@ namespace PlayniteAchievements.Services.Database
                 AchievementsUnlocked INTEGER NOT NULL DEFAULT 0,
                 TotalAchievements INTEGER NOT NULL DEFAULT 0,
                 IsCompleted INTEGER NOT NULL DEFAULT 0,
-                ProviderIsCompleted INTEGER NOT NULL DEFAULT 0,
-                CapstoneApiName TEXT NULL,
                 LastUpdatedUtc TEXT NOT NULL,
                 CreatedUtc TEXT NOT NULL,
                 UpdatedUtc TEXT NOT NULL,
@@ -225,6 +224,7 @@ namespace PlayniteAchievements.Services.Database
             EnsureColumn(db, "AchievementDefinitions", "Points", "INTEGER NULL", definitionColumns, ref backupPath);
             EnsureColumn(db, "AchievementDefinitions", "Category", "TEXT NULL", definitionColumns, ref backupPath);
             EnsureColumn(db, "AchievementDefinitions", "TrophyType", "TEXT NULL", definitionColumns, ref backupPath);
+            EnsureColumn(db, "AchievementDefinitions", "IsCapstone", "INTEGER NOT NULL DEFAULT 0", definitionColumns, ref backupPath);
 
             var progressColumns = GetColumnNames(db, "UserGameProgress");
             var legacyCompletedColumn = "Is" + "Complete";
@@ -260,32 +260,6 @@ namespace PlayniteAchievements.Services.Database
                 {
                     EnsureColumn(db, "UserGameProgress", "IsCompleted", "INTEGER NOT NULL DEFAULT 0", progressColumns, ref backupPath);
                 }
-            }
-
-            var hadProviderIsCompleted = progressColumns.Contains("provideriscompleted");
-            EnsureColumn(
-                db,
-                "UserGameProgress",
-                "ProviderIsCompleted",
-                "INTEGER NOT NULL DEFAULT 0",
-                progressColumns,
-                ref backupPath);
-
-            EnsureColumn(
-                db,
-                "UserGameProgress",
-                "CapstoneApiName",
-                "TEXT NULL",
-                progressColumns,
-                ref backupPath);
-
-            if (!hadProviderIsCompleted)
-            {
-                ExecuteSchemaChangeWithBackup(
-                    db,
-                    "UPDATE UserGameProgress SET ProviderIsCompleted = IsCompleted WHERE IsCompleted <> 0 AND ProviderIsCompleted = 0;",
-                    ref backupPath,
-                    "Backfilled UserGameProgress.ProviderIsCompleted from existing completion values.");
             }
 
             ReconcileGamesProviderGameIdIndexes(db, ref backupPath);
@@ -481,11 +455,10 @@ namespace PlayniteAchievements.Services.Database
             EnsureRequiredColumn(definitionColumns, "Points", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "Category", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "TrophyType", "AchievementDefinitions", missing);
+            EnsureRequiredColumn(definitionColumns, "IsCapstone", "AchievementDefinitions", missing);
 
             var progressColumns = GetColumnNames(db, "UserGameProgress");
             EnsureRequiredColumn(progressColumns, "IsCompleted", "UserGameProgress", missing);
-            EnsureRequiredColumn(progressColumns, "ProviderIsCompleted", "UserGameProgress", missing);
-            EnsureRequiredColumn(progressColumns, "CapstoneApiName", "UserGameProgress", missing);
 
             if (IndexExists(db, LegacyGamesProviderGameIdIndexName))
             {
