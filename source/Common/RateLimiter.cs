@@ -90,7 +90,7 @@ namespace PlayniteAchievements.Common
 
         /// <summary>
         /// Executes an async operation with base delay between calls (no retry logic).
-        /// Use this for the main scan loop where you want delay between games but handle retries differently.
+        /// Use this for the main refresh loop where you want delay between games but handle retries differently.
         /// </summary>
         /// <param name="operation">The operation to execute.</param>
         /// <param name="cancel">Cancellation token.</param>

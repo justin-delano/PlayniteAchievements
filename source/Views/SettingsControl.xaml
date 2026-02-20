@@ -1032,7 +1032,7 @@
                                                Style="{StaticResource MutedTextStyle}"/>
                                 </Grid>
 
-                                 <!-- Scanning options -->
+                                 <!-- Refreshing options -->
                                  <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ScanningHashing}"
                                             Style="{StaticResource SectionHeaderStyle}"
                                             Margin="0,8,0,12"/>

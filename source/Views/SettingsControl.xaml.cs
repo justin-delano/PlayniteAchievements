@@ -1662,7 +1662,7 @@ namespace PlayniteAchievements.Views
                 if (deletedCount > 0)
                 {
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        LF("LOCPlayAch_Settings_HashIndex_DeletedCount", "Deleted {0} hash index cache file(s).{1}{1}The hash index will be rebuilt on the next scan.", deletedCount, Environment.NewLine),
+                        LF("LOCPlayAch_Settings_HashIndex_DeletedCount", "Deleted {0} hash index cache file(s).{1}{1}The hash index will be rebuilt on the next refresh.", deletedCount, Environment.NewLine),
                         L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
@@ -1670,7 +1670,7 @@ namespace PlayniteAchievements.Views
                 else
                 {
                     _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        LF("LOCPlayAch_Settings_HashIndex_NoFiles", "No hash index cache files found to delete.{0}{0}The cache may have already been cleared, or no scans have been performed yet.", Environment.NewLine),
+                        LF("LOCPlayAch_Settings_HashIndex_NoFiles", "No hash index cache files found to delete.{0}{0}The cache may have already been cleared, or no refreshes have been performed yet.", Environment.NewLine),
                         L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);

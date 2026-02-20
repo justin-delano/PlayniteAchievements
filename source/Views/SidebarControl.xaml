@@ -377,8 +377,8 @@
                 </Setter>
             </Style>
 
-            <!-- Button style that disables during scan -->
-            <Style x:Key="ScanButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <!-- Button style that disables during refresh -->
+            <Style x:Key="RefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                 <Setter Property="Padding" Value="12,6"/>
                 <Setter Property="MinWidth" Value="80"/>
                 <Setter Property="Margin" Value="0,0,6,0"/>
@@ -566,7 +566,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- ROW 0: Header with Title and Scan Buttons -->
+        <!-- ROW 0: Header with Title and Refresh Buttons -->
         <Border Grid.Row="0"
                 Background="{DynamicResource ControlBackgroundBrush}"
                 BorderBrush="{DynamicResource NormalBorderBrush}"
@@ -591,25 +591,25 @@
                                Margin="12,0,0,0"/>
                 </StackPanel>
 
-                <!-- Center: Scan controls -->
+                <!-- Center: Refresh controls -->
                 <StackPanel Orientation="Horizontal"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center">
-                    <ComboBox ItemsSource="{Binding ScanModes}"
+                    <ComboBox ItemsSource="{Binding RefreshModes}"
                               DisplayMemberPath="ShortDisplayName"
                               SelectedValuePath="Key"
-                              SelectedValue="{Binding SelectedScanMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              SelectedValue="{Binding SelectedRefreshMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               Width="100"
                               Margin="0,0,8,0"
                               VerticalContentAlignment="Center"/>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Scan}"
-                            Command="{Binding ScanCommand}"
-                            Style="{StaticResource ScanButtonStyle}"/>
+                    <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                            Command="{Binding RefreshCommand}"
+                            Style="{StaticResource RefreshButtonStyle}"/>
 
                     <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
-                            Command="{Binding CancelScanCommand}"
-                            Style="{StaticResource ScanButtonStyle}"
+                            Command="{Binding CancelRefreshCommand}"
+                            Style="{StaticResource RefreshButtonStyle}"
                             Margin="0"/>
                 </StackPanel>
 

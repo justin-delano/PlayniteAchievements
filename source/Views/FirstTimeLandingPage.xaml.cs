@@ -83,7 +83,7 @@ namespace PlayniteAchievements.Views
                         return ResourceProvider.GetString("LOCPlayAch_Settings_ProviderDisabledMessage");
                     }
                     return IsAuthenticated
-                        ? ResourceProvider.GetString("LOCPlayAch_Landing_Status_ReadyToScan")
+                        ? ResourceProvider.GetString("LOCPlayAch_Landing_Status_ReadyToRefresh")
                         : ResourceProvider.GetString("LOCPlayAch_Landing_Status_ConfigureInSettings");
                 }
             }
@@ -111,24 +111,24 @@ namespace PlayniteAchievements.Views
         public ObservableCollection<ProviderStatus> Providers => _providers;
 
         /// <summary>
-        /// Available scan modes for the scan dropdown.
+        /// Available refresh modes for the refresh dropdown.
         /// </summary>
-        public ObservableCollection<ScanMode> ScanModes { get; }
+        public ObservableCollection<RefreshMode> RefreshModes { get; }
 
-        private string _selectedScanMode = ScanModeType.Installed.GetKey();
+        private string _selectedRefreshMode = RefreshModeType.Installed.GetKey();
 
         /// <summary>
-        /// The selected scan mode key.
+        /// The selected refresh mode key.
         /// </summary>
-        public string SelectedScanMode
+        public string SelectedRefreshMode
         {
-            get => _selectedScanMode;
+            get => _selectedRefreshMode;
             set
             {
-                _selectedScanMode = string.IsNullOrWhiteSpace(value)
-                    ? ScanModeType.Installed.GetKey()
+                _selectedRefreshMode = string.IsNullOrWhiteSpace(value)
+                    ? RefreshModeType.Installed.GetKey()
                     : value;
-                OnPropertyChanged(nameof(SelectedScanMode));
+                OnPropertyChanged(nameof(SelectedRefreshMode));
             }
         }
 
@@ -199,11 +199,11 @@ namespace PlayniteAchievements.Views
             _themeDiscovery = new ThemeDiscoveryService(_logger, _api);
             _themeMigration = new ThemeMigrationService(_logger);
 
-            var scanModes = _achievementManager.GetScanModes();
-            ScanModes = new ObservableCollection<ScanMode>(scanModes.Where(m => m.Key != "LibrarySelected"));
-            if (!ScanModes.Any(m => string.Equals(m.Key, _selectedScanMode, StringComparison.Ordinal)))
+            var RefreshModes = _achievementManager.GetRefreshModes();
+            RefreshModes = new ObservableCollection<RefreshMode>(RefreshModes.Where(m => m.Key != "LibrarySelected"));
+            if (!RefreshModes.Any(m => string.Equals(m.Key, _selectedRefreshMode, StringComparison.Ordinal)))
             {
-                _selectedScanMode = ScanModes.FirstOrDefault()?.Key ?? ScanModeType.Installed.GetKey();
+                _selectedRefreshMode = RefreshModes.FirstOrDefault()?.Key ?? RefreshModeType.Installed.GetKey();
             }
 
             InitializeComponent();
@@ -244,7 +244,7 @@ namespace PlayniteAchievements.Views
             OnPropertyChanged(nameof(HasAnyProviderAuth));
             OnPropertyChanged(nameof(CurrentState));
             OnPropertyChanged(nameof(ShowNoAuthPanel));
-            OnPropertyChanged(nameof(ShowNeedsScanPanel));
+            OnPropertyChanged(nameof(ShowNeedsRefreshPanel));
             OnPropertyChanged(nameof(ShowHasDataPanel));
         }
 
@@ -292,7 +292,7 @@ namespace PlayniteAchievements.Views
                 }
                 else if (!HasCachedData)
                 {
-                    return LandingState.NeedsScan;
+                    return LandingState.NeedsRefresh;
                 }
                 else
                 {
@@ -307,9 +307,9 @@ namespace PlayniteAchievements.Views
         public bool ShowNoAuthPanel => CurrentState == LandingState.NoAuth;
 
         /// <summary>
-        /// Gets whether to show the Needs Scan panel.
+        /// Gets whether to show the Needs Refresh panel.
         /// </summary>
-        public bool ShowNeedsScanPanel => CurrentState == LandingState.NeedsScan;
+        public bool ShowNeedsRefreshPanel => CurrentState == LandingState.NeedsRefresh;
 
         /// <summary>
         /// Gets whether to show the Has Data panel.
@@ -317,40 +317,40 @@ namespace PlayniteAchievements.Views
         public bool ShowHasDataPanel => CurrentState == LandingState.HasData;
 
         /// <summary>
-        /// Command to begin the first scan.
+        /// Command to begin the first refresh.
         /// </summary>
-        public ICommand BeginScanCommand => new RelayCommand(() =>
+        public ICommand BeginRefreshCommand => new RelayCommand(() =>
         {
             try
             {
-                var modeToRun = SelectedScanMode;
-                if (ScanModeComboBox?.SelectedValue is string selectedValue && !string.IsNullOrWhiteSpace(selectedValue))
+                var modeToRun = SelectedRefreshMode;
+                if (RefreshModeComboBox?.SelectedValue is string selectedValue && !string.IsNullOrWhiteSpace(selectedValue))
                 {
                     modeToRun = selectedValue;
                 }
-                else if (ScanModeComboBox?.SelectedItem is ScanMode selectedMode && !string.IsNullOrWhiteSpace(selectedMode.Key))
+                else if (RefreshModeComboBox?.SelectedItem is RefreshMode selectedMode && !string.IsNullOrWhiteSpace(selectedMode.Key))
                 {
                     modeToRun = selectedMode.Key;
                 }
 
-                _logger.Info($"User clicked Begin Scan from first-time landing page with mode: {modeToRun}");
+                _logger.Info($"User clicked Begin Refresh from first-time landing page with mode: {modeToRun}");
 
                 MarkSetupComplete();
 
-                _ = _achievementManager.ExecuteScanAsync(modeToRun);
+                _ = _achievementManager.ExecuteRefreshAsync(modeToRun);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to begin scan from first-time landing page.");
+                _logger.Error(ex, "Failed to begin refresh from first-time landing page.");
                 _api?.Notifications?.Add(new NotificationMessage(
-                    "PlayAch_FirstTimeScanError",
-                    $"Failed to start scan: {ex.Message}",
+                    "PlayAch_FirstTimeRefreshError",
+                    $"Failed to start refresh: {ex.Message}",
                     NotificationType.Error));
             }
         });
 
         /// <summary>
-        /// Command to continue to the sidebar without scanning.
+        /// Command to continue to the sidebar without refreshing.
         /// </summary>
         public ICommand ContinueCommand => new RelayCommand(() =>
         {
@@ -418,7 +418,7 @@ namespace PlayniteAchievements.Views
                 OnPropertyChanged(nameof(HasAnyProviderAuth));
                 OnPropertyChanged(nameof(CurrentState));
                 OnPropertyChanged(nameof(ShowNoAuthPanel));
-                OnPropertyChanged(nameof(ShowNeedsScanPanel));
+                OnPropertyChanged(nameof(ShowNeedsRefreshPanel));
                 OnPropertyChanged(nameof(ShowHasDataPanel));
             }
             catch (Exception ex)
@@ -805,9 +805,9 @@ namespace PlayniteAchievements.Views
 
         /// <summary>
         /// Authentication is configured but no cached data exists.
-        /// Shows "Begin Scan" button.
+        /// Shows "Begin Refresh" button.
         /// </summary>
-        NeedsScan,
+        NeedsRefresh,
 
         /// <summary>
         /// Authentication is configured and cached data exists.

@@ -9,25 +9,25 @@ using Playnite.SDK;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class ScanProgressControl : UserControl
+    public partial class RefreshProgressControl : UserControl
     {
-        private readonly ScanProgressViewModel _viewModel;
+        private readonly RefreshProgressViewModel _viewModel;
         private readonly AchievementManager _achievementManager;
         private readonly ILogger _logger;
 
-        public ScanProgressControl(
+        public RefreshProgressControl(
             AchievementManager achievementManager,
             ILogger logger,
-            Guid? singleGameScanId = null,
+            Guid? singleGameRefreshId = null,
             Action<Guid> openSingleGameAction = null)
         {
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
             _logger = logger;
 
-            _viewModel = new ScanProgressViewModel(
+            _viewModel = new RefreshProgressViewModel(
                 achievementManager,
                 logger,
-                singleGameScanId,
+                singleGameRefreshId,
                 openSingleGameAction);
             DataContext = _viewModel;
 

@@ -15,7 +15,7 @@
     <sys:String x:Key="LOCPlayAch_Label_Rarity">Rarity:</sys:String>
 
     <!-- Common Statuses -->
-    <sys:String x:Key="LOCPlayAch_Status_Scanning">Scanning...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_Refreshing">Refreshning...</sys:String>
 
     <!-- Common Compound Phrases -->
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Recent Achievements</sys:String>
@@ -25,7 +25,7 @@
     <!-- PLUGIN                                                             -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Title_PluginName">Playnite Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Title_Scan">Playnite Achievements Scan</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_Refresh">Playnite Achievements Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements Settings</sys:String>
 
     <!-- ================================================================= -->
@@ -42,11 +42,11 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone Achievement</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ScanGame">Scan Single Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ScanSelected">Scan Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Single Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Clear cached data for "{0}"?&#10;&#10;This removes cached achievements and icons for this game. Scan again to fetch fresh data.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear cached data for {0} selected game(s)?&#10;&#10;This removes cached achievements and icons for those games. Scan again to fetch fresh data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Clear cached data for "{0}"?&#10;&#10;This removes cached achievements and icons for this game. Refresh again to fetch fresh data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear cached data for {0} selected game(s)?&#10;&#10;This removes cached achievements and icons for those games. Refresh again to fetch fresh data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSingle">Cleared cached data for "{0}".</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSelected">Cleared cached data for {0} game(s).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_Failed">Failed to clear cached data: {0}</sys:String>
@@ -58,30 +58,30 @@
     <!-- BUTTONS                                                            -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Scan">Scan</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Refresh">Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_OpenGameInLibrary">Open game in library</sys:String>
 
-    <!-- Scan Modes -->
+    <!-- Refresh Modes -->
     <!-- Short versions for sidebar dropdown -->
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Quick">Quick</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Full">Full</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Installed">Installed</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Favorites">Favorites</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Single">Single</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Selected">Selected</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_LibrarySelected">Selected</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanModeShort_Missing">Missing</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Quick">Quick</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Full">Full</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Installed">Installed</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Favorites">Favorites</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Single">Single</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Selected">Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_LibrarySelected">Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Missing">Missing</sys:String>
     <!-- Long versions for menus -->
-    <sys:String x:Key="LOCPlayAch_ScanMode_Quick">Quick Scan</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Full">Full Scan</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Installed">Scan Installed</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Favorites">Scan Favorites</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Single">Scan Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Selected">Scan Selected</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_LibrarySelected">Scan Selected</sys:String>
-    <sys:String x:Key="LOCPlayAch_ScanMode_Missing">Scan Missing</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Quick">Quick Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Full Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Installed">Refresh Installed</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Refresh Favorites</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Single">Refresh Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Selected">Refresh Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_LibrarySelected">Refresh Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Missing">Refresh Missing</sys:String>
 
     <!-- ================================================================= -->
     <!-- COLUMNS (using common strings)                                    -->
@@ -243,9 +243,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Casual (Softcore)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Combined">Overall (Casual + Hardcore)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Controls how rarity percentages are calculated. Changing this requires a rescan to update cached values.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Controls how rarity percentages are calculated. Changing this requires a refresh to update cached values.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Scanning &amp; Hashing</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Enable archive scanning (.zip/.7z/.rar/.cso/.ciso)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Enable archive scanning (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Enable disc hashing (for disc-based consoles)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Hash index max age (days)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Force hash index rebuild</sys:String>
@@ -270,15 +270,15 @@
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupVerifyFailed">Failed to verify reset. The settings may not have been saved correctly.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupFailed">Failed to reset first-time setup: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoCacheDir">No RetroAchievements cache directory found.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_DeletedCount">Deleted {0} hash index cache file(s).{1}{1}The hash index will be rebuilt on the next scan.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoFiles">No hash index cache files found to delete.{0}{0}The cache may have already been cleared, or no scans have been performed yet.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_DeletedCount">Deleted {0} hash index cache file(s).{1}{1}The hash index will be rebuilt on the next refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndex_NoFiles">No hash index cache files found to delete.{0}{0}The cache may have already been cleared, or no refreshes have been performed yet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndex_ClearFailed">Failed to clear hash index cache: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Export database tables to CSV for debugging</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Export CSV</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseDone">Database exported to:{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseFailed">Failed to export database: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Updating cache...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">No achievements cached. Click 'Scan All' to scan your games.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">No achievements cached. Click 'Refresh All' to refresh your games.</sys:String>
 
     <!-- ================================================================= -->
     <!-- BACKGROUND UPDATES                                                 -->
@@ -287,7 +287,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Hours Between Updates:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableNotifications">Enable Plugin Notifications</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotifyPeriodicUpdates">Show Toast for Periodic Updates</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_NotifyOnRebuild">Show Toast for Scan Completion/Failure</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NotifyOnRebuild">Show Toast for Refresh Completion/Failure</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_InitialCheckFailed">Periodic update initial check failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Periodic update failed.</sys:String>
 
@@ -295,8 +295,8 @@
     <!-- QUICK REFRESH                                                      -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Title">Quick Refresh</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Description">Scan only your most recently played games with achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_RecentGames">Recent games to scan</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Description">Refresh only your most recently played games with achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_RecentGames">Recent games to refresh</sys:String>
 
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
@@ -307,7 +307,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenTitle">Reveal hidden title</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Reveal hidden description</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Include unplayed games</sys:String>
-    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">If unchecked, games with 0 playtime will be skipped during scans.</sys:String>
+    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">If unchecked, games with 0 playtime will be skipped during refreshes.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use cover images instead of icons in games list</sys:String>
 
     <!-- ================================================================= -->
@@ -342,63 +342,63 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Status_Starting">Starting...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingAchievements">Loading achievements...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_Canceled">Scan canceled.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_ScanCompleteWithModeAndCount">{0} scan complete: {1} games scanned</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_ScanComplete">Scan complete!</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_Canceled">Refresh canceled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteWithModeAndCount">{0} refresh complete: {1} games refreshed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">Refresh complete!</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">{0} of {1} ({2} unlocked) from {3} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} achievements ({1} unlocked) from {2} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Refreshing achievements for {0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingSelfAchievements">Refreshing achievements for {0}...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_LoadingOwnedGames">Loading owned games...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_LoadingExistingCache">Loading from cache...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rebuild_Completed">Scan completed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rebuild_Completed">Refresh completed</sys:String>
     <sys:String x:Key="LOCPlayAch_Rebuild_YourCacheUpToDate">Your achievements cache is up to date.</sys:String>
 
     <!-- ================================================================= -->
     <!-- ERRORS                                                             -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Scan failed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_RebuildFailed">Refresh failed</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_SteamNotConfigured">Steam API Key or Web Auth not configured</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_MissingSteamUserId">SteamID64 is required.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_FileOperationFailed">File operation failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_ScanFailed">Scan failed: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Steam authentication required. Scan canceled.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No providers are authenticated. Please configure at least one provider in settings before scanning.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">Refresh failed: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Steam authentication required. Refresh canceled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No providers are authenticated. Please configure at least one provider in settings before refreshing.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_NotifySubscribers">Failed to notify subscribers.</sys:String>
 
     <!-- ================================================================= -->
     <!-- LOG MESSAGES                                                       -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Log_ScanAttemptedNoProviders">Scan attempted but no providers are authenticated.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanAlreadyInProgress">Scan already in progress.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanStarting">Starting new scan.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanEndRun">Scan ended.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanRequestedNoProviders">Scan requested but no providers are authenticated.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanCanceled">User achievement scan was canceled.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanProviderCapabilityCheckFailed">Provider capability check failed for game '{0}'.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoAuthenticatedProviders">No authenticated providers available for scan.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanSummary">Games to scan: {0}, Providers: {1}, Grouped providers: {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoMatchingProviders">No matching providers available for scan options.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanResolveIconPathFailed">Failed to resolve achievement icon path for {0}.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanMissingNoAuthenticatedProviders">No authenticated providers available for missing scan.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanMissingNoGames">No games missing achievement data found.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanMissingFoundGames">Found {0} games missing achievement data.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanFullFailed">Full achievement scan failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanSingleFailed">Single game scan failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanQuickFailed">Quick refresh scan failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanInstalledFailed">Installed games scan failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoInstalledGames">No installed games found for scan.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanFavoritesFailed">Favorites scan failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoFavoriteGames">No favorite games found for scan.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanSingleNoGameId">Single scan mode requested but no game ID provided.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanSelectedFailed">Library selected games scan failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanNoSelectedGames">No games selected in Playnite library for scan.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanMissingFailed">Missing games scan failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanUnknownModeKey">Unknown scan mode key: {0}. Falling back to Quick.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanUnknownModeEnum">Unknown scan mode: {0}. Falling back to Quick.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanCancelRequested">Cancel scan requested.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanGetGameDataFailed">Failed to get achievement data for gameId={0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_ScanGetAllGameDataFailed">Failed to get all achievement data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshAttemptedNoProviders">Refresh attempted but no providers are authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshAlreadyInProgress">Refresh already in progress.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshStarting">Starting new refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshEndRun">Refresh ended.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshRequestedNoProviders">Refresh requested but no providers are authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshCanceled">User achievement refresh was canceled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshProviderCapabilityCheckFailed">Provider capability check failed for game '{0}'.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoAuthenticatedProviders">No authenticated providers available for refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshSummary">Games to refresh: {0}, Providers: {1}, Grouped providers: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoMatchingProviders">No matching providers available for refresh options.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshResolveIconPathFailed">Failed to resolve achievement icon path for {0}.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingNoAuthenticatedProviders">No authenticated providers available for missing refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingNoGames">No games missing achievement data found.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingFoundGames">Found {0} games missing achievement data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshFullFailed">Full achievement refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshSingleFailed">Single game refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshQuickFailed">Quick refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshInstalledFailed">Installed games refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoInstalledGames">No installed games found for refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshFavoritesFailed">Favorites refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoFavoriteGames">No favorite games found for refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshSingleNoGameId">Single refresh mode requested but no game ID provided.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshSelectedFailed">Library selected games refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoSelectedGames">No games selected in Playnite library for refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingFailed">Missing games refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeKey">Unknown refresh mode key: {0}. Falling back to Quick.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeEnum">Unknown refresh mode: {0}. Falling back to Quick.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshCancelRequested">Cancel refresh requested.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshGetGameDataFailed">Failed to get achievement data for gameId={0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshGetAllGameDataFailed">Failed to get all achievement data</sys:String>
 
     <!-- ================================================================= -->
     <!-- TIME RANGE                                                         -->
@@ -488,9 +488,9 @@
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configure Your Accounts</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your providers.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Open Plugin Settings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NeedsScanTitle">Ready to Scan</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NeedsScanMessage">Your credentials are configured. Begin your first scan to track achievements across your library.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_BeginScan">Begin Scan</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshTitle">Ready to Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Your credentials are configured. Begin your first refresh to track achievements across your library.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_BeginRefresh">Begin Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">Welcome Back</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">We found your existing achievement data. Continue to the achievements view to start tracking.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataFound">Found your existing achievement data</sys:String>
@@ -498,7 +498,7 @@
 
     <!-- Provider Status Cards -->
     <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">PROVIDER STATUS</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToScan">Ready to scan</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToRefresh">Ready to refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configure in settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeReady">READY</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">SETUP</sys:String>
@@ -507,9 +507,9 @@
     <sys:String x:Key="LOCPlayAch_Landing_EnableProvider">Enable</sys:String>
 
     <!-- ================================================================= -->
-    <!-- SCAN PROGRESS WINDOW                                               -->
+    <!-- Refresh PROGRESS WINDOW                                               -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Progress_ScanRunningNote">You can still check progress in the sidebar.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">You can still check progress in the sidebar.</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonHide">Hide</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonContinue">Continue</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonOpenGame">Open Game</sys:String>
@@ -537,7 +537,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Section_Stats">Achievement Stats</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">No Achievements Found</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">This game has no achievements tracked yet. Click the Scan button to check for achievement data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">This game has no achievements tracked yet. Click the Refresh button to check for achievement data.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">This game may not support achievements, or achievements may not be available for this platform.</sys:String>
 
     <!-- ================================================================= -->
@@ -554,7 +554,7 @@
     <sys:String x:Key="LOCPlayAch_Capstone_ButtonClear">Clear Capstone</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_ButtonDone">Done</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_SearchPlaceholder">Search achievements...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_NoCachedData">No cached achievements are available for "{0}". Scan this game first.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_NoCachedData">No cached achievements are available for "{0}". Refresh this game first.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Error_InvalidGame">Invalid game selection.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Error_NotCached">No cached achievement data is available for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Error_MarkerNotFound">The selected achievement is no longer available in cached data.</sys:String>

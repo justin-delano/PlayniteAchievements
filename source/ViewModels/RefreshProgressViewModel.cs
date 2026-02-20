@@ -8,10 +8,10 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public class ScanProgressViewModel : ObservableObject
+    public class RefreshProgressViewModel : ObservableObject
     {
         private readonly AchievementManager _achievementManager;
-        private readonly Guid? _singleGameScanId;
+        private readonly Guid? _singleGameRefreshId;
         private readonly Action<Guid> _openSingleGameAction;
 
         private double _progressPercent;
@@ -19,7 +19,7 @@ namespace PlayniteAchievements.ViewModels
         private bool _isCompleted;
         private bool _completedSuccessfully;
 
-        public bool IsScanning => _achievementManager.IsRebuilding;
+        public bool IsRefreshing => _achievementManager.IsRebuilding;
 
         public double ProgressPercent
         {
@@ -47,49 +47,49 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public bool ShowInProgressButtons => !IsCompleted && IsScanning;
+        public bool ShowInProgressButtons => !IsCompleted && IsRefreshing;
         public bool ShowCompleteButtons => IsCompleted;
         public bool ShowOpenSingleGameButton => IsCompleted &&
                                                 _completedSuccessfully &&
-                                                _singleGameScanId.HasValue &&
+                                                _singleGameRefreshId.HasValue &&
                                                 _openSingleGameAction != null;
 
-        public string ScanRunningNote => ResourceProvider.GetString("LOCPlayAch_Progress_ScanRunningNote");
+        public string RefreshRunningNote => ResourceProvider.GetString("LOCPlayAch_Progress_RefreshRunningNote");
 
-        public string WindowTitle => ResourceProvider.GetString("LOCPlayAch_Title_Scan");
+        public string WindowTitle => ResourceProvider.GetString("LOCPlayAch_Title_Refresh");
 
         public ICommand HideCommand { get; }
         public RelayCommand CancelCommand { get; }
         public ICommand ContinueCommand { get; }
         public RelayCommand OpenSingleGameCommand { get; }
 
-        public ScanProgressViewModel(
+        public RefreshProgressViewModel(
             AchievementManager achievementManager,
             ILogger logger,
-            Guid? singleGameScanId = null,
+            Guid? singleGameRefreshId = null,
             Action<Guid> openSingleGameAction = null)
         {
             _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
-            _singleGameScanId = singleGameScanId;
+            _singleGameRefreshId = singleGameRefreshId;
             _openSingleGameAction = openSingleGameAction;
 
             HideCommand = new RelayCommand(_ => HideWindow());
-            CancelCommand = new RelayCommand(_ => CancelScan(), _ => _achievementManager.IsRebuilding);
+            CancelCommand = new RelayCommand(_ => CancelRefresh(), _ => _achievementManager.IsRebuilding);
             ContinueCommand = new RelayCommand(_ => Continue());
             OpenSingleGameCommand = new RelayCommand(_ => OpenSingleGame(), _ => ShowOpenSingleGameButton);
 
             IsCompleted = false;
-            ApplyScanStatus(_achievementManager.GetScanStatusSnapshot());
+            ApplyRefreshStatus(_achievementManager.GetRefreshStatusSnapshot());
         }
 
         public void OnProgress(ProgressReport report)
         {
             if (report == null) return;
 
-            ApplyScanStatus(_achievementManager.GetScanStatusSnapshot(report));
+            ApplyRefreshStatus(_achievementManager.GetRefreshStatusSnapshot(report));
         }
 
-        private void ApplyScanStatus(ScanStatusSnapshot status)
+        private void ApplyRefreshStatus(RefreshStatusSnapshot status)
         {
             if (status == null)
             {
@@ -110,12 +110,12 @@ namespace PlayniteAchievements.ViewModels
             {
                 IsCompleted = true;
             }
-            else if (status.IsScanning)
+            else if (status.IsRefreshing)
             {
                 IsCompleted = false;
             }
 
-            OnPropertyChanged(nameof(IsScanning));
+            OnPropertyChanged(nameof(IsRefreshing));
             OnPropertyChanged(nameof(ShowInProgressButtons));
             OnPropertyChanged(nameof(ShowCompleteButtons));
             OnPropertyChanged(nameof(ShowOpenSingleGameButton));
@@ -129,7 +129,7 @@ namespace PlayniteAchievements.ViewModels
             RequestClose?.Invoke(this, EventArgs.Empty);
         }
 
-        private void CancelScan()
+        private void CancelRefresh()
         {
             _achievementManager.CancelCurrentRebuild();
         }
@@ -141,13 +141,13 @@ namespace PlayniteAchievements.ViewModels
 
         private void OpenSingleGame()
         {
-            if (!ShowOpenSingleGameButton || !_singleGameScanId.HasValue)
+            if (!ShowOpenSingleGameButton || !_singleGameRefreshId.HasValue)
             {
                 return;
             }
 
             RequestClose?.Invoke(this, EventArgs.Empty);
-            _openSingleGameAction?.Invoke(_singleGameScanId.Value);
+            _openSingleGameAction?.Invoke(_singleGameRefreshId.Value);
         }
 
         public event EventHandler RequestClose;

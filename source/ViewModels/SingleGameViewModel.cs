@@ -13,7 +13,7 @@ using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
-using ScanModeKeys = PlayniteAchievements.Models.ScanModeKeys;
+using RefreshModeKeys = PlayniteAchievements.Models.RefreshModeKeys;
 
 namespace PlayniteAchievements.ViewModels
 {
@@ -57,35 +57,35 @@ namespace PlayniteAchievements.ViewModels
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
             DismissStatusCommand = new RelayCommand(_ => DismissStatus(), _ => CanDismissStatus);
 
-            ScanGameCommand = new RelayCommand(
+            RefreshGameCommand = new RelayCommand(
                 async (param) =>
                 {
-                    if (IsScanning) return;
+                    if (IsRefreshing) return;
 
-                    IsScanning = true;
-                    ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_Scanning");
+                    IsRefreshing = true;
+                    RefreshStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_Refreshing");
                     IsStatusMessageVisible = true;
 
                     try
                     {
-                        await _achievementManager.ExecuteScanAsync(ScanModeType.Single.GetKey(), _gameId);
+                        await _achievementManager.ExecuteRefreshAsync(RefreshModeType.Single, _gameId);
 
                         // Load updated data
                         LoadGameData();
 
                         // Simple success message
-                        ScanStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+                        RefreshStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error(ex, $"Failed to scan game {_gameId}.");
-                        ScanStatusMessage = string.Format(
-                            ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"),
+                        _logger.Error(ex, $"Failed to refresh game {_gameId}.");
+                        RefreshStatusMessage = string.Format(
+                            ResourceProvider.GetString("LOCPlayAch_Error_RefreshFailed"),
                             ex.Message);
                     }
                     finally
                     {
-                        IsScanning = false;
+                        IsRefreshing = false;
                         await Task.Delay(3000);
                         IsStatusMessageVisible = false;
                     }
@@ -188,18 +188,18 @@ namespace PlayniteAchievements.ViewModels
         // Achievement list
         public ObservableCollection<AchievementDisplayItem> Achievements { get; } = new ObservableCollection<AchievementDisplayItem>();
 
-        private bool _isScanning;
-        public bool IsScanning
+        private bool _IsRefreshing;
+        public bool IsRefreshing
         {
-            get => _isScanning;
-            private set => SetValue(ref _isScanning, value);
+            get => _IsRefreshing;
+            private set => SetValue(ref _IsRefreshing, value);
         }
 
-        private string _scanStatusMessage;
-        public string ScanStatusMessage
+        private string _RefreshStatusMessage;
+        public string RefreshStatusMessage
         {
-            get => _scanStatusMessage;
-            private set => SetValue(ref _scanStatusMessage, value);
+            get => _RefreshStatusMessage;
+            private set => SetValue(ref _RefreshStatusMessage, value);
         }
 
         private bool _isStatusMessageVisible;
@@ -287,7 +287,7 @@ namespace PlayniteAchievements.ViewModels
         #region Commands
 
         public ICommand RevealAchievementCommand { get; }
-        public ICommand ScanGameCommand { get; }
+        public ICommand RefreshGameCommand { get; }
         public ICommand DismissStatusCommand { get; }
 
         #endregion
@@ -464,43 +464,43 @@ namespace PlayniteAchievements.ViewModels
         private void OnRebuildProgress(object sender, ProgressReport report)
         {
             if (report == null) return;
-            var scanStatus = _achievementManager.GetScanStatusSnapshot(report);
-            var statusMessage = scanStatus.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Scanning");
+            var refreshStatus = _achievementManager.GetRefreshStatusSnapshot(report);
+            var statusMessage = refreshStatus.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Refreshing");
 
             // Check if this progress is for our game
             var isForOurGame = report.Message?.Contains(_gameId.ToString()) == true ||
                                (GameName != null && report.Message?.Contains(GameName) == true);
 
-            if (!isForOurGame && IsScanning)
+            if (!isForOurGame && IsRefreshing)
             {
-                // If we're scanning and get progress not for our game, update generic status
-                ScanStatusMessage = statusMessage;
-                OnPropertyChanged(nameof(ScanStatusMessage));
+                // If we're refreshing and get progress not for our game, update generic status
+                RefreshStatusMessage = statusMessage;
+                OnPropertyChanged(nameof(RefreshStatusMessage));
             }
             else if (isForOurGame)
             {
                 // Update with specific progress for our game
-                ScanStatusMessage = statusMessage;
-                OnPropertyChanged(nameof(ScanStatusMessage));
+                RefreshStatusMessage = statusMessage;
+                OnPropertyChanged(nameof(RefreshStatusMessage));
             }
 
             // Handle completion
-            if (scanStatus.IsCanceled)
+            if (refreshStatus.IsCanceled)
             {
-                IsScanning = false;
-                ScanStatusMessage = statusMessage;
-                OnPropertyChanged(nameof(IsScanning));
-                OnPropertyChanged(nameof(ScanStatusMessage));
+                IsRefreshing = false;
+                RefreshStatusMessage = statusMessage;
+                OnPropertyChanged(nameof(IsRefreshing));
+                OnPropertyChanged(nameof(RefreshStatusMessage));
             }
-            else if (scanStatus.IsFinal)
+            else if (refreshStatus.IsFinal)
             {
-                IsScanning = false;
-                ScanStatusMessage = statusMessage;
-                OnPropertyChanged(nameof(IsScanning));
-                OnPropertyChanged(nameof(ScanStatusMessage));
+                IsRefreshing = false;
+                RefreshStatusMessage = statusMessage;
+                OnPropertyChanged(nameof(IsRefreshing));
+                OnPropertyChanged(nameof(RefreshStatusMessage));
             }
 
-            (ScanGameCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (RefreshGameCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private void OnSettingsChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)

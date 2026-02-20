@@ -224,6 +224,24 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
+        public HashSet<string> GetNoAchievementsGameIdsForCurrentUser()
+        {
+            return WithDb(db =>
+            {
+                var rows = db.Load<CacheKeyRow>(
+                    @"SELECT DISTINCT ugp.CacheKey AS CacheKey
+                      FROM UserGameProgress ugp
+                      INNER JOIN Users u ON u.Id = ugp.UserId
+                      WHERE u.IsCurrentUser = 1
+                        AND ugp.NoAchievements = 1;").ToList();
+
+                return new HashSet<string>(
+                    rows.Select(r => r.CacheKey)
+                        .Where(k => !string.IsNullOrWhiteSpace(k)),
+                    StringComparer.OrdinalIgnoreCase);
+            });
+        }
+
         public GameAchievementData LoadCurrentUserGameData(string key)
         {
             if (string.IsNullOrWhiteSpace(key))

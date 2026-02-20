@@ -298,21 +298,21 @@
 
                 </StackPanel>
 
-                <!-- State 2: Has Auth, No Cache (Needs Scan) -->
-                <StackPanel x:Name="NeedsScanPanel"
-                            Visibility="{Binding ShowNeedsScanPanel, Converter={StaticResource BoolToVis}}">
+                <!-- State 2: Has Auth, No Cache (Needs Refresh) -->
+                <StackPanel x:Name="NeedsRefreshPanel"
+                            Visibility="{Binding ShowNeedsRefreshPanel, Converter={StaticResource BoolToVis}}">
 
                     <Border Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="4"
                             Padding="16"
                             Margin="0,0,0,12">
                         <StackPanel>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanTitle}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsRefreshTitle}"
                                        Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
                                        Margin="0,0,0,4"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsScanMessage}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_NeedsRefreshMessage}"
                                        Style="{DynamicResource BaseTextBlockStyle}"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"
@@ -320,16 +320,16 @@
                                        Margin="0,0,0,12"/>
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Center">
-                                <ComboBox x:Name="ScanModeComboBox"
-                                          ItemsSource="{Binding ScanModes}"
+                                <ComboBox x:Name="RefreshModeComboBox"
+                                          ItemsSource="{Binding RefreshModes}"
                                           DisplayMemberPath="ShortDisplayName"
                                           SelectedValuePath="Key"
-                                          SelectedValue="{Binding SelectedScanMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          SelectedValue="{Binding SelectedRefreshMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           Width="110"
                                           Margin="0,0,8,0"
                                           VerticalContentAlignment="Center"/>
-                                <Button Content="{DynamicResource LOCPlayAch_Landing_BeginScan}"
-                                        Command="{Binding BeginScanCommand}"
+                                <Button Content="{DynamicResource LOCPlayAch_Landing_BeginRefresh}"
+                                        Command="{Binding BeginRefreshCommand}"
                                         Padding="12,6"
                                         MinWidth="100"/>
                             </StackPanel>
@@ -348,7 +348,7 @@
                                        Foreground="#06FFA5"
                                        HorizontalAlignment="Center"
                                        Margin="0,0,0,4"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Status_ReadyToScan}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Landing_Status_ReadyToRefresh}"
                                        FontSize="{DynamicResource FontSize}"
                                        Foreground="{DynamicResource TextBrush}"
                                        TextWrapping="Wrap"

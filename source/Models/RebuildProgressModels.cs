@@ -24,7 +24,7 @@ public enum RebuildUpdateKind
     /// <summary>
     /// Simplified progress update from a data provider.
     /// </summary>
-    public sealed class ProviderScanUpdate
+    public sealed class ProviderRefreshUpdate
     {
         public int CurrentIndex { get; set; }
         public int TotalItems { get; set; }
@@ -55,7 +55,7 @@ public enum RebuildUpdateKind
     /// </summary>
     public sealed class RebuildSummary
     {
-        public int GamesScanned { get; set; }
+        public int GamesRefreshed { get; set; }
         public int GamesWithAchievements { get; set; }
         public int GamesWithoutAchievements { get; set; }
     }

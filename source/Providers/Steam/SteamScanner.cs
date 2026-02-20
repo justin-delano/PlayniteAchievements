@@ -56,10 +56,10 @@ namespace PlayniteAchievements.Providers.Steam
             _logger = logger;
         }
 
-        public async Task<RebuildPayload> ScanAsync(
-            List<Game> gamesToScan,
-            Action<ProviderScanUpdate> progressCallback,
-            Func<GameAchievementData, Task> onGameScanned,
+        public async Task<RebuildPayload> RefreshAsync(
+            List<Game> gamesToRefresh,
+            Action<ProviderRefreshUpdate> progressCallback,
+            Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
             _steamClient.ResetSteamDatetimeParseFailuresForScan();
@@ -79,12 +79,12 @@ namespace PlayniteAchievements.Providers.Steam
                 if (!isLoggedIn)
                 {
                     _logger?.Warn("[SteamAch] Steam web auth check failed: not logged in. Aborting scan.");
-                    report(new ProviderScanUpdate { AuthRequired = true });
+                    report(new ProviderRefreshUpdate { AuthRequired = true });
                     return new RebuildPayload { Summary = new RebuildSummary() };
                 }
                 _logger?.Info("[SteamAch] Steam web auth verified.");
 
-                if (gamesToScan is null || gamesToScan.Count == 0)
+                if (gamesToRefresh is null || gamesToRefresh.Count == 0)
                 {
                     _logger?.Info("[SteamAch] No games found to scan.");
                     return new RebuildPayload { Summary = new RebuildSummary() };
@@ -93,7 +93,7 @@ namespace PlayniteAchievements.Providers.Steam
                 var playtimes = await GetPlaytimesAsync(_settings.Persisted.SteamUserId.Trim(), cancel).ConfigureAwait(false)
                     ?? new Dictionary<int, int>();
 
-                var progress = new RebuildProgressReporter(report, gamesToScan.Count);
+                var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
                 var summary = new RebuildSummary();
 
                 // Create rate limiter with exponential backoff
@@ -103,12 +103,12 @@ namespace PlayniteAchievements.Providers.Steam
 
                 int consecutiveErrors = 0;
 
-                for (int i = 0; i < gamesToScan.Count; i++)
+                for (int i = 0; i < gamesToRefresh.Count; i++)
                 {
                     cancel.ThrowIfCancellationRequested();
                     progress.Step();
 
-                    var game = gamesToScan[i];
+                    var game = gamesToRefresh[i];
 
                     if (!TryGetPlatformAppId(game, out var appId))
                     {
@@ -116,7 +116,7 @@ namespace PlayniteAchievements.Providers.Steam
                         continue;
                     }
 
-                    progress.Emit(new ProviderScanUpdate
+                    progress.Emit(new ProviderRefreshUpdate
                     {
                         CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"App {appId}"
                     });
@@ -128,12 +128,12 @@ namespace PlayniteAchievements.Providers.Steam
                             IsTransientError,
                             cancel).ConfigureAwait(false);
 
-                        if (onGameScanned != null && data != null)
+                        if (OnGameRefreshed != null && data != null)
                         {
-                            await onGameScanned(data).ConfigureAwait(false);
+                            await OnGameRefreshed(data).ConfigureAwait(false);
                         }
 
-                        summary.GamesScanned++;
+                        summary.GamesRefreshed++;
 
                         if (data != null && !data.NoAchievements)
                             summary.GamesWithAchievements++;

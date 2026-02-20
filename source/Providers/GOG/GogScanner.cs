@@ -35,10 +35,10 @@ namespace PlayniteAchievements.Providers.GOG
             _logger = logger;
         }
 
-        public async Task<RebuildPayload> ScanAsync(
-            List<Game> gamesToScan,
-            Action<ProviderScanUpdate> progressCallback,
-            Func<GameAchievementData, Task> onGameScanned,
+        public async Task<RebuildPayload> RefreshAsync(
+            List<Game> gamesToRefresh,
+            Action<ProviderRefreshUpdate> progressCallback,
+            Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
             var report = progressCallback ?? (_ => { });
@@ -52,7 +52,7 @@ namespace PlayniteAchievements.Providers.GOG
                     probeResult.Outcome == GogAuthOutcome.TimedOut)
                 {
                     _logger?.Warn("[GogAch] GOG not authenticated - cannot scan achievements.");
-                    report(new ProviderScanUpdate { AuthRequired = true });
+                    report(new ProviderRefreshUpdate { AuthRequired = true });
                 }
                 else
                 {
@@ -64,13 +64,13 @@ namespace PlayniteAchievements.Providers.GOG
 
             _logger?.Info("[GogAch] GOG authentication verified.");
 
-            if (gamesToScan is null || gamesToScan.Count == 0)
+            if (gamesToRefresh is null || gamesToRefresh.Count == 0)
             {
                 _logger?.Info("[GogAch] No games found to scan.");
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            var progress = new RebuildProgressReporter(report, gamesToScan.Count);
+            var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
             var summary = new RebuildSummary();
 
             // Create rate limiter with exponential backoff
@@ -80,12 +80,12 @@ namespace PlayniteAchievements.Providers.GOG
 
             int consecutiveErrors = 0;
 
-            for (int i = 0; i < gamesToScan.Count; i++)
+            for (int i = 0; i < gamesToRefresh.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
                 progress.Step();
 
-                var game = gamesToScan[i];
+                var game = gamesToRefresh[i];
 
                 if (!TryGetProductId(game, out var productId))
                 {
@@ -93,7 +93,7 @@ namespace PlayniteAchievements.Providers.GOG
                     continue;
                 }
 
-                progress.Emit(new ProviderScanUpdate
+                progress.Emit(new ProviderRefreshUpdate
                 {
                     CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"Product {productId}"
                 });
@@ -105,12 +105,12 @@ namespace PlayniteAchievements.Providers.GOG
                         GogApiClient.IsTransientError,
                         cancel).ConfigureAwait(false);
 
-                    if (onGameScanned != null && data != null)
+                    if (OnGameRefreshed != null && data != null)
                     {
-                        await onGameScanned(data).ConfigureAwait(false);
+                        await OnGameRefreshed(data).ConfigureAwait(false);
                     }
 
-                    summary.GamesScanned++;
+                    summary.GamesRefreshed++;
 
                     if (data != null && !data.NoAchievements)
                         summary.GamesWithAchievements++;
@@ -121,7 +121,7 @@ namespace PlayniteAchievements.Providers.GOG
                     consecutiveErrors = 0;
 
                     // Rate limit protection: add delay before next request
-                    if (i < gamesToScan.Count - 1)
+                    if (i < gamesToRefresh.Count - 1)
                     {
                         await rateLimiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
                     }
@@ -129,7 +129,7 @@ namespace PlayniteAchievements.Providers.GOG
                 catch (AuthRequiredException)
                 {
                     _logger?.Warn("[GogAch] GOG auth required during scan. Aborting.");
-                    report(new ProviderScanUpdate { AuthRequired = true });
+                    report(new ProviderRefreshUpdate { AuthRequired = true });
                     break;
                 }
                 catch (OperationCanceledException)

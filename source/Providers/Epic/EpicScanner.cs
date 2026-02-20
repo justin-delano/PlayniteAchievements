@@ -30,10 +30,10 @@ namespace PlayniteAchievements.Providers.Epic
             _logger = logger;
         }
 
-        public async Task<RebuildPayload> ScanAsync(
-            List<Game> gamesToScan,
-            Action<ProviderScanUpdate> progressCallback,
-            Func<GameAchievementData, Task> onGameScanned,
+        public async Task<RebuildPayload> RefreshAsync(
+            List<Game> gamesToRefresh,
+            Action<ProviderRefreshUpdate> progressCallback,
+            Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
             var report = progressCallback ?? (_ => { });
@@ -42,16 +42,16 @@ namespace PlayniteAchievements.Providers.Epic
             if (!probeResult.IsSuccess)
             {
                 _logger?.Warn("[EpicAch] Epic not authenticated - cannot scan achievements.");
-                report(new ProviderScanUpdate { AuthRequired = true });
+                report(new ProviderRefreshUpdate { AuthRequired = true });
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            if (gamesToScan == null || gamesToScan.Count == 0)
+            if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            var progress = new RebuildProgressReporter(report, gamesToScan.Count);
+            var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
             var summary = new RebuildSummary();
             var rateLimiter = new RateLimiter(
                 _settings.Persisted.ScanDelayMs,
@@ -59,19 +59,19 @@ namespace PlayniteAchievements.Providers.Epic
 
             int consecutiveErrors = 0;
 
-            for (int i = 0; i < gamesToScan.Count; i++)
+            for (int i = 0; i < gamesToRefresh.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
                 progress.Step();
 
-                var game = gamesToScan[i];
+                var game = gamesToRefresh[i];
                 var gameId = game?.GameId?.Trim();
                 if (string.IsNullOrWhiteSpace(gameId))
                 {
                     continue;
                 }
 
-                progress.Emit(new ProviderScanUpdate
+                progress.Emit(new ProviderRefreshUpdate
                 {
                     CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : gameId
                 });
@@ -83,12 +83,12 @@ namespace PlayniteAchievements.Providers.Epic
                         EpicApiClient.IsTransientError,
                         cancel).ConfigureAwait(false);
 
-                    if (onGameScanned != null && data != null)
+                    if (OnGameRefreshed != null && data != null)
                     {
-                        await onGameScanned(data).ConfigureAwait(false);
+                        await OnGameRefreshed(data).ConfigureAwait(false);
                     }
 
-                    summary.GamesScanned++;
+                    summary.GamesRefreshed++;
                     if (data != null && !data.NoAchievements)
                     {
                         summary.GamesWithAchievements++;
@@ -100,14 +100,14 @@ namespace PlayniteAchievements.Providers.Epic
 
                     consecutiveErrors = 0;
 
-                    if (i < gamesToScan.Count - 1)
+                    if (i < gamesToRefresh.Count - 1)
                     {
                         await rateLimiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
                     }
                 }
                 catch (EpicAuthRequiredException)
                 {
-                    report(new ProviderScanUpdate { AuthRequired = true });
+                    report(new ProviderRefreshUpdate { AuthRequired = true });
                     break;
                 }
                 catch (OperationCanceledException)

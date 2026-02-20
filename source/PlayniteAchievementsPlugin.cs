@@ -112,9 +112,9 @@ namespace PlayniteAchievements
 
         // Public bridge method for external helpers/themes that used to target SuccessStory via reflection.
         // AnikiHelper (PlayniteAchievements-based) will call this when available.
-        public Task RequestSingleGameScanAsync(Guid playniteGameId)
+        public Task RequestSingleGameRefreshAsync(Guid playniteGameId)
         {
-            return _achievementManager?.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), playniteGameId) ?? Task.CompletedTask;
+            return _achievementManager?.ExecuteRefreshAsync(Models.RefreshModeType.Single, playniteGameId) ?? Task.CompletedTask;
         }
 
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
@@ -233,7 +233,7 @@ namespace PlayniteAchievements
                         PlayniteApi?.MainView?.UIDispatcher ?? System.Windows.Application.Current.Dispatcher);
                     _themeUpdateService = themeUpdateService;
 
-                    // Listen for new games entering the database to auto-scan .
+                    // Listen for new games entering the database to auto-refresh .
                     PlayniteApi?.Database?.Games?.ItemCollectionChanged += Games_ItemCollectionChanged;
 
                     // Theme integration - settings support
@@ -309,7 +309,7 @@ namespace PlayniteAchievements
                 yield break;
             }
 
-            // Multiple games selected - offer "Scan Selected"
+            // Multiple games selected - offer "Refresh Selected"
             if (args.Games.Count > 1)
             {
                 var selectedGames = args.Games.Where(g => g != null).ToList();
@@ -320,11 +320,11 @@ namespace PlayniteAchievements
 
                 yield return new GameMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ScanSelected"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_RefreshSelected"),
                     MenuSection = "Playnite Achievements",
                     Action = (a) =>
                     {
-                        ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
+                        ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.LibrarySelected));
                     }
                 };
 
@@ -370,12 +370,12 @@ namespace PlayniteAchievements
 
             yield return new GameMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ScanGame"),
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_RefreshGame"),
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(
-                        () => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), game.Id),
+                    ShowRefreshProgressControlAndRun(
+                        () => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Single, game.Id),
                         game.Id);
                 }
             };
@@ -478,61 +478,61 @@ namespace PlayniteAchievements
         {
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Quick"),
+                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Quick"),
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Quick.GetKey()));
+                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Quick));
                 }
             };
 
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Full"),
+                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Full"),
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Full.GetKey()));
+                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Full));
                 }
             };
 
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Installed"),
+                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Installed"),
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Installed.GetKey()));
+                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Installed));
                 }
             };
 
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Favorites"),
+                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Favorites"),
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Favorites.GetKey()));
+                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Favorites));
                 }
             };
 
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Selected"),
+                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Selected"),
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.LibrarySelected.GetKey()));
+                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.LibrarySelected.GetKey()));
                 }
             };
 
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_ScanMode_Missing"),
+                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Missing"),
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowScanProgressControlAndRun(() => _achievementManager.ExecuteScanAsync(Models.ScanModeType.Missing.GetKey()));
+                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Missing));
                 }
             };
         }
@@ -575,8 +575,8 @@ namespace PlayniteAchievements
 
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
-            _logger.Info($"Game stopped: {args.Game.Name}. Triggering achievement scan.");
-            _ = _achievementManager.ExecuteScanAsync(Models.ScanModeType.Single.GetKey(), args.Game.Id);
+            _logger.Info($"Game stopped: {args.Game.Name}. Triggering achievement refresh.");
+            _ = _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Single, args.Game.Id);
         }
 
         // === Lifecycle ===
@@ -678,22 +678,22 @@ namespace PlayniteAchievements
             _themeUpdateService?.RequestUpdate(gameContext?.Id);
         }
 
-        private void ShowScanProgressControlAndRun(Func<Task> scanTask, Guid? singleGameScanId = null)
+        private void ShowRefreshProgressControlAndRun(Func<Task> refreshTask, Guid? singleGameRefreshId = null)
         {
             try
             {
                 // Validate authentication before showing progress window
-                if (!_achievementManager.ValidateCanStartScan())
+                if (!_achievementManager.ValidateCanStartRefresh())
                 {
                     return;
                 }
 
                 EnsureWpfFallbackResources();
 
-                var progressWindow = new ScanProgressControl(
+                var progressWindow = new RefreshProgressControl(
                     _achievementManager,
                     _logger,
-                    singleGameScanId,
+                    singleGameRefreshId,
                     OpenSingleGameAchievementsView);
 
                 var windowOptions = new WindowOptions
@@ -733,16 +733,16 @@ namespace PlayniteAchievements
                 }
                 catch { }
 
-                // Start the scan task after setting up window
+                // Start the refresh task after setting up window
                 Task.Run(async () =>
                 {
                     try
                     {
-                        await scanTask().ConfigureAwait(false);
+                        await refreshTask().ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error(ex, "Scan task failed");
+                        _logger.Error(ex, "Refresh task failed");
                     }
                 });
 
@@ -764,7 +764,7 @@ namespace PlayniteAchievements
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to show scan progress window");
+                _logger.Error(ex, "Failed to show refresh progress window");
             }
         }
 
@@ -1080,7 +1080,7 @@ namespace PlayniteAchievements
 
                 if (addedGameIds.Count > 0)
                 {
-                    _ = TriggerNewGamesScanAsync(addedGameIds);
+                    _ = TriggerNewGamesRefreshAsync(addedGameIds);
                 }
             }
 
@@ -1099,7 +1099,7 @@ namespace PlayniteAchievements
             }
         }
 
-        private Task TriggerNewGamesScanAsync(List<Guid> gameIds)
+        private Task TriggerNewGamesRefreshAsync(List<Guid> gameIds)
         {
             return Task.Run(async () =>
             {
@@ -1115,12 +1115,12 @@ namespace PlayniteAchievements
                         return;
                     }
 
-                    _logger.Info($"Detected {validGameIds.Count} new game(s); starting batched scan.");
-                    await _achievementManager.ExecuteScanForGamesAsync(validGameIds).ConfigureAwait(false);
+                    _logger.Info($"Detected {validGameIds.Count} new game(s); starting batched refresh.");
+                    await _achievementManager.ExecuteRefreshForGamesAsync(validGameIds).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error(ex, "Failed batched auto-scan for newly added games.");
+                    _logger.Error(ex, "Failed batched auto-refresh for newly added games.");
                 }
             });
         }

@@ -66,13 +66,13 @@ namespace PlayniteAchievements.Providers.Steam
             return game.PluginId == SteamPluginId;
         }
 
-        public Task<RebuildPayload> ScanAsync(
-            List<Game> gamesToScan,
-            Action<ProviderScanUpdate> progressCallback,
-            Func<GameAchievementData, Task> onGameScanned,
+        public Task<RebuildPayload> RefreshAsync(
+            List<Game> gamesToRefresh,
+            Action<ProviderRefreshUpdate> progressCallback,
+            Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
-            return _scanner.ScanAsync(gamesToScan, progressCallback, onGameScanned, cancel);
+            return _scanner.RefreshAsync(gamesToRefresh, progressCallback, OnGameRefreshed, cancel);
         }
 
         public void Dispose()

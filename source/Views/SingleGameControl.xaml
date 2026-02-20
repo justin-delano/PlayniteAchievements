@@ -240,8 +240,8 @@
                         <Run Text=" achievements)"/>
                     </TextBlock>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Scan}" Command="{Binding ScanGameCommand}" Margin="12,0,0,0" VerticalAlignment="Center" IsEnabled="{Binding !IsScanning}" />
-                    <TextBlock Text="{Binding ScanStatusMessage}" VerticalAlignment="Center" Margin="10,0,0,0" Visibility="{Binding IsStatusMessageVisible, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource TextBrush}"/>
+                    <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}" Command="{Binding RefreshGameCommand}" Margin="12,0,0,0" VerticalAlignment="Center" IsEnabled="{Binding !IsRefreshing}" />
+                    <TextBlock Text="{Binding RefreshStatusMessage}" VerticalAlignment="Center" Margin="10,0,0,0" Visibility="{Binding IsStatusMessageVisible, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource TextBrush}"/>
                 </StackPanel>
 
                 <!-- Complete Badge -->

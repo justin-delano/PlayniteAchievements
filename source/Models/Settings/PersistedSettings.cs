@@ -206,7 +206,7 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Maximum recent games to scan when using Quick Refresh.
+        /// Maximum recent games to refresh when using Quick Refresh.
         /// </summary>
         public int QuickRefreshRecentGamesCount
         {
@@ -524,7 +524,7 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// Tracks whether the Points column was auto-enabled once due to Epic achievement data.
-        /// Prevents future scans from repeatedly overriding user visibility preferences.
+        /// Prevents future refreshes from repeatedly overriding user visibility preferences.
         /// </summary>
         public bool PointsColumnAutoEnabled
         {

@@ -1,8 +1,8 @@
 namespace PlayniteAchievements.Models
 {
-    public sealed class ScanStatusSnapshot
+    public sealed class RefreshStatusSnapshot
     {
-        public bool IsScanning { get; set; }
+        public bool IsRefreshing { get; set; }
         public bool IsFinal { get; set; }
         public bool IsCanceled { get; set; }
         public double ProgressPercent { get; set; }

@@ -127,10 +127,7 @@
 
         <!-- Search Bar -->
         <Border Grid.Row="1"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="14,8">
+                Padding="0,8,0,4">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -141,15 +138,11 @@
                     <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              VerticalContentAlignment="Center"
                              Padding="6,4"
-                             Background="Transparent"
-                             BorderThickness="0,0,0,1"
-                             BorderBrush="{DynamicResource NormalBorderBrush}"
-                             Foreground="{DynamicResource TextBrush}"
-                             CaretBrush="{DynamicResource TextBrush}"/>
+                             Background="Transparent"/>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Capstone_SearchPlaceholder}"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Left"
-                               Margin="10,0,0,0"
+                               Margin="9,0,0,0"
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.5"
                                IsHitTestVisible="False">

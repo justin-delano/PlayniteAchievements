@@ -1,4 +1,4 @@
-<UserControl x:Class="PlayniteAchievements.Views.ScanProgressControl"
+<UserControl x:Class="PlayniteAchievements.Views.RefreshProgressControl"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -107,7 +107,7 @@
                 </Grid>
 
                 <!-- Hint Text -->
-                <TextBlock Text="{Binding ScanRunningNote}"
+                <TextBlock Text="{Binding RefreshRunningNote}"
                            Style="{DynamicResource BaseTextBlockStyle}"
                            Foreground="{DynamicResource TextBrush}"
                            Opacity="0.6"

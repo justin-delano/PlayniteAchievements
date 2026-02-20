@@ -810,8 +810,8 @@ namespace PlayniteAchievements.Views
         private ContextMenu CreateGameRowContextMenu(object rowData)
         {
             var menu = new ContextMenu();
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ScanGame",
-                () => ExecuteViewModelCommand(_viewModel?.ScanSingleGameCommand, rowData)));
+            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_RefreshGame",
+                () => ExecuteViewModelCommand(_viewModel?.RefreshSingleGameCommand, rowData)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_SetCapstone",
                 () => OpenCapstoneForRow(rowData)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_OpenGameInLibrary",

@@ -7,9 +7,9 @@ using Playnite.SDK.Models;
 namespace PlayniteAchievements.Models
 {
     /// <summary>
-    /// Scan mode types for achievement scanning operations.
+    /// Refresh mode types for achievement refreshing operations.
     /// </summary>
-    public enum ScanModeType
+    public enum RefreshModeType
     {
         Quick,
         Full,
@@ -21,57 +21,57 @@ namespace PlayniteAchievements.Models
     }
 
     /// <summary>
-    /// Extension methods for ScanModeType enum.
+    /// Extension methods for RefreshModeType enum.
     /// </summary>
-    public static class ScanModeExtensions
+    public static class RefreshModeExtensions
     {
         /// <summary>
         /// Gets the localization resource key for the full display name.
         /// </summary>
-        public static string GetResourceKey(this ScanModeType mode) => $"LOCPlayAch_ScanMode_{mode}";
+        public static string GetResourceKey(this RefreshModeType mode) => $"LOCPlayAch_RefreshMode_{mode}";
 
         /// <summary>
         /// Gets the localization resource key for the short display name.
         /// </summary>
-        public static string GetShortResourceKey(this ScanModeType mode) => $"LOCPlayAch_ScanModeShort_{mode}";
+        public static string GetShortResourceKey(this RefreshModeType mode) => $"LOCPlayAch_RefreshModeShort_{mode}";
 
         /// <summary>
-        /// Gets the string key for this scan mode.
+        /// Gets the string key for this refresh mode.
         /// </summary>
-        public static string GetKey(this ScanModeType mode) => mode.ToString();
+        public static string GetKey(this RefreshModeType mode) => mode.ToString();
     }
 
     /// <summary>
-    /// Represents a scan mode for achievement scanning operations.
+    /// Represents a refresh mode for achievement refreshing operations.
     /// </summary>
-    public class ScanMode
+    public class RefreshMode
     {
         /// <summary>
-        /// Unique identifier for this scan mode.
+        /// Unique identifier for this refresh mode.
         /// </summary>
         public string Key { get; set; }
 
         /// <summary>
-        /// The scan mode type enum value.
+        /// The refresh mode type enum value.
         /// </summary>
-        public ScanModeType Type { get; set; }
+        public RefreshModeType Type { get; set; }
 
         /// <summary>
-        /// Localized display name for this scan mode (long version for menus).
+        /// Localized display name for this refresh mode (long version for menus).
         /// </summary>
         public string DisplayName { get; set; }
 
         /// <summary>
-        /// Localized short display name for this scan mode (for sidebar dropdown).
+        /// Localized short display name for this refresh mode (for sidebar dropdown).
         /// </summary>
         public string ShortDisplayName { get; set; }
 
         /// <summary>
-        /// Description of what this scan mode does.
+        /// Description of what this refresh mode does.
         /// </summary>
         public string Description { get; set; }
 
-        public ScanMode(ScanModeType type, string displayNameResourceKey, string shortDisplayNameResourceKey)
+        public RefreshMode(RefreshModeType type, string displayNameResourceKey, string shortDisplayNameResourceKey)
         {
             Type = type;
             Key = type.GetKey();
@@ -91,10 +91,10 @@ namespace PlayniteAchievements.Models
     }
 
     /// <summary>
-    /// Predefined scan mode keys (obsolete - use ScanModeType enum instead).
+    /// Predefined refresh mode keys (obsolete - use RefreshModeType enum instead).
     /// </summary>
-    [Obsolete("Use ScanModeType enum instead.")]
-    public static class ScanModeKeys
+    [Obsolete("Use RefreshModeType enum instead.")]
+    public static class RefreshModeKeys
     {
         public const string Quick = "Quick";
         public const string Full = "Full";

@@ -74,14 +74,14 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 (File.Exists(p) || ArchiveUtils.IsArchivePath(p)));
         }
 
-        public Task<RebuildPayload> ScanAsync(
-            List<Game> gamesToScan,
-            Action<ProviderScanUpdate> progressCallback,
-            Func<GameAchievementData, Task> onGameScanned,
+        public Task<RebuildPayload> RefreshAsync(
+            List<Game> gamesToRefresh,
+            Action<ProviderRefreshUpdate> progressCallback,
+            Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
             EnsureInitialized();
-            return _scanner.ScanAsync(gamesToScan, progressCallback, onGameScanned, cancel);
+            return _scanner.RefreshAsync(gamesToRefresh, progressCallback, OnGameRefreshed, cancel);
         }
 
         private void EnsureInitialized()

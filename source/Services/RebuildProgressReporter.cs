@@ -6,13 +6,13 @@ namespace PlayniteAchievements.Services
 {
     internal sealed class RebuildProgressReporter
     {
-        private readonly Action<ProviderScanUpdate> _callback;
+        private readonly Action<ProviderRefreshUpdate> _callback;
         private readonly long _minIntervalTicks;
         private long _lastEmitTimestamp;
         private int _currentIndex;
         public int OverallCount { get; }
 
-        public RebuildProgressReporter(Action<ProviderScanUpdate> callback, int overallCount, int minMs = 50)
+        public RebuildProgressReporter(Action<ProviderRefreshUpdate> callback, int overallCount, int minMs = 50)
         {
             _callback = callback;
             OverallCount = Math.Max(0, overallCount);
@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Services
 
         public void Step() => _currentIndex = Math.Min(OverallCount, _currentIndex + 1);
 
-        public void Emit(ProviderScanUpdate u, bool force = false)
+        public void Emit(ProviderRefreshUpdate u, bool force = false)
         {
             if (u == null || _callback == null) return;
 

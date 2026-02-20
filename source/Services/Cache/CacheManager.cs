@@ -377,6 +377,23 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        public HashSet<string> GetNoAchievementsGameIds()
+        {
+            try
+            {
+                lock (_sync)
+                {
+                    EnsureReady_Locked("GetNoAchievementsGameIds");
+                    return _store.GetNoAchievementsGameIdsForCurrentUser() ?? new HashSet<string>();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to load NoAchievements game IDs.");
+                return new HashSet<string>();
+            }
+        }
+
         public void ClearCache()
         {
             lock (_sync)

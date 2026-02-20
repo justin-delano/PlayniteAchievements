@@ -147,11 +147,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             _openOverviewCmd = new RelayCommand(_ => OpenOverviewWindow());
             _openSelectedGameCmd = new RelayCommand(_ => OpenSelectedGameWindow());
-            _singleGameRefreshCmd = new RelayCommand(_ => RefreshWithMode(ScanModeType.Single));
-            _quickRefreshCmd = new RelayCommand(_ => RefreshWithMode(ScanModeType.Quick));
-            _favoritesRefreshCmd = new RelayCommand(_ => RefreshWithMode(ScanModeType.Favorites));
-            _fullRefreshCmd = new RelayCommand(_ => RefreshWithMode(ScanModeType.Full));
-            _installedRefreshCmd = new RelayCommand(_ => RefreshWithMode(ScanModeType.Installed));
+            _singleGameRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Single));
+            _quickRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Quick));
+            _favoritesRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Favorites));
+            _fullRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Full));
+            _installedRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Installed));
 
             // Command surfaces referenced by themes.
             _settings.OpenFullscreenAchievementWindow = _openSelectedGameCmd;
@@ -343,11 +343,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         #region Refresh Operations
 
-        private void RefreshWithMode(ScanModeType mode)
+        private void RefreshWithMode(RefreshModeType mode)
         {
             Guid? gameIdForThemeUpdate = null;
 
-            if (mode == ScanModeType.Single)
+            if (mode == RefreshModeType.Single)
             {
                 var id = GetSingleSelectedGameId();
                 if (!id.HasValue)
@@ -358,19 +358,19 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             EnsureFullscreenInitialized();
-            RunAchievementScan(mode, gameIdForThemeUpdate);
+            RunAchievementRefresh(mode, gameIdForThemeUpdate);
         }
 
-        private void RunAchievementScan(ScanModeType mode, Guid? gameIdForThemeUpdate)
+        private void RunAchievementRefresh(RefreshModeType mode, Guid? gameIdForThemeUpdate)
         {
             var errorLogMessage = mode switch
             {
-                ScanModeType.Single => "Single game achievement scan failed.",
-                ScanModeType.Quick => "Quick refresh achievement scan failed.",
-                ScanModeType.Favorites => "Favorites achievement scan failed.",
-                ScanModeType.Full => "Full achievement scan failed.",
-                ScanModeType.Installed => "Installed games achievement scan failed.",
-                _ => "Achievement scan failed."
+                RefreshModeType.Single => "Single game achievement refresh failed.",
+                RefreshModeType.Quick => "Quick refresh achievement refresh failed.",
+                RefreshModeType.Favorites => "Favorites achievement refresh failed.",
+                RefreshModeType.Full => "Full achievement refresh failed.",
+                RefreshModeType.Installed => "Installed games achievement refresh failed.",
+                _ => "Achievement refresh failed."
             };
 
             var progressOptions = new GlobalProgressOptions(ResourceProvider.GetString("LOCPlayAch_Status_Starting"), true)
@@ -423,16 +423,16 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     try
                     {
-                        var scanTask = mode == ScanModeType.Single && gameIdForThemeUpdate.HasValue
-                            ? _achievementManager.ExecuteScanAsync(mode, gameIdForThemeUpdate.Value)
-                            : _achievementManager.ExecuteScanAsync(mode);
+                        var refreshTask = mode == RefreshModeType.Single && gameIdForThemeUpdate.HasValue
+                            ? _achievementManager.ExecuteRefreshAsync(mode, gameIdForThemeUpdate.Value)
+                            : _achievementManager.ExecuteRefreshAsync(mode);
 
-                        await scanTask.ConfigureAwait(false);
+                        await refreshTask.ConfigureAwait(false);
 
                         try
                         {
                             progress.CurrentProgressValue = 100;
-                            progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_ScanComplete");
+                            progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
                         }
                         catch { }
                     }
@@ -509,7 +509,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         /// <summary>
         /// Synchronously populates single-game achievement data before opening a game window.
-        /// Uses existing cached data without triggering a scan. This prevents stale data by
+        /// Uses existing cached data without triggering a refresh. This prevents stale data by
         /// ensuring the snapshot is applied before the window opens.
         /// </summary>
         private void PopulateSingleGameDataSync(Guid gameId)
