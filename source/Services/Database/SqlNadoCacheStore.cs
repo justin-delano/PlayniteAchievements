@@ -233,7 +233,7 @@ namespace PlayniteAchievements.Services.Database
                       FROM UserGameProgress ugp
                       INNER JOIN Users u ON u.Id = ugp.UserId
                       WHERE u.IsCurrentUser = 1
-                        AND ugp.ExcludedByUser = 1;").ToList();
+                        AND (ugp.HasAchievements = 0 OR ugp.ExcludedByUser = 1);").ToList();
 
                 return new HashSet<string>(
                     rows.Select(r => r.CacheKey)

@@ -529,9 +529,9 @@ namespace PlayniteAchievements.Services
         {
             options ??= new CacheRefreshOptions();
 
-            // Pre-load excluded games for efficient skipping
+            // Pre-load excluded games for efficient skipping (bulk scans only, not targeted)
             HashSet<string> excludedGameIds = null;
-            if (options.SkipNoAchievementsGames)
+            if (options.SkipNoAchievementsGames && (options.PlayniteGameIds == null || options.PlayniteGameIds.Count == 0))
             {
                 excludedGameIds = _cacheService.GetExcludedGameIds();
             }
