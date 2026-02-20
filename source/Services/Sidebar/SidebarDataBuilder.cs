@@ -142,7 +142,7 @@ namespace PlayniteAchievements.Services.Sidebar
             settings ??= new PlayniteAchievementsSettings();
             revealedKeys ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            if (gameData?.Achievements == null || gameData.NoAchievements || gameData.Achievements.Count == 0)
+            if (gameData?.Achievements == null || !gameData.HasAchievements || gameData.Achievements.Count == 0)
             {
                 return null;
             }

@@ -208,7 +208,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     continue;
                 }
 
-                if (gameData == null || gameData.NoAchievements)
+                if (gameData == null || !gameData.HasAchievements)
                 {
                     await ApplyClearAsync(version).ConfigureAwait(false);
                     continue;

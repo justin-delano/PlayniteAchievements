@@ -529,11 +529,11 @@ namespace PlayniteAchievements.Services
         {
             options ??= new CacheRefreshOptions();
 
-            // Pre-load NoAchievements games for efficient skipping (only for bulk refreshes, not single-game)
-            HashSet<string> noAchievementsGameIds = null;
+            // Pre-load excluded games for efficient skipping (only for bulk refreshes, not single-game)
+            HashSet<string> excludedGameIds = null;
             if (options.SkipNoAchievementsGames && (options.PlayniteGameIds == null || options.PlayniteGameIds.Count == 0))
             {
-                noAchievementsGameIds = _cacheService.GetNoAchievementsGameIds();
+                excludedGameIds = _cacheService.GetExcludedGameIds();
             }
 
             IEnumerable<Game> candidates;
@@ -575,9 +575,9 @@ namespace PlayniteAchievements.Services
                     continue;
                 }
 
-                // Skip games already marked as having no achievements
-                if (noAchievementsGameIds != null &&
-                    noAchievementsGameIds.Contains(game.Id.ToString()))
+                // Skip games already marked as having no achievements or excluded by user
+                if (excludedGameIds != null &&
+                    excludedGameIds.Contains(game.Id.ToString()))
                 {
                     skippedNoAchievements++;
                     continue;
@@ -605,7 +605,7 @@ namespace PlayniteAchievements.Services
 
             if (skippedNoAchievements > 0)
             {
-                _logger?.Debug($"Skipped {skippedNoAchievements} games with NoAchievements flag.");
+                _logger?.Debug($"Skipped {skippedNoAchievements} games with HasAchievements=false or ExcludedByUser=true.");
             }
 
             return targets;
@@ -1359,6 +1359,36 @@ namespace PlayniteAchievements.Services
                     ex.Message,
                     ex);
             }
+        }
+
+        /// <summary>
+        /// Sets the ExcludedByUser flag for a game.
+        /// This excludes the game from future achievement tracking until re-included.
+        /// </summary>
+        public void SetExcludedByUser(Guid playniteGameId, bool excluded)
+        {
+            if (playniteGameId == Guid.Empty)
+                return;
+
+            var key = playniteGameId.ToString();
+            var data = _cacheService.LoadGameData(key);
+
+            if (data == null)
+            {
+                data = new GameAchievementData
+                {
+                    PlayniteGameId = playniteGameId,
+                    ExcludedByUser = excluded,
+                    LastUpdatedUtc = DateTime.UtcNow
+                };
+            }
+            else
+            {
+                data.ExcludedByUser = excluded;
+            }
+
+            _cacheService.SaveGameData(key, data);
+            NotifyCacheInvalidatedThrottled(force: true);
         }
 
         // -----------------------------

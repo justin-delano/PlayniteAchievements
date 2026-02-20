@@ -16,7 +16,7 @@ namespace PlayniteAchievements.Services
 
         // Per-game achievement cache
         List<string> GetCachedGameIds();
-        HashSet<string> GetNoAchievementsGameIds();
+        HashSet<string> GetExcludedGameIds();
         GameAchievementData LoadGameData(string key);
         CacheWriteResult SaveGameData(string key, GameAchievementData data);
         CacheWriteResult SetCapstone(Guid playniteGameId, string capstoneApiName);

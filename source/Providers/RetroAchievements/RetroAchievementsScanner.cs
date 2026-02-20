@@ -105,7 +105,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     }
 
                     summary.GamesRefreshed++;
-                    if (data != null && !data.NoAchievements)
+                    if (data != null && data.HasAchievements)
                     {
                         summary.GamesWithAchievements++;
                     }
@@ -334,7 +334,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     LibrarySourceName = game?.Source?.Name,
                     PlaytimeSeconds = (ulong)Math.Max(0, game?.Playtime ?? 0) * 60u,
                     LastUpdatedUtc = DateTime.UtcNow,
-                    NoAchievements = achievements.Count == 0,
+                    HasAchievements = achievements.Count > 0,
                     PlayniteGameId = game?.Id,
                     Achievements = achievements
                 };
@@ -356,7 +356,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 LibrarySourceName = game?.Source?.Name,
                 PlaytimeSeconds = (ulong)Math.Max(0, game?.Playtime ?? 0) * 60u,
                 LastUpdatedUtc = DateTime.UtcNow,
-                NoAchievements = true,
+                HasAchievements = false,
                 PlayniteGameId = game?.Id,
                 Achievements = new List<AchievementDetail>()
             };

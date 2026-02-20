@@ -117,7 +117,8 @@ namespace PlayniteAchievements.Services.Database
                 GameId INTEGER NOT NULL,
                 CacheKey TEXT NOT NULL COLLATE NOCASE,
                 PlaytimeSeconds INTEGER NOT NULL DEFAULT 0,
-                NoAchievements INTEGER NOT NULL DEFAULT 0,
+                HasAchievements INTEGER NOT NULL DEFAULT 0,
+                ExcludedByUser INTEGER NOT NULL DEFAULT 0,
                 AchievementsUnlocked INTEGER NOT NULL DEFAULT 0,
                 TotalAchievements INTEGER NOT NULL DEFAULT 0,
                 LastUpdatedUtc TEXT NOT NULL,
@@ -224,6 +225,32 @@ namespace PlayniteAchievements.Services.Database
             EnsureColumn(db, "AchievementDefinitions", "Category", "TEXT NULL", definitionColumns, ref backupPath);
             EnsureColumn(db, "AchievementDefinitions", "TrophyType", "TEXT NULL", definitionColumns, ref backupPath);
             EnsureColumn(db, "AchievementDefinitions", "IsCapstone", "INTEGER NOT NULL DEFAULT 0", definitionColumns, ref backupPath);
+
+            // Migrate UserGameProgress: NoAchievements -> HasAchievements (inverted) + add ExcludedByUser
+            var progressColumns = GetColumnNames(db, "UserGameProgress");
+
+            // Add HasAchievements column if it doesn't exist
+            if (!progressColumns.Contains("hasachievements"))
+            {
+                ExecuteSchemaChangeWithBackup(
+                    db,
+                    "ALTER TABLE UserGameProgress ADD COLUMN HasAchievements INTEGER NOT NULL DEFAULT 0;",
+                    ref backupPath,
+                    "Added HasAchievements column to UserGameProgress.");
+            }
+
+            // Migrate data from NoAchievements to HasAchievements (inverted) if NoAchievements exists
+            if (progressColumns.Contains("noachievements"))
+            {
+                ExecuteSchemaChangeWithBackup(
+                    db,
+                    "UPDATE UserGameProgress SET HasAchievements = CASE WHEN NoAchievements = 1 THEN 0 ELSE 1 END WHERE HasAchievements = 0;",
+                    ref backupPath,
+                    "Migrated NoAchievements to HasAchievements (inverted) in UserGameProgress.");
+            }
+
+            // Add ExcludedByUser column if it doesn't exist
+            EnsureColumn(db, "UserGameProgress", "ExcludedByUser", "INTEGER NOT NULL DEFAULT 0", progressColumns, ref backupPath);
 
             ReconcileGamesProviderGameIdIndexes(db, ref backupPath);
 

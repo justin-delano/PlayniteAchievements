@@ -7,7 +7,8 @@ namespace PlayniteAchievements.Services.Database.Rows
         public long GameId { get; set; }
         public string CacheKey { get; set; }
         public long PlaytimeSeconds { get; set; }
-        public long NoAchievements { get; set; }
+        public long HasAchievements { get; set; }
+        public long ExcludedByUser { get; set; }
         public long AchievementsUnlocked { get; set; }
         public long TotalAchievements { get; set; }
         public string LastUpdatedUtc { get; set; }

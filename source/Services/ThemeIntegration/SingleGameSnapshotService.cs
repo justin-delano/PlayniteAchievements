@@ -25,7 +25,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             double rareThreshold,
             double uncommonThreshold)
         {
-            if (data == null || data.NoAchievements)
+            if (data == null || !data.HasAchievements)
             {
                 return null;
             }

@@ -135,7 +135,7 @@ namespace PlayniteAchievements.Providers.Steam
 
                         summary.GamesRefreshed++;
 
-                        if (data != null && !data.NoAchievements)
+                        if (data != null && data.HasAchievements)
                             summary.GamesWithAchievements++;
                         else
                             summary.GamesWithoutAchievements++;
@@ -307,12 +307,12 @@ namespace PlayniteAchievements.Providers.Steam
                 LibrarySourceName = game?.Source?.Name,
                 PlaytimeSeconds = unlocked?.PlaytimeSeconds ?? 0,
                 LastUpdatedUtc = DateTime.UtcNow,
-                NoAchievements = schema?.Achievements == null || schema.Achievements.Count == 0,
+                HasAchievements = schema?.Achievements != null && schema.Achievements.Count > 0,
                 PlayniteGameId = game.Id,
                 Achievements = new List<AchievementDetail>()
             };
 
-            if (!gameData.NoAchievements)
+            if (gameData.HasAchievements)
             {
                 var unlockedApiNames = unlocked?.UnlockedApiNames ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var unlockedTimes = unlocked?.UnlockTimesUtc ?? new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);

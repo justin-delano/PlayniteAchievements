@@ -480,7 +480,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 _logger?.Info($"PopulateAllGamesDataSync: Found {allData.Count} total game data entries.");
 
                 var ids = allData
-                    .Where(d => d?.PlayniteGameId != null && d.NoAchievements == false && (d.Achievements?.Count ?? 0) > 0)
+                    .Where(d => d?.PlayniteGameId != null && d.HasAchievements && (d.Achievements?.Count ?? 0) > 0)
                     .Select(d => d.PlayniteGameId.Value)
                     .Distinct()
                     .ToList();
@@ -517,7 +517,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             try
             {
                 var gameData = _achievementManager.GetGameAchievementData(gameId);
-                if (gameData == null || gameData.NoAchievements)
+                if (gameData == null || !gameData.HasAchievements)
                 {
                     ClearSingleGameThemeProperties();
                     return;
@@ -579,7 +579,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                     var allData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
                     var ids = allData
-                        .Where(d => d?.PlayniteGameId != null && d.NoAchievements == false && (d.Achievements?.Count ?? 0) > 0)
+                        .Where(d => d?.PlayniteGameId != null && d.HasAchievements && (d.Achievements?.Count ?? 0) > 0)
                         .Select(d => d.PlayniteGameId.Value)
                         .Distinct()
                         .ToList();

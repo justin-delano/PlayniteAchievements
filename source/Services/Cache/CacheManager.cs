@@ -377,19 +377,19 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        public HashSet<string> GetNoAchievementsGameIds()
+        public HashSet<string> GetExcludedGameIds()
         {
             try
             {
                 lock (_sync)
                 {
-                    EnsureReady_Locked("GetNoAchievementsGameIds");
-                    return _store.GetNoAchievementsGameIdsForCurrentUser() ?? new HashSet<string>();
+                    EnsureReady_Locked("GetExcludedGameIds");
+                    return _store.GetExcludedGameIdsForCurrentUser() ?? new HashSet<string>();
                 }
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "Failed to load NoAchievements game IDs.");
+                _logger?.Error(ex, "Failed to load excluded game IDs.");
                 return new HashSet<string>();
             }
         }
@@ -810,7 +810,8 @@ namespace PlayniteAchievements.Services
                 LastUpdatedUtc = DateTimeUtilities.AsUtcKind(source.LastUpdatedUtc),
                 ProviderName = source.ProviderName,
                 LibrarySourceName = source.LibrarySourceName,
-                NoAchievements = source.NoAchievements,
+                HasAchievements = source.HasAchievements,
+                ExcludedByUser = source.ExcludedByUser,
                 PlaytimeSeconds = source.PlaytimeSeconds,
                 GameName = source.GameName,
                 AppId = source.AppId,

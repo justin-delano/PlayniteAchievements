@@ -28,7 +28,7 @@ namespace PlayniteAchievements.Models
         public bool IncludeUnplayedGames { get; set; } = true;
 
         /// <summary>
-        /// When true, skip games that are already cached with NoAchievements = true.
+        /// When true, skip games that are already cached with HasAchievements = false or ExcludedByUser = true.
         /// Default is true to avoid unnecessary API calls for games without achievements.
         /// </summary>
         public bool SkipNoAchievementsGames { get; set; } = true;

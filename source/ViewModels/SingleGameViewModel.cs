@@ -309,7 +309,7 @@ namespace PlayniteAchievements.ViewModels
                 GameIconPath = (!string.IsNullOrEmpty(game.Icon)) ? _playniteApi.Database.GetFullFilePath(game.Icon) : null;
 
                 var gameData = _achievementManager.GetGameAchievementData(_gameId);
-                if (gameData == null || gameData.NoAchievements || gameData.Achievements == null)
+                if (gameData == null || !gameData.HasAchievements || gameData.Achievements == null)
                 {
                     _logger?.Info($"No achievement data for game: {game.Name}");
 

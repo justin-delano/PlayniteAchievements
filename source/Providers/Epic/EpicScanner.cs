@@ -89,7 +89,7 @@ namespace PlayniteAchievements.Providers.Epic
                     }
 
                     summary.GamesRefreshed++;
-                    if (data != null && !data.NoAchievements)
+                    if (data != null && data.HasAchievements)
                     {
                         summary.GamesWithAchievements++;
                     }
@@ -167,7 +167,7 @@ namespace PlayniteAchievements.Providers.Epic
                 LibrarySourceName = game?.Source?.Name,
                 PlaytimeSeconds = 0,
                 LastUpdatedUtc = DateTime.UtcNow,
-                NoAchievements = true,
+                HasAchievements = false,
                 PlayniteGameId = game != null ? game.Id : Guid.Empty,
                 Achievements = new List<AchievementDetail>()
             });
@@ -183,7 +183,7 @@ namespace PlayniteAchievements.Providers.Epic
                 LibrarySourceName = game?.Source?.Name,
                 PlaytimeSeconds = 0,
                 LastUpdatedUtc = DateTime.UtcNow,
-                NoAchievements = items == null || items.Count == 0,
+                HasAchievements = items != null && items.Count > 0,
                 PlayniteGameId = game != null ? game.Id : Guid.Empty,
                 Achievements = new List<AchievementDetail>()
             };
@@ -215,7 +215,7 @@ namespace PlayniteAchievements.Providers.Epic
                 });
             }
 
-            data.NoAchievements = data.Achievements.Count == 0;
+            data.HasAchievements = data.Achievements.Count > 0;
             return data;
         }
     }

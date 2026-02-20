@@ -53,6 +53,10 @@
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Ouvrir le jeu dans la bibliothèque</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInSidebar">Ouvrir le jeu dans la barre latérale</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RevealAchievement">Révéler les détails du succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Exclure ce jeu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Inclure ce jeu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ExcludeGames">Exclure les jeux sélectionnés</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IncludeGames">Inclure les jeux sélectionnés</sys:String>
 
     <!-- ================================================================= -->
     <!-- BUTTONS                                                            -->

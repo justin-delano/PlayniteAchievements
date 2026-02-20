@@ -25,7 +25,17 @@ namespace PlayniteAchievements.Models
         /// </summary>
         public string LibrarySourceName { get; set; }
 
-        public bool NoAchievements { get; set; }
+        /// <summary>
+        /// True if the game has achievements, False if scan found none.
+        /// Updated by refresh operations based on scan results.
+        /// </summary>
+        public bool HasAchievements { get; set; }
+
+        /// <summary>
+        /// True if the user manually excluded this game from tracking.
+        /// Set via context menu to exclude/include games.
+        /// </summary>
+        public bool ExcludedByUser { get; set; }
 
         /// <summary>
         /// Computed completion status based on all achievements unlocked or capstone.

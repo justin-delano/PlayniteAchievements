@@ -141,7 +141,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
                     gameData = Plugin?.AchievementManager?.GetGameAchievementData(gameId);
                 }
 
-                if (gameData == null || gameData.NoAchievements || (gameData.Achievements?.Count ?? 0) == 0)
+                if (gameData == null || !gameData.HasAchievements || (gameData.Achievements?.Count ?? 0) == 0)
                 {
                     ClearData();
                     return;

@@ -338,6 +338,26 @@ namespace PlayniteAchievements
                     }
                 };
 
+                // Add bulk exclude/include based on majority state
+                var excludedIds = _achievementManager.Cache.GetExcludedGameIds();
+                var excludedCount = selectedGames.Count(g => excludedIds.Contains(g.Id.ToString()));
+                var mostlyExcluded = excludedCount > selectedGames.Count / 2;
+
+                yield return new GameMenuItem
+                {
+                    Description = mostlyExcluded
+                        ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeGames")
+                        : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeGames"),
+                    MenuSection = "Playnite Achievements",
+                    Action = (a) =>
+                    {
+                        foreach (var g in selectedGames)
+                        {
+                            _achievementManager.SetExcludedByUser(g.Id, !mostlyExcluded);
+                        }
+                    }
+                };
+
                 yield break;
             }
 
@@ -387,6 +407,22 @@ namespace PlayniteAchievements
                 Action = (a) =>
                 {
                     ClearSingleGameData(game);
+                }
+            };
+
+            // Add exclude/include toggle based on current state
+            var gameData = _achievementManager.GetGameAchievementData(game.Id);
+            var isExcluded = gameData?.ExcludedByUser ?? false;
+
+            yield return new GameMenuItem
+            {
+                Description = isExcluded
+                    ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeGame")
+                    : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeGame"),
+                MenuSection = "Playnite Achievements",
+                Action = (a) =>
+                {
+                    _achievementManager.SetExcludedByUser(game.Id, !isExcluded);
                 }
             };
         }
@@ -881,7 +917,7 @@ namespace PlayniteAchievements
                 }
 
                 var gameData = _achievementManager.GetGameAchievementData(gameId);
-                if (gameData == null || gameData.NoAchievements || gameData.Achievements == null || gameData.Achievements.Count == 0)
+                if (gameData == null || !gameData.HasAchievements || gameData.Achievements == null || gameData.Achievements.Count == 0)
                 {
                     PlayniteApi?.Dialogs?.ShowMessage(
                         string.Format(

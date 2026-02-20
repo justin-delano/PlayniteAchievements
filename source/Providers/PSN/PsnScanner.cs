@@ -95,7 +95,7 @@ namespace PlayniteAchievements.Providers.PSN
                         }
 
                         summary.GamesRefreshed++;
-                        if (data != null && !data.NoAchievements)
+                        if (data != null && data.HasAchievements)
                         {
                             summary.GamesWithAchievements++;
                         }
@@ -232,7 +232,7 @@ namespace PlayniteAchievements.Providers.PSN
                 LibrarySourceName = game?.Source?.Name,
                 GameName = game?.Name,
                 PlayniteGameId = game?.Id,
-                NoAchievements = achievements.Count == 0,
+                HasAchievements = achievements.Count > 0,
                 Achievements = achievements,
                 LastUpdatedUtc = DateTime.UtcNow,
                 PlaytimeSeconds = (ulong)(game?.Playtime ?? 0) * 60UL
@@ -247,7 +247,7 @@ namespace PlayniteAchievements.Providers.PSN
                 LibrarySourceName = game?.Source?.Name,
                 GameName = game?.Name,
                 PlayniteGameId = game?.Id,
-                NoAchievements = true,
+                HasAchievements = false,
                 LastUpdatedUtc = DateTime.UtcNow
             };
         }

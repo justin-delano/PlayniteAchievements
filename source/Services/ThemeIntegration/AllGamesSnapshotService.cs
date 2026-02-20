@@ -55,7 +55,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 token.ThrowIfCancellationRequested();
 
-                if (data?.PlayniteGameId == null || data.NoAchievements) continue;
+                if (data?.PlayniteGameId == null || !data.HasAchievements) continue;
                 var total = data.Achievements?.Count ?? 0;
                 if (total <= 0) continue;
 

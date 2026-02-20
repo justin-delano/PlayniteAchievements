@@ -112,7 +112,7 @@ namespace PlayniteAchievements.Providers.GOG
 
                     summary.GamesRefreshed++;
 
-                    if (data != null && !data.NoAchievements)
+                    if (data != null && data.HasAchievements)
                         summary.GamesWithAchievements++;
                     else
                         summary.GamesWithoutAchievements++;
@@ -211,12 +211,12 @@ namespace PlayniteAchievements.Providers.GOG
                 LibrarySourceName = game?.Source?.Name,
                 PlaytimeSeconds = 0, // GOG API doesn't provide playtime
                 LastUpdatedUtc = DateTime.UtcNow,
-                NoAchievements = achievements == null || achievements.Count == 0,
+                HasAchievements = achievements != null && achievements.Count > 0,
                 PlayniteGameId = game.Id,
                 Achievements = new List<AchievementDetail>()
             };
 
-            if (!gameData.NoAchievements)
+            if (gameData.HasAchievements)
             {
                 foreach (var ach in achievements)
                 {
@@ -260,7 +260,7 @@ namespace PlayniteAchievements.Providers.GOG
                 LibrarySourceName = game?.Source?.Name,
                 PlaytimeSeconds = 0,
                 LastUpdatedUtc = DateTime.UtcNow,
-                NoAchievements = true,
+                HasAchievements = false,
                 PlayniteGameId = game.Id,
                 Achievements = new List<AchievementDetail>()
             };
