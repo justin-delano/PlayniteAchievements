@@ -358,7 +358,7 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <!-- Quick Refresh -->
+                                <!-- Recent Refresh -->
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -366,20 +366,20 @@
                                     </Grid.ColumnDefinitions>
 
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_QuickRefresh_Title}"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_Title}"
                                                    Foreground="{DynamicResource TextBrush}"
                                                    FontWeight="SemiBold"
                                                    Margin="0,0,0,2"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_QuickRefresh_Description}"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_Description}"
                                                    Style="{StaticResource MutedTextStyle}"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_QuickRefresh_RecentGames}"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_RecentGames}"
                                                    Foreground="{DynamicResource TextBrush}"
                                                    VerticalAlignment="Center"
                                                    Margin="0,0,8,0"/>
-                                            <TextBox Text="{Binding Persisted.QuickRefreshRecentGamesCount, UpdateSourceTrigger=PropertyChanged}"
+                                            <TextBox Text="{Binding Persisted.RecentRefreshRecentGamesCount, UpdateSourceTrigger=PropertyChanged}"
                                                  Width="50"
                                                  TextAlignment="Right"/>
                                     </StackPanel>
