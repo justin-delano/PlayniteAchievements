@@ -69,7 +69,7 @@
 
     <!-- Scan Modes -->
     <!-- Short versions for sidebar dropdown -->
-    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Quick">Rapide</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Recent">Récent</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Full">Complet</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Installed">Installé</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Favorites">Favoris</sys:String>
@@ -78,7 +78,7 @@
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_LibrarySelected">Sélection</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Missing">Manquants</sys:String>
     <!-- Long versions for menus -->
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Quick">Actualisation rapide</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Recent">Actualisation récente</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Actualisation complète</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Installed">Actualiser les jeux installés</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Actualiser les favoris</sys:String>
@@ -296,11 +296,11 @@
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Échec de la mise à jour automatique.</sys:String>
 
     <!-- ================================================================= -->
-    <!-- QUICK REFRESH                                                      -->
+    <!-- RECENT REFRESH                                                      -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Title">Actualisation rapide</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Description">Actualiser uniquement vos jeux récemment joués avec des succès.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_RecentGames">Jeux récents à actualiser</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Title">Actualisation récente</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Description">Actualiser uniquement vos jeux récemment joués avec des succès.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">Jeux récents à actualiser</sys:String>
 
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
@@ -389,7 +389,7 @@
     <sys:String x:Key="LOCPlayAch_Log_RefreshMissingFoundGames">Trouvé {0} jeux avec des données de succès manquantes.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshFullFailed">L'actualisation complète des succès a échoué.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshSingleFailed">L'actualisation du jeu unique a échoué.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshQuickFailed">L'actualisation rapide a échoué.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshRecentFailed">L'actualisation récente a échoué.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshInstalledFailed">L'actualisation des jeux installés a échoué.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshNoInstalledGames">Aucun jeu installé trouvé pour l'actualisation.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshFavoritesFailed">L'actualisation des favoris a échoué.</sys:String>
@@ -398,8 +398,8 @@
     <sys:String x:Key="LOCPlayAch_Log_RefreshSelectedFailed">L'actualisation des jeux sélectionnés dans la bibliothèque a échoué.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshNoSelectedGames">Aucun jeu sélectionné dans la bibliothèque Playnite pour l'actualisation.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshMissingFailed">L'actualisation des jeux manquants a échoué.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeKey">Clé de mode d'actualisation inconnue : {0}. Retour au mode Rapide.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeEnum">Mode d'actualisation inconnu : {0}. Retour au mode Rapide.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeKey">Clé de mode d'actualisation inconnue : {0}. Retour au mode Récent.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeEnum">Mode d'actualisation inconnu : {0}. Retour au mode Récent.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshCancelRequested">Annulation de l'actualisation demandée.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshGetGameDataFailed">Échec de récupération des données de succès pour gameId={0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshGetAllGameDataFailed">Échec de récupération de toutes les données de succès</sys:String>

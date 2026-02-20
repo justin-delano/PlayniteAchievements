@@ -69,7 +69,7 @@
 
     <!-- Refresh Modes -->
     <!-- Short versions for sidebar dropdown -->
-    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Quick">Quick</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Recent">Recent</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Full">Full</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Installed">Installed</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Favorites">Favorites</sys:String>
@@ -78,7 +78,7 @@
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_LibrarySelected">Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Missing">Missing</sys:String>
     <!-- Long versions for menus -->
-    <sys:String x:Key="LOCPlayAch_RefreshMode_Quick">Quick Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Recent">Recent Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Full Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Installed">Refresh Installed</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Refresh Favorites</sys:String>
@@ -233,8 +233,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance and Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Language">Language</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GlobalLanguage">Achievement Language</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">Enable this provider</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">This provider is disabled. Enable it to track achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderEnabled">Enable this platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">This platform is disabled. Enable it to track achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Sync &amp; Updates</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_Notifications">Notifications</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_RarityThresholds">Achievement Rarity Thresholds</sys:String>
@@ -296,11 +296,11 @@
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Periodic update failed.</sys:String>
 
     <!-- ================================================================= -->
-    <!-- QUICK REFRESH                                                      -->
+    <!-- RECENT REFRESH                                                      -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Title">Quick Refresh</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_Description">Refresh only your most recently played games with achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_QuickRefresh_RecentGames">Recent games to refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Title">Recent Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Description">Refresh only your most recently played games with achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">Recent games to refresh</sys:String>
 
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
@@ -367,29 +367,29 @@
     <sys:String x:Key="LOCPlayAch_Error_FileOperationFailed">File operation failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">Refresh failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Steam authentication required. Refresh canceled.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No providers are authenticated. Please configure at least one provider in settings before refreshing.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No platforms are authenticated. Please configure at least one platform in settings before refreshing.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_NotifySubscribers">Failed to notify subscribers.</sys:String>
 
     <!-- ================================================================= -->
     <!-- LOG MESSAGES                                                       -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Log_RefreshAttemptedNoProviders">Refresh attempted but no providers are authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshAttemptedNoProviders">Refresh attempted but no platforms are authenticated.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshAlreadyInProgress">Refresh already in progress.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshStarting">Starting new refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshEndRun">Refresh ended.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshRequestedNoProviders">Refresh requested but no providers are authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshRequestedNoProviders">Refresh requested but no platforms are authenticated.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshCanceled">User achievement refresh was canceled.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshProviderCapabilityCheckFailed">Provider capability check failed for game '{0}'.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshNoAuthenticatedProviders">No authenticated providers available for refresh.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshSummary">Games to refresh: {0}, Providers: {1}, Grouped providers: {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshNoMatchingProviders">No matching providers available for refresh options.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshProviderCapabilityCheckFailed">Platform capability check failed for game '{0}'.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoAuthenticatedProviders">No authenticated platforms available for refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshSummary">Games to refresh: {0}, Platforms: {1}, Grouped platforms: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshNoMatchingProviders">No matching platforms available for refresh options.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshResolveIconPathFailed">Failed to resolve achievement icon path for {0}.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingNoAuthenticatedProviders">No authenticated providers available for missing refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshMissingNoAuthenticatedProviders">No authenticated platforms available for missing refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshMissingNoGames">No games missing achievement data found.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshMissingFoundGames">Found {0} games missing achievement data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshFullFailed">Full achievement refresh failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshSingleFailed">Single game refresh failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshQuickFailed">Quick refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshRecentFailed">Recent refresh failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshInstalledFailed">Installed games refresh failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshNoInstalledGames">No installed games found for refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshFavoritesFailed">Favorites refresh failed.</sys:String>
@@ -398,8 +398,8 @@
     <sys:String x:Key="LOCPlayAch_Log_RefreshSelectedFailed">Library selected games refresh failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshNoSelectedGames">No games selected in Playnite library for refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshMissingFailed">Missing games refresh failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeKey">Unknown refresh mode key: {0}. Falling back to Quick.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeEnum">Unknown refresh mode: {0}. Falling back to Quick.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeKey">Unknown refresh mode key: {0}. Falling back to Recent.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeEnum">Unknown refresh mode: {0}. Falling back to Recent.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshCancelRequested">Cancel refresh requested.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshGetGameDataFailed">Failed to get achievement data for gameId={0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshGetAllGameDataFailed">Failed to get all achievement data</sys:String>
@@ -422,7 +422,7 @@
     <!-- SIDEBAR CONTROL                                                    -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Sidebar_GamesOverview">Games Overview</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">Achievements by Provider</sys:String>
+    <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">Achievements by Platform</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">Completed Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_RarityPieChart">Achievements by Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_Locked">Locked</sys:String>
@@ -490,7 +490,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Landing_Title">Welcome to Playnite Achievements!</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Configure Your Accounts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your providers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">To track your achievements, sign in to one of your platforms.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Open Plugin Settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshTitle">Ready to Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Your credentials are configured. Begin your first refresh to track achievements across your library.</sys:String>
@@ -501,7 +501,7 @@
     <sys:String x:Key="LOCPlayAch_Landing_Continue">Continue</sys:String>
 
     <!-- Provider Status Cards -->
-    <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">PROVIDER STATUS</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">PLATFORM STATUS</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_ReadyToRefresh">Ready to refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">Configure in settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeReady">READY</sys:String>
