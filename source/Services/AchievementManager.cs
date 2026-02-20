@@ -1390,12 +1390,17 @@ namespace PlayniteAchievements.Services
                 {
                     PlayniteGameId = playniteGameId,
                     ExcludedByUser = excluded,
+                    HasAchievements = true,
                     LastUpdatedUtc = DateTime.UtcNow
                 };
             }
             else
             {
                 data.ExcludedByUser = excluded;
+                if (!excluded)
+                {
+                    data.HasAchievements = true;
+                }
             }
 
             _cacheService.SaveGameData(key, data);

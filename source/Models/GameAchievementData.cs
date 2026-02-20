@@ -28,8 +28,9 @@ namespace PlayniteAchievements.Models
         /// <summary>
         /// True if the game has achievements, False if scan found none.
         /// Updated by refresh operations based on scan results.
+        /// Default is true so new stubs are not skipped during bulk scans.
         /// </summary>
-        public bool HasAchievements { get; set; }
+        public bool HasAchievements { get; set; } = true;
 
         /// <summary>
         /// True if the user manually excluded this game from tracking.
