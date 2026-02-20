@@ -530,11 +530,8 @@ namespace PlayniteAchievements.Services.Database
                     var gameId = UpsertGame(db, providerName, payload, nowIso, updatedIso);
                     var existingProgress = LoadUserGameProgress(db, userId, gameId, cacheKey);
 
-                    var anyCapstoneUnlocked = achievements.Any(a => a?.IsCapstone == true && a.Unlocked);
-                    var isCompleted = SqlNadoCacheBehavior.ComputeIsCompleted(
-                        unlockedCount,
-                        totalCount,
-                        anyCapstoneUnlocked);
+                    // Use IsCompleted from the model (computed from achievements and capstones)
+                    var isCompleted = payload.IsCompleted;
 
                     var userProgressId = UpsertUserGameProgress(
                         db,
@@ -771,12 +768,11 @@ namespace PlayniteAchievements.Services.Database
                             anyCapstoneUnlocked = unlockedValue != 0;
                         }
 
+                        // Compute IsCompleted: 100% unlocked OR any capstone unlocked
                         var unlockedCount = (int)Math.Max(0, progress.AchievementsUnlocked);
                         var totalCount = (int)Math.Max(0, progress.TotalAchievements);
-                        var isCompleted = SqlNadoCacheBehavior.ComputeIsCompleted(
-                            unlockedCount,
-                            totalCount,
-                            anyCapstoneUnlocked);
+                        var isHundredPercent = totalCount > 0 && unlockedCount == totalCount;
+                        var isCompleted = isHundredPercent || anyCapstoneUnlocked;
 
                         // Update progress record
                         db.ExecuteNonQuery(

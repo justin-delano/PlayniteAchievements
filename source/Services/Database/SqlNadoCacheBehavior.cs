@@ -80,14 +80,5 @@ namespace PlayniteAchievements.Services.Database
             return !string.IsNullOrWhiteSpace(providerName) &&
                    string.Equals(providerName.Trim(), "RetroAchievements", StringComparison.OrdinalIgnoreCase);
         }
-
-        public static bool ComputeIsCompleted(
-            int unlockedCount,
-            int totalCount,
-            bool anyCapstoneUnlocked)
-        {
-            var isHundredPercent = totalCount > 0 && unlockedCount == totalCount;
-            return isHundredPercent || anyCapstoneUnlocked;
-        }
     }
 }
