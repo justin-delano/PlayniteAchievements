@@ -720,23 +720,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             // Remove common edition suffixes and trim
             var normalized = name.Trim();
 
-            // Handle RetroAchievements homebrew prefix convention: "~Homebrew~ Game Name"
-            // Remove the "~Homebrew~" prefix entirely for matching purposes
-            if (normalized.StartsWith("~Homebrew~", StringComparison.OrdinalIgnoreCase))
-            {
-                normalized = normalized.Substring("~Homebrew~".Length).Trim();
-            }
-
-            // Handle RetroAchievements hack prefix/suffix convention: "~Hack~ Game Name" or "Game Name ~Hack~"
-            // Remove the "~Hack~" prefix or suffix entirely for matching purposes
-            if (normalized.StartsWith("~Hack~", StringComparison.OrdinalIgnoreCase))
-            {
-                normalized = normalized.Substring("~Hack~".Length).Trim();
-            }
-            if (normalized.EndsWith("~Hack~", StringComparison.OrdinalIgnoreCase))
-            {
-                normalized = normalized.Substring(0, normalized.Length - "~Hack~".Length).Trim();
-            }
+            // Handle RetroAchievements tilde-wrapped tags: "~Homebrew~", "~Hack~", etc.
+            // Remove any ~Something~ pattern (prefix, suffix, or middle) for matching purposes
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"~[^~]+~", "").Trim();
 
             // Remove text in parentheses (like "(USA)", "(Europe)", etc.)
             var parenIndex = normalized.IndexOf('(');
