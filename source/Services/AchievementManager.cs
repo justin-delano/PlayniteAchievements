@@ -371,7 +371,7 @@ namespace PlayniteAchievements.Services
             return new CacheRefreshOptions
             {
                 RecentRefreshMode = true,
-                RecentRefreshRecentGamesCount = _settings?.Persisted?.RecentRefreshRecentGamesCount ?? 10,
+                RecentRefreshGamesCount = _settings?.Persisted?.RecentRefreshGamesCount ?? 10,
                 IncludeUnplayedGames = _settings.Persisted.IncludeUnplayedGames
             };
         }
@@ -565,7 +565,7 @@ namespace PlayniteAchievements.Services
 
             var targets = new List<RefreshGameTarget>();
             var seenGameIds = new HashSet<Guid>();
-            var recentLimit = Math.Max(1, options.RecentRefreshRecentGamesCount);
+            var recentLimit = Math.Max(1, options.RecentRefreshGamesCount);
             var skippedNoProvider = 0;
             var skippedNoAchievements = 0;
 
