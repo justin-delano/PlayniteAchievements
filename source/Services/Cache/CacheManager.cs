@@ -812,7 +812,6 @@ namespace PlayniteAchievements.Services
                 LibrarySourceName = source.LibrarySourceName,
                 HasAchievements = source.HasAchievements,
                 ExcludedByUser = source.ExcludedByUser,
-                PlaytimeSeconds = source.PlaytimeSeconds,
                 GameName = source.GameName,
                 AppId = source.AppId,
                 PlayniteGameId = source.PlayniteGameId,
