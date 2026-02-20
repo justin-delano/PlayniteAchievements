@@ -200,7 +200,7 @@ namespace PlayniteAchievements.Views
             _themeMigration = new ThemeMigrationService(_logger);
 
             var modes = _achievementManager.GetRefreshModes();
-            RefreshModes = new ObservableCollection<RefreshMode>(modes.Where(m => m.Key != "LibrarySelected"));
+            RefreshModes = new ObservableCollection<RefreshMode>(modes.Where(m => m.Key != "LibrarySelected" && m.Key != "Single"));
             if (!RefreshModes.Any(m => string.Equals(m.Key, _selectedRefreshMode, StringComparison.Ordinal)))
             {
                 _selectedRefreshMode = RefreshModes.FirstOrDefault()?.Key ?? RefreshModeType.Installed.GetKey();
