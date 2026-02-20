@@ -234,8 +234,7 @@ namespace PlayniteAchievements.Providers.PSN
                 PlayniteGameId = game?.Id,
                 HasAchievements = achievements.Count > 0,
                 Achievements = achievements,
-                LastUpdatedUtc = DateTime.UtcNow,
-                PlaytimeSeconds = (ulong)(game?.Playtime ?? 0) * 60UL
+                LastUpdatedUtc = DateTime.UtcNow
             };
         }
 
