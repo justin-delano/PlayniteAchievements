@@ -66,12 +66,14 @@ Track achievements across all your gaming platforms in one place.
 
 - Steam
 - RetroAchievements
-
+- GOG Galaxy
+- Epic Games Store
+- PlayStation Network
+  
 **Coming Soon**:
-
-- GOG Galaxy, Epic Games Store, EA App
 - Xbox (PC and Xbox 360 via Xenia)
 - PlayStation Network (via RPCS3, ShadPS4 emulators)
+- EA
 - Battle.net, Exophase, GameJolt
 
 ### Beautiful Visualizations
@@ -151,13 +153,6 @@ Choose how and when achievements are fetched:
 ## Roadmap
 
 **In Development**:
-
-- GOG Galaxy provider
-- Epic Games Store integration
-- Additional native controls
-- GamerScore compatibility
-
-**Planned**:
 
 - EA App, Xbox, PlayStation platforms
 - Integration with [FriendsAchievementFeed](https://github.com/justin-delano/playnite-friendsachievementfeed-plugin)
