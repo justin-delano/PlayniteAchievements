@@ -351,7 +351,7 @@ namespace PlayniteAchievements.Services
         {
             return new CacheRefreshOptions
             {
-                QuickRefreshMode = false,
+                RecentRefreshMode = false,
                 IncludeUnplayedGames = _settings.Persisted.IncludeUnplayedGames
             };
         }
@@ -366,12 +366,12 @@ namespace PlayniteAchievements.Services
             };
         }
 
-        private CacheRefreshOptions QuickRefreshOptions()
+        private CacheRefreshOptions RecentRefreshOptions()
         {
             return new CacheRefreshOptions
             {
-                QuickRefreshMode = true,
-                QuickRefreshRecentGamesCount = _settings?.Persisted?.QuickRefreshRecentGamesCount ?? 10,
+                RecentRefreshMode = true,
+                RecentRefreshRecentGamesCount = _settings?.Persisted?.RecentRefreshRecentGamesCount ?? 10,
                 IncludeUnplayedGames = _settings.Persisted.IncludeUnplayedGames
             };
         }
@@ -547,7 +547,7 @@ namespace PlayniteAchievements.Services
             else
             {
                 var allGames = _api.Database.Games.ToList();
-                if (options.QuickRefreshMode)
+                if (options.RecentRefreshMode)
                 {
                     candidates = allGames
                         .Where(g => g != null && g.LastActivity != null)
@@ -565,7 +565,7 @@ namespace PlayniteAchievements.Services
 
             var targets = new List<RefreshGameTarget>();
             var seenGameIds = new HashSet<Guid>();
-            var quickLimit = Math.Max(1, options.QuickRefreshRecentGamesCount);
+            var recentLimit = Math.Max(1, options.RecentRefreshRecentGamesCount);
             var skippedNoProvider = 0;
             var skippedNoAchievements = 0;
 
@@ -593,7 +593,7 @@ namespace PlayniteAchievements.Services
 
                 targets.Add(new RefreshGameTarget { Game = game, Provider = provider });
 
-                if (options.QuickRefreshMode && targets.Count >= quickLimit)
+                if (options.RecentRefreshMode && targets.Count >= recentLimit)
                 {
                     break;
                 }
@@ -1208,12 +1208,12 @@ namespace PlayniteAchievements.Services
             );
         }
 
-        private Task StartManagedQuickRefreshAsync()
+        private Task StartManagedRecentRefreshAsync()
         {
             return StartManagedRefreshCoreAsync(
-                QuickRefreshOptions(),
-                payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Quick, payload?.Summary?.GamesRefreshed ?? 0),
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshQuickFailed")
+                RecentRefreshOptions(),
+                payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Recent, payload?.Summary?.GamesRefreshed ?? 0),
+                ResourceProvider.GetString("LOCPlayAch_Log_RefreshRecentFailed")
             );
         }
 
@@ -1222,13 +1222,13 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public Task ExecuteRefreshAsync(string modeKey, Guid? singleGameId = null)
         {
-            // Parse string to enum, default to Quick if invalid
+            // Parse string to enum, default to Recent if invalid
             if (!Enum.TryParse<RefreshModeType>(modeKey, out var mode))
             {
                 _logger.Warn(string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Log_RefreshUnknownModeKey"),
                     modeKey));
-                mode = RefreshModeType.Quick;
+                mode = RefreshModeType.Recent;
             }
 
             return ExecuteRefreshAsync(mode, singleGameId);
@@ -1257,8 +1257,8 @@ namespace PlayniteAchievements.Services
         {
             switch (mode)
             {
-                case RefreshModeType.Quick:
-                    return StartManagedQuickRefreshAsync();
+                case RefreshModeType.Recent:
+                    return StartManagedRecentRefreshAsync();
 
                 case RefreshModeType.Full:
                     return StartManagedRebuildAsync();
@@ -1301,7 +1301,7 @@ namespace PlayniteAchievements.Services
                     _logger.Warn(string.Format(
                         ResourceProvider.GetString("LOCPlayAch_Log_RefreshUnknownModeEnum"),
                         mode));
-                    return StartManagedQuickRefreshAsync();
+                    return StartManagedRecentRefreshAsync();
             }
         }
 

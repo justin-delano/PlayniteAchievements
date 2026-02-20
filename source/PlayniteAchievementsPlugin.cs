@@ -514,11 +514,11 @@ namespace PlayniteAchievements
         {
             yield return new MainMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Quick"),
+                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Recent"),
                 MenuSection = "@Playnite Achievements",
                 Action = (a) =>
                 {
-                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Quick));
+                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Recent));
                 }
             };
 

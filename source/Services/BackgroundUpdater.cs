@@ -139,7 +139,7 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                await _achievementManager.ExecuteRefreshAsync(RefreshModeType.Quick).ConfigureAwait(false);
+                await _achievementManager.ExecuteRefreshAsync(RefreshModeType.Recent).ConfigureAwait(false);
 
                 _logger.Debug("[PeriodicUpdate] Cache update completed.");
                 HandleUpdateCompletion();

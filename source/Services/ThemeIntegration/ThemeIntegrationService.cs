@@ -118,7 +118,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly ICommand _openOverviewCmd;
         private readonly ICommand _openSelectedGameCmd;
         private readonly ICommand _singleGameRefreshCmd;
-        private readonly ICommand _quickRefreshCmd;
+        private readonly ICommand _recentRefreshCmd;
         private readonly ICommand _favoritesRefreshCmd;
         private readonly ICommand _fullRefreshCmd;
         private readonly ICommand _installedRefreshCmd;
@@ -148,7 +148,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _openOverviewCmd = new RelayCommand(_ => OpenOverviewWindow());
             _openSelectedGameCmd = new RelayCommand(_ => OpenSelectedGameWindow());
             _singleGameRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Single));
-            _quickRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Quick));
+            _recentRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Recent));
             _favoritesRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Favorites));
             _fullRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Full));
             _installedRefreshCmd = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Installed));
@@ -159,7 +159,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.OpenGameAchievementWindow = _openSelectedGameCmd;
             _settings.RefreshSelectedGameCommand = _singleGameRefreshCmd;
             _settings.SingleGameRefreshCommand = _singleGameRefreshCmd;
-            _settings.QuickRefreshCommand = _quickRefreshCmd;
+            _settings.RecentRefreshCommand = _recentRefreshCmd;
             _settings.FavoritesRefreshCommand = _favoritesRefreshCmd;
             _settings.FullRefreshCommand = _fullRefreshCmd;
             _settings.InstalledRefreshCommand = _installedRefreshCmd;
@@ -366,7 +366,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var errorLogMessage = mode switch
             {
                 RefreshModeType.Single => "Single game achievement refresh failed.",
-                RefreshModeType.Quick => "Quick refresh achievement refresh failed.",
+                RefreshModeType.Recent => "Recent refresh achievement refresh failed.",
                 RefreshModeType.Favorites => "Favorites achievement refresh failed.",
                 RefreshModeType.Full => "Full achievement refresh failed.",
                 RefreshModeType.Installed => "Installed games achievement refresh failed.",
