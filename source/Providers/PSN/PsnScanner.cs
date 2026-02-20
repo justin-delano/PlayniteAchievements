@@ -226,11 +226,6 @@ namespace PlayniteAchievements.Providers.PSN
                 });
             }
 
-            var hasUnlockedPlatinum = achievements.Any(a =>
-                a != null &&
-                a.Unlocked &&
-                string.Equals((a.TrophyType ?? string.Empty).Trim(), "platinum", StringComparison.OrdinalIgnoreCase));
-
             return new GameAchievementData
             {
                 ProviderName = providerName,
