@@ -553,12 +553,23 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             return 0;
         }
 
+        /// <summary>
+        /// Minimum similarity threshold for fuzzy matching (0.0 to 1.0).
+        /// A value of 0.85 means titles must be 85% similar to be considered a match.
+        /// </summary>
+        private const double FuzzyMatchThreshold = 0.85;
+
         private int TryFindNameMatch(Game game, string normalizedName, IReadOnlyList<Models.RaGameListWithTitle> games)
         {
             if (games == null || games.Count == 0)
             {
                 return 0;
             }
+
+            // Track best fuzzy match in case no exact match is found
+            int bestFuzzyMatchId = 0;
+            double bestFuzzyScore = 0;
+            string bestFuzzyTitle = null;
 
             foreach (var raGame in games)
             {
@@ -588,6 +599,24 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     }
                 }
 
+                // Try fuzzy match with Jaro-Winkler similarity
+                if (!string.IsNullOrWhiteSpace(normalizedRaTitle) && !string.IsNullOrWhiteSpace(normalizedName))
+                {
+                    var similarity = StringSimilarity.JaroWinklerSimilarityIgnoreCase(normalizedName, normalizedRaTitle);
+                    if (similarity >= FuzzyMatchThreshold && similarity > bestFuzzyScore)
+                    {
+                        bestFuzzyScore = similarity;
+                        bestFuzzyMatchId = raGame.ID;
+                        bestFuzzyTitle = raGame.Title;
+                    }
+                }
+            }
+
+            // Return best fuzzy match if one was found above threshold
+            if (bestFuzzyMatchId > 0)
+            {
+                _logger?.Info($"[RA] Name fallback: Fuzzy matched '{game.Name}' -> '{bestFuzzyTitle}' (ID={bestFuzzyMatchId}, score={bestFuzzyScore:F2})");
+                return bestFuzzyMatchId;
             }
 
             return 0;
@@ -696,6 +725,17 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             if (normalized.StartsWith("~Homebrew~", StringComparison.OrdinalIgnoreCase))
             {
                 normalized = normalized.Substring("~Homebrew~".Length).Trim();
+            }
+
+            // Handle RetroAchievements hack prefix/suffix convention: "~Hack~ Game Name" or "Game Name ~Hack~"
+            // Remove the "~Hack~" prefix or suffix entirely for matching purposes
+            if (normalized.StartsWith("~Hack~", StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = normalized.Substring("~Hack~".Length).Trim();
+            }
+            if (normalized.EndsWith("~Hack~", StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = normalized.Substring(0, normalized.Length - "~Hack~".Length).Trim();
             }
 
             // Remove text in parentheses (like "(USA)", "(Europe)", etc.)
