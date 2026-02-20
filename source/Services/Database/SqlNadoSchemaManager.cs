@@ -116,7 +116,6 @@ namespace PlayniteAchievements.Services.Database
                 UserId INTEGER NOT NULL,
                 GameId INTEGER NOT NULL,
                 CacheKey TEXT NOT NULL COLLATE NOCASE,
-                PlaytimeSeconds INTEGER NOT NULL DEFAULT 0,
                 HasAchievements INTEGER NOT NULL DEFAULT 0,
                 ExcludedByUser INTEGER NOT NULL DEFAULT 0,
                 AchievementsUnlocked INTEGER NOT NULL DEFAULT 0,
