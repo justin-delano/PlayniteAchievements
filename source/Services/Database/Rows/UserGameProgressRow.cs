@@ -10,7 +10,6 @@ namespace PlayniteAchievements.Services.Database.Rows
         public long NoAchievements { get; set; }
         public long AchievementsUnlocked { get; set; }
         public long TotalAchievements { get; set; }
-        public long IsCompleted { get; set; }
         public string LastUpdatedUtc { get; set; }
         public string CreatedUtc { get; set; }
         public string UpdatedUtc { get; set; }
