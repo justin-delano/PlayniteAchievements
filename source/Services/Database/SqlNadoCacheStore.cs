@@ -543,8 +543,9 @@ namespace PlayniteAchievements.Services.Database
                     var gameId = UpsertGame(db, providerName, payload, nowIso, updatedIso);
                     var existingProgress = LoadUserGameProgress(db, userId, gameId, cacheKey);
 
-                    // HasAchievements is true if there are achievements, false otherwise
-                    var hasAchievements = achievements != null && achievements.Count > 0;
+                    // Use payload.HasAchievements directly - callers are responsible for setting it correctly
+                    // Default is true; only false when a scan explicitly finds no achievements
+                    var hasAchievements = payload.HasAchievements;
 
                     var userProgressId = UpsertUserGameProgress(
                         db,
