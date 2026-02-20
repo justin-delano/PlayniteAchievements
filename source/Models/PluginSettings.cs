@@ -77,7 +77,7 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _singleGameRefreshCommand;
         [DontSerialize]
-        private ICommand _quickRefreshCommand;
+        private ICommand _recentRefreshCommand;
         [DontSerialize]
         private ICommand _favoritesRefreshCommand;
         [DontSerialize]
@@ -104,10 +104,10 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
-        public ICommand QuickRefreshCommand
+        public ICommand RecentRefreshCommand
         {
-            get => _quickRefreshCommand;
-            set => SetValue(ref _quickRefreshCommand, value);
+            get => _recentRefreshCommand;
+            set => SetValue(ref _recentRefreshCommand, value);
         }
 
         [DontSerialize]

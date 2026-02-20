@@ -12,15 +12,15 @@ namespace PlayniteAchievements.Models
         public IReadOnlyCollection<int> SteamAppIds { get; set; }
 
         /// <summary>
-        /// Quick refresh mode: refresh N most recently played games with achievements.
+        /// Recent refresh mode: refresh N most recently played games with achievements.
         /// Uses rtime_last_played from Steam API to determine recency.
         /// </summary>
-        public bool QuickRefreshMode { get; set; } = false;
+        public bool RecentRefreshMode { get; set; } = false;
 
         /// <summary>
-        /// Number of recent games to refresh in quick refresh mode (default: 10).
+        /// Number of recent games to refresh in recent refresh mode (default: 10).
         /// </summary>
-        public int QuickRefreshRecentGamesCount { get; set; } = 10;
+        public int RecentRefreshGamesCount { get; set; } = 10;
 
         /// <summary>
         /// When true, games with zero playtime on Steam are included.

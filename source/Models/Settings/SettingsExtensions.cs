@@ -48,7 +48,7 @@ namespace PlayniteAchievements.Models.Settings
             // Update and Refresh Settings
             target.EnablePeriodicUpdates = source.EnablePeriodicUpdates;
             target.PeriodicUpdateHours = source.PeriodicUpdateHours;
-            target.QuickRefreshRecentGamesCount = source.QuickRefreshRecentGamesCount;
+            target.RecentRefreshGamesCount = source.RecentRefreshGamesCount;
 
             // Notification Settings
             target.EnableNotifications = source.EnableNotifications;
@@ -131,7 +131,7 @@ namespace PlayniteAchievements.Models.Settings
                 // Update and Refresh Settings
                 EnablePeriodicUpdates = source.EnablePeriodicUpdates,
                 PeriodicUpdateHours = source.PeriodicUpdateHours,
-                QuickRefreshRecentGamesCount = source.QuickRefreshRecentGamesCount,
+                RecentRefreshGamesCount = source.RecentRefreshGamesCount,
 
                 // Notification Settings
                 EnableNotifications = source.EnableNotifications,
