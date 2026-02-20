@@ -305,7 +305,6 @@ namespace PlayniteAchievements.Providers.Steam
                 GameName = game.Name,
                 ProviderName = "Steam",
                 LibrarySourceName = game?.Source?.Name,
-                PlaytimeSeconds = unlocked?.PlaytimeSeconds ?? 0,
                 LastUpdatedUtc = DateTime.UtcNow,
                 HasAchievements = schema?.Achievements != null && schema.Achievements.Count > 0,
                 PlayniteGameId = game.Id,
@@ -399,7 +398,6 @@ namespace PlayniteAchievements.Providers.Steam
                 return new UserUnlockedAchievements
                 {
                     LastUpdatedUtc = DateTime.UtcNow,
-                    PlaytimeSeconds = (ulong)playtimeMinutes * 60,
                     AppId = appId,
                     UnlockedApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
                     UnlockTimesUtc = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase),
@@ -471,7 +469,6 @@ namespace PlayniteAchievements.Providers.Steam
             var data = new UserUnlockedAchievements
             {
                 LastUpdatedUtc = DateTime.UtcNow,
-                PlaytimeSeconds = (ulong)playtimeMinutes * 60,
                 AppId = appId,
                 UnlockedApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase),
                 UnlockTimesUtc = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase),
