@@ -529,9 +529,9 @@ namespace PlayniteAchievements.Services
         {
             options ??= new CacheRefreshOptions();
 
-            // Pre-load excluded games for efficient skipping (only for bulk refreshes, not single-game)
+            // Pre-load excluded games for efficient skipping
             HashSet<string> excludedGameIds = null;
-            if (options.SkipNoAchievementsGames && (options.PlayniteGameIds == null || options.PlayniteGameIds.Count == 0))
+            if (options.SkipNoAchievementsGames)
             {
                 excludedGameIds = _cacheService.GetExcludedGameIds();
             }
@@ -733,6 +733,13 @@ namespace PlayniteAchievements.Services
 
             if (!string.IsNullOrWhiteSpace(key))
             {
+                // Preserve ExcludedByUser flag from existing cache
+                var existingData = _cacheService.LoadGameData(key);
+                if (existingData?.ExcludedByUser == true)
+                {
+                    data.ExcludedByUser = true;
+                }
+
                 var writeResult = _cacheService.SaveGameData(key, data);
                 if (writeResult == null || !writeResult.Success)
                 {
