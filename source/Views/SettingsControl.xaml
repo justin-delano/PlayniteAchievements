@@ -379,7 +379,7 @@
                                                    Foreground="{DynamicResource TextBrush}"
                                                    VerticalAlignment="Center"
                                                    Margin="0,0,8,0"/>
-                                            <TextBox Text="{Binding Persisted.RecentRefreshRecentGamesCount, UpdateSourceTrigger=PropertyChanged}"
+                                            <TextBox Text="{Binding Persisted.RecentRefreshGamesCount, UpdateSourceTrigger=PropertyChanged}"
                                                  Width="50"
                                                  TextAlignment="Right"/>
                                     </StackPanel>
