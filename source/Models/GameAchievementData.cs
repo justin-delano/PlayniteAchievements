@@ -51,8 +51,6 @@ namespace PlayniteAchievements.Models
             return Achievements.Any(a => a?.IsCapstone == true && a.Unlocked);
         }
 
-        public ulong PlaytimeSeconds { get; set; }
-
         public string GameName { get; set; }
 
         public int AppId { get; set; }
