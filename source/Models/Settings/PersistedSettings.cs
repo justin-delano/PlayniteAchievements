@@ -34,7 +34,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableNotifications = true;
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
-        private int _recentRefreshRecentGamesCount = 10;
+        private int _recentRefreshGamesCount = 10;
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
@@ -210,8 +210,8 @@ namespace PlayniteAchievements.Models.Settings
         /// </summary>
         public int RecentRefreshGamesCount
         {
-            get => _recentRefreshRecentGamesCount;
-            set => SetValue(ref _recentRefreshRecentGamesCount, Math.Max(1, value));
+            get => _recentRefreshGamesCount;
+            set => SetValue(ref _recentRefreshGamesCount, Math.Max(1, value));
         }
 
         #endregion
