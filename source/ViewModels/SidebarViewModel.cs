@@ -24,7 +24,7 @@ namespace PlayniteAchievements.ViewModels
     public class SidebarViewModel : ObservableObject, IDisposable
     {
         /// <summary>
-        /// Returns true if unplayed games are included during scans.
+        /// Returns true if unplayed games are included during refreshes.
         /// </summary>
         public bool IncludeUnplayedGames => _settings?.Persisted?.IncludeUnplayedGames ?? true;
 
@@ -48,13 +48,13 @@ namespace PlayniteAchievements.ViewModels
         private DateTime _lastProgressUpdate = DateTime.MinValue;
         private static readonly TimeSpan ProgressMinInterval = TimeSpan.FromMilliseconds(50);
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
-        private System.Windows.Threading.DispatcherTimer _scanFullRefreshTimer;
+        private System.Windows.Threading.DispatcherTimer _refreshFullSyncTimer;
         private System.Windows.Threading.DispatcherTimer _progressHideTimer;
         private System.Windows.Threading.DispatcherTimer _deltaBatchTimer;
-        private bool _scanRefreshPending;
-        private bool _scanRefreshRunning;
+        private bool _refreshSyncPending;
+        private bool _refreshSyncRunning;
         private bool _showCompletedProgress;
-        private bool _scanAttemptInProgress;
+        private bool _refreshAttemptInProgress;
         private static readonly TimeSpan ProgressHideDelay = TimeSpan.FromSeconds(3);
         private readonly object _deltaSync = new object();
         private readonly HashSet<string> _pendingDeltaKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -89,11 +89,11 @@ namespace PlayniteAchievements.ViewModels
             };
             _refreshDebounceTimer.Tick += OnRefreshDebounceTimerTick;
 
-            _scanFullRefreshTimer = new System.Windows.Threading.DispatcherTimer
+            _refreshFullSyncTimer = new System.Windows.Threading.DispatcherTimer
             {
                 Interval = TimeSpan.FromSeconds(2)
             };
-            _scanFullRefreshTimer.Tick += OnScanFullRefreshTimerTick;
+            _refreshFullSyncTimer.Tick += OnRefreshFullSyncTimerTick;
 
             _progressHideTimer = new System.Windows.Threading.DispatcherTimer
             {
@@ -113,9 +113,9 @@ namespace PlayniteAchievements.ViewModels
             RecentAchievements = new BulkObservableCollection<RecentAchievementItem>();
             SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
 
-            // Initialize scan mode options from service (exclude LibrarySelected - context menu only)
-            var scanModes = _achievementManager.GetScanModes();
-            ScanModes = new ObservableCollection<ScanMode>(scanModes.Where(m => m.Type != ScanModeType.LibrarySelected));
+            // Initialize refresh mode options from service (exclude LibrarySelected - context menu only)
+            RefreshModes = new ObservableCollection<RefreshMode>(
+                _achievementManager.GetRefreshModes().Where(m => m.Type != RefreshModeType.LibrarySelected));
 
             GlobalTimeline = new TimelineViewModel();
             SelectedGameTimeline = new TimelineViewModel();
@@ -130,12 +130,12 @@ namespace PlayniteAchievements.ViewModels
 
             // Initialize commands
             RefreshViewCommand = new AsyncCommand(_ => RefreshViewAsync());
-            ScanCommand = new AsyncCommand(_ => ExecuteScanAsync(), _ => CanExecuteScan());
-            CancelScanCommand = new RelayCommand(_ => CancelScan(), _ => IsScanning);
+            RefreshCommand = new AsyncCommand(_ => ExecuteRefreshAsync(), _ => CanExecuteRefresh());
+            CancelRefreshCommand = new RelayCommand(_ => CancelRefresh(), _ => IsRefreshing);
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
             OpenGameInLibraryCommand = new RelayCommand(OpenGameInLibrary);
             OpenGameInSidebarCommand = new RelayCommand(OpenGameInSidebar);
-            ScanSingleGameCommand = new AsyncCommand(ExecuteSingleGameScanAsync);
+            RefreshSingleGameCommand = new AsyncCommand(ExecuteSingleGameRefreshAsync);
             CloseViewCommand = new RelayCommand(_ => PlayniteUiProvider.RestoreMainView());
             ClearGameSelectionCommand = new RelayCommand(_ => ClearGameSelection());
             NavigateToGameCommand = new RelayCommand(param => NavigateToGame(param as GameOverviewItem));
@@ -257,17 +257,17 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public ObservableCollection<ScanMode> ScanModes { get; }
+        public ObservableCollection<RefreshMode> RefreshModes { get; }
 
-        private string _selectedScanMode = ScanModeType.Installed.GetKey();
-        public string SelectedScanMode
+        private string _selectedRefreshMode = RefreshModeType.Installed.GetKey();
+        public string SelectedRefreshMode
         {
-            get => _selectedScanMode;
+            get => _selectedRefreshMode;
             set
             {
-                if (SetValueAndReturn(ref _selectedScanMode, value))
+                if (SetValueAndReturn(ref _selectedRefreshMode, value))
                 {
-                    (ScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+                    (RefreshCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -381,7 +381,7 @@ namespace PlayniteAchievements.ViewModels
 
                     ResetSelectedGameAchievementVisibilityFilters();
                     OnPropertyChanged(nameof(IsGameSelected));
-                    (ScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+                    (RefreshCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                     LoadSelectedGameAchievements();
                 }
             }
@@ -390,18 +390,18 @@ namespace PlayniteAchievements.ViewModels
         public bool IsGameSelected => SelectedGame != null;
 
         /// <summary>
-        /// Determines whether the scan command can execute.
-        /// Scan is disabled if scanning, or if scan mode is Single and no game is selected.
+        /// Determines whether the refresh command can execute.
+        /// Refresh is disabled if refreshing, or if refresh mode is Single and no game is selected.
         /// </summary>
-        private bool CanExecuteScan()
+        private bool CanExecuteRefresh()
         {
-            if (IsScanning)
+            if (IsRefreshing)
             {
                 return false;
             }
 
-            // If scan mode is Single, require a game to be selected
-            if (SelectedScanMode == ScanModeType.Single.GetKey())
+            // If refresh mode is Single, require a game to be selected
+            if (SelectedRefreshMode == RefreshModeType.Single.GetKey())
             {
                 return SelectedGame != null;
             }
@@ -441,7 +441,7 @@ namespace PlayniteAchievements.ViewModels
 
         #region Progress Properties
 
-        public bool IsScanning => _achievementManager.IsRebuilding;
+        public bool IsRefreshing => _achievementManager.IsRebuilding;
 
         private double _progressPercent;
         public double ProgressPercent
@@ -457,7 +457,7 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _progressMessage, value);
         }
 
-        public bool ShowProgress => IsScanning || _showCompletedProgress;
+        public bool ShowProgress => IsRefreshing || _showCompletedProgress;
 
         #endregion
 
@@ -539,12 +539,12 @@ namespace PlayniteAchievements.ViewModels
         #region Commands
 
         public ICommand RefreshViewCommand { get; }
-        public ICommand ScanCommand { get; }
-        public ICommand CancelScanCommand { get; }
+        public ICommand RefreshCommand { get; }
+        public ICommand CancelRefreshCommand { get; }
         public ICommand RevealAchievementCommand { get; }
         public ICommand OpenGameInLibraryCommand { get; }
         public ICommand OpenGameInSidebarCommand { get; }
-        public ICommand ScanSingleGameCommand { get; }
+        public ICommand RefreshSingleGameCommand { get; }
         public ICommand CloseViewCommand { get; }
         public ICommand ClearGameSelectionCommand { get; }
         public ICommand NavigateToGameCommand { get; }
@@ -558,7 +558,7 @@ namespace PlayniteAchievements.ViewModels
             _isActive = isActive;
             if (!isActive)
             {
-                StopScanRefreshScheduler();
+                StopRefreshSyncScheduler();
                 _deltaBatchTimer?.Stop();
                 lock (_deltaSync)
                 {
@@ -570,7 +570,7 @@ namespace PlayniteAchievements.ViewModels
             }
             else
             {
-                ApplyScanStatus(_achievementManager.GetScanStatusSnapshot());
+                ApplyRefreshStatus(_achievementManager.GetRefreshStatusSnapshot());
                 // Refresh data when sidebar becomes active to ensure cached changes are visible
                 _ = RefreshViewAsync();
             }
@@ -649,11 +649,11 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to refresh sidebar achievements");
-                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_RefreshFailed"), ex.Message);
             }
         }
 
-        public void CancelScan()
+        public void CancelRefresh()
         {
             _achievementManager.CancelCurrentRebuild();
         }
@@ -673,18 +673,18 @@ namespace PlayniteAchievements.ViewModels
             RightSearchText = string.Empty;
         }
 
-        public async Task ExecuteScanAsync()
+        public async Task ExecuteRefreshAsync()
         {
-            if (IsScanning) return;
+            if (IsRefreshing) return;
 
             try
             {
                 CancelProgressHideTimer(clearCompletedProgress: false);
-                ApplyScanStatus(_achievementManager.GetStartingScanStatusSnapshot());
-                _scanAttemptInProgress = true;
+                ApplyRefreshStatus(_achievementManager.GetStartingRefreshStatusSnapshot());
+                _refreshAttemptInProgress = true;
 
                 Guid? singleGameId = null;
-                if (SelectedScanMode == ScanModeType.Single.GetKey())
+                if (SelectedRefreshMode == RefreshModeType.Single.GetKey())
                 {
                     if (SelectedGame?.PlayniteGameId.HasValue == true)
                     {
@@ -697,19 +697,19 @@ namespace PlayniteAchievements.ViewModels
                     }
                 }
 
-                await _achievementManager.ExecuteScanAsync(SelectedScanMode, singleGameId);
+                await _achievementManager.ExecuteRefreshAsync(SelectedRefreshMode, singleGameId);
                 await RefreshViewAsync();
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"{SelectedScanMode} scan failed");
-                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
+                _logger?.Error(ex, $"{SelectedRefreshMode} refresh failed");
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_RefreshFailed"), ex.Message);
             }
             finally
             {
                 // Ensure command/button state always reflects centralized manager state,
                 // even if the final progress event was not delivered.
-                ApplyScanStatus(_achievementManager.GetScanStatusSnapshot());
+                ApplyRefreshStatus(_achievementManager.GetRefreshStatusSnapshot());
             }
         }
 
@@ -718,9 +718,9 @@ namespace PlayniteAchievements.ViewModels
             OpenGameInLibrary(game);
         }
 
-        private async Task ExecuteSingleGameScanAsync(object parameter)
+        private async Task ExecuteSingleGameRefreshAsync(object parameter)
         {
-            if (!TryGetPlayniteGameId(parameter, out var gameId) || IsScanning)
+            if (!TryGetPlayniteGameId(parameter, out var gameId) || IsRefreshing)
             {
                 return;
             }
@@ -728,20 +728,20 @@ namespace PlayniteAchievements.ViewModels
             try
             {
                 CancelProgressHideTimer(clearCompletedProgress: false);
-                ApplyScanStatus(_achievementManager.GetStartingScanStatusSnapshot());
-                _scanAttemptInProgress = true;
+                ApplyRefreshStatus(_achievementManager.GetStartingRefreshStatusSnapshot());
+                _refreshAttemptInProgress = true;
 
-                await _achievementManager.ExecuteScanAsync(ScanModeType.Single, gameId);
+                await _achievementManager.ExecuteRefreshAsync(RefreshModeType.Single, gameId);
                 await RefreshViewAsync();
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"Single game scan failed for game ID {gameId}");
-                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_ScanFailed"), ex.Message);
+                _logger?.Error(ex, $"Single game refresh failed for game ID {gameId}");
+                StatusText = string.Format(ResourceProvider.GetString("LOCPlayAch_Error_RefreshFailed"), ex.Message);
             }
             finally
             {
-                ApplyScanStatus(_achievementManager.GetScanStatusSnapshot());
+                ApplyRefreshStatus(_achievementManager.GetRefreshStatusSnapshot());
             }
         }
 
@@ -1272,7 +1272,7 @@ namespace PlayniteAchievements.ViewModels
             var now = DateTime.UtcNow;
 
             // Centralized progress/status state from AchievementManager.
-            var status = _achievementManager.GetScanStatusSnapshot(report);
+            var status = _achievementManager.GetRefreshStatusSnapshot(report);
 
             lock (_progressLock)
             {
@@ -1292,7 +1292,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 try
                 {
-                    ApplyScanStatus(status);
+                    ApplyRefreshStatus(status);
                 }
                 catch (Exception ex)
                 {
@@ -1353,7 +1353,7 @@ namespace PlayniteAchievements.ViewModels
 
             System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
             {
-                StopScanRefreshScheduler();
+                StopRefreshSyncScheduler();
                 _refreshDebounceTimer.Stop();
                 _refreshDebounceTimer.Start();
             });
@@ -1491,46 +1491,46 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private async void OnScanFullRefreshTimerTick(object sender, EventArgs e)
+        private async void OnRefreshFullSyncTimerTick(object sender, EventArgs e)
         {
             if (_disposed || !_isActive)
             {
-                StopScanRefreshScheduler();
+                StopRefreshSyncScheduler();
                 return;
             }
 
-            if (!IsScanning)
+            if (!IsRefreshing)
             {
-                StopScanRefreshScheduler();
+                StopRefreshSyncScheduler();
                 return;
             }
 
-            if (!_scanRefreshPending || _scanRefreshRunning)
+            if (!_refreshSyncPending || _refreshSyncRunning)
             {
                 return;
             }
 
-            _scanRefreshPending = false;
-            _scanRefreshRunning = true;
+            _refreshSyncPending = false;
+            _refreshSyncRunning = true;
             try
             {
                 await RefreshViewAsync();
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "Failed to refresh sidebar during active scan");
+                _logger?.Error(ex, "Failed to refresh sidebar during active refresh");
             }
             finally
             {
-                _scanRefreshRunning = false;
+                _refreshSyncRunning = false;
             }
         }
 
-        private void StopScanRefreshScheduler()
+        private void StopRefreshSyncScheduler()
         {
-            _scanFullRefreshTimer?.Stop();
-            _scanRefreshPending = false;
-            _scanRefreshRunning = false;
+            _refreshFullSyncTimer?.Stop();
+            _refreshSyncPending = false;
+            _refreshSyncRunning = false;
         }
 
         private void StartProgressHideTimer()
@@ -1550,7 +1550,7 @@ namespace PlayniteAchievements.ViewModels
 
             if (clearCompletedProgress)
             {
-                _scanAttemptInProgress = false;
+                _refreshAttemptInProgress = false;
                 if (_showCompletedProgress)
                 {
                     _showCompletedProgress = false;
@@ -1562,7 +1562,7 @@ namespace PlayniteAchievements.ViewModels
         private void OnProgressHideTimerTick(object sender, EventArgs e)
         {
             _progressHideTimer?.Stop();
-            _scanAttemptInProgress = false;
+            _refreshAttemptInProgress = false;
             if (_showCompletedProgress)
             {
                 _showCompletedProgress = false;
@@ -1570,7 +1570,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void ApplyScanStatus(ScanStatusSnapshot status)
+        private void ApplyRefreshStatus(RefreshStatusSnapshot status)
         {
             if (status == null)
             {
@@ -1580,13 +1580,13 @@ namespace PlayniteAchievements.ViewModels
             ProgressPercent = status.ProgressPercent;
             ProgressMessage = status.Message ?? string.Empty;
 
-            if (status.IsScanning)
+            if (status.IsRefreshing)
             {
-                _scanAttemptInProgress = true;
+                _refreshAttemptInProgress = true;
                 CancelProgressHideTimer(clearCompletedProgress: false);
                 _showCompletedProgress = false;
             }
-            else if (_scanAttemptInProgress)
+            else if (_refreshAttemptInProgress)
             {
                 _showCompletedProgress = true;
                 StartProgressHideTimer();
@@ -1596,7 +1596,7 @@ namespace PlayniteAchievements.ViewModels
                 _showCompletedProgress = false;
             }
 
-            OnPropertyChanged(nameof(IsScanning));
+            OnPropertyChanged(nameof(IsRefreshing));
             OnPropertyChanged(nameof(ShowProgress));
             RaiseCommandsChanged();
         }
@@ -1707,9 +1707,9 @@ namespace PlayniteAchievements.ViewModels
 
         private void RaiseCommandsChanged()
         {
-            (ScanCommand as AsyncCommand)?.RaiseCanExecuteChanged();
-            (CancelScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            (ScanSingleGameCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+            (RefreshCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+            (CancelRefreshCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (RefreshSingleGameCommand as AsyncCommand)?.RaiseCanExecuteChanged();
             (OpenGameInLibraryCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (OpenGameInSidebarCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
@@ -2285,7 +2285,7 @@ namespace PlayniteAchievements.ViewModels
             _disposed = true;
             SetActive(false);
             _refreshDebounceTimer?.Stop();
-            _scanFullRefreshTimer?.Stop();
+            _refreshFullSyncTimer?.Stop();
             _progressHideTimer?.Stop();
             _deltaBatchTimer?.Stop();
             CancelPendingRefresh();
@@ -2303,9 +2303,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 _refreshDebounceTimer.Tick -= OnRefreshDebounceTimerTick;
             }
-            if (_scanFullRefreshTimer != null)
+            if (_refreshFullSyncTimer != null)
             {
-                _scanFullRefreshTimer.Tick -= OnScanFullRefreshTimerTick;
+                _refreshFullSyncTimer.Tick -= OnRefreshFullSyncTimerTick;
             }
             if (_progressHideTimer != null)
             {
