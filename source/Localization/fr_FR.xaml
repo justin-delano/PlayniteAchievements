@@ -494,7 +494,7 @@
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Ouvrir les paramètres du plugin</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshTitle">Prêt à actualiser</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Vos identifiants sont configurés. Commencez votre première actualisation pour suivre les succès de votre bibliothèque.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_BeginScan">Commencer l'actualisation</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_BeginRefresh">Commencer l'actualisation</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">Bon retour</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">Nous avons trouvé vos données de succès existantes. Continuez vers la vue des succès pour commencer le suivi.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataFound">Vos données de succès existantes ont été trouvées</sys:String>

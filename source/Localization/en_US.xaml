@@ -15,7 +15,7 @@
     <sys:String x:Key="LOCPlayAch_Label_Rarity">Rarity:</sys:String>
 
     <!-- Common Statuses -->
-    <sys:String x:Key="LOCPlayAch_Status_Refreshing">Refreshning...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_Refreshing">Refreshing...</sys:String>
 
     <!-- Common Compound Phrases -->
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Recent Achievements</sys:String>
