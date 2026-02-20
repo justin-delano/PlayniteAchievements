@@ -209,7 +209,6 @@ namespace PlayniteAchievements.Providers.GOG
                 GameName = game.Name,
                 ProviderName = ResourceProvider.GetString("LOCPlayAch_Provider_GOG"),
                 LibrarySourceName = game?.Source?.Name,
-                PlaytimeSeconds = 0, // GOG API doesn't provide playtime
                 LastUpdatedUtc = DateTime.UtcNow,
                 HasAchievements = achievements != null && achievements.Count > 0,
                 PlayniteGameId = game.Id,
@@ -258,7 +257,6 @@ namespace PlayniteAchievements.Providers.GOG
                 GameName = game.Name,
                 ProviderName = ResourceProvider.GetString("LOCPlayAch_Provider_GOG"),
                 LibrarySourceName = game?.Source?.Name,
-                PlaytimeSeconds = 0,
                 LastUpdatedUtc = DateTime.UtcNow,
                 HasAchievements = false,
                 PlayniteGameId = game.Id,
