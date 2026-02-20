@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Models
     /// </summary>
     public enum RefreshModeType
     {
-        Quick,
+        Recent,
         Full,
         Installed,
         Favorites,
@@ -96,7 +96,7 @@ namespace PlayniteAchievements.Models
     [Obsolete("Use RefreshModeType enum instead.")]
     public static class RefreshModeKeys
     {
-        public const string Quick = "Quick";
+        public const string Recent = "Recent";
         public const string Full = "Full";
         public const string Installed = "Installed";
         public const string Favorites = "Favorites";
