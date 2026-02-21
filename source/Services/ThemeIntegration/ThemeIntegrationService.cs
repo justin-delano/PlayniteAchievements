@@ -59,6 +59,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.GoldTrophies),
             nameof(PlayniteAchievementsSettings.SilverTrophies),
             nameof(PlayniteAchievementsSettings.BronzeTrophies),
+            nameof(PlayniteAchievementsSettings.TotalUnlockCount),
+            nameof(PlayniteAchievementsSettings.TotalCommonUnlockCount),
+            nameof(PlayniteAchievementsSettings.TotalUncommonUnlockCount),
+            nameof(PlayniteAchievementsSettings.TotalRareUnlockCount),
+            nameof(PlayniteAchievementsSettings.TotalUltraRareUnlockCount),
             nameof(PlayniteAchievementsSettings.Level),
             nameof(PlayniteAchievementsSettings.LevelProgress),
             nameof(PlayniteAchievementsSettings.Rank),
@@ -737,6 +742,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.GoldTrophies = snapshot.GoldCount;
             _settings.LegacyTheme.SilverTrophies = snapshot.SilverCount;
             _settings.LegacyTheme.BronzeTrophies = snapshot.BronzeCount;
+
+            _settings.Theme.TotalUnlockCount = snapshot.TotalUnlockCount;
+            _settings.Theme.TotalCommonUnlockCount = snapshot.TotalCommonUnlockCount;
+            _settings.Theme.TotalUncommonUnlockCount = snapshot.TotalUncommonUnlockCount;
+            _settings.Theme.TotalRareUnlockCount = snapshot.TotalRareUnlockCount;
+            _settings.Theme.TotalUltraRareUnlockCount = snapshot.TotalUltraRareUnlockCount;
 
             _settings.LegacyTheme.Level = snapshot.Level;
             _settings.LegacyTheme.LevelProgress = snapshot.LevelProgress;
