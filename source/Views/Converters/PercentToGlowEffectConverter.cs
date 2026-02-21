@@ -3,19 +3,10 @@ using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Views.Converters
 {
-    /// <summary>
-    /// Rarity classification tier based on achievement unlock percentage.
-    /// </summary>
-    public enum RarityTier
-    {
-        UltraRare,
-        Rare,
-        Common
-    }
-
     internal static class SuccessStoryRarityPalette
     {
         // SuccessStory-like palette:
@@ -37,28 +28,6 @@ namespace PlayniteAchievements.Views.Converters
     }
 
     /// <summary>
-    /// Helper class for classifying achievement rarity based on percentage thresholds.
-    /// </summary>
-    internal static class RarityClassifier
-    {
-        /// <summary>
-        /// Classifies a percentage unlock rate into a rarity tier.
-        /// </summary>
-        /// <param name="percent">The global unlock percentage.</param>
-        /// <param name="ultraRareThreshold">Threshold below which achievements are UltraRare.</param>
-        /// <param name="rareThreshold">Threshold below which achievements are Rare.</param>
-        /// <returns>The classified rarity tier.</returns>
-        internal static RarityTier Classify(double percent, double ultraRareThreshold, double rareThreshold)
-        {
-            if (percent < ultraRareThreshold)
-                return RarityTier.UltraRare;
-            if (percent < rareThreshold)
-                return RarityTier.Rare;
-            return RarityTier.Common;
-        }
-    }
-
-    /// <summary>
     /// Multi-value converter that returns a DropShadowEffect with color based on rarity.
     /// Expects values: [GlobalPercentUnlocked, UltraRareThreshold, RareThreshold, UncommonThreshold]
     /// </summary>
@@ -74,11 +43,12 @@ namespace PlayniteAchievements.Views.Converters
                 values[2] is double rareThreshold &&
                 values[3] is double _)
             {
-                var tier = RarityClassifier.Classify(percent, ultraRareThreshold, rareThreshold);
+                // Use canonical RarityHelper for classification
+                var tier = RarityHelper.GetRarityTier(percent);
                 var color = SuccessStoryRarityPalette.GetColor(tier);
 
                 // Common/uncommon: no border/glow.
-                if (tier == RarityTier.Common)
+                if (tier == RarityTier.Common || tier == RarityTier.Uncommon)
                     return null;
 
                 return new DropShadowEffect
