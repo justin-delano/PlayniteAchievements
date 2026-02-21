@@ -86,7 +86,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(GlobalPercentText));
                     OnPropertyChanged(nameof(Percent));
                     OnPropertyChanged(nameof(GamerScore));
-                    OnPropertyChanged(nameof(RarityIconKey));
+                    OnPropertyChanged(nameof(Rarity));
                 }
             }
         }
@@ -375,7 +375,7 @@ namespace PlayniteAchievements.ViewModels
 
         public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
 
-        public string RarityIconKey => RarityHelper.GetRarityIconKey(GlobalPercentUnlocked ?? 100);
+        public RarityTier Rarity => RarityHelper.GetRarityTier(GlobalPercentUnlocked ?? 100);
 
         private static string DefaultIcon => "pack://application:,,,/PlayniteAchievements;component/Resources/HiddenAchIcon.png";
 
