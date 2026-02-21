@@ -425,32 +425,38 @@ namespace PlayniteAchievements
                 }
             };
 
-            // Add RetroAchievements game ID override options
-            var hasOverride = _settingsViewModel.Settings.Persisted.RaGameIdOverrides.ContainsKey(game.Id);
+            // Add RetroAchievements game ID override options (only for RA-capable games)
+            var raProvider = _achievementManager.GetProviders()
+                .FirstOrDefault(p => p.ProviderKey == "RetroAchievements");
 
-            yield return new GameMenuItem
+            if (raProvider?.IsCapable(game) == true)
             {
-                Description = hasOverride
-                    ? ResourceProvider.GetString("LOCPlayAch_Menu_ChangeRaGameId")
-                    : ResourceProvider.GetString("LOCPlayAch_Menu_SetRaGameId"),
-                MenuSection = "Playnite Achievements",
-                Action = (a) =>
-                {
-                    ShowRaGameIdDialog(game);
-                }
-            };
+                var hasOverride = _settingsViewModel.Settings.Persisted.RaGameIdOverrides.ContainsKey(game.Id);
 
-            if (hasOverride)
-            {
                 yield return new GameMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearRaGameId"),
+                    Description = hasOverride
+                        ? ResourceProvider.GetString("LOCPlayAch_Menu_ChangeRaGameId")
+                        : ResourceProvider.GetString("LOCPlayAch_Menu_SetRaGameId"),
                     MenuSection = "Playnite Achievements",
                     Action = (a) =>
                     {
-                        ClearRaGameIdOverride(game);
+                        ShowRaGameIdDialog(game);
                     }
                 };
+
+                if (hasOverride)
+                {
+                    yield return new GameMenuItem
+                    {
+                        Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearRaGameId"),
+                        MenuSection = "Playnite Achievements",
+                        Action = (a) =>
+                        {
+                            ClearRaGameIdOverride(game);
+                        }
+                    };
+                }
             }
         }
 
