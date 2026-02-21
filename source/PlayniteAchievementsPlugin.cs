@@ -351,6 +351,20 @@ namespace PlayniteAchievements
                     MenuSection = "Playnite Achievements",
                     Action = (a) =>
                     {
+                        if (!mostlyExcluded)
+                        {
+                            var result = PlayniteApi?.Dialogs?.ShowMessage(
+                                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_Exclude_ConfirmSelected"), selectedGames.Count),
+                                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                                MessageBoxButton.YesNo,
+                                MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+                            if (result != MessageBoxResult.Yes)
+                            {
+                                return;
+                            }
+                        }
+
                         foreach (var g in selectedGames)
                         {
                             _achievementManager.SetExcludedByUser(g.Id, !mostlyExcluded);
@@ -421,6 +435,19 @@ namespace PlayniteAchievements
                 MenuSection = "Playnite Achievements",
                 Action = (a) =>
                 {
+                    if (!isExcluded)
+                    {
+                        var result = PlayniteApi?.Dialogs?.ShowMessage(
+                            string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_Exclude_ConfirmSingle"), game.Name),
+                            ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+                        if (result != MessageBoxResult.Yes)
+                        {
+                            return;
+                        }
+                    }
                     _achievementManager.SetExcludedByUser(game.Id, !isExcluded);
                 }
             };
@@ -708,11 +735,30 @@ namespace PlayniteAchievements
         }
 
         /// <summary>
-        /// Toggles the exclusion state of a game.
+        /// Toggles the exclusion state of a game. Shows confirmation when excluding.
         /// </summary>
         public void ToggleGameExclusion(Guid gameId)
         {
             var isExcluded = IsGameExcluded(gameId);
+
+            // Only show confirmation when excluding (not when including)
+            if (!isExcluded)
+            {
+                var game = PlayniteApi?.Database?.Games?.Get(gameId);
+                var gameName = game?.Name ?? ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame");
+
+                var result = PlayniteApi?.Dialogs?.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_Exclude_ConfirmSingle"), gameName),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+                if (result != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
             _achievementManager.SetExcludedByUser(gameId, !isExcluded);
         }
 
