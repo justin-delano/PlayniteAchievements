@@ -27,7 +27,6 @@ namespace PlayniteAchievements.Services.Database
             public long GameId { get; set; }
             public string CacheKey { get; set; }
             public long HasAchievements { get; set; }
-            public long ExcludedByUser { get; set; }
             public string LastUpdatedUtc { get; set; }
             public string ProviderName { get; set; }
             public long? ProviderGameId { get; set; }
@@ -226,24 +225,6 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
-        public HashSet<string> GetExcludedGameIdsForCurrentUser()
-        {
-            return WithDb(db =>
-            {
-                var rows = db.Load<CacheKeyRow>(
-                    @"SELECT DISTINCT ugp.CacheKey AS CacheKey
-                      FROM UserGameProgress ugp
-                      INNER JOIN Users u ON u.Id = ugp.UserId
-                      WHERE u.IsCurrentUser = 1
-                        AND (ugp.HasAchievements = 0 OR ugp.ExcludedByUser = 1);").ToList();
-
-                return new HashSet<string>(
-                    rows.Select(r => r.CacheKey)
-                        .Where(k => !string.IsNullOrWhiteSpace(k)),
-                    StringComparer.OrdinalIgnoreCase);
-            });
-        }
-
         public GameAchievementData LoadCurrentUserGameData(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -260,7 +241,6 @@ namespace PlayniteAchievements.Services.Database
                         ugp.GameId AS GameId,
                         ugp.CacheKey AS CacheKey,
                         ugp.HasAchievements AS HasAchievements,
-                        ugp.ExcludedByUser AS ExcludedByUser,
                         ugp.LastUpdatedUtc AS LastUpdatedUtc,
                         g.ProviderName AS ProviderName,
                         g.ProviderGameId AS ProviderGameId,
@@ -360,7 +340,6 @@ namespace PlayniteAchievements.Services.Database
                             ugp.GameId AS GameId,
                             TRIM(ugp.CacheKey) AS CacheKey,
                             ugp.HasAchievements AS HasAchievements,
-                            ugp.ExcludedByUser AS ExcludedByUser,
                             ugp.LastUpdatedUtc AS LastUpdatedUtc,
                             g.ProviderName AS ProviderName,
                             g.ProviderGameId AS ProviderGameId,
@@ -383,7 +362,6 @@ namespace PlayniteAchievements.Services.Database
                         GameId,
                         CacheKey,
                         HasAchievements,
-                        ExcludedByUser,
                         LastUpdatedUtc,
                         ProviderName,
                         ProviderGameId,
@@ -573,7 +551,6 @@ namespace PlayniteAchievements.Services.Database
                         gameId,
                         cacheKey,
                         hasAchievements,
-                        payload.ExcludedByUser,
                         unlockedCount,
                         totalCount,
                         updatedIso,
@@ -678,7 +655,7 @@ namespace PlayniteAchievements.Services.Database
                     // Deduplication: When saving real provider data, remove Unmapped stubs for the same game
                     if (!string.Equals(effectiveProviderName, "Unmapped", StringComparison.OrdinalIgnoreCase))
                     {
-                        RemoveUnmappedStubsForGame(db, cacheKey, userProgressId, payload.ExcludedByUser, nowIso);
+                        RemoveUnmappedStubsForGame(db, cacheKey, userProgressId);
                     }
                 });
             });
@@ -701,14 +678,12 @@ namespace PlayniteAchievements.Services.Database
         private void RemoveUnmappedStubsForGame(
             SQLiteDatabase db,
             string cacheKey,
-            long realProgressId,
-            bool preserveExcludedFlag,
-            string nowIso)
+            long realProgressId)
         {
             // Find Unmapped UserGameProgress entries for the same CacheKey
             var unmappedProgress = db.Load<UserGameProgressRow>(
                 @"SELECT ugp.Id, ugp.UserId, ugp.GameId, ugp.CacheKey, ugp.HasAchievements,
-                         ugp.ExcludedByUser, ugp.AchievementsUnlocked, ugp.TotalAchievements,
+                         ugp.AchievementsUnlocked, ugp.TotalAchievements,
                          ugp.LastUpdatedUtc, ugp.CreatedUtc, ugp.UpdatedUtc
                   FROM UserGameProgress ugp
                   INNER JOIN Users u ON ugp.UserId = u.Id
@@ -725,18 +700,6 @@ namespace PlayniteAchievements.Services.Database
 
             foreach (var stub in unmappedProgress)
             {
-                // If the stub has ExcludedByUser=true and the real entry doesn't, preserve it
-                if (stub.ExcludedByUser != 0 && !preserveExcludedFlag)
-                {
-                    db.ExecuteNonQuery(
-                        @"UPDATE UserGameProgress
-                          SET ExcludedByUser = 1,
-                              UpdatedUtc = ?
-                          WHERE Id = ?;",
-                        nowIso,
-                        realProgressId);
-                }
-
                 // Delete UserAchievements for the stub
                 db.ExecuteNonQuery(
                     @"DELETE FROM UserAchievements
@@ -1219,7 +1182,7 @@ namespace PlayniteAchievements.Services.Database
             string cacheKey)
         {
             var existing = db.Load<UserGameProgressRow>(
-                @"SELECT Id, UserId, GameId, CacheKey, HasAchievements, ExcludedByUser, AchievementsUnlocked, TotalAchievements, LastUpdatedUtc, CreatedUtc, UpdatedUtc
+                @"SELECT Id, UserId, GameId, CacheKey, HasAchievements, AchievementsUnlocked, TotalAchievements, LastUpdatedUtc, CreatedUtc, UpdatedUtc
                   FROM UserGameProgress
                   WHERE UserId = ? AND CacheKey = ?
                   LIMIT 1;",
@@ -1232,7 +1195,7 @@ namespace PlayniteAchievements.Services.Database
             }
 
             return db.Load<UserGameProgressRow>(
-                @"SELECT Id, UserId, GameId, CacheKey, HasAchievements, ExcludedByUser, AchievementsUnlocked, TotalAchievements, LastUpdatedUtc, CreatedUtc, UpdatedUtc
+                @"SELECT Id, UserId, GameId, CacheKey, HasAchievements, AchievementsUnlocked, TotalAchievements, LastUpdatedUtc, CreatedUtc, UpdatedUtc
                   FROM UserGameProgress
                   WHERE UserId = ? AND GameId = ?
                   LIMIT 1;",
@@ -1247,7 +1210,6 @@ namespace PlayniteAchievements.Services.Database
             long gameId,
             string cacheKey,
             bool hasAchievements,
-            bool excludedByUser,
             int achievementsUnlocked,
             int totalAchievements,
             string updatedIso,
@@ -1257,14 +1219,13 @@ namespace PlayniteAchievements.Services.Database
             {
                 db.ExecuteNonQuery(
                     @"INSERT INTO UserGameProgress
-                        (UserId, GameId, CacheKey, HasAchievements, ExcludedByUser, AchievementsUnlocked, TotalAchievements, LastUpdatedUtc, CreatedUtc, UpdatedUtc)
+                        (UserId, GameId, CacheKey, HasAchievements, AchievementsUnlocked, TotalAchievements, LastUpdatedUtc, CreatedUtc, UpdatedUtc)
                       VALUES
-                        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                        (?, ?, ?, ?, ?, ?, ?, ?, ?);",
                     userId,
                     gameId,
                     cacheKey,
                     hasAchievements ? 1 : 0,
-                    excludedByUser ? 1 : 0,
                     achievementsUnlocked,
                     totalAchievements,
                     updatedIso,
@@ -1278,7 +1239,6 @@ namespace PlayniteAchievements.Services.Database
                   SET GameId = ?,
                       CacheKey = ?,
                       HasAchievements = ?,
-                      ExcludedByUser = ?,
                       AchievementsUnlocked = ?,
                       TotalAchievements = ?,
                       LastUpdatedUtc = ?,
@@ -1287,7 +1247,6 @@ namespace PlayniteAchievements.Services.Database
                 gameId,
                 cacheKey,
                 hasAchievements ? 1 : 0,
-                excludedByUser ? 1 : 0,
                 achievementsUnlocked,
                 totalAchievements,
                 updatedIso,
@@ -1488,7 +1447,7 @@ namespace PlayniteAchievements.Services.Database
                 ProviderName = progress?.ProviderName,
                 LibrarySourceName = progress?.LibrarySourceName,
                 HasAchievements = progress != null && progress.HasAchievements != 0,
-                ExcludedByUser = progress != null && progress.ExcludedByUser != 0,
+                // ExcludedByUser is populated by callers from settings
                 GameName = progress?.GameName,
                 AppId = (int)Math.Max(0, progress?.ProviderGameId ?? 0),
                 PlayniteGameId = ParseGuid(progress?.PlayniteGameId),
@@ -1724,17 +1683,17 @@ namespace PlayniteAchievements.Services.Database
             var filePath = Path.Combine(dir, "UserGameProgress.csv");
             var rows = _db.Load<UserGameProgressExportRow>(
                 "SELECT Id, UserId, GameId, CacheKey, " +
-                "HasAchievements, ExcludedByUser, AchievementsUnlocked, TotalAchievements, " +
+                "HasAchievements, AchievementsUnlocked, TotalAchievements, " +
                 "LastUpdatedUtc, CreatedUtc, UpdatedUtc " +
                 "FROM UserGameProgress").ToList();
             WriteCsv(filePath, rows, new[]
             {
                 "Id", "UserId", "GameId", "CacheKey",
-                "HasAchievements", "ExcludedByUser", "AchievementsUnlocked", "TotalAchievements",
+                "HasAchievements", "AchievementsUnlocked", "TotalAchievements",
                 "LastUpdatedUtc", "CreatedUtc", "UpdatedUtc"
             }, r => new[] {
                 r.Id.ToString(), r.UserId.ToString(), r.GameId.ToString(), r.CacheKey,
-                r.HasAchievements.ToString(), r.ExcludedByUser.ToString(), r.AchievementsUnlocked.ToString(), r.TotalAchievements.ToString(),
+                r.HasAchievements.ToString(), r.AchievementsUnlocked.ToString(), r.TotalAchievements.ToString(),
                 r.LastUpdatedUtc, r.CreatedUtc, r.UpdatedUtc
             });
             _logger.Info($"Exported {rows.Count} rows to {filePath}");
@@ -1882,7 +1841,6 @@ namespace PlayniteAchievements.Services.Database
             public long GameId { get; set; }
             public string CacheKey { get; set; }
             public long HasAchievements { get; set; }
-            public long ExcludedByUser { get; set; }
             public long AchievementsUnlocked { get; set; }
             public long TotalAchievements { get; set; }
             public string LastUpdatedUtc { get; set; }
