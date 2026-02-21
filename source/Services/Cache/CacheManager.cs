@@ -377,23 +377,6 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        public HashSet<string> GetExcludedGameIds()
-        {
-            try
-            {
-                lock (_sync)
-                {
-                    EnsureReady_Locked("GetExcludedGameIds");
-                    return _store.GetExcludedGameIdsForCurrentUser() ?? new HashSet<string>();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed to load excluded game IDs.");
-                return new HashSet<string>();
-            }
-        }
-
         public void ClearCache()
         {
             lock (_sync)
