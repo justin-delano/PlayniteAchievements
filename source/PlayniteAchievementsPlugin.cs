@@ -339,8 +339,8 @@ namespace PlayniteAchievements
                 };
 
                 // Add bulk exclude/include based on majority state
-                var excludedIds = _achievementManager.Cache.GetExcludedGameIds();
-                var excludedCount = selectedGames.Count(g => excludedIds.Contains(g.Id.ToString()));
+                var excludedIds = _settingsViewModel.Settings.Persisted.ExcludedGameIds;
+                var excludedCount = selectedGames.Count(g => excludedIds.Contains(g.Id));
                 var mostlyExcluded = excludedCount > selectedGames.Count / 2;
 
                 yield return new GameMenuItem
@@ -411,8 +411,7 @@ namespace PlayniteAchievements
             };
 
             // Add exclude/include toggle based on current state
-            var gameData = _achievementManager.GetGameAchievementData(game.Id);
-            var isExcluded = gameData?.ExcludedByUser ?? false;
+            var isExcluded = _settingsViewModel.Settings.Persisted.ExcludedGameIds.Contains(game.Id);
 
             yield return new GameMenuItem
             {
