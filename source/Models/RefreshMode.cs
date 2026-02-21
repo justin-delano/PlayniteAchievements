@@ -89,19 +89,4 @@ namespace PlayniteAchievements.Models
         /// </summary>
         public string ShortDisplayNameResourceKey { get; set; }
     }
-
-    /// <summary>
-    /// Predefined refresh mode keys (obsolete - use RefreshModeType enum instead).
-    /// </summary>
-    [Obsolete("Use RefreshModeType enum instead.")]
-    public static class RefreshModeKeys
-    {
-        public const string Recent = "Recent";
-        public const string Full = "Full";
-        public const string Installed = "Installed";
-        public const string Favorites = "Favorites";
-        public const string Single = "Single";
-        public const string LibrarySelected = "LibrarySelected";
-        public const string Missing = "Missing";
-    }
 }
