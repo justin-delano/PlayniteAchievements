@@ -823,9 +823,6 @@ namespace PlayniteAchievements.Views
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ClearData",
                 () => ClearDataForRow(rowData)));
 
-            // Add separator before exclude/include
-            menu.Items.Add(new Separator());
-
             // Add exclude/include toggle
             if (TryGetPlayniteGameId(rowData, out var gameId))
             {
