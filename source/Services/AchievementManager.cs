@@ -1406,6 +1406,32 @@ namespace PlayniteAchievements.Services
         }
 
         /// <summary>
+        /// Applies user preferences from settings to game data.
+        /// Populates ExcludedByUser and applies manual capstone override.
+        /// Called when loading cached data to ensure preferences are reflected.
+        /// </summary>
+        private void ApplyUserPreferences(GameAchievementData data)
+        {
+            if (data?.PlayniteGameId == null)
+                return;
+
+            // Populate ExcludedByUser from settings
+            data.ExcludedByUser = _settings.Persisted.ExcludedGameIds.Contains(data.PlayniteGameId.Value);
+
+            // Apply manual capstone override from settings
+            if (_settings.Persisted.ManualCapstones.TryGetValue(data.PlayniteGameId.Value, out var manualCapstone))
+            {
+                foreach (var achievement in data.Achievements ?? Enumerable.Empty<AchievementDetail>())
+                {
+                    achievement.IsCapstone = string.Equals(
+                        achievement.ApiName,
+                        manualCapstone,
+                        StringComparison.OrdinalIgnoreCase);
+                }
+            }
+        }
+
+        /// <summary>
         /// Sets the ExcludedByUser flag for a game.
         /// This excludes the game from future achievement tracking until re-included.
         /// The exclusion is persisted in settings and survives cache clears.
@@ -1452,7 +1478,9 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                return _cacheService.LoadGameData(playniteGameId);
+                var data = _cacheService.LoadGameData(playniteGameId);
+                ApplyUserPreferences(data);
+                return data;
             }
             catch (Exception ex)
             {
@@ -1478,21 +1506,31 @@ namespace PlayniteAchievements.Services
         {
             try
             {
+                List<GameAchievementData> result;
                 if (_cacheService is CacheManager optimizedCacheManager)
                 {
-                    return optimizedCacheManager.LoadAllGameDataFast() ?? new List<GameAchievementData>();
+                    result = optimizedCacheManager.LoadAllGameDataFast() ?? new List<GameAchievementData>();
                 }
-
-                var gameIds = _cacheService.GetCachedGameIds();
-                var result = new List<GameAchievementData>();
-                foreach(var gameId in gameIds)
+                else
                 {
-                    var gameData = _cacheService.LoadGameData(gameId);
-                    if (gameData != null)
+                    var gameIds = _cacheService.GetCachedGameIds();
+                    result = new List<GameAchievementData>();
+                    foreach (var gameId in gameIds)
                     {
-                        result.Add(gameData);
+                        var gameData = _cacheService.LoadGameData(gameId);
+                        if (gameData != null)
+                        {
+                            result.Add(gameData);
+                        }
                     }
                 }
+
+                // Apply user preferences from settings to all loaded data
+                foreach (var data in result)
+                {
+                    ApplyUserPreferences(data);
+                }
+
                 return result;
             }
             catch (Exception ex)
