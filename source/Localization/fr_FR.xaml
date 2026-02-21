@@ -57,6 +57,14 @@
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Inclure ce jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGames">Exclure les jeux sélectionnés</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGames">Inclure les jeux sélectionnés</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SetRaGameId">Définir l'ID de jeu RetroAchievements...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ChangeRaGameId">Modifier l'ID de jeu RetroAchievements...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearRaGameId">Effacer le remplacement d'ID RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_DialogTitle">Définir l'ID de jeu RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_DialogHint">Entrez l'ID de jeu RetroAchievements (trouvé dans l'URL du jeu sur retroachievements.org)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Veuillez entrer un ID de jeu entier positif valide.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_ClearConfirm">Effacer le remplacement d'ID RetroAchievements pour "{0}" ?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_Cleared">Remplacement d'ID RetroAchievements effacé.</sys:String>
 
     <!-- ================================================================= -->
     <!-- BUTTONS                                                            -->
@@ -64,6 +72,7 @@
     <sys:String x:Key="LOCPlayAch_Button_Clear">Effacer</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Scan">Actualiser</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Annuler</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Ok">OK</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_Clear">Effacer</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_OpenGameInLibrary">Ouvrir le jeu dans la bibliothèque</sys:String>
 
