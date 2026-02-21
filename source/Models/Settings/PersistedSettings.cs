@@ -65,6 +65,8 @@ namespace PlayniteAchievements.Models.Settings
         private double _uncommonThreshold = 50;
         private bool _firstTimeSetupCompleted = false;
         private bool _seenThemeMigration = false;
+        private HashSet<Guid> _excludedGameIds = new HashSet<Guid>();
+        private Dictionary<Guid, string> _manualCapstones = new Dictionary<Guid, string>();
 
         #endregion
 
@@ -614,6 +616,30 @@ namespace PlayniteAchievements.Models.Settings
 
         #endregion
 
+        #region User Preferences (Survive Cache Clear)
+
+        /// <summary>
+        /// Game IDs that the user has explicitly excluded from achievement tracking.
+        /// These exclusions persist across cache clears.
+        /// </summary>
+        public HashSet<Guid> ExcludedGameIds
+        {
+            get => _excludedGameIds;
+            set => SetValue(ref _excludedGameIds, value ?? new HashSet<Guid>());
+        }
+
+        /// <summary>
+        /// Manual capstone selections. Key = Playnite Game ID, Value = Achievement ApiName.
+        /// These selections persist across cache clears.
+        /// </summary>
+        public Dictionary<Guid, string> ManualCapstones
+        {
+            get => _manualCapstones;
+            set => SetValue(ref _manualCapstones, value ?? new Dictionary<Guid, string>());
+        }
+
+        #endregion
+
         #region Clone Method
 
         /// <summary>
@@ -685,7 +711,13 @@ namespace PlayniteAchievements.Models.Settings
                 RareThreshold = this.RareThreshold,
                 UncommonThreshold = this.UncommonThreshold,
                 FirstTimeSetupCompleted = this.FirstTimeSetupCompleted,
-                SeenThemeMigration = this.SeenThemeMigration
+                SeenThemeMigration = this.SeenThemeMigration,
+                ExcludedGameIds = this.ExcludedGameIds != null
+                    ? new HashSet<Guid>(this.ExcludedGameIds)
+                    : new HashSet<Guid>(),
+                ManualCapstones = this.ManualCapstones != null
+                    ? new Dictionary<Guid, string>(this.ManualCapstones)
+                    : new Dictionary<Guid, string>()
             };
         }
 
