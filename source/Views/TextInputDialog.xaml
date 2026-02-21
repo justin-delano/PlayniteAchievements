@@ -7,58 +7,46 @@
              d:DesignHeight="160" d:DesignWidth="420"
              FocusManager.FocusedElement="{Binding ElementName=InputTextBox}">
 
-    <Grid>
+    <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Content Section -->
-        <Border Grid.Row="0"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                Padding="16,14">
-            <StackPanel>
-                <!-- Hint Text -->
-                <TextBlock Text="{Binding Hint}"
-                           Style="{DynamicResource BaseTextBlockStyle}"
-                           Foreground="{DynamicResource TextBrush}"
-                           Opacity="0.75"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,12"/>
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <!-- Hint Text -->
+            <TextBlock Text="{Binding Hint}"
+                       Style="{DynamicResource BaseTextBlockStyle}"
+                       Foreground="{DynamicResource TextBrush}"
+                       Opacity="0.75"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"/>
 
-                <!-- Input TextBox -->
-                <TextBox x:Name="InputTextBox"
-                         Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                         Padding="10,8"
-                         MinHeight="32"
-                         VerticalContentAlignment="Center"
-                         Background="Transparent"
-                         BorderBrush="{DynamicResource NormalBorderBrush}"
-                         KeyDown="InputTextBox_KeyDown"/>
-            </StackPanel>
-        </Border>
+            <!-- Input TextBox -->
+            <TextBox x:Name="InputTextBox"
+                     Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                     Padding="8,6"
+                     VerticalContentAlignment="Center"
+                     KeyDown="InputTextBox_KeyDown"/>
+        </StackPanel>
 
         <!-- Buttons Section -->
-        <Border Grid.Row="1"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="0,1,0,0"
-                Padding="16,12">
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Right">
-                <Button Content="{DynamicResource LOCPlayAch_Button_Ok}"
-                        Click="OkButton_Click"
-                        Padding="12,6"
-                        MinWidth="80"
-                        Margin="0,0,8,0"
-                        IsDefault="True"/>
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Content="{DynamicResource LOCPlayAch_Button_Ok}"
+                    Click="OkButton_Click"
+                    Padding="12,6"
+                    MinWidth="80"
+                    Margin="0,0,8,0"
+                    IsDefault="True"/>
 
-                <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
-                        Click="CancelButton_Click"
-                        Padding="12,6"
-                        MinWidth="80"
-                        IsCancel="True"/>
-            </StackPanel>
-        </Border>
+            <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                    Click="CancelButton_Click"
+                    Padding="12,6"
+                    MinWidth="80"
+                    IsCancel="True"/>
+        </StackPanel>
     </Grid>
 </UserControl>
