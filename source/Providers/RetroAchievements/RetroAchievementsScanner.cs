@@ -171,6 +171,18 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
         private async Task<GameAchievementData> ScanGameAsync(Game game, int consoleId, IRaHasher hasher, CancellationToken cancel)
         {
+            // Check for manual override first (survives cache clears)
+            if (_settings.Persisted.RaGameIdOverrides.TryGetValue(game.Id, out var overriddenId))
+            {
+                _logger?.Info($"[RA] Using manual RA ID override: '{game.Name}' -> {overriddenId}");
+                var result = await FetchGameInfoAsync(game, overriddenId, cancel).ConfigureAwait(false);
+                if (result != null)
+                {
+                    result.IsAppIdOverridden = true;
+                }
+                return result;
+            }
+
             var candidates = _pathResolver.ResolveCandidateFilePaths(game).ToList();
             _logger?.Info($"[RA] Scanning '{game?.Name}' consoleId={consoleId} hasher={hasher.Name} candidates={candidates.Count}.");
 
