@@ -117,7 +117,6 @@ namespace PlayniteAchievements.Services.Database
                 GameId INTEGER NOT NULL,
                 CacheKey TEXT NOT NULL COLLATE NOCASE,
                 HasAchievements INTEGER NOT NULL DEFAULT 0,
-                ExcludedByUser INTEGER NOT NULL DEFAULT 0,
                 AchievementsUnlocked INTEGER NOT NULL DEFAULT 0,
                 TotalAchievements INTEGER NOT NULL DEFAULT 0,
                 LastUpdatedUtc TEXT NOT NULL,
@@ -248,9 +247,6 @@ namespace PlayniteAchievements.Services.Database
                     ref backupPath,
                     "Migrated NoAchievements to HasAchievements (inverted) in UserGameProgress.");
             }
-
-            // Add ExcludedByUser column if it doesn't exist
-            EnsureColumn(db, "UserGameProgress", "ExcludedByUser", "INTEGER NOT NULL DEFAULT 0", progressColumns, ref backupPath);
 
             ReconcileGamesProviderGameIdIndexes(db, ref backupPath);
 
