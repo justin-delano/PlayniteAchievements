@@ -1106,7 +1106,21 @@ namespace PlayniteAchievements.Views
                     return typed;
                 }
 
-                child = VisualTreeHelper.GetParent(child);
+                // VisualTreeHelper only works with Visual or Visual3D elements
+                // For non-visual elements like Run, use logical tree or content parent
+                if (child is Visual || child is Visual3D)
+                {
+                    child = VisualTreeHelper.GetParent(child);
+                }
+                else if (child is FrameworkContentElement frameworkContentElement)
+                {
+                    child = frameworkContentElement.Parent;
+                }
+                else
+                {
+                    // Fallback: try logical parent for FrameworkElement
+                    child = (child as FrameworkElement)?.Parent;
+                }
             }
 
             return null;
