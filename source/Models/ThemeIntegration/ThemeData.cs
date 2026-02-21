@@ -83,6 +83,16 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private List<AchievementDetail> _rarestRecentUnlocksTop5 = new List<AchievementDetail>();
         [DontSerialize]
         private List<AchievementDetail> _rarestRecentUnlocksTop10 = new List<AchievementDetail>();
+        [DontSerialize]
+        private int _totalUnlockCount;
+        [DontSerialize]
+        private int _totalCommonUnlockCount;
+        [DontSerialize]
+        private int _totalUncommonUnlockCount;
+        [DontSerialize]
+        private int _totalRareUnlockCount;
+        [DontSerialize]
+        private int _totalUltraRareUnlockCount;
 
         #endregion
 
@@ -283,6 +293,56 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _gameSummariesDesc;
             set => SetValue(ref _gameSummariesDesc, value);
+        }
+
+        /// <summary>
+        /// Total number of achievements unlocked across all games.
+        /// </summary>
+        [DontSerialize]
+        public int TotalUnlockCount
+        {
+            get => _totalUnlockCount;
+            set => SetValue(ref _totalUnlockCount, value);
+        }
+
+        /// <summary>
+        /// Total number of common achievements unlocked across all games.
+        /// </summary>
+        [DontSerialize]
+        public int TotalCommonUnlockCount
+        {
+            get => _totalCommonUnlockCount;
+            set => SetValue(ref _totalCommonUnlockCount, value);
+        }
+
+        /// <summary>
+        /// Total number of uncommon achievements unlocked across all games.
+        /// </summary>
+        [DontSerialize]
+        public int TotalUncommonUnlockCount
+        {
+            get => _totalUncommonUnlockCount;
+            set => SetValue(ref _totalUncommonUnlockCount, value);
+        }
+
+        /// <summary>
+        /// Total number of rare achievements unlocked across all games.
+        /// </summary>
+        [DontSerialize]
+        public int TotalRareUnlockCount
+        {
+            get => _totalRareUnlockCount;
+            set => SetValue(ref _totalRareUnlockCount, value);
+        }
+
+        /// <summary>
+        /// Total number of ultra-rare achievements unlocked across all games.
+        /// </summary>
+        [DontSerialize]
+        public int TotalUltraRareUnlockCount
+        {
+            get => _totalUltraRareUnlockCount;
+            set => SetValue(ref _totalUltraRareUnlockCount, value);
         }
 
         /// <summary>
