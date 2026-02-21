@@ -11,7 +11,7 @@
         TODO: Add full chart UI implementation
 
         Example binding:
-        - Display CommonStats, UncommonStats, RareStats, UltraRareStats
+        - Display Common, Uncommon, Rare, UltraRare
         - Show visual breakdown of achievement rarity tiers
     -->
     <Grid>

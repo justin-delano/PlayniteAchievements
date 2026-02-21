@@ -187,16 +187,16 @@ namespace PlayniteAchievements.Models
         public List<AchievementDetail> AchievementsRarityDesc => Theme.AchievementsRarityDesc ?? EmptyAchievementList;
 
         [DontSerialize]
-        public AchievementRarityStats CommonStats => Theme.CommonStats ?? EmptyRarityStats;
+        public AchievementRarityStats Common => Theme.Common ?? EmptyRarityStats;
 
         [DontSerialize]
-        public AchievementRarityStats UncommonStats => Theme.UncommonStats ?? EmptyRarityStats;
+        public AchievementRarityStats Uncommon => Theme.Uncommon ?? EmptyRarityStats;
 
         [DontSerialize]
-        public AchievementRarityStats RareStats => Theme.RareStats ?? EmptyRarityStats;
+        public AchievementRarityStats Rare => Theme.Rare ?? EmptyRarityStats;
 
         [DontSerialize]
-        public AchievementRarityStats UltraRareStats => Theme.UltraRareStats ?? EmptyRarityStats;
+        public AchievementRarityStats UltraRare => Theme.UltraRare ?? EmptyRarityStats;
 
         // === All-Games Overview Data ===
         [DontSerialize]
@@ -433,18 +433,6 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         public int Locked => LegacyTheme.Locked;
-
-        [DontSerialize]
-        public AchievementRarityStats Common => LegacyTheme.Common ?? EmptyRarityStats;
-
-        [DontSerialize]
-        public AchievementRarityStats NoCommon => LegacyTheme.NoCommon ?? EmptyRarityStats;
-
-        [DontSerialize]
-        public AchievementRarityStats Rare => LegacyTheme.Rare ?? EmptyRarityStats;
-
-        [DontSerialize]
-        public AchievementRarityStats UltraRare => LegacyTheme.UltraRare ?? EmptyRarityStats;
 
         [DontSerialize]
         public List<AchievementDetail> ListAchievements => LegacyTheme.ListAchievements ?? EmptyAchievementList;

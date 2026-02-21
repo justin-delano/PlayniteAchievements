@@ -33,14 +33,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private bool _is100Percent;
         [DontSerialize]
-        private AchievementRarityStats _common = new AchievementRarityStats();
-        [DontSerialize]
-        private AchievementRarityStats _noCommon = new AchievementRarityStats();
-        [DontSerialize]
-        private AchievementRarityStats _rare = new AchievementRarityStats();
-        [DontSerialize]
-        private AchievementRarityStats _ultraRare = new AchievementRarityStats();
-        [DontSerialize]
         private int _locked;
         [DontSerialize]
         private int _totalGamerScore;
@@ -158,46 +150,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _is100Percent;
             set => SetValue(ref _is100Percent, value);
-        }
-
-        /// <summary>
-        /// Common achievement statistics (SuccessStory compatible).
-        /// </summary>
-        [DontSerialize]
-        public AchievementRarityStats Common
-        {
-            get => _common;
-            set => SetValue(ref _common, value);
-        }
-
-        /// <summary>
-        /// Uncommon achievement statistics (SuccessStory compatible, named NoCommon in SS).
-        /// </summary>
-        [DontSerialize]
-        public AchievementRarityStats NoCommon
-        {
-            get => _noCommon;
-            set => SetValue(ref _noCommon, value);
-        }
-
-        /// <summary>
-        /// Rare achievement statistics (SuccessStory compatible).
-        /// </summary>
-        [DontSerialize]
-        public AchievementRarityStats Rare
-        {
-            get => _rare;
-            set => SetValue(ref _rare, value);
-        }
-
-        /// <summary>
-        /// Ultra Rare achievement statistics (SuccessStory compatible).
-        /// </summary>
-        [DontSerialize]
-        public AchievementRarityStats UltraRare
-        {
-            get => _ultraRare;
-            set => SetValue(ref _ultraRare, value);
         }
 
         /// <summary>

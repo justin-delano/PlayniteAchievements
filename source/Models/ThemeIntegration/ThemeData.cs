@@ -28,13 +28,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private double _progressPercentage;
         [DontSerialize]
-        private AchievementRarityStats _commonStats = new AchievementRarityStats();
+        private AchievementRarityStats _common = new AchievementRarityStats();
         [DontSerialize]
-        private AchievementRarityStats _uncommonStats = new AchievementRarityStats();
+        private AchievementRarityStats _uncommon = new AchievementRarityStats();
         [DontSerialize]
-        private AchievementRarityStats _rareStats = new AchievementRarityStats();
+        private AchievementRarityStats _rare = new AchievementRarityStats();
         [DontSerialize]
-        private AchievementRarityStats _ultraRareStats = new AchievementRarityStats();
+        private AchievementRarityStats _ultraRare = new AchievementRarityStats();
         [DontSerialize]
         private List<AchievementDetail> _allAchievements = new List<AchievementDetail>();
         [DontSerialize]
@@ -153,40 +153,40 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         /// Common achievement statistics for the currently selected game.
         /// </summary>
         [DontSerialize]
-        public AchievementRarityStats CommonStats
+        public AchievementRarityStats Common
         {
-            get => _commonStats;
-            set => SetValue(ref _commonStats, value);
+            get => _common;
+            set => SetValue(ref _common, value);
         }
 
         /// <summary>
         /// Uncommon achievement statistics for the currently selected game.
         /// </summary>
         [DontSerialize]
-        public AchievementRarityStats UncommonStats
+        public AchievementRarityStats Uncommon
         {
-            get => _uncommonStats;
-            set => SetValue(ref _uncommonStats, value);
+            get => _uncommon;
+            set => SetValue(ref _uncommon, value);
         }
 
         /// <summary>
         /// Rare achievement statistics for the currently selected game.
         /// </summary>
         [DontSerialize]
-        public AchievementRarityStats RareStats
+        public AchievementRarityStats Rare
         {
-            get => _rareStats;
-            set => SetValue(ref _rareStats, value);
+            get => _rare;
+            set => SetValue(ref _rare, value);
         }
 
         /// <summary>
         /// Ultra Rare achievement statistics for the currently selected game.
         /// </summary>
         [DontSerialize]
-        public AchievementRarityStats UltraRareStats
+        public AchievementRarityStats UltraRare
         {
-            get => _ultraRareStats;
-            set => SetValue(ref _ultraRareStats, value);
+            get => _ultraRare;
+            set => SetValue(ref _ultraRare, value);
         }
 
         /// <summary>

@@ -53,7 +53,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             if (e.PropertyName == "Unlocked"
                 || e.PropertyName == "Locked"
                 || e.PropertyName == "Common"
-                || e.PropertyName == "NoCommon"
+                || e.PropertyName == "Uncommon"
                 || e.PropertyName == "Rare"
                 || e.PropertyName == "UltraRare")
             {
@@ -72,15 +72,17 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             var settings = Plugin?.Settings;
             var items = new ObservableCollection<UserStatsItem>();
 
-            if (settings?.LegacyTheme != null)
+            if (settings?.Theme != null)
             {
-                var theme = settings.LegacyTheme;
-                items.Add(new UserStatsItem { NameShow = "Total", ValueShow = $"{theme.Unlocked}/{(theme.Unlocked + theme.Locked)}" });
-                items.Add(new UserStatsItem { NameShow = "Unlocked", ValueShow = theme.Unlocked.ToString() });
-                items.Add(new UserStatsItem { NameShow = "Locked", ValueShow = theme.Locked.ToString() });
+                var theme = settings.Theme;
+                var unlocked = theme.UnlockedCount;
+                var locked = theme.LockedCount;
+                items.Add(new UserStatsItem { NameShow = "Total", ValueShow = $"{unlocked}/{(unlocked + locked)}" });
+                items.Add(new UserStatsItem { NameShow = "Unlocked", ValueShow = unlocked.ToString() });
+                items.Add(new UserStatsItem { NameShow = "Locked", ValueShow = locked.ToString() });
                 items.Add(new UserStatsItem { NameShow = "", ValueShow = "" });
                 items.Add(new UserStatsItem { NameShow = "Common", ValueShow = theme.Common?.Stats ?? "0 / 0" });
-                items.Add(new UserStatsItem { NameShow = "Uncommon", ValueShow = theme.NoCommon?.Stats ?? "0 / 0" });
+                items.Add(new UserStatsItem { NameShow = "Uncommon", ValueShow = theme.Uncommon?.Stats ?? "0 / 0" });
                 items.Add(new UserStatsItem { NameShow = "Rare", ValueShow = theme.Rare?.Stats ?? "0 / 0" });
                 items.Add(new UserStatsItem { NameShow = "Ultra Rare", ValueShow = theme.UltraRare?.Stats ?? "0 / 0" });
             }

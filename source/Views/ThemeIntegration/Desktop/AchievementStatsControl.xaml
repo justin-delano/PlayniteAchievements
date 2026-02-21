@@ -11,10 +11,10 @@
         TODO: Add full stats UI implementation
 
         Example binding:
-        - Display CommonStats.Total/Unlocked/Locked
-        - Display UncommonStats.Total/Unlocked/Locked
-        - Display RareStats.Total/Unlocked/Locked
-        - Display UltraRareStats.Total/Unlocked/Locked
+        - Display Common.Total/Unlocked/Locked
+        - Display Uncommon.Total/Unlocked/Locked
+        - Display Rare.Total/Unlocked/Locked
+        - Display UltraRare.Total/Unlocked/Locked
     -->
     <Grid>
         <TextBlock Text="Achievement Stats (Stub)"

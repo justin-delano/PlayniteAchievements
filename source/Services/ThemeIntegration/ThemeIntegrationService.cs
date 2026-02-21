@@ -100,7 +100,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.Is100Percent),
             nameof(PlayniteAchievementsSettings.Locked),
             nameof(PlayniteAchievementsSettings.Common),
-            nameof(PlayniteAchievementsSettings.NoCommon),
+            nameof(PlayniteAchievementsSettings.Uncommon),
             nameof(PlayniteAchievementsSettings.Rare),
             nameof(PlayniteAchievementsSettings.UltraRare),
             nameof(PlayniteAchievementsSettings.ListAchievements),
@@ -838,10 +838,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.Theme.LockedCount = snapshot.Locked;
             _settings.Theme.ProgressPercentage = snapshot.Percent;
 
-            _settings.Theme.CommonStats = snapshot.Common;
-            _settings.Theme.UncommonStats = snapshot.Uncommon;
-            _settings.Theme.RareStats = snapshot.Rare;
-            _settings.Theme.UltraRareStats = snapshot.UltraRare;
+            _settings.Theme.Common = snapshot.Common;
+            _settings.Theme.Uncommon = snapshot.Uncommon;
+            _settings.Theme.Rare = snapshot.Rare;
+            _settings.Theme.UltraRare = snapshot.UltraRare;
 
             _settings.Theme.AllAchievements = snapshot.AllAchievements;
             _settings.Theme.AchievementsNewestFirst = snapshot.UnlockDateDesc;
@@ -864,11 +864,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.Locked = snapshot.Locked;
             _settings.LegacyTheme.TotalGamerScore = 0;
             _settings.LegacyTheme.EstimateTimeToUnlock = string.Empty;
-
-            _settings.LegacyTheme.Common = snapshot.Common;
-            _settings.LegacyTheme.NoCommon = snapshot.Uncommon;
-            _settings.LegacyTheme.Rare = snapshot.Rare;
-            _settings.LegacyTheme.UltraRare = snapshot.UltraRare;
 
             _settings.LegacyTheme.ListAchievements = snapshot.AllAchievements;
             _settings.LegacyTheme.ListAchUnlockDateAsc = snapshot.UnlockDateAsc;
@@ -902,10 +897,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.Theme.AchievementsRarityAsc = EmptyAchievementList;
             _settings.Theme.AchievementsRarityDesc = EmptyAchievementList;
 
-            _settings.Theme.CommonStats = EmptyRarityStats;
-            _settings.Theme.UncommonStats = EmptyRarityStats;
-            _settings.Theme.RareStats = EmptyRarityStats;
-            _settings.Theme.UltraRareStats = EmptyRarityStats;
+            _settings.Theme.Common = EmptyRarityStats;
+            _settings.Theme.Uncommon = EmptyRarityStats;
+            _settings.Theme.Rare = EmptyRarityStats;
+            _settings.Theme.UltraRare = EmptyRarityStats;
 
             // Raise PropertyChanged for computed properties that delegate to Theme
             NotifySettingProperties(SingleGameThemeDelegatedProperties);
@@ -922,11 +917,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.Locked = 0;
             _settings.LegacyTheme.TotalGamerScore = 0;
             _settings.LegacyTheme.EstimateTimeToUnlock = string.Empty;
-
-            _settings.LegacyTheme.Common = EmptyRarityStats;
-            _settings.LegacyTheme.NoCommon = EmptyRarityStats;
-            _settings.LegacyTheme.Rare = EmptyRarityStats;
-            _settings.LegacyTheme.UltraRare = EmptyRarityStats;
 
             _settings.LegacyTheme.ListAchievements = EmptyAchievementList;
             _settings.LegacyTheme.ListAchUnlockDateAsc = EmptyAchievementList;
