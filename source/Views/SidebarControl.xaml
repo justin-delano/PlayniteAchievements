@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:models="clr-namespace:PlayniteAchievements.Models.Achievements"
              xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              mc:Ignorable="d"
@@ -25,7 +26,6 @@
             <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
             <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
-            <converters:RarityTierToIconConverter x:Key="RarityToIcon"/>
 
             <!-- Shared LegendItem DataTemplate for all pie charts -->
             <DataTemplate x:Key="LegendItemTemplate">
@@ -1542,10 +1542,27 @@
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                                                     <Image Width="16" Height="16" Margin="0,0,4,0"
-                                                        Source="{Binding Rarity, Converter={StaticResource RarityToIcon}}"
-                                                        Style="{StaticResource RarityIcon}"
                                                         Effect="{StaticResource BadgeShadow}"
-                                                        VerticalAlignment="Center"/>
+                                                        VerticalAlignment="Center">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.UltraRare}">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Rare}">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Uncommon}">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Common}">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
 
                                                     <TextBlock Text="{Binding GlobalPercentText}"
                                                                Style="{DynamicResource BaseTextBlockStyle}"
@@ -1825,10 +1842,27 @@
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                                                     <Image Width="16" Height="16" Margin="0,0,4,0"
-                                                        Source="{Binding Rarity, Converter={StaticResource RarityToIcon}}"
-                                                        Style="{StaticResource RarityIcon}"
                                                         Effect="{StaticResource BadgeShadow}"
-                                                        VerticalAlignment="Center"/>
+                                                        VerticalAlignment="Center">
+                                                        <Image.Style>
+                                                            <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.UltraRare}">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Rare}">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Uncommon}">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Common}">
+                                                                        <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Image.Style>
+                                                    </Image>
 
                                                     <TextBlock Text="{Binding GlobalPercentText}"
                                                                Style="{DynamicResource BaseTextBlockStyle}"
