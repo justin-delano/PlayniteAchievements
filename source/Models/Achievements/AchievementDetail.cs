@@ -108,6 +108,9 @@ namespace PlayniteAchievements.Models.Achievements
         }
 
         [IgnoreDataMember]
+        public RarityTier Rarity => RarityHelper.GetRarityTier(Percent);
+
+        [IgnoreDataMember]
         public DateTime? DateUnlocked
         {
             get
