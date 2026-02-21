@@ -14,10 +14,59 @@
                 <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- Style for DataGrid headers -->
             <Style x:Key="ColumnHeaderStyle" TargetType="DataGridColumnHeader">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Padding" Value="10,6"/>
-                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="DataGridColumnHeader">
+                            <Grid Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="Center"
+                                                  Margin="{TemplateBinding Padding}"/>
+                                <Path x:Name="SortArrow"
+                                      HorizontalAlignment="Right"
+                                      Fill="{DynamicResource TextBrush}"
+                                      Width="8"
+                                      Height="6"
+                                      Data="M 0,0 L 4,6 L 8,0"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,10,0"
+                                      RenderTransformOrigin="0.5,0.5"
+                                      Visibility="Collapsed"/>
+                                <!-- REQUIRED for resizing -->
+                                <Thumb x:Name="PART_LeftHeaderGripper"
+                                    Width="0"
+                                    Background="Transparent"
+                                    IsHitTestVisible="False"
+                                    Focusable="False"/>
+                                <Thumb x:Name="PART_RightHeaderGripper"
+                                    HorizontalAlignment="Right"
+                                    Width="8"
+                                    Cursor="SizeWE"
+                                    Background="Transparent"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#18FFFFFF"/>
+                                </Trigger>
+                                <Trigger Property="SortDirection" Value="Ascending">
+                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="SortArrow" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <ScaleTransform ScaleY="-1"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="SortDirection" Value="Descending">
+                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
 
             <!-- Checkbox style for marker selection -->
@@ -371,6 +420,30 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
+                <!-- Description -->
+                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Capstone_Column_Description}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DescriptionResolved}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.7"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Center"
+                                       Margin="0,6">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEffectivelyHidden}" Value="True">
+                                                <Setter Property="FontStyle" Value="Italic"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
                 <!-- Rarity -->
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent">
                     <DataGridTemplateColumn.CellTemplate>
@@ -421,30 +494,6 @@
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
                                        Opacity="0.8"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <!-- Description -->
-                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Capstone_Column_Description}">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding DescriptionResolved}"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Opacity="0.7"
-                                       TextWrapping="Wrap"
-                                       VerticalAlignment="Center"
-                                       Margin="0,6">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsEffectivelyHidden}" Value="True">
-                                                <Setter Property="FontStyle" Value="Italic"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
