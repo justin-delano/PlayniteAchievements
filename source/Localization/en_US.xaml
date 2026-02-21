@@ -549,8 +549,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Capstone_WindowTitle">Capstone Achievement - {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Header">Capstone Achievement</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">Choose one achievement to mark as this game's capstone.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_Current">Current capstone: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">Choose one achievement to mark as this game's Capstone. Unlocking a Capstone achievement will mark the game as Completed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Current">Current Capstone: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current_None">None</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Column_Achievement">Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Column_Description">Description</sys:String>

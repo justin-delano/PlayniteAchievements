@@ -99,11 +99,11 @@
 
                 <!-- Game Info -->
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Capstone_Header}"
+                    <!-- <TextBlock Text="{DynamicResource LOCPlayAch_Capstone_Header}"
                                Style="{DynamicResource BaseTextBlockStyle}"
                                FontSize="{DynamicResource FontSizeLarge}"
                                FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextBrush}"/>
+                               Foreground="{DynamicResource TextBrush}"/> -->
                     <TextBlock Text="{Binding GameName}"
                                Style="{DynamicResource BaseTextBlockStyle}"
                                Foreground="{DynamicResource TextBrush}"
@@ -114,7 +114,8 @@
                                Style="{DynamicResource BaseTextBlockStyle}"
                                Foreground="{DynamicResource TextBrush}"
                                Margin="0,6,0,0"
-                               Opacity="0.75"/>
+                               Opacity="0.75"
+                               TextWrapping="Wrap"/>
                     <TextBlock Text="{Binding CurrentMarkerText}"
                                Style="{DynamicResource BaseTextBlockStyle}"
                                Foreground="{DynamicResource TextBrush}"

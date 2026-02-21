@@ -199,6 +199,7 @@ namespace PlayniteAchievements.Models
         public AchievementRarityStats UltraRare => Theme.UltraRare ?? EmptyRarityStats;
 
         // === All-Games Overview Data ===
+
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> CompletedGamesAsc
         {
