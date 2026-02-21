@@ -653,6 +653,69 @@ namespace PlayniteAchievements
                 MessageBoxImage.Information);
         }
 
+        /// <summary>
+        /// Shows the RetroAchievements game ID override dialog for a game.
+        /// </summary>
+        public void ShowRaGameIdDialogForGame(Guid gameId)
+        {
+            var game = PlayniteApi?.Database?.Games?.Get(gameId);
+            if (game != null)
+            {
+                ShowRaGameIdDialog(game);
+            }
+        }
+
+        /// <summary>
+        /// Clears the RetroAchievements game ID override for a game.
+        /// </summary>
+        public void ClearRaGameIdOverrideForGame(Guid gameId)
+        {
+            var game = PlayniteApi?.Database?.Games?.Get(gameId);
+            if (game != null)
+            {
+                ClearRaGameIdOverride(game);
+            }
+        }
+
+        /// <summary>
+        /// Checks if a game is capable of using RetroAchievements.
+        /// </summary>
+        public bool IsRaCapable(Guid gameId)
+        {
+            var game = PlayniteApi?.Database?.Games?.Get(gameId);
+            if (game == null) return false;
+
+            var raProvider = _achievementManager.GetProviders()
+                .FirstOrDefault(p => p.ProviderKey == "RetroAchievements");
+
+            return raProvider?.IsCapable(game) == true;
+        }
+
+        /// <summary>
+        /// Checks if a game has a RetroAchievements game ID override.
+        /// </summary>
+        public bool HasRaGameIdOverride(Guid gameId)
+        {
+            return _settingsViewModel.Settings.Persisted.RaGameIdOverrides.ContainsKey(gameId);
+        }
+
+        /// <summary>
+        /// Checks if a game is excluded by the user.
+        /// </summary>
+        public bool IsGameExcluded(Guid gameId)
+        {
+            return _settingsViewModel.Settings.Persisted.ExcludedGameIds.Contains(gameId);
+        }
+
+        /// <summary>
+        /// Toggles the exclusion state of a game.
+        /// </summary>
+        public void ToggleGameExclusion(Guid gameId)
+        {
+            var isExcluded = IsGameExcluded(gameId);
+            _achievementManager.SetExcludedByUser(gameId, !isExcluded);
+        }
+
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
             yield return new MainMenuItem

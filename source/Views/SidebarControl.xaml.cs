@@ -822,6 +822,39 @@ namespace PlayniteAchievements.Views
                 () => ExecuteViewModelCommand(_viewModel?.OpenGameInLibraryCommand, rowData)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ClearData",
                 () => ClearDataForRow(rowData)));
+
+            // Add separator before exclude/include
+            menu.Items.Add(new Separator());
+
+            // Add exclude/include toggle
+            if (TryGetPlayniteGameId(rowData, out var gameId))
+            {
+                var plugin = PlayniteAchievementsPlugin.Instance;
+                var isExcluded = plugin?.IsGameExcluded(gameId) ?? false;
+                var excludeLabel = isExcluded
+                    ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeGame")
+                    : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeGame");
+                menu.Items.Add(CreateMenuItem(excludeLabel,
+                    () => plugin?.ToggleGameExclusion(gameId)));
+
+                // Add RA game ID override options (only for RA-capable games)
+                if (plugin?.IsRaCapable(gameId) == true)
+                {
+                    var hasOverride = plugin.HasRaGameIdOverride(gameId);
+                    var raLabel = hasOverride
+                        ? ResourceProvider.GetString("LOCPlayAch_Menu_ChangeRaGameId")
+                        : ResourceProvider.GetString("LOCPlayAch_Menu_SetRaGameId");
+                    menu.Items.Add(CreateMenuItem(raLabel,
+                        () => plugin.ShowRaGameIdDialogForGame(gameId)));
+
+                    if (hasOverride)
+                    {
+                        menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ClearRaGameId",
+                            () => plugin.ClearRaGameIdOverrideForGame(gameId)));
+                    }
+                }
+            }
+
             return menu;
         }
 
