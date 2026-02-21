@@ -1335,13 +1335,35 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
+            var key = playniteGameId.ToString();
+            var existingData = _cacheService.LoadGameData(key);
+            var wasExcluded = existingData?.ExcludedByUser == true;
+
             try
             {
-                _cacheService.RemoveGameData(playniteGameId);
+                if (wasExcluded)
+                {
+                    var stub = new GameAchievementData
+                    {
+                        PlayniteGameId = playniteGameId,
+                        GameName = existingData.GameName,
+                        ProviderName = existingData.ProviderName,
+                        LibrarySourceName = existingData.LibrarySourceName,
+                        ExcludedByUser = true,
+                        HasAchievements = true,
+                        LastUpdatedUtc = DateTime.UtcNow,
+                        Achievements = new List<AchievementDetail>()
+                    };
+                    _cacheService.SaveGameData(key, stub);
+                }
+                else
+                {
+                    _cacheService.RemoveGameData(playniteGameId);
+                }
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Failed to remove achievement cache for game '{playniteGameId}'.");
+                _logger?.Warn(ex, $"Failed to clear achievement cache for game '{playniteGameId}'.");
             }
 
             try
