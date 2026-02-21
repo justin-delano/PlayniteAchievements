@@ -22,6 +22,8 @@ namespace PlayniteAchievements.Views
         private readonly SidebarViewModel _viewModel;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly AchievementManager _achievementManager;
+        private readonly IPlayniteAPI _playniteApi;
         private bool _isActive;
         private Guid? _lastSelectedOverviewGameId;
         private DataGridRow _pendingRightClickRow;
@@ -67,6 +69,8 @@ namespace PlayniteAchievements.Views
 
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings;
+            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _playniteApi = api ?? throw new ArgumentNullException(nameof(api));
 
             _viewModel = new SidebarViewModel(achievementManager, api, logger, settings);
             DataContext = _viewModel;
@@ -816,6 +820,8 @@ namespace PlayniteAchievements.Views
                 () => OpenCapstoneForRow(rowData)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_OpenGameInLibrary",
                 () => ExecuteViewModelCommand(_viewModel?.OpenGameInLibraryCommand, rowData)));
+            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ClearData",
+                () => ClearDataForRow(rowData)));
             return menu;
         }
 
@@ -904,6 +910,50 @@ namespace PlayniteAchievements.Views
             }
 
             PlayniteAchievementsPlugin.Instance?.OpenCapstoneView(gameId);
+        }
+
+        private void ClearDataForRow(object rowData)
+        {
+            if (!TryGetPlayniteGameId(rowData, out var gameId))
+            {
+                return;
+            }
+
+            var game = _playniteApi?.Database?.Games?.Get(gameId);
+            if (game == null)
+            {
+                return;
+            }
+
+            var result = _playniteApi?.Dialogs?.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_ConfirmSingle"), game.Name),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning) ?? System.Windows.MessageBoxResult.None;
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                _achievementManager.RemoveGameCache(game.Id);
+                _playniteApi?.Dialogs?.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_SuccessSingle"), game.Name),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to clear cached data for game '{game.Name}' ({game.Id}).");
+                _playniteApi?.Dialogs?.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_Failed"), ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
         }
 
         private void DataGridColumnMenu_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
