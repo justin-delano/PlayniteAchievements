@@ -52,6 +52,7 @@ namespace PlayniteAchievements.Services
         private const long CacheInvalidationThrottleMs = 500;
         private const string PointsColumnKey = "Points";
         private const string EpicProviderKey = "Epic";
+        private const string RaProviderKey = "RetroAchievements";
 
         // Dependencies that need disposal
         private readonly IReadOnlyList<IDataProvider> _providers;
@@ -726,7 +727,7 @@ namespace PlayniteAchievements.Services
             {
             }
 
-            TryAutoEnablePointsColumnForEpic(provider, data);
+            TryAutoEnablePointsColumnForPointsProvider(provider, data);
 
             await PopulateAchievementIconCacheAsync(data, cancel).ConfigureAwait(false);
 
@@ -767,7 +768,7 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            var hasEpicAchievements = HasCachedEpicAchievements();
+            var hasPointsProviderAchievements = HasCachedPointsProviderAchievements();
             var changed = false;
             lock (_pointsColumnVisibilityLock)
             {
@@ -780,7 +781,7 @@ namespace PlayniteAchievements.Services
 
                 if (!map.TryGetValue(PointsColumnKey, out var pointsVisible))
                 {
-                    map[PointsColumnKey] = hasEpicAchievements;
+                    map[PointsColumnKey] = hasPointsProviderAchievements;
                     changed = true;
                 }
                 else if (pointsVisible && !_settings.Persisted.PointsColumnAutoEnabled)
@@ -789,7 +790,7 @@ namespace PlayniteAchievements.Services
                     changed = true;
                 }
 
-                if (hasEpicAchievements && !_settings.Persisted.PointsColumnAutoEnabled)
+                if (hasPointsProviderAchievements && !_settings.Persisted.PointsColumnAutoEnabled)
                 {
                     _settings.Persisted.PointsColumnAutoEnabled = true;
                     changed = true;
@@ -802,9 +803,10 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        private void TryAutoEnablePointsColumnForEpic(IDataProvider provider, GameAchievementData data)
+        private void TryAutoEnablePointsColumnForPointsProvider(IDataProvider provider, GameAchievementData data)
         {
-            if (!IsEpicProvider(provider, data) || data?.Achievements == null || data.Achievements.Count == 0)
+            var isPointsProvider = IsEpicProvider(provider, data) || IsRaProvider(provider, data);
+            if (!isPointsProvider || data?.Achievements == null || data.Achievements.Count == 0)
             {
                 return;
             }
@@ -840,7 +842,7 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        private bool HasCachedEpicAchievements()
+        private bool HasCachedPointsProviderAchievements()
         {
             try
             {
@@ -853,11 +855,11 @@ namespace PlayniteAchievements.Services
                 return allGameData.Any(data =>
                     data?.Achievements != null &&
                     data.Achievements.Count > 0 &&
-                    IsEpicProvider(provider: null, data));
+                    (IsEpicProvider(provider: null, data) || IsRaProvider(provider: null, data)));
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "Failed while checking cached Epic achievement data for Points-column defaults.");
+                _logger?.Debug(ex, "Failed while checking cached achievement data for Points-column defaults.");
                 return false;
             }
         }
@@ -877,6 +879,18 @@ namespace PlayniteAchievements.Services
         {
             return !string.IsNullOrWhiteSpace(value) &&
                    value.IndexOf("epic", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsRaProvider(IDataProvider provider, GameAchievementData data)
+        {
+            if (provider != null &&
+                string.Equals(provider.ProviderKey, RaProviderKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return !string.IsNullOrWhiteSpace(data?.ProviderName) &&
+                   data.ProviderName.IndexOf("RetroAchievements", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private void TryPersistSettings(bool notifySettingsSaved)
