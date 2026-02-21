@@ -425,6 +425,34 @@ namespace PlayniteAchievements
                     _achievementManager.SetExcludedByUser(game.Id, !isExcluded);
                 }
             };
+
+            // Add RetroAchievements game ID override options
+            var hasOverride = _settingsViewModel.Settings.Persisted.RaGameIdOverrides.ContainsKey(game.Id);
+
+            yield return new GameMenuItem
+            {
+                Description = hasOverride
+                    ? ResourceProvider.GetString("LOCPlayAch_Menu_ChangeRaGameId")
+                    : ResourceProvider.GetString("LOCPlayAch_Menu_SetRaGameId"),
+                MenuSection = "Playnite Achievements",
+                Action = (a) =>
+                {
+                    ShowRaGameIdDialog(game);
+                }
+            };
+
+            if (hasOverride)
+            {
+                yield return new GameMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearRaGameId"),
+                    MenuSection = "Playnite Achievements",
+                    Action = (a) =>
+                    {
+                        ClearRaGameIdOverride(game);
+                    }
+                };
+            }
         }
 
         private void ClearSingleGameData(Game game)
@@ -505,6 +533,117 @@ namespace PlayniteAchievements
 
             PlayniteApi?.Dialogs?.ShowMessage(
                 string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_SuccessSelected"), clearedCount),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
+        private void ShowRaGameIdDialog(Game game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            var hasExistingOverride = _settingsViewModel.Settings.Persisted.RaGameIdOverrides.TryGetValue(game.Id, out var existingId);
+            var defaultText = hasExistingOverride ? existingId.ToString() : string.Empty;
+
+            // Use custom text input dialog
+            var inputDialog = new TextInputDialog(
+                ResourceProvider.GetString("LOCPlayAch_Menu_RaGameId_DialogTitle"),
+                ResourceProvider.GetString("LOCPlayAch_Menu_RaGameId_DialogHint"),
+                defaultText);
+
+            var windowOptions = new WindowOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = false,
+                ShowCloseButton = true,
+                CanBeResizable = false,
+                Width = 450,
+                Height = 200
+            };
+
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                ResourceProvider.GetString("LOCPlayAch_Menu_RaGameId_DialogTitle"),
+                inputDialog,
+                windowOptions);
+
+            try
+            {
+                if (window.Owner == null)
+                {
+                    window.Owner = PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+                }
+            }
+            catch { }
+
+            inputDialog.RequestClose += (s, ev) => window.Close();
+            window.ShowDialog();
+
+            if (inputDialog.DialogResult != true)
+            {
+                return;
+            }
+
+            var inputText = inputDialog.InputText?.Trim();
+            if (string.IsNullOrWhiteSpace(inputText))
+            {
+                return;
+            }
+
+            if (!int.TryParse(inputText, out var newId) || newId <= 0)
+            {
+                PlayniteApi?.Dialogs?.ShowMessage(
+                    ResourceProvider.GetString("LOCPlayAch_Menu_RaGameId_InvalidId"),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            // Update the override
+            _settingsViewModel.Settings.Persisted.RaGameIdOverrides[game.Id] = newId;
+            SavePluginSettings(_settingsViewModel.Settings);
+
+            _logger?.Info($"Set RA game ID override for '{game.Name}' to {newId}");
+
+            // Trigger a rescan for this game
+            ShowRefreshProgressControlAndRun(
+                () => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Single, game.Id),
+                game.Id);
+        }
+
+        private void ClearRaGameIdOverride(Game game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            if (!_settingsViewModel.Settings.Persisted.RaGameIdOverrides.ContainsKey(game.Id))
+            {
+                return;
+            }
+
+            var result = PlayniteApi?.Dialogs?.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_RaGameId_ClearConfirm"), game.Name),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            _settingsViewModel.Settings.Persisted.RaGameIdOverrides.Remove(game.Id);
+            SavePluginSettings(_settingsViewModel.Settings);
+
+            _logger?.Info($"Cleared RA game ID override for '{game.Name}'");
+
+            PlayniteApi?.Dialogs?.ShowMessage(
+                ResourceProvider.GetString("LOCPlayAch_Menu_RaGameId_Cleared"),
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
