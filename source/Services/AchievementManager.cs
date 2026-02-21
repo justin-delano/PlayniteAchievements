@@ -531,11 +531,11 @@ namespace PlayniteAchievements.Services
         {
             options ??= new CacheRefreshOptions();
 
-            // Pre-load excluded games for efficient skipping (unless bypass requested)
-            HashSet<string> excludedGameIds = null;
+            // Get excluded games from settings (survives cache clear)
+            HashSet<Guid> excludedGameIds = null;
             if (options.SkipNoAchievementsGames && !options.BypassExclusions)
             {
-                excludedGameIds = _cacheService.GetExcludedGameIds();
+                excludedGameIds = _settings.Persisted.ExcludedGameIds;
             }
 
             IEnumerable<Game> candidates;
@@ -579,7 +579,7 @@ namespace PlayniteAchievements.Services
 
                 // Skip games already marked as having no achievements or excluded by user
                 if (excludedGameIds != null &&
-                    excludedGameIds.Contains(game.Id.ToString()))
+                    excludedGameIds.Contains(game.Id))
                 {
                     skippedNoAchievements++;
                     continue;
@@ -735,11 +735,19 @@ namespace PlayniteAchievements.Services
 
             if (!string.IsNullOrWhiteSpace(key))
             {
-                // Preserve ExcludedByUser flag from existing cache
-                var existingData = _cacheService.LoadGameData(key);
-                if (existingData?.ExcludedByUser == true)
+                // Populate ExcludedByUser from settings (survives cache clear)
+                data.ExcludedByUser = _settings.Persisted.ExcludedGameIds.Contains(data.PlayniteGameId.Value);
+
+                // Apply manual capstone override from settings (survives cache clear)
+                if (_settings.Persisted.ManualCapstones.TryGetValue(data.PlayniteGameId.Value, out var manualCapstone))
                 {
-                    data.ExcludedByUser = true;
+                    foreach (var achievement in data.Achievements ?? Enumerable.Empty<AchievementDetail>())
+                    {
+                        achievement.IsCapstone = string.Equals(
+                            achievement.ApiName,
+                            manualCapstone,
+                            StringComparison.OrdinalIgnoreCase);
+                    }
                 }
 
                 var writeResult = _cacheService.SaveGameData(key, data);
@@ -1335,31 +1343,9 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            var key = playniteGameId.ToString();
-            var existingData = _cacheService.LoadGameData(key);
-            var wasExcluded = existingData?.ExcludedByUser == true;
-
             try
             {
-                if (wasExcluded)
-                {
-                    var stub = new GameAchievementData
-                    {
-                        PlayniteGameId = playniteGameId,
-                        GameName = existingData.GameName,
-                        ProviderName = existingData.ProviderName,
-                        LibrarySourceName = existingData.LibrarySourceName,
-                        ExcludedByUser = true,
-                        HasAchievements = true,
-                        LastUpdatedUtc = DateTime.UtcNow,
-                        Achievements = new List<AchievementDetail>()
-                    };
-                    _cacheService.SaveGameData(key, stub);
-                }
-                else
-                {
-                    _cacheService.RemoveGameData(playniteGameId);
-                }
+                _cacheService.RemoveGameData(playniteGameId);
             }
             catch (Exception ex)
             {
@@ -1393,6 +1379,17 @@ namespace PlayniteAchievements.Services
                 var result = _cacheService.SetCapstone(playniteGameId, capstoneApiName);
                 if (result.Success)
                 {
+                    // Update settings (survives cache clear)
+                    if (string.IsNullOrWhiteSpace(capstoneApiName))
+                    {
+                        _settings.Persisted.ManualCapstones.Remove(playniteGameId);
+                    }
+                    else
+                    {
+                        _settings.Persisted.ManualCapstones[playniteGameId] = capstoneApiName.Trim();
+                    }
+
+                    TryPersistSettings(notifySettingsSaved: true);
                     NotifyCacheInvalidatedThrottled(force: true);
                 }
                 return result;
@@ -1411,35 +1408,33 @@ namespace PlayniteAchievements.Services
         /// <summary>
         /// Sets the ExcludedByUser flag for a game.
         /// This excludes the game from future achievement tracking until re-included.
+        /// The exclusion is persisted in settings and survives cache clears.
         /// </summary>
         public void SetExcludedByUser(Guid playniteGameId, bool excluded)
         {
             if (playniteGameId == Guid.Empty)
                 return;
 
-            var key = playniteGameId.ToString();
-            var data = _cacheService.LoadGameData(key);
-
-            if (data == null)
+            // Update settings (survives cache clear)
+            if (excluded)
             {
-                data = new GameAchievementData
-                {
-                    PlayniteGameId = playniteGameId,
-                    ExcludedByUser = excluded,
-                    HasAchievements = true,
-                    LastUpdatedUtc = DateTime.UtcNow
-                };
+                _settings.Persisted.ExcludedGameIds.Add(playniteGameId);
             }
             else
             {
-                data.ExcludedByUser = excluded;
-                if (!excluded)
-                {
-                    data.HasAchievements = true;
-                }
+                _settings.Persisted.ExcludedGameIds.Remove(playniteGameId);
             }
 
-            _cacheService.SaveGameData(key, data);
+            // Update in-memory cache for immediate UI feedback
+            var key = playniteGameId.ToString();
+            var data = _cacheService.LoadGameData(key);
+            if (data != null)
+            {
+                data.ExcludedByUser = excluded;
+                _cacheService.SaveGameData(key, data);
+            }
+
+            TryPersistSettings(notifySettingsSaved: true);
             NotifyCacheInvalidatedThrottled(force: true);
         }
 
