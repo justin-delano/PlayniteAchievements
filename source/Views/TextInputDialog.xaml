@@ -4,51 +4,76 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="180" d:DesignWidth="400"
+             d:DesignHeight="180" d:DesignWidth="420"
              FocusManager.FocusedElement="{Binding ElementName=InputTextBox}">
 
-    <Grid Margin="20">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="{Binding Title}"
-                   FontSize="16"
-                   FontWeight="Bold"
-                   Margin="0,0,0,10"
-                   TextWrapping="Wrap"/>
+        <!-- Header Section -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource ControlBackgroundBrush}"
+                BorderBrush="{DynamicResource NormalBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,12">
+            <TextBlock Text="{Binding Title}"
+                       Style="{DynamicResource BaseTextBlockStyle}"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource TextBrush}"
+                       VerticalAlignment="Center"/>
+        </Border>
 
-        <TextBlock Grid.Row="1"
-                   Text="{Binding Hint}"
-                   FontSize="12"
-                   Margin="0,0,0,10"
-                   TextWrapping="Wrap"
-                   Opacity="0.8"/>
+        <!-- Content Section -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource ControlBackgroundBrush}"
+                BorderBrush="{DynamicResource NormalBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,14">
+            <StackPanel>
+                <!-- Hint Text -->
+                <TextBlock Text="{Binding Hint}"
+                           Style="{DynamicResource BaseTextBlockStyle}"
+                           Foreground="{DynamicResource TextBrush}"
+                           Opacity="0.75"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12"/>
 
-        <TextBox Grid.Row="2"
-                 x:Name="InputTextBox"
-                 Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                 Padding="8"
-                 FontSize="14"
-                 Margin="0,0,0,15"
-                 KeyDown="InputTextBox_KeyDown"/>
+                <!-- Input TextBox with placeholder -->
+                <Grid>
+                    <TextBox x:Name="InputTextBox"
+                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                             Padding="10,8"
+                             VerticalContentAlignment="Center"
+                             Background="Transparent"
+                             BorderBrush="{DynamicResource NormalBorderBrush}"
+                             KeyDown="InputTextBox_KeyDown"/>
+                </Grid>
+            </StackPanel>
+        </Border>
 
-        <StackPanel Grid.Row="3"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right">
-            <Button Content="{DynamicResource LOCPlayAch_Button_Ok}"
-                    Click="OkButton_Click"
-                    Padding="15,8"
-                    Margin="0,0,10,0"
-                    IsDefault="True"/>
-            <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
-                    Click="CancelButton_Click"
-                    Padding="15,8"
-                    IsCancel="True"/>
-        </StackPanel>
+        <!-- Buttons Section -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource ControlBackgroundBrush}"
+                Padding="16,12">
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button Content="{DynamicResource LOCPlayAch_Button_Ok}"
+                        Click="OkButton_Click"
+                        Padding="12,6"
+                        MinWidth="80"
+                        Margin="0,0,8,0"
+                        IsDefault="True"/>
+
+                <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                        Click="CancelButton_Click"
+                        Padding="12,6"
+                        MinWidth="80"
+                        IsCancel="True"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>
