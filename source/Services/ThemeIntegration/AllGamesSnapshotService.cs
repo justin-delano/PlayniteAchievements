@@ -171,6 +171,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             snapshot.GoldCount = items.Sum(i => i.GoldCount);
             snapshot.SilverCount = items.Sum(i => i.SilverCount);
             snapshot.BronzeCount = items.Sum(i => i.BronzeCount);
+            snapshot.TotalCommonUnlockCount = items.Sum(i => i.CommonUnlockCount);
+            snapshot.TotalUncommonUnlockCount = items.Sum(i => i.UncommonUnlockCount);
+            snapshot.TotalRareUnlockCount = items.Sum(i => i.RareUnlockCount);
+            snapshot.TotalUltraRareUnlockCount = items.Sum(i => i.UltraRareUnlockCount);
 
             if (snapshot.TotalCount > 0)
             {
