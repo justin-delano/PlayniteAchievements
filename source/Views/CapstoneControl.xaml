@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:models="clr-namespace:PlayniteAchievements.Models.Achievements"
              mc:Ignorable="d"
              d:DesignHeight="640" d:DesignWidth="760">
 
@@ -214,7 +215,8 @@
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
-                  PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown">
+                  PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown"
+                  Sorting="DataGrid_Sorting">
 
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell">
@@ -365,6 +367,60 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                             </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Rarity -->
+                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Image Width="16" Height="16" Margin="0,0,4,0"
+                                       Effect="{StaticResource BadgeShadow}"
+                                       VerticalAlignment="Center">
+                                    <Image.Style>
+                                        <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.UltraRare}">
+                                                    <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Rare}">
+                                                    <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Uncommon}">
+                                                    <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Common}">
+                                                    <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                                <TextBlock Text="{Binding GlobalPercentText}"
+                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Opacity="0.8"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Points -->
+                <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding PointsText}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.8"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

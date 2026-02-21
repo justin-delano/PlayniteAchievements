@@ -211,7 +211,7 @@ namespace PlayniteAchievements.ViewModels
 
                 var sortedAchievements = achievements
                     .Where(a => a != null && !string.IsNullOrWhiteSpace(a.ApiName))
-                    .OrderByDescending(a => a.Unlocked)
+                    .OrderBy(a => a.GlobalPercentUnlocked ?? 100)  // Rarest first
                     .ThenBy(a => a.DisplayName ?? a.ApiName, StringComparer.CurrentCultureIgnoreCase)
                     .ToList();
 
@@ -262,7 +262,9 @@ namespace PlayniteAchievements.ViewModels
                 IsCurrentMarker = string.Equals(
                     achievement.ApiName.Trim(),
                     currentCapstoneApiName,
-                    StringComparison.OrdinalIgnoreCase)
+                    StringComparison.OrdinalIgnoreCase),
+                GlobalPercentUnlocked = achievement.GlobalPercentUnlocked,
+                PointsValue = achievement.Points
             };
         }
 
@@ -497,5 +499,22 @@ namespace PlayniteAchievements.ViewModels
                 IsRevealed = !IsRevealed;
             }
         }
+
+        // Rarity data
+        public double? GlobalPercentUnlocked { get; set; }
+
+        public RarityTier Rarity => RarityHelper.GetRarityTier(GlobalPercentUnlocked ?? 100);
+
+        public string GlobalPercentText =>
+            GlobalPercentUnlocked.HasValue ? $"{GlobalPercentUnlocked.Value:F1}%" : "?%";
+
+        public double GlobalPercent => GlobalPercentUnlocked ?? 100;
+
+        // Points data
+        public int? PointsValue { get; set; }
+
+        public int Points => PointsValue ?? 0;
+
+        public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
     }
 }

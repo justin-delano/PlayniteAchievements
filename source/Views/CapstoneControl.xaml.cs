@@ -3,6 +3,8 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using System;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -93,6 +95,45 @@ namespace PlayniteAchievements.Views
             }
 
             return null;
+        }
+
+        private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            e.Handled = true;
+            var column = e.Column;
+            if (column == null || string.IsNullOrEmpty(column.SortMemberPath)) return;
+
+            var direction = ListSortDirection.Ascending;
+            if (column.SortDirection != null && column.SortDirection == ListSortDirection.Ascending)
+            {
+                direction = ListSortDirection.Descending;
+            }
+
+            // Clear other columns' sort direction
+            foreach (var c in (sender as DataGrid).Columns)
+            {
+                if (c != column) c.SortDirection = null;
+            }
+            column.SortDirection = direction;
+
+            // Sort the collection
+            var items = _viewModel.AchievementOptions.ToList();
+            items.Sort((a, b) => column.SortMemberPath switch
+            {
+                "GlobalPercent" => direction == ListSortDirection.Ascending
+                    ? a.GlobalPercent.CompareTo(b.GlobalPercent)
+                    : b.GlobalPercent.CompareTo(a.GlobalPercent),
+                "Points" => direction == ListSortDirection.Ascending
+                    ? a.Points.CompareTo(b.Points)
+                    : b.Points.CompareTo(a.Points),
+                _ => 0
+            });
+
+            _viewModel.AchievementOptions.Clear();
+            foreach (var item in items)
+            {
+                _viewModel.AchievementOptions.Add(item);
+            }
         }
     }
 }
