@@ -46,6 +46,7 @@ namespace PlayniteAchievements.Models.Settings
         private string _raUsername;
         private string _raWebApiKey;
         private string _raRarityStats = "casual";
+        private string _raPointsMode = "points";
         private int _hashIndexMaxAgeDays = 30;
         private bool _enableArchiveScanning = true;
         private bool _enableDiscHashing = true;
@@ -351,6 +352,21 @@ namespace PlayniteAchievements.Models.Settings
             }
         }
 
+        /// <summary>
+        /// Determines which points value to display for RetroAchievements:
+        /// "points" for standard points, "scaled" for TrueRatio (weighted by rarity).
+        /// </summary>
+        public string RaPointsMode
+        {
+            get => _raPointsMode;
+            set
+            {
+                var mode = (value ?? string.Empty).Trim().ToLowerInvariant();
+                SetValue(ref _raPointsMode,
+                    (mode == "scaled" || mode == "points") ? mode : "points");
+            }
+        }
+
         public int HashIndexMaxAgeDays
         {
             get => _hashIndexMaxAgeDays;
@@ -626,6 +642,7 @@ namespace PlayniteAchievements.Models.Settings
                 RaUsername = this.RaUsername,
                 RaWebApiKey = this.RaWebApiKey,
                 RaRarityStats = this.RaRarityStats,
+                RaPointsMode = this.RaPointsMode,
                 HashIndexMaxAgeDays = this.HashIndexMaxAgeDays,
                 EnableArchiveScanning = this.EnableArchiveScanning,
                 EnableDiscHashing = this.EnableDiscHashing,

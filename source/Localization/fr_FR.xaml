@@ -248,6 +248,10 @@
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Combined">Global (Casual + Hardcore)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Contrôle la manière dont les pourcentages de rareté sont calculés. Modifier ce réglage nécessite une nouvelle actualisation pour mettre à jour les valeurs en cache.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode">Affichage des points</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Points">Points standard</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Scaled">TrueRatio (pondéré)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio pondère les points selon la rareté du succès, donnant plus de valeur aux succès plus difficiles.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Actualisation et hachage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Activer l'actualisation des archives (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Activer le hachage des disques (pour les consoles à disque)</sys:String>

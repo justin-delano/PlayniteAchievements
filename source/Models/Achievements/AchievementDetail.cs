@@ -24,6 +24,12 @@ namespace PlayniteAchievements.Models.Achievements
 
         public int? Points { get; set; }
 
+        /// <summary>
+        /// RetroAchievements TrueRatio (weighted points based on rarity).
+        /// Null for providers that don't support scaled points.
+        /// </summary>
+        public int? ScaledPoints { get; set; }
+
         public string Category { get; set; }
 
         /// <summary>

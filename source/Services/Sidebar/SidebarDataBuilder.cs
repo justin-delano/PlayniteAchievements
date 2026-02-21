@@ -169,6 +169,8 @@ namespace PlayniteAchievements.Services.Sidebar
             var showDescription = settings.Persisted?.ShowHiddenDescription ?? false;
             var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
             var canResolveReveals = anyHidingEnabled && revealedKeys.Count > 0;
+            var useScaledPoints = settings.Persisted?.RaPointsMode == "scaled" &&
+                                  string.Equals(gameData.ProviderName, "RetroAchievements", StringComparison.OrdinalIgnoreCase);
 
             var achievements = gameData.Achievements;
             int gameTotal = achievements.Count;
@@ -184,6 +186,13 @@ namespace PlayniteAchievements.Services.Sidebar
                 if (ach == null)
                 {
                     continue;
+                }
+
+                // Determine which points to display based on provider and settings
+                int? pointsToDisplay = ach.Points;
+                if (useScaledPoints)
+                {
+                    pointsToDisplay = ach.ScaledPoints ?? ach.Points;
                 }
 
                 var item = new AchievementDisplayItem
@@ -203,7 +212,7 @@ namespace PlayniteAchievements.Services.Sidebar
                     ShowHiddenDescription = showDescription,
                     ProgressNum = ach.ProgressNum,
                     ProgressDenom = ach.ProgressDenom,
-                    PointsValue = ach.Points
+                    PointsValue = pointsToDisplay
                 };
 
                 if (canResolveReveals && ach.Hidden && !ach.Unlocked)
@@ -257,7 +266,7 @@ namespace PlayniteAchievements.Services.Sidebar
                                 IconPath = ach.UnlockedIconPath,
                                 UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
                                 GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
-                                PointsValue = ach.Points,
+                                PointsValue = pointsToDisplay,
                                 ProgressNum = ach.ProgressNum,
                                 ProgressDenom = ach.ProgressDenom,
                                 GameIconPath = gameIconPath,

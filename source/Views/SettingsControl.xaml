@@ -1032,6 +1032,38 @@
                                                Style="{StaticResource MutedTextStyle}"/>
                                 </Grid>
 
+                                <!-- RetroAchievements Points Display Mode -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Settings_RaPointsMode}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                    <ComboBox Grid.Row="0" Grid.Column="1"
+                                              SelectedValue="{Binding Persisted.RaPointsMode}"
+                                              SelectedValuePath="Tag"
+                                              VerticalAlignment="Center"
+                                              MinWidth="160"
+                                              HorizontalAlignment="Left">
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaPointsMode_Points}" Tag="points"/>
+                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaPointsMode_Scaled}" Tag="scaled"/>
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="1"
+                                               Text="{DynamicResource LOCPlayAch_Settings_RaPointsMode_Description}"
+                                               Margin="0,6,0,0"
+                                               Style="{StaticResource MutedTextStyle}"/>
+                                </Grid>
+
                                  <!-- Refreshing options -->
                                  <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ScanningHashing}"
                                             Style="{StaticResource SectionHeaderStyle}"

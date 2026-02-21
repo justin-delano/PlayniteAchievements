@@ -224,6 +224,7 @@ namespace PlayniteAchievements.Services.Database
             EnsureColumn(db, "AchievementDefinitions", "Category", "TEXT NULL", definitionColumns, ref backupPath);
             EnsureColumn(db, "AchievementDefinitions", "TrophyType", "TEXT NULL", definitionColumns, ref backupPath);
             EnsureColumn(db, "AchievementDefinitions", "IsCapstone", "INTEGER NOT NULL DEFAULT 0", definitionColumns, ref backupPath);
+            EnsureColumn(db, "AchievementDefinitions", "ScaledPoints", "INTEGER NULL", definitionColumns, ref backupPath);
 
             // Migrate UserGameProgress: NoAchievements -> HasAchievements (inverted) + add ExcludedByUser
             var progressColumns = GetColumnNames(db, "UserGameProgress");

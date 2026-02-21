@@ -45,6 +45,7 @@ namespace PlayniteAchievements.Services.Database
             public string UnlockedIconPath { get; set; }
             public string LockedIconPath { get; set; }
             public int? Points { get; set; }
+            public int? ScaledPoints { get; set; }
             public string Category { get; set; }
             public string TrophyType { get; set; }
             public long Hidden { get; set; }
@@ -64,6 +65,7 @@ namespace PlayniteAchievements.Services.Database
             public string UnlockedIconPath { get; set; }
             public string LockedIconPath { get; set; }
             public int? Points { get; set; }
+            public int? ScaledPoints { get; set; }
             public string Category { get; set; }
             public string TrophyType { get; set; }
             public long Hidden { get; set; }
@@ -288,6 +290,7 @@ namespace PlayniteAchievements.Services.Database
                         ad.UnlockedIconPath AS UnlockedIconPath,
                         ad.LockedIconPath AS LockedIconPath,
                         ad.Points AS Points,
+                        ad.ScaledPoints AS ScaledPoints,
                         ad.Category AS Category,
                         ad.TrophyType AS TrophyType,
                         ad.Hidden AS Hidden,
@@ -321,6 +324,7 @@ namespace PlayniteAchievements.Services.Database
                         UnlockedIconPath = row.UnlockedIconPath,
                         LockedIconPath = row.LockedIconPath,
                         Points = row.Points,
+                        ScaledPoints = row.ScaledPoints,
                         Category = row.Category,
                         TrophyType = row.TrophyType,
                         Hidden = row.Hidden != 0,
@@ -439,6 +443,7 @@ namespace PlayniteAchievements.Services.Database
                         ad.UnlockedIconPath AS UnlockedIconPath,
                         ad.LockedIconPath AS LockedIconPath,
                         ad.Points AS Points,
+                        ad.ScaledPoints AS ScaledPoints,
                         ad.Category AS Category,
                         ad.TrophyType AS TrophyType,
                         ad.Hidden AS Hidden,
@@ -474,6 +479,7 @@ namespace PlayniteAchievements.Services.Database
                         UnlockedIconPath = row.UnlockedIconPath,
                         LockedIconPath = row.LockedIconPath,
                         Points = row.Points,
+                        ScaledPoints = row.ScaledPoints,
                         Category = row.Category,
                         TrophyType = row.TrophyType,
                         Hidden = row.Hidden != 0,
@@ -1311,7 +1317,7 @@ namespace PlayniteAchievements.Services.Database
             var desiredApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var existingByApiName = db.Load<AchievementDefinitionRow>(
-                    @"SELECT Id, GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, IsCapstone, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc
+                    @"SELECT Id, GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, ScaledPoints, Category, TrophyType, Hidden, IsCapstone, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc
                       FROM AchievementDefinitions
                       WHERE GameId = ?;",
                     gameId)
@@ -1336,9 +1342,9 @@ namespace PlayniteAchievements.Services.Database
                 {
                     db.ExecuteNonQuery(
                         @"INSERT INTO AchievementDefinitions
-                            (GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, Category, TrophyType, Hidden, IsCapstone, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc)
+                            (GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath, Points, ScaledPoints, Category, TrophyType, Hidden, IsCapstone, GlobalPercentUnlocked, ProgressMax, CreatedUtc, UpdatedUtc)
                           VALUES
-                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                         gameId,
                         apiName,
                         DbValue(achievement.DisplayName),
@@ -1346,6 +1352,7 @@ namespace PlayniteAchievements.Services.Database
                         DbValue(achievement.UnlockedIconPath),
                         DbValue(achievement.LockedIconPath),
                         achievement.Points.HasValue ? (object)achievement.Points.Value : DBNull.Value,
+                        achievement.ScaledPoints.HasValue ? (object)achievement.ScaledPoints.Value : DBNull.Value,
                         DbValue(achievement.Category),
                         DbValue(achievement.TrophyType),
                         achievement.Hidden ? 1 : 0,
@@ -1371,6 +1378,7 @@ namespace PlayniteAchievements.Services.Database
                 var incomingUnlockedIconPath = NormalizeDbText(achievement.UnlockedIconPath);
                 var incomingLockedIconPath = NormalizeDbText(achievement.LockedIconPath);
                 var incomingPoints = achievement.Points;
+                var incomingScaledPoints = achievement.ScaledPoints;
                 var incomingCategory = NormalizeDbText(achievement.Category);
                 var incomingTrophyType = NormalizeDbText(achievement.TrophyType);
                 var incomingHidden = achievement.Hidden ? 1L : 0L;
@@ -1383,6 +1391,7 @@ namespace PlayniteAchievements.Services.Database
                               !NullableEquals(NormalizeDbText(existing.UnlockedIconPath), incomingUnlockedIconPath) ||
                               !NullableEquals(NormalizeDbText(existing.LockedIconPath), incomingLockedIconPath) ||
                               existing.Points != incomingPoints ||
+                              existing.ScaledPoints != incomingScaledPoints ||
                               !NullableEquals(NormalizeDbText(existing.Category), incomingCategory) ||
                               !NullableEquals(NormalizeDbText(existing.TrophyType), incomingTrophyType) ||
                               existing.Hidden != incomingHidden ||
@@ -1403,6 +1412,7 @@ namespace PlayniteAchievements.Services.Database
                           UnlockedIconPath = ?,
                           LockedIconPath = ?,
                           Points = ?,
+                          ScaledPoints = ?,
                           Category = ?,
                           TrophyType = ?,
                           Hidden = ?,
@@ -1416,6 +1426,7 @@ namespace PlayniteAchievements.Services.Database
                                         incomingUnlockedIconPath != null ? (object)incomingUnlockedIconPath : DBNull.Value,
                                         incomingLockedIconPath != null ? (object)incomingLockedIconPath : DBNull.Value,
                                         incomingPoints.HasValue ? (object)incomingPoints.Value : DBNull.Value,
+                                        incomingScaledPoints.HasValue ? (object)incomingScaledPoints.Value : DBNull.Value,
                                         incomingCategory != null ? (object)incomingCategory : DBNull.Value,
                                         incomingTrophyType != null ? (object)incomingTrophyType : DBNull.Value,
                                         incomingHidden,

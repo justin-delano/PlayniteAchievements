@@ -13,7 +13,6 @@ using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
-using RefreshModeKeys = PlayniteAchievements.Models.RefreshModeKeys;
 
 namespace PlayniteAchievements.ViewModels
 {
@@ -344,6 +343,8 @@ namespace PlayniteAchievements.ViewModels
                 var showIcon = _settings?.Persisted.ShowHiddenIcon ?? false;
                 var showTitle = _settings?.Persisted.ShowHiddenTitle ?? false;
                 var showDescription = _settings?.Persisted.ShowHiddenDescription ?? false;
+                var useScaledPoints = _settings?.Persisted.RaPointsMode == "scaled" &&
+                                      string.Equals(gameData.ProviderName, "RetroAchievements", StringComparison.OrdinalIgnoreCase);
                 var displayItems = new List<AchievementDisplayItem>();
                 var unlockCounts = new Dictionary<DateTime, int>();
 
@@ -375,6 +376,13 @@ namespace PlayniteAchievements.ViewModels
                         }
                     }
 
+                    // Determine which points to display based on provider and settings
+                    int? pointsToDisplay = ach.Points;
+                    if (useScaledPoints)
+                    {
+                        pointsToDisplay = ach.ScaledPoints ?? ach.Points;
+                    }
+
                     displayItems.Add(new AchievementDisplayItem
                     {
                         GameName = gameData.GameName ?? "Unknown",
@@ -392,7 +400,7 @@ namespace PlayniteAchievements.ViewModels
                         ShowHiddenDescription = showDescription,
                         ProgressNum = ach.ProgressNum,
                         ProgressDenom = ach.ProgressDenom,
-                        PointsValue = ach.Points
+                        PointsValue = pointsToDisplay
                     });
                 }
 

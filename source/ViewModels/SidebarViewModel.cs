@@ -1915,9 +1915,18 @@ namespace PlayniteAchievements.ViewModels
                         return new List<AchievementDisplayItem>();
                     }
 
+                    var useScaledPoints = _settings?.Persisted?.RaPointsMode == "scaled" &&
+                                          string.Equals(gameData.ProviderName, "RetroAchievements", StringComparison.OrdinalIgnoreCase);
                     var achievements = new List<AchievementDisplayItem>(gameData.Achievements.Count);
                     foreach (var ach in gameData.Achievements)
                     {
+                        // Determine which points to display based on provider and settings
+                        int? pointsToDisplay = ach.Points;
+                        if (useScaledPoints)
+                        {
+                            pointsToDisplay = ach.ScaledPoints ?? ach.Points;
+                        }
+
                         var item = new AchievementDisplayItem
                         {
                             GameName = gameData.GameName ?? "Unknown",
@@ -1935,7 +1944,7 @@ namespace PlayniteAchievements.ViewModels
                             ShowHiddenDescription = showDescription,
                             ProgressNum = ach.ProgressNum,
                             ProgressDenom = ach.ProgressDenom,
-                            PointsValue = ach.Points
+                            PointsValue = pointsToDisplay
                         };
 
                         if (canResolveReveals && ach.Hidden && !ach.Unlocked)
