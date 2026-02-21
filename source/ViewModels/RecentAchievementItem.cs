@@ -88,20 +88,20 @@ namespace PlayniteAchievements.ViewModels
         }
 
         private double _globalPercent;
-        public double GlobalPercent 
-        { 
-            get => _globalPercent; 
-            set 
-            { 
+        public double GlobalPercent
+        {
+            get => _globalPercent;
+            set
+            {
                 // Use explicit check
                 if (Math.Abs(_globalPercent - value) > 0.001)
                 {
                     SetValue(ref _globalPercent, value);
                     OnPropertyChanged(nameof(GlobalPercentText));
-                    OnPropertyChanged(nameof(RarityIconKey));
+                    OnPropertyChanged(nameof(Rarity));
                     OnPropertyChanged(nameof(RarityBrush));
                 }
-            } 
+            }
         }
 
         private int? _pointsValue;
@@ -151,9 +151,9 @@ namespace PlayniteAchievements.ViewModels
         public int Points => PointsValue ?? 0;
         public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
 
-        public string RarityIconKey => RarityHelper.GetRarityIconKey(GlobalPercent);
+        public RarityTier Rarity => RarityHelper.GetRarityTier(GlobalPercent);
 
-        public System.Windows.Media.SolidColorBrush RarityBrush => RarityHelper.GetRarityBrush(GlobalPercent);
+        public System.Windows.Media.SolidColorBrush RarityBrush => Rarity.ToBrush();
         public string HiddenTitleSuffix => Hidden ? ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle_WithParens") : string.Empty;
 
         public void UpdateFrom(RecentAchievementItem other)
