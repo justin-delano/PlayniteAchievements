@@ -51,6 +51,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableArchiveScanning = true;
         private bool _enableDiscHashing = true;
         private bool _enableRaNameFallback = true;
+        private Dictionary<Guid, int> _raGameIdOverrides = new Dictionary<Guid, int>();
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _sidebarAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -395,6 +396,17 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Manual overrides for RetroAchievements game IDs.
+        /// Key is Playnite Game ID, value is RetroAchievements game ID.
+        /// Used when automatic hash-based or name-based matching fails.
+        /// </summary>
+        public Dictionary<Guid, int> RaGameIdOverrides
+        {
+            get => _raGameIdOverrides;
+            set => SetValue(ref _raGameIdOverrides, value ?? new Dictionary<Guid, int>());
+        }
+
+        /// <summary>
         /// Persisted visibility state for shared achievement DataGrid columns.
         /// Key is a stable column identifier, value indicates whether the column is visible.
         /// </summary>
@@ -647,6 +659,9 @@ namespace PlayniteAchievements.Models.Settings
                 EnableArchiveScanning = this.EnableArchiveScanning,
                 EnableDiscHashing = this.EnableDiscHashing,
                 EnableRaNameFallback = this.EnableRaNameFallback,
+                RaGameIdOverrides = this.RaGameIdOverrides != null
+                    ? new Dictionary<Guid, int>(this.RaGameIdOverrides)
+                    : new Dictionary<Guid, int>(),
                 DataGridColumnVisibility = this.DataGridColumnVisibility != null
                     ? new Dictionary<string, bool>(this.DataGridColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
