@@ -53,9 +53,9 @@
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Open Game in Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInSidebar">Open Game in Sidebar</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RevealAchievement">Reveal Achievement Details</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Exclude this Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Exclude this Game and Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Include this Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ExcludeGames">Exclude Selected Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ExcludeGames">Exclude Selected Games and Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGames">Include Selected Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetRaGameId">Set RetroAchievements Game ID...</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ChangeRaGameId">Change RetroAchievements Game ID...</sys:String>

@@ -1445,19 +1445,12 @@ namespace PlayniteAchievements.Services
             if (excluded)
             {
                 _settings.Persisted.ExcludedGameIds.Add(playniteGameId);
+                // Clear cached data when excluding
+                _cacheService.RemoveGameData(playniteGameId);
             }
             else
             {
                 _settings.Persisted.ExcludedGameIds.Remove(playniteGameId);
-            }
-
-            // Update in-memory cache for immediate UI feedback
-            var key = playniteGameId.ToString();
-            var data = _cacheService.LoadGameData(key);
-            if (data != null)
-            {
-                data.ExcludedByUser = excluded;
-                _cacheService.SaveGameData(key, data);
             }
 
             TryPersistSettings(notifySettingsSaved: true);
