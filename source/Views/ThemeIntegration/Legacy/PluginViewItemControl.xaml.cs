@@ -8,6 +8,7 @@ using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 {

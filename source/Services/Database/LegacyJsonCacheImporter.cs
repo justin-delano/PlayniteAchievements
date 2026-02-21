@@ -1,5 +1,6 @@
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;

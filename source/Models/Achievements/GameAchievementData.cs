@@ -2,10 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PlayniteAchievements.Models
+namespace PlayniteAchievements.Models.Achievements
 {
-    using Achievements;
-
     /// <summary>
     /// User achievement data for a single game, combining schema metadata with user progress.
     /// </summary>
@@ -61,4 +59,3 @@ namespace PlayniteAchievements.Models
         public List<AchievementDetail> Achievements { get; set; } = new List<AchievementDetail>();
     }
 }
-

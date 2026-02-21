@@ -11,6 +11,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services.Sidebar;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Views.Helpers;

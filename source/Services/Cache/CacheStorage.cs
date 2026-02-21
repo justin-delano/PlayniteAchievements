@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Services

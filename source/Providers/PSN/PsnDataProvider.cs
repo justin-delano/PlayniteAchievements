@@ -1,4 +1,5 @@
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using Playnite.SDK;
 using Playnite.SDK.Models;

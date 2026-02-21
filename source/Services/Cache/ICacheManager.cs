@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Services
 {
