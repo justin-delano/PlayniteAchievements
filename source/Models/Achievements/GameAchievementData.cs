@@ -37,6 +37,12 @@ namespace PlayniteAchievements.Models.Achievements
         public bool ExcludedByUser { get; set; }
 
         /// <summary>
+        /// True if AppId was set via manual user override rather than automatic detection.
+        /// Used to indicate which games have manual RA ID overrides.
+        /// </summary>
+        public bool IsAppIdOverridden { get; set; }
+
+        /// <summary>
         /// Computed completion status based on all achievements unlocked or capstone.
         /// </summary>
         public bool IsCompleted =>
