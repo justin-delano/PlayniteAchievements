@@ -550,7 +550,6 @@ namespace PlayniteAchievements
 
             // Use custom text input dialog
             var inputDialog = new TextInputDialog(
-                ResourceProvider.GetString("LOCPlayAch_Menu_RaGameId_DialogTitle"),
                 ResourceProvider.GetString("LOCPlayAch_Menu_RaGameId_DialogHint"),
                 defaultText);
 

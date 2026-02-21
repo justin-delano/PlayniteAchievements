@@ -7,15 +7,6 @@ namespace PlayniteAchievements.Views
 {
     public partial class TextInputDialog : UserControl
     {
-        public string Title
-        {
-            get => (string)GetValue(TitleProperty);
-            set => SetValue(TitleProperty, value);
-        }
-
-        public static readonly DependencyProperty TitleProperty =
-            DependencyProperty.Register(nameof(Title), typeof(string), typeof(TextInputDialog), new PropertyMetadata(string.Empty));
-
         public string Hint
         {
             get => (string)GetValue(HintProperty);
@@ -44,9 +35,8 @@ namespace PlayniteAchievements.Views
             DataContext = this;
         }
 
-        public TextInputDialog(string title, string hint, string defaultText = "") : this()
+        public TextInputDialog(string hint, string defaultText = "") : this()
         {
-            Title = title ?? string.Empty;
             Hint = hint ?? string.Empty;
             InputText = defaultText ?? string.Empty;
         }

@@ -4,34 +4,18 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="180" d:DesignWidth="420"
+             d:DesignHeight="160" d:DesignWidth="420"
              FocusManager.FocusedElement="{Binding ElementName=InputTextBox}">
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header Section -->
+        <!-- Content Section -->
         <Border Grid.Row="0"
                 Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="16,12">
-            <TextBlock Text="{Binding Title}"
-                       Style="{DynamicResource BaseTextBlockStyle}"
-                       FontWeight="Bold"
-                       Foreground="{DynamicResource TextBrush}"
-                       VerticalAlignment="Center"/>
-        </Border>
-
-        <!-- Content Section -->
-        <Border Grid.Row="1"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="0,0,0,1"
                 Padding="16,14">
             <StackPanel>
                 <!-- Hint Text -->
@@ -42,22 +26,23 @@
                            TextWrapping="Wrap"
                            Margin="0,0,0,12"/>
 
-                <!-- Input TextBox with placeholder -->
-                <Grid>
-                    <TextBox x:Name="InputTextBox"
-                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                             Padding="10,8"
-                             VerticalContentAlignment="Center"
-                             Background="Transparent"
-                             BorderBrush="{DynamicResource NormalBorderBrush}"
-                             KeyDown="InputTextBox_KeyDown"/>
-                </Grid>
+                <!-- Input TextBox -->
+                <TextBox x:Name="InputTextBox"
+                         Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                         Padding="10,8"
+                         MinHeight="32"
+                         VerticalContentAlignment="Center"
+                         Background="Transparent"
+                         BorderBrush="{DynamicResource NormalBorderBrush}"
+                         KeyDown="InputTextBox_KeyDown"/>
             </StackPanel>
         </Border>
 
         <!-- Buttons Section -->
-        <Border Grid.Row="2"
+        <Border Grid.Row="1"
                 Background="{DynamicResource ControlBackgroundBrush}"
+                BorderBrush="{DynamicResource NormalBorderBrush}"
+                BorderThickness="0,1,0,0"
                 Padding="16,12">
             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Right">
