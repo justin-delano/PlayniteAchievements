@@ -76,6 +76,31 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public int BronzeCount { get; set; }
 
         /// <summary>
+        /// Total number of common achievements unlocked across all games.
+        /// </summary>
+        public int TotalCommonUnlockCount { get; set; }
+
+        /// <summary>
+        /// Total number of uncommon achievements unlocked across all games.
+        /// </summary>
+        public int TotalUncommonUnlockCount { get; set; }
+
+        /// <summary>
+        /// Total number of rare achievements unlocked across all games.
+        /// </summary>
+        public int TotalRareUnlockCount { get; set; }
+
+        /// <summary>
+        /// Total number of ultra-rare achievements unlocked across all games.
+        /// </summary>
+        public int TotalUltraRareUnlockCount { get; set; }
+
+        /// <summary>
+        /// Total number of achievements unlocked across all games.
+        /// </summary>
+        public int TotalUnlockCount => TotalCommonUnlockCount + TotalUncommonUnlockCount + TotalRareUnlockCount + TotalUltraRareUnlockCount;
+
+        /// <summary>
         /// Total trophy count across all games.
         /// </summary>
         public int TotalCount => PlatCount + GoldCount + SilverCount + BronzeCount;
