@@ -1,6 +1,6 @@
 using System;
 
-namespace PlayniteAchievements.Models
+namespace PlayniteAchievements.Models.Achievements
 {
     /// <summary>
     /// Statistics for achievement rarity tiers.
