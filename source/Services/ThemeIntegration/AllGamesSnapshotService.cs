@@ -105,7 +105,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 var isCompleted = data.IsCompleted;
                 var latestUnlockLocal = latestUnlockUtc == DateTime.MinValue ? DateTime.MinValue : latestUnlockUtc.ToLocalTime();
 
-                GetTrophyCounts(data, out var gold, out var silver, out var bronze);
+                GetTrophyCounts(
+                    data,
+                    out var commonUnlockCount,
+                    out var uncommonUnlockCount,
+                    out var rareUnlockCount,
+                    out var ultraRareUnlockCount,
+                    out var gold,
+                    out var silver,
+                    out var bronze);
 
                 var openCmd = new RelayCommand(_ => openGameWindowCallback(id));
 
@@ -120,7 +128,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     bronze,
                     isCompleted,
                     latestUnlockLocal,
-                    openCmd));
+                    openCmd,
+                    commonUnlockCount,
+                    uncommonUnlockCount,
+                    rareUnlockCount,
+                    ultraRareUnlockCount));
             }
 
             items = items
@@ -302,8 +314,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             return gameInfo.TryGetValue(gameId.Value, out var info) ? info : null;
         }
 
-        private static void GetTrophyCounts(GameAchievementData data, out int gold, out int silver, out int bronze)
+        private static void GetTrophyCounts(
+            GameAchievementData data,
+            out int commonUnlockCount,
+            out int uncommonUnlockCount,
+            out int rareUnlockCount,
+            out int ultraRareUnlockCount,
+            out int gold,
+            out int silver,
+            out int bronze)
         {
+            commonUnlockCount = 0;
+            uncommonUnlockCount = 0;
+            rareUnlockCount = 0;
+            ultraRareUnlockCount = 0;
             gold = 0;
             silver = 0;
             bronze = 0;
@@ -323,17 +347,25 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 var percent = a.GlobalPercentUnlocked ?? 100;
                 var tier = RarityHelper.GetRarityTier(percent);
 
-                if (tier == RarityTier.Uncommon)
+                switch (tier)
                 {
-                    silver++;
-                }
-                else if (tier == RarityTier.Common)
-                {
-                    bronze++;
-                }
-                else
-                {
-                    gold++;
+                    case RarityTier.UltraRare:
+                        ultraRareUnlockCount++;
+                        gold++;
+                        break;
+                    case RarityTier.Rare:
+                        rareUnlockCount++;
+                        gold++;
+                        break;
+                    case RarityTier.Uncommon:
+                        uncommonUnlockCount++;
+                        silver++;
+                        break;
+                    case RarityTier.Common:
+                    default:
+                        commonUnlockCount++;
+                        bronze++;
+                        break;
                 }
             }
         }

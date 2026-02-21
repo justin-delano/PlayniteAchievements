@@ -21,6 +21,26 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public Guid GameId { get; }
 
         /// <summary>
+        /// Number of common achievements unlocked.
+        /// </summary>
+        public int CommonUnlockCount { get; }
+
+        /// <summary>
+        /// Number of uncommon achievements unlocked.
+        /// </summary>
+        public int UncommonUnlockCount { get; }
+
+        /// <summary>
+        /// Number of rare achievements unlocked.
+        /// </summary>
+        public int RareUnlockCount { get; }
+
+        /// <summary>
+        /// Number of ultra-rare achievements unlocked.
+        /// </summary>
+        public int UltraRareUnlockCount { get; }
+
+        /// <summary>
         /// Game name.
         /// </summary>
         public string Name { get; }
@@ -128,7 +148,11 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             int bronzeCount,
             bool isCompleted,
             DateTime lastUnlockDate,
-            ICommand openAchievementWindow)
+            ICommand openAchievementWindow,
+            int commonUnlockCount = 0,
+            int uncommonUnlockCount = 0,
+            int rareUnlockCount = 0,
+            int ultraRareUnlockCount = 0)
         {
             GameId = gameId;
             Name = name ?? string.Empty;
@@ -141,6 +165,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             IsCompleted = isCompleted;
             LastUnlockDate = lastUnlockDate;
             OpenAchievementWindow = openAchievementWindow;
+            CommonUnlockCount = Math.Max(0, commonUnlockCount);
+            UncommonUnlockCount = Math.Max(0, uncommonUnlockCount);
+            RareUnlockCount = Math.Max(0, rareUnlockCount);
+            UltraRareUnlockCount = Math.Max(0, ultraRareUnlockCount);
         }
     }
 }

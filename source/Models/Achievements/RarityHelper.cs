@@ -78,18 +78,6 @@ namespace PlayniteAchievements.Models.Achievements
             if (globalPercent <= _uncommonThreshold) return RarityTier.Uncommon;
             return RarityTier.Common;
         }
-
-        /// <summary>
-        /// Gets the badge icon resource key for a given global unlock percentage.
-        /// </summary>
-        public static string GetRarityIconKey(double globalPercent)
-            => GetRarityTier(globalPercent).ToIconKey();
-
-        /// <summary>
-        /// Gets the rarity brush for a given global unlock percentage.
-        /// </summary>
-        public static SolidColorBrush GetRarityBrush(double globalPercent)
-            => GetRarityTier(globalPercent).ToBrush();
     }
 
     public enum RarityTier
