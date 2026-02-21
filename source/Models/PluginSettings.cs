@@ -387,6 +387,41 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public int TotalUnlockCount
+        {
+            get => Theme.TotalUnlockCount;
+            set => Theme.TotalUnlockCount = value;
+        }
+
+        [DontSerialize]
+        public int TotalCommonUnlockCount
+        {
+            get => Theme.TotalCommonUnlockCount;
+            set => Theme.TotalCommonUnlockCount = value;
+        }
+
+        [DontSerialize]
+        public int TotalUncommonUnlockCount
+        {
+            get => Theme.TotalUncommonUnlockCount;
+            set => Theme.TotalUncommonUnlockCount = value;
+        }
+
+        [DontSerialize]
+        public int TotalRareUnlockCount
+        {
+            get => Theme.TotalRareUnlockCount;
+            set => Theme.TotalRareUnlockCount = value;
+        }
+
+        [DontSerialize]
+        public int TotalUltraRareUnlockCount
+        {
+            get => Theme.TotalUltraRareUnlockCount;
+            set => Theme.TotalUltraRareUnlockCount = value;
+        }
+
+        [DontSerialize]
         public int Level
         {
             get => LegacyTheme.Level;
