@@ -20,6 +20,7 @@
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
             <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
+            <converters:RarityTierToIconConverter x:Key="RarityToIcon"/>
 
             <!-- Style for Expander Header ToggleButton -->
             <Style x:Key="ExpanderHeaderStyle" TargetType="ToggleButton">
@@ -761,26 +762,11 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <Image Width="16" Height="16" Margin="0,0,4,0" Effect="{StaticResource BadgeShadow}" VerticalAlignment="Center">
-                                    <Image.Style>
-                                        <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgePlatinumHexagon">
-                                                    <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgeGoldPentagon">
-                                                    <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgeSilverSquare">
-                                                    <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding RarityIconKey}" Value="BadgeBronzeTriangle">
-                                                    <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Image.Style>
-                                </Image>
+                                <Image Width="16" Height="16" Margin="0,0,4,0"
+                                    Source="{Binding Rarity, Converter={StaticResource RarityToIcon}}"
+                                    Style="{StaticResource RarityIcon}"
+                                    Effect="{StaticResource BadgeShadow}"
+                                    VerticalAlignment="Center"/>
 
                                 <TextBlock Text="{Binding GlobalPercentText}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
