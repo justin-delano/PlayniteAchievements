@@ -506,6 +506,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     LockedIconPath = string.IsNullOrWhiteSpace(badge) ? null : $"https://i.retroachievements.org/Badge/{badge}_lock.png",
                     Points = ach.Points,
                     Category = null,
+                    IsCapstone = string.Equals(ach.Type, "win_condition", StringComparison.OrdinalIgnoreCase),
                     UnlockTimeUtc = unlockUtc,
                     GlobalPercentUnlocked = globalPercent,
                     Hidden = false
