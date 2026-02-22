@@ -233,6 +233,11 @@
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">1. Connectez-vous sur PlayStation.com (cochez &quot;Faire confiance à ce navigateur&quot;)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp2">2. Allez sur la page de cookie SSO Sony et copiez la valeur npsso</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Collez la valeur ci-dessous et appuyez sur Entrée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1">Connectez-vous sur PlayStation.com</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1Note">(cochez &quot;Faire confiance à ce navigateur&quot;)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2">Ouvrir la page de cookie SSO Sony</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2Note">et copiez la valeur npsso</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step3">Collez la valeur ci-dessous et appuyez sur Entrée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnNpsso">Cookie NPSSO</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">Copiez uniquement la partie xxx de {&quot;npsso&quot;:&quot;xxx&quot;}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Connexion (Legacy)</sys:String>

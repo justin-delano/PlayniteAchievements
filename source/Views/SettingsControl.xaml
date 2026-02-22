@@ -1463,13 +1463,13 @@
                                 <!-- NPSSO Instructions -->
                                 <StackPanel Margin="0,0,0,16">
                                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
-                                        <Run Text="1. "/><Hyperlink NavigateUri="https://www.playstation.com" RequestNavigate="Hyperlink_RequestNavigate" TextDecorations="Underline" FontWeight="SemiBold"><TextBlock Foreground="#4CC9F0" Text="Sign in at PlayStation.com"/></Hyperlink><Run Text=" (check &quot;Trust this browser&quot;)"/>
+                                        <Run Text="1. "/><Hyperlink NavigateUri="https://www.playstation.com" RequestNavigate="Hyperlink_RequestNavigate" TextDecorations="Underline" FontWeight="SemiBold"><TextBlock Foreground="#4CC9F0" Text="{DynamicResource LOCPlayAch_Settings_Psn_Step1}"/></Hyperlink><Run Text=" "/><Run Text="{DynamicResource LOCPlayAch_Settings_Psn_Step1Note}"/>
                                     </TextBlock>
                                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
-                                        <Run Text="2. "/><Hyperlink NavigateUri="https://ca.account.sony.com/api/v1/ssocookie" RequestNavigate="Hyperlink_RequestNavigate" TextDecorations="Underline" FontWeight="SemiBold"><TextBlock Foreground="#4CC9F0" Text="Open Sony SSO cookie page"/></Hyperlink><Run Text=" and copy the npsso value"/>
+                                        <Run Text="2. "/><Hyperlink NavigateUri="https://ca.account.sony.com/api/v1/ssocookie" RequestNavigate="Hyperlink_RequestNavigate" TextDecorations="Underline" FontWeight="SemiBold"><TextBlock Foreground="#4CC9F0" Text="{DynamicResource LOCPlayAch_Settings_Psn_Step2}"/></Hyperlink><Run Text=" "/><Run Text="{DynamicResource LOCPlayAch_Settings_Psn_Step2Note}"/>
                                     </TextBlock>
                                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}">
-                                        <Run Text="3. "/><Run Text="Paste the value below and press Enter"/>
+                                        <Run Text="3. "/><Run Text="{DynamicResource LOCPlayAch_Settings_Psn_Step3}"/>
                                     </TextBlock>
                                 </StackPanel>
 

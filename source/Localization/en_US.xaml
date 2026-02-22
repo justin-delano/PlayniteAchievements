@@ -233,6 +233,11 @@
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">1. Sign in at PlayStation.com (check "Trust this browser")</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp2">2. Go to the Sony SSO cookie page and copy the npsso value</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Paste the value below and press Enter</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1">Sign in at PlayStation.com</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1Note">(check "Trust this browser")</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2">Open Sony SSO cookie page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2Note">and copy the npsso value</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step3">Paste the value below and press Enter</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnNpsso">NPSSO Cookie</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">Copy only the xxx part from {"npsso":"xxx"}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Login (Legacy)</sys:String>
