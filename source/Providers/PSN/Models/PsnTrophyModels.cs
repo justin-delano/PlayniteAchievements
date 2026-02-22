@@ -21,6 +21,27 @@ namespace PlayniteAchievements.Providers.PSN.Models
         public string NpCommunicationId { get; set; }
     }
 
+    /// <summary>
+    /// Response from /users/me/trophyTitles - lists all games user has earned trophies in.
+    /// </summary>
+    internal sealed class PsnAllTrophyTitlesResponse
+    {
+        [JsonProperty("trophyTitles")]
+        public List<PsnTrophyTitle> TrophyTitles { get; set; }
+    }
+
+    /// <summary>
+    /// Individual trophy title entry from user's trophy list.
+    /// </summary>
+    internal sealed class PsnTrophyTitle
+    {
+        [JsonProperty("npCommunicationId")]
+        public string NpCommunicationId { get; set; }
+
+        [JsonProperty("trophyTitleName")]
+        public string TrophyTitleName { get; set; }
+    }
+
     internal sealed class PsnTrophiesUserResponse
     {
         [JsonProperty("trophies")]

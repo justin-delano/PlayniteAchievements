@@ -24,6 +24,7 @@ namespace PlayniteAchievements.Providers.PSN
         private const string UrlTrophiesDetailsAll = UrlBase + "/npCommunicationIds/{0}/trophyGroups/all/trophies";
         private const string UrlTrophiesUserAll = UrlBase + "/users/me/npCommunicationIds/{0}/trophyGroups/all/trophies";
         private const string UrlTitlesWithIdsMobile = UrlBase + "/users/me/titles/trophyTitles?npTitleIds={0}";
+        private const string UrlAllTrophyTitles = UrlBase + "/users/me/trophyTitles";
 
         public PsnScanner(
             ILogger logger,
@@ -280,6 +281,35 @@ namespace PlayniteAchievements.Providers.PSN
         }
 
         /// <summary>
+        /// Normalizes a game name for comparison by removing common variations.
+        /// </summary>
+        private static string NormalizeGameName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return string.Empty;
+            }
+
+            // Remove common suffixes and special characters, convert to lowercase
+            var normalized = name.ToLowerInvariant()
+                .Replace(":", "")
+                .Replace("-", "")
+                .Replace("_", " ")
+                .Replace("®", "")
+                .Replace("™", "")
+                .Replace("©", "")
+                .Trim();
+
+            // Remove multiple spaces
+            while (normalized.Contains("  "))
+            {
+                normalized = normalized.Replace("  ", " ");
+            }
+
+            return normalized;
+        }
+
+        /// <summary>
         /// Maps the global language setting to a PSN-compatible Accept-Language header value.
         /// PSN uses standard HTTP Accept-Language format (e.g., "en-US", "fr-FR").
         /// </summary>
@@ -395,8 +425,51 @@ namespace PlayniteAchievements.Providers.PSN
                 }
             }
 
+            // Fallback: search user's trophy titles by game name
+            var nameBasedResult = await ResolveByNameAsync(http, game?.Name, cancel).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(nameBasedResult))
+            {
+                _logger?.Info($"[PSNAch] Resolved '{game?.Name}' via name search to '{nameBasedResult}'");
+                return nameBasedResult;
+            }
+
             _logger?.Warn($"[PSNAch] Unable to resolve npCommunicationId for '{game?.Name}' (GameId='{normalized}')");
             return null;
+        }
+
+        /// <summary>
+        /// Fallback method that searches the user's trophy titles by game name.
+        /// This matches SuccessStory's GetNPWR_2 approach.
+        /// </summary>
+        private async Task<string> ResolveByNameAsync(HttpClient http, string gameName, CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(gameName))
+            {
+                return null;
+            }
+
+            try
+            {
+                var json = await http.GetStringAsync(UrlAllTrophyTitles).ConfigureAwait(false);
+                cancel.ThrowIfCancellationRequested();
+
+                var response = JsonConvert.DeserializeObject<PsnAllTrophyTitlesResponse>(json);
+                if (response?.TrophyTitles == null || response.TrophyTitles.Count == 0)
+                {
+                    return null;
+                }
+
+                var normalizedSearch = NormalizeGameName(gameName);
+                var match = response.TrophyTitles.FirstOrDefault(t =>
+                    NormalizeGameName(t?.TrophyTitleName) == normalizedSearch);
+
+                return match?.NpCommunicationId;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[PSNAch] Name-based lookup failed for '{gameName}'");
+                return null;
+            }
         }
     }
 }
