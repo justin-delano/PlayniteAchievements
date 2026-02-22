@@ -1460,9 +1460,46 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PsnConnection}"
                                            Style="{StaticResource SectionHeaderStyle}"/>
 
+                                <!-- NPSSO Instructions -->
+                                <StackPanel Margin="0,0,0,16">
+                                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
+                                        <Run Text="1. "/><Hyperlink NavigateUri="https://www.playstation.com" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource GlyphBrush}">Sign in at PlayStation.com</Hyperlink><Run Text=" (check &quot;Trust this browser&quot;)"/>
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
+                                        <Run Text="2. "/><Hyperlink NavigateUri="https://ca.account.sony.com/api/v1/ssocookie" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource GlyphBrush}">Open Sony SSO cookie page</Hyperlink><Run Text=" and copy the npsso value"/>
+                                    </TextBlock>
+                                    <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}">
+                                        <Run Text="3. "/><Run Text="{DynamicResource LOCPlayAch_Settings_Psn_OwnAuthHelp3}"/>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <!-- NPSSO Cookie Input -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Settings_PsnNpsso}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Top"
+                                               Margin="0,8,0,0"/>
+
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding PsnNpsso, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource {x:Type TextBox}}"
+                                             Padding="8,6"
+                                             VerticalAlignment="Top"
+                                             MaxHeight="60"
+                                             TextWrapping="Wrap"
+                                             AcceptsReturn="False"
+                                             VerticalScrollBarVisibility="Auto"/>
+                                </Grid>
+
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,16"
-                                           Text="{DynamicResource LOCPlayAch_Settings_Psn_OwnAuthHelp}"/>
+                                           Text="{DynamicResource LOCPlayAch_Settings_PsnNpssoHint}"/>
 
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
@@ -1538,7 +1575,12 @@
                                             </Grid>
 
                                             <StackPanel Orientation="Horizontal">
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Psn_Login}"
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Psn_Check}"
+                                                        Style="{StaticResource PsnAuthActionButtonStyle}"
+                                                        Click="PsnAuth_Check_Click"
+                                                        Padding="14,6"
+                                                        Margin="0,0,8,0"/>
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Psn_LoginLegacy}"
                                                         Style="{StaticResource PsnAuthActionButtonStyle}"
                                                         Click="PsnAuth_Login_Click"
                                                         Padding="14,6"
