@@ -279,25 +279,37 @@ namespace PlayniteAchievements.Providers.PSN
                 var npsso = _settings?.PsnNpsso;
                 var hasTokenFile = File.Exists(_tokenPath);
 
+                _logger?.Debug($"[PSNAch] CheckAuthentication: hasTokenFile={hasTokenFile}, npsso length={npsso?.Length ?? 0}");
+
                 if (!hasTokenFile && string.IsNullOrWhiteSpace(npsso))
                 {
                     _logger?.Debug("[PSNAch] No token file or NPSSO configured.");
                     return false;
                 }
 
-                // Check if user is logged in
-                if (!await GetIsUserLoggedInAsync().ConfigureAwait(false))
+                // If we have NPSSO but no token file, try NPSSO authentication first
+                if (!hasTokenFile && !string.IsNullOrWhiteSpace(npsso))
                 {
-                    // Try refreshing with NPSSO
-                    if (!string.IsNullOrWhiteSpace(npsso))
+                    _logger?.Debug("[PSNAch] No token file, trying NPSSO authentication");
+                    TryRefreshCookies(npsso);
+                }
+
+                // Check if user is logged in
+                var isLoggedIn = await GetIsUserLoggedInAsync().ConfigureAwait(false);
+                _logger?.Debug($"[PSNAch] GetIsUserLoggedIn result: {isLoggedIn}");
+
+                if (!isLoggedIn)
+                {
+                    // Try refreshing with NPSSO if we haven't already
+                    if (hasTokenFile && !string.IsNullOrWhiteSpace(npsso))
                     {
+                        _logger?.Debug("[PSNAch] Token file exists but not logged in, trying NPSSO refresh");
                         TryRefreshCookies(npsso);
-                        if (!await GetIsUserLoggedInAsync().ConfigureAwait(false))
-                        {
-                            return false;
-                        }
+                        isLoggedIn = await GetIsUserLoggedInAsync().ConfigureAwait(false);
+                        _logger?.Debug($"[PSNAch] After NPSSO refresh, isLoggedIn: {isLoggedIn}");
                     }
-                    else
+
+                    if (!isLoggedIn)
                     {
                         return false;
                     }
@@ -306,8 +318,10 @@ namespace PlayniteAchievements.Providers.PSN
                 // Get mobile token if needed
                 if (_mobileToken == null)
                 {
+                    _logger?.Debug("[PSNAch] Getting mobile token");
                     if (!await GetMobileTokenAsync().ConfigureAwait(false))
                     {
+                        _logger?.Debug("[PSNAch] Failed to get mobile token");
                         return false;
                     }
                 }
@@ -439,8 +453,11 @@ namespace PlayniteAchievements.Providers.PSN
         {
             try
             {
+                _logger?.Debug($"[PSNAch] Attempting to refresh cookies with NPSSO (length={npsso?.Length ?? 0})");
+
                 using (var webView = _api.WebViews.CreateOffscreenView())
                 {
+                    // Set the NPSSO cookie using Playnite SDK's HttpCookie type
                     var npssoCookie = new HttpCookie
                     {
                         Domain = "ca.account.sony.com",
@@ -449,9 +466,15 @@ namespace PlayniteAchievements.Providers.PSN
                         Path = "/"
                     };
                     webView.SetCookies("https://ca.account.sony.com", npssoCookie);
+
+                    // Navigate to login - this should auto-authenticate with the NPSSO cookie
                     webView.NavigateAndWait(LoginUrl);
+
+                    var finalAddress = webView.GetCurrentAddress();
+                    _logger?.Debug($"[PSNAch] After NPSSO navigation, final address: {finalAddress}");
                 }
 
+                // Dump the cookies that were set during authentication
                 DumpCookies();
             }
             catch (Exception ex)
@@ -516,10 +539,13 @@ namespace PlayniteAchievements.Providers.PSN
                 using (var view = _api.WebViews.CreateOffscreenView())
                 {
                     var cookies = view.GetCookies();
+                    _logger?.Debug($"[PSNAch] DumpCookies: found {cookies?.Count ?? 0} cookies");
+
                     var cookieContainer = new CookieContainer();
 
                     foreach (var cookie in cookies)
                     {
+                        _logger?.Debug($"[PSNAch] Cookie: {cookie.Name}@{cookie.Domain} (value length={cookie.Value?.Length ?? 0})");
                         try
                         {
                             if (cookie.Domain == ".playstation.com")
@@ -541,6 +567,7 @@ namespace PlayniteAchievements.Providers.PSN
                         }
                     }
 
+                    _logger?.Debug($"[PSNAch] Cookie container has {cookieContainer.Count} cookies");
                     WriteCookiesToDisk(cookieContainer);
                 }
             }

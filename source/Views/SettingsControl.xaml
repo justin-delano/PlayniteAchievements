@@ -1587,11 +1587,6 @@
                                                         Click="PsnAuth_Login_Click"
                                                         Padding="14,6"
                                                         Margin="0,0,8,0"/>
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Psn_Check}"
-                                                        Style="{StaticResource PsnAuthActionButtonStyle}"
-                                                        Click="PsnAuth_Check_Click"
-                                                        Padding="14,6"
-                                                        Margin="0,0,8,0"/>
                                                 <Button Content="{DynamicResource LOCPlayAch_Settings_Psn_Clear}"
                                                         Style="{StaticResource PsnAuthActionButtonStyle}"
                                                         Click="PsnAuth_Clear_Click"
