@@ -1400,8 +1400,6 @@ namespace PlayniteAchievements.Views
                     return "LOCPlayAch_Settings_PsnAuth_TimedOut";
                 case PsnAuthOutcome.ProbeFailed:
                     return "LOCPlayAch_Settings_PsnAuth_ProbeFailed";
-                case PsnAuthOutcome.LibraryMissing:
-                    return "LOCPlayAch_Settings_PsnAuth_LibraryMissing";
                 case PsnAuthOutcome.Failed:
                 default:
                     return "LOCPlayAch_Settings_PsnAuth_Failed";
