@@ -1376,30 +1376,28 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                var result = _cacheService.SetCapstone(playniteGameId, capstoneApiName);
-                if (result.Success)
+                // Manual capstones are stored only in settings and applied as an overlay
+                // via ApplyUserPreferences() when loading cached data
+                if (string.IsNullOrWhiteSpace(capstoneApiName))
                 {
-                    // Update settings (survives cache clear)
-                    if (string.IsNullOrWhiteSpace(capstoneApiName))
-                    {
-                        _settings.Persisted.ManualCapstones.Remove(playniteGameId);
-                    }
-                    else
-                    {
-                        _settings.Persisted.ManualCapstones[playniteGameId] = capstoneApiName.Trim();
-                    }
-
-                    TryPersistSettings(notifySettingsSaved: true);
-                    NotifyCacheInvalidatedThrottled(force: true);
+                    _settings.Persisted.ManualCapstones.Remove(playniteGameId);
                 }
-                return result;
+                else
+                {
+                    _settings.Persisted.ManualCapstones[playniteGameId] = capstoneApiName.Trim();
+                }
+
+                TryPersistSettings(notifySettingsSaved: true);
+                NotifyCacheInvalidatedThrottled(force: true);
+
+                return CacheWriteResult.CreateSuccess(playniteGameId.ToString(), DateTime.UtcNow);
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed setting capstone for gameId={playniteGameId}.");
                 return CacheWriteResult.CreateFailure(
                     playniteGameId.ToString(),
-                    "sql_write_failed",
+                    "settings_save_failed",
                     ex.Message,
                     ex);
             }

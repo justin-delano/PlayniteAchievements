@@ -735,125 +735,6 @@ namespace PlayniteAchievements.Services.Database
             }
         }
 
-        public CacheWriteResult SetCapstone(Guid playniteGameId, string capstoneApiName)
-        {
-            if (playniteGameId == Guid.Empty)
-            {
-                return CacheWriteResult.CreateFailure(
-                    string.Empty,
-                    "invalid_game_id",
-                    ResourceProvider.GetString("LOCPlayAch_Capstone_Error_InvalidGame"));
-            }
-
-            var playniteGameIdText = playniteGameId.ToString();
-            var writeUtc = DateTime.UtcNow;
-            var updatedIso = ToIso(writeUtc);
-            var normalizedCapstoneApiName = NormalizeMarkerApiName(capstoneApiName);
-
-            try
-            {
-                return WithDb(db =>
-                {
-                    CacheWriteResult result = null;
-
-                    db.RunTransaction(() =>
-                    {
-                        var progress = db.Load<UserGameProgressRow>(
-                                @"SELECT
-                                    ugp.Id AS Id,
-                                    ugp.UserId AS UserId,
-                                    ugp.GameId AS GameId,
-                                    ugp.CacheKey AS CacheKey,
-                                    ugp.HasAchievements AS HasAchievements,
-                                    ugp.AchievementsUnlocked AS AchievementsUnlocked,
-                                    ugp.TotalAchievements AS TotalAchievements,
-                                    ugp.LastUpdatedUtc AS LastUpdatedUtc,
-                                    ugp.CreatedUtc AS CreatedUtc,
-                                    ugp.UpdatedUtc AS UpdatedUtc
-                                  FROM UserGameProgress ugp
-                                  INNER JOIN Users u ON u.Id = ugp.UserId
-                                  WHERE u.IsCurrentUser = 1
-                                    AND ugp.CacheKey = ?
-                                  ORDER BY ugp.LastUpdatedUtc DESC, ugp.Id DESC
-                                  LIMIT 1;",
-                                playniteGameIdText)
-                            .FirstOrDefault();
-
-                        if (progress == null)
-                        {
-                            result = CacheWriteResult.CreateFailure(
-                                playniteGameIdText,
-                                "game_not_cached",
-                                ResourceProvider.GetString("LOCPlayAch_Capstone_Error_NotCached"));
-                            return;
-                        }
-
-                        // Validate that the capstone achievement exists if specified
-                        if (!string.IsNullOrWhiteSpace(normalizedCapstoneApiName))
-                        {
-                            var markerExists = db.ExecuteScalar<long>(
-                                @"SELECT EXISTS(
-                                    SELECT 1
-                                    FROM AchievementDefinitions ad
-                                    INNER JOIN Games g ON g.Id = ad.GameId
-                                    WHERE g.PlayniteGameId = ?
-                                      AND ad.ApiName = ?
-                                    LIMIT 1
-                                  );",
-                                playniteGameIdText,
-                                normalizedCapstoneApiName);
-
-                            if (markerExists == 0)
-                            {
-                                result = CacheWriteResult.CreateFailure(
-                                    progress.CacheKey,
-                                    "marker_not_found",
-                                    ResourceProvider.GetString("LOCPlayAch_Capstone_Error_MarkerNotFound"));
-                                return;
-                            }
-                        }
-
-                        // Clear all capstones for this game
-                        db.ExecuteNonQuery(
-                            @"UPDATE AchievementDefinitions
-                              SET IsCapstone = 0,
-                                  UpdatedUtc = ?
-                              WHERE GameId = ?;",
-                            updatedIso,
-                            progress.GameId);
-
-                        // Set the new capstone if specified
-                        if (!string.IsNullOrWhiteSpace(normalizedCapstoneApiName))
-                        {
-                            db.ExecuteNonQuery(
-                                @"UPDATE AchievementDefinitions
-                                  SET IsCapstone = 1,
-                                      UpdatedUtc = ?
-                                  WHERE GameId = ? AND ApiName = ?;",
-                                updatedIso,
-                                progress.GameId,
-                                normalizedCapstoneApiName);
-                        }
-
-                        result = CacheWriteResult.CreateSuccess(progress.CacheKey, writeUtc);
-                    });
-
-                    return result ?? CacheWriteResult.CreateFailure(
-                        playniteGameIdText,
-                        "sql_write_failed",
-                        ResourceProvider.GetString("LOCPlayAch_Capstone_Error_SaveFailed"));
-                });
-            }
-            catch (Exception ex)
-            {
-                return CacheWriteResult.CreateFailure(
-                    playniteGameIdText,
-                    "sql_write_failed",
-                    ex.Message,
-                    ex);
-            }
-        }
-
         public void ClearCacheData()
         {
             lock (_sync)
@@ -1292,7 +1173,8 @@ namespace PlayniteAchievements.Services.Database
                 var apiName = achievement.ApiName.Trim();
                 desiredApiNames.Add(apiName);
 
-                // Compute IsCapstone: use provided value, or default to true for platinum trophies
+                // Compute IsCapstone: provider-set value or auto-detect platinum trophies.
+                // Manual capstones from settings are applied on top at load time.
                 var isCapstone = achievement.IsCapstone ||
                     string.Equals(achievement.TrophyType?.Trim(), "platinum", StringComparison.OrdinalIgnoreCase);
 
