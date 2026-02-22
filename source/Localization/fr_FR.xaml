@@ -229,9 +229,13 @@
     <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_CookiesCleared">Session PlayStation effacée.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_AlreadyAuthenticated">PlayStation configuré avec succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_ProbeFailed">Impossible de vérifier l'état d'authentification PlayStation.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_WindowNotOpened">Impossible d'ouvrir le flux de connexion PlayStation. Vérifiez l'installation de PSN Library puis réessayez.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_LibraryMissing">Plugin PSN Library introuvable. Installez-le et configurez-le d'abord.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">Cliquez sur Connexion pour ouvrir le flux d'authentification PSN Library. Après connexion, PlayniteAchievements détectera et utilisera votre session PlayStation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_WindowNotOpened">Impossible d'ouvrir la fenêtre de connexion PlayStation. Vérifiez que Playnite a le focus et réessayez.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">1. Connectez-vous sur PlayStation.com (cochez &quot;Faire confiance à ce navigateur&quot;)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp2">2. Allez sur la page de cookie SSO Sony et copiez la valeur npsso</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Collez la valeur ci-dessous et cliquez sur Vérifier</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnNpsso">Cookie NPSSO</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">La valeur npsso de {&quot;npsso&quot;:&quot;xxx&quot;} - copiez uniquement la partie xxx.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Connexion (Legacy)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Login">Connexion</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Check">Vérifier</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Clear">Effacer</sys:String>
