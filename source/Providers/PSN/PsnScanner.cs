@@ -259,18 +259,12 @@ namespace PlayniteAchievements.Providers.PSN
 
         private static string GetTrophyKey(PsnUserTrophy trophy)
         {
-            return BuildTrophyKey(trophy?.TrophyGroupId, trophy?.TrophyId ?? 0);
+            return (trophy?.TrophyId ?? 0).ToString(CultureInfo.InvariantCulture);
         }
 
         private static string GetTrophyKey(PsnTrophyDetail trophy)
         {
-            return BuildTrophyKey(trophy?.TrophyGroupId, trophy?.TrophyId ?? 0);
-        }
-
-        private static string BuildTrophyKey(string trophyGroupId, int trophyId)
-        {
-            var group = string.IsNullOrWhiteSpace(trophyGroupId) ? "default" : trophyGroupId.Trim();
-            return string.Concat(group, ":", trophyId.ToString(CultureInfo.InvariantCulture));
+            return (trophy?.TrophyId ?? 0).ToString(CultureInfo.InvariantCulture);
         }
 
         private static string NormalizeGameId(string raw)
