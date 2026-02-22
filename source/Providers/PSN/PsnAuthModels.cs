@@ -10,8 +10,7 @@ namespace PlayniteAchievements.Providers.PSN
         Cancelled,
         TimedOut,
         Failed,
-        ProbeFailed,
-        LibraryMissing
+        ProbeFailed
     }
 
     public enum PsnAuthProgressStep
@@ -54,5 +53,18 @@ namespace PlayniteAchievements.Providers.PSN
         public PsnAuthRequiredException(string message) : base(message)
         {
         }
+    }
+
+    /// <summary>
+    /// Mobile OAuth tokens from Sony account authentication.
+    /// </summary>
+    public class MobileTokens
+    {
+        public string access_token { get; set; }
+        public string token_type { get; set; }
+        public int expires_in { get; set; }
+        public string refresh_token { get; set; }
+        public int refresh_token_expires_in { get; set; }
+        public string scope { get; set; }
     }
 }
