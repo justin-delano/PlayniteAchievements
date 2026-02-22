@@ -1,10 +1,13 @@
 using Playnite.SDK;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Models.Settings;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
+using System.Net;
+using System.Net.Http;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,29 +18,33 @@ namespace PlayniteAchievements.Providers.PSN
         private static readonly TimeSpan InteractiveAuthTimeout = TimeSpan.FromMinutes(3);
         private static readonly TimeSpan CachedTokenLifetime = TimeSpan.FromMinutes(45);
 
+        private const string LoginUrl = @"https://web.np.playstation.com/api/session/v1/signin?redirect_uri=https://io.playstation.com/central/auth/login%3FpostSignInURL=https://www.playstation.com/home%26cancelURL=https://www.playstation.com/home&smcid=web:pdc";
+        private const string MobileCodeUrl = "https://ca.account.sony.com/api/authz/v3/oauth/authorize?access_type=offline&client_id=09515159-7237-4370-9b40-3806e67c0891&redirect_uri=com.scee.psxandroid.scecompcall%3A%2F%2Fredirect&response_type=code&scope=psn%3Amobile.v2.core%20psn%3Aclientapp";
+        private const string MobileTokenUrl = "https://ca.account.sony.com/api/authz/v3/oauth/token";
+        private const string MobileTokenAuth = "MDk1MTUxNTktNzIzNy00MzcwLTliNDAtMzgwNmU2N2MwODkxOnVjUGprYTV0bnRCMktxc1A=";
+        private const string GameListProbeUrl = "https://web.np.playstation.com/api/graphql/v1/op?operationName=getPurchasedGameList&variables=%7B%22isActive%22%3Atrue%2C%22platform%22%3A%5B%22ps3%22%2C%22ps4%22%2C%22ps5%22%5D%2C%22start%22%3A0%2C%22size%22%3A1%2C%22subscriptionService%22%3A%22NONE%22%7D&extensions=%7B%22persistedQuery%22%3A%7B%22version%22%3A1%2C%22sha256Hash%22%3A%222c045408b0a4d0264bb5a3edfed4efd49fb4749cf8d216be9043768adff905e2%22%7D%7D";
+
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
-        private readonly object _clientLock = new object();
         private readonly SemaphoreSlim _tokenSemaphore = new SemaphoreSlim(1, 1);
+        private readonly string _tokenPath;
 
-        private string _psnExtensionFolderName;
-        private string _psnLibraryDllPath;
-        private string _psnExtensionFolderPath;
-
-        private object _psnClientInstance;
-        private Type _psnClientType;
+        private readonly PersistedSettings _settings;
+        private MobileTokens _mobileToken;
 
         private string _accessToken;
         private DateTime _tokenAcquiredUtc = DateTime.MinValue;
         private bool _isSessionAuthenticated;
 
-        public PsnSessionManager(IPlayniteAPI api, ILogger logger)
+        public PsnSessionManager(IPlayniteAPI api, ILogger logger, PersistedSettings settings)
         {
             if (api == null) throw new ArgumentNullException(nameof(api));
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
 
             _api = api;
             _logger = logger;
-            TryInitialize();
+            _settings = settings;
+            _tokenPath = Path.Combine(api.Paths.ExtensionsDataPath, "PlayniteAchievements", "psn_cookies.bin");
         }
 
         public bool IsAuthenticated => _isSessionAuthenticated;
@@ -78,15 +85,6 @@ namespace PlayniteAchievements.Providers.PSN
             try
             {
                 ct.ThrowIfCancellationRequested();
-
-                if (!TryInitialize())
-                {
-                    SetCachedToken(null);
-                    return PsnAuthResult.Create(
-                        PsnAuthOutcome.LibraryMissing,
-                        "LOCPlayAch_Settings_PsnAuth_LibraryMissing",
-                        windowOpened: false);
-                }
 
                 var token = await TryAcquireTokenAsync(ct, forceRefresh: false).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(token))
@@ -131,16 +129,6 @@ namespace PlayniteAchievements.Providers.PSN
                 ct.ThrowIfCancellationRequested();
                 progress?.Report(PsnAuthProgressStep.CheckingExistingSession);
 
-                if (!TryInitialize())
-                {
-                    SetCachedToken(null);
-                    progress?.Report(PsnAuthProgressStep.Failed);
-                    return PsnAuthResult.Create(
-                        PsnAuthOutcome.LibraryMissing,
-                        "LOCPlayAch_Settings_PsnAuth_LibraryMissing",
-                        windowOpened: false);
-                }
-
                 if (!forceInteractive)
                 {
                     var existingToken = await TryAcquireTokenAsync(ct, forceRefresh: false).ConfigureAwait(false);
@@ -155,7 +143,7 @@ namespace PlayniteAchievements.Providers.PSN
                 }
 
                 progress?.Report(PsnAuthProgressStep.OpeningLoginWindow);
-                windowOpened = await TryTriggerAuthenticationAsync(ct).ConfigureAwait(false);
+                windowOpened = await LoginAsync(ct).ConfigureAwait(false);
 
                 if (!windowOpened)
                 {
@@ -214,8 +202,7 @@ namespace PlayniteAchievements.Providers.PSN
         {
             try
             {
-                TryClearAuthentication();
-                ResetClientState();
+                ClearAuthentication();
             }
             catch (Exception ex)
             {
@@ -223,6 +210,344 @@ namespace PlayniteAchievements.Providers.PSN
             }
 
             SetCachedToken(null);
+        }
+
+        private async Task<bool> LoginAsync(CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var loggedIn = false;
+
+            try
+            {
+                // Delete existing token file if exists
+                if (File.Exists(_tokenPath))
+                {
+                    File.Delete(_tokenPath);
+                }
+
+                var webViewSettings = new WebViewSettings
+                {
+                    WindowHeight = 700,
+                    WindowWidth = 580,
+                    UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+                };
+
+                using (var view = _api.WebViews.CreateView(webViewSettings))
+                {
+                    view.LoadingChanged += (s, e) =>
+                    {
+                        var address = view.GetCurrentAddress();
+                        if (address.StartsWith(@"https://www.playstation.com/"))
+                        {
+                            loggedIn = true;
+                            view.Close();
+                        }
+                    };
+
+                    // Clear existing cookies
+                    view.DeleteDomainCookies(".sony.com");
+                    view.DeleteDomainCookies(".ca.account.sony.com");
+                    view.DeleteDomainCookies("ca.account.sony.com");
+                    view.DeleteDomainCookies(".playstation.com");
+                    view.DeleteDomainCookies("io.playstation.com");
+
+                    view.Navigate(LoginUrl);
+                    view.OpenDialog();
+                }
+
+                if (!loggedIn)
+                {
+                    return false;
+                }
+
+                // Dump cookies to disk
+                await Task.Run(() => DumpCookies()).ConfigureAwait(false);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[PSNAch] Login failed.");
+                return false;
+            }
+        }
+
+        private async Task<bool> CheckAuthenticationAsync()
+        {
+            try
+            {
+                var npsso = _settings?.PsnNpsso;
+                var hasTokenFile = File.Exists(_tokenPath);
+
+                if (!hasTokenFile && string.IsNullOrWhiteSpace(npsso))
+                {
+                    _logger?.Debug("[PSNAch] No token file or NPSSO configured.");
+                    return false;
+                }
+
+                // Check if user is logged in
+                if (!await GetIsUserLoggedInAsync().ConfigureAwait(false))
+                {
+                    // Try refreshing with NPSSO
+                    if (!string.IsNullOrWhiteSpace(npsso))
+                    {
+                        TryRefreshCookies(npsso);
+                        if (!await GetIsUserLoggedInAsync().ConfigureAwait(false))
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                // Get mobile token if needed
+                if (_mobileToken == null)
+                {
+                    if (!await GetMobileTokenAsync().ConfigureAwait(false))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[PSNAch] CheckAuthentication failed.");
+                return false;
+            }
+        }
+
+        private void ClearAuthentication()
+        {
+            try
+            {
+                if (File.Exists(_tokenPath))
+                {
+                    File.Delete(_tokenPath);
+                }
+                _mobileToken = null;
+                _logger?.Info("[PSNAch] Authentication cleared.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[PSNAch] Failed to clear authentication.");
+            }
+        }
+
+        private async Task<bool> GetIsUserLoggedInAsync()
+        {
+            try
+            {
+                var cookieContainer = ReadCookiesFromDisk();
+                if (cookieContainer == null || cookieContainer.Count == 0)
+                {
+                    return false;
+                }
+
+                using (var handler = new HttpClientHandler { CookieContainer = cookieContainer })
+                using (var httpClient = new HttpClient(handler))
+                {
+                    httpClient.Timeout = TimeSpan.FromSeconds(10);
+                    var response = await httpClient.GetAsync(GameListProbeUrl).ConfigureAwait(false);
+                    return response.IsSuccessStatusCode;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[PSNAch] GetIsUserLoggedIn check failed.");
+                return false;
+            }
+        }
+
+        private async Task<bool> GetMobileTokenAsync()
+        {
+            var cookieContainer = ReadCookiesFromDisk();
+            if (cookieContainer == null || cookieContainer.Count == 0)
+            {
+                return false;
+            }
+
+            using (var handler = new HttpClientHandler { CookieContainer = cookieContainer, AllowAutoRedirect = false })
+            using (var httpClient = new HttpClient(handler))
+            {
+                string mobileCode;
+                try
+                {
+                    var mobileCodeResponse = await httpClient.GetAsync(MobileCodeUrl).ConfigureAwait(false);
+                    if (mobileCodeResponse.StatusCode != HttpStatusCode.Redirect)
+                    {
+                        _logger?.Debug($"[PSNAch] Mobile code request returned {mobileCodeResponse.StatusCode}, expected redirect.");
+                        return false;
+                    }
+
+                    var location = mobileCodeResponse.Headers.Location;
+                    if (location == null)
+                    {
+                        return false;
+                    }
+
+                    mobileCode = GetQueryParam(location.Query, "code");
+                    if (string.IsNullOrWhiteSpace(mobileCode))
+                    {
+                        return false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "[PSNAch] Failed to get mobile code.");
+                    return false;
+                }
+
+                try
+                {
+                    var requestMessage = new HttpRequestMessage(new HttpMethod("POST"), MobileTokenUrl);
+                    var formContent = new List<KeyValuePair<string, string>>
+                    {
+                        new KeyValuePair<string, string>("code", mobileCode),
+                        new KeyValuePair<string, string>("redirect_uri", "com.scee.psxandroid.scecompcall://redirect"),
+                        new KeyValuePair<string, string>("grant_type", "authorization_code"),
+                        new KeyValuePair<string, string>("token_format", "jwt")
+                    };
+                    requestMessage.Content = new FormUrlEncodedContent(formContent);
+                    requestMessage.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", MobileTokenAuth);
+
+                    var tokenResponse = await httpClient.SendAsync(requestMessage).ConfigureAwait(false);
+                    var responseContent = await tokenResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    if (!tokenResponse.IsSuccessStatusCode)
+                    {
+                        _logger?.Debug($"[PSNAch] Token request failed: {tokenResponse.StatusCode} - {responseContent}");
+                        return false;
+                    }
+
+                    _mobileToken = Newtonsoft.Json.JsonConvert.DeserializeObject<MobileTokens>(responseContent);
+                    return _mobileToken != null && !string.IsNullOrWhiteSpace(_mobileToken.access_token);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "[PSNAch] Failed to exchange mobile code for token.");
+                    return false;
+                }
+            }
+        }
+
+        private void TryRefreshCookies(string npsso)
+        {
+            try
+            {
+                using (var webView = _api.WebViews.CreateOffscreenView())
+                {
+                    var npssoCookie = new HttpCookie
+                    {
+                        Domain = "ca.account.sony.com",
+                        Value = npsso,
+                        Name = "npsso",
+                        Path = "/"
+                    };
+                    webView.SetCookies("https://ca.account.sony.com", npssoCookie);
+                    webView.NavigateAndWait(LoginUrl);
+                }
+
+                DumpCookies();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[PSNAch] Failed to refresh cookies with NPSSO.");
+            }
+        }
+
+        private CookieContainer ReadCookiesFromDisk()
+        {
+            try
+            {
+                if (!File.Exists(_tokenPath))
+                {
+                    return new CookieContainer();
+                }
+
+                using (var stream = File.Open(_tokenPath, FileMode.Open))
+                {
+                    var formatter = new BinaryFormatter();
+                    return (CookieContainer)formatter.Deserialize(stream);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[PSNAch] Failed to read cookies from disk.");
+                return new CookieContainer();
+            }
+        }
+
+        private void WriteCookiesToDisk(CookieContainer cookieJar)
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(_tokenPath);
+                if (!Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                if (File.Exists(_tokenPath))
+                {
+                    File.Delete(_tokenPath);
+                }
+
+                using (var stream = File.Create(_tokenPath))
+                {
+                    var formatter = new BinaryFormatter();
+                    formatter.Serialize(stream, cookieJar);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[PSNAch] Failed to write cookies to disk.");
+            }
+        }
+
+        private void DumpCookies()
+        {
+            try
+            {
+                using (var view = _api.WebViews.CreateOffscreenView())
+                {
+                    var cookies = view.GetCookies();
+                    var cookieContainer = new CookieContainer();
+
+                    foreach (var cookie in cookies)
+                    {
+                        try
+                        {
+                            if (cookie.Domain == ".playstation.com")
+                            {
+                                cookieContainer.Add(new Uri("https://web.np.playstation.com"), new Cookie(cookie.Name, cookie.Value));
+                            }
+                            if (cookie.Domain == ".ca.account.sony.com" || cookie.Domain == "ca.account.sony.com")
+                            {
+                                cookieContainer.Add(new Uri("https://ca.account.sony.com"), new Cookie(cookie.Name, cookie.Value));
+                            }
+                            if (cookie.Domain == ".sony.com")
+                            {
+                                cookieContainer.Add(new Uri("https://ca.account.sony.com"), new Cookie(cookie.Name, cookie.Value));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.Debug(ex, $"[PSNAch] Failed to add cookie: {cookie.Name}@{cookie.Domain}");
+                        }
+                    }
+
+                    WriteCookiesToDisk(cookieContainer);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[PSNAch] Failed to dump cookies.");
+            }
         }
 
         private async Task<string> TryAcquireTokenAsync(CancellationToken ct, bool forceRefresh)
@@ -240,7 +565,13 @@ namespace PlayniteAchievements.Providers.PSN
                     return _accessToken;
                 }
 
-                var token = await GetBridgeAccessTokenAsync(ct).ConfigureAwait(false);
+                if (!await CheckAuthenticationAsync().ConfigureAwait(false))
+                {
+                    SetCachedToken(null);
+                    return null;
+                }
+
+                var token = _mobileToken?.access_token;
                 if (string.IsNullOrWhiteSpace(token))
                 {
                     SetCachedToken(null);
@@ -254,6 +585,32 @@ namespace PlayniteAchievements.Providers.PSN
             {
                 _tokenSemaphore.Release();
             }
+        }
+
+        private static string GetQueryParam(string query, string key)
+        {
+            if (string.IsNullOrWhiteSpace(query) || string.IsNullOrWhiteSpace(key))
+            {
+                return null;
+            }
+
+            // Remove leading '?' if present
+            if (query.StartsWith("?"))
+            {
+                query = query.Substring(1);
+            }
+
+            var pairs = query.Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var pair in pairs)
+            {
+                var keyValue = pair.Split(new[] { '=' }, 2);
+                if (keyValue.Length == 2 && string.Equals(keyValue[0], key, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Uri.UnescapeDataString(keyValue[1]);
+                }
+            }
+
+            return null;
         }
 
         private bool HasFreshCachedToken()
@@ -275,608 +632,6 @@ namespace PlayniteAchievements.Providers.PSN
             _accessToken = token;
             _tokenAcquiredUtc = DateTime.UtcNow;
             _isSessionAuthenticated = true;
-        }
-
-        private bool TryInitialize()
-        {
-            using (PerfScope.Start(_logger, "PSN.TryInitialize", thresholdMs: 50))
-            {
-                if (!string.IsNullOrWhiteSpace(_psnLibraryDllPath) &&
-                    !string.IsNullOrWhiteSpace(_psnExtensionFolderName) &&
-                    !string.IsNullOrWhiteSpace(_psnExtensionFolderPath))
-                {
-                    return true;
-                }
-
-                try
-                {
-                    var extensionsRoot = Path.Combine(_api.Paths.ConfigurationPath, "Extensions");
-                    if (!Directory.Exists(extensionsRoot))
-                    {
-                        _logger?.Warn($"[PSNAch] Extensions folder not found: {extensionsRoot}");
-                        return false;
-                    }
-
-                    var dll = Directory.EnumerateFiles(extensionsRoot, "*.dll", SearchOption.AllDirectories)
-                        .FirstOrDefault(p =>
-                            string.Equals(Path.GetFileName(p), "PSNLibrary.dll", StringComparison.OrdinalIgnoreCase) ||
-                            p.IndexOf("PSNLibrary", StringComparison.OrdinalIgnoreCase) >= 0);
-
-                    if (string.IsNullOrWhiteSpace(dll))
-                    {
-                        _logger?.Info("[PSNAch] PSNLibrary not found (no PSNLibrary*.dll).");
-                        return false;
-                    }
-
-                    _psnLibraryDllPath = dll;
-
-                    var dllDir = new DirectoryInfo(Path.GetDirectoryName(dll));
-                    var folderName = ResolveExtensionFolderNameFromDllPath(dllDir);
-                    if (string.IsNullOrWhiteSpace(folderName))
-                    {
-                        _logger?.Warn($"[PSNAch] Could not resolve PSNLibrary extension folder from: {dll}");
-                        return false;
-                    }
-
-                    _psnExtensionFolderName = folderName;
-                    _psnExtensionFolderPath = Path.Combine(extensionsRoot, _psnExtensionFolderName);
-
-                    _logger?.Info($"[PSNAch] PSNLibrary detected. ExtensionFolder='{_psnExtensionFolderName}' (dll='{dll}')");
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Error(ex, "[PSNAch] Failed to locate PSNLibrary.");
-                    return false;
-                }
-            }
-        }
-
-        private async Task<string> GetBridgeAccessTokenAsync(CancellationToken cancel)
-        {
-            cancel.ThrowIfCancellationRequested();
-
-            if (!TryInitialize())
-            {
-                return null;
-            }
-
-            if (!EnsureClientInitialized())
-            {
-                return null;
-            }
-
-            try
-            {
-                await InvokeIfExistsAsync(_psnClientInstance, _psnClientType, "CheckAuthentication", cancel).ConfigureAwait(false);
-
-                var token = TryReadAccessToken(_psnClientInstance, _psnClientType);
-                if (string.IsNullOrWhiteSpace(token))
-                {
-                    _logger?.Warn("[PSNAch] access_token empty. Not authenticated?");
-                    return null;
-                }
-
-                _logger?.Debug($"[PSNAch] PSN access token available (len={token.Length}).");
-                return token;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "[PSNAch] Failed to get access token from PSNLibrary.");
-                return null;
-            }
-        }
-
-        private async Task<bool> TryTriggerAuthenticationAsync(CancellationToken cancel)
-        {
-            cancel.ThrowIfCancellationRequested();
-
-            if (!TryInitialize())
-            {
-                return false;
-            }
-
-            if (!EnsureClientInitialized())
-            {
-                return TryOpenSettings();
-            }
-
-            var authMethodNames = new[]
-            {
-                "AuthenticateInteractiveAsync",
-                "AuthenticateAsync",
-                "Authenticate",
-                "LoginInteractiveAsync",
-                "LoginAsync",
-                "Login",
-                "OpenLoginWindow",
-                "OpenLoginDialog",
-                "StartAuthenticationAsync",
-                "StartAuthentication"
-            };
-
-            foreach (var methodName in authMethodNames)
-            {
-                if (await InvokeIfExistsAsync(_psnClientInstance, _psnClientType, methodName, cancel).ConfigureAwait(false))
-                {
-                    _logger?.Info($"[PSNAch] Invoked PSN auth method '{methodName}'.");
-                    return true;
-                }
-            }
-
-            _logger?.Info("[PSNAch] No interactive auth method found on PSNClient, trying to open PSNLibrary settings.");
-            return TryOpenSettings();
-        }
-
-        private bool TryClearAuthentication()
-        {
-            if (!TryInitialize())
-            {
-                return false;
-            }
-
-            if (!EnsureClientInitialized())
-            {
-                return false;
-            }
-
-            var clearMethodNames = new[]
-            {
-                "ClearAuthentication",
-                "ClearSession",
-                "Logout",
-                "SignOut",
-                "ResetAuthentication"
-            };
-
-            foreach (var methodName in clearMethodNames)
-            {
-                if (InvokeIfExistsSync(_psnClientInstance, _psnClientType, methodName))
-                {
-                    _logger?.Info($"[PSNAch] Invoked PSN clear auth method '{methodName}'.");
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private void ResetClientState()
-        {
-            lock (_clientLock)
-            {
-                _psnClientInstance = null;
-                _psnClientType = null;
-            }
-        }
-
-        private bool TryOpenSettings()
-        {
-            try
-            {
-                if (Guid.TryParse(_psnExtensionFolderName, out var extensionGuid))
-                {
-                    _api.MainView.OpenPluginSettings(extensionGuid);
-                    return true;
-                }
-
-                var addons = GetProp(_api, "Addons");
-                var plugins = GetProp(addons, "Plugins") as System.Collections.IEnumerable;
-                if (plugins == null)
-                {
-                    return false;
-                }
-
-                foreach (var wrapper in plugins)
-                {
-                    if (wrapper == null)
-                    {
-                        continue;
-                    }
-
-                    var wrapperTypeName = wrapper.GetType().FullName ?? string.Empty;
-                    var wrapperName = (GetProp(wrapper, "Name") as string) ?? string.Empty;
-                    var instance =
-                        GetProp(wrapper, "Plugin") ??
-                        GetProp(wrapper, "Instance") ??
-                        GetProp(wrapper, "PluginInstance") ??
-                        GetProp(wrapper, "Value");
-
-                    var instanceTypeName = instance?.GetType().FullName ?? string.Empty;
-                    var instanceName = (GetProp(instance, "Name") as string) ?? string.Empty;
-
-                    if (!LooksLikePsnPlugin(wrapperName, wrapperTypeName, instanceName, instanceTypeName))
-                    {
-                        continue;
-                    }
-
-                    var idObj =
-                        GetProp(wrapper, "Id") ??
-                        GetProp(wrapper, "AddonId") ??
-                        GetProp(wrapper, "PluginId") ??
-                        GetProp(instance, "Id");
-
-                    if (!TryExtractGuid(idObj, out var pluginId))
-                    {
-                        continue;
-                    }
-
-                    _api.MainView.OpenPluginSettings(pluginId);
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[PSNAch] Failed to open PSNLibrary settings.");
-            }
-
-            return false;
-        }
-
-        private bool EnsureClientInitialized()
-        {
-            if (_psnClientInstance != null && _psnClientType != null)
-            {
-                return true;
-            }
-
-            lock (_clientLock)
-            {
-                if (_psnClientInstance != null && _psnClientType != null)
-                {
-                    return true;
-                }
-
-                var assemblies = LoadAssembliesFromFolder(_psnExtensionFolderPath);
-                _psnClientType = FindPsnClientType(assemblies);
-                if (_psnClientType == null)
-                {
-                    _logger?.Warn("[PSNAch] PSNClient type not found in PSNLibrary extension DLLs.");
-                    return false;
-                }
-
-                var dataPath = Path.Combine(_api.Paths.ExtensionsDataPath, _psnExtensionFolderName ?? string.Empty);
-                _psnClientInstance = CreateClientInstanceBestEffort(_psnClientType, dataPath);
-                if (_psnClientInstance == null)
-                {
-                    _logger?.Warn("[PSNAch] Failed to create PSNClient instance.");
-                    return false;
-                }
-
-                return true;
-            }
-        }
-
-        private static string ResolveExtensionFolderNameFromDllPath(DirectoryInfo dllDir)
-        {
-            var current = dllDir;
-            while (current != null && current.Parent != null)
-            {
-                if (string.Equals(current.Parent.Name, "Extensions", StringComparison.OrdinalIgnoreCase))
-                {
-                    return current.Name;
-                }
-
-                current = current.Parent;
-            }
-
-            return null;
-        }
-
-        private static List<Assembly> LoadAssembliesFromFolder(string folder)
-        {
-            var list = new List<Assembly>();
-            if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
-            {
-                return list;
-            }
-
-            foreach (var dll in Directory.EnumerateFiles(folder, "*.dll", SearchOption.TopDirectoryOnly))
-            {
-                try
-                {
-                    list.Add(Assembly.LoadFrom(dll));
-                }
-                catch
-                {
-                    // Ignore individual load failures.
-                }
-            }
-
-            return list;
-        }
-
-        private static Type FindPsnClientType(List<Assembly> assemblies)
-        {
-            foreach (var asm in assemblies.Where(a => a != null))
-            {
-                foreach (var type in SafeGetTypes(asm))
-                {
-                    if (type == null)
-                    {
-                        continue;
-                    }
-
-                    if (type.Name.Equals("PSNClient", StringComparison.OrdinalIgnoreCase) ||
-                        (type.FullName?.IndexOf("PSNClient", StringComparison.OrdinalIgnoreCase) ?? -1) >= 0)
-                    {
-                        return type;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private static IEnumerable<Type> SafeGetTypes(Assembly asm)
-        {
-            try
-            {
-                return asm.GetTypes();
-            }
-            catch (ReflectionTypeLoadException ex)
-            {
-                return ex.Types?.Where(x => x != null) ?? Enumerable.Empty<Type>();
-            }
-            catch
-            {
-                return Enumerable.Empty<Type>();
-            }
-        }
-
-        private object CreateClientInstanceBestEffort(Type clientType, string dataPath)
-        {
-            var ctors = clientType.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
-
-            object TryInvoke(ConstructorInfo ctor, object[] args)
-            {
-                try
-                {
-                    return ctor.Invoke(args);
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "[PSNAch] PSNClient ctor invoke failed.");
-                    return null;
-                }
-            }
-
-            foreach (var ctor in ctors)
-            {
-                var ps = ctor.GetParameters();
-
-                if (ps.Length == 1 && ps[0].ParameterType.FullName == "PSNLibrary.PSNLibrary")
-                {
-                    var psnLibraryInstance = FindLoadedPluginInstance(ps[0].ParameterType);
-                    if (psnLibraryInstance == null)
-                    {
-                        return null;
-                    }
-
-                    return TryInvoke(ctor, new[] { psnLibraryInstance });
-                }
-
-                if (ps.Length == 1 && ps[0].ParameterType == typeof(string))
-                {
-                    return TryInvoke(ctor, new object[] { dataPath });
-                }
-
-                if (ps.Length == 0)
-                {
-                    return TryInvoke(ctor, null);
-                }
-            }
-
-            return null;
-        }
-
-        private object FindLoadedPluginInstance(Type expectedType)
-        {
-            try
-            {
-                var addons = GetProp(_api, "Addons");
-                var plugins = GetProp(addons, "Plugins") as System.Collections.IEnumerable;
-                if (plugins == null)
-                {
-                    return null;
-                }
-
-                foreach (var wrapper in plugins)
-                {
-                    if (wrapper == null)
-                    {
-                        continue;
-                    }
-
-                    if (expectedType.IsInstanceOfType(wrapper))
-                    {
-                        return wrapper;
-                    }
-
-                    var instance =
-                        GetProp(wrapper, "Plugin") ??
-                        GetProp(wrapper, "Instance") ??
-                        GetProp(wrapper, "PluginInstance") ??
-                        GetProp(wrapper, "Value");
-
-                    if (instance != null && expectedType.IsInstanceOfType(instance))
-                    {
-                        return instance;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "[PSNAch] Failed while searching for loaded PSNLibrary instance.");
-            }
-
-            return null;
-        }
-
-        private static string TryReadAccessToken(object clientInstance, Type clientType)
-        {
-            if (clientInstance == null || clientType == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                var mobileTokenField = clientType.GetField("mobileToken", BindingFlags.Instance | BindingFlags.NonPublic);
-                var mobileToken = mobileTokenField?.GetValue(clientInstance);
-
-                if (mobileToken != null)
-                {
-                    var token = TryReadStringProperty(mobileToken, "access_token") ??
-                                TryReadStringProperty(mobileToken, "AccessToken");
-                    if (!string.IsNullOrWhiteSpace(token))
-                    {
-                        return token;
-                    }
-                }
-
-                return TryReadStringProperty(clientInstance, "AccessToken") ??
-                       TryReadStringProperty(clientInstance, "access_token") ??
-                       TryReadStringProperty(clientInstance, "Token");
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static string TryReadStringProperty(object obj, string propertyName)
-        {
-            if (obj == null || string.IsNullOrWhiteSpace(propertyName))
-            {
-                return null;
-            }
-
-            try
-            {
-                var prop = obj.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                return prop?.GetValue(obj) as string;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private async Task<bool> InvokeIfExistsAsync(object instance, Type type, string methodName, CancellationToken ct)
-        {
-            try
-            {
-                var methods = type
-                    .GetMethods(BindingFlags.Instance | BindingFlags.Public)
-                    .Where(m => string.Equals(m.Name, methodName, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-                foreach (var method in methods)
-                {
-                    var parameters = method.GetParameters();
-                    object[] args;
-                    if (parameters.Length == 0)
-                    {
-                        args = null;
-                    }
-                    else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(CancellationToken))
-                    {
-                        args = new object[] { ct };
-                    }
-                    else if (parameters.Length == 1 && parameters[0].ParameterType == typeof(bool))
-                    {
-                        args = new object[] { true };
-                    }
-                    else
-                    {
-                        continue;
-                    }
-
-                    var result = method.Invoke(instance, args);
-                    if (result is Task taskResult)
-                    {
-                        await taskResult.ConfigureAwait(false);
-                    }
-
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"[PSNAch] Failed invoking method '{methodName}'.");
-            }
-
-            return false;
-        }
-
-        private bool InvokeIfExistsSync(object instance, Type type, string methodName)
-        {
-            try
-            {
-                var method = type.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public, null, Type.EmptyTypes, null);
-                if (method == null)
-                {
-                    return false;
-                }
-
-                method.Invoke(instance, null);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static bool LooksLikePsnPlugin(string wrapperName, string wrapperTypeName, string instanceName, string instanceTypeName)
-        {
-            var combined = string.Join("|", new[]
-            {
-                wrapperName ?? string.Empty,
-                wrapperTypeName ?? string.Empty,
-                instanceName ?? string.Empty,
-                instanceTypeName ?? string.Empty
-            });
-
-            return combined.IndexOf("PSNLibrary", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   combined.IndexOf("PlayStation", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        private static bool TryExtractGuid(object value, out Guid guid)
-        {
-            if (value is Guid g)
-            {
-                guid = g;
-                return true;
-            }
-
-            if (value is string s && Guid.TryParse(s, out var parsed))
-            {
-                guid = parsed;
-                return true;
-            }
-
-            guid = Guid.Empty;
-            return false;
-        }
-
-        private static object GetProp(object obj, string name)
-        {
-            if (obj == null)
-            {
-                return null;
-            }
-
-            try
-            {
-                var p = obj.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase);
-                return p?.GetValue(obj);
-            }
-            catch
-            {
-                return null;
-            }
         }
     }
 }
