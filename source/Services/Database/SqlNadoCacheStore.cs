@@ -765,7 +765,6 @@ namespace PlayniteAchievements.Services.Database
                                     ugp.GameId AS GameId,
                                     ugp.CacheKey AS CacheKey,
                                     ugp.HasAchievements AS HasAchievements,
-                                    ugp.ExcludedByUser AS ExcludedByUser,
                                     ugp.AchievementsUnlocked AS AchievementsUnlocked,
                                     ugp.TotalAchievements AS TotalAchievements,
                                     ugp.LastUpdatedUtc AS LastUpdatedUtc,
