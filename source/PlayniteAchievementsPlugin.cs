@@ -152,7 +152,7 @@ namespace PlayniteAchievements
                     _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, settings);
                     _gogSessionManager = new GogSessionManager(PlayniteApi, _logger, settings);
                     _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
-                    _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger);
+                    _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger, settings.Persisted);
                 }
 
                 List<IDataProvider> providers;
