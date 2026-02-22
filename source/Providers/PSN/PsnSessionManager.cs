@@ -359,11 +359,8 @@ namespace PlayniteAchievements.Providers.PSN
                 var cookieContainer = ReadCookiesFromDisk();
                 if (cookieContainer == null || cookieContainer.Count == 0)
                 {
-                    _logger?.Debug("[PSNAch] GetIsUserLoggedIn: No cookies in container");
                     return false;
                 }
-
-                _logger?.Debug($"[PSNAch] GetIsUserLoggedIn: Probing with {cookieContainer.Count} cookies");
 
                 using (var handler = new HttpClientHandler { CookieContainer = cookieContainer })
                 using (var httpClient = new HttpClient(handler))
@@ -371,7 +368,6 @@ namespace PlayniteAchievements.Providers.PSN
                     httpClient.DefaultRequestHeaders.TryAddWithoutValidation("x-apollo-operation-name", "pn_psn");
                     httpClient.Timeout = TimeSpan.FromSeconds(10);
                     var response = await httpClient.GetAsync(GameListProbeUrl).ConfigureAwait(false);
-                    _logger?.Debug($"[PSNAch] GetIsUserLoggedIn: Probe response {(int)response.StatusCode} {response.StatusCode}");
                     return response.IsSuccessStatusCode;
                 }
             }
