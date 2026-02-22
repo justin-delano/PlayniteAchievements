@@ -1463,13 +1463,13 @@
                                 <!-- NPSSO Instructions -->
                                 <StackPanel Margin="0,0,0,16">
                                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
-                                        <Run Text="1. "/><Hyperlink NavigateUri="https://www.playstation.com" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource GlyphBrush}">Sign in at PlayStation.com</Hyperlink><Run Text=" (check &quot;Trust this browser&quot;)"/>
+                                        <Run Text="1. "/><Hyperlink NavigateUri="https://www.playstation.com" RequestNavigate="Hyperlink_RequestNavigate" TextDecorations="Underline" FontWeight="SemiBold"><TextBlock Foreground="#4CC9F0" Text="Sign in at PlayStation.com"/></Hyperlink><Run Text=" (check &quot;Trust this browser&quot;)"/>
                                     </TextBlock>
                                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
-                                        <Run Text="2. "/><Hyperlink NavigateUri="https://ca.account.sony.com/api/v1/ssocookie" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{DynamicResource GlyphBrush}">Open Sony SSO cookie page</Hyperlink><Run Text=" and copy the npsso value"/>
+                                        <Run Text="2. "/><Hyperlink NavigateUri="https://ca.account.sony.com/api/v1/ssocookie" RequestNavigate="Hyperlink_RequestNavigate" TextDecorations="Underline" FontWeight="SemiBold"><TextBlock Foreground="#4CC9F0" Text="Open Sony SSO cookie page"/></Hyperlink><Run Text=" and copy the npsso value"/>
                                     </TextBlock>
                                     <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}">
-                                        <Run Text="3. "/><Run Text="{DynamicResource LOCPlayAch_Settings_Psn_OwnAuthHelp3}"/>
+                                        <Run Text="3. "/><Run Text="Paste the value below and press Enter"/>
                                     </TextBlock>
                                 </StackPanel>
 
@@ -1487,14 +1487,16 @@
                                                Margin="0,8,0,0"/>
 
                                     <TextBox Grid.Column="1"
-                                             Text="{Binding PsnNpsso, UpdateSourceTrigger=PropertyChanged}"
+                                             Text="{Binding Persisted.PsnNpsso, UpdateSourceTrigger=PropertyChanged}"
+                                             x:Name="PsnNpssoTextBox"
                                              Style="{StaticResource {x:Type TextBox}}"
                                              Padding="8,6"
                                              VerticalAlignment="Top"
                                              MaxHeight="60"
                                              TextWrapping="Wrap"
                                              AcceptsReturn="False"
-                                             VerticalScrollBarVisibility="Auto"/>
+                                             VerticalScrollBarVisibility="Auto"
+                                             KeyDown="PsnNpsso_KeyDown"/>
                                 </Grid>
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"

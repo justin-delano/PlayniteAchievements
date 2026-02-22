@@ -232,9 +232,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_WindowNotOpened">Impossible d'ouvrir la fenêtre de connexion PlayStation. Vérifiez que Playnite a le focus et réessayez.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">1. Connectez-vous sur PlayStation.com (cochez &quot;Faire confiance à ce navigateur&quot;)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp2">2. Allez sur la page de cookie SSO Sony et copiez la valeur npsso</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Collez la valeur ci-dessous et cliquez sur Vérifier</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Collez la valeur ci-dessous et appuyez sur Entrée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnNpsso">Cookie NPSSO</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">La valeur npsso de {&quot;npsso&quot;:&quot;xxx&quot;} - copiez uniquement la partie xxx.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">Copiez uniquement la partie xxx de {&quot;npsso&quot;:&quot;xxx&quot;}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Connexion (Legacy)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Login">Connexion</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Check">Vérifier</sys:String>

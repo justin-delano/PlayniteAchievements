@@ -1272,6 +1272,17 @@ namespace PlayniteAchievements.Views
         // PSN auth UI
         // -----------------------------
 
+        private async void PsnNpsso_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                await CheckPsnAuthAsync().ConfigureAwait(false);
+                _ = Dispatcher.BeginInvoke(new Action(() => MoveFocusFrom((TextBox)sender)));
+            }
+        }
+
         private async void PsnAuth_Check_Click(object sender, RoutedEventArgs e)
         {
             _logger?.Info("[PSNAch] Settings: Check Auth clicked.");

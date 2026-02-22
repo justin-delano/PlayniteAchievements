@@ -232,9 +232,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_PsnAuth_WindowNotOpened">Could not open PlayStation login window. Check Playnite focus and try again.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">1. Sign in at PlayStation.com (check "Trust this browser")</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp2">2. Go to the Sony SSO cookie page and copy the npsso value</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Paste the value below and click Check</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Paste the value below and press Enter</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnNpsso">NPSSO Cookie</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">The npsso value from {"npsso":"xxx"} - copy only the xxx part.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">Copy only the xxx part from {"npsso":"xxx"}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Login (Legacy)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Check">Check</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Clear">Clear</sys:String>
