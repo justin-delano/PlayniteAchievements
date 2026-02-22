@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Models.Settings
         private DateTime? _epicTokenExpiryUtc;
         private DateTime? _epicRefreshTokenExpiryUtc;
         private string _steamApiKey;
+        private string _psnNpsso = string.Empty;
         private string _globalLanguage = "english";
         private bool _steamEnabled = true;
         private bool _epicEnabled = true;
@@ -127,6 +128,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _steamApiKey;
             set => SetValue(ref _steamApiKey, value ?? string.Empty);
+        }
+
+        /// <summary>
+        /// NPSSO cookie value for PlayStation Network authentication.
+        /// Can be obtained from https://ca.account.sony.com/api/v1/ssocookie
+        /// </summary>
+        public string PsnNpsso
+        {
+            get => _psnNpsso;
+            set => SetValue(ref _psnNpsso, value ?? string.Empty);
         }
 
         #endregion
@@ -658,6 +669,7 @@ namespace PlayniteAchievements.Models.Settings
                 EpicTokenExpiryUtc = this.EpicTokenExpiryUtc,
                 EpicRefreshTokenExpiryUtc = this.EpicRefreshTokenExpiryUtc,
                 SteamApiKey = this.SteamApiKey,
+                PsnNpsso = this.PsnNpsso,
                 GlobalLanguage = this.GlobalLanguage,
                 SteamEnabled = this.SteamEnabled,
                 EpicEnabled = this.EpicEnabled,
