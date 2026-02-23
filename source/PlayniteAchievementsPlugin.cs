@@ -18,6 +18,7 @@ using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Providers.PSN;
 using PlayniteAchievements.Providers.Xbox;
 using PlayniteAchievements.Providers.ShadPS4;
+using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -195,6 +196,9 @@ namespace PlayniteAchievements
                             PlayniteApi,
                             pluginUserDataPath),
                         new ShadPS4DataProvider(
+                            _logger,
+                            settings),
+                        new Rpcs3DataProvider(
                             _logger,
                             settings)
                     };
