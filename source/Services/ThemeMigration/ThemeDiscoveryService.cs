@@ -33,6 +33,11 @@ namespace PlayniteAchievements.Services.ThemeMigration
             public string DisplayName { get; set; }
 
             /// <summary>
+            /// Theme type (Desktop or Fullscreen).
+            /// </summary>
+            public string ThemeType { get; set; }
+
+            /// <summary>
             /// Directory-based name (e.g., "Desktop/ThemeName").
             /// Used as fallback when DisplayName is not available.
             /// </summary>
@@ -47,9 +52,20 @@ namespace PlayniteAchievements.Services.ThemeMigration
 
             /// <summary>
             /// Gets the best available name for display purposes.
-            /// Prefers DisplayName from theme.yaml, falls back to Name.
+            /// Combines ThemeType with DisplayName from theme.yaml if available,
+            /// otherwise falls back to Name.
             /// </summary>
-            public string BestDisplayName => !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName : Name;
+            public string BestDisplayName
+            {
+                get
+                {
+                    if (!string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(ThemeType))
+                    {
+                        return $"{ThemeType}/{DisplayName}";
+                    }
+                    return Name;
+                }
+            }
         }
 
         /// <summary>
@@ -134,6 +150,7 @@ namespace PlayniteAchievements.Services.ThemeMigration
                         var themeInfo = new ThemeInfo
                         {
                             DisplayName = displayName,
+                            ThemeType = subDir,
                             Name = themeName,
                             Path = themeDir,
                             HasBackup = hasBackup,
