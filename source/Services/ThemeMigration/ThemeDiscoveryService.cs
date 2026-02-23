@@ -27,6 +27,15 @@ namespace PlayniteAchievements.Services.ThemeMigration
         /// </summary>
         public class ThemeInfo
         {
+            /// <summary>
+            /// Display name from theme.yaml Name field.
+            /// </summary>
+            public string DisplayName { get; set; }
+
+            /// <summary>
+            /// Directory-based name (e.g., "Desktop/ThemeName").
+            /// Used as fallback when DisplayName is not available.
+            /// </summary>
             public string Name { get; set; }
             public string Path { get; set; }
             public bool HasBackup { get; set; }
@@ -35,6 +44,12 @@ namespace PlayniteAchievements.Services.ThemeMigration
             public string CurrentThemeVersion { get; set; }
             public string CachedMigratedThemeVersion { get; set; }
             public bool UpgradedSinceLastMigration { get; set; }
+
+            /// <summary>
+            /// Gets the best available name for display purposes.
+            /// Prefers DisplayName from theme.yaml, falls back to Name.
+            /// </summary>
+            public string BestDisplayName => !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName : Name;
         }
 
         /// <summary>
@@ -97,6 +112,10 @@ namespace PlayniteAchievements.Services.ThemeMigration
                         string currentVersion = null;
                         ThemeYamlVersionReader.TryReadThemeVersion(themeDir, out currentVersion);
 
+                        // Read theme.yaml Name (optional, for display purposes)
+                        string displayName = null;
+                        ThemeYamlVersionReader.TryReadThemeName(themeDir, out displayName);
+
                         // Compare against cached migrated version (optional)
                         string cachedVersion = null;
                         bool upgradedSinceLastMigration = false;
@@ -112,6 +131,7 @@ namespace PlayniteAchievements.Services.ThemeMigration
 
                         var themeInfo = new ThemeInfo
                         {
+                            DisplayName = displayName,
                             Name = themeName,
                             Path = themeDir,
                             HasBackup = hasBackup,
