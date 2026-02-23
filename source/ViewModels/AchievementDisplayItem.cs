@@ -83,6 +83,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _globalPercentUnlocked, value))
                 {
+                    OnPropertyChanged(nameof(HasRarity));
                     OnPropertyChanged(nameof(GlobalPercentText));
                     OnPropertyChanged(nameof(Percent));
                     OnPropertyChanged(nameof(GamerScore));
@@ -368,8 +369,13 @@ namespace PlayniteAchievements.ViewModels
         public string UnlockTimeText =>
             UnlockTimeUtc.HasValue ? $"{DateTimeUtilities.AsLocalFromUtc(UnlockTimeUtc.Value):g}" : string.Empty;
 
+        /// <summary>
+        /// True if this achievement has rarity data (GlobalPercentUnlocked is set).
+        /// </summary>
+        public bool HasRarity => GlobalPercentUnlocked.HasValue;
+
         public string GlobalPercentText =>
-            GlobalPercentUnlocked.HasValue ? $"{GlobalPercentUnlocked.Value:F1}%" : "?%";
+            GlobalPercentUnlocked.HasValue ? $"{GlobalPercentUnlocked.Value:F1}%" : "-";
 
         public int Points => PointsValue ?? 0;
 
