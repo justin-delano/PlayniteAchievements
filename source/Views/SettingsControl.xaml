@@ -64,6 +64,18 @@
                 </Style.Triggers>
             </Style>
 
+            <!-- Disable Xbox auth buttons while busy -->
+            <Style x:Key="XboxAuthActionButtonStyle"
+                   TargetType="Button"
+                   BasedOn="{StaticResource {x:Type Button}}">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding XboxAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                 Value="True">
+                        <Setter Property="IsEnabled" Value="False"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
             <!-- Section header style -->
             <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14"/>
@@ -1602,6 +1614,178 @@
                                                         <Setter Property="Visibility" Value="Collapsed"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding PsnAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                         Value="True">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ProgressBar.Style>
+                                            </ProgressBar>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ================== TAB: XBOX SETTINGS ================== -->
+            <TabItem x:Name="XboxTab" Header="{DynamicResource LOCPlayAch_Provider_Xbox}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <!-- Plugin Header -->
+                        <StackPanel Margin="0,0,0,24">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Provider_Xbox}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6" />
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Xbox_Description}"
+                                       Style="{DynamicResource MutedTextStyle}"
+                                       Margin="0,0,0,8"/>
+                            <!-- Decorative accent line (Xbox green) -->
+                            <Border Height="2"
+                                    Width="60"
+                                    HorizontalAlignment="Left"
+                                    Background="#107C10"
+                                    CornerRadius="1"
+                                    Margin="0,8,0,0"/>
+                        </StackPanel>
+
+                        <!-- Enable Xbox -->
+                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_XboxEnabled}"
+                                  IsChecked="{Binding Persisted.XboxEnabled}"
+                                  Style="{StaticResource {x:Type CheckBox}}"
+                                  Margin="0,0,0,16"/>
+
+                        <!-- Not enabled warning -->
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledWarning}"
+                                   Foreground="#F72585"
+                                   Margin="0,0,0,16">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Persisted.XboxEnabled}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Persisted.XboxEnabled}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Persisted.XboxEnabled}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_XboxConnection}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <!-- Help text -->
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Xbox_Help}"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           Margin="0,0,0,16"
+                                           Opacity="0.8"/>
+
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Label_XboxAuth}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Top"
+                                               Margin="0,8,0,0"/>
+
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource PanelBackgroundBrush}"
+                                            CornerRadius="8"
+                                            Padding="16"
+                                            BorderThickness="1">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="#F72585"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding XboxAuthenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                 Value="True">
+                                                        <Setter Property="BorderBrush" Value="#107C10"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="{DynamicResource FontSize}"
+                                                           Margin="0,0,12,0"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                                    </TextBlock.RenderTransform>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding XboxAuthenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                             Value="True">
+                                                                    <Setter Property="Text" Value="&#xE73E;"/>
+                                                                    <Setter Property="Foreground" Value="#107C10"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding XboxAuthenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                             Value="False">
+                                                                    <Setter Property="Text" Value="&#xE711;"/>
+                                                                    <Setter Property="Foreground" Value="#F72585"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding XboxAuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           VerticalAlignment="Center"
+                                                           FontSize="{DynamicResource FontSize}"
+                                                           FontWeight="SemiBold"/>
+                                            </Grid>
+
+                                            <StackPanel Orientation="Horizontal">
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Xbox_Login}"
+                                                        Style="{StaticResource XboxAuthActionButtonStyle}"
+                                                        Click="XboxAuth_Login_Click"
+                                                        Padding="14,6"
+                                                        Margin="0,0,8,0"/>
+                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Xbox_Clear}"
+                                                        Style="{StaticResource XboxAuthActionButtonStyle}"
+                                                        Click="XboxAuth_Clear_Click"
+                                                        Padding="14,6"/>
+                                            </StackPanel>
+
+                                            <ProgressBar Height="3"
+                                                         Margin="0,8,0,0"
+                                                         IsIndeterminate="True"
+                                                         Foreground="#107C10">
+                                                <ProgressBar.Style>
+                                                    <Style TargetType="ProgressBar">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding XboxAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                          Value="True">
                                                                 <Setter Property="Visibility" Value="Visible"/>
                                                             </DataTrigger>

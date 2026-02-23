@@ -247,6 +247,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Clear">Effacer</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxConnection">Connexion Xbox</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Xbox_Description">Configurez l'intégration Xbox Live pour suivre les succès de Xbox One, Xbox Series X|S, Xbox 360 et PC Game Pass.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxEnabled">Activer le suivi des succès Xbox</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_XboxAuth">Authentification Xbox</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_NotChecked">Xbox : Non vérifié</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Checking">Vérification de l'authentification Xbox...</sys:String>
@@ -264,6 +266,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_Xbox_Login">Connexion</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Xbox_Clear">Effacer</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Xbox_Help">Cliquez sur Connexion pour vous authentifier avec Xbox Live via votre compte Microsoft.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_CheckingExistingSession">Vérification de la session Xbox existante...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Completed">Authentification Xbox terminée.</sys:String>
 
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->

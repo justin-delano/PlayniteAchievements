@@ -246,6 +246,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxConnection">Xbox Connection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Xbox_Description">Configure Xbox Live integration to track achievements from Xbox One, Xbox Series X|S, Xbox 360, and PC Game Pass games.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxEnabled">Enable Xbox Achievement Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_XboxAuth">Xbox Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_NotChecked">Xbox: Not checked</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Checking">Checking Xbox authentication...</sys:String>
@@ -263,6 +265,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_Xbox_Login">Login</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Xbox_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Xbox_Help">Click Login to authenticate with Xbox Live via Microsoft account.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_CheckingExistingSession">Checking existing Xbox session...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Completed">Xbox authentication completed.</sys:String>
 
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->

@@ -17,6 +17,7 @@ using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.GOG;
 using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Providers.PSN;
+using PlayniteAchievements.Providers.Xbox;
 using PlayniteAchievements.Services.ThemeMigration;
 using Playnite.SDK;
 using System.Diagnostics;
@@ -171,6 +172,45 @@ namespace PlayniteAchievements.Views
         {
             get => (bool)GetValue(PsnAuthenticatedProperty);
             set => SetValue(PsnAuthenticatedProperty, value);
+        }
+
+        public static readonly DependencyProperty XboxAuthStatusProperty =
+            DependencyProperty.Register(
+                nameof(XboxAuthStatus),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_XboxAuth_NotChecked")));
+
+        public string XboxAuthStatus
+        {
+            get => (string)GetValue(XboxAuthStatusProperty);
+            set => SetValue(XboxAuthStatusProperty, value);
+        }
+
+        public static readonly DependencyProperty XboxAuthBusyProperty =
+            DependencyProperty.Register(
+                nameof(XboxAuthBusy),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool XboxAuthBusy
+        {
+            get => (bool)GetValue(XboxAuthBusyProperty);
+            set => SetValue(XboxAuthBusyProperty, value);
+        }
+
+        public static readonly DependencyProperty XboxAuthenticatedProperty =
+            DependencyProperty.Register(
+                nameof(XboxAuthenticated),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool XboxAuthenticated
+        {
+            get => (bool)GetValue(XboxAuthenticatedProperty);
+            set => SetValue(XboxAuthenticatedProperty, value);
         }
 
         public static readonly DependencyProperty SteamAuthenticatedProperty =
@@ -339,8 +379,9 @@ namespace PlayniteAchievements.Views
         private readonly GogSessionManager _gogSessionManager;
         private readonly EpicSessionManager _epicSessionManager;
         private readonly PsnSessionManager _psnSessionManager;
+        private readonly XboxSessionManager _xboxSessionManager;
 
-        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager, GogSessionManager gogSessionManager, EpicSessionManager epicSessionManager, PsnSessionManager psnSessionManager)
+        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager, GogSessionManager gogSessionManager, EpicSessionManager epicSessionManager, PsnSessionManager psnSessionManager, XboxSessionManager xboxSessionManager)
         {
             _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
@@ -349,6 +390,7 @@ namespace PlayniteAchievements.Views
             _gogSessionManager = gogSessionManager ?? throw new ArgumentNullException(nameof(gogSessionManager));
             _epicSessionManager = epicSessionManager ?? throw new ArgumentNullException(nameof(epicSessionManager));
             _psnSessionManager = psnSessionManager ?? throw new ArgumentNullException(nameof(psnSessionManager));
+            _xboxSessionManager = xboxSessionManager ?? throw new ArgumentNullException(nameof(xboxSessionManager));
 
             _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
             _themeMigration = new ThemeMigrationService(_logger);
@@ -384,6 +426,7 @@ namespace PlayniteAchievements.Views
                 await CheckGogAuthAsync().ConfigureAwait(false);
                 await CheckEpicAuthAsync().ConfigureAwait(false);
                 await CheckPsnAuthAsync().ConfigureAwait(false);
+                await CheckXboxAuthAsync().ConfigureAwait(false);
                 UpdateRaAuthState();
 
                 // Load themes on initial load
@@ -1501,6 +1544,220 @@ namespace PlayniteAchievements.Views
         }
 
         // -----------------------------
+        // Xbox auth UI
+        // -----------------------------
+
+        private async void XboxAuth_Login_Click(object sender, RoutedEventArgs e)
+        {
+            _logger?.Info("[XboxAch] Settings: Login clicked.");
+            SetXboxAuthBusy(true);
+            SetXboxAuthStatusByKey("LOCPlayAch_Settings_XboxAuth_Checking");
+
+            var progress = new Progress<XboxAuthProgressStep>(step =>
+            {
+                SetXboxAuthStatusByKey(GetXboxProgressMessageKey(step));
+            });
+
+            try
+            {
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(180)))
+                {
+                    var result = await _xboxSessionManager
+                        .AuthenticateInteractiveAsync(forceInteractive: true, ct: cts.Token, progress: progress)
+                        .ConfigureAwait(false);
+                    ApplyXboxAuthResult(result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                SetXboxAuthenticated(false);
+                SetXboxAuthStatusByKey("LOCPlayAch_Settings_XboxAuth_TimedOut");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[XboxAch] Login failed.");
+                SetXboxAuthenticated(false);
+                SetXboxAuthStatusByKey("LOCPlayAch_Settings_XboxAuth_Failed");
+            }
+            finally
+            {
+                SetXboxAuthBusy(false);
+            }
+        }
+
+        private void XboxAuth_Clear_Click(object sender, RoutedEventArgs e)
+        {
+            _xboxSessionManager.ClearSession();
+            SetXboxAuthenticated(false);
+            SetXboxAuthStatusByKey("LOCPlayAch_Settings_XboxAuth_CookiesCleared");
+        }
+
+        private async Task CheckXboxAuthAsync()
+        {
+            SetXboxAuthBusy(true);
+            SetXboxAuthStatusByKey("LOCPlayAch_Settings_XboxAuth_Checking");
+
+            await Task.Delay(300).ConfigureAwait(false);
+
+            try
+            {
+                using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
+                {
+                    var result = await _xboxSessionManager.ProbeAuthenticationAsync(timeoutCts.Token).ConfigureAwait(false);
+                    ApplyXboxAuthResult(result);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                SetXboxAuthenticated(false);
+                SetXboxAuthStatusByKey("LOCPlayAch_Settings_XboxAuth_TimedOut");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Xbox auth check failed.");
+                SetXboxAuthenticated(false);
+                SetXboxAuthStatusByKey("LOCPlayAch_Settings_XboxAuth_ProbeFailed");
+            }
+            finally
+            {
+                SetXboxAuthBusy(false);
+            }
+        }
+
+        private void ApplyXboxAuthResult(XboxAuthResult result)
+        {
+            if (result == null)
+            {
+                SetXboxAuthenticated(false);
+                SetXboxAuthStatusByKey("LOCPlayAch_Settings_XboxAuth_Failed");
+                return;
+            }
+
+            var authenticated =
+                result.Outcome == XboxAuthOutcome.Authenticated ||
+                result.Outcome == XboxAuthOutcome.AlreadyAuthenticated;
+
+            SetXboxAuthenticated(authenticated);
+
+            var statusKey = string.IsNullOrWhiteSpace(result.MessageKey)
+                ? GetDefaultXboxMessageKeyForOutcome(result.Outcome)
+                : result.MessageKey;
+
+            if (!result.WindowOpened &&
+                (result.Outcome == XboxAuthOutcome.Failed || result.Outcome == XboxAuthOutcome.Cancelled))
+            {
+                statusKey = "LOCPlayAch_Settings_XboxAuth_WindowNotOpened";
+            }
+
+            SetXboxAuthStatusByKey(statusKey);
+        }
+
+        private static string GetDefaultXboxMessageKeyForOutcome(XboxAuthOutcome outcome)
+        {
+            switch (outcome)
+            {
+                case XboxAuthOutcome.Authenticated:
+                    return "LOCPlayAch_Settings_XboxAuth_Verified";
+                case XboxAuthOutcome.AlreadyAuthenticated:
+                    return "LOCPlayAch_Settings_XboxAuth_AlreadyAuthenticated";
+                case XboxAuthOutcome.NotAuthenticated:
+                    return "LOCPlayAch_Settings_XboxAuth_NotAuthenticated";
+                case XboxAuthOutcome.Cancelled:
+                    return "LOCPlayAch_Settings_XboxAuth_Cancelled";
+                case XboxAuthOutcome.TimedOut:
+                    return "LOCPlayAch_Settings_XboxAuth_TimedOut";
+                case XboxAuthOutcome.ProbeFailed:
+                    return "LOCPlayAch_Settings_XboxAuth_ProbeFailed";
+                case XboxAuthOutcome.Failed:
+                default:
+                    return "LOCPlayAch_Settings_XboxAuth_Failed";
+            }
+        }
+
+        private static string GetXboxProgressMessageKey(XboxAuthProgressStep step)
+        {
+            switch (step)
+            {
+                case XboxAuthProgressStep.CheckingExistingSession:
+                    return "LOCPlayAch_Settings_XboxAuth_CheckingExistingSession";
+                case XboxAuthProgressStep.OpeningLoginWindow:
+                    return "LOCPlayAch_Settings_XboxAuth_OpeningWindow";
+                case XboxAuthProgressStep.WaitingForUserLogin:
+                    return "LOCPlayAch_Settings_XboxAuth_WaitingForLogin";
+                case XboxAuthProgressStep.Completed:
+                    return "LOCPlayAch_Settings_XboxAuth_Completed";
+                case XboxAuthProgressStep.Failed:
+                default:
+                    return "LOCPlayAch_Settings_XboxAuth_Failed";
+            }
+        }
+
+        private void SetXboxAuthStatusByKey(string key, params object[] args)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            var value = ResourceProvider.GetString(key);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                SetXboxAuthStatus(key);
+            }
+            else if (args != null && args.Length > 0)
+            {
+                try
+                {
+                    SetXboxAuthStatus(string.Format(value, args));
+                }
+                catch
+                {
+                    SetXboxAuthStatus(value);
+                }
+            }
+            else
+            {
+                SetXboxAuthStatus(value);
+            }
+        }
+
+        private void SetXboxAuthStatus(string status)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                XboxAuthStatus = status;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => XboxAuthStatus = status));
+            }
+        }
+
+        private void SetXboxAuthBusy(bool busy)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                XboxAuthBusy = busy;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => XboxAuthBusy = busy));
+            }
+        }
+
+        private void SetXboxAuthenticated(bool authenticated)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                XboxAuthenticated = authenticated;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => XboxAuthenticated = authenticated));
+            }
+        }
+
+        // -----------------------------
         // Cache actions
         // -----------------------------
 
@@ -1725,6 +1982,11 @@ namespace PlayniteAchievements.Views
             {
                 await CheckPsnAuthAsync().ConfigureAwait(false);
                 _logger?.Info("Checked PSN auth for PSN tab.");
+            }
+            else if (string.Equals(name, "XboxTab", StringComparison.OrdinalIgnoreCase))
+            {
+                await CheckXboxAuthAsync().ConfigureAwait(false);
+                _logger?.Info("Checked Xbox auth for Xbox tab.");
             }
             else if (string.Equals(name, "ThemeMigrationTab", StringComparison.OrdinalIgnoreCase))
             {
