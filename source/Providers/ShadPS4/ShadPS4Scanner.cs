@@ -17,6 +17,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ShadPS4DataProvider _provider;
+        private readonly IPlayniteAPI _playniteApi;
 
         // PS4's RTC epoch is January 1, 2008 00:00:00 UTC
         private static readonly DateTime Ps4Epoch = new DateTime(2008, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -30,11 +31,12 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private const double SilverRarity = 30.0;
         private const double BronzeRarity = 60.0;
 
-        public ShadPS4Scanner(ILogger logger, PlayniteAchievementsSettings settings, ShadPS4DataProvider provider = null)
+        public ShadPS4Scanner(ILogger logger, PlayniteAchievementsSettings settings, ShadPS4DataProvider provider = null, IPlayniteAPI playniteApi = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _provider = provider;
+            _playniteApi = playniteApi;
         }
 
         public async Task<RebuildPayload> RefreshAsync(

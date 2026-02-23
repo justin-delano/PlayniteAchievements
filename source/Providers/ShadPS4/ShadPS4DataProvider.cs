@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -18,18 +19,20 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private readonly ShadPS4Scanner _scanner;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _playniteApi;
 
         private Dictionary<string, string> _titleCache;
         private readonly object _cacheLock = new object();
 
-        public ShadPS4DataProvider(ILogger logger, PlayniteAchievementsSettings settings)
+        public ShadPS4DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             _settings = settings;
             _logger = logger;
+            _playniteApi = playniteApi;
 
-            _scanner = new ShadPS4Scanner(_logger, _settings, this);
+            _scanner = new ShadPS4Scanner(_logger, _settings, this, _playniteApi);
         }
 
         public string ProviderName
@@ -197,6 +200,66 @@ namespace PlayniteAchievements.Providers.ShadPS4
             }
 
             return normalized;
+        }
+
+        /// <summary>
+        /// Expands path variables in game paths using Playnite's variable expansion.
+        /// </summary>
+        internal string ExpandGamePath(Game game, string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+
+            try
+            {
+                // Use Playnite's built-in variable expansion
+                var expanded = _playniteApi?.ExpandGameVariables(game, path) ?? path;
+
+                // Handle additional custom variables
+                if (expanded.IndexOf("{InstallDir}", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    var installDir = game?.InstallDirectory;
+                    if (!string.IsNullOrWhiteSpace(installDir))
+                    {
+                        expanded = ReplaceInsensitive(expanded, "{InstallDir}", installDir);
+                    }
+                }
+
+                return expanded;
+            }
+            catch
+            {
+                return path;
+            }
+        }
+
+        private static string ReplaceInsensitive(string input, string oldValue, string newValue)
+        {
+            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(oldValue))
+            {
+                return input;
+            }
+
+            var idx = input.IndexOf(oldValue, StringComparison.OrdinalIgnoreCase);
+            if (idx < 0)
+            {
+                return input;
+            }
+
+            var sb = new StringBuilder(input.Length);
+            var start = 0;
+            while (idx >= 0)
+            {
+                sb.Append(input.Substring(start, idx - start));
+                sb.Append(newValue ?? string.Empty);
+                start = idx + oldValue.Length;
+                idx = input.IndexOf(oldValue, start, StringComparison.OrdinalIgnoreCase);
+            }
+
+            sb.Append(input.Substring(start));
+            return sb.ToString();
         }
 
         public Task<RebuildPayload> RefreshAsync(
