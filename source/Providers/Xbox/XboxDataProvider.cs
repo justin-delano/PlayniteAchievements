@@ -38,6 +38,8 @@ namespace PlayniteAchievements.Providers.Xbox
 
             var apiClient = new XboxApiClient(logger);
             _scanner = new XboxScanner(settings, sessionManager, apiClient, logger);
+
+            _ = _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Xbox");
