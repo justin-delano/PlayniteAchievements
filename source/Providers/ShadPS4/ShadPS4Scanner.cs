@@ -16,6 +16,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
     {
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly ShadPS4DataProvider _provider;
 
         // PS4's RTC epoch is January 1, 2008 00:00:00 UTC
         private static readonly DateTime Ps4Epoch = new DateTime(2008, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -29,10 +30,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private const double SilverRarity = 30.0;
         private const double BronzeRarity = 60.0;
 
-        public ShadPS4Scanner(ILogger logger, PlayniteAchievementsSettings settings)
+        public ShadPS4Scanner(ILogger logger, PlayniteAchievementsSettings settings, ShadPS4DataProvider provider = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _provider = provider;
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -49,15 +51,24 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return new RebuildPayload { Summary = summary };
             }
 
-            // Build the title ID cache once at scan start
-            var titleCache = await BuildTitleIdCacheAsync(cancel).ConfigureAwait(false);
+            // Use the provider's cache if available, otherwise build our own
+            Dictionary<string, string> titleCache;
+            if (_provider != null)
+            {
+                titleCache = _provider.GetOrBuildTitleCache();
+            }
+            else
+            {
+                titleCache = await BuildTitleIdCacheAsync(cancel).ConfigureAwait(false);
+            }
+
             if (titleCache == null || titleCache.Count == 0)
             {
                 _logger?.Warn("[ShadPS4] No games found in ShadPS4 user/game_data folder.");
                 return new RebuildPayload { Summary = summary };
             }
 
-            _logger?.Info($"[ShadPS4] Built title cache with {titleCache.Count} games.");
+            _logger?.Info($"[ShadPS4] Using title cache with {titleCache.Count} games.");
 
             var providerName = GetProviderName();
 
@@ -141,7 +152,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
                             var titleName = titleNameElement.Value?.Trim();
                             if (!string.IsNullOrWhiteSpace(titleName))
                             {
-                                var normalizedName = NormalizeGameName(titleName);
+                                var normalizedName = ShadPS4DataProvider.NormalizeGameName(titleName);
                                 if (!string.IsNullOrWhiteSpace(normalizedName))
                                 {
                                     cache[normalizedName] = titleId;
@@ -180,7 +191,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
-            var normalizedGameName = NormalizeGameName(gameName);
+            var normalizedGameName = ShadPS4DataProvider.NormalizeGameName(gameName);
             if (string.IsNullOrWhiteSpace(normalizedGameName))
             {
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
@@ -397,35 +408,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 _logger?.Debug(ex, $"[ShadPS4] Failed to get icon path for trophy {trophyId}");
                 return null;
             }
-        }
-
-        /// <summary>
-        /// Normalizes a game name for comparison by removing common variations.
-        /// </summary>
-        private static string NormalizeGameName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return string.Empty;
-            }
-
-            // Remove common suffixes and special characters, convert to lowercase
-            var normalized = name.ToLowerInvariant()
-                .Replace(":", "")
-                .Replace("-", "")
-                .Replace("_", " ")
-                .Replace("®", "")
-                .Replace("™", "")
-                .Replace("©", "")
-                .Trim();
-
-            // Remove multiple spaces
-            while (normalized.Contains("  "))
-            {
-                normalized = normalized.Replace("  ", " ");
-            }
-
-            return normalized;
         }
     }
 }
