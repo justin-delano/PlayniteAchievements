@@ -213,8 +213,8 @@ For detailed integration guides, property references, and code examples, a Theme
 
 ## Support & Contributing
 
-- **Issues**: [GitHub Issue Tracker](https://github.com/justindelano/PlayniteAchievements/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/justindelano/PlayniteAchievements/discussions)
+- **Issues**: [GitHub Issue Tracker](https://github.com/justin-delano/PlayniteAchievements/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/justin-delano/PlayniteAchievements/discussions)
 - **Translations**: Contributions welcome - submit a pull request with updated localization files
 
 ## License
