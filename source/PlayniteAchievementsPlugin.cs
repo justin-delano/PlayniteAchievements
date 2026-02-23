@@ -949,7 +949,7 @@ namespace PlayniteAchievements
                                 if (result.Success)
                                 {
                                     _logger.Info($"Auto-migrated upgraded theme: {theme.Name}");
-                                    migratedThemes.Add(theme.Name);
+                                    migratedThemes.Add(theme.BestDisplayName);
                                 }
                                 else
                                 {
