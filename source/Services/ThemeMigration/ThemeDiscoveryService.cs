@@ -97,7 +97,9 @@ namespace PlayniteAchievements.Services.ThemeMigration
                     foreach (var themeDir in themeDirectories)
                     {
                         var dirInfo = new DirectoryInfo(themeDir);
-                        var themeName = $"{subDir}/{dirInfo.Name}";
+                        // Strip ID suffix from directory name (e.g., "Stellar_ab1234" -> "Stellar")
+                        var cleanDirName = StripThemeIdSuffix(dirInfo.Name);
+                        var themeName = $"{subDir}/{cleanDirName}";
 
                         _logger.Debug($"Processing theme: {themeName} at {themeDir}");
 
@@ -156,6 +158,34 @@ namespace PlayniteAchievements.Services.ThemeMigration
             }
 
             return themes;
+        }
+
+        /// <summary>
+        /// Strips the ID suffix from a theme directory name.
+        /// Playnite theme directories often have IDs like "Stellar_ab1234" where
+        /// "_ab1234" is an ID suffix that should be removed for display purposes.
+        /// </summary>
+        private static string StripThemeIdSuffix(string directoryName)
+        {
+            if (string.IsNullOrWhiteSpace(directoryName))
+            {
+                return directoryName;
+            }
+
+            // Pattern: underscore followed by 6+ alphanumeric characters at the end
+            // e.g., "Stellar_ab1234" -> "Stellar"
+            var lastUnderscoreIndex = directoryName.LastIndexOf('_');
+            if (lastUnderscoreIndex > 0 && lastUnderscoreIndex < directoryName.Length - 1)
+            {
+                var suffix = directoryName.Substring(lastUnderscoreIndex + 1);
+                // Check if suffix looks like an ID (alphanumeric, reasonable length)
+                if (suffix.Length >= 6 && suffix.Length <= 12 && suffix.All(char.IsLetterOrDigit))
+                {
+                    return directoryName.Substring(0, lastUnderscoreIndex);
+                }
+            }
+
+            return directoryName;
         }
 
         /// <summary>
