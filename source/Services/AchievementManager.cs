@@ -1019,11 +1019,13 @@ namespace PlayniteAchievements.Services
                 return default;
             }
 
+            const int iconDecodeSize = 128;
+
             try
             {
-                if (_diskImageService.IsIconCached(originalPath, 0, gameIdStr))
+                if (_diskImageService.IsIconCached(originalPath, iconDecodeSize, gameIdStr))
                 {
-                    var cachedPath = _diskImageService.GetIconCachePathFromUri(originalPath, 0, gameIdStr);
+                    var cachedPath = _diskImageService.GetIconCachePathFromUri(originalPath, iconDecodeSize, gameIdStr);
                     if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
                     {
                         return (originalPath, cachedPath);
@@ -1031,7 +1033,7 @@ namespace PlayniteAchievements.Services
                 }
 
                 var localPath = await _diskImageService
-                    .GetOrDownloadIconAsync(originalPath, 0, cancel, gameIdStr)
+                    .GetOrDownloadIconAsync(originalPath, iconDecodeSize, cancel, gameIdStr)
                     .ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(localPath))
                 {
