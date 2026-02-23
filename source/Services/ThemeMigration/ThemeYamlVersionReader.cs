@@ -53,6 +53,53 @@ namespace PlayniteAchievements.Services.ThemeMigration
 
             return false;
         }
+
+        public static bool TryReadThemeName(string themeDirectory, out string name)
+        {
+            name = null;
+
+            if (string.IsNullOrWhiteSpace(themeDirectory))
+            {
+                return false;
+            }
+
+            try
+            {
+                var manifestPath = Path.Combine(themeDirectory, ThemeYamlFileName);
+                if (!File.Exists(manifestPath))
+                {
+                    return false;
+                }
+
+                foreach (var rawLine in File.ReadLines(manifestPath))
+                {
+                    var line = rawLine?.Trim();
+                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+                    {
+                        continue;
+                    }
+
+                    // Support common Playnite manifest style: "Name: Theme Name"
+                    // Also tolerate lowercase keys and quoted values.
+                    if (line.StartsWith("Name:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var value = line.Substring("Name:".Length).Trim();
+                        value = value.Trim().Trim('"').Trim('\'').Trim();
+                        if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            name = value;
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // ignore - name is optional
+            }
+
+            return false;
+        }
     }
 }
 
