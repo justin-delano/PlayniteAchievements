@@ -182,25 +182,51 @@ namespace PlayniteAchievements.Providers.ShadPS4
             string providerName,
             CancellationToken cancel)
         {
+            _logger?.Debug($"[ShadPS4] === FetchGameDataAsync START for '{game?.Name}' ===");
+
             if (game == null)
             {
+                _logger?.Debug($"[ShadPS4] Game is null, returning null");
                 return Task.FromResult<GameAchievementData>(null);
             }
 
             var gameName = game.Name;
+            _logger?.Debug($"[ShadPS4] Game name: '{gameName}'");
+
             if (string.IsNullOrWhiteSpace(gameName))
             {
+                _logger?.Debug($"[ShadPS4] Game name is empty, returning no achievements");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
             var normalizedGameName = ShadPS4DataProvider.NormalizeGameName(gameName);
+            _logger?.Debug($"[ShadPS4] Normalized game name: '{normalizedGameName}'");
+
             if (string.IsNullOrWhiteSpace(normalizedGameName))
             {
+                _logger?.Debug($"[ShadPS4] Normalized name is empty, returning no achievements");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
+            // Log title cache contents
+            _logger?.Debug($"[ShadPS4] Title cache contains {titleCache?.Count ?? 0} entries:");
+            if (titleCache != null)
+            {
+                foreach (var kvp in titleCache.Take(20))
+                {
+                    _logger?.Debug($"[ShadPS4]   Cache key: '{kvp.Key}' -> '{kvp.Value}'");
+                }
+                if (titleCache.Count > 20)
+                {
+                    _logger?.Debug($"[ShadPS4]   ... and {titleCache.Count - 20} more entries");
+                }
+            }
+
             // Look up title ID in cache
-            if (!titleCache.TryGetValue(normalizedGameName, out var titleId))
+            var foundInCache = titleCache.TryGetValue(normalizedGameName, out var titleId);
+            _logger?.Debug($"[ShadPS4] Cache lookup for '{normalizedGameName}': found={foundInCache}, titleId='{titleId}'");
+
+            if (!foundInCache)
             {
                 _logger?.Debug($"[ShadPS4] No title ID found for game '{gameName}' (normalized: '{normalizedGameName}')");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
@@ -209,8 +235,15 @@ namespace PlayniteAchievements.Providers.ShadPS4
             cancel.ThrowIfCancellationRequested();
 
             var installFolder = _settings?.Persisted?.ShadPS4InstallationFolder;
+            _logger?.Debug($"[ShadPS4] Install folder: '{installFolder}'");
+
             var xmlPath = Path.Combine(installFolder, "user", "game_data", titleId, "trophyfiles", "trophy00", "Xml", "TROP.XML");
+            _logger?.Debug($"[ShadPS4] TROP.XML path: '{xmlPath}'");
+            _logger?.Debug($"[ShadPS4] TROP.XML exists: {File.Exists(xmlPath)}");
+
             var iconsFolder = Path.Combine(installFolder, "user", "game_data", titleId, "trophyfiles", "trophy00", "Icons");
+            _logger?.Debug($"[ShadPS4] Icons folder: '{iconsFolder}'");
+            _logger?.Debug($"[ShadPS4] Icons folder exists: {Directory.Exists(iconsFolder)}");
 
             if (!File.Exists(xmlPath))
             {
@@ -266,6 +299,9 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         TrophyType = trophyTypeNormalized
                     });
                 }
+
+                _logger?.Debug($"[ShadPS4] Parsed {achievements.Count} achievements, {unlockedCount} unlocked");
+                _logger?.Debug($"[ShadPS4] === FetchGameDataAsync END: success ===");
 
                 return Task.FromResult(new GameAchievementData
                 {

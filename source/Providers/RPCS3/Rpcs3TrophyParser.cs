@@ -148,8 +148,11 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// <returns>NP Comm ID string, or null if not found.</returns>
         public static string ExtractNpCommId(string trophyTrpPath, ILogger logger)
         {
+            logger?.Debug($"[RPCS3] ExtractNpCommId: path='{trophyTrpPath}', exists={File.Exists(trophyTrpPath)}");
+
             if (string.IsNullOrWhiteSpace(trophyTrpPath) || !File.Exists(trophyTrpPath))
             {
+                logger?.Debug($"[RPCS3] ExtractNpCommId: path is empty or file doesn't exist");
                 return null;
             }
 
@@ -158,14 +161,20 @@ namespace PlayniteAchievements.Providers.RPCS3
                 // TROPHY.TRP is a container file that includes XML data
                 // Search for npcommid in the raw bytes
                 var bytes = File.ReadAllBytes(trophyTrpPath);
+                logger?.Debug($"[RPCS3] ExtractNpCommId: file size is {bytes.Length} bytes");
+
                 var content = Encoding.UTF8.GetString(bytes);
 
                 // Look for <npcommid>...</npcommid> pattern
                 var tagStart = content.IndexOf("<npcommid>", StringComparison.OrdinalIgnoreCase);
+                logger?.Debug($"[RPCS3] ExtractNpCommId: <npcommid> tag found at index {tagStart}");
+
                 if (tagStart < 0)
                 {
                     // Try alternate format without angle brackets (some dumps use different format)
                     var attrStart = content.IndexOf("npcommid=", StringComparison.OrdinalIgnoreCase);
+                    logger?.Debug($"[RPCS3] ExtractNpCommId: npcommid= attribute found at index {attrStart}");
+
                     if (attrStart >= 0)
                     {
                         // Find the value after the equals sign
@@ -176,20 +185,25 @@ namespace PlayniteAchievements.Providers.RPCS3
                             var quoteEnd = content.IndexOf("\"", quoteStart + 1);
                             if (quoteEnd > quoteStart)
                             {
-                                return content.Substring(quoteStart + 1, quoteEnd - quoteStart - 1).Trim();
+                                var extracted = content.Substring(quoteStart + 1, quoteEnd - quoteStart - 1).Trim();
+                                logger?.Debug($"[RPCS3] ExtractNpCommId: extracted from attribute: '{extracted}'");
+                                return extracted;
                             }
                         }
                     }
+                    logger?.Debug($"[RPCS3] ExtractNpCommId: no npcommid pattern found in file");
                     return null;
                 }
 
                 var tagEnd = content.IndexOf("</npcommid>", tagStart, StringComparison.OrdinalIgnoreCase);
                 if (tagEnd < 0)
                 {
+                    logger?.Debug($"[RPCS3] ExtractNpCommId: closing </npcommid> tag not found");
                     return null;
                 }
 
                 var npcommid = content.Substring(tagStart + "<npcommid>".Length, tagEnd - tagStart - "<npcommid>".Length).Trim();
+                logger?.Debug($"[RPCS3] ExtractNpCommId: extracted from tag: '{npcommid}'");
                 return string.IsNullOrWhiteSpace(npcommid) ? null : npcommid;
             }
             catch (Exception ex)
