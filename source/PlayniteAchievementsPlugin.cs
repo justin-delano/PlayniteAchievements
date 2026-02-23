@@ -900,7 +900,9 @@ namespace PlayniteAchievements
                     // ignore
                 }
 
-                // Auto-migrate themes that have been updated since the last migration.
+                // Auto-migrate themes synchronously before UI loads.
+                // This ensures migration completes before theme controls are instantiated,
+                // avoiding the need for a second restart.
                 AutoMigrateUpgradedThemesOnStartup();
             }
         }
@@ -909,91 +911,88 @@ namespace PlayniteAchievements
         {
             try
             {
-                // Run migration off the UI thread.
-                Task.Run(async () =>
+                var themesDiscovery = new ThemeDiscoveryService(_logger, PlayniteApi);
+                var themesPath = themesDiscovery.GetDefaultThemesPath();
+                if (string.IsNullOrWhiteSpace(themesPath))
+                {
+                    return;
+                }
+
+                var cache = _settingsViewModel?.Settings?.Persisted?.ThemeMigrationVersionCache;
+                var themes = themesDiscovery.DiscoverThemes(themesPath, cache);
+
+                var upgraded = themes
+                    .Where(t => t != null && t.UpgradedSinceLastMigration && t.NeedsMigration)
+                    .ToList();
+
+                if (upgraded.Count == 0)
+                {
+                    return;
+                }
+
+                // Create migration service with save settings callback.
+                var migrationService = new ThemeMigrationService(
+                    _logger,
+                    _settingsViewModel?.Settings,
+                    () => SavePluginSettings(_settingsViewModel.Settings));
+
+                var migratedThemes = new List<string>();
+
+                foreach (var theme in upgraded)
                 {
                     try
                     {
-                        var themesDiscovery = new ThemeDiscoveryService(_logger, PlayniteApi);
-                        var themesPath = themesDiscovery.GetDefaultThemesPath();
-                        if (string.IsNullOrWhiteSpace(themesPath))
+                        // Run migration synchronously to complete before theme loads.
+                        var result = migrationService.MigrateThemeAsync(theme.Path).GetAwaiter().GetResult();
+                        if (result.Success)
                         {
-                            return;
+                            _logger.Info($"Auto-migrated upgraded theme: {theme.Name}");
+                            migratedThemes.Add(theme.BestDisplayName);
                         }
-
-                        var cache = _settingsViewModel?.Settings?.Persisted?.ThemeMigrationVersionCache;
-                        var themes = themesDiscovery.DiscoverThemes(themesPath, cache);
-
-                        var upgraded = themes
-                            .Where(t => t != null && t.UpgradedSinceLastMigration && t.NeedsMigration)
-                            .ToList();
-
-                        if (upgraded.Count == 0)
+                        else
                         {
-                            return;
-                        }
-
-                        // Create migration service with save settings callback.
-                        var migrationService = new ThemeMigrationService(
-                            _logger,
-                            _settingsViewModel?.Settings,
-                            () => SavePluginSettings(_settingsViewModel.Settings));
-
-                        var migratedThemes = new List<string>();
-
-                        foreach (var theme in upgraded)
-                        {
-                            try
-                            {
-                                var result = await migrationService.MigrateThemeAsync(theme.Path);
-                                if (result.Success)
-                                {
-                                    _logger.Info($"Auto-migrated upgraded theme: {theme.Name}");
-                                    migratedThemes.Add(theme.BestDisplayName);
-                                }
-                                else
-                                {
-                                    _logger.Warn($"Failed to auto-migrate upgraded theme '{theme.Name}': {result.Message}");
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.Error(ex, $"Exception auto-migrating upgraded theme: {theme.Name}");
-                            }
-                        }
-
-                        // Show notification for successfully migrated themes.
-                        if (migratedThemes.Count > 0)
-                        {
-                            var dispatcher = PlayniteApi?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
-                            if (dispatcher != null)
-                            {
-                                _ = dispatcher.BeginInvoke(new Action(() =>
-                                {
-                                    foreach (var themeName in migratedThemes)
-                                    {
-                                        _notifications?.ShowThemeAutoMigrated(themeName);
-                                    }
-                                }));
-                            }
-                            else
-                            {
-                                foreach (var themeName in migratedThemes)
-                                {
-                                    _notifications?.ShowThemeAutoMigrated(themeName);
-                                }
-                            }
+                            _logger.Warn($"Failed to auto-migrate upgraded theme '{theme.Name}': {result.Message}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger?.Debug(ex, "Failed startup theme auto-migration.");
+                        _logger.Error(ex, $"Exception auto-migrating upgraded theme: {theme.Name}");
                     }
-                });
+                }
+
+                // Show notification for successfully migrated themes on UI thread.
+                if (migratedThemes.Count > 0)
+                {
+                    var dispatcher = PlayniteApi?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+                    if (dispatcher != null && dispatcher.CheckAccess())
+                    {
+                        foreach (var themeName in migratedThemes)
+                        {
+                            _notifications?.ShowThemeAutoMigrated(themeName);
+                        }
+                    }
+                    else if (dispatcher != null)
+                    {
+                        _ = dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            foreach (var themeName in migratedThemes)
+                        {
+                                _notifications?.ShowThemeAutoMigrated(themeName);
+                            }
+                        }));
+                    }
+                    else
+                    {
+                        foreach (var themeName in migratedThemes)
+                        {
+                            _notifications?.ShowThemeAutoMigrated(themeName);
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "Failed to schedule startup theme auto-migration.");
+                _logger?.Debug(ex, "Failed startup theme auto-migration.");
             }
         }
 
