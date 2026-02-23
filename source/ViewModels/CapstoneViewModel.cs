@@ -505,8 +505,13 @@ namespace PlayniteAchievements.ViewModels
 
         public RarityTier Rarity => RarityHelper.GetRarityTier(GlobalPercentUnlocked ?? 100);
 
+        /// <summary>
+        /// True if this achievement has rarity data (GlobalPercentUnlocked is set).
+        /// </summary>
+        public bool HasRarity => GlobalPercentUnlocked.HasValue;
+
         public string GlobalPercentText =>
-            GlobalPercentUnlocked.HasValue ? $"{GlobalPercentUnlocked.Value:F1}%" : "?%";
+            GlobalPercentUnlocked.HasValue ? $"{GlobalPercentUnlocked.Value:F1}%" : "-";
 
         public double GlobalPercent => GlobalPercentUnlocked ?? 100;
 
