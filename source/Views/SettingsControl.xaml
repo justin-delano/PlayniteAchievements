@@ -1919,6 +1919,117 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- RPCS3 Settings Section -->
+                        <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Persisted.Rpcs3Enabled}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3Connection}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <TextBlock Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,16"
+                                           Text="{DynamicResource LOCPlayAch_Settings_Rpcs3_Description}"/>
+
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{DynamicResource LOCPlayAch_Settings_Rpcs3InstallationFolder}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               VerticalAlignment="Top"
+                                               Margin="0,8,0,0"/>
+
+                                    <Border Grid.Column="1"
+                                            Background="{DynamicResource PanelBackgroundBrush}"
+                                            CornerRadius="8"
+                                            Padding="16"
+                                            BorderThickness="1">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="BorderBrush" Value="#F72585"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Rpcs3Authenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                 Value="True">
+                                                        <Setter Property="BorderBrush" Value="#0070D1"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,10">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0"
+                                                           FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="{DynamicResource FontSize}"
+                                                           Margin="0,0,12,0"
+                                                           VerticalAlignment="Center">
+                                                    <TextBlock.RenderTransform>
+                                                        <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                                    </TextBlock.RenderTransform>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Rpcs3Authenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                             Value="True">
+                                                                    <Setter Property="Text" Value="&#xE73E;"/>
+                                                                    <Setter Property="Foreground" Value="#0070D1"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Rpcs3Authenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                             Value="False">
+                                                                    <Setter Property="Text" Value="&#xE711;"/>
+                                                                    <Setter Property="Foreground" Value="#F72585"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding Rpcs3AuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           VerticalAlignment="Center"
+                                                           FontSize="{DynamicResource FontSize}"
+                                                           FontWeight="SemiBold"/>
+                                            </Grid>
+
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3InstallationFolderHint}"
+                                                       Style="{StaticResource MutedTextStyle}"
+                                                       Margin="0,0,0,12"
+                                                       TextWrapping="Wrap"/>
+
+                                            <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBox Grid.Column="0"
+                                                         Text="{Binding Persisted.Rpcs3InstallationFolder, UpdateSourceTrigger=PropertyChanged}"
+                                                         VerticalAlignment="Center"
+                                                         Padding="8,6"
+                                                         Margin="0,0,8,0"/>
+
+                                            <Button Grid.Column="1"
+                                                        Content="{DynamicResource LOCPlayAch_Settings_Rpcs3_Browse}"
+                                                        Click="Rpcs3_Browse_Click"
+                                                        Padding="14,6"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
