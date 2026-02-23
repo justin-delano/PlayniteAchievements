@@ -369,7 +369,7 @@ namespace PlayniteAchievements.Providers.Xbox
             }
         }
 
-        private static AchievementDetail ConvertToAchievementDetail(XboxOneAchievement xboxAch)
+        private AchievementDetail ConvertToAchievementDetail(XboxOneAchievement xboxAch)
         {
             var isUnlocked = xboxAch.progression?.timeUnlocked != default && xboxAch.progression?.timeUnlocked != DateTime.MinValue;
             var gamerscore = 0;
@@ -379,13 +379,35 @@ namespace PlayniteAchievements.Providers.Xbox
                 gamerscore = gs;
             }
 
+            // Log mediaAssets for debugging
+            if (xboxAch.mediaAssets == null || xboxAch.mediaAssets.Count == 0)
+            {
+                _logger.Debug($"[XboxAch] No mediaAssets for achievement: {xboxAch.name} (id: {xboxAch.id})");
+            }
+            else
+            {
+                _logger.Debug($"[XboxAch] Achievement '{xboxAch.name}' has {xboxAch.mediaAssets.Count} media assets:");
+                foreach (var asset in xboxAch.mediaAssets)
+                {
+                    _logger.Debug($"  - name: '{asset.name}', type: '{asset.type}', url: '{asset.url}'");
+                }
+            }
+
+            // Use first media asset directly (matches reference implementation pattern)
+            var iconUrl = xboxAch.mediaAssets?.FirstOrDefault()?.url;
+
+            if (string.IsNullOrWhiteSpace(iconUrl))
+            {
+                _logger.Warn($"[XboxAch] No icon URL found for achievement: {xboxAch.name}");
+            }
+
             return new AchievementDetail
             {
                 ApiName = xboxAch.id,
                 DisplayName = xboxAch.name ?? string.Empty,
                 Description = isUnlocked ? xboxAch.description : xboxAch.lockedDescription,
-                UnlockedIconPath = xboxAch.mediaAssets?.FirstOrDefault(m => m.name == "Icon")?.url,
-                LockedIconPath = xboxAch.mediaAssets?.FirstOrDefault(m => m.name == "Icon")?.url,
+                UnlockedIconPath = iconUrl,
+                LockedIconPath = iconUrl,
                 Points = gamerscore,
                 Category = null,
                 Hidden = xboxAch.isSecret,
