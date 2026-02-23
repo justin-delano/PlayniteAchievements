@@ -239,6 +239,32 @@ namespace PlayniteAchievements.Views
             set => SetValue(ShadPS4AuthenticatedProperty, value);
         }
 
+        public static readonly DependencyProperty Rpcs3AuthStatusProperty =
+            DependencyProperty.Register(
+                nameof(Rpcs3AuthStatus),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_Rpcs3_NotConfigured")));
+
+        public string Rpcs3AuthStatus
+        {
+            get => (string)GetValue(Rpcs3AuthStatusProperty);
+            set => SetValue(Rpcs3AuthStatusProperty, value);
+        }
+
+        public static readonly DependencyProperty Rpcs3AuthenticatedProperty =
+            DependencyProperty.Register(
+                nameof(Rpcs3Authenticated),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool Rpcs3Authenticated
+        {
+            get => (bool)GetValue(Rpcs3AuthenticatedProperty);
+            set => SetValue(Rpcs3AuthenticatedProperty, value);
+        }
+
         public static readonly DependencyProperty SteamAuthenticatedProperty =
             DependencyProperty.Register(
                 nameof(SteamAuthenticated),
@@ -455,6 +481,7 @@ namespace PlayniteAchievements.Views
                 await CheckXboxAuthAsync().ConfigureAwait(false);
                 UpdateRaAuthState();
                 CheckShadPS4Auth();
+                CheckRpcs3Auth();
 
                 // Load themes on initial load
                 LoadThemes();
@@ -1800,6 +1827,22 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        // -----------------------------
+        // RPCS3 actions
+        // -----------------------------
+
+        private void Rpcs3_Browse_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFolder();
+            if (!string.IsNullOrWhiteSpace(selectedPath))
+            {
+                _settingsViewModel.Settings.Persisted.Rpcs3InstallationFolder = selectedPath;
+
+                // Check if the selected folder is valid
+                CheckRpcs3Auth();
+            }
+        }
+
         private void CheckShadPS4Auth()
         {
             var installFolder = _settingsViewModel.Settings?.Persisted?.ShadPS4InstallationFolder;
@@ -1854,6 +1897,63 @@ namespace PlayniteAchievements.Views
             else
             {
                 Dispatcher.BeginInvoke(new Action(() => ShadPS4Authenticated = authenticated));
+            }
+        }
+
+        private void CheckRpcs3Auth()
+        {
+            var installFolder = _settingsViewModel.Settings?.Persisted?.Rpcs3InstallationFolder;
+
+            if (string.IsNullOrWhiteSpace(installFolder))
+            {
+                SetRpcs3Authenticated(false);
+                SetRpcs3AuthStatusByKey("LOCPlayAch_Settings_Rpcs3_NotConfigured");
+                return;
+            }
+
+            var trophyPath = System.IO.Path.Combine(installFolder, "trophy");
+            if (System.IO.Directory.Exists(trophyPath))
+            {
+                SetRpcs3Authenticated(true);
+                SetRpcs3AuthStatusByKey("LOCPlayAch_Settings_Rpcs3_Verified");
+            }
+            else
+            {
+                SetRpcs3Authenticated(false);
+                SetRpcs3AuthStatusByKey("LOCPlayAch_Settings_Rpcs3_FolderNotFound");
+            }
+        }
+
+        private void SetRpcs3AuthStatusByKey(string key)
+        {
+            var value = ResourceProvider.GetString(key);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                SetRpcs3AuthStatus(value);
+            }
+        }
+
+        private void SetRpcs3AuthStatus(string status)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                Rpcs3AuthStatus = status;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => Rpcs3AuthStatus = status));
+            }
+        }
+
+        private void SetRpcs3Authenticated(bool authenticated)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                Rpcs3Authenticated = authenticated;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => Rpcs3Authenticated = authenticated));
             }
         }
 
@@ -2092,6 +2192,11 @@ namespace PlayniteAchievements.Views
             {
                 CheckShadPS4Auth();
                 _logger?.Info("Checked ShadPS4 auth for ShadPS4 tab.");
+            }
+            else if (string.Equals(name, "Rpcs3Tab", StringComparison.OrdinalIgnoreCase))
+            {
+                CheckRpcs3Auth();
+                _logger?.Info("Checked RPCS3 auth for RPCS3 tab.");
             }
             else if (string.Equals(name, "ThemeMigrationTab", StringComparison.OrdinalIgnoreCase))
             {
