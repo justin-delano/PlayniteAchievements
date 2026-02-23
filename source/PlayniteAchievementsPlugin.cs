@@ -17,6 +17,7 @@ using PlayniteAchievements.Providers.GOG;
 using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Providers.PSN;
 using PlayniteAchievements.Providers.Xbox;
+using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -192,7 +193,10 @@ namespace PlayniteAchievements
                             _logger,
                             settings,
                             PlayniteApi,
-                            pluginUserDataPath)
+                            pluginUserDataPath),
+                        new ShadPS4DataProvider(
+                            _logger,
+                            settings)
                     };
                 }
 
