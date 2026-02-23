@@ -108,6 +108,10 @@ namespace PlayniteAchievements.Providers.ShadPS4
             return new RebuildPayload { Summary = summary };
         }
 
+        /// <summary>
+        /// Builds a cache of title ID to trophy data directory path.
+        /// Cache structure: title_id (e.g., "CUSA00432") -> full path to game_data directory
+        /// </summary>
         private async Task<Dictionary<string, string>> BuildTitleIdCacheAsync(CancellationToken cancel)
         {
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -138,33 +142,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         continue;
                     }
 
-                    // Look for TROP.XML
+                    // Verify trophy data exists
                     var xmlPath = Path.Combine(titleDir, "trophyfiles", "trophy00", "Xml", "TROP.XML");
-                    if (!File.Exists(xmlPath))
+                    if (File.Exists(xmlPath))
                     {
-                        continue;
-                    }
-
-                    try
-                    {
-                        var doc = XDocument.Load(xmlPath);
-                        var titleNameElement = doc.Descendants("title-name").FirstOrDefault();
-                        if (titleNameElement != null)
-                        {
-                            var titleName = titleNameElement.Value?.Trim();
-                            if (!string.IsNullOrWhiteSpace(titleName))
-                            {
-                                var normalizedName = ShadPS4DataProvider.NormalizeGameName(titleName);
-                                if (!string.IsNullOrWhiteSpace(normalizedName))
-                                {
-                                    cache[normalizedName] = titleId;
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Debug(ex, $"[ShadPS4] Failed to parse TROP.XML for {titleId}");
+                        cache[titleId.ToUpperInvariant()] = titleDir;
                     }
                 }
             }
@@ -176,80 +158,99 @@ namespace PlayniteAchievements.Providers.ShadPS4
             return await Task.FromResult(cache).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Extracts the PS4 title ID from the game's install directory path.
+        /// PS4 title IDs follow pattern: AAAA12345 (e.g., CUSA00432)
+        /// </summary>
+        private string ExtractTitleIdFromGame(Game game)
+        {
+            var rawInstallDir = game?.InstallDirectory;
+            if (string.IsNullOrWhiteSpace(rawInstallDir))
+            {
+                return null;
+            }
+
+            // Expand path variables
+            var installDir = ExpandGamePath(game, rawInstallDir);
+
+            // Search for title ID pattern in the path
+            var match = TitleIdPattern.Match(installDir);
+            if (match.Success)
+            {
+                return match.Groups[1].Value.ToUpperInvariant();
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Expands path variables in game paths using Playnite's variable expansion.
+        /// </summary>
+        private string ExpandGamePath(Game game, string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+
+            // Use provider's expansion if available
+            if (_provider != null)
+            {
+                return _provider.ExpandGamePath(game, path);
+            }
+
+            // Fallback: use Playnite API directly if available
+            try
+            {
+                return _playniteApi?.ExpandGameVariables(game, path) ?? path;
+            }
+            catch
+            {
+                return path;
+            }
+        }
+
+        // PS4 title ID patterns: CUSA (US), BCAS (Asia), PCAS (Asia digital), etc.
+        private static readonly System.Text.RegularExpressions.Regex TitleIdPattern =
+            new System.Text.RegularExpressions.Regex(@"\b([A-Z]{4}\d{5})\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
         private Task<GameAchievementData> FetchGameDataAsync(
             Game game,
             Dictionary<string, string> titleCache,
             string providerName,
             CancellationToken cancel)
         {
-            _logger?.Debug($"[ShadPS4] === FetchGameDataAsync START for '{game?.Name}' ===");
-
             if (game == null)
             {
-                _logger?.Debug($"[ShadPS4] Game is null, returning null");
                 return Task.FromResult<GameAchievementData>(null);
             }
 
-            var gameName = game.Name;
-            _logger?.Debug($"[ShadPS4] Game name: '{gameName}'");
-
-            if (string.IsNullOrWhiteSpace(gameName))
+            // Extract title ID from game's install directory
+            var titleId = ExtractTitleIdFromGame(game);
+            if (string.IsNullOrWhiteSpace(titleId))
             {
-                _logger?.Debug($"[ShadPS4] Game name is empty, returning no achievements");
+                _logger?.Debug($"[ShadPS4] No title ID found in game path for '{game.Name}'");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
-            var normalizedGameName = ShadPS4DataProvider.NormalizeGameName(gameName);
-            _logger?.Debug($"[ShadPS4] Normalized game name: '{normalizedGameName}'");
-
-            if (string.IsNullOrWhiteSpace(normalizedGameName))
+            // Look up trophy data directory in cache
+            if (!titleCache.TryGetValue(titleId, out var trophyDataPath))
             {
-                _logger?.Debug($"[ShadPS4] Normalized name is empty, returning no achievements");
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
-            }
-
-            // Log title cache contents
-            _logger?.Debug($"[ShadPS4] Title cache contains {titleCache?.Count ?? 0} entries:");
-            if (titleCache != null)
-            {
-                foreach (var kvp in titleCache.Take(20))
-                {
-                    _logger?.Debug($"[ShadPS4]   Cache key: '{kvp.Key}' -> '{kvp.Value}'");
-                }
-                if (titleCache.Count > 20)
-                {
-                    _logger?.Debug($"[ShadPS4]   ... and {titleCache.Count - 20} more entries");
-                }
-            }
-
-            // Look up title ID in cache
-            var foundInCache = titleCache.TryGetValue(normalizedGameName, out var titleId);
-            _logger?.Debug($"[ShadPS4] Cache lookup for '{normalizedGameName}': found={foundInCache}, titleId='{titleId}'");
-
-            if (!foundInCache)
-            {
-                _logger?.Debug($"[ShadPS4] No title ID found for game '{gameName}' (normalized: '{normalizedGameName}')");
+                _logger?.Debug($"[ShadPS4] Title ID '{titleId}' not found in cache for '{game.Name}'");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
             cancel.ThrowIfCancellationRequested();
 
-            var installFolder = _settings?.Persisted?.ShadPS4InstallationFolder;
-            _logger?.Debug($"[ShadPS4] Install folder: '{installFolder}'");
-
-            var xmlPath = Path.Combine(installFolder, "user", "game_data", titleId, "trophyfiles", "trophy00", "Xml", "TROP.XML");
-            _logger?.Debug($"[ShadPS4] TROP.XML path: '{xmlPath}'");
-            _logger?.Debug($"[ShadPS4] TROP.XML exists: {File.Exists(xmlPath)}");
-
-            var iconsFolder = Path.Combine(installFolder, "user", "game_data", titleId, "trophyfiles", "trophy00", "Icons");
-            _logger?.Debug($"[ShadPS4] Icons folder: '{iconsFolder}'");
-            _logger?.Debug($"[ShadPS4] Icons folder exists: {Directory.Exists(iconsFolder)}");
-
+            var xmlPath = Path.Combine(trophyDataPath, "trophyfiles", "trophy00", "Xml", "TROP.XML");
             if (!File.Exists(xmlPath))
             {
                 _logger?.Debug($"[ShadPS4] TROP.XML not found at {xmlPath}");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
+
+            var iconsFolder = Path.Combine(trophyDataPath, "trophyfiles", "trophy00", "Icons");
 
             try
             {
@@ -301,7 +302,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 }
 
                 _logger?.Debug($"[ShadPS4] Parsed {achievements.Count} achievements, {unlockedCount} unlocked");
-                _logger?.Debug($"[ShadPS4] === FetchGameDataAsync END: success ===");
 
                 return Task.FromResult(new GameAchievementData
                 {

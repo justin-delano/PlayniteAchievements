@@ -261,69 +261,31 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private string FindNpCommIdForGame(Game game, Dictionary<string, string> trophyFolderCache, CancellationToken cancel)
         {
-            _logger?.Debug($"[RPCS3] === FindNpCommIdForGame START for '{game?.Name}' ===");
-
-            var rawInstallDir = game?.InstallDirectory;
-            _logger?.Debug($"[RPCS3] Raw InstallDirectory: '{rawInstallDir}'");
-
-            var gameDirectory = ExpandGamePath(game, rawInstallDir);
-            _logger?.Debug($"[RPCS3] Expanded gameDirectory: '{gameDirectory}'");
-            _logger?.Debug($"[RPCS3] Directory.Exists: {Directory.Exists(gameDirectory)}");
-
-            // Log trophy cache contents
-            _logger?.Debug($"[RPCS3] Trophy cache contains {trophyFolderCache?.Count ?? 0} entries:");
-            if (trophyFolderCache != null)
-            {
-                foreach (var kvp in trophyFolderCache.Take(20))
-                {
-                    _logger?.Debug($"[RPCS3]   Cache key: '{kvp.Key}' -> '{kvp.Value}'");
-                }
-                if (trophyFolderCache.Count > 20)
-                {
-                    _logger?.Debug($"[RPCS3]   ... and {trophyFolderCache.Count - 20} more entries");
-                }
-            }
-
+            var gameDirectory = ExpandGamePath(game, game?.InstallDirectory);
             if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory))
             {
-                _logger?.Debug($"[RPCS3] Game directory not found or not set for '{game?.Name}': {gameDirectory}");
                 return null;
             }
 
             try
             {
-                // Search for TROPHY.TRP files in the game directory
-                _logger?.Debug($"[RPCS3] Searching for TROPHY.TRP in: '{gameDirectory}'");
+                // Search for TROPHY.TRP files and extract NPCommId
                 var trophyTrpFiles = Directory.GetFiles(gameDirectory, "TROPHY.TRP", SearchOption.AllDirectories);
-                _logger?.Debug($"[RPCS3] Found {trophyTrpFiles.Length} TROPHY.TRP file(s)");
-
                 foreach (var trophyTrpPath in trophyTrpFiles)
                 {
-                    _logger?.Debug($"[RPCS3] Processing TROPHY.TRP: '{trophyTrpPath}'");
                     cancel.ThrowIfCancellationRequested();
 
                     var npcommid = Rpcs3TrophyParser.ExtractNpCommId(trophyTrpPath, _logger);
-                    _logger?.Debug($"[RPCS3] Extracted npcommid: '{npcommid}'");
-
-                    var inCache = !string.IsNullOrWhiteSpace(npcommid) && trophyFolderCache.ContainsKey(npcommid);
-                    _logger?.Debug($"[RPCS3] npcommid in trophy cache: {inCache}");
-
-                    if (inCache)
+                    if (!string.IsNullOrWhiteSpace(npcommid) && trophyFolderCache.ContainsKey(npcommid))
                     {
-                        _logger?.Debug($"[RPCS3] Found npcommid '{npcommid}' for game '{game.Name}'");
                         return npcommid;
                     }
                 }
 
-                // Fallback: try to match by directory name pattern (some games use title ID as folder name)
+                // Fallback: some games use title ID (NPXXXXX) as folder name
                 var dirName = Path.GetFileName(gameDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-                _logger?.Debug($"[RPCS3] Fallback: trying directory name match with '{dirName}'");
-                var dirNameInCache = !string.IsNullOrWhiteSpace(dirName) && trophyFolderCache.ContainsKey(dirName);
-                _logger?.Debug($"[RPCS3] Directory name in cache: {dirNameInCache}");
-
                 if (!string.IsNullOrWhiteSpace(dirName) && trophyFolderCache.ContainsKey(dirName))
                 {
-                    _logger?.Debug($"[RPCS3] Matched game directory name '{dirName}' to trophy folder");
                     return dirName;
                 }
             }
@@ -332,7 +294,6 @@ namespace PlayniteAchievements.Providers.RPCS3
                 _logger?.Debug(ex, $"[RPCS3] Failed to search for TROPHY.TRP in {gameDirectory}");
             }
 
-            _logger?.Debug($"[RPCS3] === FindNpCommIdForGame END: no match found ===");
             return null;
         }
 

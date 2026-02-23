@@ -6,10 +6,8 @@ using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using PlayniteAchievements.Common;
 
 namespace PlayniteAchievements.Providers.ShadPS4
@@ -65,49 +63,56 @@ namespace PlayniteAchievements.Providers.ShadPS4
             }
         }
 
+        // PS4 title ID patterns: CUSA (US), BCAS (Asia), PCAS (Asia digital), CUSA (Europe), etc.
+        private static readonly System.Text.RegularExpressions.Regex TitleIdPattern =
+            new System.Text.RegularExpressions.Regex(@"\b([A-Z]{4}\d{5})\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
         public bool IsCapable(Game game)
         {
-            _logger?.Debug($"[ShadPS4] === IsCapable check for '{game?.Name}' ===");
-
             if (game == null)
             {
-                _logger?.Debug($"[ShadPS4] IsCapable: game is null");
                 return false;
             }
 
             // Fast path: check source name
             var src = (game.Source?.Name ?? string.Empty).Trim();
-            _logger?.Debug($"[ShadPS4] IsCapable: source name = '{src}'");
             if (src.IndexOf("ShadPS4", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                _logger?.Debug($"[ShadPS4] IsCapable: matched by source name");
                 return true;
             }
 
-            // Fallback: check if game exists in ShadPS4 game_data
-            var cache = GetOrBuildTitleCache();
-            _logger?.Debug($"[ShadPS4] IsCapable: cache has {cache?.Count ?? 0} entries");
-
-            if (cache == null || cache.Count == 0)
+            // Extract title ID from game's install directory and look it up in cache
+            var titleId = ExtractTitleIdFromGame(game);
+            if (string.IsNullOrWhiteSpace(titleId))
             {
-                _logger?.Debug($"[ShadPS4] IsCapable: cache is empty, returning false");
                 return false;
             }
 
-            var gameName = game.Name;
-            var normalizedName = NormalizeGameName(gameName);
-            _logger?.Debug($"[ShadPS4] IsCapable: game name = '{gameName}', normalized = '{normalizedName}'");
+            var cache = GetOrBuildTitleCache();
+            return cache != null && cache.ContainsKey(titleId);
+        }
 
-            // Log cache keys for debugging
-            _logger?.Debug($"[ShadPS4] IsCapable: cache keys (first 20):");
-            foreach (var key in cache.Keys.Take(20))
+        /// <summary>
+        /// Extracts the PS4 title ID from the game's install directory path.
+        /// PS4 title IDs follow pattern: AAAA12345 (e.g., CUSA00432)
+        /// </summary>
+        private string ExtractTitleIdFromGame(Game game)
+        {
+            var installDir = ExpandGamePath(game, game?.InstallDirectory);
+            if (string.IsNullOrWhiteSpace(installDir))
             {
-                _logger?.Debug($"[ShadPS4]   '{key}'");
+                return null;
             }
 
-            var found = !string.IsNullOrWhiteSpace(normalizedName) && cache.ContainsKey(normalizedName);
-            _logger?.Debug($"[ShadPS4] IsCapable: cache lookup result = {found}");
-            return found;
+            // Search for title ID pattern in the path
+            var match = TitleIdPattern.Match(installDir);
+            if (match.Success)
+            {
+                return match.Groups[1].Value.ToUpperInvariant();
+            }
+
+            return null;
         }
 
         internal Dictionary<string, string> GetOrBuildTitleCache()
@@ -131,6 +136,10 @@ namespace PlayniteAchievements.Providers.ShadPS4
             }
         }
 
+        /// <summary>
+        /// Builds a cache of title ID to trophy data directory path.
+        /// Cache structure: title_id (e.g., "CUSA00432") -> full path to game_data directory
+        /// </summary>
         private Dictionary<string, string> BuildTitleIdCache()
         {
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -159,36 +168,15 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         continue;
                     }
 
+                    // Verify trophy data exists
                     var xmlPath = Path.Combine(titleDir, "trophyfiles", "trophy00", "Xml", "TROP.XML");
-                    if (!File.Exists(xmlPath))
+                    if (File.Exists(xmlPath))
                     {
-                        continue;
-                    }
-
-                    try
-                    {
-                        var doc = XDocument.Load(xmlPath);
-                        var titleNameElement = doc.Descendants("title-name").FirstOrDefault();
-                        if (titleNameElement != null)
-                        {
-                            var titleName = titleNameElement.Value?.Trim();
-                            if (!string.IsNullOrWhiteSpace(titleName))
-                            {
-                                var normalizedName = NormalizeGameName(titleName);
-                                if (!string.IsNullOrWhiteSpace(normalizedName))
-                                {
-                                    cache[normalizedName] = titleId;
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Debug(ex, $"[ShadPS4] Failed to parse TROP.XML for {titleId}");
+                        cache[titleId.ToUpperInvariant()] = titleDir;
                     }
                 }
 
-                _logger?.Debug($"[ShadPS4] Built title cache with {cache.Count} games");
+                _logger?.Debug($"[ShadPS4] Built title ID cache with {cache.Count} games");
             }
             catch (Exception ex)
             {
@@ -196,41 +184,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
             }
 
             return cache;
-        }
-
-        internal static string NormalizeGameName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return string.Empty;
-            }
-
-            var normalized = name.ToLowerInvariant()
-                .Replace(":", "")
-                .Replace("-", "")
-                .Replace("_", " ")
-                .Replace("®", "")
-                .Replace("™", "")
-                .Replace("©", "")
-                .Trim();
-
-            while (normalized.Contains("  "))
-            {
-                normalized = normalized.Replace("  ", " ");
-            }
-
-            // Strip common TROP.XML suffixes (e.g., "Webbed Trophies" -> "Webbed")
-            string[] suffixes = { " trophies", " trophy set", " trophy" };
-            foreach (var suffix in suffixes)
-            {
-                if (normalized.EndsWith(suffix))
-                {
-                    normalized = normalized.Substring(0, normalized.Length - suffix.Length);
-                    break;
-                }
-            }
-
-            return normalized.Trim();
         }
 
         /// <summary>
