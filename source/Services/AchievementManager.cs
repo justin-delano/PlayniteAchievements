@@ -1030,10 +1030,8 @@ namespace PlayniteAchievements.Services
                     }
                 }
 
-                // Use 128px for cached icons - large enough for detail, small enough for fast download
-                const int iconDecodeSize = 128;
                 var localPath = await _diskImageService
-                    .GetOrDownloadIconAsync(originalPath, iconDecodeSize, cancel, gameIdStr)
+                    .GetOrDownloadIconAsync(originalPath, 0, cancel, gameIdStr)
                     .ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(localPath))
                 {

@@ -202,6 +202,21 @@
                                 </Style>
                             </Image.Style>
                         </Image>
+                        <!-- Provider: Xbox -->
+                        <Image Source="{StaticResource ProviderIconXbox}"
+                               SnapsToDevicePixels="True"
+                               RenderOptions.BitmapScalingMode="NearestNeighbor">
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IconKey}" Value="ProviderIconXbox">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+                        </Image>
                     </Grid>
                     <TextBlock Text="{Binding Count}"
                                Style="{DynamicResource BaseTextBlockStyle}"
