@@ -33,6 +33,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _xboxEnabled = true;
         private bool _shadPS4Enabled = true;
         private string _shadPS4InstallationFolder = string.Empty;
+        private bool _rpcs3Enabled = true;
+        private string _rpcs3InstallationFolder = string.Empty;
         private bool _enablePeriodicUpdates = true;
         private int _periodicUpdateHours = 6;
         private bool _enableNotifications = true;
@@ -226,6 +228,24 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _shadPS4InstallationFolder;
             set => SetValue(ref _shadPS4InstallationFolder, value ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Enable or disable RPCS3 trophy scanning.
+        /// </summary>
+        public bool Rpcs3Enabled
+        {
+            get => _rpcs3Enabled;
+            set => SetValue(ref _rpcs3Enabled, value);
+        }
+
+        /// <summary>
+        /// Path to the RPCS3 installation folder containing the trophy directory.
+        /// </summary>
+        public string Rpcs3InstallationFolder
+        {
+            get => _rpcs3InstallationFolder;
+            set => SetValue(ref _rpcs3InstallationFolder, value ?? string.Empty);
         }
 
         #endregion
@@ -709,6 +729,8 @@ namespace PlayniteAchievements.Models.Settings
                 XboxEnabled = this.XboxEnabled,
                 ShadPS4Enabled = this.ShadPS4Enabled,
                 ShadPS4InstallationFolder = this.ShadPS4InstallationFolder,
+                Rpcs3Enabled = this.Rpcs3Enabled,
+                Rpcs3InstallationFolder = this.Rpcs3InstallationFolder,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 EnableNotifications = this.EnableNotifications,
