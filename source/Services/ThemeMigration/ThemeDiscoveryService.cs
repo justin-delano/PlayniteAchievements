@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Playnite.SDK;
+using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services.ThemeMigration
 {
@@ -31,14 +32,21 @@ namespace PlayniteAchievements.Services.ThemeMigration
             public bool HasBackup { get; set; }
             public bool NeedsMigration { get; set; }
             public bool CouldNotScan { get; set; }
+            public string CurrentThemeVersion { get; set; }
+            public string CachedMigratedThemeVersion { get; set; }
+            public bool UpgradedSinceLastMigration { get; set; }
         }
 
         /// <summary>
         /// Discovers all themes in the Playnite themes directory.
         /// </summary>
         /// <param name="themesRootPath">Root path to the themes directory.</param>
+        /// <param name="themeMigrationVersionCache">
+        /// Optional cache mapping ThemePath -> last migrated theme.yaml Version.
+        /// When provided, discovery will flag themes that have upgraded versions since migration.
+        /// </param>
         /// <returns>List of discovered themes.</returns>
-        public List<ThemeInfo> DiscoverThemes(string themesRootPath)
+        public List<ThemeInfo> DiscoverThemes(string themesRootPath, IReadOnlyDictionary<string, ThemeMigrationCacheEntry> themeMigrationVersionCache = null)
         {
             var themes = new List<ThemeInfo>();
 
@@ -85,13 +93,33 @@ namespace PlayniteAchievements.Services.ThemeMigration
                         // Check if theme contains SuccessStory references
                         var (needsMigration, couldNotScan) = CheckIfNeedsMigration(themeDir);
 
+                        // Read theme.yaml version (optional)
+                        string currentVersion = null;
+                        ThemeYamlVersionReader.TryReadThemeVersion(themeDir, out currentVersion);
+
+                        // Compare against cached migrated version (optional)
+                        string cachedVersion = null;
+                        bool upgradedSinceLastMigration = false;
+                        if (themeMigrationVersionCache != null &&
+                            themeMigrationVersionCache.TryGetValue(themeDir, out var cached) &&
+                            cached != null &&
+                            !string.IsNullOrWhiteSpace(cached.MigratedThemeVersion) &&
+                            !string.IsNullOrWhiteSpace(currentVersion))
+                        {
+                            cachedVersion = cached.MigratedThemeVersion;
+                            upgradedSinceLastMigration = !string.Equals(cachedVersion, currentVersion, StringComparison.OrdinalIgnoreCase);
+                        }
+
                         var themeInfo = new ThemeInfo
                         {
                             Name = themeName,
                             Path = themeDir,
                             HasBackup = hasBackup,
                             NeedsMigration = !hasBackup && needsMigration,
-                            CouldNotScan = couldNotScan
+                            CouldNotScan = couldNotScan,
+                            CurrentThemeVersion = currentVersion,
+                            CachedMigratedThemeVersion = cachedVersion,
+                            UpgradedSinceLastMigration = upgradedSinceLastMigration
                         };
 
                         themes.Add(themeInfo);

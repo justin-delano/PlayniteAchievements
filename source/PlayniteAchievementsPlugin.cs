@@ -28,6 +28,7 @@ using Playnite.SDK.Plugins;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.ThemeIntegration;
+using PlayniteAchievements.Services.ThemeMigration;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows.Shell;
@@ -898,6 +899,70 @@ namespace PlayniteAchievements
                 {
                     // ignore
                 }
+
+                // Theme migration discovery runs on startup so we can alert users if a previously migrated theme
+                // has been upgraded (version changed in theme.yaml) and likely needs re-migration.
+                ShowThemeUpgradeToastsOnStartup();
+            }
+        }
+
+        private void ShowThemeUpgradeToastsOnStartup()
+        {
+            try
+            {
+                // Run discovery off the UI thread.
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        var themesDiscovery = new ThemeDiscoveryService(_logger, PlayniteApi);
+                        var themesPath = themesDiscovery.GetDefaultThemesPath();
+                        if (string.IsNullOrWhiteSpace(themesPath))
+                        {
+                            return;
+                        }
+
+                        var cache = _settingsViewModel?.Settings?.Persisted?.ThemeMigrationVersionCache;
+                        var themes = themesDiscovery.DiscoverThemes(themesPath, cache);
+
+                        var upgraded = themes
+                            .Where(t => t != null && t.UpgradedSinceLastMigration && t.NeedsMigration)
+                            .ToList();
+
+                        if (upgraded.Count == 0)
+                        {
+                            return;
+                        }
+
+                        // Marshal notification publishing to the UI dispatcher when available.
+                        var dispatcher = PlayniteApi?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+                        if (dispatcher != null)
+                        {
+                            dispatcher.BeginInvoke(new Action(() =>
+                            {
+                                foreach (var t in upgraded)
+                                {
+                                    _notifications?.ShowThemeUpgradedNeedsMigration(t.Name, t.CachedMigratedThemeVersion, t.CurrentThemeVersion);
+                                }
+                            }));
+                        }
+                        else
+                        {
+                            foreach (var t in upgraded)
+                            {
+                                _notifications?.ShowThemeUpgradedNeedsMigration(t.Name, t.CachedMigratedThemeVersion, t.CurrentThemeVersion);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "Failed startup theme upgrade discovery.");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to schedule startup theme upgrade discovery.");
             }
         }
 

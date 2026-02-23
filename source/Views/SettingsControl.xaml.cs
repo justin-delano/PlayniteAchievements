@@ -445,7 +445,10 @@ namespace PlayniteAchievements.Views
             _xboxSessionManager = xboxSessionManager ?? throw new ArgumentNullException(nameof(xboxSessionManager));
 
             _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
-            _themeMigration = new ThemeMigrationService(_logger);
+            _themeMigration = new ThemeMigrationService(
+                _logger,
+                _settingsViewModel.Settings,
+                () => _plugin.SavePluginSettings(_settingsViewModel.Settings));
 
             InitializeComponent();
 
@@ -520,7 +523,8 @@ namespace PlayniteAchievements.Views
                     return;
                 }
 
-                var themes = _themeDiscovery.DiscoverThemes(themesPath);
+                var cache = _settingsViewModel?.Settings?.Persisted?.ThemeMigrationVersionCache;
+                var themes = _themeDiscovery.DiscoverThemes(themesPath, cache);
 
                 // Themes that need migration (no backup, has SuccessStory)
                 foreach (var theme in themes.Where(t => t.NeedsMigration))

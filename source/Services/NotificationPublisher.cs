@@ -40,5 +40,40 @@ namespace PlayniteAchievements.Services
                 _logger?.Debug(ex, "Failed to show periodic notification.");
             }
         }
+
+        public void ShowThemeUpgradedNeedsMigration(string themeName, string cachedVersion, string currentVersion)
+        {
+            if (_settings?.Persisted?.EnableNotifications != true)
+            {
+                return;
+            }
+
+            var title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = "Playnite Achievements";
+            }
+
+            var displayName = string.IsNullOrWhiteSpace(themeName) ? "Theme" : themeName;
+            var from = string.IsNullOrWhiteSpace(cachedVersion) ? "?" : cachedVersion;
+            var to = string.IsNullOrWhiteSpace(currentVersion) ? "?" : currentVersion;
+
+            var text =
+                $"Theme updated: {displayName}\n" +
+                $"Version changed {from} → {to}\n" +
+                "This theme may need to be migrated again.";
+
+            try
+            {
+                _api.Notifications.Add(new NotificationMessage(
+                    $"PlayniteAchievements-ThemeUpgrade-{Guid.NewGuid()}",
+                    $"{title}\n{text}",
+                    NotificationType.Info));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to show theme upgrade notification.");
+            }
+        }
     }
 }

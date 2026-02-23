@@ -197,7 +197,10 @@ namespace PlayniteAchievements.Views
             _availableThemes = new ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
             _revertableThemes = new ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
             _themeDiscovery = new ThemeDiscoveryService(_logger, _api);
-            _themeMigration = new ThemeMigrationService(_logger);
+            _themeMigration = new ThemeMigrationService(
+                _logger,
+                _settings,
+                () => _plugin.SavePluginSettings(_settings));
 
             var modes = _achievementManager.GetRefreshModes();
             RefreshModes = new ObservableCollection<RefreshMode>(modes.Where(m => m.Key != "LibrarySelected" && m.Key != "Single"));
@@ -633,7 +636,8 @@ namespace PlayniteAchievements.Views
                     return;
                 }
 
-                var themes = _themeDiscovery.DiscoverThemes(themesPath);
+                var cache = _settings?.Persisted?.ThemeMigrationVersionCache;
+                var themes = _themeDiscovery.DiscoverThemes(themesPath, cache);
 
                 // Load themes that need migration
                 var themesNeedingMigration = themes.Where(t => t.NeedsMigration).ToList();
