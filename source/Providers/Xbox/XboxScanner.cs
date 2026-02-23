@@ -1,0 +1,428 @@
+using Playnite.SDK;
+using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Xbox.Models;
+using PlayniteAchievements.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace PlayniteAchievements.Providers.Xbox
+{
+    /// <summary>
+    /// Scans Xbox games for achievement data.
+    /// Supports Xbox One/Series X|S, Xbox 360, and PC Game Pass games.
+    /// </summary>
+    internal sealed class XboxScanner
+    {
+        private sealed class XboxTransientException : Exception
+        {
+            public XboxTransientException(string message) : base(message) { }
+            public XboxTransientException(string message, Exception innerException) : base(message, innerException) { }
+        }
+
+        private readonly PlayniteAchievementsSettings _settings;
+        private readonly XboxSessionManager _sessionManager;
+        private readonly XboxApiClient _apiClient;
+        private readonly ILogger _logger;
+
+        // Xbox library plugin ID from Playnite
+        internal static readonly Guid XboxLibraryPluginId = Guid.Parse("7e4fbb5b-4594-4c5a-8a69-1e3f41b39c52");
+
+        public XboxScanner(
+            PlayniteAchievementsSettings settings,
+            XboxSessionManager sessionManager,
+            XboxApiClient apiClient,
+            ILogger logger)
+        {
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+            _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public async Task<RebuildPayload> RefreshAsync(
+            List<Game> gamesToRefresh,
+            Action<ProviderRefreshUpdate> progressCallback,
+            Func<GameAchievementData, Task> OnGameRefreshed,
+            CancellationToken cancel)
+        {
+            try
+            {
+                var report = progressCallback ?? (_ => { });
+
+                _logger?.Info("[XboxAch] Probing Xbox login status before scan...");
+                var authData = await _sessionManager.GetAuthorizationAsync(cancel).ConfigureAwait(false);
+                if (authData == null)
+                {
+                    _logger?.Warn("[XboxAch] Xbox auth check failed: not logged in. Aborting scan.");
+                    report(new ProviderRefreshUpdate { AuthRequired = true });
+                    return new RebuildPayload { Summary = new RebuildSummary() };
+                }
+                _logger?.Info("[XboxAch] Xbox auth verified.");
+
+                if (gamesToRefresh is null || gamesToRefresh.Count == 0)
+                {
+                    _logger?.Info("[XboxAch] No games found to scan.");
+                    return new RebuildPayload { Summary = new RebuildSummary() };
+                }
+
+                var xuid = authData.DisplayClaims?.xui?.FirstOrDefault()?.xid;
+                if (string.IsNullOrWhiteSpace(xuid))
+                {
+                    _logger?.Warn("[XboxAch] Could not get XUID from auth data.");
+                    return new RebuildPayload { Summary = new RebuildSummary() };
+                }
+
+                var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
+                var summary = new RebuildSummary();
+
+                var rateLimiter = new RateLimiter(
+                    _settings.Persisted.ScanDelayMs,
+                    _settings.Persisted.MaxRetryAttempts);
+
+                int consecutiveErrors = 0;
+
+                for (int i = 0; i < gamesToRefresh.Count; i++)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                    progress.Step();
+
+                    var game = gamesToRefresh[i];
+
+                    progress.Emit(new ProviderRefreshUpdate
+                    {
+                        CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : "Unknown Game"
+                    });
+
+                    try
+                    {
+                        var data = await rateLimiter.ExecuteWithRetryAsync(
+                            () => FetchGameDataAsync(game, authData, xuid, cancel),
+                            IsTransientError,
+                            cancel).ConfigureAwait(false);
+
+                        if (OnGameRefreshed != null && data != null)
+                        {
+                            await OnGameRefreshed(data).ConfigureAwait(false);
+                        }
+
+                        summary.GamesRefreshed++;
+
+                        if (data != null && data.HasAchievements)
+                            summary.GamesWithAchievements++;
+                        else
+                            summary.GamesWithoutAchievements++;
+
+                        consecutiveErrors = 0;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (CachePersistenceException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        consecutiveErrors++;
+                        _logger?.Warn($"[XboxAch] Skipping game after retries: {game.Name}. Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
+
+                        if (consecutiveErrors >= 3)
+                        {
+                            await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
+                        }
+                    }
+                }
+
+                return new RebuildPayload { Summary = summary };
+            }
+            catch (XboxAuthRequiredException)
+            {
+                progressCallback?.Invoke(new ProviderRefreshUpdate { AuthRequired = true });
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+        }
+
+        /// <summary>
+        /// Determines if an exception is a transient error that should trigger retry.
+        /// </summary>
+        private static bool IsTransientError(Exception ex)
+        {
+            if (ex is OperationCanceledException) return false;
+            if (ex is XboxTransientException) return true;
+
+            // WebException with transient status codes
+            if (ex is WebException webEx && webEx.Response is HttpWebResponse response)
+            {
+                var statusCode = (int)response.StatusCode;
+                // 429 Too Many Requests, 503 Service Unavailable, 502 Bad Gateway, 504 Gateway Timeout
+                if (statusCode == 429 || statusCode == 502 || statusCode == 503 || statusCode == 504)
+                    return true;
+            }
+
+            // Network-related exceptions
+            var message = ex.Message ?? string.Empty;
+            if (message.IndexOf("timeout", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (message.IndexOf("connection", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                message.IndexOf("reset", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (message.IndexOf("temporarily", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (message.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+
+            if (ex.InnerException != null && !ReferenceEquals(ex.InnerException, ex))
+            {
+                return IsTransientError(ex.InnerException);
+            }
+
+            return false;
+        }
+
+        private async Task<GameAchievementData> FetchGameDataAsync(
+            Game game,
+            AuthorizationData authData,
+            string xuid,
+            CancellationToken cancel)
+        {
+            cancel.ThrowIfCancellationRequested();
+
+            // Resolve title ID
+            var titleId = await ResolveTitleIdAsync(game, authData, cancel).ConfigureAwait(false);
+
+            if (string.IsNullOrWhiteSpace(titleId))
+            {
+                _logger?.Warn($"[XboxAch] Could not resolve title ID for game: {game.Name}");
+                return null;
+            }
+
+            // Determine if Xbox 360 game
+            var isXbox360 = IsXbox360Game(game);
+
+            // Try fetching achievements - Xbox 360 first if platform matches, otherwise Xbox One first
+            List<AchievementDetail> achievements = null;
+
+            if (isXbox360)
+            {
+                achievements = await TryGetXbox360AchievementsAsync(xuid, titleId, authData, cancel).ConfigureAwait(false);
+                if (achievements == null || achievements.Count == 0)
+                {
+                    achievements = await TryGetXboxOneAchievementsAsync(xuid, titleId, game.Name, authData, cancel).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                achievements = await TryGetXboxOneAchievementsAsync(xuid, titleId, game.Name, authData, cancel).ConfigureAwait(false);
+                if (achievements == null || achievements.Count == 0)
+                {
+                    achievements = await TryGetXbox360AchievementsAsync(xuid, titleId, authData, cancel).ConfigureAwait(false);
+                }
+            }
+
+            // Parse titleId to int for AppId
+            int appId = 0;
+            if (!string.IsNullOrWhiteSpace(titleId) && int.TryParse(titleId, out var parsedId))
+            {
+                appId = parsedId;
+            }
+
+            return new GameAchievementData
+            {
+                AppId = appId,
+                GameName = game.Name,
+                ProviderName = "Xbox",
+                LibrarySourceName = game?.Source?.Name,
+                LastUpdatedUtc = DateTime.UtcNow,
+                HasAchievements = achievements != null && achievements.Count > 0,
+                PlayniteGameId = game.Id,
+                Achievements = achievements ?? new List<AchievementDetail>()
+            };
+        }
+
+        private async Task<string> ResolveTitleIdAsync(Game game, AuthorizationData authData, CancellationToken cancel)
+        {
+            // Console games: GameId = "CONSOLE_{titleId}"
+            if (game.GameId?.StartsWith("CONSOLE_") == true)
+            {
+                var parts = game.GameId.Split('_');
+                if (parts.Length >= 2)
+                {
+                    return parts[1];
+                }
+            }
+
+            // PC games: Use Title Hub API to resolve PFN to titleId
+            if (!string.IsNullOrWhiteSpace(game.GameId))
+            {
+                try
+                {
+                    var titleInfo = await _apiClient.GetTitleInfoByPfnAsync(game.GameId, authData, cancel).ConfigureAwait(false);
+                    if (titleInfo != null && !string.IsNullOrWhiteSpace(titleInfo.titleId))
+                    {
+                        return titleInfo.titleId;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"[XboxAch] Failed to get title info for PFN: {game.GameId}");
+                }
+            }
+
+            return null;
+        }
+
+        private static bool IsXbox360Game(Game game)
+        {
+            return game.Platforms?.Any(p => p.SpecificationId == "xbox360") == true;
+        }
+
+        private async Task<List<AchievementDetail>> TryGetXboxOneAchievementsAsync(
+            string xuid,
+            string titleId,
+            string gameName,
+            AuthorizationData authData,
+            CancellationToken cancel)
+        {
+            try
+            {
+                var response = await _apiClient.GetXboxOneAchievementsAsync(xuid, titleId, authData, cancel).ConfigureAwait(false);
+
+                if (response?.achievements == null || response.achievements.Count == 0)
+                {
+                    return null;
+                }
+
+                // Filter by game name if no title ID was provided
+                var achievements = response.achievements;
+                if (string.IsNullOrWhiteSpace(titleId) && !string.IsNullOrWhiteSpace(gameName))
+                {
+                    achievements = achievements
+                        .Where(a => a.titleAssociations?.Any(t => string.Equals(t.name, gameName, StringComparison.OrdinalIgnoreCase)) == true)
+                        .ToList();
+                }
+
+                return achievements.Select(ConvertToAchievementDetail).ToList();
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger?.Debug(ex, $"[XboxAch] Failed to get Xbox One achievements for title {titleId}");
+                return null;
+            }
+        }
+
+        private async Task<List<AchievementDetail>> TryGetXbox360AchievementsAsync(
+            string xuid,
+            string titleId,
+            AuthorizationData authData,
+            CancellationToken cancel)
+        {
+            try
+            {
+                // Get both unlocked and all achievements in parallel
+                var unlockedTask = _apiClient.GetXbox360UnlockedAsync(xuid, titleId, authData, cancel);
+                var allTask = _apiClient.GetXbox360AllAsync(xuid, titleId, authData, cancel);
+
+                await Task.WhenAll(unlockedTask, allTask).ConfigureAwait(false);
+
+                var unlockedResponse = await unlockedTask.ConfigureAwait(false);
+                var allResponse = await allTask.ConfigureAwait(false);
+
+                if (unlockedResponse?.achievements == null && allResponse?.achievements == null)
+                {
+                    return null;
+                }
+
+                // Merge unlocked and all achievements
+                var mergedAchievements = new Dictionary<int, Xbox360Achievement>();
+
+                // Add unlocked achievements first (they have unlock times)
+                if (unlockedResponse?.achievements != null)
+                {
+                    foreach (var ach in unlockedResponse.achievements)
+                    {
+                        mergedAchievements[ach.id] = ach;
+                    }
+                }
+
+                // Add all achievements (locked ones won't have unlock times)
+                if (allResponse?.achievements != null)
+                {
+                    foreach (var ach in allResponse.achievements)
+                    {
+                        if (!mergedAchievements.ContainsKey(ach.id))
+                        {
+                            mergedAchievements[ach.id] = ach;
+                        }
+                    }
+                }
+
+                return mergedAchievements.Values.Select(ConvertToAchievementDetail).ToList();
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger?.Debug(ex, $"[XboxAch] Failed to get Xbox 360 achievements for title {titleId}");
+                return null;
+            }
+        }
+
+        private static AchievementDetail ConvertToAchievementDetail(XboxOneAchievement xboxAch)
+        {
+            var isUnlocked = xboxAch.progression?.timeUnlocked != default && xboxAch.progression?.timeUnlocked != DateTime.MinValue;
+            var gamerscore = 0;
+            var reward = xboxAch.rewards?.FirstOrDefault(r => string.Equals(r.type, "Gamerscore", StringComparison.OrdinalIgnoreCase));
+            if (reward != null && int.TryParse(reward.value, out var gs))
+            {
+                gamerscore = gs;
+            }
+
+            return new AchievementDetail
+            {
+                ApiName = xboxAch.id,
+                DisplayName = xboxAch.name ?? string.Empty,
+                Description = isUnlocked ? xboxAch.description : xboxAch.lockedDescription,
+                UnlockedIconPath = xboxAch.mediaAssets?.FirstOrDefault(m => m.name == "Icon")?.url,
+                LockedIconPath = xboxAch.mediaAssets?.FirstOrDefault(m => m.name == "Icon")?.url,
+                Points = gamerscore,
+                Category = null,
+                Hidden = xboxAch.isSecret,
+                GlobalPercentUnlocked = null,
+                UnlockTimeUtc = isUnlocked ? xboxAch.progression.timeUnlocked : (DateTime?)null,
+                Unlocked = isUnlocked,
+                ProgressNum = null,
+                ProgressDenom = null
+            };
+        }
+
+        private static AchievementDetail ConvertToAchievementDetail(Xbox360Achievement xboxAch)
+        {
+            var isUnlocked = xboxAch.unlocked || xboxAch.unlockedOnline;
+            var unlockTime = isUnlocked && xboxAch.timeUnlocked != default && xboxAch.timeUnlocked != DateTime.MinValue
+                ? xboxAch.timeUnlocked
+                : (DateTime?)null;
+
+            // Xbox 360 achievement icon URL format
+            var iconUrl = $"https://image-ssl.xboxlive.com/global/t.{xboxAch.titleId:x}/ach/0/{xboxAch.imageId:x}";
+
+            return new AchievementDetail
+            {
+                ApiName = xboxAch.id.ToString(),
+                DisplayName = xboxAch.name ?? string.Empty,
+                Description = isUnlocked ? xboxAch.lockedDescription : xboxAch.description,
+                UnlockedIconPath = iconUrl,
+                LockedIconPath = iconUrl,
+                Points = xboxAch.gamerscore,
+                Category = null,
+                Hidden = xboxAch.isSecret,
+                GlobalPercentUnlocked = null,
+                UnlockTimeUtc = unlockTime,
+                Unlocked = isUnlocked,
+                ProgressNum = null,
+                ProgressDenom = null
+            };
+        }
+    }
+}

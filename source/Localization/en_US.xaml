@@ -36,6 +36,7 @@
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_PlayStation">PlayStation</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Xbox">Xbox</sys:String>
 
     <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
@@ -244,6 +245,24 @@
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Check">Check</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxConnection">Xbox Connection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_XboxAuth">Xbox Authentication</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_NotChecked">Xbox: Not checked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Checking">Checking Xbox authentication...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_OpeningWindow">Opening Xbox login window...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_WaitingForLogin">Waiting for Xbox login confirmation...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Verified">Xbox authentication verified.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_NotAuthenticated">Xbox is not authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_TimedOut">Xbox authentication timed out.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Failed">Xbox authentication failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Cancelled">Xbox authentication was cancelled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_CookiesCleared">Xbox session cleared.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_AlreadyAuthenticated">Xbox configured successfully</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_ProbeFailed">Unable to verify Xbox authentication state.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_WindowNotOpened">Could not open Xbox login window.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Xbox_Login">Login</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Xbox_Clear">Clear</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Xbox_Help">Click Login to authenticate with Xbox Live via Microsoft account.</sys:String>
 
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->

@@ -16,6 +16,7 @@ using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.GOG;
 using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Providers.PSN;
+using PlayniteAchievements.Providers.Xbox;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -53,6 +54,7 @@ namespace PlayniteAchievements
         private readonly GogSessionManager _gogSessionManager;
         private readonly EpicSessionManager _epicSessionManager;
         private readonly PsnSessionManager _psnSessionManager;
+        private readonly XboxSessionManager _xboxSessionManager;
         private readonly ProviderRegistry _providerRegistry;
 
         private readonly BackgroundUpdater _backgroundUpdates;
@@ -153,6 +155,7 @@ namespace PlayniteAchievements
                     _gogSessionManager = new GogSessionManager(PlayniteApi, _logger, settings);
                     _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
                     _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger, settings.Persisted);
+                    _xboxSessionManager = new XboxSessionManager(PlayniteApi, _logger, settings.Persisted);
                 }
 
                 List<IDataProvider> providers;
@@ -181,6 +184,10 @@ namespace PlayniteAchievements
                             _logger,
                             settings,
                             _psnSessionManager),
+                        new XboxDataProvider(
+                            _logger,
+                            settings,
+                            _xboxSessionManager),
                         new RetroAchievementsDataProvider(
                             _logger,
                             settings,

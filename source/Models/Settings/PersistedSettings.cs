@@ -30,6 +30,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _gogEnabled = true;
         private bool _psnEnabled = true;
         private bool _retroAchievementsEnabled = true;
+        private bool _xboxEnabled = true;
         private bool _enablePeriodicUpdates = true;
         private int _periodicUpdateHours = 6;
         private bool _enableNotifications = true;
@@ -196,6 +197,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _retroAchievementsEnabled;
             set => SetValue(ref _retroAchievementsEnabled, value);
+        }
+
+        /// <summary>
+        /// Enable or disable Xbox achievement scanning.
+        /// </summary>
+        public bool XboxEnabled
+        {
+            get => _xboxEnabled;
+            set => SetValue(ref _xboxEnabled, value);
         }
 
         #endregion
@@ -676,6 +686,7 @@ namespace PlayniteAchievements.Models.Settings
                 GogEnabled = this.GogEnabled,
                 PsnEnabled = this.PsnEnabled,
                 RetroAchievementsEnabled = this.RetroAchievementsEnabled,
+                XboxEnabled = this.XboxEnabled,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 EnableNotifications = this.EnableNotifications,

@@ -17,7 +17,8 @@ namespace PlayniteAchievements.Services
             { "Epic", true },
             { "GOG", true },
             { "PSN", true },
-            { "RetroAchievements", true }
+            { "RetroAchievements", true },
+            { "Xbox", true }
         };
 
         /// <summary>
@@ -78,6 +79,7 @@ namespace PlayniteAchievements.Services
             _enabledState["GOG"] = settings.GogEnabled;
             _enabledState["PSN"] = settings.PsnEnabled;
             _enabledState["RetroAchievements"] = settings.RetroAchievementsEnabled;
+            _enabledState["Xbox"] = settings.XboxEnabled;
         }
 
         /// <summary>
@@ -97,6 +99,7 @@ namespace PlayniteAchievements.Services
             settings.GogEnabled = IsProviderEnabled("GOG");
             settings.PsnEnabled = IsProviderEnabled("PSN");
             settings.RetroAchievementsEnabled = IsProviderEnabled("RetroAchievements");
+            settings.XboxEnabled = IsProviderEnabled("Xbox");
         }
     }
 
