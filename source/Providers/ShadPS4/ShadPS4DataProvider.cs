@@ -6,8 +6,10 @@ using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace PlayniteAchievements.Providers.ShadPS4
 {
@@ -15,14 +17,19 @@ namespace PlayniteAchievements.Providers.ShadPS4
     {
         private readonly ShadPS4Scanner _scanner;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly ILogger _logger;
+
+        private Dictionary<string, string> _titleCache;
+        private readonly object _cacheLock = new object();
 
         public ShadPS4DataProvider(ILogger logger, PlayniteAchievementsSettings settings)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             _settings = settings;
+            _logger = logger;
 
-            _scanner = new ShadPS4Scanner(logger, _settings);
+            _scanner = new ShadPS4Scanner(_logger, _settings, this);
         }
 
         public string ProviderName
@@ -62,13 +69,134 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return false;
             }
 
+            // Fast path: check source name
             var src = (game.Source?.Name ?? string.Empty).Trim();
             if (src.IndexOf("ShadPS4", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return true;
             }
 
-            return false;
+            // Fallback: check if game exists in ShadPS4 game_data
+            var cache = GetOrBuildTitleCache();
+            if (cache == null || cache.Count == 0)
+            {
+                return false;
+            }
+
+            var normalizedName = NormalizeGameName(game.Name);
+            return !string.IsNullOrWhiteSpace(normalizedName) && cache.ContainsKey(normalizedName);
+        }
+
+        internal Dictionary<string, string> GetOrBuildTitleCache()
+        {
+            lock (_cacheLock)
+            {
+                if (_titleCache != null)
+                {
+                    return _titleCache;
+                }
+                _titleCache = BuildTitleIdCache();
+                return _titleCache;
+            }
+        }
+
+        internal void ClearTitleCache()
+        {
+            lock (_cacheLock)
+            {
+                _titleCache = null;
+            }
+        }
+
+        private Dictionary<string, string> BuildTitleIdCache()
+        {
+            var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            var installFolder = _settings?.Persisted?.ShadPS4InstallationFolder;
+            if (string.IsNullOrWhiteSpace(installFolder))
+            {
+                return cache;
+            }
+
+            var gameDataPath = Path.Combine(installFolder, "user", "game_data");
+            if (!Directory.Exists(gameDataPath))
+            {
+                _logger?.Debug($"[ShadPS4] user/game_data folder not found at {gameDataPath}");
+                return cache;
+            }
+
+            try
+            {
+                var titleDirectories = Directory.GetDirectories(gameDataPath);
+                foreach (var titleDir in titleDirectories)
+                {
+                    var titleId = Path.GetFileName(titleDir);
+                    if (string.IsNullOrWhiteSpace(titleId))
+                    {
+                        continue;
+                    }
+
+                    var xmlPath = Path.Combine(titleDir, "trophyfiles", "trophy00", "Xml", "TROP.XML");
+                    if (!File.Exists(xmlPath))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        var doc = XDocument.Load(xmlPath);
+                        var titleNameElement = doc.Descendants("title-name").FirstOrDefault();
+                        if (titleNameElement != null)
+                        {
+                            var titleName = titleNameElement.Value?.Trim();
+                            if (!string.IsNullOrWhiteSpace(titleName))
+                            {
+                                var normalizedName = NormalizeGameName(titleName);
+                                if (!string.IsNullOrWhiteSpace(normalizedName))
+                                {
+                                    cache[normalizedName] = titleId;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, $"[ShadPS4] Failed to parse TROP.XML for {titleId}");
+                    }
+                }
+
+                _logger?.Debug($"[ShadPS4] Built title cache with {cache.Count} games");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "[ShadPS4] Failed to enumerate title directories.");
+            }
+
+            return cache;
+        }
+
+        internal static string NormalizeGameName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return string.Empty;
+            }
+
+            var normalized = name.ToLowerInvariant()
+                .Replace(":", "")
+                .Replace("-", "")
+                .Replace("_", " ")
+                .Replace("®", "")
+                .Replace("™", "")
+                .Replace("©", "")
+                .Trim();
+
+            while (normalized.Contains("  "))
+            {
+                normalized = normalized.Replace("  ", " ");
+            }
+
+            return normalized;
         }
 
         public Task<RebuildPayload> RefreshAsync(
