@@ -32,6 +32,8 @@
     <SolidColorBrush x:Key="BrushEpic" Color="#26BBFF"/>
     <SolidColorBrush x:Key="BrushPSN" Color="#0070D1"/>
     <SolidColorBrush x:Key="BrushXbox" Color="#107C10"/>
+    <SolidColorBrush x:Key="BrushRPCS3" Color="#0070D1"/>
+    <SolidColorBrush x:Key="BrushShadPS4" Color="#0070D1"/>
 
 
     <!-- DrawingImage resources for each provider -->
@@ -68,6 +70,18 @@
     <DrawingImage x:Key="ProviderIconXbox">
         <DrawingImage.Drawing>
             <GeometryDrawing Geometry="{StaticResource GeoXbox}" Brush="{StaticResource BrushXbox}"/>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <DrawingImage x:Key="ProviderIconShadPS4">
+        <DrawingImage.Drawing>
+            <GeometryDrawing Geometry="{StaticResource GeoPSN}" Brush="{StaticResource BrushShadPS4}"/>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <DrawingImage x:Key="ProviderIconRPCS3">
+        <DrawingImage.Drawing>
+            <GeometryDrawing Geometry="{StaticResource GeoPSN}" Brush="{StaticResource BrushRPCS3}"/>
         </DrawingImage.Drawing>
     </DrawingImage>
 

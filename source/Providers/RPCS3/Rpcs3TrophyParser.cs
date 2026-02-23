@@ -161,15 +161,15 @@ namespace PlayniteAchievements.Providers.RPCS3
                 var content = Encoding.UTF8.GetString(bytes);
 
                 // Look for <npcommid>...</npcommid> pattern
-                var startIndex = content.IndexOf("<npcommid>", StringComparison.OrdinalIgnoreCase);
-                if (startIndex < 0)
+                var tagStart = content.IndexOf("<npcommid>", StringComparison.OrdinalIgnoreCase);
+                if (tagStart < 0)
                 {
                     // Try alternate format without angle brackets (some dumps use different format)
-                    startIndex = content.IndexOf("npcommid=", StringComparison.OrdinalIgnoreCase);
-                    if (startIndex >= 0)
+                    var attrStart = content.IndexOf("npcommid=", StringComparison.OrdinalIgnoreCase);
+                    if (attrStart >= 0)
                     {
                         // Find the value after the equals sign
-                        var valueStart = startIndex + "npcommid=".Length;
+                        var valueStart = attrStart + "npcommid=".Length;
                         var quoteStart = content.IndexOf("\"", valueStart);
                         if (quoteStart >= 0)
                         {
@@ -183,13 +183,13 @@ namespace PlayniteAchievements.Providers.RPCS3
                     return null;
                 }
 
-                var endIndex = content.IndexOf("</npcommid>", startIndex, StringComparison.OrdinalIgnoreCase);
-                if (endIndex < 0)
+                var tagEnd = content.IndexOf("</npcommid>", tagStart, StringComparison.OrdinalIgnoreCase);
+                if (tagEnd < 0)
                 {
                     return null;
                 }
 
-                var npcommid = content.Substring(startIndex + "<npcommid>".Length, endIndex - startIndex - "<npcommid>".Length).Trim();
+                var npcommid = content.Substring(tagStart + "<npcommid>".Length, tagEnd - tagStart - "<npcommid>".Length).Trim();
                 return string.IsNullOrWhiteSpace(npcommid) ? null : npcommid;
             }
             catch (Exception ex)
