@@ -968,7 +968,7 @@ namespace PlayniteAchievements
                             var dispatcher = PlayniteApi?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
                             if (dispatcher != null)
                             {
-                                dispatcher.BeginInvoke(new Action(() =>
+                                _ = dispatcher.BeginInvoke(new Action(() =>
                                 {
                                     foreach (var themeName in migratedThemes)
                                     {
