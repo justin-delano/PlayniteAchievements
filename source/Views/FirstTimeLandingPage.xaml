@@ -462,7 +462,7 @@
                                     HorizontalAlignment="Center">
                             <ComboBox x:Name="MigrationThemeComboBox"
                                       ItemsSource="{Binding AvailableThemes}"
-                                      DisplayMemberPath="Name"
+                                      DisplayMemberPath="BestDisplayName"
                                       SelectedValuePath="Path"
                                       SelectedValue="{Binding SelectedThemePath}"
                                       Width="200"
@@ -514,7 +514,7 @@
                                     HorizontalAlignment="Center">
                             <ComboBox x:Name="RevertThemeComboBox"
                                       ItemsSource="{Binding RevertableThemes}"
-                                      DisplayMemberPath="Name"
+                                      DisplayMemberPath="BestDisplayName"
                                       SelectedValuePath="Path"
                                       SelectedValue="{Binding SelectedRevertThemePath}"
                                       Width="200"
