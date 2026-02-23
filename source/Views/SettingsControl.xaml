@@ -1637,41 +1637,21 @@
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">
 
-                        <!-- Plugin Header -->
-                        <StackPanel Margin="0,0,0,24">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Provider_Xbox}"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,6" />
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Xbox_Description}"
-                                       Style="{DynamicResource MutedTextStyle}"
-                                       Margin="0,0,0,8"/>
-                            <!-- Decorative accent line (Xbox green) -->
-                            <Border Height="2"
-                                    Width="60"
-                                    HorizontalAlignment="Left"
-                                    Background="#107C10"
-                                    CornerRadius="1"
-                                    Margin="0,8,0,0"/>
-                        </StackPanel>
+                        <!-- Provider Enable Toggle -->
+                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,12">
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ProviderEnabled}"
+                                      IsChecked="{Binding Persisted.XboxEnabled}"
+                                      FontWeight="SemiBold"
+                                      FontSize="{DynamicResource FontSize}"/>
+                        </Border>
 
-                        <!-- Enable Xbox -->
-                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_XboxEnabled}"
-                                  IsChecked="{Binding Persisted.XboxEnabled}"
-                                  Style="{StaticResource {x:Type CheckBox}}"
-                                  Margin="0,0,0,16"/>
-
-                        <!-- Not enabled warning -->
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledWarning}"
-                                   Foreground="#F72585"
+                        <!-- Provider Disabled Message -->
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledMessage}"
                                    Margin="0,0,0,16">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Persisted.XboxEnabled}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding Persisted.XboxEnabled}" Value="False">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
@@ -1685,12 +1665,9 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_XboxConnection}"
                                            Style="{StaticResource SectionHeaderStyle}"/>
 
-                                <!-- Help text -->
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Xbox_Help}"
-                                           TextWrapping="Wrap"
-                                           Foreground="{DynamicResource TextBrush}"
+                                <TextBlock Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,16"
-                                           Opacity="0.8"/>
+                                           Text="{DynamicResource LOCPlayAch_Settings_Xbox_Help}"/>
 
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
