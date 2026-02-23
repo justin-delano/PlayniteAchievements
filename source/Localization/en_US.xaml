@@ -37,6 +37,7 @@
     <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_PlayStation">PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Xbox">Xbox</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_ShadPS4">ShadPS4</sys:String>
 
     <!-- ================================================================= -->
     <!-- CONTEXT MENU                                                       -->
@@ -267,6 +268,17 @@
     <sys:String x:Key="LOCPlayAch_Settings_Xbox_Help">Click Login to authenticate with Xbox Live via Microsoft account.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_CheckingExistingSession">Checking existing Xbox session...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Completed">Xbox authentication completed.</sys:String>
+
+    <!-- ShadPS4 Settings -->
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Connection">ShadPS4 Connection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Description">Configure ShadPS4 emulator integration to track trophies from PlayStation 4 games played in the emulator.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Enabled">Enable ShadPS4 Trophy Tracking</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4InstallationFolder">Installation Folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4InstallationFolderHint">Path to your ShadPS4 folder containing user/game_data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Browse">Browse...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Verified">ShadPS4 installation folder verified.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_NotConfigured">ShadPS4 installation folder not configured.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_FolderNotFound">ShadPS4 user/game_data folder not found.</sys:String>
 
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->
