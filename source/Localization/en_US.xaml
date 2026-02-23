@@ -607,7 +607,7 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertFailed">Revert failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedTitle">Theme Auto-Migrated</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedMessage">{0} has been automatically updated for PlayniteAchievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart"></sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">Please restart Playnite to apply the changes.</sys:String>
 
     <!-- ================================================================= -->
     <!-- SINGLE GAME VIEW                                                   -->
