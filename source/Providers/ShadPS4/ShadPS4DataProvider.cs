@@ -67,27 +67,47 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         public bool IsCapable(Game game)
         {
+            _logger?.Debug($"[ShadPS4] === IsCapable check for '{game?.Name}' ===");
+
             if (game == null)
             {
+                _logger?.Debug($"[ShadPS4] IsCapable: game is null");
                 return false;
             }
 
             // Fast path: check source name
             var src = (game.Source?.Name ?? string.Empty).Trim();
+            _logger?.Debug($"[ShadPS4] IsCapable: source name = '{src}'");
             if (src.IndexOf("ShadPS4", StringComparison.OrdinalIgnoreCase) >= 0)
             {
+                _logger?.Debug($"[ShadPS4] IsCapable: matched by source name");
                 return true;
             }
 
             // Fallback: check if game exists in ShadPS4 game_data
             var cache = GetOrBuildTitleCache();
+            _logger?.Debug($"[ShadPS4] IsCapable: cache has {cache?.Count ?? 0} entries");
+
             if (cache == null || cache.Count == 0)
             {
+                _logger?.Debug($"[ShadPS4] IsCapable: cache is empty, returning false");
                 return false;
             }
 
-            var normalizedName = NormalizeGameName(game.Name);
-            return !string.IsNullOrWhiteSpace(normalizedName) && cache.ContainsKey(normalizedName);
+            var gameName = game.Name;
+            var normalizedName = NormalizeGameName(gameName);
+            _logger?.Debug($"[ShadPS4] IsCapable: game name = '{gameName}', normalized = '{normalizedName}'");
+
+            // Log cache keys for debugging
+            _logger?.Debug($"[ShadPS4] IsCapable: cache keys (first 20):");
+            foreach (var key in cache.Keys.Take(20))
+            {
+                _logger?.Debug($"[ShadPS4]   '{key}'");
+            }
+
+            var found = !string.IsNullOrWhiteSpace(normalizedName) && cache.ContainsKey(normalizedName);
+            _logger?.Debug($"[ShadPS4] IsCapable: cache lookup result = {found}");
+            return found;
         }
 
         internal Dictionary<string, string> GetOrBuildTitleCache()

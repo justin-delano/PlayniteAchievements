@@ -69,31 +69,44 @@ namespace PlayniteAchievements.Providers.RPCS3
 
         public bool IsCapable(Game game)
         {
+            _logger?.Debug($"[RPCS3] === IsCapable check for '{game?.Name}' ===");
+
             if (game == null)
             {
+                _logger?.Debug($"[RPCS3] IsCapable: game is null");
                 return false;
             }
 
             // Fast path: check source name
             var src = (game.Source?.Name ?? string.Empty).Trim();
+            _logger?.Debug($"[RPCS3] IsCapable: source name = '{src}'");
             if (src.IndexOf("RPCS3", StringComparison.OrdinalIgnoreCase) >= 0)
             {
+                _logger?.Debug($"[RPCS3] IsCapable: matched by source name");
                 return true;
             }
 
             // Check platform (existing behavior)
-            if (IsPs3Platform(game))
+            var isPs3 = IsPs3Platform(game);
+            _logger?.Debug($"[RPCS3] IsCapable: is PS3 platform = {isPs3}");
+            if (isPs3)
             {
+                _logger?.Debug($"[RPCS3] IsCapable: matched by PS3 platform");
                 return true;
             }
 
             // Fallback: check if game has matching trophy data in RPCS3
-            return HasTrophyDataInRpcs3(game);
+            _logger?.Debug($"[RPCS3] IsCapable: checking HasTrophyDataInRpcs3 fallback");
+            var hasTrophyData = HasTrophyDataInRpcs3(game);
+            _logger?.Debug($"[RPCS3] IsCapable: HasTrophyDataInRpcs3 = {hasTrophyData}");
+            return hasTrophyData;
         }
 
-        private static bool IsPs3Platform(Game game)
+        private bool IsPs3Platform(Game game)
         {
             var platforms = game.Platforms;
+            _logger?.Debug($"[RPCS3] IsPs3Platform: platforms count = {platforms?.Count ?? 0}");
+
             if (platforms == null)
             {
                 return false;
@@ -104,6 +117,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                 if (platform == null) continue;
 
                 var platformName = (platform.Name ?? string.Empty).Trim();
+                _logger?.Debug($"[RPCS3] IsPs3Platform: checking platform '{platformName}'");
                 if (platformName.IndexOf("PlayStation 3", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     platformName.IndexOf("PS3", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
