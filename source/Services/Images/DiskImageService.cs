@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media.Imaging;
 using Playnite.SDK;
 
@@ -180,8 +181,11 @@ namespace PlayniteAchievements.Services.Images
                         bitmap.StreamSource = ms;
                         bitmap.EndInit();
 
+                        // Crop to square for consistent aspect ratio and smaller file size
+                        var finalBitmap = CropToSquare(bitmap);
+
                         var encoder = new PngBitmapEncoder();
-                        encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                        encoder.Frames.Add(BitmapFrame.Create(finalBitmap));
                         await SavePngWithRetryAsync(cachePath, encoder, cancel).ConfigureAwait(false);
 
                         // _logger?.Debug($"Cached icon: {cachePath}");
@@ -228,6 +232,44 @@ namespace PlayniteAchievements.Services.Images
                     await Task.Delay(50 * attempt, cancel).ConfigureAwait(false);
                 }
             }
+        }
+
+        /// <summary>
+        /// Crop a bitmap to square from center. If already square, returns original.
+        /// For rectangular images, crops to square using center horizontally.
+        /// </summary>
+        private static BitmapSource CropToSquare(BitmapSource source)
+        {
+            if (source == null) return null;
+
+            int width = source.PixelWidth;
+            int height = source.PixelHeight;
+
+            // Already square (or close enough)
+            if (Math.Abs(width - height) <= 1) return source;
+
+            // Calculate crop rect - center horizontally
+            int cropSize = Math.Min(width, height);
+            int x = 0;
+            int y = 0;
+
+            if (height < width)
+            {
+                // Landscape: crop sides
+                x = (width - height) / 2;
+                cropSize = height;
+            }
+            else
+            {
+                // Portrait: crop top/bottom (rare for achievement icons)
+                y = (height - width) / 2;
+                cropSize = width;
+            }
+
+            var rect = new Int32Rect(x, y, cropSize, cropSize);
+            var cropped = new CroppedBitmap(source, rect);
+            cropped.Freeze();
+            return cropped;
         }
 
         private async Task<byte[]> DownloadBytesAsync(string url, CancellationToken cancel)
