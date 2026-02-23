@@ -21,6 +21,7 @@ namespace PlayniteAchievements.Providers.RPCS3
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Rpcs3DataProvider _provider;
+        private readonly IPlayniteAPI _playniteApi;
 
         // Default rarity estimates by trophy type
         private const double PlatinumRarity = 5.0;
@@ -28,11 +29,12 @@ namespace PlayniteAchievements.Providers.RPCS3
         private const double SilverRarity = 30.0;
         private const double BronzeRarity = 60.0;
 
-        public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings, Rpcs3DataProvider provider = null)
+        public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings, Rpcs3DataProvider provider = null, IPlayniteAPI playniteApi = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _provider = provider;
+            _playniteApi = playniteApi;
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -259,9 +261,10 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private string FindNpCommIdForGame(Game game, Dictionary<string, string> trophyFolderCache, CancellationToken cancel)
         {
-            var gameDirectory = game?.InstallDirectory;
+            var gameDirectory = ExpandGamePath(game, game?.InstallDirectory);
             if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory))
             {
+                _logger?.Debug($"[RPCS3] Game directory not found or not set for '{game?.Name}': {gameDirectory}");
                 return null;
             }
 
@@ -296,6 +299,33 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Expands path variables in game paths using Playnite's variable expansion.
+        /// </summary>
+        private string ExpandGamePath(Game game, string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+
+            // Use provider's expansion if available
+            if (_provider != null)
+            {
+                return _provider.ExpandGamePath(game, path);
+            }
+
+            // Fallback: use Playnite API directly if available
+            try
+            {
+                return _playniteApi?.ExpandGameVariables(game, path) ?? path;
+            }
+            catch
+            {
+                return path;
+            }
         }
 
         private static GameAchievementData BuildNoAchievementsData(Game game, string providerName)

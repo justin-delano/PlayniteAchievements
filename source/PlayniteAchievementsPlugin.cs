@@ -200,7 +200,8 @@ namespace PlayniteAchievements
                             settings),
                         new Rpcs3DataProvider(
                             _logger,
-                            settings)
+                            settings,
+                            PlayniteApi)
                     };
                 }
 

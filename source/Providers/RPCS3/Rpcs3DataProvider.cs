@@ -6,6 +6,7 @@ using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,18 +21,20 @@ namespace PlayniteAchievements.Providers.RPCS3
         private readonly Rpcs3Scanner _scanner;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _playniteApi;
 
         private Dictionary<string, string> _trophyFolderCache;
         private readonly object _cacheLock = new object();
 
-        public Rpcs3DataProvider(ILogger logger, PlayniteAchievementsSettings settings)
+        public Rpcs3DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             _settings = settings;
             _logger = logger;
+            _playniteApi = playniteApi;
 
-            _scanner = new Rpcs3Scanner(_logger, _settings, this);
+            _scanner = new Rpcs3Scanner(_logger, _settings, this, _playniteApi);
         }
 
         public string ProviderName
@@ -113,7 +116,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
         private bool HasTrophyDataInRpcs3(Game game)
         {
-            var gameDirectory = game?.InstallDirectory;
+            var gameDirectory = ExpandGamePath(game, game?.InstallDirectory);
             if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory))
             {
                 return false;
@@ -151,6 +154,66 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Expands path variables in game paths using Playnite's variable expansion.
+        /// </summary>
+        internal string ExpandGamePath(Game game, string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+
+            try
+            {
+                // Use Playnite's built-in variable expansion
+                var expanded = _playniteApi?.ExpandGameVariables(game, path) ?? path;
+
+                // Handle additional custom variables
+                if (expanded.IndexOf("{InstallDir}", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    var installDir = game?.InstallDirectory;
+                    if (!string.IsNullOrWhiteSpace(installDir))
+                    {
+                        expanded = ReplaceInsensitive(expanded, "{InstallDir}", installDir);
+                    }
+                }
+
+                return expanded;
+            }
+            catch
+            {
+                return path;
+            }
+        }
+
+        private static string ReplaceInsensitive(string input, string oldValue, string newValue)
+        {
+            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(oldValue))
+            {
+                return input;
+            }
+
+            var idx = input.IndexOf(oldValue, StringComparison.OrdinalIgnoreCase);
+            if (idx < 0)
+            {
+                return input;
+            }
+
+            var sb = new StringBuilder(input.Length);
+            var start = 0;
+            while (idx >= 0)
+            {
+                sb.Append(input.Substring(start, idx - start));
+                sb.Append(newValue ?? string.Empty);
+                start = idx + oldValue.Length;
+                idx = input.IndexOf(oldValue, start, StringComparison.OrdinalIgnoreCase);
+            }
+
+            sb.Append(input.Substring(start));
+            return sb.ToString();
         }
 
         internal Dictionary<string, string> GetOrBuildTrophyFolderCache()
