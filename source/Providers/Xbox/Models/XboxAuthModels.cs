@@ -21,6 +21,8 @@ namespace PlayniteAchievements.Providers.Xbox.Models
     /// </summary>
     public class XboxAuthRequest
     {
+        public string RelyingParty { get; set; } = "http://auth.xboxlive.com";
+        public string TokenType { get; set; } = "JWT";
         public XboxAuthProperties Properties { get; set; } = new XboxAuthProperties();
     }
 
@@ -47,6 +49,8 @@ namespace PlayniteAchievements.Providers.Xbox.Models
     /// </summary>
     public class XstsRequest
     {
+        public string RelyingParty { get; set; } = "http://xboxlive.com";
+        public string TokenType { get; set; } = "JWT";
         public XstsProperties Properties { get; set; } = new XstsProperties();
     }
 
