@@ -30,36 +30,40 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <Image Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" x:Name="PART_Image"
-               Loaded="Image_Loaded" ImageFailed="Image_ImageFailed"
-               helpers:AsyncImage.Gray="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsLocked}">
-            <helpers:AsyncImage.Uri>
-                <MultiBinding Converter="{StaticResource LockedIconSelectorConverter}">
-                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IsLocked" />
-                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IconCustom" />
-                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Icon" />
-                </MultiBinding>
-            </helpers:AsyncImage.Uri>
-            <Image.Style>
-                <Style TargetType="{x:Type Image}">
-                    <Style.Triggers>
-                        <!-- Rarity indicator glow effect - color based on achievement rarity -->
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=EnableRaretyIndicator}" Value="True">
-                            <Setter Property="Effect">
-                                <Setter.Value>
-                                    <MultiBinding Converter="{StaticResource PercentToGlowEffectConverter}">
-                                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Percent" />
-                                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="UltraRareThreshold" />
-                                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="RareThreshold" />
-                                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="UncommonThreshold" />
-                                    </MultiBinding>
-                                </Setter.Value>
-                            </Setter>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Image.Style>
-        </Image>
+        <!-- Border with clipping to handle rectangular images, centered in square container -->
+        <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                ClipToBounds="True">
+            <Image Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" x:Name="PART_Image"
+                   Loaded="Image_Loaded" ImageFailed="Image_ImageFailed"
+                   helpers:AsyncImage.Gray="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsLocked}">
+                <helpers:AsyncImage.Uri>
+                    <MultiBinding Converter="{StaticResource LockedIconSelectorConverter}">
+                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IsLocked" />
+                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IconCustom" />
+                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Icon" />
+                    </MultiBinding>
+                </helpers:AsyncImage.Uri>
+                <Image.Style>
+                    <Style TargetType="{x:Type Image}">
+                        <Style.Triggers>
+                            <!-- Rarity indicator glow effect - color based on achievement rarity -->
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=EnableRaretyIndicator}" Value="True">
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <MultiBinding Converter="{StaticResource PercentToGlowEffectConverter}">
+                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Percent" />
+                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="UltraRareThreshold" />
+                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="RareThreshold" />
+                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="UncommonThreshold" />
+                                        </MultiBinding>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Image.Style>
+            </Image>
+        </Border>
 
         <!-- Custom icon text overlay (only shown when using custom locked icon) -->
         <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconText, FallbackValue='🔒'}"
