@@ -1919,7 +1919,39 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- RPCS3 Settings Section -->
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ================== TAB: RPCS3 ================== -->
+            <TabItem x:Name="Rpcs3Tab" Header="{DynamicResource LOCPlayAch_Provider_RPCS3}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <!-- Provider Enable Toggle -->
+                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,12">
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ProviderEnabled}"
+                                      IsChecked="{Binding Persisted.Rpcs3Enabled}"
+                                      FontWeight="SemiBold"
+                                      FontSize="{DynamicResource FontSize}"/>
+                        </Border>
+
+                        <!-- Provider Disabled Message -->
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledMessage}"
+                                   Margin="0,0,0,16">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Persisted.Rpcs3Enabled}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
                         <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Persisted.Rpcs3Enabled}">
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3Connection}"
@@ -2008,27 +2040,27 @@
                                                        TextWrapping="Wrap"/>
 
                                             <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
 
-                                            <TextBox Grid.Column="0"
+                                                <TextBox Grid.Column="0"
                                                          Text="{Binding Persisted.Rpcs3InstallationFolder, UpdateSourceTrigger=PropertyChanged}"
                                                          VerticalAlignment="Center"
                                                          Padding="8,6"
                                                          Margin="0,0,8,0"/>
 
-                                            <Button Grid.Column="1"
+                                                <Button Grid.Column="1"
                                                         Content="{DynamicResource LOCPlayAch_Settings_Rpcs3_Browse}"
                                                         Click="Rpcs3_Browse_Click"
                                                         Padding="14,6"/>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
 
                     </StackPanel>
                 </ScrollViewer>
