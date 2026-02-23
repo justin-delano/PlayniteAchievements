@@ -1,5 +1,19 @@
 AddonId: PlayniteAchievements
 Packages:
+  - Version: 1.4.2
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-02-22
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.4.2/PlayniteAchievements_1_4_2.pext
+    Changelog:
+      - PSN Authentication - Clarified instructions and authentication flow
+      - Exclude Games - Right-click to exclude games from achievement tracking (and clear data)
+      - Better handling of games without achievements
+      - Manual Capstones - Choose your own capstone achievement for any game, with searchable selection UI. Similar to Playstation platinum trophies, these mark game completion. Automatically set for PSN and RetroAchievements games, with support for manual overrides for all providers.
+      - RetroAchievements Game ID Override - Manually set RetroAchievements game IDs when auto-detection fails
+      - Experimental RVZ Support - GameCube/Wii RVZ compressed ROM format now supported for RetroAchievements
+      - Improved RetroAchievements Matching - Fuzzy title matching when exact game ID lookup fails
+      - RetroAchievements now supports Points as well as TrueRatio data.
+
   - Version: 1.4.1
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-19
