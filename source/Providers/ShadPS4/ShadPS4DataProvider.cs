@@ -7,10 +7,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using PlayniteAchievements.Common;
 
 namespace PlayniteAchievements.Providers.ShadPS4
 {
@@ -207,59 +207,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         /// </summary>
         internal string ExpandGamePath(Game game, string path)
         {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return path;
-            }
-
-            try
-            {
-                // Use Playnite's built-in variable expansion
-                var expanded = _playniteApi?.ExpandGameVariables(game, path) ?? path;
-
-                // Handle additional custom variables
-                if (expanded.IndexOf("{InstallDir}", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    var installDir = game?.InstallDirectory;
-                    if (!string.IsNullOrWhiteSpace(installDir))
-                    {
-                        expanded = ReplaceInsensitive(expanded, "{InstallDir}", installDir);
-                    }
-                }
-
-                return expanded;
-            }
-            catch
-            {
-                return path;
-            }
-        }
-
-        private static string ReplaceInsensitive(string input, string oldValue, string newValue)
-        {
-            if (string.IsNullOrEmpty(input) || string.IsNullOrEmpty(oldValue))
-            {
-                return input;
-            }
-
-            var idx = input.IndexOf(oldValue, StringComparison.OrdinalIgnoreCase);
-            if (idx < 0)
-            {
-                return input;
-            }
-
-            var sb = new StringBuilder(input.Length);
-            var start = 0;
-            while (idx >= 0)
-            {
-                sb.Append(input.Substring(start, idx - start));
-                sb.Append(newValue ?? string.Empty);
-                start = idx + oldValue.Length;
-                idx = input.IndexOf(oldValue, start, StringComparison.OrdinalIgnoreCase);
-            }
-
-            sb.Append(input.Substring(start));
-            return sb.ToString();
+            return PathExpansion.ExpandGamePath(_playniteApi, game, path);
         }
 
         public Task<RebuildPayload> RefreshAsync(
