@@ -151,6 +151,11 @@ namespace PlayniteAchievements.ViewModels
         public int Points => PointsValue ?? 0;
         public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
 
+        /// <summary>
+        /// Always true for RecentAchievementItem since GlobalPercent is non-nullable.
+        /// </summary>
+        public bool HasRarity => true;
+
         public RarityTier Rarity => RarityHelper.GetRarityTier(GlobalPercent);
 
         public System.Windows.Media.SolidColorBrush RarityBrush => Rarity.ToBrush();
