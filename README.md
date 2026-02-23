@@ -161,7 +161,7 @@ Additional platforms and features are released as development completes.
 
 ## Installation
 
-1. Download the latest `.pext` file from [Releases](https://github.com/justindelano/PlayniteAchievements/releases/latest)
+1. Download the latest `.pext` file from [Releases](https://github.com/justin-delano/PlayniteAchievements/releases/latest)
 2. Install via Playnite's addon browser or drag-drop into Playnite
 3. Configure your platform credentials in Settings → Extensions → PlayniteAchievements
 
