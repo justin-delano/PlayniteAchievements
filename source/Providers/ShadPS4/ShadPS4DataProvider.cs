@@ -219,7 +219,18 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 normalized = normalized.Replace("  ", " ");
             }
 
-            return normalized;
+            // Strip common TROP.XML suffixes (e.g., "Webbed Trophies" -> "Webbed")
+            string[] suffixes = { " trophies", " trophy set", " trophy" };
+            foreach (var suffix in suffixes)
+            {
+                if (normalized.EndsWith(suffix))
+                {
+                    normalized = normalized.Substring(0, normalized.Length - suffix.Length);
+                    break;
+                }
+            }
+
+            return normalized.Trim();
         }
 
         /// <summary>
