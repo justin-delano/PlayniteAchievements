@@ -20,6 +20,7 @@ namespace PlayniteAchievements.Providers.RPCS3
     {
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly Rpcs3DataProvider _provider;
 
         // Default rarity estimates by trophy type
         private const double PlatinumRarity = 5.0;
@@ -27,10 +28,11 @@ namespace PlayniteAchievements.Providers.RPCS3
         private const double SilverRarity = 30.0;
         private const double BronzeRarity = 60.0;
 
-        public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings)
+        public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings, Rpcs3DataProvider provider = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _provider = provider;
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -47,15 +49,24 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return new RebuildPayload { Summary = summary };
             }
 
-            // Build the trophy folder cache once at scan start
-            var trophyFolderCache = await BuildTrophyFolderCacheAsync(cancel).ConfigureAwait(false);
+            // Use the provider's cache if available, otherwise build our own
+            Dictionary<string, string> trophyFolderCache;
+            if (_provider != null)
+            {
+                trophyFolderCache = _provider.GetOrBuildTrophyFolderCache();
+            }
+            else
+            {
+                trophyFolderCache = await BuildTrophyFolderCacheAsync(cancel).ConfigureAwait(false);
+            }
+
             if (trophyFolderCache == null || trophyFolderCache.Count == 0)
             {
                 _logger?.Warn("[RPCS3] No trophy folders found in RPCS3 trophy directory.");
                 return new RebuildPayload { Summary = summary };
             }
 
-            _logger?.Info($"[RPCS3] Built trophy folder cache with {trophyFolderCache.Count} games.");
+            _logger?.Info($"[RPCS3] Using trophy folder cache with {trophyFolderCache.Count} games.");
 
             var providerName = GetProviderName();
 
