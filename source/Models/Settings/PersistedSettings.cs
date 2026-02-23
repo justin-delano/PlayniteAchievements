@@ -31,6 +31,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _psnEnabled = true;
         private bool _retroAchievementsEnabled = true;
         private bool _xboxEnabled = true;
+        private bool _shadPS4Enabled = true;
+        private string _shadPS4InstallationFolder = string.Empty;
         private bool _enablePeriodicUpdates = true;
         private int _periodicUpdateHours = 6;
         private bool _enableNotifications = true;
@@ -206,6 +208,24 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _xboxEnabled;
             set => SetValue(ref _xboxEnabled, value);
+        }
+
+        /// <summary>
+        /// Enable or disable ShadPS4 achievement scanning.
+        /// </summary>
+        public bool ShadPS4Enabled
+        {
+            get => _shadPS4Enabled;
+            set => SetValue(ref _shadPS4Enabled, value);
+        }
+
+        /// <summary>
+        /// Path to the ShadPS4 installation folder containing user/game_data.
+        /// </summary>
+        public string ShadPS4InstallationFolder
+        {
+            get => _shadPS4InstallationFolder;
+            set => SetValue(ref _shadPS4InstallationFolder, value ?? string.Empty);
         }
 
         #endregion
@@ -687,6 +707,8 @@ namespace PlayniteAchievements.Models.Settings
                 PsnEnabled = this.PsnEnabled,
                 RetroAchievementsEnabled = this.RetroAchievementsEnabled,
                 XboxEnabled = this.XboxEnabled,
+                ShadPS4Enabled = this.ShadPS4Enabled,
+                ShadPS4InstallationFolder = this.ShadPS4InstallationFolder,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 EnableNotifications = this.EnableNotifications,
