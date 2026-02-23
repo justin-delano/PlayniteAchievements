@@ -606,7 +606,7 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertFailed">Échec du rétablissement : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedTitle">Conversion automatique du thème</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedMessage">{0} a été automatiquement mis à jour pour PlayniteAchievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">Veuillez redémarrer Playnite pour appliquer les changements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart"></sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertButton">Rétablir</sys:String>
 
     <!-- ================================================================= -->
