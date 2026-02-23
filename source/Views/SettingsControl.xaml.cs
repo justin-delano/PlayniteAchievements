@@ -213,6 +213,32 @@ namespace PlayniteAchievements.Views
             set => SetValue(XboxAuthenticatedProperty, value);
         }
 
+        public static readonly DependencyProperty ShadPS4AuthStatusProperty =
+            DependencyProperty.Register(
+                nameof(ShadPS4AuthStatus),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_ShadPS4_NotConfigured")));
+
+        public string ShadPS4AuthStatus
+        {
+            get => (string)GetValue(ShadPS4AuthStatusProperty);
+            set => SetValue(ShadPS4AuthStatusProperty, value);
+        }
+
+        public static readonly DependencyProperty ShadPS4AuthenticatedProperty =
+            DependencyProperty.Register(
+                nameof(ShadPS4Authenticated),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool ShadPS4Authenticated
+        {
+            get => (bool)GetValue(ShadPS4AuthenticatedProperty);
+            set => SetValue(ShadPS4AuthenticatedProperty, value);
+        }
+
         public static readonly DependencyProperty SteamAuthenticatedProperty =
             DependencyProperty.Register(
                 nameof(SteamAuthenticated),
@@ -428,6 +454,7 @@ namespace PlayniteAchievements.Views
                 await CheckPsnAuthAsync().ConfigureAwait(false);
                 await CheckXboxAuthAsync().ConfigureAwait(false);
                 UpdateRaAuthState();
+                CheckShadPS4Auth();
 
                 // Load themes on initial load
                 LoadThemes();
@@ -1758,6 +1785,79 @@ namespace PlayniteAchievements.Views
         }
 
         // -----------------------------
+        // ShadPS4 actions
+        // -----------------------------
+
+        private void ShadPS4_Browse_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFolder();
+            if (!string.IsNullOrWhiteSpace(selectedPath))
+            {
+                _settingsViewModel.Settings.Persisted.ShadPS4InstallationFolder = selectedPath;
+
+                // Check if the selected folder is valid
+                CheckShadPS4Auth();
+            }
+        }
+
+        private void CheckShadPS4Auth()
+        {
+            var installFolder = _settingsViewModel.Settings?.Persisted?.ShadPS4InstallationFolder;
+
+            if (string.IsNullOrWhiteSpace(installFolder))
+            {
+                SetShadPS4Authenticated(false);
+                SetShadPS4AuthStatusByKey("LOCPlayAch_Settings_ShadPS4_NotConfigured");
+                return;
+            }
+
+            var gameDataPath = System.IO.Path.Combine(installFolder, "user", "game_data");
+            if (System.IO.Directory.Exists(gameDataPath))
+            {
+                SetShadPS4Authenticated(true);
+                SetShadPS4AuthStatusByKey("LOCPlayAch_Settings_ShadPS4_Verified");
+            }
+            else
+            {
+                SetShadPS4Authenticated(false);
+                SetShadPS4AuthStatusByKey("LOCPlayAch_Settings_ShadPS4_FolderNotFound");
+            }
+        }
+
+        private void SetShadPS4AuthStatusByKey(string key)
+        {
+            var value = ResourceProvider.GetString(key);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                SetShadPS4AuthStatus(value);
+            }
+        }
+
+        private void SetShadPS4AuthStatus(string status)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                ShadPS4AuthStatus = status;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => ShadPS4AuthStatus = status));
+            }
+        }
+
+        private void SetShadPS4Authenticated(bool authenticated)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                ShadPS4Authenticated = authenticated;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => ShadPS4Authenticated = authenticated));
+            }
+        }
+
+        // -----------------------------
         // Cache actions
         // -----------------------------
 
@@ -1987,6 +2087,11 @@ namespace PlayniteAchievements.Views
             {
                 await CheckXboxAuthAsync().ConfigureAwait(false);
                 _logger?.Info("Checked Xbox auth for Xbox tab.");
+            }
+            else if (string.Equals(name, "ShadPS4Tab", StringComparison.OrdinalIgnoreCase))
+            {
+                CheckShadPS4Auth();
+                _logger?.Info("Checked ShadPS4 auth for ShadPS4 tab.");
             }
             else if (string.Equals(name, "ThemeMigrationTab", StringComparison.OrdinalIgnoreCase))
             {
