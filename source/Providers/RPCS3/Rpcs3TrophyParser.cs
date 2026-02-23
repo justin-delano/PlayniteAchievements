@@ -218,7 +218,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         private static List<string> SplitByMagicBytes(string hexString)
         {
             var entries = new List<string>();
-            var startIndex = 0;
 
             // Find all occurrences of magic byte patterns
             var indices = new List<int>();
