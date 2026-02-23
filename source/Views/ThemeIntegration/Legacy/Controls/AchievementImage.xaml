@@ -31,9 +31,9 @@
         </Grid.RowDefinitions>
 
         <!-- Border with clipping to handle rectangular images, centered in square container -->
-        <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                ClipToBounds="True">
+        <Border ClipToBounds="True">
             <Image Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" x:Name="PART_Image"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
                    Loaded="Image_Loaded" ImageFailed="Image_ImageFailed"
                    helpers:AsyncImage.Gray="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsLocked}">
                 <helpers:AsyncImage.Uri>
