@@ -176,9 +176,30 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 var full1 = Path.GetFullPath(path1.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
                 var full2 = Path.GetFullPath(path2.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-                var equal = string.Equals(full1, full2, StringComparison.OrdinalIgnoreCase);
-                _logger?.Debug($"[RPCS3] PathsEqual: '{full1}' vs '{full2}' = {equal}");
-                return equal;
+
+                // Exact match
+                if (string.Equals(full1, full2, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger?.Debug($"[RPCS3] PathsEqual: '{full1}' vs '{full2}' = true (exact match)");
+                    return true;
+                }
+
+                // Check if one is a parent directory of the other
+                // (RPCS3 trophy folder is often a subdirectory of emulator root)
+                if (full2.StartsWith(full1 + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger?.Debug($"[RPCS3] PathsEqual: '{full1}' vs '{full2}' = true (path2 is child of path1)");
+                    return true;
+                }
+
+                if (full1.StartsWith(full2 + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger?.Debug($"[RPCS3] PathsEqual: '{full1}' vs '{full2}' = true (path1 is child of path2)");
+                    return true;
+                }
+
+                _logger?.Debug($"[RPCS3] PathsEqual: '{full1}' vs '{full2}' = false");
+                return false;
             }
             catch (Exception ex)
             {
