@@ -351,6 +351,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Exporter CSV</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseDone">Base de données exportée vers :{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseFailed">Échec de l'export de la base de données : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder">Ouvrir le dossier de données de l'extension (contient les journaux et le cache)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">Ouvrir le dossier</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderFailed">Échec de l'ouverture du dossier de données : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Mise à jour du cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">Aucun succès en cache. Cliquez sur « Actualiser tout » pour actualiser vos jeux.</sys:String>
 

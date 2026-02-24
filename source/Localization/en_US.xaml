@@ -351,6 +351,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Export CSV</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseDone">Database exported to:{0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseFailed">Failed to export database: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolder">Open extension data folder (contains logs and cache)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">Open Folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderFailed">Failed to open data folder: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Updating cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">No achievements cached. Click 'Refresh All' to refresh your games.</sys:String>
 
