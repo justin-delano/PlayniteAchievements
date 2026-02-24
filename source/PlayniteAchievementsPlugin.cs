@@ -28,6 +28,7 @@ using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
+using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services.ThemeIntegration;
 using PlayniteAchievements.Services.ThemeMigration;
 using System.Threading.Tasks;
@@ -40,7 +41,7 @@ namespace PlayniteAchievements
 {
     public class PlayniteAchievementsPlugin : GenericPlugin
     {
-        private static readonly ILogger _logger = LogManager.GetLogger(nameof(PlayniteAchievementsPlugin));
+        private readonly ILogger _logger;
 
 
         // Set Properties before constructor runs
@@ -125,6 +126,10 @@ namespace PlayniteAchievements
 
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
         {
+            // Initialize logging system first
+            PluginLogger.Initialize(GetPluginUserDataPath());
+            _logger = PluginLogger.GetLogger(nameof(PlayniteAchievementsPlugin));
+
             using (PerfScope.StartStartup(_logger, "PluginCtor.Total", thresholdMs: 50))
             {
                 Properties = _pluginProperties;
@@ -1052,6 +1057,9 @@ namespace PlayniteAchievements
             try { _themeUpdateService?.Dispose(); } catch { }
             try { _fullscreenWindowService?.Dispose(); } catch { }
             try { _themeIntegrationService?.Dispose(); } catch { }
+
+            // Shutdown logging system
+            try { PluginLogger.Shutdown(); } catch { }
         }
 
         // === Theme Integration ===
