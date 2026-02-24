@@ -1354,122 +1354,16 @@
                                                             CellTemplate="{StaticResource AchievementStatusTemplate}"/>
 
                                     <!-- Achievement Icon -->
-                                    <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">
-                                                    <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
-                                                        <Border.Style>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="Opacity" Value="0.5"/>
-                                                                <Setter Property="Effect" Value="{x:Null}"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                                                        <Setter Property="Opacity" Value="1"/>
-                                                                        <Setter Property="Effect" Value="{Binding Percent, Converter={StaticResource PercentToRarityGlow}}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding IsIconHidden}" Value="True">
-                                                                        <Setter Property="Opacity" Value="1"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Border.Style>
-                                                        <Border.Background>
-                                                            <ImageBrush Stretch="UniformToFill"
-                                                                        helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                                                                        helpers:AsyncImage.DecodePixel="64"/>
-                                                        </Border.Background>
-                                                    </Border>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False"
+                                                            CellTemplate="{StaticResource AchievementIconTemplate}"/>
 
                                     <!-- Achievement Info -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName" helpers:ColumnVisibilityHelper.ColumnKey="Achievement">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Margin="12,10" VerticalAlignment="Center" Background="Transparent">
-                                                    <TextBlock FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource TextBrush}"
-                                                               TextWrapping="Wrap">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-                                                                <Setter Property="Opacity" Value="0.7"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                                                        <Setter Property="Opacity" Value="1"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
-                                                                        <Setter Property="FontStyle" Value="Italic"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                        <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
-                                                        <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
-                                                             FontStyle="Italic"
-                                                             FontSize="{DynamicResource FontSizeSmall}"
-                                                             Foreground="{DynamicResource TextBrushDarker}"/>
-                                                    </TextBlock>
-
-                                                    <TextBlock Text="{Binding DescriptionResolved}"
-                                                               FontSize="{DynamicResource FontSizeSmall}"
-                                                               Foreground="{DynamicResource TextBrush}"
-                                                               Opacity="0.5"
-                                                               TextWrapping="Wrap"
-                                                               MaxHeight="44"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               Margin="0,3,0,0">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
-                                                                        <Setter Property="FontStyle" Value="Italic"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName" helpers:ColumnVisibilityHelper.ColumnKey="Achievement"
+                                                            CellTemplate="{StaticResource AchievementInfoTemplate}"/>
 
                                     <!-- Date / Progress -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Grid>
-                                                    <!-- Unlock time for unlocked achievements -->
-                                                    <TextBlock Text="{Binding UnlockTimeText}"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center"
-                                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                                               Foreground="{DynamicResource TextBrush}"
-                                                               Opacity="0.7"
-                                                               Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
-                                                    <!-- Progress bar for locked achievements with progress -->
-                                                    <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}" Margin="4,0">
-                                                        <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
-                                                                     Minimum="0" Maximum="100"
-                                                                     Height="18"
-                                                                     Background="{DynamicResource ControlBackgroundBrush}"
-                                                                     Foreground="{DynamicResource HighlightGlyphBrush}"
-                                                                     Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
-                                                        <TextBlock Text="{Binding ProgressText, Mode=OneWay}"
-                                                                   HorizontalAlignment="Center"
-                                                                   VerticalAlignment="Center"
-                                                                   Style="{DynamicResource BaseTextBlockStyle}"
-                                                                   FontSize="{DynamicResource FontSizeSmall}"
-                                                                   FontWeight="SemiBold"
-                                                                   Foreground="White"
-                                                                   Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
-                                                    </Grid>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate"
+                                                            CellTemplate="{StaticResource AchievementUnlockDateTemplate}"/>
 
                                     <!-- Rarity -->
                                     <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
