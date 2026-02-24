@@ -43,32 +43,39 @@ namespace PlayniteAchievements.Providers.RPCS3
             Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
+            _logger?.Debug("[RPCS3] RefreshAsync - Starting refresh");
             var report = progressCallback ?? (_ => { });
             var summary = new RebuildSummary();
 
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
+                _logger?.Debug("[RPCS3] RefreshAsync - No games to refresh");
                 return new RebuildPayload { Summary = summary };
             }
+
+            _logger?.Debug($"[RPCS3] RefreshAsync - Processing {gamesToRefresh.Count} games");
 
             // Use the provider's cache if available, otherwise build our own
             Dictionary<string, string> trophyFolderCache;
             if (_provider != null)
             {
+                _logger?.Debug("[RPCS3] RefreshAsync - Using provider's trophy folder cache");
                 trophyFolderCache = _provider.GetOrBuildTrophyFolderCache();
             }
             else
             {
+                _logger?.Debug("[RPCS3] RefreshAsync - Building trophy folder cache directly");
                 trophyFolderCache = await BuildTrophyFolderCacheAsync(cancel).ConfigureAwait(false);
             }
 
             if (trophyFolderCache == null || trophyFolderCache.Count == 0)
             {
-                _logger?.Warn("[RPCS3] No trophy folders found in RPCS3 trophy directory.");
+                _logger?.Warn("[RPCS3] RefreshAsync - No trophy folders found in RPCS3 trophy directory.");
                 return new RebuildPayload { Summary = summary };
             }
 
-            _logger?.Info($"[RPCS3] Using trophy folder cache with {trophyFolderCache.Count} games.");
+            _logger?.Info($"[RPCS3] RefreshAsync - Using trophy folder cache with {trophyFolderCache.Count} games.");
+            _logger?.Debug($"[RPCS3] RefreshAsync - Cache NPCommIDs: [{string.Join(", ", trophyFolderCache.Keys)}]");
 
             var providerName = GetProviderName();
 
@@ -76,11 +83,14 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 cancel.ThrowIfCancellationRequested();
                 var game = gamesToRefresh[i];
+                _logger?.Debug($"[RPCS3] RefreshAsync - Processing game {i + 1}/{gamesToRefresh.Count}: '{game?.Name ?? "(null)"}'");
                 report(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
 
                 try
                 {
                     var data = await FetchGameDataAsync(game, trophyFolderCache, providerName, cancel).ConfigureAwait(false);
+                    _logger?.Debug($"[RPCS3] RefreshAsync - FetchGameDataAsync result for '{game?.Name}': HasData={data != null}, HasAchievements={data?.HasAchievements ?? false}, AchievementCount={data?.Achievements?.Count ?? 0}");
+
                     if (data != null && OnGameRefreshed != null)
                     {
                         await OnGameRefreshed(data).ConfigureAwait(false);
@@ -96,12 +106,18 @@ namespace PlayniteAchievements.Providers.RPCS3
                         summary.GamesWithoutAchievements++;
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    _logger?.Debug($"[RPCS3] RefreshAsync - Operation cancelled at game {i + 1}/{gamesToRefresh.Count}");
+                    throw;
+                }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, $"[RPCS3] Failed to scan {game?.Name}");
+                    _logger?.Debug(ex, $"[RPCS3] RefreshAsync - Failed to scan '{game?.Name}'");
                 }
             }
 
+            _logger?.Debug($"[RPCS3] RefreshAsync - Complete. GamesRefreshed={summary.GamesRefreshed}, GamesWithAchievements={summary.GamesWithAchievements}, GamesWithoutAchievements={summary.GamesWithoutAchievements}");
             report(new ProviderRefreshUpdate { CurrentGameName = null });
             return new RebuildPayload { Summary = summary };
         }
@@ -112,24 +128,31 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private async Task<Dictionary<string, string>> BuildTrophyFolderCacheAsync(CancellationToken cancel)
         {
+            _logger?.Debug("[RPCS3] BuildTrophyFolderCacheAsync - Starting");
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             var installFolder = _settings?.Persisted?.Rpcs3InstallationFolder;
             if (string.IsNullOrWhiteSpace(installFolder))
             {
+                _logger?.Debug("[RPCS3] BuildTrophyFolderCacheAsync - No RPCS3 installation folder configured");
                 return cache;
             }
 
+            _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Install folder: '{installFolder}'");
             var trophyPath = Path.Combine(installFolder, "trophy");
+            _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Trophy path: '{trophyPath}'");
+
             if (!Directory.Exists(trophyPath))
             {
-                _logger?.Warn($"[RPCS3] Trophy folder not found at {trophyPath}");
+                _logger?.Warn($"[RPCS3] BuildTrophyFolderCacheAsync - Trophy folder not found at '{trophyPath}'");
                 return cache;
             }
 
             try
             {
                 var npcommidDirectories = Directory.GetDirectories(trophyPath);
+                _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Found {npcommidDirectories.Length} directories in trophy folder");
+
                 foreach (var npcommidDir in npcommidDirectories)
                 {
                     cancel.ThrowIfCancellationRequested();
@@ -137,6 +160,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                     var npcommid = Path.GetFileName(npcommidDir);
                     if (string.IsNullOrWhiteSpace(npcommid))
                     {
+                        _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Skipping directory with empty name");
                         continue;
                     }
 
@@ -145,12 +169,24 @@ namespace PlayniteAchievements.Providers.RPCS3
                     if (File.Exists(tropconfPath))
                     {
                         cache[npcommid] = npcommidDir;
+                        _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Added '{npcommid}' -> '{npcommidDir}'");
+                    }
+                    else
+                    {
+                        _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Skipping '{npcommid}' (no TROPCONF.SFM)");
                     }
                 }
+
+                _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Complete with {cache.Count} valid trophy folders");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger?.Debug("[RPCS3] BuildTrophyFolderCacheAsync - Operation cancelled");
+                throw;
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "[RPCS3] Failed to enumerate trophy directories.");
+                _logger?.Error(ex, $"[RPCS3] BuildTrophyFolderCacheAsync - Failed to enumerate trophy directories at '{trophyPath}'");
             }
 
             return await Task.FromResult(cache).ConfigureAwait(false);
@@ -164,15 +200,21 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (game == null)
             {
+                _logger?.Debug("[RPCS3] FetchGameDataAsync - Game is null, returning null");
                 return Task.FromResult<GameAchievementData>(null);
             }
 
+            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Starting for game '{game.Name}' (Id: {game.Id})");
+            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Game Source: '{game.Source?.Name ?? "(null)"}'");
+            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Game InstallDirectory: '{game.InstallDirectory ?? "(null)"}'");
+
             // Find npcommid for this game
             var npcommid = FindNpCommIdForGame(game, trophyFolderCache, cancel);
+            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Found npcommid: '{npcommid ?? "(null)"}'");
 
             if (string.IsNullOrWhiteSpace(npcommid))
             {
-                _logger?.Debug($"[RPCS3] No npcommid found for game '{game.Name}'");
+                _logger?.Debug($"[RPCS3] FetchGameDataAsync - No npcommid found for game '{game.Name}', returning no achievements");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
@@ -181,36 +223,52 @@ namespace PlayniteAchievements.Providers.RPCS3
             // Look up trophy folder
             if (!trophyFolderCache.TryGetValue(npcommid, out var trophyFolderPath))
             {
-                _logger?.Debug($"[RPCS3] Trophy folder not found for npcommid '{npcommid}'");
+                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Trophy folder not found for npcommid '{npcommid}' in cache");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
+
+            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Trophy folder path: '{trophyFolderPath}'");
 
             var tropconfPath = Path.Combine(trophyFolderPath, "TROPCONF.SFM");
             var tropusrPath = Path.Combine(trophyFolderPath, "TROPUSR.DAT");
 
+            _logger?.Debug($"[RPCS3] FetchGameDataAsync - TROPCONF.SFM path: '{tropconfPath}', Exists: {File.Exists(tropconfPath)}");
+            _logger?.Debug($"[RPCS3] FetchGameDataAsync - TROPUSR.DAT path: '{tropusrPath}', Exists: {File.Exists(tropusrPath)}");
+
             if (!File.Exists(tropconfPath))
             {
-                _logger?.Debug($"[RPCS3] TROPCONF.SFM not found at {tropconfPath}");
+                _logger?.Debug($"[RPCS3] FetchGameDataAsync - TROPCONF.SFM not found at '{tropconfPath}'");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
             try
             {
+                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Parsing trophy definitions from '{tropconfPath}'");
                 // Parse trophy definitions
                 var trophies = Rpcs3TrophyParser.ParseTrophyDefinitions(tropconfPath, _logger);
+                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Parsed {trophies.Count} trophy definitions");
 
                 // Parse unlock data
                 if (File.Exists(tropusrPath))
                 {
+                    _logger?.Debug($"[RPCS3] FetchGameDataAsync - Parsing unlock data from '{tropusrPath}'");
                     Rpcs3TrophyParser.ParseTrophyUnlockData(tropusrPath, trophies, _logger);
+                    var parsedUnlockedCount = trophies.Count(t => t.Unlocked);
+                    _logger?.Debug($"[RPCS3] FetchGameDataAsync - {parsedUnlockedCount}/{trophies.Count} trophies unlocked");
+                }
+                else
+                {
+                    _logger?.Debug($"[RPCS3] FetchGameDataAsync - No TROPUSR.DAT, all trophies remain locked");
                 }
 
                 if (trophies.Count == 0)
                 {
+                    _logger?.Debug($"[RPCS3] FetchGameDataAsync - No trophies parsed, returning no achievements");
                     return Task.FromResult(BuildNoAchievementsData(game, providerName));
                 }
 
                 // Convert to achievements
+                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Converting {trophies.Count} trophies to achievements");
                 var achievements = new List<AchievementDetail>();
                 var unlockedCount = 0;
 
@@ -222,6 +280,10 @@ namespace PlayniteAchievements.Providers.RPCS3
                     }
 
                     var iconPath = GetTrophyIconPath(trophyFolderPath, trophy.Id);
+                    if (iconPath == null)
+                    {
+                        _logger?.Debug($"[RPCS3] FetchGameDataAsync - No icon found for trophy {trophy.Id} ('{trophy.Name}')");
+                    }
 
                     var normalizedTrophyType = NormalizeTrophyType(trophy.TrophyType);
                     achievements.Add(new AchievementDetail
@@ -240,6 +302,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                     });
                 }
 
+                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Created {achievements.Count} achievements, {unlockedCount} unlocked");
+
                 return Task.FromResult(new GameAchievementData
                 {
                     ProviderName = providerName,
@@ -253,7 +317,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"[RPCS3] Failed to parse trophy data for {game.Name}");
+                _logger?.Error(ex, $"[RPCS3] FetchGameDataAsync - Failed to parse trophy data for '{game.Name}'");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
         }
@@ -268,22 +332,43 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private string FindNpCommIdForGame(Game game, Dictionary<string, string> trophyFolderCache, CancellationToken cancel)
         {
-            var gameDirectory = ExpandGamePath(game, game?.InstallDirectory);
+            var rawInstallDir = game?.InstallDirectory;
+            var gameDirectory = ExpandGamePath(game, rawInstallDir);
+
+            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Game: '{game?.Name}'");
+            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Raw InstallDirectory: '{rawInstallDir ?? "(null)"}'");
+            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Expanded gameDirectory: '{gameDirectory ?? "(null)"}'");
 
             // Extract PS3 ID from the path and look it up in cache
             if (!string.IsNullOrWhiteSpace(gameDirectory))
             {
                 var match = Ps3IdPattern.Match(gameDirectory);
+                _logger?.Debug($"[RPCS3] FindNpCommIdForGame - PS3 ID pattern match: Success={match.Success}");
+
                 if (match.Success)
                 {
                     var ps3Id = match.Groups[1].Value.ToUpperInvariant();
+                    _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Extracted PS3 ID: '{ps3Id}'");
+                    _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Checking if '{ps3Id}' exists in cache (cache has {trophyFolderCache.Count} entries)");
+
                     if (trophyFolderCache.ContainsKey(ps3Id))
                     {
+                        _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Found matching npcommid '{ps3Id}' in cache");
                         return ps3Id;
+                    }
+                    else
+                    {
+                        _logger?.Debug($"[RPCS3] FindNpCommIdForGame - PS3 ID '{ps3Id}' not found in cache");
+                        _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Available cache keys: [{string.Join(", ", trophyFolderCache.Keys.Take(20))}{(trophyFolderCache.Count > 20 ? "..." : "")}]");
                     }
                 }
             }
+            else
+            {
+                _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Game directory is null or empty");
+            }
 
+            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - No npcommid found for game '{game?.Name}'");
             return null;
         }
 
@@ -294,22 +379,28 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (string.IsNullOrWhiteSpace(path))
             {
+                _logger?.Debug($"[RPCS3] ExpandGamePath - Path is null or empty, returning as-is");
                 return path;
             }
 
             // Use provider's expansion if available
             if (_provider != null)
             {
-                return _provider.ExpandGamePath(game, path);
+                var expanded = _provider.ExpandGamePath(game, path);
+                _logger?.Debug($"[RPCS3] ExpandGamePath - Provider expansion: '{path}' -> '{expanded}'");
+                return expanded;
             }
 
             // Fallback: use Playnite API directly if available
             try
             {
-                return _playniteApi?.ExpandGameVariables(game, path) ?? path;
+                var expanded = _playniteApi?.ExpandGameVariables(game, path) ?? path;
+                _logger?.Debug($"[RPCS3] ExpandGamePath - Playnite API expansion: '{path}' -> '{expanded}'");
+                return expanded;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug($"[RPCS3] ExpandGamePath - Expansion failed: {ex.Message}, returning original path");
                 return path;
             }
         }
@@ -371,6 +462,7 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (string.IsNullOrWhiteSpace(trophyFolderPath))
             {
+                _logger?.Debug($"[RPCS3] GetTrophyIconPath - Trophy folder path is null or empty");
                 return null;
             }
 
@@ -380,16 +472,20 @@ namespace PlayniteAchievements.Providers.RPCS3
                 var iconFileName = $"TROP{trophyId.ToString().PadLeft(3, '0')}.PNG";
                 var iconPath = Path.Combine(trophyFolderPath, iconFileName);
 
+                _logger?.Debug($"[RPCS3] GetTrophyIconPath - Looking for icon at '{iconPath}'");
+
                 if (File.Exists(iconPath))
                 {
+                    _logger?.Debug($"[RPCS3] GetTrophyIconPath - Found icon at '{iconPath}'");
                     return iconPath;
                 }
 
+                _logger?.Debug($"[RPCS3] GetTrophyIconPath - Icon not found at '{iconPath}'");
                 return null;
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, $"[RPCS3] Failed to get icon path for trophy {trophyId}");
+                _logger?.Debug(ex, $"[RPCS3] GetTrophyIconPath - Failed to get icon path for trophy {trophyId}");
                 return null;
             }
         }
