@@ -108,7 +108,7 @@ namespace PlayniteAchievements.Services.ThemeMigration
                     }
 
                     var themeDirectories = Directory.GetDirectories(subDirPath);
-                    _logger.Info($"Found {themeDirectories.Length} themes in {subDir}");
+                    // _logger.Info($"Found {themeDirectories.Length} themes in {subDir}");
 
                     foreach (var themeDir in themeDirectories)
                     {
@@ -117,11 +117,11 @@ namespace PlayniteAchievements.Services.ThemeMigration
                         var cleanDirName = StripThemeIdSuffix(dirInfo.Name);
                         var themeName = $"{subDir}/{cleanDirName}";
 
-                        _logger.Debug($"Processing theme: {themeName} at {themeDir}");
+                        // _logger.Debug($"Processing theme: {themeName} at {themeDir}");
 
                         var backupPath = Path.Combine(themeDir, BackupFolderName);
                         var hasBackup = Directory.Exists(backupPath);
-                        _logger.Debug($"Theme has backup: {hasBackup}");
+                        // _logger.Debug($"Theme has backup: {hasBackup}");
 
                         // Check if theme contains SuccessStory references
                         var (needsMigration, couldNotScan) = CheckIfNeedsMigration(themeDir);
@@ -163,11 +163,11 @@ namespace PlayniteAchievements.Services.ThemeMigration
 
                         themes.Add(themeInfo);
 
-                        _logger.Info($"Discovered theme: {themeName}, NeedsMigration: {themeInfo.NeedsMigration}, HasBackup: {hasBackup}, CouldNotScan: {couldNotScan}");
+                        // _logger.Info($"Discovered theme: {themeName}, NeedsMigration: {themeInfo.NeedsMigration}, HasBackup: {hasBackup}, CouldNotScan: {couldNotScan}");
                     }
                 }
 
-                _logger.Info($"Discovered {themes.Count} themes, {themes.Count(t => t.NeedsMigration)} need migration.");
+                // _logger.Info($"Discovered {themes.Count} themes, {themes.Count(t => t.NeedsMigration)} need migration.");
             }
             catch (Exception ex)
             {
@@ -275,7 +275,7 @@ namespace PlayniteAchievements.Services.ThemeMigration
                     .Distinct()
                     .ToList();
 
-                _logger.Debug($"Found {filesToCheck.Count} files to check in theme: {themePath}");
+                // _logger.Debug($"Found {filesToCheck.Count} files to check in theme: {themePath}");
 
                 foreach (var file in filesToCheck.Take(100))
                 {
@@ -288,14 +288,14 @@ namespace PlayniteAchievements.Services.ThemeMigration
                         if (content.IndexOf("PlayniteAchievements", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             foundPlayniteAchievements = true;
-                            _logger.Debug($"Found PlayniteAchievements reference in: {file} - theme already migrated");
+                            // _logger.Debug($"Found PlayniteAchievements reference in: {file} - theme already migrated");
                             break;
                         }
 
                         if (content.IndexOf("SuccessStory", StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             foundSuccessStory = true;
-                            _logger.Debug($"Found SuccessStory reference in: {file}");
+                            // _logger.Debug($"Found SuccessStory reference in: {file}");
                         }
                     }
                     catch (Exception ex)
@@ -314,11 +314,11 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 // If theme already uses PlayniteAchievements, it doesn't need migration
                 if (foundPlayniteAchievements)
                 {
-                    _logger.Info($"Theme {Path.GetFileName(themePath)} already uses PlayniteAchievements - skipping");
+                    // _logger.Info($"Theme {Path.GetFileName(themePath)} already uses PlayniteAchievements - skipping");
                     return (false, false);
                 }
 
-                _logger.Info($"Theme scan for {Path.GetFileName(themePath)}: {filesRead} files read, {filesSkipped} files skipped, found SuccessStory: {foundSuccessStory}");
+                // _logger.Info($"Theme scan for {Path.GetFileName(themePath)}: {filesRead} files read, {filesSkipped} files skipped, found SuccessStory: {foundSuccessStory}");
 
                 // If we couldn't read ANY files, conservatively assume it needs migration
                 // This handles the case where the theme is currently running and files are locked
