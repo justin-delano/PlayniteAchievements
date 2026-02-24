@@ -36,7 +36,7 @@ namespace PlayniteAchievements.Providers.Xbox
             _logger = logger;
             _sessionManager = sessionManager;
 
-            var apiClient = new XboxApiClient(logger);
+            var apiClient = new XboxApiClient(logger, settings.Persisted.GlobalLanguage);
             _scanner = new XboxScanner(settings, sessionManager, apiClient, logger);
 
             _ = _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);

@@ -17,14 +17,16 @@ namespace PlayniteAchievements.Providers.Xbox
     {
         private readonly ILogger _logger;
         private readonly HttpClient _httpClient;
+        private readonly string _globalLanguage;
 
         private const string AchievementsBaseUrl = "https://achievements.xboxlive.com/users/xuid({0})/achievements";
         private const string TitleAchievementsBaseUrl = "https://achievements.xboxlive.com/users/xuid({0})/titleachievements";
         private const string TitleHubBatchUrl = "https://titlehub.xboxlive.com/titles/batch/decoration/detail";
 
-        public XboxApiClient(ILogger logger)
+        public XboxApiClient(ILogger logger, string globalLanguage = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _globalLanguage = globalLanguage;
             _httpClient = new HttpClient();
             _httpClient.Timeout = TimeSpan.FromSeconds(30);
         }
@@ -61,7 +63,7 @@ namespace PlayniteAchievements.Providers.Xbox
 
                 using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                 {
-                    XboxSessionManager.SetAuthenticationHeaders(request.Headers, auth, "2");
+                    XboxSessionManager.SetAuthenticationHeaders(request.Headers, auth, "2", GetLocale());
 
                     var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false);
                     var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -110,7 +112,7 @@ namespace PlayniteAchievements.Providers.Xbox
 
                 using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                 {
-                    XboxSessionManager.SetAuthenticationHeaders(request.Headers, auth, "1");
+                    XboxSessionManager.SetAuthenticationHeaders(request.Headers, auth, "1", GetLocale());
 
                     var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false);
                     var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -159,7 +161,7 @@ namespace PlayniteAchievements.Providers.Xbox
 
                 using (var request = new HttpRequestMessage(HttpMethod.Get, url))
                 {
-                    XboxSessionManager.SetAuthenticationHeaders(request.Headers, auth, "1");
+                    XboxSessionManager.SetAuthenticationHeaders(request.Headers, auth, "1", GetLocale());
 
                     var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false);
                     var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -210,7 +212,7 @@ namespace PlayniteAchievements.Providers.Xbox
 
                 using (var request = new HttpRequestMessage(HttpMethod.Post, TitleHubBatchUrl))
                 {
-                    XboxSessionManager.SetAuthenticationHeaders(request.Headers, auth, "2");
+                    XboxSessionManager.SetAuthenticationHeaders(request.Headers, auth, "2", GetLocale());
                     request.Content = new StringContent(
                         Serialization.ToJson(requestData),
                         Encoding.UTF8,
@@ -244,6 +246,80 @@ namespace PlayniteAchievements.Providers.Xbox
                 _logger?.Error(ex, $"[XboxAch] Failed to get title info for PFN: {pfn}");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Maps the global language setting to Xbox Live API locale format.
+        /// Xbox uses BCP-47 style locale values (for example "en-US", "de-DE", "pt-BR").
+        /// </summary>
+        private static string MapGlobalLanguageToXboxLocale(string globalLanguage)
+        {
+            if (string.IsNullOrWhiteSpace(globalLanguage))
+            {
+                return "en-US";
+            }
+
+            var normalizedRaw = globalLanguage.Trim();
+
+            // If caller already provided an explicit locale, pass it through.
+            if (normalizedRaw.IndexOf('-') > 0)
+            {
+                return normalizedRaw;
+            }
+
+            var normalized = normalizedRaw.ToLowerInvariant();
+
+            // Map Steam-style language keys to Xbox locale values.
+            var localeMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "english", "en-US" },
+                { "german", "de-DE" },
+                { "french", "fr-FR" },
+                { "spanish", "es-ES" },
+                { "latam", "es-419" },
+                { "italian", "it-IT" },
+                { "portuguese", "pt-PT" },
+                { "brazilian", "pt-BR" },
+                { "brazilianportuguese", "pt-BR" },
+                { "russian", "ru-RU" },
+                { "polish", "pl-PL" },
+                { "dutch", "nl-NL" },
+                { "swedish", "sv-SE" },
+                { "finnish", "fi-FI" },
+                { "danish", "da-DK" },
+                { "norwegian", "nb-NO" },
+                { "hungarian", "hu-HU" },
+                { "czech", "cs-CZ" },
+                { "romanian", "ro-RO" },
+                { "turkish", "tr-TR" },
+                { "greek", "el-GR" },
+                { "bulgarian", "bg-BG" },
+                { "ukrainian", "uk-UA" },
+                { "thai", "th-TH" },
+                { "vietnamese", "vi-VN" },
+                { "japanese", "ja-JP" },
+                { "koreana", "ko-KR" },
+                { "korean", "ko-KR" },
+                { "schinese", "zh-CN" },
+                { "tchinese", "zh-Hant" },
+                { "arabic", "ar-SA" }
+            };
+
+            if (localeMap.TryGetValue(normalized, out var locale))
+            {
+                return locale;
+            }
+
+            // Fallback to English
+            return "en-US";
+        }
+
+        /// <summary>
+        /// Gets the mapped locale for the current global language setting.
+        /// </summary>
+        private string GetLocale()
+        {
+            return MapGlobalLanguageToXboxLocale(_globalLanguage);
         }
     }
 }

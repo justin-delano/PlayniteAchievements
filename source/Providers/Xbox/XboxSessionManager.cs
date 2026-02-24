@@ -716,11 +716,12 @@ namespace PlayniteAchievements.Providers.Xbox
         public static void SetAuthenticationHeaders(
             System.Net.Http.Headers.HttpRequestHeaders headers,
             AuthorizationData auth,
-            string contractVersion = "2")
+            string contractVersion = "2",
+            string acceptLanguage = "en-US")
         {
             headers.Add("x-xbl-contract-version", contractVersion);
             headers.Add("Authorization", $"XBL3.0 x={auth.DisplayClaims.xui[0].uhs};{auth.Token}");
-            headers.Add("Accept-Language", "en-US");
+            headers.Add("Accept-Language", acceptLanguage);
         }
     }
 }
