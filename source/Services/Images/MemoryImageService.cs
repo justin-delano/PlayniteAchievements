@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
+using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Services.Images
@@ -17,7 +18,7 @@ namespace PlayniteAchievements.Services.Images
     /// </summary>
     public sealed class MemoryImageService : IDisposable
     {
-        private static readonly ILogger StaticLogger = LogManager.GetLogger(nameof(MemoryImageService));
+        private static readonly ILogger StaticLogger = PluginLogger.GetLogger(nameof(MemoryImageService));
 
         private readonly ILogger _logger;
         private readonly DiskImageService _diskService;

@@ -4,13 +4,14 @@ using System.Windows.Controls;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
+using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Views.ParityTests
 {
     public partial class GameViewControlHost : UserControl
     {
-        private static readonly ILogger _logger = LogManager.GetLogger(nameof(GameViewControlHost));
+        private static readonly ILogger _logger = PluginLogger.GetLogger(nameof(GameViewControlHost));
 
         public static readonly DependencyProperty ControlNameProperty = DependencyProperty.Register(
             nameof(ControlName),

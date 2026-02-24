@@ -1,5 +1,6 @@
 // SettingsControl.xaml.cs
 using System;
+using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Windows;
@@ -2088,6 +2089,35 @@ namespace PlayniteAchievements.Views
                 _logger.Error(ex, "Failed to export database.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
                     LF("LOCPlayAch_Settings_ExportDatabaseFailed", "Failed to export database: {0}", ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private void OpenDataFolder_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dataPath = _plugin.GetPluginUserDataPath();
+
+                if (!Directory.Exists(dataPath))
+                {
+                    Directory.CreateDirectory(dataPath);
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = dataPath,
+                    UseShellExecute = true,
+                    Verb = "open"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to open extension data folder.");
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_OpenDataFolderFailed"), ex.Message),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);

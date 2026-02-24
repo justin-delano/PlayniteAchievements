@@ -9,6 +9,7 @@ using LiveCharts;
 using LiveCharts.Wpf;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
@@ -17,7 +18,7 @@ namespace PlayniteAchievements.ViewModels
 {
     public class TimelineViewModel : ObservableObject
     {
-        private static readonly ILogger _logger = LogManager.GetLogger(nameof(TimelineViewModel));
+        private readonly ILogger _logger = PluginLogger.GetLogger(nameof(TimelineViewModel));
 
         private readonly object _sync = new object();
         private Dictionary<DateTime, int> _countsByDate = new Dictionary<DateTime, int>();

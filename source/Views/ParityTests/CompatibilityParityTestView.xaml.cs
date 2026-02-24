@@ -5,13 +5,14 @@ using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Views.ThemeIntegration.Legacy;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Views.ParityTests
 {
     public partial class CompatibilityParityTestView : UserControl
     {
-        private static readonly ILogger _logger = LogManager.GetLogger(nameof(CompatibilityParityTestView));
+        private static readonly ILogger _logger = PluginLogger.GetLogger(nameof(CompatibilityParityTestView));
 
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly Game _game;
