@@ -12,6 +12,12 @@
     <!-- Shadow effect used by templates (duplicated from RarityIcons.xaml to avoid merge conflicts) -->
     <DropShadowEffect x:Key="BadgeShadow" BlurRadius="6" ShadowDepth="3" Opacity="0.35"/>
 
+    <!-- RarityIcon style (duplicated from RarityIcons.xaml) -->
+    <Style x:Key="RarityIcon" TargetType="Image">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
+    </Style>
+
     <!-- Column Header Style with Sort Arrow and Resize Grippers -->
     <Style x:Key="AchievementColumnHeaderStyle" TargetType="DataGridColumnHeader">
         <Setter Property="Background" Value="Transparent"/>
