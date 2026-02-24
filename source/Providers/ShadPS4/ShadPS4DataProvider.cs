@@ -46,7 +46,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         public string ProviderIconKey => "ProviderIconShadPS4";
 
-        public string ProviderColorHex => "#0070D1";
+        public string ProviderColorHex => "#752bfd";
 
         public bool IsAuthenticated
         {
@@ -73,13 +73,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (game == null)
             {
                 return false;
-            }
-
-            // Fast path: check source name
-            var src = (game.Source?.Name ?? string.Empty).Trim();
-            if (src.IndexOf("ShadPS4", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                return true;
             }
 
             // Check if game is configured to use ShadPS4 emulator

@@ -50,7 +50,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
         public string ProviderIconKey => "ProviderIconRPCS3";
 
-        public string ProviderColorHex => "#0070D1";
+        public string ProviderColorHex => "#686DE0";
 
         public bool IsAuthenticated
         {
