@@ -159,18 +159,31 @@ namespace PlayniteAchievements.Services.Database
                 ON UserAchievements (AchievementDefinitionId);");
 
             var storedVersion = GetStoredSchemaVersion(db);
+
+            // Skip reconciliation if schema is already at target version
+            if (storedVersion >= SchemaVersion)
+            {
+                var verification = VerifyRequiredColumns(db);
+                if (verification.Success)
+                {
+                    _logger?.Info($"[Schema] Schema up-to-date (version {storedVersion}), skipping reconciliation.");
+                    return;
+                }
+                _logger?.Warn($"[Schema] Schema version {storedVersion} but verification failed, running reconciliation.");
+            }
+
             var backupPath = ReconcileSchema(db);
 
-            var verification = VerifyRequiredColumns(db);
+            var verification2 = VerifyRequiredColumns(db);
             _logger?.Info(
-                $"[Schema] Verification Success={verification.Success} " +
+                $"[Schema] Verification Success={verification2.Success} " +
                 $"StoredVersion={storedVersion} TargetVersion={SchemaVersion} " +
                 $"BackupPath={(string.IsNullOrWhiteSpace(backupPath) ? "(none)" : backupPath)}");
 
-            if (!verification.Success)
+            if (!verification2.Success)
             {
                 throw new InvalidOperationException(
-                    $"Schema verification failed after reconciliation. {verification.Message}");
+                    $"Schema verification failed after reconciliation. {verification2.Message}");
             }
 
             db.ExecuteNonQuery(
