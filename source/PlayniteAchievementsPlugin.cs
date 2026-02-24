@@ -140,7 +140,6 @@ namespace PlayniteAchievements
                 using (PerfScope.StartStartup(_logger, "PluginCtor.SettingsLoad", thresholdMs: 50))
                 {
                     _settingsViewModel = new PlayniteAchievementsSettingsViewModel(this);
-                    EnsureWpfFallbackResources();
                 }
 
                 // NECESSARY TO MAKE SURE CHARTS WORK
@@ -899,7 +898,6 @@ namespace PlayniteAchievements
             {
                 try
                 {
-                    EnsureWpfFallbackResources();
                     EnsureAchievementResourcesLoaded();
                 }
                 catch
@@ -1130,8 +1128,6 @@ namespace PlayniteAchievements
                     return;
                 }
 
-                EnsureWpfFallbackResources();
-
                 var progressWindow = new RefreshProgressControl(
                     _achievementManager,
                     _logger,
@@ -1237,8 +1233,6 @@ namespace PlayniteAchievements
         {
             try
             {
-                EnsureWpfFallbackResources();
-
                 var view = new SingleGameControl(
                     gameId,
                     _achievementManager,
@@ -1335,8 +1329,6 @@ namespace PlayniteAchievements
                     return;
                 }
 
-                EnsureWpfFallbackResources();
-
                 var view = new CapstoneControl(
                     gameId,
                     _achievementManager,
@@ -1402,39 +1394,6 @@ namespace PlayniteAchievements
                 PlayniteApi?.Dialogs?.ShowErrorMessage(
                     string.Format(ResourceProvider.GetString("LOCPlayAch_Capstone_Error_OpenFailed"), ex.Message),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
-            }
-        }
-
-        private void EnsureWpfFallbackResources()
-        {
-            try
-            {
-                var app = Application.Current;
-                if (app == null)
-                {
-                    return;
-                }
-
-                void Ensure()
-                {
-                    if (!app.Resources.Contains("BaseTextBlockStyle"))
-                    {
-                        app.Resources["BaseTextBlockStyle"] = new Style(typeof(TextBlock));
-                    }
-                }
-
-                if (app.Dispatcher.CheckAccess())
-                {
-                    Ensure();
-                }
-                else
-                {
-                    app.Dispatcher.BeginInvoke((Action)Ensure, DispatcherPriority.Background);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Debug(ex, "Failed to ensure WPF fallback resources.");
             }
         }
 
