@@ -35,6 +35,8 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Windows.Shell;
 using System.Windows.Threading;
+using LiveCharts;
+using LiveCharts.Configurations;
 using LiveCharts.Wpf;
 
 namespace PlayniteAchievements
@@ -146,6 +148,11 @@ namespace PlayniteAchievements
                 var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
                 var panel = new WpfToolkit.Controls.VirtualizingWrapPanel();
                 // NECESSARY DO NOT REMOVE
+
+                // Configure LiveCharts mapper for PieSliceChartData so the tooltip can bind to custom data
+                var pieSliceMapper = Mappers.Pie<PieSliceChartData>()
+                    .Value(data => data.ChartValue);
+                Charting.For<PieSliceChartData>(pieSliceMapper);
 
                 // Configure rarity thresholds from settings
                 RarityHelper.Configure(
