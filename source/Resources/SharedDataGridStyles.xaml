@@ -4,6 +4,9 @@
                     xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
                     xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters">
 
+    <!-- Shared shadow effect used by badge icons -->
+    <DropShadowEffect x:Key="BadgeShadow" BlurRadius="6" ShadowDepth="3" Opacity="0.35"/>
+
     <!-- Column Header Style with Sort Arrow and Resize Grippers -->
     <Style x:Key="AchievementColumnHeaderStyle" TargetType="DataGridColumnHeader">
         <Setter Property="Background" Value="Transparent"/>
