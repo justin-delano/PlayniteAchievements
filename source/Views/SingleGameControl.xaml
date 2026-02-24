@@ -13,11 +13,8 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
-            <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility"/>
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
-            <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
 
             <!-- Style for Expander Header ToggleButton -->
             <Style x:Key="ExpanderHeaderStyle" TargetType="ToggleButton">

@@ -1456,9 +1456,13 @@ namespace PlayniteAchievements
                         return;
                     }
 
-                    // Load achievement resources (badges, templates, styles)
-                    var achievementUri = new Uri("/PlayniteAchievements;component/Resources/AchievementResources.xaml", UriKind.Relative);
-                    app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = achievementUri });
+                    // Load rarity badges (geometries, fills, badge images)
+                    var badgesUri = new Uri("/PlayniteAchievements;component/Resources/RarityBadges.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = badgesUri });
+
+                    // Load achievement templates (datagrid styles, templates, converters)
+                    var templatesUri = new Uri("/PlayniteAchievements;component/Resources/AchievementTemplates.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = templatesUri });
 
                     // Load provider icons (platform geometries)
                     var providerUri = new Uri("/PlayniteAchievements;component/Resources/ProviderIcons.xaml", UriKind.Relative);

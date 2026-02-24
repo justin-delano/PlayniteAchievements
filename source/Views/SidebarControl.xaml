@@ -14,8 +14,6 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
-            <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility"/>
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>
             <converters:IntToVisibilityConverter x:Key="IntToVis"/>
             <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
