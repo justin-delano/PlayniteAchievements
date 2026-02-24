@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -14,7 +15,7 @@ namespace PlayniteAchievements.ViewModels
     /// </summary>
     public class PlayniteAchievementsSettingsViewModel : ObservableObject, ISettings
     {
-        private static readonly ILogger _logger = LogManager.GetLogger(nameof(PlayniteAchievementsSettingsViewModel));
+        private readonly ILogger _logger = PluginLogger.GetLogger(nameof(PlayniteAchievementsSettingsViewModel));
         private readonly PlayniteAchievementsPlugin _plugin;
         private PlayniteAchievementsSettings settings;
 

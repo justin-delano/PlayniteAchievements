@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Services.Images
@@ -19,7 +20,7 @@ namespace PlayniteAchievements.Services.Images
     /// </summary>
     public sealed class DiskImageService : IDisposable
     {
-        private static readonly ILogger StaticLogger = LogManager.GetLogger(nameof(DiskImageService));
+        private static readonly ILogger StaticLogger = PluginLogger.GetLogger(nameof(DiskImageService));
         private const int MaxBytes = 5 * 1024 * 1024; // 5MB limit
 
         private readonly ILogger _logger;

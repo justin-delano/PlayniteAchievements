@@ -4,13 +4,14 @@ using System.Windows.Controls;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Views.ParityTests
 {
     public partial class NativeParityTestView : UserControl
     {
-        private static readonly ILogger _logger = LogManager.GetLogger(nameof(NativeParityTestView));
+        private static readonly ILogger _logger = PluginLogger.GetLogger(nameof(NativeParityTestView));
 
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly Game _game;

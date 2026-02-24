@@ -9,6 +9,7 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services.Logging;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 {
@@ -19,7 +20,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
     /// </summary>
     public partial class PluginViewItemControl : PluginUserControl
     {
-        private static readonly ILogger _logger = LogManager.GetLogger(nameof(PluginViewItemControl));
+        private static readonly ILogger _logger = PluginLogger.GetLogger(nameof(PluginViewItemControl));
         private PlayniteAchievementsPlugin Plugin => PlayniteAchievementsPlugin.Instance;
 
         #region IntegrationViewItemWithProgressBar Property
