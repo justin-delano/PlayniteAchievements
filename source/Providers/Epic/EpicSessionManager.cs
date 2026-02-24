@@ -912,6 +912,9 @@ namespace PlayniteAchievements.Providers.Epic
             _settings.Persisted.EpicTokenType = _tokenType;
             _settings.Persisted.EpicTokenExpiryUtc = _tokenExpiryUtc == DateTime.MinValue ? (DateTime?)null : _tokenExpiryUtc;
             _settings.Persisted.EpicRefreshTokenExpiryUtc = _refreshTokenExpiryUtc == DateTime.MinValue ? (DateTime?)null : _refreshTokenExpiryUtc;
+
+            // Persist to disk so tokens survive restart
+            _settings._plugin?.SavePluginSettings(_settings);
         }
 
         private sealed class OauthResponse
