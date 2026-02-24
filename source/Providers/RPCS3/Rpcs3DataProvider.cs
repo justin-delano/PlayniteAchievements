@@ -81,6 +81,12 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return true;
             }
 
+            // Check if game is configured to use RPCS3 emulator
+            if (UsesRpcs3Emulator(game))
+            {
+                return true;
+            }
+
             // Extract PS3 ID from game's install directory and look it up in cache
             var ps3Id = ExtractPs3IdFromGame(game);
             if (string.IsNullOrWhiteSpace(ps3Id))
@@ -90,6 +96,64 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             var cache = GetOrBuildTrophyFolderCache();
             return cache != null && cache.ContainsKey(ps3Id);
+        }
+
+        /// <summary>
+        /// Checks if any game action uses an emulator whose InstallDir matches
+        /// the configured RPCS3 installation folder.
+        /// </summary>
+        private bool UsesRpcs3Emulator(Game game)
+        {
+            if (game?.GameActions == null)
+            {
+                return false;
+            }
+
+            var rpcs3InstallFolder = _settings?.Persisted?.Rpcs3InstallationFolder;
+            if (string.IsNullOrWhiteSpace(rpcs3InstallFolder))
+            {
+                return false;
+            }
+
+            foreach (var action in game.GameActions)
+            {
+                if (action?.Type == GameActionType.Emulator && action.EmulatorId != Guid.Empty)
+                {
+                    var emulator = _playniteApi?.Database?.Emulators?.Get(action.EmulatorId);
+                    if (emulator == null || string.IsNullOrWhiteSpace(emulator.InstallDir))
+                    {
+                        continue;
+                    }
+
+                    // Compare emulator's InstallDir with configured RPCS3 folder
+                    // Use case-insensitive comparison with normalized paths
+                    if (PathsEqual(emulator.InstallDir, rpcs3InstallFolder))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool PathsEqual(string path1, string path2)
+        {
+            if (string.IsNullOrWhiteSpace(path1) || string.IsNullOrWhiteSpace(path2))
+            {
+                return false;
+            }
+
+            try
+            {
+                var full1 = Path.GetFullPath(path1.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                var full2 = Path.GetFullPath(path2.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                return string.Equals(full1, full2, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return string.Equals(path1.Trim(), path2.Trim(), StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         // PS3 title/serial ID patterns:
