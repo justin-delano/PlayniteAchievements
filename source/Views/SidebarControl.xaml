@@ -206,63 +206,6 @@
                 </Style.Triggers>
             </Style>
 
-            <!-- Progress bar style for games -->
-            <Style x:Key="GameProgressBar" TargetType="ProgressBar">
-                <Setter Property="Height" Value="16"/>
-                <Setter Property="Minimum" Value="0"/>
-                <Setter Property="Maximum" Value="100"/>
-                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
-                <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ProgressBar">
-                            <Grid>
-                                <Border Background="{TemplateBinding Background}" CornerRadius="2"/>
-                                <Border x:Name="PART_Track"/>
-                                <Border x:Name="PART_Indicator"
-                                        Background="{TemplateBinding Foreground}"
-                                        HorizontalAlignment="Left"
-                                        CornerRadius="2"/>
-                            </Grid>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <!-- Time range button style for timeline controls -->
-            <Style x:Key="TimeRangeButtonStyle" TargetType="RadioButton">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Padding" Value="8,4"/>
-                <Setter Property="Margin" Value="0,0,4,0"/>
-                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="RadioButton">
-                            <Border x:Name="border"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{DynamicResource NormalBorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="3"
-                                    Padding="{TemplateBinding Padding}">
-                                <ContentPresenter HorizontalAlignment="Center"
-                                                  VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#2196F3"/>
-                                    <Setter Property="Foreground" Value="White"/>
-                                </Trigger>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
             <Style x:Key="RevealButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
@@ -456,9 +399,7 @@
 
                         <Grid Grid.Column="0">
                             <TextBox Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                     VerticalContentAlignment="Center"
-                                     Padding="6,4"
-                                     Background="Transparent"/>
+                                     Style="{StaticResource SearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
                                        VerticalAlignment="Center"
                                        Margin="9,0,0,0"
@@ -536,9 +477,7 @@
 
                         <Grid Grid.Column="0">
                             <TextBox Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                     VerticalContentAlignment="Center"
-                                     Padding="6,4"
-                                     Background="Transparent"/>
+                                     Style="{StaticResource SearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
                                        VerticalAlignment="Center"
                                        Margin="9,0,0,0"
@@ -1321,62 +1260,11 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Rarity -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                    <Image Width="16" Height="16" Margin="0,0,4,0"
-                                                        Effect="{StaticResource BadgeShadow}"
-                                                        VerticalAlignment="Center">
-                                                        <Image.Style>
-                                                            <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding HasRarity}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.UltraRare}">
-                                                                        <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Rare}">
-                                                                        <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Uncommon}">
-                                                                        <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Common}">
-                                                                        <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Image.Style>
-                                                    </Image>
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
+                                                            CellTemplate="{StaticResource AchievementRarityTemplate}"/>
 
-                                                    <TextBlock Text="{Binding GlobalPercentText}"
-                                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                                               FontSize="{DynamicResource FontSizeSmall}"
-                                                               FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource TextBrush}"
-                                                               Opacity="0.8"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-
-                                    <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points" helpers:ColumnVisibilityHelper.ColumnKey="Points">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding PointsText}"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center"
-                                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                                           FontSize="{DynamicResource FontSizeSmall}"
-                                                           FontWeight="SemiBold"
-                                                           Foreground="{DynamicResource TextBrush}"
-                                                           Opacity="0.8"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points" helpers:ColumnVisibilityHelper.ColumnKey="Points"
+                                                            CellTemplate="{StaticResource AchievementPointsTemplate}"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
@@ -1462,49 +1350,8 @@
 
                                 <DataGrid.Columns>
                                     <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
-                                    <DataGridTemplateColumn Width="36" MinWidth="36" MaxWidth="36" CanUserSort="False" CanUserResize="False">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                    <!-- Checkmark for unlocked -->
-                                                    <TextBlock Text="✓"
-                                                               FontSize="16"
-                                                               FontWeight="Bold"
-                                                               Foreground="{DynamicResource GlyphBrush}"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                    <!-- Padlock for locked -->
-                                                    <Image Source="{StaticResource BadgeLocked}"
-                                                           Width="16" Height="16"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center">
-                                                        <Image.Style>
-                                                            <Style TargetType="Image">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Setter Property="Opacity" Value="0.6"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Unlocked}" Value="False">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Image.Style>
-                                                    </Image>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Width="36" MinWidth="36" MaxWidth="36" CanUserSort="False" CanUserResize="False"
+                                                            CellTemplate="{StaticResource AchievementStatusTemplate}"/>
 
                                     <!-- Achievement Icon -->
                                     <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False">
@@ -1625,62 +1472,11 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Rarity -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                    <Image Width="16" Height="16" Margin="0,0,4,0"
-                                                        Effect="{StaticResource BadgeShadow}"
-                                                        VerticalAlignment="Center">
-                                                        <Image.Style>
-                                                            <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding HasRarity}" Value="True">
-                                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.UltraRare}">
-                                                                        <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Rare}">
-                                                                        <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Uncommon}">
-                                                                        <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Common}">
-                                                                        <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Image.Style>
-                                                    </Image>
+                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
+                                                            CellTemplate="{StaticResource AchievementRarityTemplate}"/>
 
-                                                    <TextBlock Text="{Binding GlobalPercentText}"
-                                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                                               FontSize="{DynamicResource FontSizeSmall}"
-                                                               FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource TextBrush}"
-                                                               Opacity="0.8"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-
-                                    <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points" helpers:ColumnVisibilityHelper.ColumnKey="Points">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding PointsText}"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center"
-                                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                                           FontSize="{DynamicResource FontSizeSmall}"
-                                                           FontWeight="SemiBold"
-                                                           Foreground="{DynamicResource TextBrush}"
-                                                           Opacity="0.8"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points" helpers:ColumnVisibilityHelper.ColumnKey="Points"
+                                                            CellTemplate="{StaticResource AchievementPointsTemplate}"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </Grid>
