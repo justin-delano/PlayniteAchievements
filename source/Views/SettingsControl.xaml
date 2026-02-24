@@ -2114,7 +2114,7 @@
 
                                     <ComboBox Grid.Column="0"
                                               ItemsSource="{Binding AvailableThemes, ElementName=SettingsControlRoot}"
-                                              DisplayMemberPath="Name"
+                                              DisplayMemberPath="BestDisplayName"
                                               SelectedValuePath="Path"
                                               SelectedValue="{Binding SelectedThemePath, ElementName=SettingsControlRoot}"
                                               VerticalContentAlignment="Center"
@@ -2158,7 +2158,7 @@
 
                                     <ComboBox Grid.Column="0"
                                               ItemsSource="{Binding RevertableThemes, ElementName=SettingsControlRoot}"
-                                              DisplayMemberPath="Name"
+                                              DisplayMemberPath="BestDisplayName"
                                               SelectedValuePath="Path"
                                               SelectedValue="{Binding SelectedRevertThemePath, ElementName=SettingsControlRoot}"
                                               VerticalContentAlignment="Center"

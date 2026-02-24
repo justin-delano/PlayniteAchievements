@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Playnite.SDK;
+using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services.ThemeMigration
 {
@@ -26,19 +27,57 @@ namespace PlayniteAchievements.Services.ThemeMigration
         /// </summary>
         public class ThemeInfo
         {
+            /// <summary>
+            /// Display name from theme.yaml Name field.
+            /// </summary>
+            public string DisplayName { get; set; }
+
+            /// <summary>
+            /// Theme type (Desktop or Fullscreen).
+            /// </summary>
+            public string ThemeType { get; set; }
+
+            /// <summary>
+            /// Directory-based name (e.g., "Desktop/ThemeName").
+            /// Used as fallback when DisplayName is not available.
+            /// </summary>
             public string Name { get; set; }
             public string Path { get; set; }
             public bool HasBackup { get; set; }
             public bool NeedsMigration { get; set; }
             public bool CouldNotScan { get; set; }
+            public string CurrentThemeVersion { get; set; }
+            public string CachedMigratedThemeVersion { get; set; }
+            public bool UpgradedSinceLastMigration { get; set; }
+
+            /// <summary>
+            /// Gets the best available name for display purposes.
+            /// Combines ThemeType with DisplayName from theme.yaml if available,
+            /// otherwise falls back to Name.
+            /// </summary>
+            public string BestDisplayName
+            {
+                get
+                {
+                    if (!string.IsNullOrWhiteSpace(DisplayName) && !string.IsNullOrWhiteSpace(ThemeType))
+                    {
+                        return $"{ThemeType}/{DisplayName}";
+                    }
+                    return Name;
+                }
+            }
         }
 
         /// <summary>
         /// Discovers all themes in the Playnite themes directory.
         /// </summary>
         /// <param name="themesRootPath">Root path to the themes directory.</param>
+        /// <param name="themeMigrationVersionCache">
+        /// Optional cache mapping ThemePath -> last migrated theme.yaml Version.
+        /// When provided, discovery will flag themes that have upgraded versions since migration.
+        /// </param>
         /// <returns>List of discovered themes.</returns>
-        public List<ThemeInfo> DiscoverThemes(string themesRootPath)
+        public List<ThemeInfo> DiscoverThemes(string themesRootPath, IReadOnlyDictionary<string, ThemeMigrationCacheEntry> themeMigrationVersionCache = null)
         {
             var themes = new List<ThemeInfo>();
 
@@ -74,7 +113,9 @@ namespace PlayniteAchievements.Services.ThemeMigration
                     foreach (var themeDir in themeDirectories)
                     {
                         var dirInfo = new DirectoryInfo(themeDir);
-                        var themeName = $"{subDir}/{dirInfo.Name}";
+                        // Strip ID suffix from directory name (e.g., "Stellar_ab1234" -> "Stellar")
+                        var cleanDirName = StripThemeIdSuffix(dirInfo.Name);
+                        var themeName = $"{subDir}/{cleanDirName}";
 
                         _logger.Debug($"Processing theme: {themeName} at {themeDir}");
 
@@ -85,13 +126,39 @@ namespace PlayniteAchievements.Services.ThemeMigration
                         // Check if theme contains SuccessStory references
                         var (needsMigration, couldNotScan) = CheckIfNeedsMigration(themeDir);
 
+                        // Read theme.yaml version (optional)
+                        string currentVersion = null;
+                        ThemeYamlVersionReader.TryReadThemeVersion(themeDir, out currentVersion);
+
+                        // Read theme.yaml Name (optional, for display purposes)
+                        string displayName = null;
+                        ThemeYamlVersionReader.TryReadThemeName(themeDir, out displayName);
+
+                        // Compare against cached migrated version (optional)
+                        string cachedVersion = null;
+                        bool upgradedSinceLastMigration = false;
+                        if (themeMigrationVersionCache != null &&
+                            themeMigrationVersionCache.TryGetValue(themeDir, out var cached) &&
+                            cached != null &&
+                            !string.IsNullOrWhiteSpace(cached.MigratedThemeVersion) &&
+                            !string.IsNullOrWhiteSpace(currentVersion))
+                        {
+                            cachedVersion = cached.MigratedThemeVersion;
+                            upgradedSinceLastMigration = !string.Equals(cachedVersion, currentVersion, StringComparison.OrdinalIgnoreCase);
+                        }
+
                         var themeInfo = new ThemeInfo
                         {
+                            DisplayName = displayName,
+                            ThemeType = subDir,
                             Name = themeName,
                             Path = themeDir,
                             HasBackup = hasBackup,
                             NeedsMigration = !hasBackup && needsMigration,
-                            CouldNotScan = couldNotScan
+                            CouldNotScan = couldNotScan,
+                            CurrentThemeVersion = currentVersion,
+                            CachedMigratedThemeVersion = cachedVersion,
+                            UpgradedSinceLastMigration = upgradedSinceLastMigration
                         };
 
                         themes.Add(themeInfo);
@@ -108,6 +175,34 @@ namespace PlayniteAchievements.Services.ThemeMigration
             }
 
             return themes;
+        }
+
+        /// <summary>
+        /// Strips the ID suffix from a theme directory name.
+        /// Playnite theme directories often have IDs like "Stellar_ab1234" where
+        /// "_ab1234" is an ID suffix that should be removed for display purposes.
+        /// </summary>
+        private static string StripThemeIdSuffix(string directoryName)
+        {
+            if (string.IsNullOrWhiteSpace(directoryName))
+            {
+                return directoryName;
+            }
+
+            // Pattern: underscore followed by 6+ alphanumeric characters at the end
+            // e.g., "Stellar_ab1234" -> "Stellar"
+            var lastUnderscoreIndex = directoryName.LastIndexOf('_');
+            if (lastUnderscoreIndex > 0 && lastUnderscoreIndex < directoryName.Length - 1)
+            {
+                var suffix = directoryName.Substring(lastUnderscoreIndex + 1);
+                // Check if suffix looks like an ID (alphanumeric, reasonable length)
+                if (suffix.Length >= 6 && suffix.Length <= 12 && suffix.All(char.IsLetterOrDigit))
+                {
+                    return directoryName.Substring(0, lastUnderscoreIndex);
+                }
+            }
+
+            return directoryName;
         }
 
         /// <summary>

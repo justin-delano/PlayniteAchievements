@@ -40,5 +40,41 @@ namespace PlayniteAchievements.Services
                 _logger?.Debug(ex, "Failed to show periodic notification.");
             }
         }
+
+        public void ShowThemeAutoMigrated(string themeName)
+        {
+            if (_settings?.Persisted?.EnableNotifications != true)
+            {
+                return;
+            }
+
+            var title = ResourceProvider.GetString("LOCPlayAch_ThemeMigration_AutoMigratedTitle");
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = "Theme Auto-Migrated";
+            }
+
+            var displayName = string.IsNullOrWhiteSpace(themeName) ? "Theme" : themeName;
+
+            var message = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_ThemeMigration_AutoMigratedMessage"),
+                displayName);
+
+            var restart = ResourceProvider.GetString("LOCPlayAch_ThemeMigration_AutoMigratedRestart");
+
+            var text = $"{message}\n{restart}";
+
+            try
+            {
+                _api.Notifications.Add(new NotificationMessage(
+                    $"PlayniteAchievements-ThemeAutoMigrated-{Guid.NewGuid()}",
+                    $"{title}\n{text}",
+                    NotificationType.Info));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to show theme auto-migrated notification.");
+            }
+        }
     }
 }

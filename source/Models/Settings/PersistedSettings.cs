@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
@@ -73,6 +74,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _seenThemeMigration = false;
         private HashSet<Guid> _excludedGameIds = new HashSet<Guid>();
         private Dictionary<Guid, string> _manualCapstones = new Dictionary<Guid, string>();
+        private Dictionary<string, ThemeMigrationCacheEntry> _themeMigrationVersionCache =
+            new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase);
 
         #endregion
 
@@ -675,6 +678,22 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _seenThemeMigration, value);
         }
 
+        /// <summary>
+        /// Cache mapping ThemePath -> last migrated theme.yaml Version.
+        /// Used to detect themes that have been upgraded since migration and may need re-migration.
+        /// </summary>
+        public Dictionary<string, ThemeMigrationCacheEntry> ThemeMigrationVersionCache
+        {
+            get => _themeMigrationVersionCache;
+            set
+            {
+                var normalized = value != null
+                    ? new Dictionary<string, ThemeMigrationCacheEntry>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase);
+                SetValue(ref _themeMigrationVersionCache, normalized);
+            }
+        }
+
         #endregion
 
         #region User Preferences (Survive Cache Clear)
@@ -779,6 +798,20 @@ namespace PlayniteAchievements.Models.Settings
                 UncommonThreshold = this.UncommonThreshold,
                 FirstTimeSetupCompleted = this.FirstTimeSetupCompleted,
                 SeenThemeMigration = this.SeenThemeMigration,
+                ThemeMigrationVersionCache = this.ThemeMigrationVersionCache != null
+                    ? this.ThemeMigrationVersionCache.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value == null
+                            ? null
+                            : new ThemeMigrationCacheEntry
+                            {
+                                ThemeName = kvp.Value.ThemeName,
+                                ThemePath = kvp.Value.ThemePath,
+                                MigratedThemeVersion = kvp.Value.MigratedThemeVersion,
+                                MigratedAtUtc = kvp.Value.MigratedAtUtc
+                            },
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase),
                 ExcludedGameIds = this.ExcludedGameIds != null
                     ? new HashSet<Guid>(this.ExcludedGameIds)
                     : new HashSet<Guid>(),

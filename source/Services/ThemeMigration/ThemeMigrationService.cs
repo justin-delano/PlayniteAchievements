@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Services.ThemeMigration
@@ -15,6 +17,8 @@ namespace PlayniteAchievements.Services.ThemeMigration
     public sealed class ThemeMigrationService
     {
         private readonly ILogger _logger;
+        private readonly PlayniteAchievementsSettings _settings;
+        private readonly Action _saveSettings;
         private const string BackupFolderName = "PlayniteAchievements_backup";
         private const string ManifestFileName = "backup_manifest.txt";
 
@@ -38,9 +42,11 @@ namespace PlayniteAchievements.Services.ThemeMigration
             ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"
         };
 
-        public ThemeMigrationService(ILogger logger)
+        public ThemeMigrationService(ILogger logger, PlayniteAchievementsSettings settings = null, Action saveSettings = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settings;
+            _saveSettings = saveSettings;
         }
 
         /// <summary>
@@ -93,6 +99,10 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 if (result.FilesBackedUp == 0)
                 {
                     _logger.Info($"No files contained SuccessStory references - no changes needed for: {themePath}");
+
+                    // Even if no changes were required, cache the theme version so we can detect upgrades later.
+                    TryUpdateThemeMigrationVersionCache(themePath);
+
                     return new MigrationResult
                     {
                         Success = true,
@@ -104,6 +114,9 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 }
 
                 _logger.Info($"Theme migration completed successfully for: {themePath}");
+
+                // Cache the migrated theme's version in plugin settings so upgrades can be detected on startup.
+                TryUpdateThemeMigrationVersionCache(themePath);
 
                 return new MigrationResult
                 {
@@ -123,6 +136,64 @@ namespace PlayniteAchievements.Services.ThemeMigration
                     Success = false,
                     Message = $"Migration failed: {ex.Message}"
                 };
+            }
+        }
+
+        private void TryUpdateThemeMigrationVersionCache(string themePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(themePath) || _settings?.Persisted == null)
+                {
+                    return;
+                }
+
+                if (!ThemeYamlVersionReader.TryReadThemeVersion(themePath, out var version) || string.IsNullOrWhiteSpace(version))
+                {
+                    return;
+                }
+
+                var cache = _settings.Persisted.ThemeMigrationVersionCache
+                    ?? new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase);
+
+                cache[themePath] = new ThemeMigrationCacheEntry
+                {
+                    ThemeName = GetThemeDisplayName(themePath),
+                    ThemePath = themePath,
+                    MigratedThemeVersion = version,
+                    MigratedAtUtc = DateTime.UtcNow
+                };
+
+                _settings.Persisted.ThemeMigrationVersionCache = cache;
+                _saveSettings?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to update theme migration version cache.");
+            }
+        }
+
+        private static string GetThemeDisplayName(string themePath)
+        {
+            if (string.IsNullOrWhiteSpace(themePath))
+            {
+                return "Theme";
+            }
+
+            try
+            {
+                var themeDir = new DirectoryInfo(themePath);
+                var parent = themeDir.Parent?.Name;
+                if (string.Equals(parent, "Desktop", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(parent, "Fullscreen", StringComparison.OrdinalIgnoreCase))
+                {
+                    return $"{parent}/{themeDir.Name}";
+                }
+                return themeDir.Name;
+            }
+            catch
+            {
+                return Path.GetFileName(themePath);
             }
         }
 
