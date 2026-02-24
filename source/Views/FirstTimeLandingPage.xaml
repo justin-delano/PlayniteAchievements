@@ -8,16 +8,6 @@
              d:DesignHeight="700"
              d:DesignWidth="360">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-
-            <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
-        </ResourceDictionary>
-    </UserControl.Resources>
-
     <ScrollViewer VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="20,16,20,24">

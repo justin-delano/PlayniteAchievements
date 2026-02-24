@@ -12,10 +12,6 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-
             <!-- Disable Steam auth buttons while busy -->
             <Style x:Key="SteamAuthActionButtonStyle"
                    TargetType="Button"

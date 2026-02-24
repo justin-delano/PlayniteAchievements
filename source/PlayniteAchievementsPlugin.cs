@@ -140,7 +140,6 @@ namespace PlayniteAchievements
                 using (PerfScope.StartStartup(_logger, "PluginCtor.SettingsLoad", thresholdMs: 50))
                 {
                     _settingsViewModel = new PlayniteAchievementsSettingsViewModel(this);
-                    EnsureWpfFallbackResources();
                 }
 
                 // NECESSARY TO MAKE SURE CHARTS WORK
@@ -899,7 +898,7 @@ namespace PlayniteAchievements
             {
                 try
                 {
-                    EnsureWpfFallbackResources();
+                    EnsureAchievementResourcesLoaded();
                 }
                 catch
                 {
@@ -1129,8 +1128,6 @@ namespace PlayniteAchievements
                     return;
                 }
 
-                EnsureWpfFallbackResources();
-
                 var progressWindow = new RefreshProgressControl(
                     _achievementManager,
                     _logger,
@@ -1236,8 +1233,6 @@ namespace PlayniteAchievements
         {
             try
             {
-                EnsureWpfFallbackResources();
-
                 var view = new SingleGameControl(
                     gameId,
                     _achievementManager,
@@ -1334,8 +1329,6 @@ namespace PlayniteAchievements
                     return;
                 }
 
-                EnsureWpfFallbackResources();
-
                 var view = new CapstoneControl(
                     gameId,
                     _achievementManager,
@@ -1404,7 +1397,7 @@ namespace PlayniteAchievements
             }
         }
 
-        private void EnsureWpfFallbackResources()
+        private void EnsureAchievementResourcesLoaded()
         {
             try
             {
@@ -1414,26 +1407,39 @@ namespace PlayniteAchievements
                     return;
                 }
 
-                void Ensure()
+                void LoadResources()
                 {
-                    if (!app.Resources.Contains("BaseTextBlockStyle"))
+                    // Check if already loaded
+                    if (app.Resources.Contains("BadgeShadow"))
                     {
-                        app.Resources["BaseTextBlockStyle"] = new Style(typeof(TextBlock));
+                        return;
                     }
+
+                    // Load rarity badges (geometries, fills, badge images)
+                    var badgesUri = new Uri("/PlayniteAchievements;component/Resources/RarityBadges.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = badgesUri });
+
+                    // Load achievement templates (datagrid styles, templates, converters)
+                    var templatesUri = new Uri("/PlayniteAchievements;component/Resources/AchievementTemplates.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = templatesUri });
+
+                    // Load provider icons (platform geometries)
+                    var providerUri = new Uri("/PlayniteAchievements;component/Resources/ProviderIcons.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = providerUri });
                 }
 
                 if (app.Dispatcher.CheckAccess())
                 {
-                    Ensure();
+                    LoadResources();
                 }
                 else
                 {
-                    app.Dispatcher.BeginInvoke((Action)Ensure, DispatcherPriority.Background);
+                    app.Dispatcher.BeginInvoke((Action)LoadResources, DispatcherPriority.Background);
                 }
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to ensure WPF fallback resources.");
+                _logger.Debug(ex, "Failed to load achievement resources at application level.");
             }
         }
 

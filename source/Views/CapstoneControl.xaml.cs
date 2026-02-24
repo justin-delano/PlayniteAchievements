@@ -2,6 +2,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views.Helpers;
 using System;
 using System.ComponentModel;
 using System.Linq;
@@ -64,12 +65,12 @@ namespace PlayniteAchievements.Views
         {
             var source = e.OriginalSource as DependencyObject;
 
-            if (source is CheckBox || FindVisualParent<CheckBox>(source) != null)
+            if (source is CheckBox || VisualTreeHelpers.FindVisualParent<CheckBox>(source) != null)
             {
                 return;
             }
 
-            var row = FindVisualParent<DataGridRow>(source);
+            var row = VisualTreeHelpers.FindVisualParent<DataGridRow>(source);
             if (row == null)
             {
                 return;
@@ -81,49 +82,24 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private static T FindVisualParent<T>(DependencyObject child) where T : DependencyObject
-        {
-            var parentObject = child;
-            while (parentObject != null)
-            {
-                if (parentObject is T parent)
-                {
-                    return parent;
-                }
-
-                parentObject = System.Windows.Media.VisualTreeHelper.GetParent(parentObject);
-            }
-
-            return null;
-        }
-
         private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
-            e.Handled = true;
+            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e);
+            if (sortDirection == null)
+            {
+                return;
+            }
+
             var column = e.Column;
-            if (column == null || string.IsNullOrEmpty(column.SortMemberPath)) return;
-
-            var direction = ListSortDirection.Ascending;
-            if (column.SortDirection != null && column.SortDirection == ListSortDirection.Ascending)
-            {
-                direction = ListSortDirection.Descending;
-            }
-
-            // Clear other columns' sort direction
-            foreach (var c in (sender as DataGrid).Columns)
-            {
-                if (c != column) c.SortDirection = null;
-            }
-            column.SortDirection = direction;
 
             // Sort the collection
             var items = _viewModel.AchievementOptions.ToList();
             items.Sort((a, b) => column.SortMemberPath switch
             {
-                "GlobalPercent" => direction == ListSortDirection.Ascending
+                "GlobalPercent" => sortDirection.Value == ListSortDirection.Ascending
                     ? a.GlobalPercent.CompareTo(b.GlobalPercent)
                     : b.GlobalPercent.CompareTo(a.GlobalPercent),
-                "Points" => direction == ListSortDirection.Ascending
+                "Points" => sortDirection.Value == ListSortDirection.Ascending
                     ? a.Points.CompareTo(b.Points)
                     : b.Points.CompareTo(a.Points),
                 _ => 0
