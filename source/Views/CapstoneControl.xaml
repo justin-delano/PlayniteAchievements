@@ -10,11 +10,6 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/SharedDataGridStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-
             <!-- Checkbox style for marker selection -->
             <Style x:Key="MarkerCheckBoxStyle" TargetType="CheckBox">
                 <Setter Property="HorizontalAlignment" Value="Center"/>

@@ -7,15 +7,6 @@
         d:DesignHeight="280"
         d:DesignWidth="400">
 
-    <UserControl.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/SharedDataGridStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </UserControl.Resources>
-
     <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

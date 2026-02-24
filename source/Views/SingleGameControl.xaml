@@ -13,11 +13,6 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/SharedDataGridStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-
             <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
             <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility"/>
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>

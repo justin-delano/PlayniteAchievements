@@ -14,12 +14,6 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/ProviderIcons.xaml"/>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/SharedDataGridStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-
             <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
             <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility"/>
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>
@@ -33,7 +27,7 @@
             <DataTemplate x:Key="LegendItemTemplate">
                 <StackPanel Orientation="Horizontal" Margin="0,2">
                     <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center">
-                        <!-- Badge icons: complex DrawingImages from RarityIcons.xaml -->
+                        <!-- Badge icons: complex DrawingImages from AchievementResources.xaml -->
                         <Image Source="{Binding IconKey, Converter={StaticResource ResourceKeyToImage}}"
                                Effect="{StaticResource BadgeShadow}"
                                SnapsToDevicePixels="True"

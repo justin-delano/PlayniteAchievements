@@ -4,8 +4,177 @@
                     xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
                     xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters">
 
+    <!-- =======================
+         PRIMITIVE RESOURCES
+         ======================= -->
+
     <!-- Shared shadow effect used by badge icons -->
     <DropShadowEffect x:Key="BadgeShadow" BlurRadius="6" ShadowDepth="3" Opacity="0.35"/>
+
+    <!-- =======================
+         BADGE SHAPES (128x128)
+         ======================= -->
+    <Geometry x:Key="GeoTriangle">M 64,12 L 116,110 12,110 Z</Geometry>
+    <Geometry x:Key="GeoSquareDiamond">M 64,10 L 118,64 64,118 10,64 Z</Geometry>
+    <Geometry x:Key="GeoPentagon">M 64,12 L 112,44 94,106 34,106 16,44 Z</Geometry>
+    <Geometry x:Key="GeoHexagon">M 64,10 L 110,37 110,91 64,118 18,91 18,37 Z</Geometry>
+
+    <!-- Sparkle glints -->
+    <Geometry x:Key="GeoGlint1">M96,28 L99,36 L107,39 L99,42 L96,50 L93,42 L85,39 L93,36 Z</Geometry>
+    <Geometry x:Key="GeoGlint2">M84,44 L86,50 L92,52 L86,54 L84,60 L82,54 L76,52 L82,50 Z</Geometry>
+    <Geometry x:Key="GeoGlint3">M104,52 L106,57 L112,59 L106,61 L104,66 L102,61 L96,59 L102,57 Z</Geometry>
+
+    <!-- =======================
+         METAL FILLS
+         ======================= -->
+    <LinearGradientBrush x:Key="FillBronze" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0.00" Color="#3B231A"/>
+        <GradientStop Offset="0.35" Color="#B56A37"/>
+        <GradientStop Offset="0.55" Color="#F2C08C"/>
+        <GradientStop Offset="1.00" Color="#6A3A25"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="FillSilver" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0.00" Color="#222831"/>
+        <GradientStop Offset="0.35" Color="#A6B1BF"/>
+        <GradientStop Offset="0.55" Color="#F7F9FF"/>
+        <GradientStop Offset="1.00" Color="#46505C"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="FillGold" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0.00" Color="#2F2106"/>
+        <GradientStop Offset="0.35" Color="#CF9B1F"/>
+        <GradientStop Offset="0.55" Color="#FFF2A8"/>
+        <GradientStop Offset="1.00" Color="#6F4C06"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="FillPlatinum" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0.00" Color="#1B2632"/>
+        <GradientStop Offset="0.35" Color="#86C8FF"/>
+        <GradientStop Offset="0.55" Color="#FFFFFF"/>
+        <GradientStop Offset="1.00" Color="#56697A"/>
+    </LinearGradientBrush>
+
+    <!-- Rim strokes -->
+    <SolidColorBrush x:Key="RimBronze" Color="#B3FFEBDC"/>
+    <SolidColorBrush x:Key="RimSilver" Color="#B3FFFFFF"/>
+    <SolidColorBrush x:Key="RimGold" Color="#B3FFFAD2"/>
+    <SolidColorBrush x:Key="RimPlatinum" Color="#B3EBFAFF"/>
+
+    <!-- Static shine band overlay -->
+    <LinearGradientBrush x:Key="ShineOverlay" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0.00" Color="#00FFFFFF"/>
+        <GradientStop Offset="0.45" Color="#00FFFFFF"/>
+        <GradientStop Offset="0.55" Color="#66FFFFFF"/>
+        <GradientStop Offset="0.70" Color="#00FFFFFF"/>
+        <GradientStop Offset="1.00" Color="#00FFFFFF"/>
+    </LinearGradientBrush>
+
+    <!-- Iridescent rainbow gradient for Completed Game badge -->
+    <LinearGradientBrush x:Key="FillRainbow" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Offset="0.00" Color="#E91E63"/>
+        <GradientStop Offset="0.20" Color="#9C27B0"/>
+        <GradientStop Offset="0.40" Color="#3F51B5"/>
+        <GradientStop Offset="0.60" Color="#2196F3"/>
+        <GradientStop Offset="0.80" Color="#00BCD4"/>
+        <GradientStop Offset="1.00" Color="#4CAF50"/>
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="RimRainbow" Color="#B3FFFFFF"/>
+
+    <!-- =======================
+         BADGE IMAGES
+         ======================= -->
+    <Style x:Key="RarityIcon" TargetType="Image">
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
+    </Style>
+
+    <!-- Bronze triangle -->
+    <DrawingImage x:Key="BadgeBronzeTriangle">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Geometry="{StaticResource GeoTriangle}" Brush="{StaticResource FillBronze}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{StaticResource RimBronze}" Thickness="3" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="{StaticResource GeoTriangle}" Brush="{StaticResource ShineOverlay}"/>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- Silver square (diamond) -->
+    <DrawingImage x:Key="BadgeSilverSquare">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Geometry="{StaticResource GeoSquareDiamond}" Brush="{StaticResource FillSilver}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{StaticResource RimSilver}" Thickness="3" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="{StaticResource GeoSquareDiamond}" Brush="{StaticResource ShineOverlay}"/>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- Gold pentagon -->
+    <DrawingImage x:Key="BadgeGoldPentagon">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Geometry="{StaticResource GeoPentagon}" Brush="{StaticResource FillGold}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{StaticResource RimGold}" Thickness="3" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="{StaticResource GeoPentagon}" Brush="{StaticResource ShineOverlay}"/>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- Platinum hexagon -->
+    <DrawingImage x:Key="BadgePlatinumHexagon">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource FillPlatinum}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{StaticResource RimPlatinum}" Thickness="3" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource ShineOverlay}"/>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- Completed Game iridescent rainbow hexagon -->
+    <DrawingImage x:Key="BadgeCompletedGame">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource FillRainbow}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{StaticResource RimRainbow}" Thickness="3" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M 64,30 L 90,47 90,83 64,100 38,83 38,47 Z" Brush="#33FFFFFF"/>
+                <GeometryDrawing Geometry="{StaticResource GeoHexagon}" Brush="{StaticResource ShineOverlay}"/>
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- Locked padlock -->
+    <Geometry x:Key="GeoLock">
+        M97.984 57.2288v-15.3088c0.0256-18.7136-15.2064-33.92-33.9072-33.92-18.7264 0-33.92 15.2064-33.92 33.92v15.3216h-7.3088v62.7584h82.4064v-62.7712h-7.2704z m-55.0784-15.3088c0-11.6608 9.5104-21.1328 21.1712-21.1328 11.6352 0 21.12 9.472 21.12 21.1328v15.3216h-42.2912v-15.3216z m26.9952 60.8512h-11.6352l1.7408-17.2032c-2.1632-1.344-3.5968-3.7248-3.5968-6.4768 0-4.224 3.4304-7.6544 7.6672-7.6544 4.224 0 7.6544 3.4304 7.6544 7.6544 0 2.7392-1.4336 5.1456-3.6224 6.4768l1.792 17.2032z
+    </Geometry>
+
+    <DrawingImage x:Key="BadgeLocked">
+        <DrawingImage.Drawing>
+            <GeometryDrawing Geometry="{StaticResource GeoLock}" Brush="#B0B0B0"/>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- =======================
+         DATAGRID STYLES
+         ======================= -->
 
     <!-- Column Header Style with Sort Arrow and Resize Grippers -->
     <Style x:Key="AchievementColumnHeaderStyle" TargetType="DataGridColumnHeader">
@@ -29,7 +198,6 @@
                               Margin="0,0,10,0"
                               RenderTransformOrigin="0.5,0.5"
                               Visibility="Collapsed"/>
-                        <!-- REQUIRED for resizing -->
                         <Thumb x:Name="PART_LeftHeaderGripper"
                                Width="0"
                                Background="Transparent"
@@ -62,7 +230,7 @@
         </Setter>
     </Style>
 
-    <!-- Column Header Style with Tooltip (for column visibility hint) -->
+    <!-- Column Header Style with Tooltip -->
     <Style x:Key="AchievementColumnHeaderWithMenuStyle"
            TargetType="DataGridColumnHeader"
            BasedOn="{StaticResource AchievementColumnHeaderStyle}">
@@ -105,10 +273,13 @@
         <Setter Property="MinHeight" Value="66"/>
     </Style>
 
+    <!-- =======================
+         ACHIEVEMENT TEMPLATES
+         ======================= -->
+
     <!-- Achievement Status Template: Checkmark (unlocked) or Padlock (locked) -->
     <DataTemplate x:Key="AchievementStatusTemplate">
         <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
-            <!-- Checkmark for unlocked -->
             <TextBlock Text="&#x2713;"
                        FontSize="16"
                        FontWeight="Bold"
@@ -126,7 +297,6 @@
                     </Style>
                 </TextBlock.Style>
             </TextBlock>
-            <!-- Padlock for locked -->
             <Image Source="{StaticResource BadgeLocked}"
                    Width="16" Height="16"
                    HorizontalAlignment="Center"
@@ -196,14 +366,121 @@
                    Opacity="0.8"/>
     </DataTemplate>
 
-    <!-- Search TextBox Style with Placeholder -->
+    <!-- Achievement Icon Template with Hidden/Locked State Styling -->
+    <DataTemplate x:Key="AchievementIconTemplate">
+        <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">
+            <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Opacity" Value="0.5"/>
+                        <Setter Property="Effect" Value="{x:Null}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                                <Setter Property="Effect" Value="{Binding Percent, Converter={StaticResource PercentToRarityGlow}}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsIconHidden}" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <Border.Background>
+                    <ImageBrush Stretch="UniformToFill"
+                                helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                                helpers:AsyncImage.DecodePixel="64"/>
+                </Border.Background>
+            </Border>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Achievement Info Template with Hidden Styling -->
+    <DataTemplate x:Key="AchievementInfoTemplate">
+        <StackPanel Margin="12,10" VerticalAlignment="Center" Background="Transparent">
+            <TextBlock FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextBrush}"
+                       TextWrapping="Wrap">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                        <Setter Property="Opacity" Value="0.7"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                <Setter Property="Opacity" Value="1"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
+                                <Setter Property="FontStyle" Value="Italic"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+                <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
+                <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
+                     FontStyle="Italic"
+                     FontSize="{DynamicResource FontSizeSmall}"
+                     Foreground="{DynamicResource TextBrushDarker}"/>
+            </TextBlock>
+            <TextBlock Text="{Binding DescriptionResolved}"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource TextBrush}"
+                       Opacity="0.7"
+                       TextWrapping="Wrap"
+                       MaxHeight="44"
+                       TextTrimming="CharacterEllipsis"
+                       Margin="0,3,0,0">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
+                                <Setter Property="FontStyle" Value="Italic"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Unlock Date / Progress Template -->
+    <DataTemplate x:Key="AchievementUnlockDateTemplate">
+        <Grid>
+            <TextBlock Text="{Binding UnlockTimeText}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Style="{DynamicResource BaseTextBlockStyle}"
+                       Foreground="{DynamicResource TextBrush}"
+                       Opacity="0.7"
+                       Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
+            <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}" Margin="4,0">
+                <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
+                             Minimum="0" Maximum="100"
+                             Height="18"
+                             Background="{DynamicResource ControlBackgroundBrush}"
+                             Foreground="{DynamicResource HighlightGlyphBrush}"
+                             Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
+                <TextBlock Text="{Binding ProgressText, Mode=OneWay}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Style="{DynamicResource BaseTextBlockStyle}"
+                           FontSize="{DynamicResource FontSizeSmall}"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
+            </Grid>
+        </Grid>
+    </DataTemplate>
+
+    <!-- =======================
+         CONTROL STYLES
+         ======================= -->
+
+    <!-- Search TextBox Style -->
     <Style x:Key="SearchTextBoxStyle" TargetType="TextBox">
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Padding" Value="6,4"/>
         <Setter Property="Background" Value="Transparent"/>
     </Style>
 
-    <!-- Progress bar style for games and progress displays -->
+    <!-- Progress bar style -->
     <Style x:Key="GameProgressBar" TargetType="ProgressBar">
         <Setter Property="Height" Value="18"/>
         <Setter Property="Minimum" Value="0"/>
@@ -226,7 +503,7 @@
         </Setter>
     </Style>
 
-    <!-- Time range button style for timeline controls -->
+    <!-- Time range button style -->
     <Style x:Key="TimeRangeButtonStyle" TargetType="RadioButton">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -288,116 +565,5 @@
             </DataTrigger>
         </Style.Triggers>
     </Style>
-
-    <!-- Achievement Icon Template with Hidden/Locked State Styling -->
-    <!-- Used by SingleGameControl and SidebarControl's GameAchievementsDataGrid -->
-    <DataTemplate x:Key="AchievementIconTemplate">
-        <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">
-            <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <Setter Property="Opacity" Value="0.5"/>
-                        <Setter Property="Effect" Value="{x:Null}"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                <Setter Property="Opacity" Value="1"/>
-                                <Setter Property="Effect" Value="{Binding Percent, Converter={StaticResource PercentToRarityGlow}}"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsIconHidden}" Value="True">
-                                <Setter Property="Opacity" Value="1"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-                <Border.Background>
-                    <ImageBrush Stretch="UniformToFill"
-                                helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                                helpers:AsyncImage.DecodePixel="64"/>
-                </Border.Background>
-            </Border>
-        </Grid>
-    </DataTemplate>
-
-    <!-- Achievement Info Template with Hidden Styling -->
-    <!-- Used by SingleGameControl and SidebarControl's GameAchievementsDataGrid -->
-    <DataTemplate x:Key="AchievementInfoTemplate">
-        <StackPanel Margin="12,10" VerticalAlignment="Center" Background="Transparent">
-            <!-- Achievement Title -->
-            <TextBlock FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextBrush}"
-                       TextWrapping="Wrap">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
-                        <Setter Property="Opacity" Value="0.7"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                <Setter Property="Opacity" Value="1"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
-                                <Setter Property="FontStyle" Value="Italic"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-                <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
-                <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
-                     FontStyle="Italic"
-                     FontSize="{DynamicResource FontSizeSmall}"
-                     Foreground="{DynamicResource TextBrushDarker}"/>
-            </TextBlock>
-
-            <!-- Achievement Description -->
-            <TextBlock Text="{Binding DescriptionResolved}"
-                       FontSize="{DynamicResource FontSizeSmall}"
-                       Foreground="{DynamicResource TextBrush}"
-                       Opacity="0.7"
-                       TextWrapping="Wrap"
-                       MaxHeight="44"
-                       TextTrimming="CharacterEllipsis"
-                       Margin="0,3,0,0">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
-                                <Setter Property="FontStyle" Value="Italic"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-        </StackPanel>
-    </DataTemplate>
-
-    <!-- Unlock Date / Progress Template -->
-    <!-- Shows unlock time for unlocked achievements, progress bar for locked with progress -->
-    <DataTemplate x:Key="AchievementUnlockDateTemplate">
-        <Grid>
-            <!-- Unlock time for unlocked achievements -->
-            <TextBlock Text="{Binding UnlockTimeText}"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Style="{DynamicResource BaseTextBlockStyle}"
-                       Foreground="{DynamicResource TextBrush}"
-                       Opacity="0.7"
-                       Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
-            <!-- Progress bar for locked achievements with progress -->
-            <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}" Margin="4,0">
-                <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
-                             Minimum="0" Maximum="100"
-                             Height="18"
-                             Background="{DynamicResource ControlBackgroundBrush}"
-                             Foreground="{DynamicResource HighlightGlyphBrush}"
-                             Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
-                <TextBlock Text="{Binding ProgressText, Mode=OneWay}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Style="{DynamicResource BaseTextBlockStyle}"
-                           FontSize="{DynamicResource FontSizeSmall}"
-                           FontWeight="SemiBold"
-                           Foreground="White"
-                           Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
-            </Grid>
-        </Grid>
-    </DataTemplate>
 
 </ResourceDictionary>

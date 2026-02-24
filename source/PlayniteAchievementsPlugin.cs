@@ -900,6 +900,7 @@ namespace PlayniteAchievements
                 try
                 {
                     EnsureWpfFallbackResources();
+                    EnsureAchievementResourcesLoaded();
                 }
                 catch
                 {
@@ -1434,6 +1435,48 @@ namespace PlayniteAchievements
             catch (Exception ex)
             {
                 _logger.Debug(ex, "Failed to ensure WPF fallback resources.");
+            }
+        }
+
+        private void EnsureAchievementResourcesLoaded()
+        {
+            try
+            {
+                var app = Application.Current;
+                if (app == null)
+                {
+                    return;
+                }
+
+                void LoadResources()
+                {
+                    // Check if already loaded
+                    if (app.Resources.Contains("BadgeShadow"))
+                    {
+                        return;
+                    }
+
+                    // Load achievement resources (badges, templates, styles)
+                    var achievementUri = new Uri("/PlayniteAchievements;component/Resources/AchievementResources.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = achievementUri });
+
+                    // Load provider icons (platform geometries)
+                    var providerUri = new Uri("/PlayniteAchievements;component/Resources/ProviderIcons.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = providerUri });
+                }
+
+                if (app.Dispatcher.CheckAccess())
+                {
+                    LoadResources();
+                }
+                else
+                {
+                    app.Dispatcher.BeginInvoke((Action)LoadResources, DispatcherPriority.Background);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, "Failed to load achievement resources at application level.");
             }
         }
 

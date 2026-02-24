@@ -10,10 +10,6 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-
             <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
         </ResourceDictionary>
     </UserControl.Resources>
