@@ -255,7 +255,7 @@ namespace PlayniteAchievements.Views
 
         private void GridColumnResize_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (IsColumnResizeThumbHit(e.OriginalSource as DependencyObject))
+            if (VisualTreeHelpers.IsColumnResizeThumbHit(e.OriginalSource as DependencyObject))
             {
                 _isColumnResizeInProgress = true;
             }
@@ -585,7 +585,7 @@ namespace PlayniteAchievements.Views
                 }
 
                 // Also try to reset via ScrollViewer for more reliable scroll reset
-                if (FindVisualChild<ScrollViewer>(GameAchievementsDataGrid) is ScrollViewer scrollViewer)
+                if (VisualTreeHelpers.FindVisualChild<ScrollViewer>(GameAchievementsDataGrid) is ScrollViewer scrollViewer)
                 {
                     scrollViewer.ScrollToTop();
                 }
@@ -729,23 +729,6 @@ namespace PlayniteAchievements.Views
 
             NormalizeSharedAchievementColumnsToContainer(activeGrid, rescaleAll);
             return true;
-        }
-
-        private static T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
-        {
-            if (parent == null) return null;
-
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is T result)
-                    return result;
-
-                var descendant = FindVisualChild<T>(child);
-                if (descendant != null)
-                    return descendant;
-            }
-            return null;
         }
 
         private void AchievementRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -994,7 +977,7 @@ namespace PlayniteAchievements.Views
             }
 
             var source = e.OriginalSource as DependencyObject;
-            if (FindVisualParent<DataGridRow>(source) != null)
+            if (VisualTreeHelpers.FindVisualParent<DataGridRow>(source) != null)
             {
                 return;
             }
@@ -1092,35 +1075,6 @@ namespace PlayniteAchievements.Views
                 default:
                     return header?.ToString() ?? string.Empty;
             }
-        }
-
-        private static T FindVisualParent<T>(DependencyObject child) where T : DependencyObject
-        {
-            while (child != null)
-            {
-                if (child is T typed)
-                {
-                    return typed;
-                }
-
-                // VisualTreeHelper only works with Visual or Visual3D elements
-                // For non-visual elements like Run, use logical tree or content parent
-                if (child is Visual || child is Visual3D)
-                {
-                    child = VisualTreeHelper.GetParent(child);
-                }
-                else if (child is FrameworkContentElement frameworkContentElement)
-                {
-                    child = frameworkContentElement.Parent;
-                }
-                else
-                {
-                    // Fallback: try logical parent for FrameworkElement
-                    child = (child as FrameworkElement)?.Parent;
-                }
-            }
-
-            return null;
         }
 
         private void OnColumnVisibilityChanged(DataGrid sourceGrid, DataGridColumn sourceColumn, bool isVisible)
@@ -2019,7 +1973,7 @@ namespace PlayniteAchievements.Views
                 return IsValidPersistedColumnWidth(fallbackWidth) ? fallbackWidth : 0;
             }
 
-            var scrollViewer = FindVisualChild<ScrollViewer>(grid);
+            var scrollViewer = VisualTreeHelpers.FindVisualChild<ScrollViewer>(grid);
             var viewportWidth = scrollViewer?.ViewportWidth ?? 0;
             if (IsValidPersistedColumnWidth(viewportWidth))
             {
@@ -2066,48 +2020,6 @@ namespace PlayniteAchievements.Views
 
             var display = column.Width.DisplayValue;
             return IsValidPersistedColumnWidth(display) ? display : 0;
-        }
-
-        private static bool IsColumnResizeThumbHit(DependencyObject source)
-        {
-            while (source != null)
-            {
-                if (source is Thumb thumb &&
-                    (string.Equals(thumb.Name, "PART_LeftHeaderGripper", StringComparison.Ordinal) ||
-                     string.Equals(thumb.Name, "PART_RightHeaderGripper", StringComparison.Ordinal)))
-                {
-                    return true;
-                }
-
-                source = GetParentForHitTesting(source);
-            }
-
-            return false;
-        }
-
-        private static DependencyObject GetParentForHitTesting(DependencyObject source)
-        {
-            if (source == null)
-            {
-                return null;
-            }
-
-            if (source is Visual || source is Visual3D)
-            {
-                return VisualTreeHelper.GetParent(source);
-            }
-
-            if (source is FrameworkContentElement frameworkContentElement)
-            {
-                return frameworkContentElement.Parent;
-            }
-
-            if (source is ContentElement contentElement)
-            {
-                return ContentOperations.GetParent(contentElement);
-            }
-
-            return null;
         }
 
         private void PersistColumnVisibility(Dictionary<string, bool> map, string columnKey, bool isVisible)
@@ -2169,27 +2081,10 @@ namespace PlayniteAchievements.Views
         {
             if (_viewModel == null) return;
 
-            e.Handled = true;
+            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e);
+            if (sortDirection == null) return;
 
-            var column = e.Column;
-            if (column == null || string.IsNullOrEmpty(column.SortMemberPath)) return;
-
-            var sortDirection = ListSortDirection.Ascending;
-            if (column.SortDirection != null && column.SortDirection == ListSortDirection.Ascending)
-            {
-                sortDirection = ListSortDirection.Descending;
-            }
-
-            _viewModel.SortDataGrid((sender as DataGrid), column.SortMemberPath, sortDirection);
-
-            foreach (var c in (sender as DataGrid).Columns)
-            {
-                if (c != column)
-                {
-                    c.SortDirection = null;
-                }
-            }
-            column.SortDirection = sortDirection;
+            _viewModel.SortDataGrid((sender as DataGrid), e.Column.SortMemberPath, sortDirection.Value);
         }
     }
 }

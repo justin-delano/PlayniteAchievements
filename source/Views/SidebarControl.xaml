@@ -16,6 +16,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
                 <ResourceDictionary Source="/PlayniteAchievements;component/Resources/ProviderIcons.xaml"/>
+                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/SharedDataGridStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
@@ -116,67 +117,6 @@
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
-
-            <Style x:Key="ColumnHeaderStyle" TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Padding" Value="10,6"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Tooltip_RightClickShowHide}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="DataGridColumnHeader">
-                        <Grid Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="Center"
-                                              Margin="{TemplateBinding Padding}"/>
-
-                            <Path x:Name="SortArrow"
-                                  HorizontalAlignment="Right"
-                                  Fill="{DynamicResource TextBrush}"
-                                  Width="8" Height="6"
-                                  Data="M 0,0 L 4,6 L 8,0"
-                                  VerticalAlignment="Center"
-                                  Margin="0,0,10,0"
-                                  RenderTransformOrigin="0.5,0.5"
-                                  Visibility="Collapsed"/>
-
-                            <!-- REQUIRED for resizing -->
-                            <Thumb x:Name="PART_LeftHeaderGripper"
-                                Width="0"
-                                Background="Transparent"
-                                IsHitTestVisible="False"
-                                Focusable="False"/>
-
-                            <Thumb x:Name="PART_RightHeaderGripper"
-                                HorizontalAlignment="Right"
-                                Width="8"
-                                Cursor="SizeWE"
-                                Background="Transparent"/>
-                        </Grid>
-
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#18FFFFFF"/>
-                            </Trigger>
-
-                            <Trigger Property="SortDirection" Value="Ascending">
-                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="SortArrow" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <ScaleTransform ScaleY="-1"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-
-                            <Trigger Property="SortDirection" Value="Descending">
-                                <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
 
             <!-- Tab button style -->
             <Style x:Key="TabButtonStyle" TargetType="RadioButton">
@@ -707,7 +647,7 @@
                             EnableRowVirtualization="True"
                             VirtualizingStackPanel.IsVirtualizing="True"
                             VirtualizingStackPanel.VirtualizationMode="Recycling"
-                            ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+                            ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
                             VirtualizingStackPanel.ScrollUnit="Pixel"
                             ScrollViewer.CanContentScroll="True"
                             ScrollViewer.VerticalScrollBarVisibility="Visible"
@@ -1230,7 +1170,7 @@
                                       ScrollViewer.VerticalScrollBarVisibility="Visible"
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                       Padding="0"
-                                      ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+                                      ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
                                       ScrollViewer.IsDeferredScrollingEnabled="False"
                                       PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
@@ -1475,7 +1415,7 @@
                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                       ScrollViewer.IsDeferredScrollingEnabled="False"
                                       Padding="0"
-                                      ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+                                      ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
                                       PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
                                 <DataGrid.CellStyle>
