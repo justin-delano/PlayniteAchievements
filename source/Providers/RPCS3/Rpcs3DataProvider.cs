@@ -81,72 +81,44 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return true;
             }
 
-            // Check platform
-            if (IsPs3Platform(game))
-            {
-                return true;
-            }
-
-            // Fallback: check if game has matching trophy data by extracting NPCommId from TROPHY.TRP
-            return HasTrophyDataInRpcs3(game);
-        }
-
-        private bool IsPs3Platform(Game game)
-        {
-            var platforms = game.Platforms;
-            if (platforms == null)
-            {
-                return false;
-            }
-
-            foreach (var platform in platforms)
-            {
-                if (platform == null) continue;
-
-                var platformName = (platform.Name ?? string.Empty).Trim();
-                if (platformName.IndexOf("PlayStation 3", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    platformName.IndexOf("PS3", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private bool HasTrophyDataInRpcs3(Game game)
-        {
-            var gameDirectory = ExpandGamePath(game, game?.InstallDirectory);
-            if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory))
+            // Extract PS3 ID from game's install directory and look it up in cache
+            var ps3Id = ExtractPs3IdFromGame(game);
+            if (string.IsNullOrWhiteSpace(ps3Id))
             {
                 return false;
             }
 
             var cache = GetOrBuildTrophyFolderCache();
-            if (cache == null || cache.Count == 0)
+            return cache != null && cache.ContainsKey(ps3Id);
+        }
+
+        // PS3 title/serial ID patterns:
+        // - Disc serials: BLUS, BLES, BCES, BLJM, etc. (4 letters + 5 digits)
+        // - PSN/NPCommId: NPUB, NPEB, NPHB, etc. (NP + 2 letters + 5 digits)
+        private static readonly System.Text.RegularExpressions.Regex Ps3IdPattern =
+            new System.Text.RegularExpressions.Regex(@"\b([A-Z]{2,4}\d{5})\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        /// <summary>
+        /// Extracts the PS3 title/serial ID from the game's install directory path.
+        /// PS3 IDs follow pattern: AAAA12345 or NPXX12345 (e.g., BLUS12345, NPUB12345)
+        /// </summary>
+        private string ExtractPs3IdFromGame(Game game)
+        {
+            var installDir = ExpandGamePath(game, game?.InstallDirectory);
+            if (string.IsNullOrWhiteSpace(installDir))
             {
-                return false;
+                return null;
             }
 
-            try
+            // Search for PS3 ID pattern in the path
+            var match = Ps3IdPattern.Match(installDir);
+            if (match.Success)
             {
-                // Search for TROPHY.TRP files and extract NPCommId
-                var trophyTrpFiles = Directory.GetFiles(gameDirectory, "TROPHY.TRP", SearchOption.AllDirectories);
-                foreach (var trophyTrpPath in trophyTrpFiles)
-                {
-                    var npcommid = Rpcs3TrophyParser.ExtractNpCommId(trophyTrpPath, _logger);
-                    if (!string.IsNullOrWhiteSpace(npcommid) && cache.ContainsKey(npcommid))
-                    {
-                        return true;
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore errors during directory traversal
+                return match.Groups[1].Value.ToUpperInvariant();
             }
 
-            return false;
+            return null;
         }
 
         /// <summary>

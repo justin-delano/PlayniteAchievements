@@ -256,42 +256,30 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
         }
 
+        // PS3 title/serial ID patterns: BLUS, BLES, BCES, NPUB, NPEB, etc.
+        private static readonly System.Text.RegularExpressions.Regex Ps3IdPattern =
+            new System.Text.RegularExpressions.Regex(@"\b([A-Z]{2,4}\d{5})\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
         /// <summary>
-        /// Finds the npcommid for a game by searching for TROPHY.TRP in the game directory.
+        /// Finds the npcommid for a game by extracting PS3 ID from the install path.
         /// </summary>
         private string FindNpCommIdForGame(Game game, Dictionary<string, string> trophyFolderCache, CancellationToken cancel)
         {
             var gameDirectory = ExpandGamePath(game, game?.InstallDirectory);
-            if (string.IsNullOrWhiteSpace(gameDirectory) || !Directory.Exists(gameDirectory))
-            {
-                return null;
-            }
 
-            try
+            // Extract PS3 ID from the path and look it up in cache
+            if (!string.IsNullOrWhiteSpace(gameDirectory))
             {
-                // Search for TROPHY.TRP files and extract NPCommId
-                var trophyTrpFiles = Directory.GetFiles(gameDirectory, "TROPHY.TRP", SearchOption.AllDirectories);
-                foreach (var trophyTrpPath in trophyTrpFiles)
+                var match = Ps3IdPattern.Match(gameDirectory);
+                if (match.Success)
                 {
-                    cancel.ThrowIfCancellationRequested();
-
-                    var npcommid = Rpcs3TrophyParser.ExtractNpCommId(trophyTrpPath, _logger);
-                    if (!string.IsNullOrWhiteSpace(npcommid) && trophyFolderCache.ContainsKey(npcommid))
+                    var ps3Id = match.Groups[1].Value.ToUpperInvariant();
+                    if (trophyFolderCache.ContainsKey(ps3Id))
                     {
-                        return npcommid;
+                        return ps3Id;
                     }
                 }
-
-                // Fallback: some games use title ID (NPXXXXX) as folder name
-                var dirName = Path.GetFileName(gameDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-                if (!string.IsNullOrWhiteSpace(dirName) && trophyFolderCache.ContainsKey(dirName))
-                {
-                    return dirName;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"[RPCS3] Failed to search for TROPHY.TRP in {gameDirectory}");
             }
 
             return null;
