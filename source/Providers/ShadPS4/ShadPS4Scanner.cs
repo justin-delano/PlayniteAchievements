@@ -297,7 +297,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         Unlocked = isUnlocked,
                         UnlockTimeUtc = unlockTime,
                         GlobalPercentUnlocked = rarity,
-                        TrophyType = trophyTypeNormalized
+                        TrophyType = trophyTypeNormalized,
+                        IsCapstone = trophyType?.ToUpperInvariant() == "P"
                     });
                 }
 

@@ -223,7 +223,8 @@ namespace PlayniteAchievements.Providers.PSN
                     Unlocked = unlocked,
                     UnlockTimeUtc = unlockUtc,
                     GlobalPercentUnlocked = userEntry?.TrophyEarnedRate,
-                    TrophyType = detail.TrophyType
+                    TrophyType = detail.TrophyType,
+                    IsCapstone = string.Equals(detail.TrophyType, "platinum", StringComparison.OrdinalIgnoreCase)
                 });
             }
 

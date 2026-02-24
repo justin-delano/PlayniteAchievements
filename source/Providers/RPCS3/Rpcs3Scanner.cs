@@ -223,6 +223,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
                     var iconPath = GetTrophyIconPath(trophyFolderPath, trophy.Id);
 
+                    var normalizedTrophyType = NormalizeTrophyType(trophy.TrophyType);
                     achievements.Add(new AchievementDetail
                     {
                         ApiName = trophy.Id.ToString(),
@@ -234,7 +235,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                         Unlocked = trophy.Unlocked,
                         UnlockTimeUtc = trophy.UnlockTimeUtc,
                         GlobalPercentUnlocked = GetRarityByTrophyType(trophy.TrophyType),
-                        TrophyType = NormalizeTrophyType(trophy.TrophyType)
+                        TrophyType = normalizedTrophyType,
+                        IsCapstone = normalizedTrophyType == "platinum"
                     });
                 }
 
