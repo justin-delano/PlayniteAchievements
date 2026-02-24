@@ -11,13 +11,17 @@ namespace PlayniteAchievements.ViewModels
 {
     public class PieChartViewModel : ObservableObject
     {
+        /// <summary>
+        /// Internal data class for pie slice processing.
+        /// Contains both the slice color (for rendering) and the legend color hex (for display).
+        /// </summary>
         private sealed class PieSliceData
         {
             public string Label { get; set; }
             public int Count { get; set; }
             public string IconKey { get; set; }
             public Color Color { get; set; }
-            public string LegendColorHex { get; set; }
+            public string ColorHex { get; set; }
             public double ChartValue { get; set; }
         }
 
@@ -208,7 +212,7 @@ namespace PlayniteAchievements.ViewModels
                     Count = dataPoints[i].Count,
                     IconKey = dataPoints[i].IconKey,
                     Color = dataPoints[i].Color,
-                    LegendColorHex = legendColor,
+                    ColorHex = legendColor,
                     ChartValue = chartValue
                 });
             }
@@ -255,20 +259,29 @@ namespace PlayniteAchievements.ViewModels
                     series.Fill = new SolidColorBrush(slice.Color);
                 }
 
-                var values = series.Values as ChartValues<double>;
+                var values = series.Values as ChartValues<PieSliceChartData>;
                 if (values == null)
                 {
-                    values = new ChartValues<double>();
+                    values = new ChartValues<PieSliceChartData>();
                     series.Values = values;
                 }
 
+                var chartData = new PieSliceChartData
+                {
+                    Label = slice.Label,
+                    Count = slice.Count,
+                    IconKey = slice.IconKey,
+                    ColorHex = slice.ColorHex,
+                    ChartValue = slice.ChartValue
+                };
+
                 if (values.Count == 0)
                 {
-                    values.Add(slice.ChartValue);
+                    values.Add(chartData);
                 }
                 else
                 {
-                    values[0] = slice.ChartValue;
+                    values[0] = chartData;
                     while (values.Count > 1)
                     {
                         values.RemoveAt(values.Count - 1);
@@ -301,7 +314,7 @@ namespace PlayniteAchievements.ViewModels
                 item.Label = slice.Label;
                 item.Count = slice.Count;
                 item.IconKey = slice.IconKey;
-                item.ColorHex = slice.LegendColorHex;
+                item.ColorHex = slice.ColorHex;
             }
 
             while (LegendItems.Count > slices.Count)
