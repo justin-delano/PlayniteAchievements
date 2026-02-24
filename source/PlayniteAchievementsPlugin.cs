@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
@@ -921,11 +922,42 @@ namespace PlayniteAchievements
                             return;
                         }
 
-                        var cache = _settingsViewModel?.Settings?.Persisted?.ThemeMigrationVersionCache;
-                        var themes = themesDiscovery.DiscoverThemes(themesPath, cache);
+                        // Seed cache with existing migrated themes if cache is empty
+                        var persisted = _settingsViewModel?.Settings?.Persisted;
+                        var wasCacheEmpty = persisted != null && (persisted.ThemeMigrationVersionCache == null || persisted.ThemeMigrationVersionCache.Count == 0);
 
+                        // Discover themes once (without cache to get full list)
+                        var themes = themesDiscovery.DiscoverThemes(themesPath, null);
+
+                        if (wasCacheEmpty)
+                        {
+                            var seededThemes = themes.Where(t => t.HasBackup && !string.IsNullOrWhiteSpace(t.CurrentThemeVersion)).ToList();
+
+                            if (seededThemes.Count > 0)
+                            {
+                                foreach (var theme in seededThemes)
+                                {
+                                    persisted.ThemeMigrationVersionCache[theme.Path] = new ThemeMigrationCacheEntry
+                                    {
+                                        ThemePath = theme.Path,
+                                        ThemeName = theme.BestDisplayName,
+                                        MigratedThemeVersion = theme.CurrentThemeVersion,
+                                        MigratedAtUtc = DateTime.UtcNow
+                                    };
+                                }
+
+                                SavePluginSettings(_settingsViewModel.Settings);
+                                _logger.Info($"Seeded ThemeMigrationVersionCache with {seededThemes.Count} existing migrated themes.");
+                            }
+                        }
+
+                        // Determine upgraded themes: those with cache entry whose version differs from current
+                        var cache = _settingsViewModel?.Settings?.Persisted?.ThemeMigrationVersionCache;
                         var upgraded = themes
-                            .Where(t => t != null && t.UpgradedSinceLastMigration && t.NeedsMigration)
+                            .Where(t => t != null && t.NeedsMigration && !string.IsNullOrWhiteSpace(t.CurrentThemeVersion))
+                            .Where(t => cache != null && cache.TryGetValue(t.Path, out var cached) &&
+                                        !string.IsNullOrWhiteSpace(cached.MigratedThemeVersion) &&
+                                        !string.Equals(cached.MigratedThemeVersion, t.CurrentThemeVersion, StringComparison.OrdinalIgnoreCase))
                             .ToList();
 
                         if (upgraded.Count == 0)
