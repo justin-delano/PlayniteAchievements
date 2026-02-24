@@ -12,62 +12,8 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
+                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/SharedDataGridStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
-            <!-- Style for DataGrid headers -->
-            <Style x:Key="ColumnHeaderStyle" TargetType="DataGridColumnHeader">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Padding" Value="10,6"/>
-                <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="DataGridColumnHeader">
-                            <Grid Background="{TemplateBinding Background}">
-                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="Center"
-                                                  Margin="{TemplateBinding Padding}"/>
-                                <Path x:Name="SortArrow"
-                                      HorizontalAlignment="Right"
-                                      Fill="{DynamicResource TextBrush}"
-                                      Width="8"
-                                      Height="6"
-                                      Data="M 0,0 L 4,6 L 8,0"
-                                      VerticalAlignment="Center"
-                                      Margin="0,0,10,0"
-                                      RenderTransformOrigin="0.5,0.5"
-                                      Visibility="Collapsed"/>
-                                <!-- REQUIRED for resizing -->
-                                <Thumb x:Name="PART_LeftHeaderGripper"
-                                    Width="0"
-                                    Background="Transparent"
-                                    IsHitTestVisible="False"
-                                    Focusable="False"/>
-                                <Thumb x:Name="PART_RightHeaderGripper"
-                                    HorizontalAlignment="Right"
-                                    Width="8"
-                                    Cursor="SizeWE"
-                                    Background="Transparent"/>
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#18FFFFFF"/>
-                                </Trigger>
-                                <Trigger Property="SortDirection" Value="Ascending">
-                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
-                                    <Setter TargetName="SortArrow" Property="RenderTransform">
-                                        <Setter.Value>
-                                            <ScaleTransform ScaleY="-1"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Trigger>
-                                <Trigger Property="SortDirection" Value="Descending">
-                                    <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
 
             <!-- Checkbox style for marker selection -->
             <Style x:Key="MarkerCheckBoxStyle" TargetType="CheckBox">
@@ -263,44 +209,16 @@
                   VirtualizingStackPanel.ScrollUnit="Pixel"
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                  ColumnHeaderStyle="{StaticResource ColumnHeaderStyle}"
+                  ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
                   PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown"
                   Sorting="DataGrid_Sorting">
 
             <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                    <Setter Property="Padding" Value="0"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="DataGridCell">
-                                <Border Background="{TemplateBinding Background}"
-                                        Padding="{TemplateBinding Padding}">
-                                    <ContentPresenter VerticalAlignment="Center"/>
-                                </Border>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
-                            <Setter Property="Background" Value="#30FFFFFF"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
-                            <Setter Property="Background" Value="#40FFFFFF"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
+                <Style TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}"/>
             </DataGrid.CellStyle>
 
             <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
-                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                    <Setter Property="Cursor" Value="Hand"/>
+                <Style TargetType="DataGridRow" BasedOn="{StaticResource AchievementRowStyle}">
                     <Setter Property="MinHeight" Value="66"/>
                 </Style>
             </DataGrid.RowStyle>
