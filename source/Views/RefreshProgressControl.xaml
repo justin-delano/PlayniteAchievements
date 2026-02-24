@@ -11,30 +11,8 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/PlayniteAchievements;component/Resources/RarityIcons.xaml"/>
+                <ResourceDictionary Source="/PlayniteAchievements;component/Resources/SharedDataGridStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
-            <!-- Progress bar style matching SingleGameControl -->
-            <Style x:Key="GameProgressBar" TargetType="ProgressBar">
-                <Setter Property="Height" Value="22"/>
-                <Setter Property="Minimum" Value="0"/>
-                <Setter Property="Maximum" Value="100"/>
-                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
-                <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ProgressBar">
-                            <Grid>
-                                <Border Background="{TemplateBinding Background}" CornerRadius="2"/>
-                                <Border x:Name="PART_Track"/>
-                                <Border x:Name="PART_Indicator"
-                                        Background="{TemplateBinding Foreground}"
-                                        HorizontalAlignment="Left"
-                                        CornerRadius="2"/>
-                            </Grid>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -97,7 +75,8 @@
                 <!-- Progress Bar with Percentage -->
                 <Grid Margin="0,0,0,12">
                     <ProgressBar Value="{Binding ProgressPercent}"
-                                 Style="{StaticResource GameProgressBar}"/>
+                                 Style="{StaticResource GameProgressBar}"
+                                 Height="22"/>
                     <TextBlock Text="{Binding ProgressPercent, StringFormat={}{0:F0}%}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
