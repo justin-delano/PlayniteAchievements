@@ -106,6 +106,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_UnlockDate">Débloqué</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Rareté</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Trophy">Trophée</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">Jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Dernière partie</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
