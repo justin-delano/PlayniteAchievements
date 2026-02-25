@@ -23,8 +23,20 @@ namespace PlayniteAchievements.Common
 
             try
             {
-                // Use Playnite's built-in variable expansion
-                var expanded = playniteApi?.ExpandGameVariables(game, path) ?? path;
+                var expanded = path;
+
+                // Handle {EmulatorDir} BEFORE Playnite's expansion, which may strip it to empty string
+                if (path.IndexOf("{EmulatorDir}", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    var emulatorDir = GetEmulatorInstallDir(playniteApi, game);
+                    if (!string.IsNullOrWhiteSpace(emulatorDir))
+                    {
+                        expanded = ReplaceInsensitive(expanded, "{EmulatorDir}", emulatorDir);
+                    }
+                }
+
+                // Use Playnite's built-in variable expansion for remaining variables
+                expanded = playniteApi?.ExpandGameVariables(game, expanded) ?? expanded;
 
                 // Handle additional custom variables
                 if (expanded.IndexOf("{InstallDir}", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -33,16 +45,6 @@ namespace PlayniteAchievements.Common
                     if (!string.IsNullOrWhiteSpace(installDir))
                     {
                         expanded = ReplaceInsensitive(expanded, "{InstallDir}", installDir);
-                    }
-                }
-
-                // Handle {EmulatorDir} variable - Playnite may not expand this in all contexts
-                if (expanded.IndexOf("{EmulatorDir}", StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    var emulatorDir = GetEmulatorInstallDir(playniteApi, game);
-                    if (!string.IsNullOrWhiteSpace(emulatorDir))
-                    {
-                        expanded = ReplaceInsensitive(expanded, "{EmulatorDir}", emulatorDir);
                     }
                 }
 
