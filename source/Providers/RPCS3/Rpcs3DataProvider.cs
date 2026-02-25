@@ -22,6 +22,7 @@ namespace PlayniteAchievements.Providers.RPCS3
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
+        private readonly string _pluginUserDataPath;
 
         private Dictionary<string, string> _trophyFolderCache;
         private readonly object _cacheLock = new object();
@@ -32,15 +33,16 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private const string DefaultUserPath = "dev_hdd0\\home\\00000001";
 
-        public Rpcs3DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
+        public Rpcs3DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             _settings = settings;
             _logger = logger;
             _playniteApi = playniteApi;
+            _pluginUserDataPath = pluginUserDataPath;
 
-            _scanner = new Rpcs3Scanner(_logger, _settings, this, _playniteApi);
+            _scanner = new Rpcs3Scanner(_logger, _settings, this, _playniteApi, _pluginUserDataPath);
         }
 
         public string ProviderName
@@ -127,19 +129,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return true;
             }
 
-            // Extract PS3 ID from game's install directory and look it up in cache
-            var ps3Id = ExtractPs3IdFromGame(game);
-            _logger?.Debug($"[RPCS3] IsCapable check - Extracted PS3 ID: '{ps3Id ?? "(null)"}'");
-            if (string.IsNullOrWhiteSpace(ps3Id))
-            {
-                _logger?.Debug($"[RPCS3] IsCapable = false for '{game.Name}' (no PS3 ID found in path)");
-                return false;
-            }
-
-            var cache = GetOrBuildTrophyFolderCache();
-            var capable = cache != null && cache.ContainsKey(ps3Id);
-            _logger?.Debug($"[RPCS3] IsCapable = {capable} for '{game.Name}' (PS3 ID '{ps3Id}' in cache: {cache?.ContainsKey(ps3Id) ?? false})");
-            return capable;
+            _logger?.Debug($"[RPCS3] IsCapable = false for '{game.Name}' (no RPCS3 match found)");
+            return false;
         }
 
         /// <summary>
@@ -214,42 +205,6 @@ namespace PlayniteAchievements.Providers.RPCS3
                 _logger?.Debug($"[RPCS3] PathsEqual (fallback): '{path1}' vs '{path2}' = {equal}, Exception: {ex.Message}");
                 return equal;
             }
-        }
-
-        // PS3 title/serial ID patterns:
-        // - Disc serials: BLUS, BLES, BCES, BLJM, etc. (4 letters + 5 digits)
-        // - PSN/NPCommId: NPUB, NPEB, NPHB, etc. (NP + 2 letters + 5 digits)
-        private static readonly System.Text.RegularExpressions.Regex Ps3IdPattern =
-            new System.Text.RegularExpressions.Regex(@"\b([A-Z]{2,4}\d{5})\b",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-        /// <summary>
-        /// Extracts the PS3 title/serial ID from the game's install directory path.
-        /// PS3 IDs follow pattern: AAAA12345 or NPXX12345 (e.g., BLUS12345, NPUB12345)
-        /// </summary>
-        private string ExtractPs3IdFromGame(Game game)
-        {
-            var rawInstallDir = game?.InstallDirectory;
-            var installDir = ExpandGamePath(game, rawInstallDir);
-            _logger?.Debug($"[RPCS3] ExtractPs3IdFromGame - Game: '{game?.Name}', Raw InstallDir: '{rawInstallDir ?? "(null)"}', Expanded: '{installDir ?? "(null)"}'");
-
-            if (string.IsNullOrWhiteSpace(installDir))
-            {
-                _logger?.Debug($"[RPCS3] ExtractPs3IdFromGame - No install directory for '{game?.Name}'");
-                return null;
-            }
-
-            // Search for PS3 ID pattern in the path
-            var match = Ps3IdPattern.Match(installDir);
-            if (match.Success)
-            {
-                var ps3Id = match.Groups[1].Value.ToUpperInvariant();
-                _logger?.Debug($"[RPCS3] ExtractPs3IdFromGame - Found PS3 ID '{ps3Id}' in path '{installDir}'");
-                return ps3Id;
-            }
-
-            _logger?.Debug($"[RPCS3] ExtractPs3IdFromGame - No PS3 ID pattern match in path '{installDir}'");
-            return null;
         }
 
         /// <summary>

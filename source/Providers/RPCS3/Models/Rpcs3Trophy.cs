@@ -39,6 +39,11 @@ namespace PlayniteAchievements.Providers.RPCS3.Models
         public string GroupId { get; set; }
 
         /// <summary>
+        /// Group name for DLC trophies (resolved from group ID).
+        /// </summary>
+        public string GroupName { get; set; }
+
+        /// <summary>
         /// Whether the trophy has been unlocked.
         /// </summary>
         public bool Unlocked { get; set; }

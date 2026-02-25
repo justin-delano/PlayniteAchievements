@@ -22,6 +22,7 @@ namespace PlayniteAchievements.Providers.RPCS3
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Rpcs3DataProvider _provider;
         private readonly IPlayniteAPI _playniteApi;
+        private readonly string _pluginUserDataPath;
 
         // Default rarity estimates by trophy type
         private const double PlatinumRarity = 5.0;
@@ -29,12 +30,17 @@ namespace PlayniteAchievements.Providers.RPCS3
         private const double SilverRarity = 30.0;
         private const double BronzeRarity = 60.0;
 
-        public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings, Rpcs3DataProvider provider = null, IPlayniteAPI playniteApi = null)
+        // Icon copying settings
+        private const int MaxCopyAttempts = 5;
+        private const int CopyRetryDelayMs = 200;
+
+        public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings, Rpcs3DataProvider provider = null, IPlayniteAPI playniteApi = null, string pluginUserDataPath = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _provider = provider;
             _playniteApi = playniteApi;
+            _pluginUserDataPath = pluginUserDataPath;
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -279,7 +285,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                         unlockedCount++;
                     }
 
-                    var iconPath = GetTrophyIconPath(trophyFolderPath, trophy.Id);
+                    var iconPath = GetTrophyIconPath(trophyFolderPath, npcommid, trophy.Id);
                     if (iconPath == null)
                     {
                         _logger?.Debug($"[RPCS3] FetchGameDataAsync - No icon found for trophy {trophy.Id} ('{trophy.Name}')");
@@ -298,7 +304,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                         UnlockTimeUtc = trophy.UnlockTimeUtc,
                         GlobalPercentUnlocked = GetRarityByTrophyType(trophy.TrophyType),
                         TrophyType = normalizedTrophyType,
-                        IsCapstone = normalizedTrophyType == "platinum"
+                        IsCapstone = normalizedTrophyType == "platinum",
+                        Category = trophy.GroupName
                     });
                 }
 
@@ -617,7 +624,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             };
         }
 
-        private string GetTrophyIconPath(string trophyFolderPath, int trophyId)
+        /// <summary>
+        /// Gets the trophy icon path, copying it to plugin data folder if necessary.
+        /// This ensures icons remain available even if RPCS3 is moved or updated.
+        /// </summary>
+        private string GetTrophyIconPath(string trophyFolderPath, string npcommid, int trophyId)
         {
             if (string.IsNullOrWhiteSpace(trophyFolderPath))
             {
@@ -629,23 +640,91 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 // Trophy icons follow TROP###.PNG format with zero-padded ID
                 var iconFileName = $"TROP{trophyId.ToString().PadLeft(3, '0')}.PNG";
-                var iconPath = Path.Combine(trophyFolderPath, iconFileName);
+                var sourcePath = Path.Combine(trophyFolderPath, iconFileName);
 
-                _logger?.Debug($"[RPCS3] GetTrophyIconPath - Looking for icon at '{iconPath}'");
+                _logger?.Debug($"[RPCS3] GetTrophyIconPath - Looking for icon at '{sourcePath}'");
 
-                if (File.Exists(iconPath))
+                if (!File.Exists(sourcePath))
                 {
-                    _logger?.Debug($"[RPCS3] GetTrophyIconPath - Found icon at '{iconPath}'");
-                    return iconPath;
+                    _logger?.Debug($"[RPCS3] GetTrophyIconPath - Icon not found at '{sourcePath}'");
+                    return null;
                 }
 
-                _logger?.Debug($"[RPCS3] GetTrophyIconPath - Icon not found at '{iconPath}'");
-                return null;
+                // If no plugin data path, return direct path (fallback)
+                if (string.IsNullOrWhiteSpace(_pluginUserDataPath))
+                {
+                    _logger?.Debug($"[RPCS3] GetTrophyIconPath - No plugin data path, returning direct path");
+                    return sourcePath;
+                }
+
+                // Copy icon to plugin data folder
+                return CopyTrophyIconToPluginData(sourcePath, npcommid, iconFileName);
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"[RPCS3] GetTrophyIconPath - Failed to get icon path for trophy {trophyId}");
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Copies a trophy icon from RPCS3 folder to plugin data folder.
+        /// Returns the relative path to the copied file for display.
+        /// </summary>
+        private string CopyTrophyIconToPluginData(string sourcePath, string npcommid, string iconFileName)
+        {
+            try
+            {
+                // Create target directory: {PluginData}/rpcs3/{npcommid}/
+                var rpcs3IconsDir = Path.Combine(_pluginUserDataPath, "rpcs3", npcommid);
+                var targetPath = Path.Combine(rpcs3IconsDir, iconFileName);
+
+                // Ensure directory exists
+                if (!Directory.Exists(rpcs3IconsDir))
+                {
+                    Directory.CreateDirectory(rpcs3IconsDir);
+                    _logger?.Debug($"[RPCS3] CopyTrophyIconToPluginData - Created directory '{rpcs3IconsDir}'");
+                }
+
+                // Only copy if target doesn't exist (avoid redundant I/O)
+                if (File.Exists(targetPath))
+                {
+                    _logger?.Debug($"[RPCS3] CopyTrophyIconToPluginData - Icon already exists at '{targetPath}'");
+                    return targetPath;
+                }
+
+                // Copy with retry logic for file access issues
+                for (var attempt = 0; attempt < MaxCopyAttempts; attempt++)
+                {
+                    try
+                    {
+                        using (var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        using (var destStream = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
+                        {
+                            sourceStream.CopyTo(destStream);
+                        }
+
+                        _logger?.Debug($"[RPCS3] CopyTrophyIconToPluginData - Copied '{sourcePath}' to '{targetPath}'");
+                        return targetPath;
+                    }
+                    catch (IOException)
+                    {
+                        if (attempt == MaxCopyAttempts - 1)
+                        {
+                            _logger?.Debug($"[RPCS3] CopyTrophyIconToPluginData - Failed after {MaxCopyAttempts} attempts");
+                            return sourcePath; // Fall back to source path
+                        }
+
+                        System.Threading.Thread.Sleep(CopyRetryDelayMs);
+                    }
+                }
+
+                return sourcePath; // Fall back to source path
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[RPCS3] CopyTrophyIconToPluginData - Error copying icon");
+                return sourcePath; // Fall back to source path
             }
         }
     }

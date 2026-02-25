@@ -49,6 +49,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Loading XML document from '{tropconfPath}'");
                 var doc = XDocument.Load(tropconfPath);
+
+                // Build group names dictionary for DLC trophy categorization
+                var groupNames = BuildGroupNamesDictionary(doc, logger);
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Found {groupNames.Count} trophy groups");
+
                 var trophyElements = doc.Descendants("trophy");
                 var elementCount = doc.Descendants("trophy").Count();
                 logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Found {elementCount} trophy elements in XML");
@@ -64,7 +69,10 @@ namespace PlayniteAchievements.Providers.RPCS3
                         var detailElement = trophyElement.Element("detail")?.Value;
                         var gidAttr = trophyElement.Attribute("gid")?.Value;
 
-                        logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Trophy element: id='{idAttr}', ttype='{ttypeAttr}', hidden='{hiddenAttr}', name='{nameElement}', gid='{gidAttr}'");
+                        var groupId = gidAttr?.Trim() ?? "0";
+                        var groupName = groupNames.TryGetValue(groupId, out var name) ? name : null;
+
+                        logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Trophy element: id='{idAttr}', ttype='{ttypeAttr}', hidden='{hiddenAttr}', name='{nameElement}', gid='{groupId}', groupName='{groupName}'");
 
                         var trophy = new Rpcs3Trophy
                         {
@@ -73,13 +81,14 @@ namespace PlayniteAchievements.Providers.RPCS3
                             Hidden = string.Equals(hiddenAttr, "yes", StringComparison.OrdinalIgnoreCase),
                             Name = nameElement?.Trim() ?? string.Empty,
                             Description = detailElement?.Trim() ?? string.Empty,
-                            GroupId = gidAttr?.Trim() ?? "0"
+                            GroupId = groupId,
+                            GroupName = groupName
                         };
 
                         if (trophy.Id >= 0)
                         {
                             trophies.Add(trophy);
-                            logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Added trophy Id={trophy.Id}, Name='{trophy.Name}', Type='{trophy.TrophyType}', Hidden={trophy.Hidden}");
+                            logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Added trophy Id={trophy.Id}, Name='{trophy.Name}', Type='{trophy.TrophyType}', Hidden={trophy.Hidden}, GroupName='{trophy.GroupName}'");
                         }
                         else
                         {
@@ -100,7 +109,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                 var goldCount = trophies.Count(t => t.TrophyType?.ToUpperInvariant() == "G");
                 var platinumCount = trophies.Count(t => t.TrophyType?.ToUpperInvariant() == "P");
                 var hiddenCount = trophies.Count(t => t.Hidden);
-                logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Trophy distribution: Bronze={bronzeCount}, Silver={silverCount}, Gold={goldCount}, Platinum={platinumCount}, Hidden={hiddenCount}");
+                var groupedCount = trophies.Count(t => !string.IsNullOrWhiteSpace(t.GroupName));
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Trophy distribution: Bronze={bronzeCount}, Silver={silverCount}, Gold={goldCount}, Platinum={platinumCount}, Hidden={hiddenCount}, Grouped={groupedCount}");
             }
             catch (Exception ex)
             {
@@ -108,6 +118,37 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             return trophies;
+        }
+
+        /// <summary>
+        /// Builds a dictionary mapping group IDs to group names from TROPCONF.SFM.
+        /// Used for DLC trophy categorization.
+        /// </summary>
+        private static Dictionary<string, string> BuildGroupNamesDictionary(XDocument doc, ILogger logger)
+        {
+            var groupNames = new Dictionary<string, string>();
+
+            try
+            {
+                // Groups are defined as: <group id="001"><name>DLC Name</name></group>
+                foreach (var groupElement in doc.Descendants("group"))
+                {
+                    var groupId = groupElement.Attribute("id")?.Value;
+                    var groupName = groupElement.Element("name")?.Value?.Trim();
+
+                    if (!string.IsNullOrWhiteSpace(groupId) && !string.IsNullOrWhiteSpace(groupName))
+                    {
+                        groupNames[groupId] = groupName;
+                        logger?.Debug($"[RPCS3] BuildGroupNamesDictionary - Group '{groupId}': '{groupName}'");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.Debug(ex, "[RPCS3] BuildGroupNamesDictionary - Error parsing group names");
+            }
+
+            return groupNames;
         }
 
         /// <summary>
