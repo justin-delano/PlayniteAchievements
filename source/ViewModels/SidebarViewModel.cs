@@ -917,7 +917,7 @@ namespace PlayniteAchievements.ViewModels
             var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Locked");
 
             // Update charts
-            ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
+            ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
 
             GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.CompletedGames, completedLabel, incompleteLabel);
             RarityPieChart.SetRarityData(
@@ -926,6 +926,10 @@ namespace PlayniteAchievements.ViewModels
                 snapshot.TotalRare,
                 snapshot.TotalUltraRare,
                 snapshot.TotalLocked,
+                snapshot.TotalCommonPossible,
+                snapshot.TotalUncommonPossible,
+                snapshot.TotalRarePossible,
+                snapshot.TotalUltraRarePossible,
                 commonLabel,
                 uncommonLabel,
                 rareLabel,
@@ -1143,7 +1147,7 @@ namespace PlayniteAchievements.ViewModels
             var ultraRareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_UltraRare");
             var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Locked");
 
-            ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
+            ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
 
             GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.CompletedGames, completedLabel, incompleteLabel);
             RarityPieChart.SetRarityData(
@@ -1152,6 +1156,10 @@ namespace PlayniteAchievements.ViewModels
                 snapshot.TotalRare,
                 snapshot.TotalUltraRare,
                 snapshot.TotalLocked,
+                snapshot.TotalCommonPossible,
+                snapshot.TotalUncommonPossible,
+                snapshot.TotalRarePossible,
+                snapshot.TotalUltraRarePossible,
                 commonLabel,
                 uncommonLabel,
                 rareLabel,
