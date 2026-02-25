@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -31,6 +32,7 @@ namespace PlayniteAchievements.Services.Images
         };
 
         private readonly ILogger _logger;
+        private readonly HttpClientHandler _httpHandler;
         private readonly HttpClient _http;
         private readonly string _cacheRoot;
         private readonly SemaphoreSlim _downloadGate;
@@ -43,9 +45,15 @@ namespace PlayniteAchievements.Services.Images
             _logger = logger ?? StaticLogger;
             _cacheRoot = cacheRoot ?? throw new ArgumentNullException(nameof(cacheRoot));
             _downloadGate = new SemaphoreSlim(Math.Max(1, downloadConcurrency), Math.Max(1, downloadConcurrency));
-            _rateLimitedDownloadGate = new SemaphoreSlim(2, 2); // Lower concurrency for rate-limited domains
+            _rateLimitedDownloadGate = new SemaphoreSlim(4, 4); // Xbox CDN concurrency (was 2, increased since processing no longer blocks)
 
-            _http = new HttpClient
+            _httpHandler = new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                AllowAutoRedirect = true,
+                UseCookies = false
+            };
+            _http = new HttpClient(_httpHandler)
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
@@ -57,6 +65,7 @@ namespace PlayniteAchievements.Services.Images
         public void Dispose()
         {
             try { _http?.Dispose(); } catch { }
+            try { _httpHandler?.Dispose(); } catch { }
             try { _downloadGate?.Dispose(); } catch { }
             try { _rateLimitedDownloadGate?.Dispose(); } catch { }
             try { _pathWriteLocks.Clear(); } catch { }
@@ -196,7 +205,9 @@ namespace PlayniteAchievements.Services.Images
                 // Use appropriate gate based on domain rate-limiting behavior
                 var downloadGate = IsRateLimitedDomain(uri) ? _rateLimitedDownloadGate : _downloadGate;
 
-                // Download and cache under shared download concurrency gate.
+                // Download bytes under shared download concurrency gate.
+                // Image processing happens outside the gate to avoid blocking other downloads.
+                byte[] bytes;
                 await downloadGate.WaitAsync(cancel).ConfigureAwait(false);
                 try
                 {
@@ -205,40 +216,42 @@ namespace PlayniteAchievements.Services.Images
                         return cachePath;
                     }
 
-                    var bytes = await DownloadBytesAsync(uri, cancel).ConfigureAwait(false);
-                    if (bytes == null || bytes.Length == 0)
-                    {
-                        return null;
-                    }
-
-                    // Convert to PNG and save
-                    using (var ms = new MemoryStream(bytes, writable: false))
-                    {
-                        var bitmap = new BitmapImage();
-                        bitmap.BeginInit();
-                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                        if (decodeSize > 0)
-                        {
-                            bitmap.DecodePixelWidth = decodeSize;
-                        }
-                        bitmap.StreamSource = ms;
-                        bitmap.EndInit();
-
-                        // Crop to square for consistent aspect ratio and smaller file size
-                        var finalBitmap = CropToSquare(bitmap);
-
-                        var encoder = new PngBitmapEncoder();
-                        encoder.Frames.Add(BitmapFrame.Create(finalBitmap));
-                        await SavePngWithRetryAsync(cachePath, encoder, cancel).ConfigureAwait(false);
-
-                        // _logger?.Debug($"Cached icon: {cachePath}");
-                        return cachePath;
-                    }
+                    bytes = await DownloadBytesAsync(uri, cancel).ConfigureAwait(false);
                 }
                 finally
                 {
                     downloadGate.Release();
+                }
+
+                // Process image outside the download gate - allows parallel processing
+                if (bytes == null || bytes.Length == 0)
+                {
+                    return null;
+                }
+
+                // Convert to PNG and save
+                using (var ms = new MemoryStream(bytes, writable: false))
+                {
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                    if (decodeSize > 0)
+                    {
+                        bitmap.DecodePixelWidth = decodeSize;
+                    }
+                    bitmap.StreamSource = ms;
+                    bitmap.EndInit();
+
+                    // Crop to square for consistent aspect ratio and smaller file size
+                    var finalBitmap = CropToSquare(bitmap);
+
+                    var encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(finalBitmap));
+                    await SavePngWithRetryAsync(cachePath, encoder, cancel).ConfigureAwait(false);
+
+                    // _logger?.Debug($"Cached icon: {cachePath}");
+                    return cachePath;
                 }
             }
             catch (OperationCanceledException)
@@ -323,52 +336,79 @@ namespace PlayniteAchievements.Services.Images
 
         private async Task<byte[]> DownloadBytesAsync(string url, CancellationToken cancel)
         {
-            // Create a linked token with timeout to ensure we control disposal timing.
-            // This prevents ObjectDisposedException when the parent CTS is disposed
-            // while async SSL stream operations are still unwinding.
-            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancel))
+            const int maxAttempts = 3;
+            var backoff = TimeSpan.FromSeconds(1);
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                linkedCts.CancelAfter(TimeSpan.FromSeconds(30));
-                var token = linkedCts.Token;
-
-                try
+                // Create a linked token with timeout to ensure we control disposal timing.
+                // This prevents ObjectDisposedException when the parent CTS is disposed
+                // while async SSL stream operations are still unwinding.
+                using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancel))
                 {
-                    using (var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false))
+                    linkedCts.CancelAfter(TimeSpan.FromSeconds(30));
+                    var token = linkedCts.Token;
+
+                    try
                     {
-                        resp.EnsureSuccessStatusCode();
-
-                        using (var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                        using (var ms = new MemoryStream())
+                        using (var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false))
                         {
-                            var buffer = new byte[16 * 1024];
-                            int read;
-                            int total = 0;
+                            resp.EnsureSuccessStatusCode();
 
-                            while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
+                            using (var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                            using (var ms = new MemoryStream())
                             {
-                                total += read;
-                                if (total > MaxBytes)
-                                {
-                                    throw new InvalidOperationException("Image download exceeded size limit.");
-                                }
-                                ms.Write(buffer, 0, read);
-                            }
+                                var buffer = new byte[16 * 1024];
+                                int read;
+                                int total = 0;
 
-                            return ms.ToArray();
+                                while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
+                                {
+                                    total += read;
+                                    if (total > MaxBytes)
+                                    {
+                                        throw new InvalidOperationException("Image download exceeded size limit.");
+                                    }
+                                    ms.Write(buffer, 0, read);
+                                }
+
+                                return ms.ToArray();
+                            }
                         }
                     }
-                }
-                catch (OperationCanceledException) when (cancel.IsCancellationRequested)
-                {
-                    // User cancelled - rethrow to propagate
-                    throw;
-                }
-                catch (OperationCanceledException)
-                {
-                    // Timeout - return null
-                    return null;
+                    catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+                    {
+                        // User cancelled - rethrow to propagate
+                        throw;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Timeout - retry with exponential backoff
+                        if (attempt < maxAttempts)
+                        {
+                            _logger?.Debug($"Download timeout for {url}, attempt {attempt}/{maxAttempts}, retrying in {backoff.TotalSeconds}s");
+                            await Task.Delay(backoff, cancel).ConfigureAwait(false);
+                            backoff = TimeSpan.FromSeconds(backoff.TotalSeconds * 2);
+                            continue;
+                        }
+                        return null;
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        // Transient HTTP errors - retry with exponential backoff
+                        if (attempt < maxAttempts)
+                        {
+                            _logger?.Debug($"HTTP error for {url}, attempt {attempt}/{maxAttempts}: {ex.Message}, retrying in {backoff.TotalSeconds}s");
+                            await Task.Delay(backoff, cancel).ConfigureAwait(false);
+                            backoff = TimeSpan.FromSeconds(backoff.TotalSeconds * 2);
+                            continue;
+                        }
+                        return null;
+                    }
                 }
             }
+
+            return null;
         }
 
         /// <summary>
