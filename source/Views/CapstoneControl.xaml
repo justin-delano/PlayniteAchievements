@@ -276,7 +276,8 @@
                                            TextWrapping="Wrap"
                                            VerticalAlignment="Center">
                                     <TextBlock.Style>
-                                        <Style TargetType="TextBlock" BasedOn="{DynamicResource BaseTextBlockStyle}">
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsEffectivelyHidden}" Value="True">
                                                     <Setter Property="FontStyle" Value="Italic"/>
@@ -301,7 +302,8 @@
                                        VerticalAlignment="Center"
                                        Margin="0,6">
                                 <TextBlock.Style>
-                                    <Style TargetType="TextBlock" BasedOn="{DynamicResource BaseTextBlockStyle}">
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsEffectivelyHidden}" Value="True">
                                                 <Setter Property="FontStyle" Value="Italic"/>
