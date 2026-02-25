@@ -2045,6 +2045,7 @@ namespace PlayniteAchievements.ViewModels
 
             Comparison<GameOverviewItem> comparison = sortMemberPath switch
             {
+                "SortingName" => (a, b) => string.Compare(a.SortingName, b.SortingName, StringComparison.OrdinalIgnoreCase),
                 nameof(GameOverviewItem.GameName) => (a, b) => string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase),
                 nameof(GameOverviewItem.LastPlayed) => (a, b) => (a.LastPlayed ?? DateTime.MinValue).CompareTo(b.LastPlayed ?? DateTime.MinValue),
                 nameof(GameOverviewItem.Progression) => (a, b) => a.Progression.CompareTo(b.Progression),
