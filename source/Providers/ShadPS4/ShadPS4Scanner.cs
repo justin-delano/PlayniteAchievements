@@ -18,6 +18,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ShadPS4DataProvider _provider;
         private readonly IPlayniteAPI _playniteApi;
+        private readonly string _pluginUserDataPath;
 
         // PS4's RTC epoch is January 1, 2008 00:00:00 UTC
         private static readonly DateTime Ps4Epoch = new DateTime(2008, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -31,12 +32,17 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private const double SilverRarity = 30.0;
         private const double BronzeRarity = 60.0;
 
-        public ShadPS4Scanner(ILogger logger, PlayniteAchievementsSettings settings, ShadPS4DataProvider provider = null, IPlayniteAPI playniteApi = null)
+        // Icon copying settings
+        private const int MaxCopyAttempts = 5;
+        private const int CopyRetryDelayMs = 200;
+
+        public ShadPS4Scanner(ILogger logger, PlayniteAchievementsSettings settings, ShadPS4DataProvider provider = null, IPlayniteAPI playniteApi = null, string pluginUserDataPath = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _provider = provider;
             _playniteApi = playniteApi;
+            _pluginUserDataPath = pluginUserDataPath;
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -283,8 +289,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
                     double rarity = GetRarityByTrophyType(trophyType);
                     string trophyTypeNormalized = NormalizeTrophyType(trophyType);
 
-                    // Build icon path
-                    var iconPath = GetTrophyIconPath(iconsFolder, trophyId);
+                    // Build icon path with caching
+                    var iconPath = GetTrophyIconPath(iconsFolder, titleId, trophyId);
 
                     achievements.Add(new AchievementDetail
                     {
@@ -421,7 +427,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
             };
         }
 
-        private string GetTrophyIconPath(string iconsFolder, string trophyId)
+        /// <summary>
+        /// Gets the trophy icon path, copying it to plugin data folder if necessary.
+        /// This ensures icons remain available even if ShadPS4 is moved or updated.
+        /// </summary>
+        private string GetTrophyIconPath(string iconsFolder, string titleId, string trophyId)
         {
             if (string.IsNullOrWhiteSpace(trophyId))
             {
@@ -432,20 +442,85 @@ namespace PlayniteAchievements.Providers.ShadPS4
             {
                 // Trophy icons follow TROP###.PNG format with zero-padded ID
                 var iconFileName = $"TROP{trophyId.PadLeft(3, '0')}.PNG";
-                var iconPath = Path.Combine(iconsFolder, iconFileName);
+                var sourcePath = Path.Combine(iconsFolder, iconFileName);
 
-                if (File.Exists(iconPath))
+                if (!File.Exists(sourcePath))
                 {
-                    // Return absolute file path - DiskImageService can handle local file:// paths
-                    return iconPath;
+                    return null;
                 }
 
-                return null;
+                // If no plugin data path, return direct path (fallback)
+                if (string.IsNullOrWhiteSpace(_pluginUserDataPath))
+                {
+                    return sourcePath;
+                }
+
+                // Copy icon to plugin data folder
+                return CopyTrophyIconToPluginData(sourcePath, titleId, iconFileName);
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"[ShadPS4] Failed to get icon path for trophy {trophyId}");
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Copies a trophy icon from ShadPS4 folder to plugin data folder.
+        /// Returns the path to the copied file for display.
+        /// </summary>
+        private string CopyTrophyIconToPluginData(string sourcePath, string titleId, string iconFileName)
+        {
+            try
+            {
+                // Create target directory: {PluginData}/shadps4/{titleId}/
+                var shadps4IconsDir = Path.Combine(_pluginUserDataPath, "shadps4", titleId);
+                var targetPath = Path.Combine(shadps4IconsDir, iconFileName);
+
+                // Ensure directory exists
+                if (!Directory.Exists(shadps4IconsDir))
+                {
+                    Directory.CreateDirectory(shadps4IconsDir);
+                }
+
+                // Only copy if target doesn't exist (avoid redundant I/O)
+                if (File.Exists(targetPath))
+                {
+                    return targetPath;
+                }
+
+                // Copy with retry logic for file access issues
+                for (var attempt = 0; attempt < MaxCopyAttempts; attempt++)
+                {
+                    try
+                    {
+                        using (var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        using (var destStream = new FileStream(targetPath, FileMode.Create, FileAccess.Write))
+                        {
+                            sourceStream.CopyTo(destStream);
+                        }
+
+                        _logger?.Debug($"[ShadPS4] Copied icon '{sourcePath}' to '{targetPath}'");
+                        return targetPath;
+                    }
+                    catch (IOException)
+                    {
+                        if (attempt == MaxCopyAttempts - 1)
+                        {
+                            _logger?.Debug($"[ShadPS4] Failed to copy icon after {MaxCopyAttempts} attempts, using source path");
+                            return sourcePath; // Fall back to source path
+                        }
+
+                        Thread.Sleep(CopyRetryDelayMs);
+                    }
+                }
+
+                return sourcePath; // Fall back to source path
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[ShadPS4] Error copying icon, using source path");
+                return sourcePath; // Fall back to source path
             }
         }
     }
