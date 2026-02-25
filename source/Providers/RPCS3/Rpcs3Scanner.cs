@@ -327,8 +327,15 @@ namespace PlayniteAchievements.Providers.RPCS3
             new System.Text.RegularExpressions.Regex(@"\b([A-Z]{2,4}\d{5})\b",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
+        // Pattern to extract npcommid from TROPHY.TRP file content
+        private static readonly System.Text.RegularExpressions.Regex NpCommIdPattern =
+            new System.Text.RegularExpressions.Regex(@"<npcommid>(.*?)<\/npcommid>",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
         /// <summary>
-        /// Finds the npcommid for a game by extracting PS3 ID from the install path.
+        /// Finds the npcommid for a game using multiple strategies:
+        /// 1. Extract PS3 ID from the install path (e.g., BLUS12345)
+        /// 2. Search for TROPHY.TRP file and parse npcommid from it
         /// </summary>
         private string FindNpCommIdForGame(Game game, Dictionary<string, string> trophyFolderCache, CancellationToken cancel)
         {
@@ -339,7 +346,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Raw InstallDirectory: '{rawInstallDir ?? "(null)"}'");
             _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Expanded gameDirectory: '{gameDirectory ?? "(null)"}'");
 
-            // Extract PS3 ID from the path and look it up in cache
+            // Strategy 1: Extract PS3 ID from the path and look it up in cache
             if (!string.IsNullOrWhiteSpace(gameDirectory))
             {
                 var match = Ps3IdPattern.Match(gameDirectory);
@@ -349,7 +356,6 @@ namespace PlayniteAchievements.Providers.RPCS3
                 {
                     var ps3Id = match.Groups[1].Value.ToUpperInvariant();
                     _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Extracted PS3 ID: '{ps3Id}'");
-                    _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Checking if '{ps3Id}' exists in cache (cache has {trophyFolderCache.Count} entries)");
 
                     if (trophyFolderCache.ContainsKey(ps3Id))
                     {
@@ -359,7 +365,6 @@ namespace PlayniteAchievements.Providers.RPCS3
                     else
                     {
                         _logger?.Debug($"[RPCS3] FindNpCommIdForGame - PS3 ID '{ps3Id}' not found in cache");
-                        _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Available cache keys: [{string.Join(", ", trophyFolderCache.Keys.Take(20))}{(trophyFolderCache.Count > 20 ? "..." : "")}]");
                     }
                 }
             }
@@ -368,7 +373,161 @@ namespace PlayniteAchievements.Providers.RPCS3
                 _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Game directory is null or empty");
             }
 
+            // Strategy 2: Search for TROPHY.TRP file and extract npcommid
+            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Trying TROPHY.TRP search fallback");
+            var npcommidFromTrp = FindNpCommIdFromTrophyTrp(game, gameDirectory, trophyFolderCache, cancel);
+            if (!string.IsNullOrWhiteSpace(npcommidFromTrp))
+            {
+                return npcommidFromTrp;
+            }
+
             _logger?.Debug($"[RPCS3] FindNpCommIdForGame - No npcommid found for game '{game?.Name}'");
+            return null;
+        }
+
+        /// <summary>
+        /// Searches for TROPHY.TRP file in the game directory tree and extracts the npcommid.
+        /// This follows SuccessStory's approach: go up one directory, then search recursively.
+        /// </summary>
+        private string FindNpCommIdFromTrophyTrp(Game game, string gameDirectory,
+            Dictionary<string, string> trophyFolderCache, CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(gameDirectory))
+            {
+                _logger?.Debug("[RPCS3] FindNpCommIdFromTrophyTrp - Game directory is empty");
+                return null;
+            }
+
+            try
+            {
+                // Go up one directory level (like SuccessStory does)
+                var searchPath = Path.GetDirectoryName(gameDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                if (string.IsNullOrWhiteSpace(searchPath) || !Directory.Exists(searchPath))
+                {
+                    _logger?.Debug($"[RPCS3] FindNpCommIdFromTrophyTrp - Parent directory not found: '{searchPath}'");
+                    return null;
+                }
+
+                _logger?.Debug($"[RPCS3] FindNpCommIdFromTrophyTrp - Searching for TROPHY.TRP in: '{searchPath}'");
+
+                // Search recursively for TROPHY.TRP
+                var trophyTrpFiles = FindFilesRecursive(searchPath, "TROPHY.TRP", maxDepth: 5, cancel);
+                _logger?.Debug($"[RPCS3] FindNpCommIdFromTrophyTrp - Found {trophyTrpFiles.Count} TROPHY.TRP file(s)");
+
+                foreach (var trpFile in trophyTrpFiles)
+                {
+                    cancel.ThrowIfCancellationRequested();
+
+                    _logger?.Debug($"[RPCS3] FindNpCommIdFromTrophyTrp - Parsing: '{trpFile}'");
+                    var npcommid = ParseNpCommIdFromTrpFile(trpFile);
+                    _logger?.Debug($"[RPCS3] FindNpCommIdFromTrophyTrp - Extracted npcommid: '{npcommid ?? "(null)"}'");
+
+                    if (!string.IsNullOrWhiteSpace(npcommid) && trophyFolderCache.ContainsKey(npcommid))
+                    {
+                        _logger?.Debug($"[RPCS3] FindNpCommIdFromTrophyTrp - Found matching npcommid '{npcommid}' in cache");
+                        return npcommid;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromTrophyTrp - Error searching for TROPHY.TRP");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Recursively searches for files with the specified name.
+        /// </summary>
+        private List<string> FindFilesRecursive(string directory, string fileName, int maxDepth, CancellationToken cancel)
+        {
+            var results = new List<string>();
+            FindFilesRecursiveInternal(directory, fileName, maxDepth, 0, results, cancel);
+            return results;
+        }
+
+        private void FindFilesRecursiveInternal(string directory, string fileName, int maxDepth, int currentDepth,
+            List<string> results, CancellationToken cancel)
+        {
+            if (currentDepth > maxDepth || results.Count >= 10) // Limit search
+            {
+                return;
+            }
+
+            cancel.ThrowIfCancellationRequested();
+
+            try
+            {
+                // Check for file in current directory
+                var filePath = Path.Combine(directory, fileName);
+                if (File.Exists(filePath))
+                {
+                    results.Add(filePath);
+                    _logger?.Debug($"[RPCS3] FindFilesRecursive - Found: '{filePath}'");
+                    return; // Found it, no need to search deeper in this branch
+                }
+
+                // Search subdirectories
+                foreach (var subDir in Directory.GetDirectories(directory))
+                {
+                    cancel.ThrowIfCancellationRequested();
+
+                    // Skip common non-game directories
+                    var dirName = Path.GetFileName(subDir);
+                    if (dirName?.StartsWith(".") == true ||
+                        string.Equals(dirName, "dev_hdd0", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(dirName, "dev_hdd1", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(dirName, "trophy", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    FindFilesRecursiveInternal(subDir, fileName, maxDepth, currentDepth + 1, results, cancel);
+
+                    if (results.Count >= 10)
+                    {
+                        return;
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Skip directories we can't access
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug($"[RPCS3] FindFilesRecursive - Error in '{directory}': {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Parses the npcommid from a TROPHY.TRP file.
+        /// The npcommid is stored in XML format within the file.
+        /// </summary>
+        private string ParseNpCommIdFromTrpFile(string trpFilePath)
+        {
+            try
+            {
+                // TROPHY.TRP contains XML data that we can read as text
+                // The npcommid is in a tag like: <npcommid>NPWR00807_00</npcommid>
+                var fileContent = File.ReadAllText(trpFilePath);
+                var match = NpCommIdPattern.Match(fileContent);
+
+                if (match.Success)
+                {
+                    return match.Groups[1].Value?.Trim();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug($"[RPCS3] ParseNpCommIdFromTrpFile - Error reading '{trpFilePath}': {ex.Message}");
+            }
+
             return null;
         }
 
