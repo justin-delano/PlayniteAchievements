@@ -956,6 +956,9 @@ namespace PlayniteAchievements.Services
 
         private async Task PopulateAchievementIconCacheAsync(GameAchievementData data, CancellationToken cancel)
         {
+            // Reset icon progress for each game to show per-game counts
+            _iconProgressTracker.Reset();
+
             if (data?.Achievements == null || data.Achievements.Count == 0)
             {
                 return;
