@@ -61,6 +61,10 @@ namespace PlayniteAchievements.Services
         private readonly GameDataHydrator _hydrator;
         private readonly IconProgressTracker _iconProgressTracker = new IconProgressTracker();
 
+        // Tracks overall refresh progress for icon download progress updates
+        private int _currentOverallIndex;
+        private int _totalGamesInRun;
+
         public ICacheManager Cache => _cacheService;
 
         /// <summary>
@@ -656,6 +660,9 @@ namespace PlayniteAchievements.Services
             var summary = new RebuildSummary();
             var refreshedSoFar = 0;
 
+            // Track overall progress for icon download progress updates
+            _totalGamesInRun = totalGames;
+
             foreach (var kvp in gamesByProvider)
             {
                 var provider = kvp.Key;
@@ -674,9 +681,12 @@ namespace PlayniteAchievements.Services
 
                     // Map provider-local index to global index
                     var localIndex = Math.Min(u.CurrentIndex, games.Count);
-                    
+
                     // localIndex is 1-based (from progress reporter steps), so we just add the offset
                     var globalIndex = refreshedSoFar + localIndex;
+
+                    // Track current game index for icon progress updates
+                    _currentOverallIndex = globalIndex;
 
                     var update = new RebuildUpdate
                     {
@@ -1053,7 +1063,12 @@ namespace PlayniteAchievements.Services
                         Stage = RebuildStage.RefreshingUserAchievements,
                         CurrentGameName = data.GameName,
                         IconsDownloaded = downloaded,
-                        TotalIcons = total
+                        TotalIcons = total,
+                        // Include overall progress for correct percentage display
+                        UserAppIndex = _currentOverallIndex - 1,
+                        UserAppCount = _totalGamesInRun,
+                        OverallIndex = _currentOverallIndex,
+                        OverallCount = _totalGamesInRun
                     });
                 }
 
