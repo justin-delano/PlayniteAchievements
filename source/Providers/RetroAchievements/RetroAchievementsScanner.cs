@@ -71,7 +71,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             for (var i = 0; i < gamesToRefresh.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
-                progress.Step();
 
                 var game = gamesToRefresh[i];
                 if (game == null) continue;
@@ -137,6 +136,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                         await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
                     }
                 }
+
+                progress.Step();
             }
 
             return new RebuildPayload { Summary = summary };
