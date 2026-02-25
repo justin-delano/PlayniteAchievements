@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Services.Hydration
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _achievementHydrator = new AchievementDetailHydrator(api, settings);
+            _achievementHydrator = new AchievementDetailHydrator(settings);
         }
 
         /// <summary>
@@ -38,10 +38,10 @@ namespace PlayniteAchievements.Services.Hydration
             // Populate ExcludedByUser from settings
             data.ExcludedByUser = _settings.ExcludedGameIds.Contains(gameId);
 
-            // Populate SortingName from Playnite database
-            data.SortingName = GetSortingName(gameId) ?? data.GameName;
+            // Set Game reference from Playnite database (SortingName is computed from this)
+            data.Game = GetGame(gameId);
 
-            // Hydrate achievements with Game reference and capstone override
+            // Hydrate achievements with capstone override
             if (data.Achievements != null && data.Achievements.Count > 0)
             {
                 _achievementHydrator.HydrateAllWithCapstoneOverride(data.Achievements, gameId);
@@ -64,12 +64,11 @@ namespace PlayniteAchievements.Services.Hydration
             }
         }
 
-        private string GetSortingName(Guid playniteGameId)
+        private Playnite.SDK.Models.Game GetGame(Guid playniteGameId)
         {
             try
             {
-                var game = _api.Database.Games.Get(playniteGameId);
-                return game?.SortingName;
+                return _api.Database.Games.Get(playniteGameId);
             }
             catch
             {

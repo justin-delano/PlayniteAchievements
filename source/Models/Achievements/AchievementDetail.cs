@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.Serialization;
-using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Models.Achievements
@@ -46,9 +45,6 @@ namespace PlayniteAchievements.Models.Achievements
 
         [IgnoreDataMember]
         public string IconDisplay => UnlockedIconPath ?? AchievementIconResolver.GetDefaultIcon();
-
-        [IgnoreDataMember]
-        public Game Game { get; set; }
 
         public bool Hidden { get; set; }
 

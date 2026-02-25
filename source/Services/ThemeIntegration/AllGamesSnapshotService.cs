@@ -1,8 +1,8 @@
+using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
-using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,17 +12,6 @@ using System.Windows.Input;
 namespace PlayniteAchievements.Services.ThemeIntegration
 {
     /// <summary>
-    /// Game metadata for snapshot building.
-    /// </summary>
-    public sealed class GameInfo
-    {
-        public Game Game { get; set; }
-        public string Name { get; set; }
-        public string Platform { get; set; }
-        public string CoverImagePath { get; set; }
-    }
-
-    /// <summary>
     /// Service for building all-games achievement snapshots.
     /// Creates immutable AllGamesSnapshot instances for trophy overview displays.
     /// </summary>
@@ -31,13 +20,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         /// <summary>
         /// Build an all-games snapshot from achievement data.
         /// </summary>
-        /// <param name="allData">All games achievement data.</param>
-        /// <param name="gameInfo">Game metadata mapping.</param>
+        /// <param name="allData">All games achievement data (must be hydrated with Game references).</param>
+        /// <param name="api">Playnite API for resolving file paths.</param>
         /// <param name="openGameWindowCallback">Callback to open a game's achievement window.</param>
         /// <param name="token">Cancellation token.</param>
         public static AllGamesSnapshot BuildSnapshot(
             List<GameAchievementData> allData,
-            Dictionary<Guid, GameInfo> gameInfo,
+            IPlayniteAPI api,
             Action<Guid> openGameWindowCallback,
             CancellationToken token,
             bool includeHeavyAchievementLists = true)
@@ -48,7 +37,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             snapshot.HeavyListsBuilt = includeHeavyAchievementLists;
 
             allData ??= new List<GameAchievementData>();
-            gameInfo ??= new Dictionary<Guid, GameInfo>();
 
             var items = new List<GameAchievementSummary>();
             foreach (var data in allData)
@@ -60,16 +48,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 if (total <= 0) continue;
 
                 var id = data.PlayniteGameId.Value;
-                if (!gameInfo.TryGetValue(id, out var info) || info == null)
-                {
-                    info = new GameInfo
-                    {
-                        Game = null,
-                        Name = data.GameName ?? string.Empty,
-                        Platform = "Unknown",
-                        CoverImagePath = string.Empty
-                    };
-                }
+                var game = data.Game;
 
                 var unlocked = 0;
                 var latestUnlockUtc = DateTime.MinValue;
@@ -115,13 +94,17 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     out var silver,
                     out var bronze);
 
-                var openCmd = new RelayCommand(_ => openGameWindowCallback(id));
+                var openCmd = new Common.RelayCommand(_ => openGameWindowCallback(id));
+
+                var name = game?.Name ?? data.GameName ?? string.Empty;
+                var platform = game?.Source?.Name ?? "Unknown";
+                var coverImagePath = ResolveCoverImagePath(game, api);
 
                 items.Add(new GameAchievementSummary(
                     id,
-                    info.Name,
-                    info.Platform,
-                    info.CoverImagePath,
+                    name,
+                    platform,
+                    coverImagePath,
                     progress,
                     gold,
                     silver,
@@ -193,12 +176,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     token.ThrowIfCancellationRequested();
                     if (data?.Achievements == null) continue;
-                    var info = ResolveGameInfo(gameInfo, data.PlayniteGameId);
                     foreach (var achievement in data.Achievements)
                     {
                         if (achievement != null)
                         {
-                            achievement.Game = info?.Game;
                             allAchievements.Add(achievement);
                         }
                     }
@@ -244,7 +225,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         continue;
                     }
 
-                    var info = ResolveGameInfo(gameInfo, data.PlayniteGameId);
                     for (int i = 0; i < data.Achievements.Count; i++)
                     {
                         var achievement = data.Achievements[i];
@@ -255,7 +235,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                             continue;
                         }
 
-                        achievement.Game = info?.Game;
                         unlockedAchievements.Add(achievement);
                     }
                 }
@@ -264,6 +243,36 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             return snapshot;
+        }
+
+        private static string ResolveCoverImagePath(Playnite.SDK.Models.Game game, IPlayniteAPI api)
+        {
+            if (game == null || api?.Database == null)
+            {
+                return string.Empty;
+            }
+
+            // Try cover image first
+            if (!string.IsNullOrWhiteSpace(game.CoverImage))
+            {
+                var coverPath = api.Database.GetFullFilePath(game.CoverImage);
+                if (!string.IsNullOrWhiteSpace(coverPath))
+                {
+                    return coverPath;
+                }
+            }
+
+            // Fallback to icon
+            if (!string.IsNullOrWhiteSpace(game.Icon))
+            {
+                var iconPath = api.Database.GetFullFilePath(game.Icon);
+                if (!string.IsNullOrWhiteSpace(iconPath))
+                {
+                    return iconPath;
+                }
+            }
+
+            return string.Empty;
         }
 
         private static void PopulateRecentLists(AllGamesSnapshot snapshot, List<AchievementDetail> unlockedAchievements, bool includeFullLists)
@@ -306,16 +315,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             return timestamp.Kind == DateTimeKind.Local ? timestamp.ToUniversalTime() : timestamp;
-        }
-
-        private static GameInfo ResolveGameInfo(Dictionary<Guid, GameInfo> gameInfo, Guid? gameId)
-        {
-            if (gameInfo == null || !gameId.HasValue)
-            {
-                return null;
-            }
-
-            return gameInfo.TryGetValue(gameId.Value, out var info) ? info : null;
         }
 
         private static void GetTrophyCounts(
@@ -421,4 +420,3 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         }
     }
 }
-

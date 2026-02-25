@@ -484,18 +484,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 var allData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
                 _logger?.Info($"PopulateAllGamesDataSync: Found {allData.Count} total game data entries.");
 
-                var ids = allData
-                    .Where(d => d?.PlayniteGameId != null && d.HasAchievements && (d.Achievements?.Count ?? 0) > 0)
-                    .Select(d => d.PlayniteGameId.Value)
-                    .Distinct()
-                    .ToList();
-
-                _logger?.Info($"PopulateAllGamesDataSync: Found {ids.Count} games with achievements.");
-
-                var info = BuildGameInfoMapOnUiThread(ids);
                 var snapshot = AllGamesSnapshotService.BuildSnapshot(
                     allData,
-                    info,
+                    _api,
                     OpenGameWindow,
                     CancellationToken.None,
                     includeHeavyAchievementLists);
@@ -591,39 +582,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                     token.ThrowIfCancellationRequested();
 
-                    Dictionary<Guid, GameInfo> info = null;
-                    System.Windows.Threading.Dispatcher uiDispatcher = null;
-                    try
-                    {
-                        uiDispatcher = _api.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
-                        if (uiDispatcher == null)
-                        {
-                            info = new Dictionary<Guid, GameInfo>();
-                        }
-                        else if (uiDispatcher.CheckAccess())
-                        {
-                            info = BuildGameInfoMapOnUiThread(ids);
-                        }
-                        else
-                        {
-                            info = await uiDispatcher.InvokeAsync(() => BuildGameInfoMapOnUiThread(ids), DispatcherPriority.Background);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Debug(ex, "Failed to build fullscreen game-info map on UI thread.");
-                        info = new Dictionary<Guid, GameInfo>();
-                    }
-
-                    token.ThrowIfCancellationRequested();
-
                     var snapshot = AllGamesSnapshotService.BuildSnapshot(
                         allData,
-                        info,
+                        _api,
                         OpenGameWindow,
                         token,
                         shouldBuildHeavyAchievementLists);
 
+                    var uiDispatcher = _api.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
                     uiDispatcher?.InvokeIfNeeded(() => ApplySnapshot(snapshot), DispatcherPriority.Background);
                 }
                 catch (OperationCanceledException)
@@ -634,51 +600,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     _logger?.Error(ex, "Failed to refresh theme integration snapshot.");
                 }
             }, token);
-        }
-
-        private Dictionary<Guid, GameInfo> BuildGameInfoMapOnUiThread(List<Guid> ids)
-        {
-            var gameInfo = new Dictionary<Guid, GameInfo>();
-            if (ids == null || ids.Count == 0)
-            {
-                return gameInfo;
-            }
-
-            var gamesDb = _api?.Database?.Games;
-            if (gamesDb == null)
-            {
-                return gameInfo;
-            }
-
-            foreach (var id in ids)
-            {
-                var game = gamesDb.Get(id);
-                if (game == null)
-                {
-                    continue;
-                }
-
-                var cover = string.Empty;
-                if (!string.IsNullOrWhiteSpace(game.CoverImage))
-                {
-                    cover = _api.Database.GetFullFilePath(game.CoverImage) ?? string.Empty;
-                }
-
-                if (string.IsNullOrWhiteSpace(cover) && !string.IsNullOrWhiteSpace(game.Icon))
-                {
-                    cover = _api.Database.GetFullFilePath(game.Icon) ?? string.Empty;
-                }
-
-                gameInfo[id] = new GameInfo
-                {
-                    Game = game,
-                    Name = game.Name ?? string.Empty,
-                    Platform = game.Source?.Name ?? "Unknown",
-                    CoverImagePath = cover ?? string.Empty
-                };
-            }
-
-            return gameInfo;
         }
 
         private void ApplySnapshot(AllGamesSnapshot snapshot)
@@ -796,48 +717,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
-            AttachGameReferenceToSnapshot(snapshot);
             ApplySingleGameToTheme(snapshot);
             ApplySingleGameToLegacyTheme(snapshot);
-        }
-
-        private void AttachGameReferenceToSnapshot(SingleGameSnapshot snapshot)
-        {
-            if (snapshot == null)
-            {
-                return;
-            }
-
-            Game game = null;
-            try
-            {
-                game = _api?.Database?.Games?.Get(snapshot.GameId);
-            }
-            catch
-            {
-            }
-
-            SetGameReference(snapshot.AllAchievements, game);
-            SetGameReference(snapshot.UnlockDateAsc, game);
-            SetGameReference(snapshot.UnlockDateDesc, game);
-            SetGameReference(snapshot.RarityAsc, game);
-            SetGameReference(snapshot.RarityDesc, game);
-        }
-
-        private static void SetGameReference(List<AchievementDetail> achievements, Game game)
-        {
-            if (achievements == null || achievements.Count == 0)
-            {
-                return;
-            }
-
-            for (var i = 0; i < achievements.Count; i++)
-            {
-                if (achievements[i] != null)
-                {
-                    achievements[i].Game = game;
-                }
-            }
         }
 
         private void ApplySingleGameToTheme(SingleGameSnapshot snapshot)

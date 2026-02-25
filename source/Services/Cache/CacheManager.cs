@@ -711,10 +711,10 @@ namespace PlayniteAchievements.Services
                 LibrarySourceName = source.LibrarySourceName,
                 HasAchievements = source.HasAchievements,
                 ExcludedByUser = source.ExcludedByUser,
-                SortingName = source.SortingName,
                 GameName = source.GameName,
                 AppId = source.AppId,
                 PlayniteGameId = source.PlayniteGameId,
+                Game = source.Game,
                 Achievements = new List<AchievementDetail>()
             };
 
