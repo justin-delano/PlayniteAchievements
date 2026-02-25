@@ -6,7 +6,43 @@
     M 82.5 54.6 c 0.18 0.01 0.37 0.03 0.55 0.03 35.3 0 45-47.5 45-47.5 h-25.6 c 0.04-0.76 0.09-1.51 0.09-2.2 h-77 c 0 0.69 0.04 1.45 0.09 2.2 H 0.03 s 9.7 47.5 45 47.5 c 0.19 0 0.37-0.01 0.56-0.03 2.0 2.24 4.13 4.23 6.35 5.79 -1.56 0.04-2.82 1.29-2.82 2.84 0 1.59 1.28 2.87 2.87 2.87 h 3.76 l-8.63 45.37 h-2.61 v 11.57 h 41.09 v-11.57 h-2.61 l-8.64-45.37 h 3.79 c 1.57 0 2.86-1.28 2.86-2.87 0-1.57-1.28-2.85-2.86-2.85 h-1.95 c 2.21-1.57 4.31-3.54 6.34-5.78 z m 19.37-42.34 h 19.47 c-3.64 11.3-13.6 34.44-34.51 36.97 7.73-10.9 13.24-25.54 15.04-36.97 z m-95.15-0 h 19.47 c 1.79 11.46 7.3 26.1 15.04 36.97 -20.93-2.53-30.89-25.69-34.51-36.97 z
   </Geometry>
 
-  <!-- Reuse existing metal fills from RarityBadges.xaml (these will be merged at runtime) -->
+  <!-- Sparkle geometries for platinum trophy (scaled to trophy size) -->
+  <Geometry x:Key="GeoTrophySparkle1">M64,8 L66,14 L72,16 L66,18 L64,24 L62,18 L56,16 L62,14 Z</Geometry>
+  <Geometry x:Key="GeoTrophySparkle2">M88,30 L89,34 L93,35 L89,36 L88,40 L87,36 L83,35 L87,34 Z</Geometry>
+  <Geometry x:Key="GeoTrophySparkle3">M40,28 L41,32 L45,33 L41,34 L40,38 L39,34 L35,33 L39,32 Z</Geometry>
+  <Geometry x:Key="GeoTrophySparkle4">M75,48 L76,51 L79,52 L76,53 L75,56 L74,53 L71,52 L74,51 Z</Geometry>
+
+  <!-- Enhanced platinum fill - brighter, more prestigious gradient -->
+  <LinearGradientBrush x:Key="FillTrophyPlatinum" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Offset="0.00" Color="#0D1B2A"/>
+    <GradientStop Offset="0.20" Color="#4CC9F0"/>
+    <GradientStop Offset="0.40" Color="#FFFFFF"/>
+    <GradientStop Offset="0.50" Color="#E0F7FF"/>
+    <GradientStop Offset="0.70" Color="#4361EE"/>
+    <GradientStop Offset="1.00" Color="#1B263B"/>
+  </LinearGradientBrush>
+
+  <!-- Platinum rim with subtle glow -->
+  <SolidColorBrush x:Key="RimTrophyPlatinum" Color="#CCFFFFFF"/>
+
+  <!-- Extra shine overlay for platinum - more intense -->
+  <LinearGradientBrush x:Key="PlatinumShineOverlay" StartPoint="0,0" EndPoint="1,1">
+    <GradientStop Offset="0.00" Color="#00FFFFFF"/>
+    <GradientStop Offset="0.30" Color="#33FFFFFF"/>
+    <GradientStop Offset="0.45" Color="#88FFFFFF"/>
+    <GradientStop Offset="0.50" Color="#AAFFFFFF"/>
+    <GradientStop Offset="0.55" Color="#88FFFFFF"/>
+    <GradientStop Offset="0.70" Color="#33FFFFFF"/>
+    <GradientStop Offset="1.00" Color="#00FFFFFF"/>
+  </LinearGradientBrush>
+
+  <!-- Inner glow gradient for platinum prestige effect -->
+  <RadialGradientBrush x:Key="PlatinumInnerGlow" Center="0.4,0.35" RadiusX="0.5" RadiusY="0.5">
+    <GradientStop Offset="0.0" Color="#55FFFFFF"/>
+    <GradientStop Offset="0.5" Color="#22CCFFFF"/>
+    <GradientStop Offset="1.0" Color="#00FFFFFF"/>
+  </RadialGradientBrush>
+
   <!-- Bronze Trophy -->
   <DrawingImage x:Key="TrophyBronze">
     <DrawingImage.Drawing>
@@ -50,16 +86,28 @@
     </DrawingImage.Drawing>
   </DrawingImage>
 
-  <!-- Platinum Trophy -->
+  <!-- Platinum Trophy - Enhanced PSN-inspired design with sparkles -->
   <DrawingImage x:Key="TrophyPlatinum">
     <DrawingImage.Drawing>
       <DrawingGroup>
-        <GeometryDrawing Geometry="{StaticResource GeoTrophy}" Brush="{StaticResource FillPlatinum}">
+        <!-- Base trophy shape with enhanced platinum fill -->
+        <GeometryDrawing Geometry="{StaticResource GeoTrophy}" Brush="{StaticResource FillTrophyPlatinum}">
           <GeometryDrawing.Pen>
-            <Pen Brush="{StaticResource RimPlatinum}" Thickness="3" LineJoin="Round"/>
+            <Pen Brush="{StaticResource RimTrophyPlatinum}" Thickness="3" LineJoin="Round"/>
           </GeometryDrawing.Pen>
         </GeometryDrawing>
-        <GeometryDrawing Geometry="{StaticResource GeoTrophy}" Brush="{StaticResource ShineOverlay}"/>
+
+        <!-- Inner glow for depth -->
+        <GeometryDrawing Geometry="{StaticResource GeoTrophy}" Brush="{StaticResource PlatinumInnerGlow}"/>
+
+        <!-- Intense shine overlay -->
+        <GeometryDrawing Geometry="{StaticResource GeoTrophy}" Brush="{StaticResource PlatinumShineOverlay}"/>
+
+        <!-- Sparkle effects for prestige -->
+        <GeometryDrawing Geometry="{StaticResource GeoTrophySparkle1}" Brush="#DDFFFFFF"/>
+        <GeometryDrawing Geometry="{StaticResource GeoTrophySparkle2}" Brush="#BBFFFFFF"/>
+        <GeometryDrawing Geometry="{StaticResource GeoTrophySparkle3}" Brush="#AAFFFFFF"/>
+        <GeometryDrawing Geometry="{StaticResource GeoTrophySparkle4}" Brush="#99FFFFFF"/>
       </DrawingGroup>
     </DrawingImage.Drawing>
   </DrawingImage>
