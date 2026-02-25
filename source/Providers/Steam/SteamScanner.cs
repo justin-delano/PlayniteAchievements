@@ -106,7 +106,6 @@ namespace PlayniteAchievements.Providers.Steam
                 for (int i = 0; i < gamesToRefresh.Count; i++)
                 {
                     cancel.ThrowIfCancellationRequested();
-                    progress.Step();
 
                     var game = gamesToRefresh[i];
 
@@ -163,6 +162,8 @@ namespace PlayniteAchievements.Providers.Steam
                             await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
                         }
                     }
+
+                    progress.Step();
                 }
 
                 return new RebuildPayload { Summary = summary };
