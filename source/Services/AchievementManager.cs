@@ -998,17 +998,22 @@ namespace PlayniteAchievements.Services
             var iconTasks = iconPaths.Select(async iconPath =>
             {
                 var result = await ResolveIconPathAsync(iconPath, gameIdStr, cancel).ConfigureAwait(false);
-                _iconProgressTracker.IncrementDownloaded();
 
-                var (downloaded, total) = _iconProgressTracker.GetSnapshot();
-                HandleUpdate(new RebuildUpdate
+                // Only emit progress if not cancelled
+                if (!cancel.IsCancellationRequested)
                 {
-                    Kind = RebuildUpdateKind.UserProgress,
-                    Stage = RebuildStage.RefreshingUserAchievements,
-                    CurrentGameName = data.GameName,
-                    IconsDownloaded = downloaded,
-                    TotalIcons = total
-                });
+                    _iconProgressTracker.IncrementDownloaded();
+
+                    var (downloaded, total) = _iconProgressTracker.GetSnapshot();
+                    HandleUpdate(new RebuildUpdate
+                    {
+                        Kind = RebuildUpdateKind.UserProgress,
+                        Stage = RebuildStage.RefreshingUserAchievements,
+                        CurrentGameName = data.GameName,
+                        IconsDownloaded = downloaded,
+                        TotalIcons = total
+                    });
+                }
 
                 return result;
             }).ToArray();
