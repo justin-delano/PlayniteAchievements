@@ -2000,13 +2000,20 @@
                                             </Style>
                                         </Border.Style>
 
-                                        <StackPanel>
-                                            <Grid Margin="0,0,0,10">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Status Row -->
+                                            <Grid Grid.Row="0" Margin="0,0,0,14">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
 
+                                                <!-- Status Icon -->
                                                 <TextBlock Grid.Column="0"
                                                            FontFamily="Segoe MDL2 Assets"
                                                            FontSize="{DynamicResource FontSize}"
@@ -2035,6 +2042,7 @@
                                                     </TextBlock.Style>
                                                 </TextBlock>
 
+                                                <!-- Status Text -->
                                                 <TextBlock Grid.Column="1"
                                                            Text="{Binding Rpcs3AuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                            Foreground="{DynamicResource TextBrush}"
@@ -2044,29 +2052,38 @@
                                                            FontWeight="SemiBold"/>
                                             </Grid>
 
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3InstallationFolderHint}"
-                                                       Style="{StaticResource MutedTextStyle}"
-                                                       Margin="0,0,0,12"
-                                                       TextWrapping="Wrap"/>
+                                            <!-- Separator -->
+                                            <Border Grid.Row="0" Height="1"
+                                                    Background="{DynamicResource ControlBorderBrush}"
+                                                    Opacity="0.5"
+                                                    Margin="36,0,0,14"/>
 
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
+                                            <!-- Folder Path Section -->
+                                            <StackPanel Grid.Row="1">
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3InstallationFolderHint}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           FontSize="{DynamicResource FontSizeSmall}"
+                                                           Opacity="0.8"
+                                                           Margin="0,0,0,4"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
 
-                                                <TextBox Grid.Column="0"
-                                                         Text="{Binding Persisted.Rpcs3InstallationFolder, UpdateSourceTrigger=PropertyChanged}"
-                                                         VerticalAlignment="Center"
-                                                         Padding="8,6"
-                                                         Margin="0,0,8,0"/>
+                                                    <TextBox Grid.Column="0"
+                                                             Text="{Binding Persisted.Rpcs3InstallationFolder, UpdateSourceTrigger=PropertyChanged}"
+                                                             KeyDown="Rpcs3InstallationFolder_KeyDown"
+                                                             VerticalAlignment="Center"/>
 
-                                                <Button Grid.Column="1"
-                                                        Content="{DynamicResource LOCPlayAch_Settings_Rpcs3_Browse}"
-                                                        Click="Rpcs3_Browse_Click"
-                                                        Padding="14,6"/>
-                                            </Grid>
-                                        </StackPanel>
+                                                    <Button Grid.Column="1"
+                                                            Content="{DynamicResource LOCPlayAch_Settings_Rpcs3_Browse}"
+                                                            Click="Rpcs3_Browse_Click"
+                                                            Padding="14,6"
+                                                            Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Grid>
                                     </Border>
                                 </Grid>
                             </StackPanel>

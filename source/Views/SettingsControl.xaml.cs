@@ -757,6 +757,17 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void Rpcs3InstallationFolder_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                CheckRpcs3Auth();
+                MoveFocusFrom((TextBox)sender);
+            }
+        }
+
         private void MoveFocusFrom(TextBox textBox)
         {
             var parent = textBox?.Parent as FrameworkElement;
