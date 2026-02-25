@@ -380,6 +380,17 @@ namespace PlayniteAchievements.Providers.RPCS3
                 _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Game directory is null or empty");
             }
 
+            // Strategy 1.5: For installed PKG games, check for TROPHY.TRP in game directory
+            if (!string.IsNullOrWhiteSpace(gameDirectory))
+            {
+                _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Trying installed game TROPHY.TRP extraction");
+                var npcommidFromInstall = FindNpCommIdFromInstalledGame(gameDirectory, trophyFolderCache);
+                if (!string.IsNullOrWhiteSpace(npcommidFromInstall))
+                {
+                    return npcommidFromInstall;
+                }
+            }
+
             // Strategy 2: Extract npcommid from PS3 ISO file
             _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Trying ISO extraction fallback");
             var npcommidFromIso = FindNpCommIdFromIso(game, gameDirectory, trophyFolderCache);
@@ -476,6 +487,92 @@ namespace PlayniteAchievements.Providers.RPCS3
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromIso - Error searching for ISO files");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Extracts the npcommid from an installed PKG game's TROPHY.TRP file.
+        /// PKG-installed games have TROPHY.TRP at {gameDir}/TROPHY/TROPHY.TRP or
+        /// {gameDir}/PS3_GAME/TROPHY/TROPHY.TRP.
+        /// </summary>
+        private string FindNpCommIdFromInstalledGame(string gameDirectory,
+            Dictionary<string, string> trophyFolderCache)
+        {
+            if (string.IsNullOrWhiteSpace(gameDirectory))
+            {
+                _logger?.Debug("[RPCS3] FindNpCommIdFromInstalledGame - Game directory is empty");
+                return null;
+            }
+
+            // Possible TROPHY.TRP locations for installed games
+            var trpPaths = new[]
+            {
+                Path.Combine(gameDirectory, "TROPHY", "TROPHY.TRP"),
+                Path.Combine(gameDirectory, "PS3_GAME", "TROPHY", "TROPHY.TRP")
+            };
+
+            foreach (var trpPath in trpPaths)
+            {
+                _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Checking TROPHY.TRP path: '{trpPath}'");
+
+                if (!File.Exists(trpPath))
+                {
+                    continue;
+                }
+
+                _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Found TROPHY.TRP at '{trpPath}'");
+
+                try
+                {
+                    var npcommid = ExtractNpCommIdFromTrpFile(trpPath);
+                    if (!string.IsNullOrWhiteSpace(npcommid))
+                    {
+                        _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Extracted npcommid: '{npcommid}'");
+
+                        if (trophyFolderCache.ContainsKey(npcommid))
+                        {
+                            _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Found matching npcommid '{npcommid}' in cache");
+                            return npcommid;
+                        }
+                        else
+                        {
+                            _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - npcommid '{npcommid}' not in cache");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromInstalledGame - Error reading TROPHY.TRP at '{trpPath}'");
+                }
+            }
+
+            _logger?.Debug("[RPCS3] FindNpCommIdFromInstalledGame - No valid npcommid found from installed game");
+            return null;
+        }
+
+        /// <summary>
+        /// Extracts the npcommid from a TROPHY.TRP file on disk.
+        /// </summary>
+        private string ExtractNpCommIdFromTrpFile(string trpPath)
+        {
+            using (var stream = new FileStream(trpPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var reader = new StreamReader(stream))
+            {
+                // TROPHY.TRP contains XML with <npcommid> tag
+                // Read enough lines to find the npcommid (usually near the top)
+                for (int i = 0; i < 30; i++)
+                {
+                    var line = reader.ReadLine();
+                    if (line == null) break;
+
+                    var match = NpCommIdPattern.Match(line);
+                    if (match.Success)
+                    {
+                        return match.Groups[1].Value?.Trim();
+                    }
+                }
             }
 
             return null;
