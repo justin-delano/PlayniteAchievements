@@ -15,6 +15,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services.Hydration;
 
 namespace PlayniteAchievements.Services
 {
@@ -57,6 +58,7 @@ namespace PlayniteAchievements.Services
         // Dependencies that need disposal
         private readonly IReadOnlyList<IDataProvider> _providers;
         private readonly RebuildProgressMapper _progressMapper;
+        private readonly GameDataHydrator _hydrator;
 
         public ICacheManager Cache => _cacheService;
 
@@ -155,6 +157,7 @@ namespace PlayniteAchievements.Services
             _cacheService = new CacheManager(api, logger, _plugin);
             _providers = providers.ToList();
             _progressMapper = new RebuildProgressMapper();
+            _hydrator = new GameDataHydrator(api, _settings.Persisted);
 
             _ = Task.Run(() =>
             {
@@ -735,20 +738,8 @@ namespace PlayniteAchievements.Services
 
             if (!string.IsNullOrWhiteSpace(key))
             {
-                // Populate ExcludedByUser from settings (survives cache clear)
-                data.ExcludedByUser = _settings.Persisted.ExcludedGameIds.Contains(data.PlayniteGameId.Value);
-
-                // Apply manual capstone override from settings (survives cache clear)
-                if (_settings.Persisted.ManualCapstones.TryGetValue(data.PlayniteGameId.Value, out var manualCapstone))
-                {
-                    foreach (var achievement in data.Achievements ?? Enumerable.Empty<AchievementDetail>())
-                    {
-                        achievement.IsCapstone = string.Equals(
-                            achievement.ApiName,
-                            manualCapstone,
-                            StringComparison.OrdinalIgnoreCase);
-                    }
-                }
+                // Hydrate with non-persisted properties from settings and Playnite DB
+                _hydrator.Hydrate(data);
 
                 var writeResult = _cacheService.SaveGameData(key, data);
                 if (writeResult == null || !writeResult.Success)
@@ -1432,32 +1423,6 @@ namespace PlayniteAchievements.Services
         }
 
         /// <summary>
-        /// Applies user preferences from settings to game data.
-        /// Populates ExcludedByUser and applies manual capstone override.
-        /// Called when loading cached data to ensure preferences are reflected.
-        /// </summary>
-        private void ApplyUserPreferences(GameAchievementData data)
-        {
-            if (data?.PlayniteGameId == null)
-                return;
-
-            // Populate ExcludedByUser from settings
-            data.ExcludedByUser = _settings.Persisted.ExcludedGameIds.Contains(data.PlayniteGameId.Value);
-
-            // Apply manual capstone override from settings
-            if (_settings.Persisted.ManualCapstones.TryGetValue(data.PlayniteGameId.Value, out var manualCapstone))
-            {
-                foreach (var achievement in data.Achievements ?? Enumerable.Empty<AchievementDetail>())
-                {
-                    achievement.IsCapstone = string.Equals(
-                        achievement.ApiName,
-                        manualCapstone,
-                        StringComparison.OrdinalIgnoreCase);
-                }
-            }
-        }
-
-        /// <summary>
         /// Sets the ExcludedByUser flag for a game.
         /// This excludes the game from future achievement tracking until re-included.
         /// The exclusion is persisted in settings and survives cache clears.
@@ -1498,7 +1463,7 @@ namespace PlayniteAchievements.Services
             try
             {
                 var data = _cacheService.LoadGameData(playniteGameId);
-                ApplyUserPreferences(data);
+                _hydrator.Hydrate(data);
                 return data;
             }
             catch (Exception ex)
@@ -1544,11 +1509,8 @@ namespace PlayniteAchievements.Services
                     }
                 }
 
-                // Apply user preferences from settings to all loaded data
-                foreach (var data in result)
-                {
-                    ApplyUserPreferences(data);
-                }
+                // Hydrate with non-persisted properties from settings and Playnite DB
+                _hydrator.HydrateAll(result);
 
                 return result;
             }

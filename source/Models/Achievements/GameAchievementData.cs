@@ -37,6 +37,12 @@ namespace PlayniteAchievements.Models.Achievements
         public bool ExcludedByUser { get; set; }
 
         /// <summary>
+        /// Sorting name from Playnite's game database, derived from PlayniteGameId.
+        /// Falls back to GameName if not available. Not persisted to cache.
+        /// </summary>
+        public string SortingName { get; set; }
+
+        /// <summary>
         /// True if AppId was set via manual user override rather than automatic detection.
         /// Used to indicate which games have manual RA ID overrides.
         /// </summary>
