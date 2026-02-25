@@ -49,6 +49,13 @@ namespace PlayniteAchievements.Services.Sidebar
             int completedGames = 0;
 
             var unlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var totalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            // Total rarity counts (including locked achievements)
+            int totalCommonPossible = 0;
+            int totalUncommonPossible = 0;
+            int totalRarePossible = 0;
+            int totalUltraRarePossible = 0;
 
             var allGameData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
             for (var i = 0; i < allGameData.Count; i++)
@@ -100,7 +107,19 @@ namespace PlayniteAchievements.Services.Sidebar
                     unlockedByProvider[provider] = 0;
                 }
 
+                if (!totalByProvider.ContainsKey(provider))
+                {
+                    totalByProvider[provider] = 0;
+                }
+
                 unlockedByProvider[provider] += fragment.UnlockedAchievements;
+                totalByProvider[provider] += fragment.TotalAchievements;
+
+                // Aggregate total rarity counts
+                totalCommonPossible += fragment.TotalCommonPossible;
+                totalUncommonPossible += fragment.TotalUncommonPossible;
+                totalRarePossible += fragment.TotalRarePossible;
+                totalUltraRarePossible += fragment.TotalUltraRarePossible;
             }
 
             // Sort stable outputs once so UI work is minimal.
@@ -130,6 +149,12 @@ namespace PlayniteAchievements.Services.Sidebar
 
             snapshot.TotalLocked = totalAchievements - totalUnlocked;
             snapshot.UnlockedByProvider = unlockedByProvider;
+            snapshot.TotalByProvider = totalByProvider;
+
+            snapshot.TotalCommonPossible = totalCommonPossible;
+            snapshot.TotalUncommonPossible = totalUncommonPossible;
+            snapshot.TotalRarePossible = totalRarePossible;
+            snapshot.TotalUltraRarePossible = totalUltraRarePossible;
 
             return snapshot;
         }
@@ -180,6 +205,12 @@ namespace PlayniteAchievements.Services.Sidebar
             int gameRare = 0;
             int gameUltraRare = 0;
 
+            // Total rarity counts (including locked achievements)
+            int gameTotalCommon = 0;
+            int gameTotalUncommon = 0;
+            int gameTotalRare = 0;
+            int gameTotalUltraRare = 0;
+
             for (var i = 0; i < achievements.Count; i++)
             {
                 var ach = achievements[i];
@@ -228,26 +259,53 @@ namespace PlayniteAchievements.Services.Sidebar
 
                 fragment.Achievements.Add(item);
 
+                // Calculate total rarity tier for ALL achievements (including locked)
+                // Only count if rarity data is available (null means no rarity info for this provider)
+                if (ach.GlobalPercentUnlocked.HasValue)
+                {
+                    var pctForTotal = ach.GlobalPercentUnlocked.Value;
+                    var tierForTotal = RarityHelper.GetRarityTier(pctForTotal);
+                    switch (tierForTotal)
+                    {
+                        case RarityTier.UltraRare:
+                            gameTotalUltraRare++;
+                            break;
+                        case RarityTier.Rare:
+                            gameTotalRare++;
+                            break;
+                        case RarityTier.Uncommon:
+                            gameTotalUncommon++;
+                            break;
+                        default:
+                            gameTotalCommon++;
+                            break;
+                    }
+                }
+
                 if (ach.Unlocked)
                 {
                     gameUnlocked++;
 
-                    var pct = ach.GlobalPercentUnlocked ?? 100;
-                    var tier = RarityHelper.GetRarityTier(pct);
-                    switch (tier)
+                    // Only count rarity if data is available
+                    if (ach.GlobalPercentUnlocked.HasValue)
                     {
-                        case RarityTier.UltraRare:
-                            gameUltraRare++;
-                            break;
-                        case RarityTier.Rare:
-                            gameRare++;
-                            break;
-                        case RarityTier.Uncommon:
-                            gameUncommon++;
-                            break;
-                        default:
-                            gameCommon++;
-                            break;
+                        var pct = ach.GlobalPercentUnlocked.Value;
+                        var tier = RarityHelper.GetRarityTier(pct);
+                        switch (tier)
+                        {
+                            case RarityTier.UltraRare:
+                                gameUltraRare++;
+                                break;
+                            case RarityTier.Rare:
+                                gameRare++;
+                                break;
+                            case RarityTier.Uncommon:
+                                gameUncommon++;
+                                break;
+                            default:
+                                gameCommon++;
+                                break;
+                        }
                     }
 
                     if (ach.UnlockTimeUtc.HasValue)
@@ -285,6 +343,12 @@ namespace PlayniteAchievements.Services.Sidebar
             fragment.UncommonCount = gameUncommon;
             fragment.RareCount = gameRare;
             fragment.UltraRareCount = gameUltraRare;
+
+            fragment.TotalCommonPossible = gameTotalCommon;
+            fragment.TotalUncommonPossible = gameTotalUncommon;
+            fragment.TotalRarePossible = gameTotalRare;
+            fragment.TotalUltraRarePossible = gameTotalUltraRare;
+
             fragment.IsCompleted = gameData.IsCompleted;
 
             fragment.GameOverview = new GameOverviewItem
