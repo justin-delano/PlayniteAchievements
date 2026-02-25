@@ -23,10 +23,18 @@ namespace PlayniteAchievements.Services.Images
         private static readonly ILogger StaticLogger = PluginLogger.GetLogger(nameof(DiskImageService));
         private const int MaxBytes = 5 * 1024 * 1024; // 5MB limit
 
+        // Domains known to rate-limit concurrent requests
+        private static readonly string[] RateLimitedDomains = new[]
+        {
+            "image-ssl.xboxlive.com",
+            "xboxlive.com"
+        };
+
         private readonly ILogger _logger;
         private readonly HttpClient _http;
         private readonly string _cacheRoot;
         private readonly SemaphoreSlim _downloadGate;
+        private readonly SemaphoreSlim _rateLimitedDownloadGate;
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _pathWriteLocks =
             new ConcurrentDictionary<string, SemaphoreSlim>(StringComparer.OrdinalIgnoreCase);
 
@@ -35,6 +43,7 @@ namespace PlayniteAchievements.Services.Images
             _logger = logger ?? StaticLogger;
             _cacheRoot = cacheRoot ?? throw new ArgumentNullException(nameof(cacheRoot));
             _downloadGate = new SemaphoreSlim(Math.Max(1, downloadConcurrency), Math.Max(1, downloadConcurrency));
+            _rateLimitedDownloadGate = new SemaphoreSlim(2, 2); // Lower concurrency for rate-limited domains
 
             _http = new HttpClient
             {
@@ -49,6 +58,7 @@ namespace PlayniteAchievements.Services.Images
         {
             try { _http?.Dispose(); } catch { }
             try { _downloadGate?.Dispose(); } catch { }
+            try { _rateLimitedDownloadGate?.Dispose(); } catch { }
             try { _pathWriteLocks.Clear(); } catch { }
         }
 
@@ -115,6 +125,36 @@ namespace PlayniteAchievements.Services.Images
         }
 
         /// <summary>
+        /// Determines if a URL belongs to a domain known to rate-limit concurrent requests.
+        /// </summary>
+        private static bool IsRateLimitedDomain(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                var host = new Uri(url).Host;
+                foreach (var domain in RateLimitedDomains)
+                {
+                    if (host.EndsWith(domain, StringComparison.OrdinalIgnoreCase) ||
+                        host.Equals(domain, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Invalid URL, treat as normal
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Get or download an icon by URI, caching to disk by URI hash.
         /// If gameId is provided, stores in per-game subfolder.
         /// Returns the file path to the cached PNG file, or null on failure.
@@ -153,8 +193,11 @@ namespace PlayniteAchievements.Services.Images
                     return cachePath;
                 }
 
+                // Use appropriate gate based on domain rate-limiting behavior
+                var downloadGate = IsRateLimitedDomain(uri) ? _rateLimitedDownloadGate : _downloadGate;
+
                 // Download and cache under shared download concurrency gate.
-                await _downloadGate.WaitAsync(cancel).ConfigureAwait(false);
+                await downloadGate.WaitAsync(cancel).ConfigureAwait(false);
                 try
                 {
                     if (File.Exists(cachePath))
@@ -195,7 +238,7 @@ namespace PlayniteAchievements.Services.Images
                 }
                 finally
                 {
-                    _downloadGate.Release();
+                    downloadGate.Release();
                 }
             }
             catch (OperationCanceledException)
