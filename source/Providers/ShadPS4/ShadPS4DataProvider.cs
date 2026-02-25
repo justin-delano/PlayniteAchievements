@@ -23,7 +23,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private Dictionary<string, string> _titleCache;
         private readonly object _cacheLock = new object();
 
-        public ShadPS4DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath = null)
+        public ShadPS4DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
