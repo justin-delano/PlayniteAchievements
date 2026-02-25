@@ -71,16 +71,27 @@ namespace PlayniteAchievements.Services
         private ProgressReport MapUserProgressUpdate(RebuildUpdate update)
         {
             var (cur, tot) = ProgressSteps(update);
-            var countsText = CountsText(update.UserAppIndex + 1, update.UserAppCount);
-
             var gameName = !string.IsNullOrWhiteSpace(update.CurrentGameName)
                 ? update.CurrentGameName
                 : ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame");
 
-            var message = string.Format(
-                ResourceProvider.GetString("LOCPlayAch_Targeted_RefreshingGameWithCounts"),
-                gameName,
-                countsText);
+            string message;
+            if (update.TotalIcons > 0)
+            {
+                message = string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Targeted_RefreshingGameWithIcons"),
+                    gameName,
+                    update.IconsDownloaded,
+                    update.TotalIcons);
+            }
+            else
+            {
+                var countsText = CountsText(update.UserAppIndex + 1, update.UserAppCount);
+                message = string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Targeted_RefreshingGameWithCounts"),
+                    gameName,
+                    countsText);
+            }
 
             return Build(message, cur, tot);
         }
