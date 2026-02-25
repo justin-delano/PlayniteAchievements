@@ -139,7 +139,7 @@ namespace PlayniteAchievements.Views.Controls
             double centerX = ActualWidth / 2.0;
             double centerY = ActualHeight / 2.0;
 
-            double currentAngle = -90;
+            double currentAngle = 45;
             var positions = new List<PieIconPosition>();
 
             for (int i = 0; i < chartValues.Count && i < LegendItems.Count; i++)
@@ -148,18 +148,23 @@ namespace PlayniteAchievements.Views.Controls
                 double midpointAngle = currentAngle + (sliceArc / 2.0);
                 double angleRadians = midpointAngle * Math.PI / 180.0;
 
-                double x = centerX + iconRadius * Math.Sin(angleRadians) - IconSize / 2.0;
-                double y = centerY - iconRadius * Math.Cos(angleRadians) - IconSize / 2.0;
-
                 var legend = LegendItems[i];
-                positions.Add(new PieIconPosition
+
+                // Only show icon if count > 0
+                if (legend.Count > 0)
                 {
-                    IconKey = legend.IconKey,
-                    ColorHex = legend.ColorHex,
-                    Count = legend.Count,
-                    X = x,
-                    Y = y
-                });
+                    double x = centerX + iconRadius * Math.Cos(angleRadians) - IconSize / 2.0;
+                    double y = centerY + iconRadius * Math.Sin(angleRadians) - IconSize / 2.0;
+
+                    positions.Add(new PieIconPosition
+                    {
+                        IconKey = legend.IconKey,
+                        ColorHex = legend.ColorHex,
+                        Count = legend.Count,
+                        X = x,
+                        Y = y
+                    });
+                }
 
                 currentAngle += sliceArc;
             }
