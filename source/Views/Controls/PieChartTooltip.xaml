@@ -12,6 +12,7 @@
         <ResourceDictionary>
             <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
             <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
+            <converters:PieTooltipConverter x:Key="PieTooltipConverter"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -36,11 +37,22 @@
                     </Image.Source>
                 </Image>
             </Grid>
-            <TextBlock Text="{Binding ChartPoint.Instance.(models:PieSliceChartData.Count)}"
-                       Style="{DynamicResource BaseTextBlockStyle}"
-                       Foreground="{DynamicResource TextBrush}"
-                       FontSize="{DynamicResource FontSize}"
-                       VerticalAlignment="Center"/>
+            <!-- Count display with conditional format -->
+            <TextBlock VerticalAlignment="Center">
+                <TextBlock.Text>
+                    <MultiBinding Converter="{StaticResource PieTooltipConverter}">
+                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.UnlockedCount)"/>
+                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.TotalCount)"/>
+                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IsLocked)"/>
+                    </MultiBinding>
+                </TextBlock.Text>
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{DynamicResource BaseTextBlockStyle}">
+                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                        <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
         </StackPanel>
     </Border>
 </UserControl>
