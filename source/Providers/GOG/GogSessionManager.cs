@@ -399,9 +399,16 @@ namespace PlayniteAchievements.Providers.GOG
                 return true;
             }
 
-            // Keep a minimum validity window to avoid immediate false negatives from bad expires values.
-            var expiresInSeconds = response.ResolvedAccessTokenExpires > 0 ? response.ResolvedAccessTokenExpires : 300;
-            _tokenExpiryUtc = DateTime.UtcNow.AddSeconds(expiresInSeconds);
+            // GOG returns accessTokenExpires as an absolute Unix timestamp (seconds since epoch).
+            if (response.ResolvedAccessTokenExpires > 0)
+            {
+                _tokenExpiryUtc = DateTimeOffset.FromUnixTimeSeconds(response.ResolvedAccessTokenExpires).UtcDateTime;
+            }
+            else
+            {
+                // Fallback: assume 5-minute validity if expires value is missing or invalid.
+                _tokenExpiryUtc = DateTime.UtcNow.AddSeconds(300);
+            }
 
             return true;
         }
