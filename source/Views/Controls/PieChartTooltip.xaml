@@ -1,0 +1,46 @@
+<UserControl x:Class="PlayniteAchievements.Views.Controls.PieChartTooltip"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+             xmlns:models="clr-namespace:PlayniteAchievements.Models"
+             mc:Ignorable="d"
+             d:DesignHeight="30" d:DesignWidth="80">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
+            <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource ControlBackgroundBrush}"
+            BorderBrush="{DynamicResource NormalBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="8,4">
+        <StackPanel Orientation="Horizontal">
+            <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center">
+                <!-- Badge icons: complex DrawingImages from AchievementResources.xaml -->
+                <Image Source="{Binding ChartPoint.Instance.(models:PieSliceChartData.IconKey), Converter={StaticResource ResourceKeyToImage}}"
+                       SnapsToDevicePixels="True"
+                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                <!-- Provider icons: created at runtime from geometry + color -->
+                <Image SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="NearestNeighbor">
+                    <Image.Source>
+                        <MultiBinding Converter="{StaticResource ProviderIconConverter}">
+                            <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IconKey)"/>
+                            <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.ColorHex)"/>
+                        </MultiBinding>
+                    </Image.Source>
+                </Image>
+            </Grid>
+            <TextBlock Text="{Binding ChartPoint.Instance.(models:PieSliceChartData.Count)}"
+                       Style="{DynamicResource BaseTextBlockStyle}"
+                       Foreground="{DynamicResource TextBrush}"
+                       FontSize="{DynamicResource FontSize}"
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+    </Border>
+</UserControl>

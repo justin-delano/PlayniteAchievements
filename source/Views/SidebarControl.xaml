@@ -8,6 +8,7 @@
              xmlns:models="clr-namespace:PlayniteAchievements.Models.Achievements"
              xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
+             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="900"
              Loaded="OnLoaded">
@@ -921,10 +922,12 @@
                                                   InnerRadius="30"
                                                   Margin="4"
                                                   DisableAnimations="True"
-                                                  Hoverable="False"
-                                                  DataTooltip="{x:Null}"
-                                                  IsHitTestVisible="False"
-                                                  Series="{Binding GamesPieChart.PieSeries}"/>
+                                                  Hoverable="True"
+                                                  Series="{Binding GamesPieChart.PieSeries}">
+                                        <lvc:PieChart.DataTooltip>
+                                            <controls:PieChartTooltip/>
+                                        </lvc:PieChart.DataTooltip>
+                                    </lvc:PieChart>
                                     <!-- Custom Games Legend with icons -->
                                     <ItemsControl Grid.Column="1" Margin="6,0,0,0"
                                                   ItemsSource="{Binding GamesPieChart.LegendItems}"
@@ -955,10 +958,12 @@
                                                   InnerRadius="30"
                                                   Margin="4"
                                                   DisableAnimations="True"
-                                                  Hoverable="False"
-                                                  DataTooltip="{x:Null}"
-                                                  IsHitTestVisible="False"
-                                                  Series="{Binding ProviderPieChart.PieSeries}"/>
+                                                  Hoverable="True"
+                                                  Series="{Binding ProviderPieChart.PieSeries}">
+                                        <lvc:PieChart.DataTooltip>
+                                            <controls:PieChartTooltip/>
+                                        </lvc:PieChart.DataTooltip>
+                                    </lvc:PieChart>
                                     <!-- Custom Provider Legend with icons -->
                                     <ItemsControl Grid.Column="1" Margin="6,0,0,0"
                                                   ItemsSource="{Binding ProviderPieChart.LegendItems}"
@@ -989,10 +994,12 @@
                                                   InnerRadius="30"
                                                   Margin="4"
                                                   DisableAnimations="True"
-                                                  Hoverable="False"
-                                                  DataTooltip="{x:Null}"
-                                                  IsHitTestVisible="False"
-                                                  Series="{Binding RarityPieChart.PieSeries}"/>
+                                                  Hoverable="True"
+                                                  Series="{Binding RarityPieChart.PieSeries}">
+                                        <lvc:PieChart.DataTooltip>
+                                            <controls:PieChartTooltip/>
+                                        </lvc:PieChart.DataTooltip>
+                                    </lvc:PieChart>
                                     <!-- Custom Rarity Legend with icons -->
                                     <ItemsControl Grid.Column="1" Margin="6,0,0,0"
                                                   ItemsSource="{Binding RarityPieChart.LegendItems}"
