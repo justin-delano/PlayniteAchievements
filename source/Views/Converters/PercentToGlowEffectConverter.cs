@@ -38,13 +38,20 @@ namespace PlayniteAchievements.Views.Converters
             if (values == null || values.Length < 4)
                 return null;
 
-            if (values[0] is double percent &&
-                values[1] is double ultraRareThreshold &&
+            // Handle nullable double - null means no rarity data, so no glow
+            if (values[0] == null)
+                return null;
+
+            double? percent = values[0] as double? ?? (values[0] is double d ? d : (double?)null);
+            if (percent == null)
+                return null;
+
+            if (values[1] is double ultraRareThreshold &&
                 values[2] is double rareThreshold &&
                 values[3] is double _)
             {
                 // Use canonical RarityHelper for classification
-                var tier = RarityHelper.GetRarityTier(percent);
+                var tier = RarityHelper.GetRarityTier(percent.Value);
                 var color = SuccessStoryRarityPalette.GetColor(tier);
 
                 // Common/uncommon: no border/glow.

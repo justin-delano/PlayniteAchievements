@@ -422,7 +422,8 @@ namespace PlayniteAchievements.Providers.Xbox
         private static AchievementDetail ConvertToAchievementDetail(Xbox360Achievement xboxAch)
         {
             var isUnlocked = xboxAch.unlocked || xboxAch.unlockedOnline;
-            var unlockTime = isUnlocked && xboxAch.timeUnlocked != default && xboxAch.timeUnlocked != DateTime.MinValue
+            // SqlDateTime.MinValue (1753-01-01) is returned by Xbox 360 API for invalid dates
+            var unlockTime = isUnlocked && IsValidXboxDate(xboxAch.timeUnlocked)
                 ? xboxAch.timeUnlocked
                 : (DateTime?)null;
 
@@ -445,6 +446,19 @@ namespace PlayniteAchievements.Providers.Xbox
                 ProgressNum = null,
                 ProgressDenom = null
             };
+        }
+
+        /// <summary>
+        /// Validates that a DateTime is not a sentinel/invalid value.
+        /// Xbox 360 API returns 1753-01-01 (SqlDateTime.MinValue) for missing dates.
+        /// </summary>
+        private static bool IsValidXboxDate(DateTime date)
+        {
+            if (date == default) return false;
+            if (date == DateTime.MinValue) return false;
+            // SqlDateTime.MinValue: 1753-01-01 00:00:00
+            if (date.Year == 1753 && date.Month == 1 && date.Day == 1) return false;
+            return true;
         }
     }
 }

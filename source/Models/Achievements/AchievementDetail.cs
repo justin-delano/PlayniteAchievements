@@ -99,7 +99,7 @@ namespace PlayniteAchievements.Models.Achievements
         public string LockedIconDisplay => LockedIconPath ?? UnlockedIconPath ?? IconDisplay;
 
         [IgnoreDataMember]
-        public double Percent
+        public double? Percent
         {
             get
             {
@@ -109,12 +109,17 @@ namespace PlayniteAchievements.Models.Achievements
                     return v;
                 }
 
-                return 0;
+                return null;
             }
         }
 
         [IgnoreDataMember]
-        public RarityTier Rarity => RarityHelper.GetRarityTier(Percent);
+        public bool HasRarity => GlobalPercentUnlocked.HasValue;
+
+        [IgnoreDataMember]
+        public RarityTier? Rarity => GlobalPercentUnlocked.HasValue
+            ? RarityHelper.GetRarityTier(GlobalPercentUnlocked.Value)
+            : (RarityTier?)null;
 
         [IgnoreDataMember]
         public DateTime? DateUnlocked
