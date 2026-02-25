@@ -347,7 +347,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     continue;
                 }
 
-                var percent = a.GlobalPercentUnlocked ?? 100;
+                // Only count rarity if data is available (null means no rarity info for this provider)
+                if (!a.GlobalPercentUnlocked.HasValue)
+                {
+                    continue;
+                }
+
+                var percent = a.GlobalPercentUnlocked.Value;
                 var tier = RarityHelper.GetRarityTier(percent);
 
                 switch (tier)

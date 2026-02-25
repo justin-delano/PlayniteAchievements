@@ -38,7 +38,9 @@
                 </Image>
             </Grid>
             <!-- Count display with conditional format -->
-            <TextBlock VerticalAlignment="Center">
+            <TextBlock VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextBrush}"
+                       FontSize="{DynamicResource FontSize}">
                 <TextBlock.Text>
                     <MultiBinding Converter="{StaticResource PieTooltipConverter}">
                         <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.UnlockedCount)"/>
@@ -46,12 +48,6 @@
                         <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IsLocked)"/>
                     </MultiBinding>
                 </TextBlock.Text>
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock" BasedOn="{DynamicResource BaseTextBlockStyle}">
-                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                        <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
-                    </Style>
-                </TextBlock.Style>
             </TextBlock>
         </StackPanel>
     </Border>

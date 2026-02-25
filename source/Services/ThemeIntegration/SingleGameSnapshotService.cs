@@ -93,7 +93,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     continue;
                 }
 
-                var p = a.GlobalPercentUnlocked ?? 100;
+                // Skip achievements without rarity data (null means no rarity info for this provider)
+                if (!a.GlobalPercentUnlocked.HasValue)
+                {
+                    continue;
+                }
+
+                var p = a.GlobalPercentUnlocked.Value;
                 if (p <= 0)
                 {
                     continue;

@@ -365,14 +365,18 @@ namespace PlayniteAchievements.ViewModels
                             }
                         }
 
-                        var pct = ach.GlobalPercentUnlocked ?? 100;
-                        var tier = RarityHelper.GetRarityTier(pct);
-                        switch (tier)
+                        // Only count rarity if data is available (null means no rarity info for this provider)
+                        if (ach.GlobalPercentUnlocked.HasValue)
                         {
-                            case RarityTier.UltraRare: ultraRare++; break;
-                            case RarityTier.Rare: rare++; break;
-                            case RarityTier.Uncommon: uncommon++; break;
-                            default: common++; break;
+                            var pct = ach.GlobalPercentUnlocked.Value;
+                            var tier = RarityHelper.GetRarityTier(pct);
+                            switch (tier)
+                            {
+                                case RarityTier.UltraRare: ultraRare++; break;
+                                case RarityTier.Rare: rare++; break;
+                                case RarityTier.Uncommon: uncommon++; break;
+                                default: common++; break;
+                            }
                         }
                     }
 
