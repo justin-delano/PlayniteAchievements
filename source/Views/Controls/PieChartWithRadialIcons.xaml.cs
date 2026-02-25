@@ -169,21 +169,10 @@ namespace PlayniteAchievements.Views.Controls
 
         private void SynchronizePositions(IReadOnlyList<PieIconPosition> positions)
         {
-            while (IconPositions.Count > positions.Count)
+            IconPositions.Clear();
+            foreach (var pos in positions)
             {
-                IconPositions.RemoveAt(IconPositions.Count - 1);
-            }
-
-            for (int i = 0; i < positions.Count; i++)
-            {
-                if (i < IconPositions.Count)
-                {
-                    IconPositions[i] = positions[i];
-                }
-                else
-                {
-                    IconPositions.Add(positions[i]);
-                }
+                IconPositions.Add(pos);
             }
         }
     }

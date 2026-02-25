@@ -32,11 +32,15 @@
                         <Canvas/>
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                        <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Grid Width="18" Height="18"
-                              Canvas.Left="{Binding X}"
-                              Canvas.Top="{Binding Y}">
+                        <Grid Width="18" Height="18">
                             <!-- Badge icons -->
                             <Image Source="{Binding IconKey, Converter={StaticResource ResourceKeyToImage}}"
                                    Effect="{StaticResource BadgeShadow}"
