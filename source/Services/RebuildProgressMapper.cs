@@ -79,18 +79,20 @@ namespace PlayniteAchievements.Services
             var (cur, tot) = ProgressSteps(update);
             var gameName = update.CurrentGameName;
 
+            var countsText = CountsText(update.UserAppIndex + 1, update.UserAppCount);
+
             string message;
             if (update.TotalIcons > 0)
             {
                 message = string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Targeted_RefreshingGameWithIcons"),
                     gameName,
+                    countsText,
                     update.IconsDownloaded,
                     update.TotalIcons);
             }
             else
             {
-                var countsText = CountsText(update.UserAppIndex + 1, update.UserAppCount);
                 message = string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Targeted_RefreshingGameWithCounts"),
                     gameName,
