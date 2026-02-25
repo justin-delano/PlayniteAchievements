@@ -701,7 +701,7 @@
                                                        VerticalAlignment="Center"
                                                        TextTrimming="CharacterEllipsis">
                                                 <TextBlock.Style>
-                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                                                    <Style TargetType="TextBlock" BasedOn="{DynamicResource BaseTextBlockStyle}">
                                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                                         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                                                     </Style>
