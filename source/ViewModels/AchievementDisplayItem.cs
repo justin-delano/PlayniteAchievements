@@ -266,6 +266,28 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private string _trophyType;
+        /// <summary>
+        /// Trophy type for PlayStation games: "bronze", "silver", "gold", "platinum".
+        /// Null for non-PlayStation achievements.
+        /// </summary>
+        public string TrophyType
+        {
+            get => _trophyType;
+            set
+            {
+                if (SetValueAndReturn(ref _trophyType, value))
+                {
+                    OnPropertyChanged(nameof(HasTrophyType));
+                }
+            }
+        }
+
+        /// <summary>
+        /// True if this achievement has PlayStation trophy type data.
+        /// </summary>
+        public bool HasTrophyType => !string.IsNullOrWhiteSpace(TrophyType);
+
         /// <summary>
         /// True if this achievement has progress data (both numerator and denominator are set).
         /// </summary>
@@ -368,6 +390,7 @@ namespace PlayniteAchievements.ViewModels
             ProgressNum = source.ProgressNum;
             ProgressDenom = source.ProgressDenom;
             PointsValue = source.Points;
+            TrophyType = source.TrophyType;
         }
 
         public string UnlockTimeText =>
