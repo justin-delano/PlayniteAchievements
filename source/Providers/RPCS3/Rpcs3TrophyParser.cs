@@ -358,10 +358,10 @@ namespace PlayniteAchievements.Providers.RPCS3
 
         /// <summary>
         /// Parses a single trophy entry from TROPUSR.DAT.
-        /// Entry structure:
-        /// - Offset 0-3: Trophy ID (hex, extract first 4 chars as 2 bytes)
-        /// - Offset 36-51: Unlock status (00000001 = unlocked)
-        /// - Offset 88-103: Timestamp (ticks * 10, convert to DateTime)
+        /// Entry structure (matching SuccessStory's parsing):
+        /// - Offset 0-1: Trophy ID (first 2 hex chars = 1 byte)
+        /// - Offset 18-25: Unlock status (8 hex chars, "00000001" = unlocked)
+        /// - Offset 44-57: Timestamp (14 hex chars, ticks * 10)
         /// </summary>
         private static void ParseTrophyEntry(string entry, Rpcs3Trophy trophy, ILogger logger)
         {
@@ -373,42 +373,33 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return;
             }
 
-            if (entry.Length < 104)
+            if (entry.Length < 58)
             {
-                logger?.Debug($"[RPCS3] ParseTrophyEntry - Entry too short ({entry.Length} chars) for trophy Id={trophy.Id}, expected at least 104");
+                logger?.Debug($"[RPCS3] ParseTrophyEntry - Entry too short ({entry.Length} chars) for trophy Id={trophy.Id}, expected at least 58");
                 return;
             }
 
-            // Each character in hex string represents 4 bits
-            // Characters 0-3 are the first 2 bytes (trophy ID area)
-            // The actual trophy ID is at a different offset based on SuccessStory parsing
-
-            // Check unlock status at offset 36-51 (hex chars 72-103 for bytes 36-51)
+            // Check unlock status at offset 18-25 (8 hex chars)
             // Looking for "00000001" which indicates unlocked
-            if (entry.Length >= 104)
-            {
-                var unlockArea = entry.Substring(72, 8);
-                logger?.Debug($"[RPCS3] ParseTrophyEntry - Trophy Id={trophy.Id}, unlock area (offset 72, 8 chars): '{unlockArea}'");
-                trophy.Unlocked = unlockArea.Equals("00000001", StringComparison.OrdinalIgnoreCase);
-                logger?.Debug($"[RPCS3] ParseTrophyEntry - Trophy Id={trophy.Id}, Unlocked={trophy.Unlocked}");
-            }
+            var unlockArea = entry.Substring(18, 8);
+            logger?.Debug($"[RPCS3] ParseTrophyEntry - Trophy Id={trophy.Id}, unlock area (offset 18, 8 chars): '{unlockArea}'");
+            trophy.Unlocked = unlockArea.Equals("00000001", StringComparison.OrdinalIgnoreCase);
+            logger?.Debug($"[RPCS3] ParseTrophyEntry - Trophy Id={trophy.Id}, Unlocked={trophy.Unlocked}");
 
-            // Parse timestamp at offset 88-103 (hex chars 176-207 for bytes 88-103)
-            if (trophy.Unlocked && entry.Length >= 208)
+            // Parse timestamp at offset 44-57 (14 hex chars)
+            if (trophy.Unlocked)
             {
                 try
                 {
-                    var timestampHex = entry.Substring(176, 16);
-                    logger?.Debug($"[RPCS3] ParseTrophyEntry - Trophy Id={trophy.Id}, timestamp hex (offset 176, 16 chars): '{timestampHex}'");
+                    var timestampHex = entry.Substring(44, 14);
+                    logger?.Debug($"[RPCS3] ParseTrophyEntry - Trophy Id={trophy.Id}, timestamp hex (offset 44, 14 chars): '{timestampHex}'");
 
                     var timestampTicks = Convert.ToUInt64(timestampHex, 16);
                     logger?.Debug($"[RPCS3] ParseTrophyEntry - Trophy Id={trophy.Id}, raw timestamp ticks: {timestampTicks}");
 
-                    // RPCS3 stores timestamps as ticks * 10 (essentially FILETIME format)
-                    // FILETIME is 100-nanosecond intervals since January 1, 1601 UTC
-                    // But RPCS3 appears to use ticks since DateTime.MinValue (January 1, 0001)
-                    // Divide by 10 to get ticks
-                    var ticks = (long)(timestampTicks / 10);
+                    // SuccessStory multiplies by 10 to convert to ticks
+                    // The stored value is in units of 100ns, so multiply by 10 to get ticks
+                    var ticks = (long)(timestampTicks * 10);
                     logger?.Debug($"[RPCS3] ParseTrophyEntry - Trophy Id={trophy.Id}, adjusted ticks: {ticks}");
 
                     if (ticks > 0 && ticks < DateTime.MaxValue.Ticks)
@@ -426,13 +417,9 @@ namespace PlayniteAchievements.Providers.RPCS3
                     logger?.Debug(ex, $"[RPCS3] ParseTrophyEntry - Failed to parse timestamp for trophy Id={trophy.Id}");
                 }
             }
-            else if (!trophy.Unlocked)
+            else
             {
                 logger?.Debug($"[RPCS3] ParseTrophyEntry - Trophy Id={trophy.Id} is locked, skipping timestamp parse");
-            }
-            else if (entry.Length < 208)
-            {
-                logger?.Debug($"[RPCS3] ParseTrophyEntry - Entry too short ({entry.Length}) for timestamp parsing, need 208");
             }
         }
 
