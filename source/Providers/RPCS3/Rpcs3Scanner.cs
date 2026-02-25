@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.RPCS3.Models;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -393,7 +394,15 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return npcommidFromTrp;
             }
 
-            // Strategy 3: Match by game name against TROPCONF.SFM titles
+            // Strategy 3: Extract npcommid from PS3 ISO file
+            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Trying ISO extraction fallback");
+            var npcommidFromIso = FindNpCommIdFromIso(game, gameDirectory, trophyFolderCache);
+            if (!string.IsNullOrWhiteSpace(npcommidFromIso))
+            {
+                return npcommidFromIso;
+            }
+
+            // Strategy 4: Match by game name against TROPCONF.SFM titles
             _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Trying name-based matching fallback");
             var npcommidFromName = FindNpCommIdByName(game, trophyFolderCache);
             if (!string.IsNullOrWhiteSpace(npcommidFromName))
@@ -459,6 +468,145 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Extracts the npcommid from a PS3 ISO file by reading the embedded TROPHY.TRP.
+        /// </summary>
+        private string FindNpCommIdFromIso(Game game, string gameDirectory,
+            Dictionary<string, string> trophyFolderCache)
+        {
+            if (string.IsNullOrWhiteSpace(gameDirectory))
+            {
+                _logger?.Debug("[RPCS3] FindNpCommIdFromIso - Game directory is empty");
+                return null;
+            }
+
+            try
+            {
+                // Find ISO files in the game directory
+                var isoFiles = FindIsoFiles(gameDirectory);
+                if (isoFiles.Count == 0)
+                {
+                    _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - No ISO files found in '{gameDirectory}'");
+                    return null;
+                }
+
+                _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Found {isoFiles.Count} ISO file(s)");
+
+                foreach (var isoPath in isoFiles)
+                {
+                    _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Checking ISO: '{isoPath}'");
+
+                    string npcommid = null;
+                    try
+                    {
+                        using (var disc = new DiscUtilsFacade(isoPath))
+                        {
+                            // Try PS3_GAME/TROPHY/TROPHY.TRP (standard PS3 structure)
+                            npcommid = ExtractNpCommIdFromDisc(disc, "PS3_GAME\\TROPHY\\TROPHY.TRP");
+
+                            // If not found, try just TROPHY/TROPHY.TRP (some structures)
+                            if (string.IsNullOrWhiteSpace(npcommid))
+                            {
+                                npcommid = ExtractNpCommIdFromDisc(disc, "TROPHY\\TROPHY.TRP");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromIso - Error reading ISO '{isoPath}'");
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(npcommid))
+                    {
+                        _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Extracted npcommid: '{npcommid}'");
+
+                        if (trophyFolderCache.ContainsKey(npcommid))
+                        {
+                            _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Found matching npcommid '{npcommid}' in cache");
+                            return npcommid;
+                        }
+                        else
+                        {
+                            _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - npcommid '{npcommid}' not in cache");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromIso - Error searching for ISO files");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Extracts the npcommid from a TROPHY.TRP file inside a disc image.
+        /// </summary>
+        private string ExtractNpCommIdFromDisc(DiscUtilsFacade disc, string trpPath)
+        {
+            if (!disc.FileExists(trpPath))
+            {
+                _logger?.Debug($"[RPCS3] ExtractNpCommIdFromDisc - File not found: '{trpPath}'");
+                return null;
+            }
+
+            using (var stream = disc.OpenFileOrNull(trpPath))
+            {
+                if (stream == null)
+                {
+                    _logger?.Debug($"[RPCS3] ExtractNpCommIdFromDisc - Could not open stream: '{trpPath}'");
+                    return null;
+                }
+
+                using (var reader = new StreamReader(stream))
+                {
+                    // TROPHY.TRP contains XML with <npcommid> tag
+                    // Read enough to find the npcommid (usually near the top)
+                    for (int i = 0; i < 20; i++)
+                    {
+                        var line = reader.ReadLine();
+                        if (line == null) break;
+
+                        var match = NpCommIdPattern.Match(line);
+                        if (match.Success)
+                        {
+                            return match.Groups[1].Value?.Trim();
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds ISO files in the specified directory.
+        /// </summary>
+        private List<string> FindIsoFiles(string directory)
+        {
+            var results = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            {
+                return results;
+            }
+
+            try
+            {
+                // Check if the directory itself is pointing to an ISO
+                var files = Directory.GetFiles(directory, "*.iso");
+                results.AddRange(files);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[RPCS3] FindIsoFiles - Error searching in '{directory}'");
+            }
+
+            return results;
         }
 
         /// <summary>
