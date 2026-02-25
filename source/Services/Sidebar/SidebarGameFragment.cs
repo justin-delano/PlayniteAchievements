@@ -30,6 +30,12 @@ namespace PlayniteAchievements.Services.Sidebar
         public int TotalRarePossible { get; set; }
         public int TotalUltraRarePossible { get; set; }
 
+        // Trophy counts (for PlayStation games)
+        public int TrophyPlatinumCount { get; set; }
+        public int TrophyGoldCount { get; set; }
+        public int TrophySilverCount { get; set; }
+        public int TrophyBronzeCount { get; set; }
+
         public bool IsCompleted { get; set; }
     }
 }

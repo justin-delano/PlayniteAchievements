@@ -62,6 +62,24 @@ namespace PlayniteAchievements.ViewModels
         private int _ultraRareCount;
         public int UltraRareCount { get => _ultraRareCount; set => SetValue(ref _ultraRareCount, value); }
 
+        // Trophy counts for PlayStation games
+        private int _trophyPlatinumCount;
+        public int TrophyPlatinumCount { get => _trophyPlatinumCount; set => SetValue(ref _trophyPlatinumCount, value); }
+
+        private int _trophyGoldCount;
+        public int TrophyGoldCount { get => _trophyGoldCount; set => SetValue(ref _trophyGoldCount, value); }
+
+        private int _trophySilverCount;
+        public int TrophySilverCount { get => _trophySilverCount; set => SetValue(ref _trophySilverCount, value); }
+
+        private int _trophyBronzeCount;
+        public int TrophyBronzeCount { get => _trophyBronzeCount; set => SetValue(ref _trophyBronzeCount, value); }
+
+        /// <summary>
+        /// True if this game has PlayStation trophy type data.
+        /// </summary>
+        public bool HasTrophyTypes => TrophyPlatinumCount > 0 || TrophyGoldCount > 0 || TrophySilverCount > 0 || TrophyBronzeCount > 0;
+
         private DateTime? _lastPlayed;
         public DateTime? LastPlayed 
         { 
