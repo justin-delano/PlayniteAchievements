@@ -23,6 +23,9 @@ namespace PlayniteAchievements.ViewModels
             public Color Color { get; set; }
             public string ColorHex { get; set; }
             public double ChartValue { get; set; }
+            public int UnlockedCount { get; set; }
+            public int TotalCount { get; set; }
+            public bool IsLocked { get; set; }
         }
 
         public SeriesCollection PieSeries { get; } = new SeriesCollection();
@@ -45,14 +48,14 @@ namespace PlayniteAchievements.ViewModels
 
             var incomplete = totalGames - completedGames;
 
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex)>
+            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)>
             {
-                (completedLabel, completedGames, "BadgeCompletedGame", Color.FromRgb(33, 150, 243), string.Empty)
+                (completedLabel, completedGames, "BadgeCompletedGame", Color.FromRgb(33, 150, 243), string.Empty, completedGames, totalGames, false)
             };
 
             if (incomplete > 0)
             {
-                dataPoints.Add((incompleteLabel, incomplete, "BadgeLocked", LockedTransparent, string.Empty));
+                dataPoints.Add((incompleteLabel, incomplete, "BadgeLocked", LockedTransparent, string.Empty, incomplete, incomplete, true));
             }
 
             ApplyMinimumVisibilityRule(dataPoints);
@@ -61,24 +64,37 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// Sets the pie chart data for Rarity distribution (Ultra Rare, Rare, Uncommon, Common, Locked).
         /// </summary>
-        public void SetRarityData(int common, int uncommon, int rare, int ultraRare, int locked,
+        public void SetRarityData(
+            int commonUnlocked, int uncommonUnlocked, int rareUnlocked, int ultraRareUnlocked, int locked,
+            int commonTotal, int uncommonTotal, int rareTotal, int ultraRareTotal,
             string commonLabel, string uncommonLabel, string rareLabel, string ultraRareLabel, string lockedLabel)
         {
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex)>
+            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)>();
+
+            if (ultraRareUnlocked > 0 || ultraRareTotal > 0)
             {
-                (ultraRareLabel, ultraRare, "BadgePlatinumHexagon", Color.FromRgb(135, 206, 250), string.Empty),
-                (rareLabel, rare, "BadgeGoldPentagon", Color.FromRgb(255, 193, 7), string.Empty),
-                (uncommonLabel, uncommon, "BadgeSilverSquare", Color.FromRgb(158, 158, 158), string.Empty),
-                (commonLabel, common, "BadgeBronzeTriangle", Color.FromRgb(139, 69, 19), string.Empty)
-            };
+                dataPoints.Add((ultraRareLabel, ultraRareUnlocked, "BadgePlatinumHexagon", Color.FromRgb(135, 206, 250), string.Empty, ultraRareUnlocked, ultraRareTotal, false));
+            }
+
+            if (rareUnlocked > 0 || rareTotal > 0)
+            {
+                dataPoints.Add((rareLabel, rareUnlocked, "BadgeGoldPentagon", Color.FromRgb(255, 193, 7), string.Empty, rareUnlocked, rareTotal, false));
+            }
+
+            if (uncommonUnlocked > 0 || uncommonTotal > 0)
+            {
+                dataPoints.Add((uncommonLabel, uncommonUnlocked, "BadgeSilverSquare", Color.FromRgb(158, 158, 158), string.Empty, uncommonUnlocked, uncommonTotal, false));
+            }
+
+            if (commonUnlocked > 0 || commonTotal > 0)
+            {
+                dataPoints.Add((commonLabel, commonUnlocked, "BadgeBronzeTriangle", Color.FromRgb(139, 69, 19), string.Empty, commonUnlocked, commonTotal, false));
+            }
 
             if (locked > 0)
             {
-                dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent, string.Empty));
+                dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent, string.Empty, locked, locked, true));
             }
-
-            // Filter to only include non-zero values
-            dataPoints = dataPoints.Where(d => d.Count > 0).ToList();
 
             ApplyMinimumVisibilityRule(dataPoints);
         }
@@ -87,11 +103,13 @@ namespace PlayniteAchievements.ViewModels
         /// Sets the pie chart data for Provider distribution.
         /// </summary>
         /// <param name="unlockedByProvider">Dictionary of provider name to unlocked count</param>
+        /// <param name="totalByProvider">Dictionary of provider name to total count (including locked)</param>
         /// <param name="totalLocked">Total locked achievements</param>
         /// <param name="lockedLabel">Localized label for locked achievements</param>
         /// <param name="providerLookup">Dictionary of provider name to (iconKey, colorHex) tuple</param>
         public void SetProviderData(
             Dictionary<string, int> unlockedByProvider,
+            Dictionary<string, int> totalByProvider,
             int totalLocked,
             string lockedLabel,
             Dictionary<string, (string iconKey, string colorHex)> providerLookup)
@@ -102,13 +120,14 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex)>();
+            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)>();
 
             // Sort providers by count descending
             foreach (var provider in unlockedByProvider.OrderByDescending(p => p.Value))
             {
                 var providerName = provider.Key;
-                var count = provider.Value;
+                var unlockedCount = provider.Value;
+                var totalCount = totalByProvider != null && totalByProvider.TryGetValue(providerName, out var total) ? total : unlockedCount;
 
                 // Look up provider icon and color
                 string colorHex = "#888888";
@@ -122,23 +141,23 @@ namespace PlayniteAchievements.ViewModels
                 // Parse color hex to Color
                 if (ColorConverter.ConvertFromString(colorHex) is Color color)
                 {
-                    dataPoints.Add((providerName, count, iconKey, color, colorHex));
+                    dataPoints.Add((providerName, unlockedCount, iconKey, color, colorHex, unlockedCount, totalCount, false));
                 }
                 else
                 {
-                    dataPoints.Add((providerName, count, iconKey, Colors.Gray, "#888888"));
+                    dataPoints.Add((providerName, unlockedCount, iconKey, Colors.Gray, "#888888", unlockedCount, totalCount, false));
                 }
             }
 
             if (totalLocked > 0)
             {
-                dataPoints.Add((lockedLabel, totalLocked, "BadgeLocked", LockedTransparent, string.Empty));
+                dataPoints.Add((lockedLabel, totalLocked, "BadgeLocked", LockedTransparent, string.Empty, totalLocked, totalLocked, true));
             }
 
             ApplyMinimumVisibilityRule(dataPoints);
         }
 
-        private void ApplyMinimumVisibilityRule(List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex)> dataPoints)
+        private void ApplyMinimumVisibilityRule(List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)> dataPoints)
         {
             if (dataPoints == null || dataPoints.Count == 0)
             {
@@ -213,7 +232,10 @@ namespace PlayniteAchievements.ViewModels
                     IconKey = dataPoints[i].IconKey,
                     Color = dataPoints[i].Color,
                     ColorHex = legendColor,
-                    ChartValue = chartValue
+                    ChartValue = chartValue,
+                    UnlockedCount = dataPoints[i].UnlockedCount,
+                    TotalCount = dataPoints[i].TotalCount,
+                    IsLocked = dataPoints[i].IsLocked
                 });
             }
 
@@ -272,7 +294,10 @@ namespace PlayniteAchievements.ViewModels
                     Count = slice.Count,
                     IconKey = slice.IconKey,
                     ColorHex = slice.ColorHex,
-                    ChartValue = slice.ChartValue
+                    ChartValue = slice.ChartValue,
+                    UnlockedCount = slice.UnlockedCount,
+                    TotalCount = slice.TotalCount,
+                    IsLocked = slice.IsLocked
                 };
 
                 if (values.Count == 0)
