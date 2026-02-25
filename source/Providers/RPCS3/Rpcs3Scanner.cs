@@ -339,6 +339,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             new System.Text.RegularExpressions.Regex(@"<npcommid>(.*?)<\/npcommid>",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
+        // Pattern to extract title-name from TROPCONF.SFM
+        private static readonly System.Text.RegularExpressions.Regex TitleNamePattern =
+            new System.Text.RegularExpressions.Regex(@"<title-name>(.*?)<\/title-name>",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
         /// <summary>
         /// Finds the npcommid for a game using multiple strategies:
         /// 1. Extract PS3 ID from the install path (e.g., BLUS12345)
@@ -386,6 +391,14 @@ namespace PlayniteAchievements.Providers.RPCS3
             if (!string.IsNullOrWhiteSpace(npcommidFromTrp))
             {
                 return npcommidFromTrp;
+            }
+
+            // Strategy 3: Match by game name against TROPCONF.SFM titles
+            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Trying name-based matching fallback");
+            var npcommidFromName = FindNpCommIdByName(game, trophyFolderCache);
+            if (!string.IsNullOrWhiteSpace(npcommidFromName))
+            {
+                return npcommidFromName;
             }
 
             _logger?.Debug($"[RPCS3] FindNpCommIdForGame - No npcommid found for game '{game?.Name}'");
@@ -446,6 +459,208 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Attempts to match a game by name against the titles in TROPCONF.SFM files.
+        /// This is useful for ISO-based games where the PS3 ID cannot be extracted from the path.
+        /// </summary>
+        private string FindNpCommIdByName(Game game, Dictionary<string, string> trophyFolderCache)
+        {
+            if (game == null || string.IsNullOrWhiteSpace(game.Name))
+            {
+                _logger?.Debug("[RPCS3] FindNpCommIdByName - Game or game name is null");
+                return null;
+            }
+
+            var normalizedGameName = NormalizeGameName(game.Name);
+            if (string.IsNullOrWhiteSpace(normalizedGameName))
+            {
+                _logger?.Debug($"[RPCS3] FindNpCommIdByName - Normalized game name is empty for '{game.Name}'");
+                return null;
+            }
+
+            _logger?.Debug($"[RPCS3] FindNpCommIdByName - Looking for match for '{game.Name}' (normalized: '{normalizedGameName}')");
+
+            string bestMatch = null;
+            int bestScore = 0;
+
+            foreach (var kvp in trophyFolderCache)
+            {
+                var npcommid = kvp.Key;
+                var trophyFolder = kvp.Value;
+
+                var titleName = ExtractTitleNameFromTropconf(trophyFolder);
+                if (string.IsNullOrWhiteSpace(titleName))
+                {
+                    continue;
+                }
+
+                var normalizedTitle = NormalizeGameName(titleName);
+                if (string.IsNullOrWhiteSpace(normalizedTitle))
+                {
+                    continue;
+                }
+
+                // Check if one name contains the other (handles subtitle differences)
+                var score = CalculateNameSimilarity(normalizedGameName, normalizedTitle);
+                if (score > bestScore && score >= 70) // Require at least 70% similarity
+                {
+                    bestScore = score;
+                    bestMatch = npcommid;
+                    _logger?.Debug($"[RPCS3] FindNpCommIdByName - Candidate: '{titleName}' (normalized: '{normalizedTitle}') score={score}");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(bestMatch))
+            {
+                _logger?.Debug($"[RPCS3] FindNpCommIdByName - Best match: '{bestMatch}' with score {bestScore}");
+                return bestMatch;
+            }
+
+            _logger?.Debug($"[RPCS3] FindNpCommIdByName - No match found for '{game.Name}'");
+            return null;
+        }
+
+        /// <summary>
+        /// Extracts the title-name from a TROPCONF.SFM file.
+        /// </summary>
+        private string ExtractTitleNameFromTropconf(string trophyFolder)
+        {
+            if (string.IsNullOrWhiteSpace(trophyFolder))
+            {
+                return null;
+            }
+
+            try
+            {
+                var tropconfPath = Path.Combine(trophyFolder, "TROPCONF.SFM");
+                if (!File.Exists(tropconfPath))
+                {
+                    return null;
+                }
+
+                // Read only the first few KB to find the title (title is near the top)
+                using (var stream = new FileStream(tropconfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var reader = new StreamReader(stream))
+                {
+                    // Read enough lines to find the title
+                    for (int i = 0; i < 20; i++)
+                    {
+                        var line = reader.ReadLine();
+                        if (line == null) break;
+
+                        var match = TitleNamePattern.Match(line);
+                        if (match.Success)
+                        {
+                            return match.Groups[1].Value?.Trim();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[RPCS3] ExtractTitleNameFromTropconf - Error reading TROPCONF.SFM in '{trophyFolder}'");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Normalizes a game name for comparison by removing special characters,
+        /// normalizing whitespace, and converting to lowercase.
+        /// </summary>
+        private static string NormalizeGameName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return string.Empty;
+            }
+
+            // Remove common suffixes/prefixes
+            var normalized = System.Text.RegularExpressions.Regex.Replace(
+                name,
+                @"\s*[-:]\s*(PlayStation\s*)?(PS[1234])\s*(Edition|Version|Demo|Beta|Trial|Region\s*Free)?",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // Remove registered/trademark symbols
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[®™©]", "");
+
+            // Remove content in parentheses (region info, language codes, etc.)
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\([^)]*\)", "");
+
+            // Remove content in brackets
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\[[^\]]*\]", "");
+
+            // Remove file extensions
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\.(iso|pkg|rap)$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // Remove special characters, keep alphanumeric and spaces
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[^a-zA-Z0-9\s]", " ");
+
+            // Normalize whitespace
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\s+", " ").Trim();
+
+            return normalized.ToLowerInvariant().Trim();
+        }
+
+        /// <summary>
+        /// Calculates a similarity score (0-100) between two normalized game names.
+        /// </summary>
+        private static int CalculateNameSimilarity(string name1, string name2)
+        {
+            if (string.IsNullOrWhiteSpace(name1) || string.IsNullOrWhiteSpace(name2))
+            {
+                return 0;
+            }
+
+            // Exact match
+            if (string.Equals(name1, name2, StringComparison.OrdinalIgnoreCase))
+            {
+                return 100;
+            }
+
+            // Check if one contains the other (handles subtitle differences)
+            if (name1.Contains(name2) || name2.Contains(name1))
+            {
+                var longerLength = Math.Max(name1.Length, name2.Length);
+                var shorterLength = Math.Min(name1.Length, name2.Length);
+                return (int)((double)shorterLength / longerLength * 100);
+            }
+
+            // Word-based matching
+            var words1 = name1.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var words2 = name2.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (words1.Length == 0 || words2.Length == 0)
+            {
+                return 0;
+            }
+
+            var set1 = new HashSet<string>(words1, StringComparer.OrdinalIgnoreCase);
+            var set2 = new HashSet<string>(words2, StringComparer.OrdinalIgnoreCase);
+            var intersection = new HashSet<string>(set1, StringComparer.OrdinalIgnoreCase);
+            intersection.IntersectWith(set2);
+
+            if (intersection.Count == 0)
+            {
+                return 0;
+            }
+
+            // Calculate Jaccard-like similarity with bonus for matching key words
+            var union = new HashSet<string>(set1, StringComparer.OrdinalIgnoreCase);
+            union.UnionWith(set2);
+
+            var jaccardScore = (double)intersection.Count / union.Count * 100;
+
+            // Bonus if the first word matches (usually the main title)
+            if (string.Equals(words1[0], words2[0], StringComparison.OrdinalIgnoreCase))
+            {
+                jaccardScore = Math.Min(100, jaccardScore * 1.3);
+            }
+
+            return (int)jaccardScore;
         }
 
         /// <summary>
