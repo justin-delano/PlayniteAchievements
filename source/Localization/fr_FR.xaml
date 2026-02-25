@@ -13,6 +13,7 @@
 
     <!-- Label with Colon (for labels that need trailing punctuation) -->
     <sys:String x:Key="LOCPlayAch_Label_Rarity">Rareté :</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_Trophies">Trophées :</sys:String>
 
     <!-- Common Statuses -->
     <sys:String x:Key="LOCPlayAch_Status_Refreshing">Actualisation...</sys:String>
