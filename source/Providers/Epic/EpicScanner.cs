@@ -62,7 +62,6 @@ namespace PlayniteAchievements.Providers.Epic
             for (int i = 0; i < gamesToRefresh.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
-                progress.Step();
 
                 var game = gamesToRefresh[i];
                 var gameId = game?.GameId?.Trim();
@@ -128,6 +127,8 @@ namespace PlayniteAchievements.Providers.Epic
                         await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
                     }
                 }
+
+                progress.Step();
             }
 
             return new RebuildPayload { Summary = summary };
