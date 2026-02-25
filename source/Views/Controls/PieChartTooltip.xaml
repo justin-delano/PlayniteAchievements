@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              xmlns:models="clr-namespace:PlayniteAchievements.Models"
+             xmlns:wpf="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
              mc:Ignorable="d"
              d:DesignHeight="30" d:DesignWidth="80">
 
@@ -21,34 +22,40 @@
             BorderThickness="1"
             CornerRadius="4"
             Padding="8,4">
-        <StackPanel Orientation="Horizontal">
-            <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center">
-                <!-- Badge icons: complex DrawingImages from AchievementResources.xaml -->
-                <Image Source="{Binding ChartPoint.Instance.(models:PieSliceChartData.IconKey), Converter={StaticResource ResourceKeyToImage}}"
-                       SnapsToDevicePixels="True"
-                       RenderOptions.BitmapScalingMode="NearestNeighbor"/>
-                <!-- Provider icons: created at runtime from geometry + color -->
-                <Image SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="NearestNeighbor">
-                    <Image.Source>
-                        <MultiBinding Converter="{StaticResource ProviderIconConverter}">
-                            <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IconKey)"/>
-                            <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.ColorHex)"/>
-                        </MultiBinding>
-                    </Image.Source>
-                </Image>
-            </Grid>
-            <!-- Count display with conditional format -->
-            <TextBlock VerticalAlignment="Center"
-                       Foreground="{DynamicResource TextBrush}"
-                       FontSize="{DynamicResource FontSize}">
-                <TextBlock.Text>
-                    <MultiBinding Converter="{StaticResource PieTooltipConverter}">
-                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.UnlockedCount)"/>
-                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.TotalCount)"/>
-                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IsLocked)"/>
-                    </MultiBinding>
-                </TextBlock.Text>
-            </TextBlock>
-        </StackPanel>
+        <ItemsControl ItemsSource="{Binding Data.Points}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type wpf:DataPointViewModel}">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center">
+                            <!-- Badge icons: complex DrawingImages from AchievementResources.xaml -->
+                            <Image Source="{Binding ChartPoint.Instance.(models:PieSliceChartData.IconKey), Converter={StaticResource ResourceKeyToImage}}"
+                                   SnapsToDevicePixels="True"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            <!-- Provider icons: created at runtime from geometry + color -->
+                            <Image SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                <Image.Source>
+                                    <MultiBinding Converter="{StaticResource ProviderIconConverter}">
+                                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IconKey)"/>
+                                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.ColorHex)"/>
+                                    </MultiBinding>
+                                </Image.Source>
+                            </Image>
+                        </Grid>
+                        <!-- Count display with conditional format -->
+                        <TextBlock VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   FontSize="{DynamicResource FontSize}">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource PieTooltipConverter}">
+                                    <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.UnlockedCount)"/>
+                                    <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.TotalCount)"/>
+                                    <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IsLocked)"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
     </Border>
 </UserControl>
