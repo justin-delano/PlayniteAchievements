@@ -496,6 +496,8 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// Extracts the npcommid from an installed PKG game's TROPHY.TRP file.
         /// PKG-installed games have TROPHY.TRP at {gameDir}/TROPHY/TROPHY.TRP or
         /// {gameDir}/PS3_GAME/TROPHY/TROPHY.TRP.
+        /// Note: Playnite's InstallDirectory often points to USRDIR, but TROPHY is
+        /// in the parent game folder (sibling to USRDIR).
         /// </summary>
         private string FindNpCommIdFromInstalledGame(string gameDirectory,
             Dictionary<string, string> trophyFolderCache)
@@ -506,12 +508,29 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return null;
             }
 
-            // Possible TROPHY.TRP locations for installed games
-            var trpPaths = new[]
+            // Build list of directories to check
+            // Playnite may point to USRDIR, but TROPHY folder is in the game root
+            var directoriesToCheck = new List<string> { gameDirectory };
+
+            // If path ends with USRDIR, also check parent directory
+            var normalizedPath = gameDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (normalizedPath.EndsWith("USRDIR", StringComparison.OrdinalIgnoreCase))
             {
-                Path.Combine(gameDirectory, "TROPHY", "TROPHY.TRP"),
-                Path.Combine(gameDirectory, "PS3_GAME", "TROPHY", "TROPHY.TRP")
-            };
+                var parentDir = Path.GetDirectoryName(normalizedPath);
+                if (!string.IsNullOrWhiteSpace(parentDir))
+                {
+                    directoriesToCheck.Add(parentDir);
+                    _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Also checking parent directory: '{parentDir}'");
+                }
+            }
+
+            // Possible TROPHY.TRP locations for installed games
+            var trpPaths = new List<string>();
+            foreach (var dir in directoriesToCheck)
+            {
+                trpPaths.Add(Path.Combine(dir, "TROPHY", "TROPHY.TRP"));
+                trpPaths.Add(Path.Combine(dir, "PS3_GAME", "TROPHY", "TROPHY.TRP"));
+            }
 
             foreach (var trpPath in trpPaths)
             {
