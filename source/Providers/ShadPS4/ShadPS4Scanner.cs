@@ -257,6 +257,10 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 var achievements = new List<AchievementDetail>();
                 var unlockedCount = 0;
 
+                // Map global language to PS4 locale (same format as PS3)
+                var ps4Locale = MapGlobalLanguageToPs4Locale(_settings?.Persisted?.GlobalLanguage);
+                _logger?.Debug($"[ShadPS4] GlobalLanguage: '{_settings?.Persisted?.GlobalLanguage}', PS4 locale: '{ps4Locale ?? "(default)"}'");
+
                 foreach (var trophyElement in doc.Descendants("trophy"))
                 {
                     cancel.ThrowIfCancellationRequested();
@@ -264,8 +268,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
                     var trophyId = trophyElement.Attribute("id")?.Value;
                     var trophyType = trophyElement.Attribute("ttype")?.Value;
                     var isHidden = trophyElement.Attribute("hidden")?.Value == "yes";
-                    var name = trophyElement.Element("name")?.Value?.Trim();
-                    var description = trophyElement.Element("detail")?.Value?.Trim();
+                    var name = GetLocalizedElement(trophyElement, "name", ps4Locale)?.Trim();
+                    var description = GetLocalizedElement(trophyElement, "detail", ps4Locale)?.Trim();
 
                     // Check if trophy is unlocked
                     var isUnlocked = trophyElement.Attribute("unlockstate") != null;
@@ -430,6 +434,74 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 _logger?.Debug(ex, $"[ShadPS4] Failed to get icon path for trophy {trophyId}");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Gets a localized element value from a trophy element.
+        /// Tries to find an element with matching lang attribute, falls back to element without lang.
+        /// </summary>
+        private static string GetLocalizedElement(XElement trophyElement, string elementName, string language)
+        {
+            if (string.IsNullOrWhiteSpace(language))
+            {
+                // No language specified, return first element found
+                return trophyElement.Element(elementName)?.Value;
+            }
+
+            // Try to find element with matching lang attribute
+            var localizedElement = trophyElement.Elements(elementName)
+                .FirstOrDefault(e => string.Equals(e.Attribute("lang")?.Value, language, StringComparison.OrdinalIgnoreCase));
+
+            if (localizedElement != null)
+            {
+                return localizedElement.Value;
+            }
+
+            // Fall back to element without lang attribute (default language)
+            var defaultElement = trophyElement.Elements(elementName)
+                .FirstOrDefault(e => e.Attribute("lang") == null);
+
+            return defaultElement?.Value ?? trophyElement.Element(elementName)?.Value;
+        }
+
+        /// <summary>
+        /// Maps a global language setting to PS4 locale code.
+        /// </summary>
+        private static string MapGlobalLanguageToPs4Locale(string globalLanguage)
+        {
+            if (string.IsNullOrWhiteSpace(globalLanguage))
+            {
+                return null;
+            }
+
+            var normalized = globalLanguage.Trim().ToLowerInvariant();
+
+            return normalized switch
+            {
+                "english" => "en",
+                "french" => "fr",
+                "spanish" => "es",
+                "german" => "de",
+                "italian" => "it",
+                "japanese" => "ja",
+                "dutch" => "nl",
+                "portuguese" => "pt",
+                "russian" => "ru",
+                "korean" => "ko",
+                "chinese" => "zh",
+                "polish" => "pl",
+                "danish" => "da",
+                "finnish" => "fi",
+                "norwegian" => "no",
+                "swedish" => "sv",
+                "turkish" => "tr",
+                "czech" => "cs",
+                "hungarian" => "hu",
+                "greek" => "el",
+                "brazilian" => "pt-br",
+                "latam" => "es-419",
+                _ => null
+            };
         }
     }
 }
