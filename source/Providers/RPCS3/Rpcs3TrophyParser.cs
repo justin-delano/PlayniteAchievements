@@ -197,27 +197,43 @@ namespace PlayniteAchievements.Providers.RPCS3
                 var entries = SplitByMagicBytes(hexString, logger);
                 logger?.Debug($"[RPCS3] ParseTrophyUnlockData - Split into {entries.Count} entries by magic byte patterns");
 
-                // Take the last N entries (where N = trophy count)
-                var relevantEntries = entries
-                    .Skip(Math.Max(0, entries.Count - trophies.Count))
-                    .Take(trophies.Count)
-                    .ToList();
+                // Take the last N entries (where N = trophy count) - matching SuccessStory behavior
+                var relevantEntries = entries.Count >= trophies.Count
+                    ? entries.Skip(entries.Count - trophies.Count).Take(trophies.Count).ToList()
+                    : new List<string>();
 
                 logger?.Debug($"[RPCS3] ParseTrophyUnlockData - Using {relevantEntries.Count} relevant entries for {trophies.Count} trophies (skipped {Math.Max(0, entries.Count - trophies.Count)} entries)");
 
-                for (var i = 0; i < trophies.Count && i < relevantEntries.Count; i++)
+                // Build lookup dictionary by trophy ID for robust matching
+                var trophyById = trophies.ToDictionary(t => t.Id, t => t);
+
+                foreach (var entry in relevantEntries)
                 {
-                    var entry = relevantEntries[i];
-                    var trophy = trophies[i];
+                    if (entry.Length < 58)
+                    {
+                        logger?.Debug($"[RPCS3] ParseTrophyUnlockData - Entry too short ({entry.Length} chars), skipping");
+                        continue;
+                    }
 
                     try
                     {
-                        // Parse entry: offset 0-1 is trophy ID, offset 18-25 is unlock status, offset 44-57 is timestamp
+                        // Parse trophy ID from offset 0-1 (2 hex chars = 1 byte)
+                        var idHex = entry.Substring(0, 2);
+                        var trophyId = (int)long.Parse(idHex, System.Globalization.NumberStyles.HexNumber);
+                        logger?.Debug($"[RPCS3] ParseTrophyUnlockData - Parsed trophy ID {trophyId} from hex '{idHex}'");
+
+                        if (!trophyById.TryGetValue(trophyId, out var trophy))
+                        {
+                            logger?.Debug($"[RPCS3] ParseTrophyUnlockData - No trophy found with ID {trophyId}, skipping");
+                            continue;
+                        }
+
+                        // Parse entry: offset 18-25 is unlock status, offset 44-57 is timestamp
                         ParseTrophyEntry(entry, trophy, logger);
                     }
                     catch (Exception ex)
                     {
-                        logger?.Debug(ex, $"[RPCS3] ParseTrophyUnlockData - Failed to parse entry for trophy {trophy.Id}");
+                        logger?.Debug(ex, $"[RPCS3] ParseTrophyUnlockData - Failed to parse entry");
                     }
                 }
 
@@ -348,43 +364,16 @@ namespace PlayniteAchievements.Providers.RPCS3
 
         /// <summary>
         /// Splits the hex string by magic byte patterns to get individual trophy entries.
+        /// Uses String.Split like SuccessStory to get the parts BETWEEN delimiters.
         /// </summary>
         private static List<string> SplitByMagicBytes(string hexString, ILogger logger)
         {
             logger?.Debug($"[RPCS3] SplitByMagicBytes - Starting with hex string length: {hexString.Length}");
-            var entries = new List<string>();
 
-            // Find all occurrences of magic byte patterns
-            var indices = new List<int>();
-            foreach (var pattern in MagicBytePatterns)
-            {
-                logger?.Debug($"[RPCS3] SplitByMagicBytes - Searching for pattern: '{pattern}'");
-                var patternCount = 0;
-                var searchIndex = 0;
-                while ((searchIndex = hexString.IndexOf(pattern, searchIndex, StringComparison.OrdinalIgnoreCase)) >= 0)
-                {
-                    if (!indices.Contains(searchIndex))
-                    {
-                        indices.Add(searchIndex);
-                        patternCount++;
-                    }
-                    searchIndex++;
-                }
-                logger?.Debug($"[RPCS3] SplitByMagicBytes - Found pattern '{pattern}' {patternCount} times");
-            }
+            // Use String.Split to get parts BETWEEN the magic byte patterns (like SuccessStory does)
+            var entries = hexString.Split(MagicBytePatterns, StringSplitOptions.None).ToList();
 
-            logger?.Debug($"[RPCS3] SplitByMagicBytes - Total unique pattern indices found: {indices.Count}");
-
-            // Sort indices and extract entries
-            indices.Sort();
-
-            for (var i = 0; i < indices.Count; i++)
-            {
-                var entryStart = indices[i];
-                var entryEnd = (i + 1 < indices.Count) ? indices[i + 1] : hexString.Length;
-                var entryLength = entryEnd - entryStart;
-                entries.Add(hexString.Substring(entryStart, entryLength));
-            }
+            logger?.Debug($"[RPCS3] SplitByMagicBytes - Split into {entries.Count} entries");
 
             // Log entry length distribution
             if (entries.Count > 0)
