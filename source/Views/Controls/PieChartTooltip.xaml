@@ -17,8 +17,8 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Border Background="{DynamicResource ControlBackgroundBrush}"
-            BorderBrush="{DynamicResource NormalBorderBrush}"
+    <Border Background="{DynamicResource PopupBackgroundBrush}"
+            BorderBrush="{DynamicResource PopupBorderBrush}"
             BorderThickness="1"
             CornerRadius="4"
             Padding="8,4">

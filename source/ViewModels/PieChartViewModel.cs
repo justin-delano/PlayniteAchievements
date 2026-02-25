@@ -50,7 +50,7 @@ namespace PlayniteAchievements.ViewModels
 
             var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)>
             {
-                (completedLabel, completedGames, "BadgeCompletedGame", Color.FromRgb(33, 150, 243), string.Empty, completedGames, totalGames, false)
+                (completedLabel, completedGames, "BadgeCompletedGame", Color.FromRgb(33, 150, 243), string.Empty, completedGames, completedGames, false)
             };
 
             if (incomplete > 0)

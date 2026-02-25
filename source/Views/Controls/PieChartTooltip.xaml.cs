@@ -14,6 +14,7 @@ namespace PlayniteAchievements.Views.Controls
         public PieChartTooltip()
         {
             InitializeComponent();
+            DataContext = this;
         }
 
         public TooltipSelectionMode? SelectionMode { get; set; } = TooltipSelectionMode.OnlySender;
@@ -26,7 +27,6 @@ namespace PlayniteAchievements.Views.Controls
             {
                 _data = value;
                 OnPropertyChanged();
-                DataContext = value;
             }
         }
 
