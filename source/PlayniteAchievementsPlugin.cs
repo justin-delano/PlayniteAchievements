@@ -204,13 +204,11 @@ namespace PlayniteAchievements
                         new ShadPS4DataProvider(
                             _logger,
                             settings,
-                            PlayniteApi,
-                            pluginUserDataPath),
+                            PlayniteApi),
                         new Rpcs3DataProvider(
                             _logger,
                             settings,
-                            PlayniteApi,
-                            pluginUserDataPath)
+                            PlayniteApi)
                     };
                 }
 
