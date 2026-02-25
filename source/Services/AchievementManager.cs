@@ -995,10 +995,49 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            var iconPaths = groupedByIcon.Keys.ToList();
-            _iconProgressTracker.IncrementTotal(iconPaths.Count);
+            const int iconDecodeSize = 128;
 
-            var iconTasks = iconPaths.Select(async iconPath =>
+            // Pre-filter icons: separate cached from needs-download
+            var cachedIcons = new List<string>();
+            var iconsToProcess = new List<string>();
+
+            foreach (var iconPath in groupedByIcon.Keys)
+            {
+                if (_diskImageService.IsIconCached(iconPath, iconDecodeSize, gameIdStr))
+                {
+                    var cachedPath = _diskImageService.GetIconCachePathFromUri(iconPath, iconDecodeSize, gameIdStr);
+                    if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
+                    {
+                        cachedIcons.Add(iconPath);
+                        continue;
+                    }
+                }
+                iconsToProcess.Add(iconPath);
+            }
+
+            // Resolve cached icons without progress tracking
+            foreach (var iconPath in cachedIcons)
+            {
+                var cachedPath = _diskImageService.GetIconCachePathFromUri(iconPath, iconDecodeSize, gameIdStr);
+                if (groupedByIcon.TryGetValue(iconPath, out var grouped))
+                {
+                    foreach (var achievement in grouped)
+                    {
+                        achievement.UnlockedIconPath = cachedPath;
+                    }
+                }
+            }
+
+            // If no icons need downloading, we're done
+            if (iconsToProcess.Count == 0)
+            {
+                return;
+            }
+
+            // Only track progress for icons that actually need downloading
+            _iconProgressTracker.IncrementTotal(iconsToProcess.Count);
+
+            var iconTasks = iconsToProcess.Select(async iconPath =>
             {
                 var result = await ResolveIconPathAsync(iconPath, gameIdStr, cancel).ConfigureAwait(false);
 
