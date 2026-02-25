@@ -1916,16 +1916,72 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var trophyPath = System.IO.Path.Combine(installFolder, "trophy");
-            if (System.IO.Directory.Exists(trophyPath))
+            // Validate RPCS3 installation folder structure
+            // Expected structure: {installFolder}\dev_hdd0\home\{userId}\trophy
+            if (!System.IO.Directory.Exists(installFolder))
             {
-                SetRpcs3Authenticated(true);
-                SetRpcs3AuthStatusByKey("LOCPlayAch_Settings_Rpcs3_Verified");
+                SetRpcs3Authenticated(false);
+                SetRpcs3AuthStatusByKey("LOCPlayAch_Rpcs3Validation_InvalidPath");
+                return;
+            }
+
+            var homePath = System.IO.Path.Combine(installFolder, "dev_hdd0", "home");
+            if (!System.IO.Directory.Exists(homePath))
+            {
+                SetRpcs3Authenticated(false);
+                SetRpcs3AuthStatusByKey("LOCPlayAch_Rpcs3Validation_NotRpcs3");
+                return;
+            }
+
+            // Find user ID (8-digit numeric directory)
+            string userId = null;
+            try
+            {
+                foreach (var dir in System.IO.Directory.GetDirectories(homePath))
+                {
+                    var name = System.IO.Path.GetFileName(dir);
+                    if (!string.IsNullOrWhiteSpace(name) && name.Length == 8 && name.All(char.IsDigit))
+                    {
+                        userId = name;
+                        break;
+                    }
+                }
+            }
+            catch { /* ignore */ }
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                SetRpcs3Authenticated(false);
+                SetRpcs3AuthStatusByKey("LOCPlayAch_Rpcs3Validation_NoUser");
+                return;
+            }
+
+            var trophyPath = System.IO.Path.Combine(homePath, userId, "trophy");
+            if (!System.IO.Directory.Exists(trophyPath))
+            {
+                SetRpcs3Authenticated(false);
+                SetRpcs3AuthStatusByKey("LOCPlayAch_Rpcs3Validation_NoTrophyFolder");
+                return;
+            }
+
+            // Count trophy folders for success message
+            var trophyCount = 0;
+            try
+            {
+                trophyCount = System.IO.Directory.GetDirectories(trophyPath)
+                    .Count(d => System.IO.File.Exists(System.IO.Path.Combine(d, "TROPCONF.SFM")));
+            }
+            catch { /* ignore */ }
+
+            SetRpcs3Authenticated(true);
+            var successMsg = ResourceProvider.GetString("LOCPlayAch_Rpcs3Validation_Success");
+            if (!string.IsNullOrWhiteSpace(successMsg))
+            {
+                SetRpcs3AuthStatus(string.Format(successMsg, trophyCount));
             }
             else
             {
-                SetRpcs3Authenticated(false);
-                SetRpcs3AuthStatusByKey("LOCPlayAch_Settings_Rpcs3_FolderNotFound");
+                SetRpcs3AuthStatus($"Valid - Found {trophyCount} trophy folders");
             }
         }
 
