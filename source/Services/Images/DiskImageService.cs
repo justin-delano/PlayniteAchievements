@@ -392,5 +392,85 @@ namespace PlayniteAchievements.Services.Images
         }
 
         public string GetCacheDirectoryPath() => IconCacheDirectory;
+
+        /// <summary>
+        /// Check if a path refers to an existing local file.
+        /// </summary>
+        public static bool IsLocalIconPath(string path) =>
+            !string.IsNullOrWhiteSpace(path) && File.Exists(path);
+
+        /// <summary>
+        /// Get or copy a local icon file to the cache.
+        /// If gameId is provided, stores in per-game subfolder.
+        /// Returns the cached file path, or null on failure.
+        /// </summary>
+        public async Task<string> GetOrCopyLocalIconAsync(
+            string localPath,
+            int decodeSize,
+            CancellationToken cancel,
+            string gameId = null)
+        {
+            if (string.IsNullOrWhiteSpace(localPath) || !File.Exists(localPath))
+            {
+                return null;
+            }
+
+            // Ensure game directory exists if gameId provided
+            if (!string.IsNullOrEmpty(gameId))
+            {
+                EnsureGameIconDirectory(gameId);
+            }
+
+            // Check if already cached on disk
+            var cachePath = GetIconCachePathFromUri(localPath, decodeSize, gameId);
+            if (File.Exists(cachePath))
+            {
+                return cachePath;
+            }
+
+            var pathLock = _pathWriteLocks.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
+            await pathLock.WaitAsync(cancel).ConfigureAwait(false);
+            try
+            {
+                // Double-check after acquiring lock
+                if (File.Exists(cachePath))
+                {
+                    return cachePath;
+                }
+
+                // Read local file and convert to PNG
+                using (var ms = new MemoryStream(File.ReadAllBytes(localPath), writable: false))
+                {
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                    if (decodeSize > 0)
+                    {
+                        bitmap.DecodePixelWidth = decodeSize;
+                    }
+                    bitmap.StreamSource = ms;
+                    bitmap.EndInit();
+
+                    // Crop to square for consistent aspect ratio and smaller file size
+                    var finalBitmap = CropToSquare(bitmap);
+
+                    var encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(finalBitmap));
+                    await SavePngWithRetryAsync(cachePath, encoder, cancel).ConfigureAwait(false);
+
+                    return cachePath;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to copy/cache local icon from {localPath}");
+                return null;
+            }
+            finally
+            {
+                pathLock.Release();
+            }
+        }
     }
 }
