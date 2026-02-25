@@ -3,7 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              x:Name="Root">
+
+    <UserControl.Resources>
+        <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
+        <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
+    </UserControl.Resources>
+
     <Grid>
         <lvc:PieChart LegendLocation="None"
                       InnerRadius="30"
