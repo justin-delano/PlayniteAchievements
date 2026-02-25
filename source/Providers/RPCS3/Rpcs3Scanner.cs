@@ -244,8 +244,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             try
             {
                 _logger?.Debug($"[RPCS3] FetchGameDataAsync - Parsing trophy definitions from '{tropconfPath}'");
-                // Parse trophy definitions
-                var trophies = Rpcs3TrophyParser.ParseTrophyDefinitions(tropconfPath, _logger);
+                // Map global language to PS3 locale
+                var ps3Locale = Rpcs3TrophyParser.MapGlobalLanguageToPs3Locale(_settings?.Persisted?.GlobalLanguage);
+                _logger?.Debug($"[RPCS3] FetchGameDataAsync - GlobalLanguage: '{_settings?.Persisted?.GlobalLanguage}', PS3 locale: '{ps3Locale ?? "(default)"}'");
+                // Parse trophy definitions with language support
+                var trophies = Rpcs3TrophyParser.ParseTrophyDefinitions(tropconfPath, ps3Locale, _logger);
                 _logger?.Debug($"[RPCS3] FetchGameDataAsync - Parsed {trophies.Count} trophy definitions");
 
                 // Parse unlock data

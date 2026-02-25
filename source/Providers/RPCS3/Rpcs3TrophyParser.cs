@@ -26,9 +26,10 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// Parses trophy definitions from TROPCONF.SFM XML file.
         /// </summary>
         /// <param name="tropconfPath">Path to TROPCONF.SFM file.</param>
+        /// <param name="language">Target language code (e.g., "en", "fr") for localized names.</param>
         /// <param name="logger">Logger for error reporting.</param>
         /// <returns>List of trophy definitions, or empty list on error.</returns>
-        public static List<Rpcs3Trophy> ParseTrophyDefinitions(string tropconfPath, ILogger logger)
+        public static List<Rpcs3Trophy> ParseTrophyDefinitions(string tropconfPath, string language, ILogger logger)
         {
             logger?.Debug($"[RPCS3] ParseTrophyDefinitions - Starting parse of '{tropconfPath ?? "(null)"}'");
             var trophies = new List<Rpcs3Trophy>();
@@ -65,8 +66,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                         var idAttr = trophyElement.Attribute("id")?.Value;
                         var ttypeAttr = trophyElement.Attribute("ttype")?.Value;
                         var hiddenAttr = trophyElement.Attribute("hidden")?.Value;
-                        var nameElement = trophyElement.Element("name")?.Value;
-                        var detailElement = trophyElement.Element("detail")?.Value;
+                        var nameElement = GetLocalizedElement(trophyElement, "name", language);
+                        var detailElement = GetLocalizedElement(trophyElement, "detail", language);
                         var gidAttr = trophyElement.Attribute("gid")?.Value;
 
                         var groupId = gidAttr?.Trim() ?? "0";
@@ -465,6 +466,80 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             return int.TryParse(attrValue, out var result) ? result : defaultValue;
+        }
+
+        /// <summary>
+        /// Gets a localized element value from a trophy element.
+        /// Tries to find an element with matching lang attribute, falls back to element without lang.
+        /// </summary>
+        /// <param name="trophyElement">The parent trophy element.</param>
+        /// <param name="elementName">The element name to find (e.g., "name", "detail").</param>
+        /// <param name="language">The target language code (e.g., "en", "fr").</param>
+        /// <returns>The localized value, or the default value if no match found.</returns>
+        private static string GetLocalizedElement(XElement trophyElement, string elementName, string language)
+        {
+            if (string.IsNullOrWhiteSpace(language))
+            {
+                // No language specified, return first element found
+                return trophyElement.Element(elementName)?.Value;
+            }
+
+            // Try to find element with matching lang attribute
+            var localizedElement = trophyElement.Elements(elementName)
+                .FirstOrDefault(e => string.Equals(e.Attribute("lang")?.Value, language, StringComparison.OrdinalIgnoreCase));
+
+            if (localizedElement != null)
+            {
+                return localizedElement.Value;
+            }
+
+            // Fall back to element without lang attribute (default language)
+            var defaultElement = trophyElement.Elements(elementName)
+                .FirstOrDefault(e => e.Attribute("lang") == null);
+
+            return defaultElement?.Value ?? trophyElement.Element(elementName)?.Value;
+        }
+
+        /// <summary>
+        /// Maps a global language setting to PS3 locale code.
+        /// </summary>
+        /// <param name="globalLanguage">The global language setting (e.g., "english", "french").</param>
+        /// <returns>PS3 locale code (e.g., "en", "fr"), or null for default.</returns>
+        public static string MapGlobalLanguageToPs3Locale(string globalLanguage)
+        {
+            if (string.IsNullOrWhiteSpace(globalLanguage))
+            {
+                return null;
+            }
+
+            var normalized = globalLanguage.Trim().ToLowerInvariant();
+
+            return normalized switch
+            {
+                "english" => "en",
+                "french" => "fr",
+                "spanish" => "es",
+                "german" => "de",
+                "italian" => "it",
+                "japanese" => "ja",
+                "dutch" => "nl",
+                "portuguese" => "pt",
+                "russian" => "ru",
+                "korean" => "ko",
+                "chinese" => "zh",
+                "polish" => "pl",
+                "danish" => "da",
+                "finnish" => "fi",
+                "norwegian" => "no",
+                "swedish" => "sv",
+                "turkish" => "tr",
+                "czech" => "cs",
+                "hungarian" => "hu",
+                "greek" => "el",
+                "brazilian" => "pt-br",
+                "latam" => "es-419",
+                _ => null
+            };
         }
     }
 }
