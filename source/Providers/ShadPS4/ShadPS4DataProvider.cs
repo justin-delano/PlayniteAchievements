@@ -19,21 +19,19 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
-        private readonly string _pluginUserDataPath;
 
         private Dictionary<string, string> _titleCache;
         private readonly object _cacheLock = new object();
 
-        public ShadPS4DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath)
+        public ShadPS4DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath = null)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             _settings = settings;
             _logger = logger;
             _playniteApi = playniteApi;
-            _pluginUserDataPath = pluginUserDataPath;
 
-            _scanner = new ShadPS4Scanner(_logger, _settings, this, _playniteApi, _pluginUserDataPath);
+            _scanner = new ShadPS4Scanner(_logger, _settings, this, _playniteApi);
         }
 
         public string ProviderName
