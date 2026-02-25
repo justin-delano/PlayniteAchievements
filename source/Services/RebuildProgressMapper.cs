@@ -70,10 +70,14 @@ namespace PlayniteAchievements.Services
 
         private ProgressReport MapUserProgressUpdate(RebuildUpdate update)
         {
+            // Skip updates with no game name - these are completion signals from providers
+            if (string.IsNullOrWhiteSpace(update.CurrentGameName))
+            {
+                return null;
+            }
+
             var (cur, tot) = ProgressSteps(update);
-            var gameName = !string.IsNullOrWhiteSpace(update.CurrentGameName)
-                ? update.CurrentGameName
-                : ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame");
+            var gameName = update.CurrentGameName;
 
             string message;
             if (update.TotalIcons > 0)
