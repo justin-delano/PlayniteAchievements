@@ -8,6 +8,9 @@ namespace PlayniteAchievements.ViewModels
         private string _gameName;
         public string GameName { get => _gameName; set => SetValue(ref _gameName, value); }
 
+        private string _sortingName;
+        public string SortingName { get => _sortingName; set => SetValue(ref _sortingName, value); }
+
         private string _gameLogo;
         public string GameLogo { get => _gameLogo; set => SetValue(ref _gameLogo, value); }
 
