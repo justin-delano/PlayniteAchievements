@@ -1953,7 +1953,8 @@ namespace PlayniteAchievements.ViewModels
                             ShowHiddenDescription = showDescription,
                             ProgressNum = ach.ProgressNum,
                             ProgressDenom = ach.ProgressDenom,
-                            PointsValue = pointsToDisplay
+                            PointsValue = pointsToDisplay,
+                            TrophyType = ach.TrophyType
                         };
 
                         if (canResolveReveals && ach.Hidden && !ach.Unlocked)
