@@ -26,12 +26,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
         // The consistent difference we need to subtract (ShadPS4-specific offset)
         private const int YearOffset = 2007;
 
-        // Default rarity estimates by trophy type (no Exophase in initial implementation)
-        private const double PlatinumRarity = 5.0;
-        private const double GoldRarity = 15.0;
-        private const double SilverRarity = 30.0;
-        private const double BronzeRarity = 60.0;
-
         public ShadPS4Scanner(ILogger logger, PlayniteAchievementsSettings settings, ShadPS4DataProvider provider = null, IPlayniteAPI playniteApi = null, string pluginUserDataPath = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -284,8 +278,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         unlockTime = ConvertPs4Timestamp(timestamp);
                     }
 
-                    // Calculate rarity based on trophy type
-                    double rarity = GetRarityByTrophyType(trophyType);
                     string trophyTypeNormalized = NormalizeTrophyType(trophyType);
 
                     // Build icon path - caching handled by DiskImageService
@@ -301,7 +293,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         Hidden = isHidden,
                         Unlocked = isUnlocked,
                         UnlockTimeUtc = unlockTime,
-                        GlobalPercentUnlocked = rarity,
+                        GlobalPercentUnlocked = null,
                         TrophyType = trophyTypeNormalized,
                         IsCapstone = trophyType?.ToUpperInvariant() == "P"
                     });
@@ -390,23 +382,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 _logger?.Debug(ex, $"[ShadPS4] Failed to convert timestamp: {timestamp}");
                 return null;
             }
-        }
-
-        private static double GetRarityByTrophyType(string trophyType)
-        {
-            if (string.IsNullOrWhiteSpace(trophyType))
-            {
-                return BronzeRarity;
-            }
-
-            return trophyType.ToUpperInvariant() switch
-            {
-                "P" => PlatinumRarity,
-                "G" => GoldRarity,
-                "S" => SilverRarity,
-                "B" => BronzeRarity,
-                _ => BronzeRarity
-            };
         }
 
         private static string NormalizeTrophyType(string trophyType)
