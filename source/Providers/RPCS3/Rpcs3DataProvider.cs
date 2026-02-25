@@ -34,7 +34,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
-        private readonly string _pluginUserDataPath;
 
         private Dictionary<string, string> _trophyFolderCache;
         private readonly object _cacheLock = new object();
@@ -43,16 +42,15 @@ namespace PlayniteAchievements.Providers.RPCS3
         private string _cachedUserId;
         private string _cachedEmulatorRoot;
 
-        public Rpcs3DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath)
+        public Rpcs3DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             _settings = settings;
             _logger = logger;
             _playniteApi = playniteApi;
-            _pluginUserDataPath = pluginUserDataPath;
 
-            _scanner = new Rpcs3Scanner(_logger, _settings, this, _playniteApi, _pluginUserDataPath);
+            _scanner = new Rpcs3Scanner(_logger, _settings, this, _playniteApi);
         }
 
         public string ProviderName
