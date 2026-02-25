@@ -198,6 +198,11 @@ namespace PlayniteAchievements.Services.Images
                     _downloadGate.Release();
                 }
             }
+            catch (OperationCanceledException)
+            {
+                // Let cancellation propagate - handled by caller
+                throw;
+            }
             catch (Exception ex)
             {
                 _logger?.Warn(ex, $"Failed to download/cache icon from {uri}");
@@ -275,28 +280,50 @@ namespace PlayniteAchievements.Services.Images
 
         private async Task<byte[]> DownloadBytesAsync(string url, CancellationToken cancel)
         {
-            using (var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancel).ConfigureAwait(false))
+            // Create a linked token with timeout to ensure we control disposal timing.
+            // This prevents ObjectDisposedException when the parent CTS is disposed
+            // while async SSL stream operations are still unwinding.
+            using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancel))
             {
-                resp.EnsureSuccessStatusCode();
+                linkedCts.CancelAfter(TimeSpan.FromSeconds(30));
+                var token = linkedCts.Token;
 
-                using (var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                using (var ms = new MemoryStream())
+                try
                 {
-                    var buffer = new byte[16 * 1024];
-                    int read;
-                    int total = 0;
-
-                    while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, cancel).ConfigureAwait(false)) > 0)
+                    using (var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false))
                     {
-                        total += read;
-                        if (total > MaxBytes)
-                        {
-                            throw new InvalidOperationException("Image download exceeded size limit.");
-                        }
-                        ms.Write(buffer, 0, read);
-                    }
+                        resp.EnsureSuccessStatusCode();
 
-                    return ms.ToArray();
+                        using (var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                        using (var ms = new MemoryStream())
+                        {
+                            var buffer = new byte[16 * 1024];
+                            int read;
+                            int total = 0;
+
+                            while ((read = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
+                            {
+                                total += read;
+                                if (total > MaxBytes)
+                                {
+                                    throw new InvalidOperationException("Image download exceeded size limit.");
+                                }
+                                ms.Write(buffer, 0, read);
+                            }
+
+                            return ms.ToArray();
+                        }
+                    }
+                }
+                catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+                {
+                    // User cancelled - rethrow to propagate
+                    throw;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Timeout - return null
+                    return null;
                 }
             }
         }
