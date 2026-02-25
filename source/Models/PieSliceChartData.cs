@@ -11,5 +11,22 @@ namespace PlayniteAchievements.Models
         public string IconKey { get; set; }
         public string ColorHex { get; set; }
         public double ChartValue { get; set; }
+
+        /// <summary>
+        /// Number of unlocked achievements in this category.
+        /// For non-locked slices, same as Count.
+        /// </summary>
+        public int UnlockedCount { get; set; }
+
+        /// <summary>
+        /// Total achievements in this category (including locked).
+        /// </summary>
+        public int TotalCount { get; set; }
+
+        /// <summary>
+        /// True if this represents a locked/remaining slice.
+        /// Locked slices display just the count, not "unlocked / total".
+        /// </summary>
+        public bool IsLocked { get; set; }
     }
 }
