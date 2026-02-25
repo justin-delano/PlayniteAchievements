@@ -290,6 +290,7 @@ namespace PlayniteAchievements.Services.Sidebar
             fragment.GameOverview = new GameOverviewItem
             {
                 GameName = gameData.GameName ?? "Unknown",
+                SortingName = playniteGame?.SortingName ?? gameData.GameName ?? "Unknown",
                 GameLogo = gameIconPath,
                 GameCoverPath = gameCoverPath,
                 AppId = gameData.AppId,
