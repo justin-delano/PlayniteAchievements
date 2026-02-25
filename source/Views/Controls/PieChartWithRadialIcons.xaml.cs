@@ -139,7 +139,7 @@ namespace PlayniteAchievements.Views.Controls
             double centerX = ActualWidth / 2.0;
             double centerY = ActualHeight / 2.0;
 
-            double currentAngle = 45;
+            double currentAngle = 0;
             var positions = new List<PieIconPosition>();
 
             for (int i = 0; i < chartValues.Count && i < LegendItems.Count; i++)
@@ -153,8 +153,9 @@ namespace PlayniteAchievements.Views.Controls
                 // Only show icon if count > 0
                 if (legend.Count > 0)
                 {
-                    double x = centerX + iconRadius * Math.Cos(angleRadians) - IconSize / 2.0;
-                    double y = centerY + iconRadius * Math.Sin(angleRadians) - IconSize / 2.0;
+                    // Clockwise from top: x = sin(θ), y = -cos(θ)
+                    double x = centerX + iconRadius * Math.Sin(angleRadians) - IconSize / 2.0;
+                    double y = centerY - iconRadius * Math.Cos(angleRadians) - IconSize / 2.0;
 
                     positions.Add(new PieIconPosition
                     {
