@@ -286,11 +286,18 @@
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Description">Configurez l'intégration de l'émulateur RPCS3 pour suivre les trophées des jeux PlayStation 3 joués dans l'émulateur.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Enabled">Activer le suivi des trophées RPCS3</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3InstallationFolder">Dossier d'installation</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3InstallationFolderHint">Chemin vers votre dossier RPCS3 contenant le répertoire trophy</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3InstallationFolderHint">Chemin vers votre dossier d'installation RPCS3 (requis pour le suivi des trophées).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Browse">Parcourir...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Verified">Dossier d'installation RPCS3 vérifié.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_NotConfigured">Dossier d'installation RPCS3 non configuré.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_FolderNotFound">Dossier trophy RPCS3 introuvable.</sys:String>
+
+    <!-- RPCS3 Validation -->
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_InvalidPath">Le répertoire n'existe pas</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">Installation RPCS3 invalide - dev_hdd0\home manquant</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">Aucun profil utilisateur trouvé dans dev_hdd0\home</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">Dossier de trophées introuvable</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_Success">Valide - {0} dossiers de trophées trouvés</sys:String>
 
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->
