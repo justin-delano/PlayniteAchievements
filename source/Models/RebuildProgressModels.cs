@@ -48,6 +48,9 @@ public enum RebuildUpdateKind
 
         public int OverallIndex { get; set; }
         public int OverallCount { get; set; }
+
+        public int IconsDownloaded { get; set; }
+        public int TotalIcons { get; set; }
     }
 
     /// <summary>
