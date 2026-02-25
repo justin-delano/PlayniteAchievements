@@ -436,24 +436,32 @@ namespace PlayniteAchievements.Providers.RPCS3
                     _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Checking ISO: '{isoPath}'");
 
                     string npcommid = null;
+
+                    // First try DiscUtils (works for ISO9660)
                     try
                     {
                         using (var disc = new DiscUtilsFacade(isoPath))
                         {
                             // Try PS3_GAME/TROPHY/TROPHY.TRP (standard PS3 structure)
-                            npcommid = ExtractNpCommIdFromDisc(disc, "PS3_GAME\\TROPHY\\TROPHY.TRP");
+                            npcommid = ExtractNpCommIdFromDisc(disc, "PS3_GAME/TROPHY/TROPHY.TRP");
 
                             // If not found, try just TROPHY/TROPHY.TRP (some structures)
                             if (string.IsNullOrWhiteSpace(npcommid))
                             {
-                                npcommid = ExtractNpCommIdFromDisc(disc, "TROPHY\\TROPHY.TRP");
+                                npcommid = ExtractNpCommIdFromDisc(disc, "TROPHY/TROPHY.TRP");
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromIso - Error reading ISO '{isoPath}'");
-                        continue;
+                        _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - DiscUtils failed (likely UDF format): {ex.Message}");
+                    }
+
+                    // If DiscUtils failed, try raw byte scanning (works for UDF ISOs)
+                    if (string.IsNullOrWhiteSpace(npcommid))
+                    {
+                        _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Trying raw byte scan for UDF ISO");
+                        npcommid = ExtractNpCommIdFromRawScan(isoPath);
                     }
 
                     if (!string.IsNullOrWhiteSpace(npcommid))
@@ -475,6 +483,105 @@ namespace PlayniteAchievements.Providers.RPCS3
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromIso - Error searching for ISO files");
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Scans a raw ISO file for the npcommid pattern.
+        /// This works for UDF-format PS3 ISOs without needing UDF parsing libraries.
+        /// The npcommid appears in TROPHY.TRP as XML: &lt;npcommid>NPWR05636_00&lt;/npcommid>
+        /// </summary>
+        private string ExtractNpCommIdFromRawScan(string isoPath)
+        {
+            try
+            {
+                // Read the ISO file in chunks, looking for <npcommid>...</npcommid>
+                // The TROPHY.TRP file is typically within the first 100MB of the ISO
+                var searchPattern = System.Text.Encoding.ASCII.GetBytes("<npcommid>");
+                var endPattern = System.Text.Encoding.ASCII.GetBytes("</npcommid>");
+                var maxSearchBytes = 100L * 1024 * 1024; // 100MB max search
+
+                using (var fs = new FileStream(isoPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    var fileSize = fs.Length;
+                    var searchLimit = Math.Min(fileSize, maxSearchBytes);
+                    var buffer = new byte[64 * 1024]; // 64KB buffer
+                    var overlap = new byte[256]; // For patterns spanning buffer boundaries
+                    var overlapCount = 0;
+
+                    long position = 0;
+                    while (position < searchLimit)
+                    {
+                        var bytesToRead = (int)Math.Min(buffer.Length, searchLimit - position);
+                        var bytesRead = fs.Read(buffer, 0, bytesToRead);
+                        if (bytesRead == 0) break;
+
+                        // Combine overlap from previous chunk with current buffer
+                        var searchBuffer = new byte[overlapCount + bytesRead];
+                        if (overlapCount > 0)
+                        {
+                            Array.Copy(overlap, 0, searchBuffer, 0, overlapCount);
+                        }
+                        Array.Copy(buffer, 0, searchBuffer, overlapCount, bytesRead);
+
+                        // Search for <npcommid> pattern using byte-by-byte comparison
+                        for (int i = 0; i <= searchBuffer.Length - searchPattern.Length - 20; i++)
+                        {
+                            // Check for start pattern
+                            bool match = true;
+                            for (int p = 0; p < searchPattern.Length; p++)
+                            {
+                                if (searchBuffer[i + p] != searchPattern[p])
+                                {
+                                    match = false;
+                                    break;
+                                }
+                            }
+
+                            if (match)
+                            {
+                                // Find end pattern
+                                for (int j = searchPattern.Length; j < searchBuffer.Length - i - endPattern.Length; j++)
+                                {
+                                    bool endMatch = true;
+                                    for (int e = 0; e < endPattern.Length; e++)
+                                    {
+                                        if (searchBuffer[i + j + e] != endPattern[e])
+                                        {
+                                            endMatch = false;
+                                            break;
+                                        }
+                                    }
+
+                                    if (endMatch)
+                                    {
+                                        // Extract the npcommid value
+                                        var startIndex = i + searchPattern.Length;
+                                        var length = j - searchPattern.Length;
+                                        var npcommidBytes = new byte[length];
+                                        Array.Copy(searchBuffer, startIndex, npcommidBytes, 0, length);
+                                        var npcommid = System.Text.Encoding.ASCII.GetString(npcommidBytes).Trim();
+
+                                        _logger?.Debug($"[RPCS3] ExtractNpCommIdFromRawScan - Found npcommid: '{npcommid}'");
+                                        return npcommid;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Save last bytes for overlap handling
+                        overlapCount = Math.Min(256, bytesRead);
+                        Array.Copy(buffer, bytesRead - overlapCount, overlap, 0, overlapCount);
+
+                        position += bytesRead;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[RPCS3] ExtractNpCommIdFromRawScan - Error scanning ISO '{isoPath}'");
             }
 
             return null;
@@ -683,6 +790,11 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             // Remove special characters, keep alphanumeric and spaces
             normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[^a-zA-Z0-9\s]", " ");
+
+            // Separate digits from letters (e.g., "PlayStation3" -> "PlayStation 3")
+            // This handles cases like "PlayStation3 Edition" vs "PlayStation 3 Edition"
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"(\d)([a-zA-Z])", "$1 $2");
+            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"([a-zA-Z])(\d)", "$1 $2");
 
             // Normalize whitespace
             normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\s+", " ").Trim();
