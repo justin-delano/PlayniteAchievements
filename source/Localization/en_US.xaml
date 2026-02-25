@@ -286,11 +286,18 @@
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Description">Configure RPCS3 emulator integration to track trophies from PlayStation 3 games played in the emulator.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Enabled">Enable RPCS3 Trophy Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3InstallationFolder">Installation Folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3InstallationFolderHint">Path to your RPCS3 folder containing the trophy directory</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3InstallationFolderHint">Path to your RPCS3 installation folder (required for trophy tracking).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Browse">Browse...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Verified">RPCS3 installation folder verified.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_NotConfigured">RPCS3 installation folder not configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_FolderNotFound">RPCS3 trophy folder not found.</sys:String>
+
+    <!-- RPCS3 Validation -->
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_InvalidPath">Directory does not exist</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">Not a valid RPCS3 installation - missing dev_hdd0\home</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">No user profile found in dev_hdd0\home</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">Trophy folder not found</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_Success">Valid - Found {0} trophy folders</sys:String>
 
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->
