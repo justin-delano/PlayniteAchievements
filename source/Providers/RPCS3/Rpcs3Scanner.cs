@@ -525,11 +525,33 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             // Possible TROPHY.TRP locations for installed games
-            // PKG games use TROPDIR, disc-based games use TROPHY
+            // PKG games: {game_root}/TROPDIR/{npcommid}/TROPHY.TRP
+            // Disc-based games: {game_root}/TROPHY/TROPHY.TRP or {game_root}/PS3_GAME/TROPHY/TROPHY.TRP
             var trpPaths = new List<string>();
             foreach (var dir in directoriesToCheck)
             {
-                trpPaths.Add(Path.Combine(dir, "TROPDIR", "TROPHY.TRP"));
+                // PKG games: TROPDIR contains subdirectories named after npcommid
+                var tropdir = Path.Combine(dir, "TROPDIR");
+                if (Directory.Exists(tropdir))
+                {
+                    try
+                    {
+                        foreach (var subDir in Directory.GetDirectories(tropdir))
+                        {
+                            var trpPath = Path.Combine(subDir, "TROPHY.TRP");
+                            if (File.Exists(trpPath))
+                            {
+                                trpPaths.Add(trpPath);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromInstalledGame - Error scanning TROPDIR at '{tropdir}'");
+                    }
+                }
+
+                // Disc-based game paths
                 trpPaths.Add(Path.Combine(dir, "TROPHY", "TROPHY.TRP"));
                 trpPaths.Add(Path.Combine(dir, "PS3_GAME", "TROPHY", "TROPHY.TRP"));
             }
