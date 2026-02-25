@@ -25,12 +25,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         private readonly Rpcs3DataProvider _provider;
         private readonly IPlayniteAPI _playniteApi;
 
-        // Default rarity estimates by trophy type
-        private const double PlatinumRarity = 5.0;
-        private const double GoldRarity = 15.0;
-        private const double SilverRarity = 30.0;
-        private const double BronzeRarity = 60.0;
-
         public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings, Rpcs3DataProvider provider = null, IPlayniteAPI playniteApi = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -302,7 +296,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                         Hidden = trophy.Hidden,
                         Unlocked = trophy.Unlocked,
                         UnlockTimeUtc = trophy.UnlockTimeUtc,
-                        GlobalPercentUnlocked = GetRarityByTrophyType(trophy.TrophyType),
+                        GlobalPercentUnlocked = null,
                         TrophyType = normalizedTrophyType,
                         IsCapstone = normalizedTrophyType == "platinum",
                         Category = trophy.GroupName
@@ -909,23 +903,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             var value = ResourceProvider.GetString("LOCPlayAch_Provider_RPCS3");
             return string.IsNullOrWhiteSpace(value) ? "RPCS3" : value;
-        }
-
-        private static double GetRarityByTrophyType(string trophyType)
-        {
-            if (string.IsNullOrWhiteSpace(trophyType))
-            {
-                return BronzeRarity;
-            }
-
-            return trophyType.ToUpperInvariant() switch
-            {
-                "P" => PlatinumRarity,
-                "G" => GoldRarity,
-                "S" => SilverRarity,
-                "B" => BronzeRarity,
-                _ => BronzeRarity
-            };
         }
 
         private static string NormalizeTrophyType(string trophyType)
