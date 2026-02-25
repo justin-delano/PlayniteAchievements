@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -45,13 +46,14 @@ namespace PlayniteAchievements.Providers.ShadPS4
             Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
-            var report = progressCallback ?? (_ => { });
             var summary = new RebuildSummary();
 
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
                 return new RebuildPayload { Summary = summary };
             }
+
+            var progress = new RebuildProgressReporter(progressCallback, gamesToRefresh.Count);
 
             // Use the provider's cache if available, otherwise build our own
             Dictionary<string, string> titleCache;
@@ -78,7 +80,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
             {
                 cancel.ThrowIfCancellationRequested();
                 var game = gamesToRefresh[i];
-                report(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
+
+                progress.Emit(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
 
                 try
                 {
@@ -102,9 +105,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 {
                     _logger?.Debug(ex, $"[ShadPS4] Failed to scan {game?.Name}");
                 }
+
+                progress.Step();
             }
 
-            report(new ProviderRefreshUpdate { CurrentGameName = null });
+            progress.Emit(new ProviderRefreshUpdate { CurrentGameName = null }, force: true);
             return new RebuildPayload { Summary = summary };
         }
 
