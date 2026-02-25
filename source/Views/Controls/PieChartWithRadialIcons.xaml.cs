@@ -139,7 +139,10 @@ namespace PlayniteAchievements.Views.Controls
             double centerX = ActualWidth / 2.0;
             double centerY = ActualHeight / 2.0;
 
-            double currentAngle = 0;
+            // LiveCharts renders first slice at approximately 1:00 position
+            // Offset by -30° to align icons with slice midpoints
+            const double LiveChartsRotationOffset = -30;
+            double currentAngle = LiveChartsRotationOffset;
             var positions = new List<PieIconPosition>();
 
             for (int i = 0; i < chartValues.Count && i < LegendItems.Count; i++)
