@@ -1644,7 +1644,7 @@ namespace PlayniteAchievements.ViewModels
             switch (SortIndex)
             {
                 case 0: // Game Name
-                    return items.OrderBy(a => a.GameName).ThenBy(a => a.DisplayName);
+                    return items.OrderBy(a => a.SortingName).ThenBy(a => a.DisplayName);
                 case 1: // Achievement Name
                     return items.OrderBy(a => a.DisplayName);
                 case 2: // Unlock Date (most recent first)
@@ -1930,6 +1930,7 @@ namespace PlayniteAchievements.ViewModels
                         var item = new AchievementDisplayItem
                         {
                             GameName = gameData.GameName ?? "Unknown",
+                            SortingName = gameData.SortingName ?? gameData.GameName ?? "Unknown",
                             PlayniteGameId = gameId,
                             DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
                             Description = ach.Description ?? string.Empty,

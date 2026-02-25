@@ -386,6 +386,7 @@ namespace PlayniteAchievements.ViewModels
                     displayItems.Add(new AchievementDisplayItem
                     {
                         GameName = gameData.GameName ?? "Unknown",
+                        SortingName = gameData.SortingName ?? gameData.GameName ?? "Unknown",
                         PlayniteGameId = _gameId,
                         DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
                         Description = ach.Description ?? "",

@@ -198,6 +198,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 var item = new AchievementDisplayItem
                 {
                     GameName = gameData.GameName ?? "Unknown",
+                    SortingName = gameData.SortingName ?? gameData.GameName ?? "Unknown",
                     PlayniteGameId = gameData.PlayniteGameId,
                     DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
                     Description = ach.Description ?? string.Empty,

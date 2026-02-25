@@ -16,6 +16,9 @@ namespace PlayniteAchievements.ViewModels
         private string _gameName;
         public string GameName { get => _gameName; set => SetValue(ref _gameName, value); }
 
+        private string _sortingName;
+        public string SortingName { get => _sortingName; set => SetValue(ref _sortingName, value); }
+
         private Guid? _playniteGameId;
         public Guid? PlayniteGameId { get => _playniteGameId; set => SetValue(ref _playniteGameId, value); }
 
@@ -346,9 +349,10 @@ namespace PlayniteAchievements.ViewModels
         /// Updates this item's properties from a source Achievement object.
         /// This is used to synchronize data without recreating the entire object, preventing UI flicker.
         /// </summary>
-        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideIcon, bool hideTitle, bool hideDescription)
+        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideIcon, bool hideTitle, bool hideDescription, string sortingName = null)
         {
             GameName = gameName;
+            SortingName = sortingName ?? gameName;
             PlayniteGameId = playniteGameId;
             DisplayName = source.DisplayName ?? source.ApiName ?? "Unknown Achievement";
             Description = source.Description ?? "No description";

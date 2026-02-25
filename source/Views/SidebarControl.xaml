@@ -679,7 +679,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Game Name (a bit larger) -->
-                            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName" MinWidth="160" helpers:ColumnVisibilityHelper.ColumnKey="OverviewGameName">
+                            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="SortingName" MinWidth="160" helpers:ColumnVisibilityHelper.ColumnKey="OverviewGameName">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -1195,7 +1195,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Game Icon/Cover (bigger) -->
-                                    <DataGridTemplateColumn Width="64" MinWidth="64" MaxWidth="64" CanUserResize="False" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="GameName" helpers:ColumnVisibilityHelper.ColumnKey="Game"> <!-- was 40 -->
+                                    <DataGridTemplateColumn Width="64" MinWidth="64" MaxWidth="64" CanUserResize="False" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="SortingName" helpers:ColumnVisibilityHelper.ColumnKey="Game"> <!-- was 40 -->
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <Border CornerRadius="6"
