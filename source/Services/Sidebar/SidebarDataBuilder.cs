@@ -211,6 +211,12 @@ namespace PlayniteAchievements.Services.Sidebar
             int gameTotalRare = 0;
             int gameTotalUltraRare = 0;
 
+            // Trophy counts (for PlayStation games)
+            int gameTrophyPlatinum = 0;
+            int gameTrophyGold = 0;
+            int gameTrophySilver = 0;
+            int gameTrophyBronze = 0;
+
             for (var i = 0; i < achievements.Count; i++)
             {
                 var ach = achievements[i];
@@ -259,6 +265,26 @@ namespace PlayniteAchievements.Services.Sidebar
                 }
 
                 fragment.Achievements.Add(item);
+
+                // Track trophy types (for ALL achievements, including locked)
+                if (!string.IsNullOrWhiteSpace(ach.TrophyType))
+                {
+                    switch (ach.TrophyType.ToLowerInvariant())
+                    {
+                        case "platinum":
+                            gameTrophyPlatinum++;
+                            break;
+                        case "gold":
+                            gameTrophyGold++;
+                            break;
+                        case "silver":
+                            gameTrophySilver++;
+                            break;
+                        case "bronze":
+                            gameTrophyBronze++;
+                            break;
+                    }
+                }
 
                 // Calculate total rarity tier for ALL achievements (including locked)
                 // Only count if rarity data is available (null means no rarity info for this provider)
@@ -331,7 +357,8 @@ namespace PlayniteAchievements.Services.Sidebar
                                 ProgressDenom = ach.ProgressDenom,
                                 GameIconPath = gameIconPath,
                                 GameCoverPath = gameCoverPath,
-                                Hidden = ach.Hidden
+                                Hidden = ach.Hidden,
+                                TrophyType = ach.TrophyType
                             });
                         }
                     }
@@ -344,6 +371,11 @@ namespace PlayniteAchievements.Services.Sidebar
             fragment.UncommonCount = gameUncommon;
             fragment.RareCount = gameRare;
             fragment.UltraRareCount = gameUltraRare;
+
+            fragment.TrophyPlatinumCount = gameTrophyPlatinum;
+            fragment.TrophyGoldCount = gameTrophyGold;
+            fragment.TrophySilverCount = gameTrophySilver;
+            fragment.TrophyBronzeCount = gameTrophyBronze;
 
             fragment.TotalCommonPossible = gameTotalCommon;
             fragment.TotalUncommonPossible = gameTotalUncommon;
@@ -366,6 +398,10 @@ namespace PlayniteAchievements.Services.Sidebar
                 UncommonCount = gameUncommon,
                 RareCount = gameRare,
                 UltraRareCount = gameUltraRare,
+                TrophyPlatinumCount = gameTrophyPlatinum,
+                TrophyGoldCount = gameTrophyGold,
+                TrophySilverCount = gameTrophySilver,
+                TrophyBronzeCount = gameTrophyBronze,
                 LastPlayed = playniteGame?.LastActivity,
                 IsCompleted = gameData.IsCompleted,
                 Provider = gameData.ProviderName ?? "Unknown"
