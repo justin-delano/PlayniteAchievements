@@ -460,6 +460,10 @@
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate"
                                         CellTemplate="{StaticResource AchievementUnlockDateTemplate}"/>
 
+                <!-- Trophy -->
+                <DataGridTemplateColumn Width="48" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="False"
+                                        CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
+
                 <!-- Rarity -->
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
                                         CellTemplate="{StaticResource AchievementRarityTemplate}"/>
