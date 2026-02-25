@@ -17,6 +17,7 @@
                       Margin="4"
                       DisableAnimations="True"
                       Hoverable="True"
+                      TooltipTimeout="0:0:0.1"
                       Series="{Binding PieSeries, ElementName=Root}">
             <lvc:PieChart.DataTooltip>
                 <controls:PieChartTooltip/>

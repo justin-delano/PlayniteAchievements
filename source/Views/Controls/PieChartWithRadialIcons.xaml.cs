@@ -141,7 +141,7 @@ namespace PlayniteAchievements.Views.Controls
 
             // LiveCharts renders first slice at approximately 1:00 position
             // Offset by -30° to align icons with slice midpoints
-            const double LiveChartsRotationOffset = -30;
+            const double LiveChartsRotationOffset = 45;
             double currentAngle = LiveChartsRotationOffset;
             var positions = new List<PieIconPosition>();
 
