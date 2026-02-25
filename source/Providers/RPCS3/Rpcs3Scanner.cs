@@ -525,9 +525,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             // Possible TROPHY.TRP locations for installed games
+            // PKG games use TROPDIR, disc-based games use TROPHY
             var trpPaths = new List<string>();
             foreach (var dir in directoriesToCheck)
             {
+                trpPaths.Add(Path.Combine(dir, "TROPDIR", "TROPHY.TRP"));
                 trpPaths.Add(Path.Combine(dir, "TROPHY", "TROPHY.TRP"));
                 trpPaths.Add(Path.Combine(dir, "PS3_GAME", "TROPHY", "TROPHY.TRP"));
             }
