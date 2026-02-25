@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.PSN.Models;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -42,7 +43,6 @@ namespace PlayniteAchievements.Providers.PSN
             Func<GameAchievementData, Task> OnGameRefreshed,
             CancellationToken cancel)
         {
-            var report = progressCallback ?? (_ => { });
             var providerName = GetProviderName();
 
             string token;
@@ -53,13 +53,13 @@ namespace PlayniteAchievements.Providers.PSN
             catch (PsnAuthRequiredException)
             {
                 _logger?.Warn("[PSNAch] Not authenticated (PSN token missing).");
-                report(new ProviderRefreshUpdate { AuthRequired = true });
+                progressCallback?.Invoke(new ProviderRefreshUpdate { AuthRequired = true });
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "[PSNAch] Failed to acquire PSN token.");
-                report(new ProviderRefreshUpdate { AuthRequired = true });
+                progressCallback?.Invoke(new ProviderRefreshUpdate { AuthRequired = true });
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
@@ -68,6 +68,8 @@ namespace PlayniteAchievements.Providers.PSN
             {
                 return new RebuildPayload { Summary = summary };
             }
+
+            var progress = new RebuildProgressReporter(progressCallback, gamesToRefresh.Count);
 
             using (var http = new HttpClient())
             {
@@ -85,7 +87,8 @@ namespace PlayniteAchievements.Providers.PSN
                 {
                     cancel.ThrowIfCancellationRequested();
                     var game = gamesToRefresh[i];
-                    report(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
+
+                    progress.Emit(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
 
                     try
                     {
@@ -109,10 +112,12 @@ namespace PlayniteAchievements.Providers.PSN
                     {
                         _logger?.Debug(ex, $"[PSNAch] Failed to scan {game?.Name}");
                     }
+
+                    progress.Step();
                 }
             }
 
-            report(new ProviderRefreshUpdate { CurrentGameName = null });
+            progress.Emit(new ProviderRefreshUpdate { CurrentGameName = null }, force: true);
             return new RebuildPayload { Summary = summary };
         }
 
