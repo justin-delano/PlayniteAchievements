@@ -956,6 +956,11 @@ namespace PlayniteAchievements.Services
                     iconPath.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
         }
 
+        private static bool IsLocalIconPath(string iconPath)
+        {
+            return !string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath);
+        }
+
         private async Task PopulateAchievementIconCacheAsync(GameAchievementData data, CancellationToken cancel)
         {
             if (data?.Achievements == null || data.Achievements.Count == 0)
@@ -968,15 +973,22 @@ namespace PlayniteAchievements.Services
 
             foreach (var achievement in data.Achievements)
             {
-                if (achievement == null || !IsHttpIconPath(achievement.UnlockedIconPath))
+                if (achievement == null)
                 {
                     continue;
                 }
 
-                if (!groupedByIcon.TryGetValue(achievement.UnlockedIconPath, out var grouped))
+                var iconPath = achievement.UnlockedIconPath;
+                // Include both HTTP URLs and local file paths
+                if (!IsHttpIconPath(iconPath) && !IsLocalIconPath(iconPath))
+                {
+                    continue;
+                }
+
+                if (!groupedByIcon.TryGetValue(iconPath, out var grouped))
                 {
                     grouped = new List<AchievementDetail>();
-                    groupedByIcon[achievement.UnlockedIconPath] = grouped;
+                    groupedByIcon[iconPath] = grouped;
                 }
 
                 grouped.Add(achievement);
@@ -1014,7 +1026,8 @@ namespace PlayniteAchievements.Services
 
         private async Task<(string OriginalPath, string LocalPath)> ResolveIconPathAsync(string originalPath, string gameIdStr, CancellationToken cancel)
         {
-            if (!IsHttpIconPath(originalPath))
+            // Must be either HTTP URL or local file path
+            if (!IsHttpIconPath(originalPath) && !IsLocalIconPath(originalPath))
             {
                 return default;
             }
@@ -1023,6 +1036,7 @@ namespace PlayniteAchievements.Services
 
             try
             {
+                // Check if already cached
                 if (_diskImageService.IsIconCached(originalPath, iconDecodeSize, gameIdStr))
                 {
                     var cachedPath = _diskImageService.GetIconCachePathFromUri(originalPath, iconDecodeSize, gameIdStr);
@@ -1032,9 +1046,21 @@ namespace PlayniteAchievements.Services
                     }
                 }
 
-                var localPath = await _diskImageService
-                    .GetOrDownloadIconAsync(originalPath, iconDecodeSize, cancel, gameIdStr)
-                    .ConfigureAwait(false);
+                // Branch based on path type
+                string localPath;
+                if (IsHttpIconPath(originalPath))
+                {
+                    localPath = await _diskImageService
+                        .GetOrDownloadIconAsync(originalPath, iconDecodeSize, cancel, gameIdStr)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    localPath = await _diskImageService
+                        .GetOrCopyLocalIconAsync(originalPath, iconDecodeSize, cancel, gameIdStr)
+                        .ConfigureAwait(false);
+                }
+
                 if (!string.IsNullOrWhiteSpace(localPath))
                 {
                     return (originalPath, localPath);
