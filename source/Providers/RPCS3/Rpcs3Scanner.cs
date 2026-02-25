@@ -2,6 +2,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.RPCS3.Models;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -45,7 +46,6 @@ namespace PlayniteAchievements.Providers.RPCS3
             CancellationToken cancel)
         {
             _logger?.Debug("[RPCS3] RefreshAsync - Starting refresh");
-            var report = progressCallback ?? (_ => { });
             var summary = new RebuildSummary();
 
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
@@ -55,6 +55,8 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             _logger?.Debug($"[RPCS3] RefreshAsync - Processing {gamesToRefresh.Count} games");
+
+            var progress = new RebuildProgressReporter(progressCallback, gamesToRefresh.Count);
 
             // Use the provider's cache if available, otherwise build our own
             Dictionary<string, string> trophyFolderCache;
@@ -85,7 +87,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                 cancel.ThrowIfCancellationRequested();
                 var game = gamesToRefresh[i];
                 _logger?.Debug($"[RPCS3] RefreshAsync - Processing game {i + 1}/{gamesToRefresh.Count}: '{game?.Name ?? "(null)"}'");
-                report(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
+
+                progress.Emit(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
 
                 try
                 {
@@ -116,10 +119,12 @@ namespace PlayniteAchievements.Providers.RPCS3
                 {
                     _logger?.Debug(ex, $"[RPCS3] RefreshAsync - Failed to scan '{game?.Name}'");
                 }
+
+                progress.Step();
             }
 
             _logger?.Debug($"[RPCS3] RefreshAsync - Complete. GamesRefreshed={summary.GamesRefreshed}, GamesWithAchievements={summary.GamesWithAchievements}, GamesWithoutAchievements={summary.GamesWithoutAchievements}");
-            report(new ProviderRefreshUpdate { CurrentGameName = null });
+            progress.Emit(new ProviderRefreshUpdate { CurrentGameName = null }, force: true);
             return new RebuildPayload { Summary = summary };
         }
 
