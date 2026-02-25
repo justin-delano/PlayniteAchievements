@@ -59,6 +59,7 @@ namespace PlayniteAchievements.Services
         private readonly IReadOnlyList<IDataProvider> _providers;
         private readonly RebuildProgressMapper _progressMapper;
         private readonly GameDataHydrator _hydrator;
+        private readonly IconProgressTracker _iconProgressTracker = new IconProgressTracker();
 
         public ICacheManager Cache => _cacheService;
 
@@ -442,6 +443,7 @@ namespace PlayniteAchievements.Services
                 return;
 
             _progressMapper.Reset();
+            _iconProgressTracker.Reset();
             Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
             Interlocked.Exchange(ref _lastCacheInvalidationTimestamp, -1);
 
@@ -990,9 +992,26 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            var iconTasks = groupedByIcon.Keys
-                .Select(iconPath => ResolveIconPathAsync(iconPath, gameIdStr, cancel))
-                .ToArray();
+            var iconPaths = groupedByIcon.Keys.ToList();
+            _iconProgressTracker.IncrementTotal(iconPaths.Count);
+
+            var iconTasks = iconPaths.Select(async iconPath =>
+            {
+                var result = await ResolveIconPathAsync(iconPath, gameIdStr, cancel).ConfigureAwait(false);
+                _iconProgressTracker.IncrementDownloaded();
+
+                var (downloaded, total) = _iconProgressTracker.GetSnapshot();
+                HandleUpdate(new RebuildUpdate
+                {
+                    Kind = RebuildUpdateKind.UserProgress,
+                    Stage = RebuildStage.RefreshingUserAchievements,
+                    CurrentGameName = data.GameName,
+                    IconsDownloaded = downloaded,
+                    TotalIcons = total
+                });
+
+                return result;
+            }).ToArray();
 
             var resolvedIconPaths = await Task.WhenAll(iconTasks).ConfigureAwait(false);
             foreach (var resolved in resolvedIconPaths)
