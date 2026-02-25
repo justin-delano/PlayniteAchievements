@@ -351,7 +351,7 @@ namespace PlayniteAchievements.Services.Sidebar
                                 GameName = gameData.GameName ?? "Unknown",
                                 IconPath = ach.UnlockedIconPath,
                                 UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
-                                GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
+                                GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
                                 PointsValue = pointsToDisplay,
                                 ProgressNum = ach.ProgressNum,
                                 ProgressDenom = ach.ProgressDenom,
