@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
@@ -22,8 +21,6 @@ namespace PlayniteAchievements.Services.Images
 
         private readonly ILogger _logger;
         private readonly DiskImageService _diskService;
-        private readonly SemaphoreSlim _downloadGate;
-        private readonly HttpClient _http;
 
         private readonly int _maxItems;
 
@@ -44,25 +41,16 @@ namespace PlayniteAchievements.Services.Images
         public MemoryImageService(
             ILogger logger,
             DiskImageService diskService,
-            int maxItems = 512,
-            int downloadConcurrency = 8)
+            int maxItems = 512)
         {
             _logger = logger ?? StaticLogger;
             _diskService = diskService ?? throw new ArgumentNullException(nameof(diskService));
             _maxItems = Math.Max(64, maxItems);
-            _downloadGate = new SemaphoreSlim(Math.Max(1, downloadConcurrency), Math.Max(1, downloadConcurrency));
-
-            _http = new HttpClient
-            {
-                Timeout = TimeSpan.FromSeconds(20)
-            };
-            _http.DefaultRequestHeaders.UserAgent.ParseAdd("PlayniteAchievements/1.0");
         }
 
         public void Dispose()
         {
-            try { _http?.Dispose(); } catch { }
-            try { _downloadGate?.Dispose(); } catch { }
+            // No unmanaged resources to dispose.
         }
 
         public void Clear()
@@ -136,7 +124,9 @@ namespace PlayniteAchievements.Services.Images
                 BitmapSource bmp;
                 if (IsHttpUrl(uri))
                 {
-                    bmp = await LoadRemoteAsync(uri, decodePixel).ConfigureAwait(false);
+                    // HTTP URIs should only be used during download in AchievementManager.
+                    // At display time, check disk cache only - do NOT download.
+                    bmp = await LoadFromDiskCacheAsync(uri, decodePixel).ConfigureAwait(false);
                 }
                 else
                 {
@@ -303,19 +293,26 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
-        private async Task<BitmapSource> LoadRemoteAsync(string url, int decodePixel)
+        /// <summary>
+        /// Load an image from disk cache only. Returns null if not cached.
+        /// HTTP URIs should be resolved during refresh, not at display time.
+        /// </summary>
+        private async Task<BitmapSource> LoadFromDiskCacheAsync(string uri, int decodePixel)
         {
-            // Bound concurrent downloads/decodes to avoid UI stalls and network thrash.
-            await _downloadGate.WaitAsync().ConfigureAwait(false);
             try
             {
-                var bytes = await DownloadBytesAsync(url).ConfigureAwait(false);
-                if (bytes == null || bytes.Length == 0)
+                if (!_diskService.IsIconCached(uri, decodePixel, gameId: null))
                 {
                     return null;
                 }
 
-                using (var ms = new MemoryStream(bytes, writable: false))
+                var cachePath = _diskService.GetIconCachePathFromUri(uri, decodePixel, gameId: null);
+                if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath))
+                {
+                    return null;
+                }
+
+                return await Task.Run(() =>
                 {
                     var bitmap = new BitmapImage();
                     bitmap.BeginInit();
@@ -325,49 +322,15 @@ namespace PlayniteAchievements.Services.Images
                     {
                         bitmap.DecodePixelWidth = decodePixel;
                     }
-                    bitmap.StreamSource = ms;
+                    bitmap.UriSource = new Uri(cachePath, UriKind.Absolute);
                     bitmap.EndInit();
                     return bitmap;
-                }
+                }).ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, $"Failed to load from disk cache: {uri}");
                 return null;
-            }
-            finally
-            {
-                _downloadGate.Release();
-            }
-        }
-
-        private async Task<byte[]> DownloadBytesAsync(string url)
-        {
-            using (var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false))
-            {
-                resp.EnsureSuccessStatusCode();
-
-                // Hard cap to avoid huge downloads.
-                const int maxBytes = 5 * 1024 * 1024;
-
-                using (var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                using (var ms = new MemoryStream())
-                {
-                    var buffer = new byte[16 * 1024];
-                    int read;
-                    int total = 0;
-
-                    while ((read = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
-                    {
-                        total += read;
-                        if (total > maxBytes)
-                        {
-                            throw new InvalidOperationException("Image download exceeded size limit.");
-                        }
-                        ms.Write(buffer, 0, read);
-                    }
-
-                    return ms.ToArray();
-                }
             }
         }
 
