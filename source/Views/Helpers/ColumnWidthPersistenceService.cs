@@ -361,6 +361,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             if (changed)
             {
+                _setWidths?.Invoke(map);
                 _saveSettings?.Invoke();
             }
         }
@@ -386,6 +387,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             if (changed)
             {
+                _setWidths?.Invoke(map);
                 _shouldRescaleAllOnInitialLoad = true;
                 _saveSettings?.Invoke();
             }
