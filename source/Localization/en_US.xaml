@@ -432,7 +432,7 @@
     <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">{0} of {1} ({2} unlocked) from {3} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} achievements ({1} unlocked) from {2} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Refreshing achievements for {0} ({1})</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithIcons">Refreshing {0} - Downloading icons {1}/{2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithIcons">Refreshing achievements for {0} ({1}) - Downloading icons {2}/{3}</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingSelfAchievements">Refreshing achievements for {0}...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_LoadingOwnedGames">Loading owned games...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_LoadingExistingCache">Loading from cache...</sys:String>
