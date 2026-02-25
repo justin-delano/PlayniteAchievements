@@ -32,8 +32,19 @@ namespace PlayniteAchievements.Services.Sidebar
         public Dictionary<string, int> UnlockedByProvider { get; set; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
+        /// Total achievements per provider (including locked, for "unlocked / total" display).
+        /// </summary>
+        public Dictionary<string, int> TotalByProvider { get; set; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Total locked achievements across all providers (for the locked section of provider pie chart).
         /// </summary>
         public int TotalLocked { get; set; }
+
+        // Total rarity counts (including locked achievements) for "unlocked / total" display
+        public int TotalCommonPossible { get; set; }
+        public int TotalUncommonPossible { get; set; }
+        public int TotalRarePossible { get; set; }
+        public int TotalUltraRarePossible { get; set; }
     }
 }
