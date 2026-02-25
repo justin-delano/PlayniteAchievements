@@ -176,6 +176,40 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _ultraRareCount, value);
         }
 
+        // Trophy counts for PlayStation games
+        private int _trophyPlatinumCount;
+        public int TrophyPlatinumCount
+        {
+            get => _trophyPlatinumCount;
+            private set => SetValue(ref _trophyPlatinumCount, value);
+        }
+
+        private int _trophyGoldCount;
+        public int TrophyGoldCount
+        {
+            get => _trophyGoldCount;
+            private set => SetValue(ref _trophyGoldCount, value);
+        }
+
+        private int _trophySilverCount;
+        public int TrophySilverCount
+        {
+            get => _trophySilverCount;
+            private set => SetValue(ref _trophySilverCount, value);
+        }
+
+        private int _trophyBronzeCount;
+        public int TrophyBronzeCount
+        {
+            get => _trophyBronzeCount;
+            private set => SetValue(ref _trophyBronzeCount, value);
+        }
+
+        /// <summary>
+        /// True if this game has PlayStation trophy type data.
+        /// </summary>
+        public bool HasTrophyTypes => TrophyPlatinumCount > 0 || TrophyGoldCount > 0 || TrophySilverCount > 0 || TrophyBronzeCount > 0;
+
         public double Progression => TotalAchievements > 0
             ? (double)UnlockedAchievements / TotalAchievements * 100
             : 0;
@@ -340,6 +374,8 @@ namespace PlayniteAchievements.ViewModels
 
                 // Calculate rarity counts
                 int common = 0, uncommon = 0, rare = 0, ultraRare = 0;
+                // Calculate trophy counts (for PlayStation games)
+                int trophyPlatinum = 0, trophyGold = 0, trophySilver = 0, trophyBronze = 0;
                 var showIcon = _settings?.Persisted.ShowHiddenIcon ?? false;
                 var showTitle = _settings?.Persisted.ShowHiddenTitle ?? false;
                 var showDescription = _settings?.Persisted.ShowHiddenDescription ?? false;
@@ -408,12 +444,30 @@ namespace PlayniteAchievements.ViewModels
                         PointsValue = pointsToDisplay,
                         TrophyType = ach.TrophyType
                     });
+
+                    // Track trophy types for ALL achievements (including locked)
+                    if (!string.IsNullOrWhiteSpace(ach.TrophyType))
+                    {
+                        switch (ach.TrophyType.ToLowerInvariant())
+                        {
+                            case "platinum": trophyPlatinum++; break;
+                            case "gold": trophyGold++; break;
+                            case "silver": trophySilver++; break;
+                            case "bronze": trophyBronze++; break;
+                        }
+                    }
                 }
 
                 CommonCount = common;
                 UncommonCount = uncommon;
                 RareCount = rare;
                 UltraRareCount = ultraRare;
+
+                // Set trophy counts
+                TrophyPlatinumCount = trophyPlatinum;
+                TrophyGoldCount = trophyGold;
+                TrophySilverCount = trophySilver;
+                TrophyBronzeCount = trophyBronze;
 
                 // Sort: unlocked first by date desc, then locked by rarity
                 _allAchievements = displayItems
