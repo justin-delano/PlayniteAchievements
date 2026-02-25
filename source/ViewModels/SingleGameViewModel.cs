@@ -414,6 +414,18 @@ namespace PlayniteAchievements.ViewModels
                                 default: common++; break;
                             }
                         }
+
+                        // Track trophy types for unlocked achievements
+                        if (!string.IsNullOrWhiteSpace(ach.TrophyType))
+                        {
+                            switch (ach.TrophyType.ToLowerInvariant())
+                            {
+                                case "platinum": trophyPlatinum++; break;
+                                case "gold": trophyGold++; break;
+                                case "silver": trophySilver++; break;
+                                case "bronze": trophyBronze++; break;
+                            }
+                        }
                     }
 
                     // Determine which points to display based on provider and settings
@@ -444,18 +456,6 @@ namespace PlayniteAchievements.ViewModels
                         PointsValue = pointsToDisplay,
                         TrophyType = ach.TrophyType
                     });
-
-                    // Track trophy types for ALL achievements (including locked)
-                    if (!string.IsNullOrWhiteSpace(ach.TrophyType))
-                    {
-                        switch (ach.TrophyType.ToLowerInvariant())
-                        {
-                            case "platinum": trophyPlatinum++; break;
-                            case "gold": trophyGold++; break;
-                            case "silver": trophySilver++; break;
-                            case "bronze": trophyBronze++; break;
-                        }
-                    }
                 }
 
                 CommonCount = common;

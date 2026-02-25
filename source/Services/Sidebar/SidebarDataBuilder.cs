@@ -266,26 +266,6 @@ namespace PlayniteAchievements.Services.Sidebar
 
                 fragment.Achievements.Add(item);
 
-                // Track trophy types (for ALL achievements, including locked)
-                if (!string.IsNullOrWhiteSpace(ach.TrophyType))
-                {
-                    switch (ach.TrophyType.ToLowerInvariant())
-                    {
-                        case "platinum":
-                            gameTrophyPlatinum++;
-                            break;
-                        case "gold":
-                            gameTrophyGold++;
-                            break;
-                        case "silver":
-                            gameTrophySilver++;
-                            break;
-                        case "bronze":
-                            gameTrophyBronze++;
-                            break;
-                    }
-                }
-
                 // Calculate total rarity tier for ALL achievements (including locked)
                 // Only count if rarity data is available (null means no rarity info for this provider)
                 if (ach.GlobalPercentUnlocked.HasValue)
@@ -331,6 +311,26 @@ namespace PlayniteAchievements.Services.Sidebar
                                 break;
                             default:
                                 gameCommon++;
+                                break;
+                        }
+                    }
+
+                    // Track trophy types for unlocked achievements
+                    if (!string.IsNullOrWhiteSpace(ach.TrophyType))
+                    {
+                        switch (ach.TrophyType.ToLowerInvariant())
+                        {
+                            case "platinum":
+                                gameTrophyPlatinum++;
+                                break;
+                            case "gold":
+                                gameTrophyGold++;
+                                break;
+                            case "silver":
+                                gameTrophySilver++;
+                                break;
+                            case "bronze":
+                                gameTrophyBronze++;
                                 break;
                         }
                     }
