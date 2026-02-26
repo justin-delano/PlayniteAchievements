@@ -197,32 +197,51 @@
 
     <!-- Achievement Trophy Template -->
     <DataTemplate x:Key="AchievementTrophyTemplate">
-        <Image Width="20" Height="20"
-               Effect="{StaticResource BadgeShadow}"
-               VerticalAlignment="Center" HorizontalAlignment="Center">
-            <Image.Style>
-                <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
-                    <Setter Property="Visibility" Value="Collapsed"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding HasTrophyType}" Value="True">
-                            <Setter Property="Visibility" Value="Visible"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding TrophyType}" Value="platinum">
-                            <Setter Property="Source" Value="{StaticResource TrophyPlatinum}"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding TrophyType}" Value="gold">
-                            <Setter Property="Source" Value="{StaticResource TrophyGold}"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding TrophyType}" Value="silver">
-                            <Setter Property="Source" Value="{StaticResource TrophySilver}"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding TrophyType}" Value="bronze">
-                            <Setter Property="Source" Value="{StaticResource TrophyBronze}"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Image.Style>
-        </Image>
+        <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Image Width="20" Height="20"
+                   Effect="{StaticResource BadgeShadow}">
+                <Image.Style>
+                    <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasTrophyType}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding TrophyType}" Value="platinum">
+                                <Setter Property="Source" Value="{StaticResource TrophyPlatinum}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding TrophyType}" Value="gold">
+                                <Setter Property="Source" Value="{StaticResource TrophyGold}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding TrophyType}" Value="silver">
+                                <Setter Property="Source" Value="{StaticResource TrophySilver}"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding TrophyType}" Value="bronze">
+                                <Setter Property="Source" Value="{StaticResource TrophyBronze}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Image.Style>
+            </Image>
+            <TextBlock Text="—"
+                       Style="{DynamicResource BaseTextBlockStyle}"
+                       FontSize="{DynamicResource FontSizeSmall}"
+                       Foreground="{DynamicResource TextBrush}"
+                       Opacity="0.4"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasTrophyType}" Value="False">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
     </DataTemplate>
 
     <!-- Achievement Points Template -->
