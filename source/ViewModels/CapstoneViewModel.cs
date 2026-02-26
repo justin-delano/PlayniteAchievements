@@ -17,7 +17,7 @@ namespace PlayniteAchievements.ViewModels
         private const string HiddenIconPath = "pack://application:,,,/PlayniteAchievements;component/Resources/HiddenAchIcon.png";
 
         private readonly Guid _gameId;
-        private readonly AchievementManager _achievementManager;
+        private readonly AchievementService _achievementService;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
@@ -28,13 +28,13 @@ namespace PlayniteAchievements.ViewModels
 
         public CapstoneViewModel(
             Guid gameId,
-            AchievementManager achievementManager,
+            AchievementService achievementService,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)
         {
             _gameId = gameId;
-            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
             _playniteApi = playniteApi;
             _logger = logger;
             _settings = settings;
@@ -118,7 +118,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var result = _achievementManager.SetCapstone(_gameId, item.ApiName);
+            var result = _achievementService.SetCapstone(_gameId, item.ApiName);
             if (!result.Success)
             {
                 ShowError(ResolveErrorMessage(result));
@@ -130,7 +130,7 @@ namespace PlayniteAchievements.ViewModels
 
         public void ClearMarker()
         {
-            var result = _achievementManager.SetCapstone(_gameId, null);
+            var result = _achievementService.SetCapstone(_gameId, null);
             if (!result.Success)
             {
                 ShowError(ResolveErrorMessage(result));
@@ -202,7 +202,7 @@ namespace PlayniteAchievements.ViewModels
                     }
                 }
 
-                var gameData = _achievementManager.GetGameAchievementData(_gameId);
+                var gameData = _achievementService.GetGameAchievementData(_gameId);
                 var achievements = gameData?.Achievements ?? new List<AchievementDetail>();
 
                 // Find the current capstone by checking IsCapstone on achievements
@@ -505,3 +505,6 @@ namespace PlayniteAchievements.ViewModels
         public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
     }
 }
+
+
+

@@ -18,12 +18,12 @@ namespace PlayniteAchievements.ViewModels
 {
     public class SingleGameControlModel : ObservableObject, IDisposable
     {
-        private readonly AchievementManager _achievementManager;
+        private readonly AchievementService _achievementService;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Guid _gameId;
-        private volatile bool _fullResetRequested;
+        private Guid? _activeRefreshOperationId;
 
         // Sort state tracking for quick reverse
         private string _currentSortPath;
@@ -38,13 +38,13 @@ namespace PlayniteAchievements.ViewModels
 
         public SingleGameControlModel(
             Guid gameId,
-            AchievementManager achievementManager,
+            AchievementService achievementService,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)
         {
             _gameId = gameId;
-            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
             _playniteApi = playniteApi;
             _logger = logger;
             _settings = settings;
@@ -62,12 +62,13 @@ namespace PlayniteAchievements.ViewModels
                     if (IsRefreshing) return;
 
                     IsRefreshing = true;
+                    _activeRefreshOperationId = null;
                     RefreshStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_Refreshing");
                     IsStatusMessageVisible = true;
 
                     try
                     {
-                        await _achievementManager.ExecuteRefreshAsync(RefreshModeType.Single, _gameId);
+                        await _achievementService.ExecuteRefreshAsync(RefreshModeType.Single, _gameId);
 
                         // Load updated data
                         LoadGameData();
@@ -85,21 +86,21 @@ namespace PlayniteAchievements.ViewModels
                     finally
                     {
                         IsRefreshing = false;
+                        _activeRefreshOperationId = null;
                         await Task.Delay(3000);
                         IsStatusMessageVisible = false;
                     }
                 },
-                _ => !_achievementManager.IsRebuilding);
+                _ => !_achievementService.IsRebuilding);
 
             // Subscribe to settings changes
             if (_settings != null)
             {
                 _settings.PropertyChanged += OnSettingsChanged;
             }
-            _achievementManager.GameCacheUpdated += OnGameCacheUpdated;
-            _achievementManager.CacheDeltaUpdated += OnCacheDeltaUpdated;
-            _achievementManager.CacheInvalidated += OnCacheInvalidated;
-            _achievementManager.RebuildProgress += OnRebuildProgress;
+            _achievementService.GameCacheUpdated += OnGameCacheUpdated;
+            _achievementService.CacheDeltaUpdated += OnCacheDeltaUpdated;
+            _achievementService.RebuildProgress += OnRebuildProgress;
 
             // Load data
             LoadGameData();
@@ -341,7 +342,7 @@ namespace PlayniteAchievements.ViewModels
                 GameName = game.Name;
                 GameIconPath = (!string.IsNullOrEmpty(game.Icon)) ? _playniteApi.Database.GetFullFilePath(game.Icon) : null;
 
-                var gameData = _achievementManager.GetGameAchievementData(_gameId);
+                var gameData = _achievementService.GetGameAchievementData(_gameId);
                 if (gameData == null || !gameData.HasAchievements || gameData.Achievements == null)
                 {
                     _logger?.Info($"No achievement data for game: {game.Name}");
@@ -376,11 +377,7 @@ namespace PlayniteAchievements.ViewModels
                 int common = 0, uncommon = 0, rare = 0, ultraRare = 0;
                 // Calculate trophy counts (for PlayStation games)
                 int trophyPlatinum = 0, trophyGold = 0, trophySilver = 0, trophyBronze = 0;
-                var showIcon = _settings?.Persisted.ShowHiddenIcon ?? false;
-                var showTitle = _settings?.Persisted.ShowHiddenTitle ?? false;
-                var showDescription = _settings?.Persisted.ShowHiddenDescription ?? false;
-                var useScaledPoints = _settings?.Persisted.RaPointsMode == "scaled" &&
-                                      string.Equals(gameData.ProviderName, "RetroAchievements", StringComparison.OrdinalIgnoreCase);
+                var projectionOptions = AchievementProjectionService.CreateOptions(_settings, gameData);
                 var displayItems = new List<AchievementDisplayItem>();
                 var unlockCounts = new Dictionary<DateTime, int>();
 
@@ -402,60 +399,15 @@ namespace PlayniteAchievements.ViewModels
                         }
 
                         // Only count rarity if data is available (null means no rarity info for this provider)
-                        if (ach.GlobalPercentUnlocked.HasValue)
-                        {
-                            var pct = ach.GlobalPercentUnlocked.Value;
-                            var tier = RarityHelper.GetRarityTier(pct);
-                            switch (tier)
-                            {
-                                case RarityTier.UltraRare: ultraRare++; break;
-                                case RarityTier.Rare: rare++; break;
-                                case RarityTier.Uncommon: uncommon++; break;
-                                default: common++; break;
-                            }
-                        }
-
-                        // Track trophy types for unlocked achievements
-                        if (!string.IsNullOrWhiteSpace(ach.TrophyType))
-                        {
-                            switch (ach.TrophyType.ToLowerInvariant())
-                            {
-                                case "platinum": trophyPlatinum++; break;
-                                case "gold": trophyGold++; break;
-                                case "silver": trophySilver++; break;
-                                case "bronze": trophyBronze++; break;
-                            }
-                        }
+                        AchievementProjectionService.AccumulateRarity(ach, ref common, ref uncommon, ref rare, ref ultraRare);
+                        AchievementProjectionService.AccumulateTrophy(ach, ref trophyPlatinum, ref trophyGold, ref trophySilver, ref trophyBronze);
                     }
 
-                    // Determine which points to display based on provider and settings
-                    int? pointsToDisplay = ach.Points;
-                    if (useScaledPoints)
+                    var item = AchievementProjectionService.CreateDisplayItem(gameData, ach, projectionOptions, _gameId);
+                    if (item != null)
                     {
-                        pointsToDisplay = ach.ScaledPoints ?? ach.Points;
+                        displayItems.Add(item);
                     }
-
-                    displayItems.Add(new AchievementDisplayItem
-                    {
-                        GameName = gameData.GameName ?? "Unknown",
-                        SortingName = gameData.SortingName ?? gameData.GameName ?? "Unknown",
-                        PlayniteGameId = _gameId,
-                        DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
-                        Description = ach.Description ?? "",
-                        IconPath = ach.UnlockedIconPath,
-                        UnlockTimeUtc = ach.UnlockTimeUtc,
-                        GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
-                        Unlocked = ach.Unlocked,
-                        Hidden = ach.Hidden,
-                        ApiName = ach.ApiName,
-                        ShowHiddenIcon = showIcon,
-                        ShowHiddenTitle = showTitle,
-                        ShowHiddenDescription = showDescription,
-                        ProgressNum = ach.ProgressNum,
-                        ProgressDenom = ach.ProgressDenom,
-                        PointsValue = pointsToDisplay,
-                        TrophyType = ach.TrophyType
-                    });
                 }
 
                 CommonCount = common;
@@ -507,17 +459,6 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void OnCacheInvalidated(object sender, EventArgs e)
-        {
-            if (!_fullResetRequested)
-            {
-                return;
-            }
-
-            _fullResetRequested = false;
-            System.Windows.Application.Current?.Dispatcher?.Invoke(LoadGameData);
-        }
-
         private void OnCacheDeltaUpdated(object sender, CacheDeltaEventArgs e)
         {
             if (e?.IsFullReset != true)
@@ -525,37 +466,40 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            _fullResetRequested = true;
             System.Windows.Application.Current?.Dispatcher?.Invoke(LoadGameData);
         }
 
         private void OnRebuildProgress(object sender, ProgressReport report)
         {
             if (report == null) return;
-            var refreshStatus = _achievementManager.GetRefreshStatusSnapshot(report);
+            var refreshStatus = _achievementService.GetRefreshStatusSnapshot(report);
             var statusMessage = refreshStatus.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Refreshing");
 
-            // Check if this progress is for our game
-            var isForOurGame = report.Message?.Contains(_gameId.ToString()) == true ||
-                               (GameName != null && report.Message?.Contains(GameName) == true);
-
-            if (!isForOurGame && IsRefreshing)
+            var isForOurGame = report.CurrentGameId.HasValue && report.CurrentGameId.Value == _gameId;
+            if (isForOurGame && report.OperationId.HasValue)
             {
-                // If we're refreshing and get progress not for our game, update generic status
+                _activeRefreshOperationId = report.OperationId;
+            }
+
+            var isTrackedOperation = _activeRefreshOperationId.HasValue &&
+                                     report.OperationId.HasValue &&
+                                     _activeRefreshOperationId.Value == report.OperationId.Value;
+
+            if (isForOurGame || isTrackedOperation)
+            {
                 RefreshStatusMessage = statusMessage;
                 OnPropertyChanged(nameof(RefreshStatusMessage));
             }
-            else if (isForOurGame)
+            else
             {
-                // Update with specific progress for our game
-                RefreshStatusMessage = statusMessage;
-                OnPropertyChanged(nameof(RefreshStatusMessage));
+                return;
             }
 
             // Handle completion
             if (refreshStatus.IsCanceled)
             {
                 IsRefreshing = false;
+                _activeRefreshOperationId = null;
                 RefreshStatusMessage = statusMessage;
                 OnPropertyChanged(nameof(IsRefreshing));
                 OnPropertyChanged(nameof(RefreshStatusMessage));
@@ -563,6 +507,7 @@ namespace PlayniteAchievements.ViewModels
             else if (refreshStatus.IsFinal)
             {
                 IsRefreshing = false;
+                _activeRefreshOperationId = null;
                 RefreshStatusMessage = statusMessage;
                 OnPropertyChanged(nameof(IsRefreshing));
                 OnPropertyChanged(nameof(RefreshStatusMessage));
@@ -764,12 +709,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 _settings.PropertyChanged -= OnSettingsChanged;
             }
-            _achievementManager.GameCacheUpdated -= OnGameCacheUpdated;
-            _achievementManager.CacheDeltaUpdated -= OnCacheDeltaUpdated;
-            _achievementManager.CacheInvalidated -= OnCacheInvalidated;
-            _achievementManager.RebuildProgress -= OnRebuildProgress;
+            _achievementService.GameCacheUpdated -= OnGameCacheUpdated;
+            _achievementService.CacheDeltaUpdated -= OnCacheDeltaUpdated;
+            _achievementService.RebuildProgress -= OnRebuildProgress;
         }
 
         #endregion
     }
 }
+
+
+

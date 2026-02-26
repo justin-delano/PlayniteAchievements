@@ -10,7 +10,7 @@ namespace PlayniteAchievements.ViewModels
 {
     public class RefreshProgressViewModel : ObservableObject
     {
-        private readonly AchievementManager _achievementManager;
+        private readonly AchievementService _achievementService;
         private readonly Guid? _singleGameRefreshId;
         private readonly Action<Guid> _openSingleGameAction;
 
@@ -19,7 +19,7 @@ namespace PlayniteAchievements.ViewModels
         private bool _isCompleted;
         private bool _completedSuccessfully;
 
-        public bool IsRefreshing => _achievementManager.IsRebuilding;
+        public bool IsRefreshing => _achievementService.IsRebuilding;
 
         public double ProgressPercent
         {
@@ -64,29 +64,29 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand OpenSingleGameCommand { get; }
 
         public RefreshProgressViewModel(
-            AchievementManager achievementManager,
+            AchievementService achievementService,
             ILogger logger,
             Guid? singleGameRefreshId = null,
             Action<Guid> openSingleGameAction = null)
         {
-            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
             _singleGameRefreshId = singleGameRefreshId;
             _openSingleGameAction = openSingleGameAction;
 
             HideCommand = new RelayCommand(_ => HideWindow());
-            CancelCommand = new RelayCommand(_ => CancelRefresh(), _ => _achievementManager.IsRebuilding);
+            CancelCommand = new RelayCommand(_ => CancelRefresh(), _ => _achievementService.IsRebuilding);
             ContinueCommand = new RelayCommand(_ => Continue());
             OpenSingleGameCommand = new RelayCommand(_ => OpenSingleGame(), _ => ShowOpenSingleGameButton);
 
             IsCompleted = false;
-            ApplyRefreshStatus(_achievementManager.GetRefreshStatusSnapshot());
+            ApplyRefreshStatus(_achievementService.GetRefreshStatusSnapshot());
         }
 
         public void OnProgress(ProgressReport report)
         {
             if (report == null) return;
 
-            ApplyRefreshStatus(_achievementManager.GetRefreshStatusSnapshot(report));
+            ApplyRefreshStatus(_achievementService.GetRefreshStatusSnapshot(report));
         }
 
         private void ApplyRefreshStatus(RefreshStatusSnapshot status)
@@ -131,7 +131,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void CancelRefresh()
         {
-            _achievementManager.CancelCurrentRebuild();
+            _achievementService.CancelCurrentRebuild();
         }
 
         private void Continue()
@@ -153,4 +153,7 @@ namespace PlayniteAchievements.ViewModels
         public event EventHandler RequestClose;
     }
 }
+
+
+
 
