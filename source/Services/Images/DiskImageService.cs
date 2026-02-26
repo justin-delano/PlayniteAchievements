@@ -40,12 +40,12 @@ namespace PlayniteAchievements.Services.Images
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _pathWriteLocks =
             new ConcurrentDictionary<string, SemaphoreSlim>(StringComparer.OrdinalIgnoreCase);
 
-        public DiskImageService(ILogger logger, string cacheRoot, int downloadConcurrency = 4)
+        public DiskImageService(ILogger logger, string cacheRoot, int downloadConcurrency = 8)
         {
             _logger = logger ?? StaticLogger;
             _cacheRoot = cacheRoot ?? throw new ArgumentNullException(nameof(cacheRoot));
             _downloadGate = new SemaphoreSlim(Math.Max(1, downloadConcurrency), Math.Max(1, downloadConcurrency));
-            _rateLimitedDownloadGate = new SemaphoreSlim(4, 4); // Xbox CDN concurrency (was 2, increased since processing no longer blocks)
+            _rateLimitedDownloadGate = new SemaphoreSlim(4, 4); // Xbox CDN concurrency (kept at 4 due to rate limiting)
 
             _httpHandler = new HttpClientHandler
             {
