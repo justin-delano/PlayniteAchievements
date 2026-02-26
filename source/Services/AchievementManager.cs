@@ -758,17 +758,30 @@ namespace PlayniteAchievements.Services
 
             var totalGames = gamesToRefresh.Count;
             var summary = new RebuildSummary();
-            var refreshedSoFar = 0;
 
             // Track overall progress for icon download progress updates
             _totalGamesInRun = totalGames;
 
+            // Pre-compute starting offsets for each provider for parallel execution
+            var providerOffsets = new Dictionary<IDataProvider, int>();
+            var offset = 0;
             foreach (var kvp in gamesByProvider)
+            {
+                providerOffsets[kvp.Key] = offset;
+                offset += kvp.Value.Count;
+            }
+
+            // Thread-safe counter for global progress tracking
+            var globalProgressCounter = 0;
+
+            // Create provider tasks that run in parallel
+            var providerTasks = gamesByProvider.Select(kvp =>
             {
                 var provider = kvp.Key;
                 var games = kvp.Value;
+                var providerOffset = providerOffsets[provider];
 
-                // Create a localized callback for this provider
+                // Create a localized callback for this provider with pre-computed offset
                 Action<ProviderRefreshUpdate> wrappedCallback = (u) =>
                 {
                     if (u == null) return;
@@ -779,27 +792,25 @@ namespace PlayniteAchievements.Services
                         return;
                     }
 
-                    // Map provider-local index to global index
+                    // Map provider-local index to global index using pre-computed offset
                     var localIndex = Math.Min(u.CurrentIndex, games.Count);
-
-                    // localIndex is 1-based (from progress reporter steps), so we just add the offset
-                    var globalIndex = refreshedSoFar + localIndex;
+                    var globalIndex = providerOffset + localIndex;
 
                     // Track current game index for icon progress updates
-                    _currentOverallIndex = globalIndex;
+                    Interlocked.Exchange(ref _currentOverallIndex, globalIndex);
 
                     var update = new RebuildUpdate
                     {
                         Kind = RebuildUpdateKind.UserProgress,
                         Stage = RebuildStage.RefreshingUserAchievements,
-                        
+
                         // Provider details
                         // Use global counts for the text display so it doesn't look like it resets
                         // UserAppIndex is 0-based for the text formatter
                         UserAppIndex = globalIndex - 1,
                         UserAppCount = totalGames,
                         CurrentGameName = u.CurrentGameName,
-                        
+
                         // Global details
                         OverallIndex = globalIndex,
                         OverallCount = totalGames
@@ -808,13 +819,26 @@ namespace PlayniteAchievements.Services
                     progressCallback?.Invoke(update);
                 };
 
-                cancel.ThrowIfCancellationRequested();
-                var payload = await provider
-                    .RefreshAsync(games, wrappedCallback, data => OnGameRefreshed(provider, data, cancel), cancel)
-                    .ConfigureAwait(false);
+                return Task.Run(async () =>
+                {
+                    cancel.ThrowIfCancellationRequested();
+                    var payload = await provider
+                        .RefreshAsync(games, wrappedCallback, data => OnGameRefreshed(provider, data, cancel), cancel)
+                        .ConfigureAwait(false);
 
-                refreshedSoFar += games.Count;
+                    // Update global counter for this provider's games
+                    Interlocked.Add(ref globalProgressCounter, games.Count);
 
+                    return payload;
+                }, cancel);
+            }).ToArray();
+
+            // Wait for all providers to complete
+            var payloads = await Task.WhenAll(providerTasks).ConfigureAwait(false);
+
+            // Aggregate results from all providers
+            foreach (var payload in payloads)
+            {
                 if (payload?.Summary == null)
                     continue;
 
