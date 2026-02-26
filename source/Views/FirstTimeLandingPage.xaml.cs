@@ -21,7 +21,8 @@ namespace PlayniteAchievements.Views
     public partial class FirstTimeLandingPage : IDisposable, INotifyPropertyChanged
     {
         private readonly ILogger _logger;
-        private readonly AchievementManager _achievementManager;
+        private readonly AchievementService _achievementService;
+        private readonly RefreshCoordinator _refreshCoordinator;
         private readonly PlayniteAchievementsPlugin _plugin;
         private PlayniteAchievementsSettings _settings;
         private readonly ProviderRegistry _providerRegistry;
@@ -181,14 +182,16 @@ namespace PlayniteAchievements.Views
         public FirstTimeLandingPage(
             IPlayniteAPI api,
             ILogger logger,
-            AchievementManager achievementManager,
+            AchievementService achievementService,
+            RefreshCoordinator refreshCoordinator,
             PlayniteAchievementsSettings settings,
             PlayniteAchievementsPlugin plugin,
             ProviderRegistry providerRegistry)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
+            _refreshCoordinator = refreshCoordinator ?? throw new ArgumentNullException(nameof(refreshCoordinator));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
@@ -202,8 +205,11 @@ namespace PlayniteAchievements.Views
                 _settings,
                 () => _plugin.SavePluginSettings(_settings));
 
-            var modes = _achievementManager.GetRefreshModes();
-            RefreshModes = new ObservableCollection<RefreshMode>(modes.Where(m => m.Key != "LibrarySelected" && m.Key != "Single"));
+            var modes = _achievementService.GetRefreshModes();
+            RefreshModes = new ObservableCollection<RefreshMode>(
+                modes.Where(m =>
+                    m.Type != RefreshModeType.LibrarySelected &&
+                    m.Type != RefreshModeType.Single));
             if (!RefreshModes.Any(m => string.Equals(m.Key, _selectedRefreshMode, StringComparison.Ordinal)))
             {
                 _selectedRefreshMode = RefreshModes.FirstOrDefault()?.Key ?? RefreshModeType.Installed.GetKey();
@@ -227,7 +233,7 @@ namespace PlayniteAchievements.Views
             // Sync provider registry from the latest persisted settings
             _providerRegistry.SyncFromSettings(_settings.Persisted);
 
-            var providers = _achievementManager.GetProviders();
+            var providers = _achievementService.GetProviders();
             _providers.Clear();
 
             foreach (var provider in providers)
@@ -253,9 +259,9 @@ namespace PlayniteAchievements.Views
 
         /// <summary>
         /// Gets whether any provider authentication is configured.
-        /// Delegates to AchievementManager to check if any provider is authenticated.
+        /// Delegates to AchievementService to check if any provider is authenticated.
         /// </summary>
-        public bool HasAnyProviderAuth => _achievementManager.HasAnyAuthenticatedProvider();
+        public bool HasAnyProviderAuth => _achievementService.HasAnyAuthenticatedProvider();
 
         /// <summary>
         /// Gets the settings for checking if setup is complete.
@@ -271,7 +277,7 @@ namespace PlayniteAchievements.Views
             {
                 try
                 {
-                    var cachedIds = _achievementManager.Cache.GetCachedGameIds();
+                    var cachedIds = _achievementService.Cache.GetCachedGameIds();
                     return cachedIds != null && cachedIds.Count > 0;
                 }
                 catch (Exception ex)
@@ -338,9 +344,41 @@ namespace PlayniteAchievements.Views
 
                 _logger.Info($"User clicked Begin Refresh from first-time landing page with mode: {modeToRun}");
 
+                RefreshRequest refreshRequest;
+                if (string.Equals(modeToRun, RefreshModeType.Custom.GetKey(), StringComparison.Ordinal))
+                {
+                    if (!CustomRefreshControl.TryShowDialog(
+                        _api,
+                        _achievementService,
+                        CurrentSettings,
+                        _logger,
+                        out var customOptions))
+                    {
+                        return;
+                    }
+
+                    refreshRequest = new RefreshRequest
+                    {
+                        Mode = RefreshModeType.Custom,
+                        CustomOptions = customOptions
+                    };
+                }
+                else
+                {
+                    refreshRequest = new RefreshRequest { ModeKey = modeToRun };
+                }
+
                 MarkSetupComplete();
 
-                _ = _achievementManager.ExecuteRefreshAsync(modeToRun);
+                _ = _refreshCoordinator.ExecuteAsync(
+                    refreshRequest,
+                    new RefreshExecutionPolicy
+                    {
+                        ValidateAuthentication = true,
+                        UseProgressWindow = false,
+                        SwallowExceptions = true,
+                        ErrorLogMessage = "Failed to start refresh from first-time landing page."
+                    });
             }
             catch (Exception ex)
             {
@@ -432,7 +470,7 @@ namespace PlayniteAchievements.Views
 
         private bool GetProviderAuthenticated(string providerKey)
         {
-            var providers = _achievementManager.GetProviders();
+            var providers = _achievementService.GetProviders();
             var provider = providers.FirstOrDefault(p => p.ProviderKey == providerKey);
             return provider?.IsAuthenticated ?? false;
         }
@@ -820,3 +858,6 @@ namespace PlayniteAchievements.Views
         HasData
     }
 }
+
+
+

@@ -409,6 +409,23 @@
                                                    Margin="20,4,0,0"/>
                                     </StackPanel>
                                 </Grid>
+
+                                <!-- Provider Execution Mode -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh}"
+                                                  IsChecked="{Binding Persisted.EnableParallelProviderRefresh}"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="20,4,0,0"/>
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
                         </Border>
 

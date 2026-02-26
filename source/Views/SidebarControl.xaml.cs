@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Views
         private readonly SidebarViewModel _viewModel;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
-        private readonly AchievementManager _achievementManager;
+        private readonly AchievementService _achievementService;
         private readonly IPlayniteAPI _playniteApi;
         private bool _isActive;
         private Guid? _lastSelectedOverviewGameId;
@@ -63,17 +63,27 @@ namespace PlayniteAchievements.Views
             InitSaveTimer();
         }
 
-        public SidebarControl(IPlayniteAPI api, ILogger logger, AchievementManager achievementManager, PlayniteAchievementsSettings settings)
+        public SidebarControl(
+            IPlayniteAPI api,
+            ILogger logger,
+            AchievementService achievementService,
+            RefreshCoordinator refreshCoordinator,
+            PlayniteAchievementsSettings settings)
         {
             InitializeComponent();
             InitSaveTimer();
 
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings;
-            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
             _playniteApi = api ?? throw new ArgumentNullException(nameof(api));
 
-            _viewModel = new SidebarViewModel(achievementManager, api, logger, settings);
+            _viewModel = new SidebarViewModel(
+                achievementService,
+                refreshCoordinator ?? throw new ArgumentNullException(nameof(refreshCoordinator)),
+                api,
+                logger,
+                settings);
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.SetActive(false);
@@ -1035,7 +1045,7 @@ namespace PlayniteAchievements.Views
 
             try
             {
-                _achievementManager.RemoveGameCache(game.Id);
+                _achievementService.RemoveGameCache(game.Id);
                 _playniteApi?.Dialogs?.ShowMessage(
                     string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_SuccessSingle"), game.Name),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
@@ -1116,3 +1126,6 @@ namespace PlayniteAchievements.Views
         }
     }
 }
+
+
+

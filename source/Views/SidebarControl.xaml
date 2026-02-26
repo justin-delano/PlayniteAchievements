@@ -324,7 +324,7 @@
                               Margin="0,0,8,0"
                               VerticalContentAlignment="Center"/>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                    <Button Content="{Binding RefreshActionButtonText}"
                             Command="{Binding RefreshCommand}"
                             Style="{StaticResource RefreshButtonStyle}"/>
 

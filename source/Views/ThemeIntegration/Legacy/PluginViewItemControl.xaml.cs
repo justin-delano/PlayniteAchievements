@@ -140,7 +140,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
                 var gameData = default(GameAchievementData);
                 using (PerfScope.Start(_logger, "Theme.PluginViewItemControl.GetGameAchievementData", thresholdMs: 16, context: gameId.ToString()))
                 {
-                    gameData = Plugin?.AchievementManager?.GetGameAchievementData(gameId);
+                    gameData = Plugin?.AchievementService?.GetGameAchievementData(gameId);
                 }
 
                 if (gameData == null || !gameData.HasAchievements || (gameData.Achievements?.Count ?? 0) == 0)
@@ -165,3 +165,4 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
     }
 }
 // --END SUCCESSSTORY--
+

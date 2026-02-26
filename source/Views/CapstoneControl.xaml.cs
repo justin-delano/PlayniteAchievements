@@ -18,12 +18,12 @@ namespace PlayniteAchievements.Views
 
         public CapstoneControl(
             Guid gameId,
-            AchievementManager achievementManager,
+            AchievementService achievementService,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)
         {
-            _viewModel = new CapstoneViewModel(gameId, achievementManager, playniteApi, logger, settings);
+            _viewModel = new CapstoneViewModel(gameId, achievementService, playniteApi, logger, settings);
             DataContext = _viewModel;
             InitializeComponent();
             _viewModel.RequestClose += ViewModel_RequestClose;
@@ -113,3 +113,5 @@ namespace PlayniteAchievements.Views
         }
     }
 }
+
+

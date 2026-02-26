@@ -2037,8 +2037,8 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                _plugin.AchievementManager.Cache.ClearCache();
-                var stillPresent = _plugin.AchievementManager.Cache.CacheFileExists();
+                _plugin.AchievementService.Cache.ClearCache();
+                var stillPresent = _plugin.AchievementService.Cache.CacheFileExists();
                 
                 var (msg, img) = !stillPresent
                     ? (ResourceProvider.GetString("LOCPlayAch_Settings_Cache_Wiped"), MessageBoxImage.Information)
@@ -2129,7 +2129,7 @@ namespace PlayniteAchievements.Views
             try
             {
                 var exportBaseDir = _plugin.GetPluginUserDataPath();
-                var cache = _plugin.AchievementManager?.Cache;
+                var cache = _plugin.AchievementService?.Cache;
 
                 if (cache == null)
                 {
@@ -2332,3 +2332,4 @@ namespace PlayniteAchievements.Views
         }
     }
 }
+

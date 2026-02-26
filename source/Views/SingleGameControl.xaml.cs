@@ -36,7 +36,7 @@ namespace PlayniteAchievements.Views
 
         public SingleGameControl(
             Guid gameId,
-            AchievementManager achievementManager,
+            AchievementService achievementService,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)
@@ -45,7 +45,7 @@ namespace PlayniteAchievements.Views
 
             _settings = settings;
             _logger = logger;
-            DataContext = new SingleGameControlModel(gameId, achievementManager, playniteApi, logger, settings);
+            DataContext = new SingleGameControlModel(gameId, achievementService, playniteApi, logger, settings);
 
             // Subscribe to settings saved event to refresh when credentials change
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
@@ -207,3 +207,5 @@ namespace PlayniteAchievements.Views
         }
     }
 }
+
+
