@@ -1211,17 +1211,7 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                // Check if already cached
-                if (_diskImageService.IsIconCached(originalPath, iconDecodeSize, gameIdStr))
-                {
-                    var cachedPath = _diskImageService.GetIconCachePathFromUri(originalPath, iconDecodeSize, gameIdStr);
-                    if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
-                    {
-                        return (originalPath, cachedPath);
-                    }
-                }
-
-                // Branch based on path type
+                // Branch based on path type - disk image service handles cache checking internally
                 string localPath;
                 if (IsHttpIconPath(originalPath))
                 {
