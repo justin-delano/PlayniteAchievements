@@ -197,6 +197,11 @@ namespace PlayniteAchievements.Views.Converters
                 values[1] is int totalCount &&
                 values[2] is bool isLocked)
             {
+                // Hide denominator if total is 0
+                if (totalCount == 0)
+                {
+                    return unlockedCount.ToString();
+                }
                 if (isLocked || unlockedCount == totalCount)
                 {
                     return unlockedCount.ToString();
