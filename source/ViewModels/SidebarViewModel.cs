@@ -2060,6 +2060,7 @@ namespace PlayniteAchievements.ViewModels
                 nameof(GameOverviewItem.Progression) => (a, b) => a.Progression.CompareTo(b.Progression),
                 nameof(GameOverviewItem.TotalAchievements) => (a, b) => a.TotalAchievements.CompareTo(b.TotalAchievements),
                 nameof(GameOverviewItem.UnlockedAchievements) => (a, b) => a.UnlockedAchievements.CompareTo(b.UnlockedAchievements),
+                "TrophyType" => CompareGameOverviewByTrophyType,
                 _ => null
             };
 
@@ -2112,8 +2113,9 @@ namespace PlayniteAchievements.ViewModels
                 "Name" => (a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase),
                 "GameName" => (a, b) => string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase),
                 "UnlockTime" => CompareRecentAchievementsByUnlockColumn,
-                "GlobalPercent" => (a, b) => a.GlobalPercent.CompareTo(b.GlobalPercent),
+                "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
                 "Points" => (a, b) => a.Points.CompareTo(b.Points),
+                "TrophyType" => CompareRecentAchievementsByTrophyType,
                 _ => null
             };
 
@@ -2148,8 +2150,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
                 "UnlockTime" => CompareSelectedGameAchievementsByUnlockColumn,
-                "GlobalPercent" => (a, b) => a.GlobalPercent.CompareTo(b.GlobalPercent),
+                "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
                 "Points" => (a, b) => a.Points.CompareTo(b.Points),
+                "TrophyType" => CompareSelectedGameAchievementsByTrophyType,
                 _ => null
             };
 
@@ -2299,6 +2302,41 @@ namespace PlayniteAchievements.ViewModels
             }
 
             return 0;
+        }
+
+        private static int GetTrophyRank(string trophyType)
+        {
+            if (string.IsNullOrWhiteSpace(trophyType)) return 0;
+            return trophyType.ToLowerInvariant() switch
+            {
+                "platinum" => 4,
+                "gold" => 3,
+                "silver" => 2,
+                "bronze" => 1,
+                _ => 0
+            };
+        }
+
+        private static int CompareGameOverviewByTrophyType(GameOverviewItem a, GameOverviewItem b)
+        {
+            return GetTrophyRank(a.TrophyPlatinumCount > 0 ? "platinum" :
+                                  a.TrophyGoldCount > 0 ? "gold" :
+                                  a.TrophySilverCount > 0 ? "silver" :
+                                  a.TrophyBronzeCount > 0 ? "bronze" : null)
+                   .CompareTo(GetTrophyRank(b.TrophyPlatinumCount > 0 ? "platinum" :
+                                            b.TrophyGoldCount > 0 ? "gold" :
+                                            b.TrophySilverCount > 0 ? "silver" :
+                                            b.TrophyBronzeCount > 0 ? "bronze" : null));
+        }
+
+        private static int CompareRecentAchievementsByTrophyType(RecentAchievementItem a, RecentAchievementItem b)
+        {
+            return GetTrophyRank(a.TrophyType).CompareTo(GetTrophyRank(b.TrophyType));
+        }
+
+        private static int CompareSelectedGameAchievementsByTrophyType(AchievementDisplayItem a, AchievementDisplayItem b)
+        {
+            return GetTrophyRank(a.TrophyType).CompareTo(GetTrophyRank(b.TrophyType));
         }
 
         public void Dispose()
