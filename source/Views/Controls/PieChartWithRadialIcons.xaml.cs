@@ -78,7 +78,10 @@ namespace PlayniteAchievements.Views.Controls
         {
             foreach (var series in subscribedSeries)
             {
-                series.PropertyChanged -= OnSeriesPropertyChanged;
+                if (series is INotifyPropertyChanged notify)
+                {
+                    notify.PropertyChanged -= OnSeriesPropertyChanged;
+                }
                 if (series.Values is INotifyCollectionChanged chartValues)
                 {
                     chartValues.CollectionChanged -= OnChartValuesChanged;
@@ -91,7 +94,10 @@ namespace PlayniteAchievements.Views.Controls
         {
             foreach (var series in collection.OfType<PieSeries>())
             {
-                series.PropertyChanged += OnSeriesPropertyChanged;
+                if (series is INotifyPropertyChanged notify)
+                {
+                    notify.PropertyChanged += OnSeriesPropertyChanged;
+                }
                 if (series.Values is INotifyCollectionChanged chartValues)
                 {
                     chartValues.CollectionChanged += OnChartValuesChanged;
@@ -102,7 +108,7 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnSeriesPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(PieSeries.Values))
+            if (e.PropertyName == "Values")
             {
                 CalculatePositions();
             }
