@@ -224,14 +224,13 @@
                 </Image.Style>
             </Image>
             <TextBlock Text="—"
-                       Style="{DynamicResource BaseTextBlockStyle}"
                        FontSize="{DynamicResource FontSizeSmall}"
                        Foreground="{DynamicResource TextBrush}"
                        Opacity="0.4"
                        VerticalAlignment="Center"
                        HorizontalAlignment="Center">
                 <TextBlock.Style>
-                    <Style TargetType="TextBlock">
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding HasTrophyType}" Value="False">
