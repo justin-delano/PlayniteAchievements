@@ -1,0 +1,301 @@
+<UserControl x:Class="PlayniteAchievements.Views.CustomRefreshControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignWidth="920"
+             d:DesignHeight="680">
+    <Grid Margin="12"
+          Background="{DynamicResource ControlBackgroundBrush}"
+          TextElement.Foreground="{DynamicResource TextBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="{DynamicResource LOCPlayAch_CustomRefresh_Header}"
+                   Style="{DynamicResource BaseTextBlockStyle}"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   Margin="0,0,0,10" />
+
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <GroupBox Grid.Row="0"
+                          Header="{DynamicResource LOCPlayAch_CustomRefresh_PresetsHeader}"
+                          Foreground="{DynamicResource TextBrush}"
+                          BorderBrush="{DynamicResource NormalBorderBrush}"
+                          Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <ComboBox Grid.Column="0"
+                                  ItemsSource="{Binding PresetOptions}"
+                                  DisplayMemberPath="Name"
+                                  SelectedItem="{Binding SelectedPreset, Mode=TwoWay}"
+                                  Foreground="{DynamicResource TextBrush}"
+                                  Background="{DynamicResource ControlBackgroundBrush}"
+                                  BorderBrush="{DynamicResource NormalBorderBrush}"
+                                  Margin="0,0,8,0" />
+
+                        <Button Grid.Column="1"
+                                Content="{DynamicResource LOCPlayAch_CustomRefresh_Presets_Load}"
+                                Click="LoadPresetButton_Click"
+                                IsEnabled="{Binding CanLoadPreset}"
+                                Padding="12,6"
+                                MinWidth="80"
+                                Margin="0,0,6,0" />
+
+                        <Button Grid.Column="2"
+                                Content="{DynamicResource LOCPlayAch_CustomRefresh_Presets_Save}"
+                                Click="SavePresetButton_Click"
+                                IsEnabled="{Binding CanSavePreset}"
+                                Padding="12,6"
+                                MinWidth="80"
+                                Margin="0,0,6,0" />
+
+                        <Button Grid.Column="3"
+                                Content="{DynamicResource LOCPlayAch_CustomRefresh_Presets_SaveAs}"
+                                Click="SaveAsPresetButton_Click"
+                                Padding="12,6"
+                                MinWidth="88"
+                                Margin="0,0,6,0" />
+
+                        <Button Grid.Column="4"
+                                Content="{DynamicResource LOCPlayAch_CustomRefresh_Presets_Delete}"
+                                Click="DeletePresetButton_Click"
+                                IsEnabled="{Binding CanDeletePreset}"
+                                Padding="12,6"
+                                MinWidth="80" />
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Grid.Row="1"
+                          Header="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}"
+                          Foreground="{DynamicResource TextBrush}"
+                          BorderBrush="{DynamicResource NormalBorderBrush}"
+                          Margin="0,0,0,10">
+                    <ItemsControl ItemsSource="{Binding ProviderOptions}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <CheckBox Grid.Column="0"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsSelectable}"
+                                              Foreground="{DynamicResource TextBrush}"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,8,0" />
+
+                                    <StackPanel Grid.Column="1"
+                                                Orientation="Horizontal"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ProviderName}"
+                                                   Style="{DynamicResource BaseTextBlockStyle}" />
+                                        <TextBlock Text=" ("
+                                                   Style="{DynamicResource BaseTextBlockStyle}" />
+                                        <TextBlock Text="{Binding ProviderKey}"
+                                                   Style="{DynamicResource BaseTextBlockStyle}" />
+                                        <TextBlock Text=")"
+                                                   Style="{DynamicResource BaseTextBlockStyle}" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="2"
+                                               Text="{Binding StatusText}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                               VerticalAlignment="Center"
+                                               Opacity="0.75" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </GroupBox>
+
+                <GroupBox Grid.Row="2"
+                          Header="{DynamicResource LOCPlayAch_CustomRefresh_ScopeHeader}"
+                          Foreground="{DynamicResource TextBrush}"
+                          BorderBrush="{DynamicResource NormalBorderBrush}"
+                          Margin="0,0,0,10">
+                    <StackPanel>
+                        <ComboBox ItemsSource="{Binding ScopeOptions}"
+                                  SelectedValuePath="Scope"
+                                  DisplayMemberPath="DisplayName"
+                                  SelectedValue="{Binding SelectedScope, Mode=TwoWay}"
+                                  Foreground="{DynamicResource TextBrush}"
+                                  Background="{DynamicResource ControlBackgroundBrush}"
+                                  BorderBrush="{DynamicResource NormalBorderBrush}"
+                                  Margin="0,0,0,8" />
+
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,0,0,6">
+                            <CheckBox IsChecked="{Binding UseRecentLimitOverride, Mode=TwoWay}"
+                                      Content="{DynamicResource LOCPlayAch_CustomRefresh_UseRecentLimit}"
+                                      Foreground="{DynamicResource TextBrush}" />
+                            <TextBox Width="80"
+                                     Margin="8,0,0,0"
+                                     Text="{Binding RecentLimitOverrideText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Foreground="{DynamicResource TextBrush}"
+                                     Background="{DynamicResource ControlBackgroundBrush}"
+                                     BorderBrush="{DynamicResource NormalBorderBrush}"
+                                     IsEnabled="{Binding UseRecentLimitOverride}" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding UseIncludeUnplayedOverride, Mode=TwoWay}"
+                                      Content="{DynamicResource LOCPlayAch_CustomRefresh_UseIncludeUnplayed}"
+                                      Foreground="{DynamicResource TextBrush}" />
+                            <CheckBox Margin="8,0,0,0"
+                                      Content="{DynamicResource LOCPlayAch_IncludeUnplayedGames}"
+                                      IsChecked="{Binding IncludeUnplayedOverrideValue, Mode=TwoWay}"
+                                      Foreground="{DynamicResource TextBrush}"
+                                      IsEnabled="{Binding UseIncludeUnplayedOverride}" />
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Grid.Row="3"
+                          Header="{DynamicResource LOCPlayAch_CustomRefresh_TargetingHeader}"
+                          Foreground="{DynamicResource TextBrush}"
+                          BorderBrush="{DynamicResource NormalBorderBrush}"
+                          Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="12" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_CustomRefresh_IncludeHeader}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,4" />
+                            <TextBox Text="{Binding IncludeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{DynamicResource SearchTextBoxStyle}"
+                                     Foreground="{DynamicResource TextBrush}"
+                                     Margin="0,0,0,6" />
+                            <ListBox ItemsSource="{Binding IncludeGameView}"
+                                     Foreground="{DynamicResource TextBrush}"
+                                     Background="{DynamicResource ControlBackgroundBrush}"
+                                     BorderBrush="{DynamicResource NormalBorderBrush}"
+                                     Height="230">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsIncluded, Mode=TwoWay}"
+                                                  Content="{Binding DisplayName}"
+                                                  Foreground="{DynamicResource TextBrush}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_CustomRefresh_ExcludeHeader}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,4" />
+                            <TextBox Text="{Binding ExcludeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{DynamicResource SearchTextBoxStyle}"
+                                     Foreground="{DynamicResource TextBrush}"
+                                     Margin="0,0,0,6" />
+                            <ListBox ItemsSource="{Binding ExcludeGameView}"
+                                     Foreground="{DynamicResource TextBrush}"
+                                     Background="{DynamicResource ControlBackgroundBrush}"
+                                     BorderBrush="{DynamicResource NormalBorderBrush}"
+                                     Height="230">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsExcluded, Mode=TwoWay}"
+                                                  Content="{Binding DisplayName}"
+                                                  Foreground="{DynamicResource TextBrush}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+
+                <GroupBox Grid.Row="4"
+                          Header="{DynamicResource LOCPlayAch_CustomRefresh_ExecutionHeader}"
+                          Foreground="{DynamicResource TextBrush}"
+                          BorderBrush="{DynamicResource NormalBorderBrush}"
+                          Margin="0,0,0,10">
+                    <StackPanel>
+                        <CheckBox Content="{DynamicResource LOCPlayAch_CustomRefresh_RespectExclusions}"
+                                  IsChecked="{Binding RespectUserExclusions, Mode=TwoWay}"
+                                  Foreground="{DynamicResource TextBrush}"
+                                  Margin="0,0,0,4" />
+
+                        <CheckBox Content="{DynamicResource LOCPlayAch_CustomRefresh_ForceIncludeBypass}"
+                                  IsChecked="{Binding ForceBypassExclusionsForExplicitIncludes, Mode=TwoWay}"
+                                  Foreground="{DynamicResource TextBrush}"
+                                  Margin="0,0,0,8" />
+
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox IsChecked="{Binding UseParallelOverride, Mode=TwoWay}"
+                                      Content="{DynamicResource LOCPlayAch_CustomRefresh_UseParallelOverride}"
+                                      Foreground="{DynamicResource TextBrush}" />
+                            <CheckBox Margin="8,0,0,0"
+                                      Content="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh}"
+                                      IsChecked="{Binding RunProvidersInParallelValue, Mode=TwoWay}"
+                                      Foreground="{DynamicResource TextBrush}"
+                                      IsEnabled="{Binding UseParallelOverride}" />
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <Border Grid.Row="5"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource NormalBorderBrush}"
+                        Padding="8">
+                    <TextBlock Text="{Binding SummaryText}"
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               TextWrapping="Wrap" />
+                </Border>
+            </Grid>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,10,0,0">
+            <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                    Click="RunButton_Click"
+                    IsEnabled="{Binding CanRun}"
+                    Padding="12,6"
+                    MinWidth="100"
+                    Margin="0,0,8,0"
+                    IsDefault="True" />
+            <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                    Click="CancelButton_Click"
+                    Padding="12,6"
+                    MinWidth="100"
+                    IsCancel="True" />
+        </StackPanel>
+    </Grid>
+</UserControl>
