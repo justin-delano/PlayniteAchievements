@@ -1,0 +1,200 @@
+using System;
+using System.Collections.Generic;
+using PlayniteAchievements.Common;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.ViewModels;
+
+namespace PlayniteAchievements.Services
+{
+    public sealed class AchievementProjectionOptions
+    {
+        public bool ShowHiddenIcon { get; set; }
+        public bool ShowHiddenTitle { get; set; }
+        public bool ShowHiddenDescription { get; set; }
+        public bool UseScaledPoints { get; set; }
+        public ISet<string> RevealedKeys { get; set; }
+    }
+
+    public static class AchievementProjectionService
+    {
+        public static AchievementProjectionOptions CreateOptions(
+            PlayniteAchievementsSettings settings,
+            GameAchievementData gameData,
+            ISet<string> revealedKeys = null)
+        {
+            return new AchievementProjectionOptions
+            {
+                ShowHiddenIcon = settings?.Persisted?.ShowHiddenIcon ?? false,
+                ShowHiddenTitle = settings?.Persisted?.ShowHiddenTitle ?? false,
+                ShowHiddenDescription = settings?.Persisted?.ShowHiddenDescription ?? false,
+                UseScaledPoints = (settings?.Persisted?.RaPointsMode == "scaled") &&
+                                  string.Equals(gameData?.ProviderName, "RetroAchievements", StringComparison.OrdinalIgnoreCase),
+                RevealedKeys = revealedKeys
+            };
+        }
+
+        public static AchievementDisplayItem CreateDisplayItem(
+            GameAchievementData gameData,
+            AchievementDetail achievement,
+            AchievementProjectionOptions options,
+            Guid? playniteGameIdOverride = null)
+        {
+            if (achievement == null)
+            {
+                return null;
+            }
+
+            var gameId = playniteGameIdOverride ?? gameData?.PlayniteGameId;
+            var item = new AchievementDisplayItem
+            {
+                GameName = gameData?.GameName ?? "Unknown",
+                SortingName = gameData?.SortingName ?? gameData?.GameName ?? "Unknown",
+                PlayniteGameId = gameId,
+                DisplayName = achievement.DisplayName ?? achievement.ApiName ?? "Unknown",
+                Description = achievement.Description ?? string.Empty,
+                IconPath = achievement.UnlockedIconPath,
+                UnlockTimeUtc = achievement.UnlockTimeUtc,
+                GlobalPercentUnlocked = achievement.GlobalPercentUnlocked,
+                Unlocked = achievement.Unlocked,
+                Hidden = achievement.Hidden,
+                ApiName = achievement.ApiName,
+                ShowHiddenIcon = options?.ShowHiddenIcon ?? false,
+                ShowHiddenTitle = options?.ShowHiddenTitle ?? false,
+                ShowHiddenDescription = options?.ShowHiddenDescription ?? false,
+                ProgressNum = achievement.ProgressNum,
+                ProgressDenom = achievement.ProgressDenom,
+                PointsValue = ResolvePoints(achievement, options),
+                TrophyType = achievement.TrophyType,
+                IsRevealed = IsRevealed(gameData, achievement, options, gameId)
+            };
+
+            return item;
+        }
+
+        public static RecentAchievementItem CreateRecentItem(
+            GameAchievementData gameData,
+            AchievementDetail achievement,
+            AchievementProjectionOptions options,
+            string gameIconPath,
+            string gameCoverPath)
+        {
+            if (achievement == null || !achievement.Unlocked || !achievement.UnlockTimeUtc.HasValue)
+            {
+                return null;
+            }
+
+            return new RecentAchievementItem
+            {
+                ApiName = achievement.ApiName,
+                PlayniteGameId = gameData?.PlayniteGameId,
+                Name = achievement.DisplayName ?? achievement.ApiName ?? "Unknown",
+                Description = achievement.Description ?? string.Empty,
+                GameName = gameData?.GameName ?? "Unknown",
+                IconPath = achievement.UnlockedIconPath,
+                UnlockTime = DateTimeUtilities.AsUtcKind(achievement.UnlockTimeUtc.Value),
+                GlobalPercentUnlocked = achievement.GlobalPercentUnlocked,
+                PointsValue = ResolvePoints(achievement, options),
+                ProgressNum = achievement.ProgressNum,
+                ProgressDenom = achievement.ProgressDenom,
+                GameIconPath = gameIconPath,
+                GameCoverPath = gameCoverPath,
+                Hidden = achievement.Hidden,
+                TrophyType = achievement.TrophyType
+            };
+        }
+
+        public static void AccumulateRarity(AchievementDetail achievement, ref int common, ref int uncommon, ref int rare, ref int ultraRare)
+        {
+            if (achievement?.GlobalPercentUnlocked.HasValue != true)
+            {
+                return;
+            }
+
+            var tier = RarityHelper.GetRarityTier(achievement.GlobalPercentUnlocked.Value);
+            switch (tier)
+            {
+                case RarityTier.UltraRare:
+                    ultraRare++;
+                    break;
+                case RarityTier.Rare:
+                    rare++;
+                    break;
+                case RarityTier.Uncommon:
+                    uncommon++;
+                    break;
+                default:
+                    common++;
+                    break;
+            }
+        }
+
+        public static void AccumulateTrophy(AchievementDetail achievement, ref int platinum, ref int gold, ref int silver, ref int bronze)
+        {
+            if (achievement == null || string.IsNullOrWhiteSpace(achievement.TrophyType))
+            {
+                return;
+            }
+
+            switch (achievement.TrophyType.ToLowerInvariant())
+            {
+                case "platinum":
+                    platinum++;
+                    break;
+                case "gold":
+                    gold++;
+                    break;
+                case "silver":
+                    silver++;
+                    break;
+                case "bronze":
+                    bronze++;
+                    break;
+            }
+        }
+
+        public static string MakeRevealKey(Guid? playniteGameId, string apiName, string gameName)
+        {
+            var gamePart = playniteGameId?.ToString() ?? (gameName ?? string.Empty);
+            return $"{gamePart}\u001f{apiName ?? string.Empty}";
+        }
+
+        private static int? ResolvePoints(AchievementDetail achievement, AchievementProjectionOptions options)
+        {
+            if (achievement == null)
+            {
+                return null;
+            }
+
+            if (options?.UseScaledPoints == true)
+            {
+                return achievement.ScaledPoints ?? achievement.Points;
+            }
+
+            return achievement.Points;
+        }
+
+        private static bool IsRevealed(
+            GameAchievementData gameData,
+            AchievementDetail achievement,
+            AchievementProjectionOptions options,
+            Guid? gameId)
+        {
+            if (achievement == null || !achievement.Hidden || achievement.Unlocked)
+            {
+                return false;
+            }
+
+            var hidesAny = !(options?.ShowHiddenIcon ?? false) ||
+                           !(options?.ShowHiddenTitle ?? false) ||
+                           !(options?.ShowHiddenDescription ?? false);
+            if (!hidesAny || options?.RevealedKeys == null || options.RevealedKeys.Count == 0)
+            {
+                return false;
+            }
+
+            var key = MakeRevealKey(gameId, achievement.ApiName, gameData?.GameName);
+            return options.RevealedKeys.Contains(key);
+        }
+    }
+}

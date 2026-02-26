@@ -1,6 +1,5 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
-using PlayniteAchievements.Providers.Steam;
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
@@ -22,12 +21,15 @@ namespace PlayniteAchievements.Services
     /// <summary>
     /// Manages user achievement refreshing and caching operations.
     /// </summary>
-    public class AchievementManager : IDisposable
+    public class AchievementService : IDisposable
     {
         private readonly object _runLock = new object();
         private readonly object _pointsColumnVisibilityLock = new object();
         private readonly object _reportLock = new object();
         private CancellationTokenSource _activeRunCts;
+        private Guid? _activeOperationId;
+        private RefreshModeType? _activeRefreshMode;
+        private Guid? _activeSingleGameId;
 
         public event EventHandler<ProgressReport> RebuildProgress;
 
@@ -36,6 +38,7 @@ namespace PlayniteAchievements.Services
 
         // Progress throttling
         private ProgressReport _pendingReport;
+        private bool _pendingReportIsPriority;
         private long _lastReportTimestamp = -1; // Stopwatch.GetTimestamp() for high-precision throttling
         private System.Timers.Timer _reportThrottleTimer;
         private const int ReportThrottleIntervalMs = 1000;
@@ -64,12 +67,9 @@ namespace PlayniteAchievements.Services
 
         // Dependencies that need disposal
         private readonly IReadOnlyList<IDataProvider> _providers;
-        private readonly RebuildProgressMapper _progressMapper;
         private readonly GameDataHydrator _hydrator;
-        private readonly IconProgressTracker _iconProgressTracker = new IconProgressTracker();
-
-        // Tracks overall refresh progress for icon download progress updates
-        private int _currentOverallIndex;
+        // Tracks overall refresh progress for refresh and icon updates.
+        private int _processedGamesInRun;
         private int _totalGamesInRun;
 
         public ICacheManager Cache => _cacheService;
@@ -78,14 +78,6 @@ namespace PlayniteAchievements.Services
         /// Gets the provider registry for checking/modifying provider enabled state.
         /// </summary>
         public ProviderRegistry ProviderRegistry => _providerRegistry;
-
-        /// <summary>
-        /// Predefined refresh modes available in the plugin.
-        /// Generated automatically from RefreshModeType enum.
-        /// </summary>
-        private static readonly RefreshMode[] PredefinedRefreshModes = ((RefreshModeType[])Enum.GetValues(typeof(RefreshModeType)))
-            .Select(m => new RefreshMode(m, m.GetResourceKey(), m.GetShortResourceKey()))
-            .ToArray();
 
         /// <summary>
         /// Checks if at least one provider is enabled and has valid authentication credentials configured.
@@ -123,12 +115,18 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public IReadOnlyList<RefreshMode> GetRefreshModes()
         {
-            foreach (var mode in PredefinedRefreshModes)
+            return ((RefreshModeType[])Enum.GetValues(typeof(RefreshModeType)))
+                .Select(modeType =>
             {
-                mode.DisplayName = ResourceProvider.GetString(mode.DisplayNameResourceKey) ?? mode.Key;
-                mode.ShortDisplayName = ResourceProvider.GetString(mode.ShortDisplayNameResourceKey) ?? mode.Key;
-            }
-            return PredefinedRefreshModes;
+                var mode = new RefreshMode(modeType, modeType.GetResourceKey(), modeType.GetShortResourceKey())
+                {
+                    DisplayName = ResourceProvider.GetString(modeType.GetResourceKey()) ?? modeType.GetKey(),
+                    ShortDisplayName = ResourceProvider.GetString(modeType.GetShortResourceKey()) ?? modeType.GetKey()
+                };
+
+                return mode;
+            })
+            .ToList();
         }
 
         public event EventHandler<GameCacheUpdatedEventArgs> GameCacheUpdated
@@ -149,7 +147,7 @@ namespace PlayniteAchievements.Services
             remove => _cacheService.CacheInvalidated -= value;
         }
 
-        public AchievementManager(
+        public AchievementService(
             IPlayniteAPI api,
             PlayniteAchievementsSettings settings,
             ILogger logger,
@@ -168,14 +166,13 @@ namespace PlayniteAchievements.Services
 
             _cacheService = new CacheManager(api, logger, _plugin);
             _providers = providers.ToList();
-            _progressMapper = new RebuildProgressMapper();
             _hydrator = new GameDataHydrator(api, _settings.Persisted);
 
             _ = Task.Run(() =>
             {
                 try
                 {
-                    using (PerfScope.Start(_logger, "AchievementManager.InitializePointsColumnVisibilityDefaults.Async", thresholdMs: 25))
+                    using (PerfScope.Start(_logger, "AchievementService.InitializePointsColumnVisibilityDefaults.Async", thresholdMs: 25))
                     {
                         InitializePointsColumnVisibilityDefaults();
                     }
@@ -229,25 +226,76 @@ namespace PlayniteAchievements.Services
             dispatcher.InvokeIfNeeded(action, DispatcherPriority.Background);
         }
 
-        private void Report(string message, int current = 0, int total = 0, bool canceled = false)
+        private (Guid? OperationId, RefreshModeType? Mode, Guid? SingleGameId) GetActiveRunContext()
+        {
+            lock (_runLock)
+            {
+                return (_activeOperationId, _activeRefreshMode, _activeSingleGameId);
+            }
+        }
+
+        private void Report(
+            string message,
+            int current = 0,
+            int total = 0,
+            bool canceled = false,
+            Guid? operationId = null,
+            RefreshModeType? mode = null,
+            Guid? currentGameId = null)
         {
             var report = new ProgressReport
             {
                 Message = message,
                 CurrentStep = current,
                 TotalSteps = total,
-                IsCanceled = canceled
+                IsCanceled = canceled,
+                OperationId = operationId,
+                Mode = mode,
+                CurrentGameId = currentGameId
             };
 
+            Report(report);
+        }
+
+        private void Report(ProgressReport report)
+        {
+            Report(report, prioritizePending: false);
+        }
+
+        private void Report(ProgressReport report, bool prioritizePending)
+        {
+            if (report == null)
+            {
+                return;
+            }
+
+            var context = GetActiveRunContext();
+            if (!report.OperationId.HasValue)
+            {
+                report.OperationId = context.OperationId;
+            }
+
+            if (!report.Mode.HasValue)
+            {
+                report.Mode = context.Mode;
+            }
+
+            if (!report.CurrentGameId.HasValue && report.Mode == RefreshModeType.Single)
+            {
+                report.CurrentGameId = context.SingleGameId;
+            }
+
             _lastProgress = report;
-            if (!string.IsNullOrWhiteSpace(message))
-                _lastStatus = message;
+            if (!string.IsNullOrWhiteSpace(report.Message))
+            {
+                _lastStatus = report.Message;
+            }
 
             var handler = RebuildProgress;
             if (handler == null) return;
 
             // Always report immediately for final/canceled updates
-            var isFinal = canceled || (total > 0 && current >= total);
+            var isFinal = report.IsCanceled || (report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps);
 
             // Fast path: use lock-free timestamp check for throttling decision
             var nowTimestamp = Stopwatch.GetTimestamp();
@@ -263,7 +311,12 @@ namespace PlayniteAchievements.Services
                         // Within throttle window - update pending report under lock
                         lock (_reportLock)
                         {
-                            _pendingReport = report;
+                            if (_pendingReport == null || prioritizePending || !_pendingReportIsPriority)
+                            {
+                                _pendingReport = report;
+                                _pendingReportIsPriority = prioritizePending;
+                            }
+
                             if (_reportThrottleTimer == null)
                             {
                                 _reportThrottleTimer = new System.Timers.Timer(ReportThrottleIntervalMs);
@@ -285,6 +338,7 @@ namespace PlayniteAchievements.Services
             {
                 Interlocked.Exchange(ref _lastReportTimestamp, nowTimestamp);
                 _pendingReport = null;
+                _pendingReportIsPriority = false;
                 StopThrottleTimer();
                 SendReportToUi(report, handler);
             }
@@ -300,6 +354,7 @@ namespace PlayniteAchievements.Services
                 handler = RebuildProgress;
                 reportToSend = _pendingReport;
                 _pendingReport = null;
+                _pendingReportIsPriority = false;
                 Interlocked.Exchange(ref _lastReportTimestamp, Stopwatch.GetTimestamp());
             }
 
@@ -486,23 +541,14 @@ namespace PlayniteAchievements.Services
         }
 
         // -----------------------------
-        // Centralized progress mapping
-        // -----------------------------
-
-        private void HandleUpdate(RebuildUpdate update)
-        {
-            var mapped = _progressMapper.Map(update);
-            if (mapped != null)
-            {
-                Report(mapped.Message, mapped.CurrentStep, mapped.TotalSteps, mapped.IsCanceled);
-            }
-        }
-
-        // -----------------------------
         // Managed refresh runner
         // -----------------------------
 
-        private bool TryBeginRun(out CancellationTokenSource cts)
+        private bool TryBeginRun(
+            Guid operationId,
+            RefreshModeType mode,
+            Guid? singleGameId,
+            out CancellationTokenSource cts)
         {
             lock (_runLock)
             {
@@ -510,12 +556,21 @@ namespace PlayniteAchievements.Services
                 {
                     _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshAlreadyInProgress"));
                     cts = null;
-                    Report(_lastStatus ?? ResourceProvider.GetString("LOCPlayAch_Status_UpdatingCache"), 0, 1);
+                    Report(
+                        _lastStatus ?? ResourceProvider.GetString("LOCPlayAch_Status_UpdatingCache"),
+                        0,
+                        1,
+                        operationId: _activeOperationId,
+                        mode: _activeRefreshMode,
+                        currentGameId: _activeSingleGameId);
                     return false;
                 }
 
                 _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshStarting"));
                 _activeRunCts = new CancellationTokenSource();
+                _activeOperationId = operationId;
+                _activeRefreshMode = mode;
+                _activeSingleGameId = singleGameId;
                 cts = _activeRunCts;
                 return true;
             }
@@ -528,32 +583,51 @@ namespace PlayniteAchievements.Services
             {
                 _activeRunCts?.Dispose();
                 _activeRunCts = null;
+                _activeOperationId = null;
+                _activeRefreshMode = null;
+                _activeSingleGameId = null;
             }
         }
 
         private async Task RunManagedAsync(
-            Func<CancellationToken, Task<RebuildPayload>> runner,
+            RefreshModeType mode,
+            Guid? singleGameId,
+            Func<Guid, CancellationToken, Task<RebuildPayload>> runner,
             Func<RebuildPayload, string> finalMessage,
             string errorLogMessage)
         {
+            var operationId = Guid.NewGuid();
+
             if (!HasAnyAuthenticatedProvider())
             {
                 _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshRequestedNoProviders"));
-                Report(ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"), 0, 1);
+                Report(
+                    ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"),
+                    0,
+                    1,
+                    operationId: operationId,
+                    mode: mode,
+                    currentGameId: singleGameId);
                 return;
             }
 
-            if (!TryBeginRun(out var cts))
+            if (!TryBeginRun(operationId, mode, singleGameId, out var cts))
                 return;
 
-            _progressMapper.Reset();
-            _iconProgressTracker.Reset();
+            Interlocked.Exchange(ref _processedGamesInRun, 0);
+            _totalGamesInRun = 0;
             Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
             Interlocked.Exchange(ref _lastCacheInvalidationTimestamp, -1);
 
             // Report immediately so UI updates buttons before any async work
             var startMsg = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
-            Report(startMsg, 0, 1);
+            Report(
+                startMsg,
+                0,
+                1,
+                operationId: operationId,
+                mode: mode,
+                currentGameId: singleGameId);
 
             RebuildPayload payload = null;
             try
@@ -561,36 +635,59 @@ namespace PlayniteAchievements.Services
                 // Run refresh setup/execution on background thread so UI commands are never blocked
                 // by synchronous pre-refresh work (game filtering, capability checks, etc.).
                 payload = await Task.Run(
-                    async () => await runner(cts.Token).ConfigureAwait(false),
+                    async () => await runner(operationId, cts.Token).ConfigureAwait(false),
                     cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
                 _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshCanceled"));
-                Report(ResourceProvider.GetString("LOCPlayAch_Status_Canceled"), 0, 1, true);
+                Report(
+                    ResourceProvider.GetString("LOCPlayAch_Status_Canceled"),
+                    0,
+                    1,
+                    canceled: true,
+                    operationId: operationId,
+                    mode: mode,
+                    currentGameId: singleGameId);
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, errorLogMessage);
-                Report(ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"), 0, 1);
+                Report(
+                    ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"),
+                    0,
+                    1,
+                    operationId: operationId,
+                    mode: mode,
+                    currentGameId: singleGameId);
             }
             finally
             {
                 var hasSavedGames = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0) > 0;
                 var wasCanceled = cts.IsCancellationRequested;
+                var totalGames = Math.Max(1, _totalGamesInRun);
                 EndRun();
 
                 // Send final completion report AFTER EndRun so IsRebuilding is false when UI processes it
                 if (!wasCanceled && payload != null)
                 {
                     var msg = ResolveFinalSuccessMessage(payload, finalMessage);
-                    Report(msg, 1, 1);
+                    Report(
+                        msg,
+                        totalGames,
+                        totalGames,
+                        operationId: operationId,
+                        mode: mode,
+                        currentGameId: singleGameId);
                 }
 
                 if (hasSavedGames)
                 {
                     NotifyCacheInvalidatedThrottled(force: true);
                 }
+
+                _totalGamesInRun = 0;
+                Interlocked.Exchange(ref _processedGamesInRun, 0);
             }
         }
 
@@ -598,6 +695,13 @@ namespace PlayniteAchievements.Services
         {
             public Game Game { get; set; }
             public IDataProvider Provider { get; set; }
+        }
+
+        private sealed class CustomRefreshResolution
+        {
+            public IReadOnlyList<IDataProvider> Providers { get; set; }
+            public IReadOnlyList<Guid> TargetGameIds { get; set; }
+            public bool RunProvidersInParallel { get; set; }
         }
 
         private IReadOnlyList<IDataProvider> GetAuthenticatedProviders()
@@ -636,7 +740,7 @@ namespace PlayniteAchievements.Services
             return null;
         }
 
-        private List<RefreshGameTarget> GetrefreshTargets(CacheRefreshOptions options, IReadOnlyList<IDataProvider> providers)
+        private List<RefreshGameTarget> GetRefreshTargets(CacheRefreshOptions options, IReadOnlyList<IDataProvider> providers)
         {
             options ??= new CacheRefreshOptions();
 
@@ -724,109 +828,228 @@ namespace PlayniteAchievements.Services
 
         private async Task<RebuildPayload> RefreshAsync(
             CacheRefreshOptions options,
-            Action<RebuildUpdate> progressCallback,
-            CancellationToken cancel)
+            CancellationToken cancel,
+            Guid operationId,
+            RefreshModeType mode,
+            Guid? singleGameId = null,
+            IReadOnlyList<IDataProvider> providerScope = null,
+            bool? runProvidersInParallelOverride = null)
         {
             options ??= new CacheRefreshOptions();
 
-            var authenticatedProviders = GetAuthenticatedProviders();
+            var authenticatedProviders = (providerScope ?? GetAuthenticatedProviders())
+                .Where(provider => provider != null)
+                .ToList();
             if (authenticatedProviders.Count == 0)
             {
                 _logger?.Warn(ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoAuthenticatedProviders"));
-                return new RebuildPayload();
+                return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            var refreshTargets = GetrefreshTargets(options, authenticatedProviders);
-            var gamesToRefresh = refreshTargets.Select(x => x.Game).ToList();
-            var gamesByProvider = refreshTargets
-                .GroupBy(x => x.Provider)
-                .ToDictionary(g => g.Key, g => g.Select(x => x.Game).ToList());
+            var refreshTargets = GetRefreshTargets(options, authenticatedProviders);
+            var providerOrder = authenticatedProviders
+                .Select((provider, index) => new { provider, index })
+                .ToDictionary(x => x.provider, x => x.index);
 
-            // log games by providers to check, list all games and all providers
+            var providerPlans = refreshTargets
+                .GroupBy(x => x.Provider)
+                .OrderBy(group => providerOrder.TryGetValue(group.Key, out var index) ? index : int.MaxValue)
+                .Select(group => new RefreshPipeline.ProviderExecutionPlan
+                {
+                    Provider = group.Key,
+                    Games = group.Select(x => x.Game).ToList()
+                })
+                .ToList();
+
             _logger.Debug(string.Format(
                 ResourceProvider.GetString("LOCPlayAch_Log_RefreshSummary"),
-                gamesToRefresh.Count,
+                refreshTargets.Count,
                 _providers.Count,
-                gamesByProvider.Count));
-            // _logger.Debug($"[Refresh] Games with providers: {string.Join(", ", refreshTargets.Select(x => x.Game.Name + " => " + x.Provider.ProviderName))}");
+                providerPlans.Count));
 
-            if (gamesByProvider.Count == 0)
+            if (providerPlans.Count == 0)
             {
                 _logger?.Warn(ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoMatchingProviders"));
-                return new RebuildPayload();
+                return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            var totalGames = gamesToRefresh.Count;
-            var summary = new RebuildSummary();
-            var refreshedSoFar = 0;
+            _totalGamesInRun = refreshTargets.Count;
+            Interlocked.Exchange(ref _processedGamesInRun, 0);
 
-            // Track overall progress for icon download progress updates
-            _totalGamesInRun = totalGames;
+            var runProvidersInParallel = runProvidersInParallelOverride ?? (_settings?.Persisted?.EnableParallelProviderRefresh ?? true);
+            var providerResults = await RefreshPipeline.ExecuteProvidersAsync(
+                providerPlans,
+                runProvidersInParallel,
+                plan => plan.Provider.RefreshAsync(
+                    plan.Games,
+                    game => ReportGameStarting(game, operationId, mode, singleGameId),
+                    (game, data) => OnProviderGameCompleted(plan.Provider, game, data, operationId, mode, singleGameId, cancel),
+                    cancel),
+                cancel).ConfigureAwait(false);
 
-            foreach (var kvp in gamesByProvider)
+            var mergedSummary = new RebuildSummary();
+            var authRequired = false;
+
+            foreach (var result in providerResults)
             {
-                var provider = kvp.Key;
-                var games = kvp.Value;
-
-                // Create a localized callback for this provider
-                Action<ProviderRefreshUpdate> wrappedCallback = (u) =>
+                if (result?.Payload == null)
                 {
-                    if (u == null) return;
-
-                    if (u.AuthRequired)
-                    {
-                        progressCallback?.Invoke(new RebuildUpdate { Kind = RebuildUpdateKind.AuthRequired });
-                        return;
-                    }
-
-                    // Map provider-local index to global index
-                    var localIndex = Math.Min(u.CurrentIndex, games.Count);
-
-                    // localIndex is 1-based (from progress reporter steps), so we just add the offset
-                    var globalIndex = refreshedSoFar + localIndex;
-
-                    // Track current game index for icon progress updates
-                    _currentOverallIndex = globalIndex;
-
-                    var update = new RebuildUpdate
-                    {
-                        Kind = RebuildUpdateKind.UserProgress,
-                        Stage = RebuildStage.RefreshingUserAchievements,
-                        
-                        // Provider details
-                        // Use global counts for the text display so it doesn't look like it resets
-                        // UserAppIndex is 0-based for the text formatter
-                        UserAppIndex = globalIndex - 1,
-                        UserAppCount = totalGames,
-                        CurrentGameName = u.CurrentGameName,
-                        
-                        // Global details
-                        OverallIndex = globalIndex,
-                        OverallCount = totalGames
-                    };
-
-                    progressCallback?.Invoke(update);
-                };
-
-                cancel.ThrowIfCancellationRequested();
-                var payload = await provider
-                    .RefreshAsync(games, wrappedCallback, data => OnGameRefreshed(provider, data, cancel), cancel)
-                    .ConfigureAwait(false);
-
-                refreshedSoFar += games.Count;
-
-                if (payload?.Summary == null)
                     continue;
+                }
 
-                summary.GamesRefreshed += payload.Summary.GamesRefreshed;
-                summary.GamesWithAchievements += payload.Summary.GamesWithAchievements;
-                summary.GamesWithoutAchievements += payload.Summary.GamesWithoutAchievements;
+                authRequired |= result.Payload.AuthRequired;
+
+                if (result.Payload.Summary == null)
+                {
+                    continue;
+                }
+
+                mergedSummary.GamesRefreshed += result.Payload.Summary.GamesRefreshed;
+                mergedSummary.GamesWithAchievements += result.Payload.Summary.GamesWithAchievements;
+                mergedSummary.GamesWithoutAchievements += result.Payload.Summary.GamesWithoutAchievements;
             }
 
-            return new RebuildPayload { Summary = summary };
+            return new RebuildPayload
+            {
+                Summary = mergedSummary,
+                AuthRequired = authRequired
+            };
         }
 
-        private async Task OnGameRefreshed(IDataProvider provider, GameAchievementData data, CancellationToken cancel = default)
+        private void ReportGameStarting(
+            Game game,
+            Guid operationId,
+            RefreshModeType mode,
+            Guid? singleGameId)
+        {
+            var totalGames = Math.Max(1, _totalGamesInRun);
+            var completedGames = Math.Min(Volatile.Read(ref _processedGamesInRun), totalGames);
+            var displayIndex = Math.Min(totalGames, completedGames + 1);
+            var currentGameId = game?.Id ?? singleGameId;
+            var gameName = game?.Name;
+            var message = BuildRefreshingGameMessage(gameName, displayIndex, totalGames);
+
+            Report(
+                message,
+                completedGames,
+                totalGames,
+                operationId: operationId,
+                mode: mode,
+                currentGameId: currentGameId);
+        }
+
+        private void ReportIconProgress(
+            Game game,
+            GameAchievementData data,
+            int iconsDownloaded,
+            int totalIcons,
+            Guid operationId,
+            RefreshModeType mode,
+            Guid? singleGameId)
+        {
+            if (totalIcons <= 0)
+            {
+                return;
+            }
+
+            var totalGames = Math.Max(1, _totalGamesInRun);
+            var completedGames = Math.Min(Volatile.Read(ref _processedGamesInRun), totalGames);
+            var displayIndex = Math.Min(totalGames, completedGames + 1);
+            var currentGameId = data?.PlayniteGameId ?? game?.Id ?? singleGameId;
+            var gameName = data?.GameName ?? game?.Name;
+            var message = BuildRefreshingGameMessage(gameName, displayIndex, totalGames, iconsDownloaded, totalIcons);
+            var report = new ProgressReport
+            {
+                Message = message,
+                CurrentStep = completedGames,
+                TotalSteps = totalGames,
+                OperationId = operationId,
+                Mode = mode,
+                CurrentGameId = currentGameId
+            };
+
+            Report(report, prioritizePending: true);
+        }
+
+        private string BuildRefreshingGameMessage(
+            string gameName,
+            int currentIndex,
+            int totalGames,
+            int iconsDownloaded = 0,
+            int totalIcons = 0)
+        {
+            var safeGameName = string.IsNullOrWhiteSpace(gameName)
+                ? ResourceProvider.GetString("LOCPlayAch_Text_Ellipsis")
+                : gameName;
+
+            var countsText = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Format_Counts"),
+                Math.Max(0, currentIndex),
+                Math.Max(1, totalGames));
+
+            if (totalIcons > 0)
+            {
+                return string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Targeted_RefreshingGameWithIcons"),
+                    safeGameName,
+                    countsText,
+                    Math.Max(0, iconsDownloaded),
+                    Math.Max(0, totalIcons));
+            }
+
+            return string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Targeted_RefreshingGameWithCounts"),
+                safeGameName,
+                countsText);
+        }
+
+        private async Task OnProviderGameCompleted(
+            IDataProvider provider,
+            Game game,
+            GameAchievementData data,
+            Guid operationId,
+            RefreshModeType mode,
+            Guid? singleGameId,
+            CancellationToken cancel)
+        {
+            try
+            {
+                if (data != null)
+                {
+                    await OnGameRefreshed(provider, game, data, operationId, mode, singleGameId, cancel).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                var totalGames = Math.Max(1, _totalGamesInRun);
+                var completedGames = Interlocked.Increment(ref _processedGamesInRun);
+                if (completedGames > totalGames)
+                {
+                    completedGames = totalGames;
+                }
+
+                var currentGameId = data?.PlayniteGameId ?? game?.Id ?? singleGameId;
+                var gameName = data?.GameName ?? game?.Name;
+                var message = BuildRefreshingGameMessage(gameName, completedGames, totalGames);
+
+                Report(
+                    message,
+                    completedGames,
+                    totalGames,
+                    operationId: operationId,
+                    mode: mode,
+                    currentGameId: currentGameId);
+            }
+        }
+
+        private async Task OnGameRefreshed(
+            IDataProvider provider,
+            Game game,
+            GameAchievementData data,
+            Guid operationId,
+            RefreshModeType mode,
+            Guid? singleGameId,
+            CancellationToken cancel = default)
         {
             if (data?.PlayniteGameId == null) return;
 
@@ -844,7 +1067,11 @@ namespace PlayniteAchievements.Services
 
             TryAutoEnablePointsColumnForPointsProvider(provider, data);
 
-            await PopulateAchievementIconCacheAsync(data, cancel).ConfigureAwait(false);
+            await PopulateAchievementIconCacheAsync(
+                data,
+                cancel,
+                (downloaded, total) => ReportIconProgress(game, data, downloaded, total, operationId, mode, singleGameId))
+                .ConfigureAwait(false);
 
             var key = data.PlayniteGameId.Value.ToString();
 
@@ -1021,6 +1248,11 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        public void PersistSettingsForUi()
+        {
+            TryPersistSettings(notifySettingsSaved: true);
+        }
+
         private void NotifyCacheInvalidatedThrottled(bool force)
         {
             var nowTimestamp = Stopwatch.GetTimestamp();
@@ -1064,10 +1296,13 @@ namespace PlayniteAchievements.Services
             return !string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath);
         }
 
-        private async Task PopulateAchievementIconCacheAsync(GameAchievementData data, CancellationToken cancel)
+        private async Task PopulateAchievementIconCacheAsync(
+            GameAchievementData data,
+            CancellationToken cancel,
+            Action<int, int> onIconProgress = null)
         {
-            // Reset icon progress for each game to show per-game counts
-            _iconProgressTracker.Reset();
+            // Track icon progress per game so parallel provider refreshes don't clobber each other.
+            var iconProgressTracker = new IconProgressTracker();
 
             if (data?.Achievements == null || data.Achievements.Count == 0)
             {
@@ -1142,7 +1377,7 @@ namespace PlayniteAchievements.Services
             }
 
             // Only track progress for icons that actually need downloading
-            _iconProgressTracker.IncrementTotal(iconsToProcess.Count);
+            iconProgressTracker.IncrementTotal(iconsToProcess.Count);
 
             var iconTasks = iconsToProcess.Select(async iconPath =>
             {
@@ -1151,22 +1386,10 @@ namespace PlayniteAchievements.Services
                 // Only emit progress if not cancelled
                 if (!cancel.IsCancellationRequested)
                 {
-                    _iconProgressTracker.IncrementDownloaded();
+                    iconProgressTracker.IncrementDownloaded();
 
-                    var (downloaded, total) = _iconProgressTracker.GetSnapshot();
-                    HandleUpdate(new RebuildUpdate
-                    {
-                        Kind = RebuildUpdateKind.UserProgress,
-                        Stage = RebuildStage.RefreshingUserAchievements,
-                        CurrentGameName = data.GameName,
-                        IconsDownloaded = downloaded,
-                        TotalIcons = total,
-                        // Include overall progress for correct percentage display
-                        UserAppIndex = _currentOverallIndex - 1,
-                        UserAppCount = _totalGamesInRun,
-                        OverallIndex = _currentOverallIndex,
-                        OverallCount = _totalGamesInRun
-                    });
+                    var (downloaded, total) = iconProgressTracker.GetSnapshot();
+                    onIconProgress?.Invoke(downloaded, total);
                 }
 
                 return result;
@@ -1252,6 +1475,9 @@ namespace PlayniteAchievements.Services
 
         private string ResolveFinalSuccessMessage(RebuildPayload payload, Func<RebuildPayload, string> finalMessage)
         {
+            var defaultMessage = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
+            string resolvedMessage = null;
+
             if (finalMessage != null)
             {
                 try
@@ -1259,7 +1485,7 @@ namespace PlayniteAchievements.Services
                     var message = finalMessage(payload);
                     if (!string.IsNullOrWhiteSpace(message))
                     {
-                        return message;
+                        resolvedMessage = message;
                     }
                 }
                 catch (Exception ex)
@@ -1268,7 +1494,23 @@ namespace PlayniteAchievements.Services
                 }
             }
 
-            return ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
+            if (string.IsNullOrWhiteSpace(resolvedMessage))
+            {
+                resolvedMessage = defaultMessage;
+            }
+
+            if (payload?.AuthRequired == true)
+            {
+                var suffix = ResourceProvider.GetString("LOCPlayAch_Status_RefreshCompleteAuthRequiredSuffix");
+                if (string.IsNullOrWhiteSpace(suffix))
+                {
+                    suffix = "Some providers require authentication.";
+                }
+
+                return string.Concat(resolvedMessage, " ", suffix);
+            }
+
+            return resolvedMessage;
         }
 
         // -----------------------------
@@ -1276,12 +1518,16 @@ namespace PlayniteAchievements.Services
         // -----------------------------
 
         private Task StartManagedRefreshCoreAsync(
+            RefreshModeType mode,
             CacheRefreshOptions options,
             Func<RebuildPayload, string> finalMessage,
-            string errorLogMessage)
+            string errorLogMessage,
+            Guid? singleGameId = null)
         {
             return RunManagedAsync(
-                cancel => RefreshAsync(options, HandleUpdate, cancel),
+                mode,
+                singleGameId,
+                (operationId, cancel) => RefreshAsync(options, cancel, operationId, mode, singleGameId),
                 finalMessage,
                 errorLogMessage
             );
@@ -1302,11 +1548,12 @@ namespace PlayniteAchievements.Services
                     _logger.Info(emptySelectionLogMessage);
                 }
 
-                Report(FormatRefreshCompletionWithModeAndCount(mode, 0), 1, 1);
+                Report(FormatRefreshCompletionWithModeAndCount(mode, 0), 1, 1, mode: mode);
                 return Task.CompletedTask;
             }
 
             return StartManagedRefreshCoreAsync(
+                mode,
                 new CacheRefreshOptions { PlayniteGameIds = gameIds, IncludeUnplayedGames = true, BypassExclusions = bypassExclusions },
                 finalMessage,
                 errorLogMessage
@@ -1354,9 +1601,11 @@ namespace PlayniteAchievements.Services
                 .ToList();
         }
 
-        private List<Guid> GetMissingGameIds()
+        private List<Guid> GetMissingGameIds(IReadOnlyList<IDataProvider> providerScope = null)
         {
-            var authenticatedProviders = GetAuthenticatedProviders();
+            var authenticatedProviders = (providerScope ?? GetAuthenticatedProviders())
+                .Where(provider => provider != null)
+                .ToList();
             if (authenticatedProviders.Count == 0)
             {
                 _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshMissingNoAuthenticatedProviders"));
@@ -1398,9 +1647,252 @@ namespace PlayniteAchievements.Services
             return missingGameIds;
         }
 
+        private IReadOnlyList<IDataProvider> ResolveCustomProviders(CustomRefreshOptions options)
+        {
+            var authenticatedProviders = GetAuthenticatedProviders();
+            if (authenticatedProviders.Count == 0)
+            {
+                return Array.Empty<IDataProvider>();
+            }
+
+            var requestedKeys = options?.ProviderKeys?
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (requestedKeys == null || requestedKeys.Count == 0)
+            {
+                return authenticatedProviders;
+            }
+
+            var requestedSet = new HashSet<string>(requestedKeys, StringComparer.OrdinalIgnoreCase);
+            return authenticatedProviders
+                .Where(provider => requestedSet.Contains(provider.ProviderKey))
+                .ToList();
+        }
+
+        private List<Game> ResolveCustomScopeGames(
+            CustomRefreshOptions options,
+            IReadOnlyList<IDataProvider> providers)
+        {
+            options ??= new CustomRefreshOptions();
+            var includeUnplayed = options.IncludeUnplayedOverride ?? (_settings?.Persisted?.IncludeUnplayedGames ?? true);
+            var allGames = _api.Database.Games.Where(game => game != null).ToList();
+
+            IEnumerable<Game> scopedGames;
+            switch (options.Scope)
+            {
+                case CustomGameScope.All:
+                    scopedGames = allGames;
+                    if (!includeUnplayed)
+                    {
+                        scopedGames = scopedGames.Where(game => game.Playtime > 0);
+                    }
+                    break;
+
+                case CustomGameScope.Installed:
+                    scopedGames = allGames.Where(game => game.IsInstalled);
+                    if (!includeUnplayed)
+                    {
+                        scopedGames = scopedGames.Where(game => game.Playtime > 0);
+                    }
+                    break;
+
+                case CustomGameScope.Favorites:
+                    scopedGames = allGames.Where(game => game.Favorite);
+                    if (!includeUnplayed)
+                    {
+                        scopedGames = scopedGames.Where(game => game.Playtime > 0);
+                    }
+                    break;
+
+                case CustomGameScope.Recent:
+                    var recentLimit = Math.Max(1, options.RecentLimitOverride ?? (_settings?.Persisted?.RecentRefreshGamesCount ?? 10));
+                    scopedGames = allGames
+                        .Where(game => game.LastActivity.HasValue)
+                        .OrderByDescending(game => game.LastActivity.Value);
+
+                    if (!includeUnplayed)
+                    {
+                        scopedGames = scopedGames.Where(game => game.Playtime > 0);
+                    }
+
+                    scopedGames = scopedGames.Take(recentLimit);
+                    break;
+
+                case CustomGameScope.LibrarySelected:
+                    scopedGames = _api.MainView.SelectedGames?.Where(game => game != null) ?? Enumerable.Empty<Game>();
+                    break;
+
+                case CustomGameScope.Missing:
+                    var missingIds = GetMissingGameIds(providers);
+                    scopedGames = missingIds
+                        .Select(gameId => _api.Database.Games.Get(gameId))
+                        .Where(game => game != null);
+                    break;
+
+                case CustomGameScope.Explicit:
+                    scopedGames = Enumerable.Empty<Game>();
+                    break;
+
+                default:
+                    scopedGames = allGames;
+                    break;
+            }
+
+            return scopedGames.ToList();
+        }
+
+        private CustomRefreshResolution ResolveCustomRefresh(CustomRefreshOptions options)
+        {
+            var resolvedOptions = options?.Clone() ?? new CustomRefreshOptions();
+            var providers = ResolveCustomProviders(resolvedOptions);
+            var runProvidersInParallel = resolvedOptions.RunProvidersInParallelOverride ?? (_settings?.Persisted?.EnableParallelProviderRefresh ?? true);
+
+            if (providers.Count == 0)
+            {
+                return new CustomRefreshResolution
+                {
+                    Providers = Array.Empty<IDataProvider>(),
+                    TargetGameIds = Array.Empty<Guid>(),
+                    RunProvidersInParallel = runProvidersInParallel
+                };
+            }
+
+            var scopedGames = ResolveCustomScopeGames(resolvedOptions, providers);
+            var includeIds = resolvedOptions.IncludeGameIds?
+                .Where(gameId => gameId != Guid.Empty)
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+            var excludeIds = resolvedOptions.ExcludeGameIds?
+                .Where(gameId => gameId != Guid.Empty)
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+
+            var explicitIncludeSet = new HashSet<Guid>(includeIds);
+            var explicitExcludeSet = new HashSet<Guid>(excludeIds);
+
+            var mergedIds = new List<Guid>();
+            var seenIds = new HashSet<Guid>();
+            foreach (var game in scopedGames)
+            {
+                if (game == null || game.Id == Guid.Empty || !seenIds.Add(game.Id))
+                {
+                    continue;
+                }
+
+                mergedIds.Add(game.Id);
+            }
+
+            foreach (var includeId in includeIds)
+            {
+                if (seenIds.Add(includeId))
+                {
+                    mergedIds.Add(includeId);
+                }
+            }
+
+            if (explicitExcludeSet.Count > 0)
+            {
+                mergedIds = mergedIds
+                    .Where(gameId => !explicitExcludeSet.Contains(gameId))
+                    .ToList();
+            }
+
+            if (resolvedOptions.RespectUserExclusions)
+            {
+                var excludedByUser = _settings?.Persisted?.ExcludedGameIds;
+                if (excludedByUser != null && excludedByUser.Count > 0)
+                {
+                    mergedIds = mergedIds
+                        .Where(gameId =>
+                        {
+                            if (!excludedByUser.Contains(gameId))
+                            {
+                                return true;
+                            }
+
+                            return resolvedOptions.ForceBypassExclusionsForExplicitIncludes &&
+                                   explicitIncludeSet.Contains(gameId) &&
+                                   !explicitExcludeSet.Contains(gameId);
+                        })
+                        .ToList();
+                }
+            }
+
+            var resolvedGames = mergedIds
+                .Select(gameId => _api.Database.Games.Get(gameId))
+                .Where(game => game != null)
+                .ToList();
+
+            var capableGameIds = resolvedGames
+                .Where(game => ResolveProviderForGame(game, providers) != null)
+                .Select(game => game.Id)
+                .ToList();
+
+            return new CustomRefreshResolution
+            {
+                Providers = providers,
+                TargetGameIds = capableGameIds,
+                RunProvidersInParallel = runProvidersInParallel
+            };
+        }
+
+        private void ShowCustomRefreshMessage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            _api?.Dialogs?.ShowMessage(
+                message,
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        public Task ExecuteRefreshAsync(CustomRefreshOptions options)
+        {
+            var resolution = ResolveCustomRefresh(options);
+            if (resolution.Providers.Count == 0)
+            {
+                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_CustomRefreshNoMatchingProviders"));
+                ShowCustomRefreshMessage(ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingProviders"));
+                return Task.CompletedTask;
+            }
+
+            if (resolution.TargetGameIds.Count == 0)
+            {
+                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_CustomRefreshNoMatchingGames"));
+                ShowCustomRefreshMessage(ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingGames"));
+                return Task.CompletedTask;
+            }
+
+            return RunManagedAsync(
+                RefreshModeType.Custom,
+                singleGameId: null,
+                (operationId, cancel) => RefreshAsync(
+                    new CacheRefreshOptions
+                    {
+                        PlayniteGameIds = resolution.TargetGameIds,
+                        IncludeUnplayedGames = true,
+                        BypassExclusions = true
+                    },
+                    cancel,
+                    operationId,
+                    RefreshModeType.Custom,
+                    singleGameId: null,
+                    providerScope: resolution.Providers,
+                    runProvidersInParallelOverride: resolution.RunProvidersInParallel),
+                payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Custom, payload?.Summary?.GamesRefreshed ?? 0),
+                ResourceProvider.GetString("LOCPlayAch_Log_CustomRefreshFailed"));
+        }
+
         private async Task StartManagedMissingRefreshAsync()
         {
-            var missingGameIds = await Task.Run(GetMissingGameIds).ConfigureAwait(false);
+            var missingGameIds = await Task.Run(() => GetMissingGameIds()).ConfigureAwait(false);
             await StartManagedGameIdRefreshAsync(
                 RefreshModeType.Missing,
                 missingGameIds,
@@ -1412,6 +1904,7 @@ namespace PlayniteAchievements.Services
         private Task StartManagedRebuildAsync()
         {
             return StartManagedRefreshCoreAsync(
+                RefreshModeType.Full,
                 FullRefreshOptions(),
                 payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Full, payload?.Summary?.GamesRefreshed ?? 0),
                 ResourceProvider.GetString("LOCPlayAch_Log_RefreshFullFailed")
@@ -1421,15 +1914,18 @@ namespace PlayniteAchievements.Services
         private Task StartManagedSingleGameRefreshAsync(Guid playniteGameId)
         {
             return StartManagedRefreshCoreAsync(
+                RefreshModeType.Single,
                 SingleGameOptions(playniteGameId),
                 payload => ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete"),
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshSingleFailed")
+                ResourceProvider.GetString("LOCPlayAch_Log_RefreshSingleFailed"),
+                playniteGameId
             );
         }
 
         private Task StartManagedRecentRefreshAsync()
         {
             return StartManagedRefreshCoreAsync(
+                RefreshModeType.Recent,
                 RecentRefreshOptions(),
                 payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Recent, payload?.Summary?.GamesRefreshed ?? 0),
                 ResourceProvider.GetString("LOCPlayAch_Log_RefreshRecentFailed")
@@ -1451,6 +1947,39 @@ namespace PlayniteAchievements.Services
             }
 
             return ExecuteRefreshAsync(mode, singleGameId);
+        }
+
+        public Task ExecuteRefreshAsync(RefreshRequest request)
+        {
+            request ??= new RefreshRequest();
+
+            if (request.GameIds != null && request.GameIds.Count > 0)
+            {
+                return ExecuteRefreshForGamesAsync(request.GameIds);
+            }
+
+            if (request.Mode.HasValue)
+            {
+                if (request.Mode.Value == RefreshModeType.Custom)
+                {
+                    return ExecuteRefreshAsync(request.CustomOptions);
+                }
+
+                return ExecuteRefreshAsync(request.Mode.Value, request.SingleGameId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.ModeKey))
+            {
+                if (Enum.TryParse(request.ModeKey, out RefreshModeType parsedMode) &&
+                    parsedMode == RefreshModeType.Custom)
+                {
+                    return ExecuteRefreshAsync(request.CustomOptions);
+                }
+
+                return ExecuteRefreshAsync(request.ModeKey, request.SingleGameId);
+            }
+
+            return ExecuteRefreshAsync(RefreshModeType.Recent, request.SingleGameId);
         }
 
         public Task ExecuteRefreshForGamesAsync(IEnumerable<Guid> gameIds)
@@ -1515,6 +2044,9 @@ namespace PlayniteAchievements.Services
 
                 case RefreshModeType.Missing:
                     return StartManagedMissingRefreshAsync();
+
+                case RefreshModeType.Custom:
+                    return ExecuteRefreshAsync(options: null);
 
                 default:
                     _logger.Warn(string.Format(
@@ -1701,3 +2233,4 @@ namespace PlayniteAchievements.Services
 
     }
 }
+
