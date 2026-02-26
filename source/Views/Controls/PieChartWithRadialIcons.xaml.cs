@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
@@ -17,6 +18,7 @@ namespace PlayniteAchievements.Views.Controls
     public partial class PieChartWithRadialIcons : UserControl
     {
         private static readonly double IconSize = 18.0;
+        private List<PieSeries> subscribedSeries = new List<PieSeries>();
 
         public static readonly DependencyProperty PieSeriesProperty =
             DependencyProperty.Register(nameof(PieSeries), typeof(SeriesCollection), typeof(PieChartWithRadialIcons),
@@ -59,6 +61,7 @@ namespace PlayniteAchievements.Views.Controls
         private static void OnPieSeriesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var control = (PieChartWithRadialIcons)d;
+            control.UnsubscribeFromSeries();
             if (e.OldValue is SeriesCollection oldSeries)
             {
                 oldSeries.CollectionChanged -= control.OnSeriesCollectionChanged;
@@ -66,8 +69,48 @@ namespace PlayniteAchievements.Views.Controls
             if (e.NewValue is SeriesCollection newSeries)
             {
                 newSeries.CollectionChanged += control.OnSeriesCollectionChanged;
+                control.SubscribeToSeries(newSeries);
             }
             control.CalculatePositions();
+        }
+
+        private void UnsubscribeFromSeries()
+        {
+            foreach (var series in subscribedSeries)
+            {
+                series.PropertyChanged -= OnSeriesPropertyChanged;
+                if (series.Values is INotifyCollectionChanged chartValues)
+                {
+                    chartValues.CollectionChanged -= OnChartValuesChanged;
+                }
+            }
+            subscribedSeries.Clear();
+        }
+
+        private void SubscribeToSeries(SeriesCollection collection)
+        {
+            foreach (var series in collection.OfType<PieSeries>())
+            {
+                series.PropertyChanged += OnSeriesPropertyChanged;
+                if (series.Values is INotifyCollectionChanged chartValues)
+                {
+                    chartValues.CollectionChanged += OnChartValuesChanged;
+                }
+                subscribedSeries.Add(series);
+            }
+        }
+
+        private void OnSeriesPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PieSeries.Values))
+            {
+                CalculatePositions();
+            }
+        }
+
+        private void OnChartValuesChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            CalculatePositions();
         }
 
         private static void OnLegendItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -96,6 +139,11 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnSeriesCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
+            UnsubscribeFromSeries();
+            if (PieSeries != null)
+            {
+                SubscribeToSeries(PieSeries);
+            }
             CalculatePositions();
         }
 
