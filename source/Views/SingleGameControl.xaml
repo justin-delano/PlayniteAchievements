@@ -15,6 +15,7 @@
         <ResourceDictionary>
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
+            <converters:IntToVisibilityConverter x:Key="IntToVis"/>
 
             <!-- Style for Expander Header ToggleButton -->
             <Style x:Key="ExpanderHeaderStyle" TargetType="ToggleButton">
