@@ -494,7 +494,7 @@
                                         CellTemplate="{StaticResource AchievementUnlockDateTemplate}"/>
 
                 <!-- Trophy -->
-                <DataGridTemplateColumn Width="56" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="False" SortMemberPath="TrophyType"
+                <DataGridTemplateColumn Width="64" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="True" SortMemberPath="TrophyType"
                                         CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
 
                 <!-- Rarity -->
