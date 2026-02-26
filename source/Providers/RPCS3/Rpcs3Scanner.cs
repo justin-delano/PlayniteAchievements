@@ -34,23 +34,20 @@ namespace PlayniteAchievements.Providers.RPCS3
         }
 
         public async Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
             _logger?.Debug("[RPCS3] RefreshAsync - Starting refresh");
-            var summary = new RebuildSummary();
 
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
                 _logger?.Debug("[RPCS3] RefreshAsync - No games to refresh");
-                return new RebuildPayload { Summary = summary };
+                return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
             _logger?.Debug($"[RPCS3] RefreshAsync - Processing {gamesToRefresh.Count} games");
-
-            var progress = new RebuildProgressReporter(progressCallback, gamesToRefresh.Count);
 
             // Use the provider's cache if available, otherwise build our own
             Dictionary<string, string> trophyFolderCache;
@@ -68,58 +65,42 @@ namespace PlayniteAchievements.Providers.RPCS3
             if (trophyFolderCache == null || trophyFolderCache.Count == 0)
             {
                 _logger?.Warn("[RPCS3] RefreshAsync - No trophy folders found in RPCS3 trophy directory.");
-                return new RebuildPayload { Summary = summary };
+                return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
             _logger?.Info($"[RPCS3] RefreshAsync - Using trophy folder cache with {trophyFolderCache.Count} games.");
             _logger?.Debug($"[RPCS3] RefreshAsync - Cache NPCommIDs: [{string.Join(", ", trophyFolderCache.Keys)}]");
 
             var providerName = GetProviderName();
-
-            for (var i = 0; i < gamesToRefresh.Count; i++)
-            {
-                cancel.ThrowIfCancellationRequested();
-                var game = gamesToRefresh[i];
-                _logger?.Debug($"[RPCS3] RefreshAsync - Processing game {i + 1}/{gamesToRefresh.Count}: '{game?.Name ?? "(null)"}'");
-
-                progress.Emit(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
-
-                try
+            var payload = await RefreshPipeline.RunProviderGamesAsync(
+                gamesToRefresh,
+                game =>
                 {
-                    var data = await FetchGameDataAsync(game, trophyFolderCache, providerName, cancel).ConfigureAwait(false);
+                    onGameStarting?.Invoke(game);
+                    _logger?.Debug($"[RPCS3] RefreshAsync - Processing game '{game?.Name ?? "(null)"}'");
+                },
+                async (game, token) =>
+                {
+                    var data = await FetchGameDataAsync(game, trophyFolderCache, providerName, token).ConfigureAwait(false);
                     _logger?.Debug($"[RPCS3] RefreshAsync - FetchGameDataAsync result for '{game?.Name}': HasData={data != null}, HasAchievements={data?.HasAchievements ?? false}, AchievementCount={data?.Achievements?.Count ?? 0}");
-
-                    if (data != null && OnGameRefreshed != null)
+                    return new RefreshPipeline.ProviderGameResult
                     {
-                        await OnGameRefreshed(data).ConfigureAwait(false);
-                    }
-
-                    summary.GamesRefreshed++;
-                    if (data != null && data.HasAchievements)
-                    {
-                        summary.GamesWithAchievements++;
-                    }
-                    else
-                    {
-                        summary.GamesWithoutAchievements++;
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    _logger?.Debug($"[RPCS3] RefreshAsync - Operation cancelled at game {i + 1}/{gamesToRefresh.Count}");
-                    throw;
-                }
-                catch (Exception ex)
+                        Data = data
+                    };
+                },
+                onGameCompleted,
+                isAuthRequiredException: _ => false,
+                onGameError: (game, ex, consecutiveErrors) =>
                 {
                     _logger?.Debug(ex, $"[RPCS3] RefreshAsync - Failed to scan '{game?.Name}'");
-                }
+                },
+                delayBetweenGamesAsync: null,
+                delayAfterErrorAsync: null,
+                cancel).ConfigureAwait(false);
 
-                progress.Step();
-            }
-
+            var summary = payload?.Summary ?? new RebuildSummary();
             _logger?.Debug($"[RPCS3] RefreshAsync - Complete. GamesRefreshed={summary.GamesRefreshed}, GamesWithAchievements={summary.GamesWithAchievements}, GamesWithoutAchievements={summary.GamesWithoutAchievements}");
-            progress.Emit(new ProviderRefreshUpdate { CurrentGameName = null }, force: true);
-            return new RebuildPayload { Summary = summary };
+            return payload ?? new RebuildPayload { Summary = new RebuildSummary() };
         }
 
         /// <summary>

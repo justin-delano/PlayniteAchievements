@@ -25,9 +25,9 @@ namespace PlayniteAchievements.Providers
         bool IsAuthenticated { get; }
 
         Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel);
     }
 }

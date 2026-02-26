@@ -40,9 +40,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         }
 
         public async Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
             if (string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername) || string.IsNullOrWhiteSpace(_settings.Persisted.RaWebApiKey))
@@ -56,91 +56,51 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            var report = progressCallback ?? (_ => { });
-
-            var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
-            var summary = new RebuildSummary();
-
             // Create rate limiter with exponential backoff
             var rateLimiter = new RateLimiter(
                 _settings.Persisted.ScanDelayMs,
                 _settings.Persisted.MaxRetryAttempts);
 
-            int consecutiveErrors = 0;
-
-            for (var i = 0; i < gamesToRefresh.Count; i++)
-            {
-                cancel.ThrowIfCancellationRequested();
-
-                var game = gamesToRefresh[i];
-                if (game == null) continue;
-
-                if (!RaConsoleIdResolver.TryResolve(game, out var consoleId))
+            return await RefreshPipeline.RunProviderGamesAsync(
+                gamesToRefresh,
+                onGameStarting,
+                async (game, token) =>
                 {
-                    continue;
-                }
+                    if (game == null)
+                    {
+                        return RefreshPipeline.ProviderGameResult.Skipped();
+                    }
 
-                var hasher = RaHasherFactory.Create(consoleId, _settings, _logger);
-                if (hasher == null)
-                {
-                    continue;
-                }
+                    if (!RaConsoleIdResolver.TryResolve(game, out var consoleId))
+                    {
+                        return RefreshPipeline.ProviderGameResult.Skipped();
+                    }
 
-                progress.Emit(new ProviderRefreshUpdate
-                {
-                    CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"Game {game.Id}"
-                });
+                    var hasher = RaHasherFactory.Create(consoleId, _settings, _logger);
+                    if (hasher == null)
+                    {
+                        return RefreshPipeline.ProviderGameResult.Skipped();
+                    }
 
-                try
-                {
                     var data = await rateLimiter.ExecuteWithRetryAsync(
-                        () => ScanGameAsync(game, consoleId, hasher, cancel),
+                        () => ScanGameAsync(game, consoleId, hasher, token),
                         IsTransientError,
-                        cancel).ConfigureAwait(false);
+                        token).ConfigureAwait(false);
 
-                    if (OnGameRefreshed != null && data != null)
+                    return new RefreshPipeline.ProviderGameResult
                     {
-                        await OnGameRefreshed(data).ConfigureAwait(false);
-                    }
-
-                    summary.GamesRefreshed++;
-                    if (data != null && data.HasAchievements)
-                    {
-                        summary.GamesWithAchievements++;
-                    }
-                    else
-                    {
-                        summary.GamesWithoutAchievements++;
-                    }
-
-                    // Reset consecutive errors on success
-                    consecutiveErrors = 0;
-
-                }
-                catch (OperationCanceledException)
+                        Data = data
+                    };
+                },
+                onGameCompleted,
+                isAuthRequiredException: _ => false,
+                onGameError: (game, ex, consecutiveErrors) =>
                 {
-                    throw;
-                }
-                catch (CachePersistenceException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    consecutiveErrors++;
                     _logger?.Warn(ex, $"[RA] Failed to scan game '{game?.Name}' after {consecutiveErrors} consecutive errors.");
-
-                    // If we've hit too many consecutive errors, apply exponential backoff before continuing
-                    if (consecutiveErrors >= 3)
-                    {
-                        await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
-                    }
-                }
-
-                progress.Step();
-            }
-
-            return new RebuildPayload { Summary = summary };
+                },
+                delayBetweenGamesAsync: null,
+                delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                cancel).ConfigureAwait(false);
         }
 
         /// <summary>

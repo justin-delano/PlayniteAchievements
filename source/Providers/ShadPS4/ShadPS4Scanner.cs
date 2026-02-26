@@ -35,19 +35,15 @@ namespace PlayniteAchievements.Providers.ShadPS4
         }
 
         public async Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            var summary = new RebuildSummary();
-
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
-                return new RebuildPayload { Summary = summary };
+                return new RebuildPayload { Summary = new RebuildSummary() };
             }
-
-            var progress = new RebuildProgressReporter(progressCallback, gamesToRefresh.Count);
 
             // Use the provider's cache if available, otherwise build our own
             Dictionary<string, string> titleCache;
@@ -63,48 +59,33 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (titleCache == null || titleCache.Count == 0)
             {
                 _logger?.Warn("[ShadPS4] No games found in ShadPS4 user/game_data folder.");
-                return new RebuildPayload { Summary = summary };
+                return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
             _logger?.Info($"[ShadPS4] Using title cache with {titleCache.Count} games.");
 
             var providerName = GetProviderName();
 
-            for (var i = 0; i < gamesToRefresh.Count; i++)
-            {
-                cancel.ThrowIfCancellationRequested();
-                var game = gamesToRefresh[i];
-
-                progress.Emit(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
-
-                try
+            return await RefreshPipeline.RunProviderGamesAsync(
+                gamesToRefresh,
+                onGameStarting,
+                async (game, token) =>
                 {
-                    var data = await FetchGameDataAsync(game, titleCache, providerName, cancel).ConfigureAwait(false);
-                    if (data != null && OnGameRefreshed != null)
+                    var data = await FetchGameDataAsync(game, titleCache, providerName, token).ConfigureAwait(false);
+                    return new RefreshPipeline.ProviderGameResult
                     {
-                        await OnGameRefreshed(data).ConfigureAwait(false);
-                    }
-
-                    summary.GamesRefreshed++;
-                    if (data != null && data.HasAchievements)
-                    {
-                        summary.GamesWithAchievements++;
-                    }
-                    else
-                    {
-                        summary.GamesWithoutAchievements++;
-                    }
-                }
-                catch (Exception ex)
+                        Data = data
+                    };
+                },
+                onGameCompleted,
+                isAuthRequiredException: _ => false,
+                onGameError: (game, ex, consecutiveErrors) =>
                 {
                     _logger?.Debug(ex, $"[ShadPS4] Failed to scan {game?.Name}");
-                }
-
-                progress.Step();
-            }
-
-            progress.Emit(new ProviderRefreshUpdate { CurrentGameName = null }, force: true);
-            return new RebuildPayload { Summary = summary };
+                },
+                delayBetweenGamesAsync: null,
+                delayAfterErrorAsync: null,
+                cancel).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -407,7 +388,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         /// <summary>
         /// Gets the trophy icon path from the ShadPS4 installation.
-        /// Icon caching is handled by DiskImageService via AchievementManager.
+        /// Icon caching is handled by DiskImageService via AchievementService.
         /// </summary>
         private string GetTrophyIconPath(string iconsFolder, string trophyId)
         {
@@ -505,3 +486,4 @@ namespace PlayniteAchievements.Providers.ShadPS4
         }
     }
 }
+

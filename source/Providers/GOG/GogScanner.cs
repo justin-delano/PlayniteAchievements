@@ -36,13 +36,11 @@ namespace PlayniteAchievements.Providers.GOG
         }
 
         public async Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            var report = progressCallback ?? (_ => { });
-
             // Ensure auth state is loaded from current GOG web session.
             var probeResult = await _sessionManager.ProbeAuthenticationAsync(cancel).ConfigureAwait(false);
             if (!probeResult.IsSuccess)
@@ -52,7 +50,11 @@ namespace PlayniteAchievements.Providers.GOG
                     probeResult.Outcome == GogAuthOutcome.TimedOut)
                 {
                     _logger?.Warn("[GogAch] GOG not authenticated - cannot scan achievements.");
-                    report(new ProviderRefreshUpdate { AuthRequired = true });
+                    return new RebuildPayload
+                    {
+                        Summary = new RebuildSummary(),
+                        AuthRequired = true
+                    };
                 }
                 else
                 {
@@ -70,91 +72,42 @@ namespace PlayniteAchievements.Providers.GOG
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
-            var summary = new RebuildSummary();
-
             // Create rate limiter with exponential backoff
             var rateLimiter = new RateLimiter(
                 _settings.Persisted.ScanDelayMs,
                 _settings.Persisted.MaxRetryAttempts);
 
-            int consecutiveErrors = 0;
-
-            for (int i = 0; i < gamesToRefresh.Count; i++)
-            {
-                cancel.ThrowIfCancellationRequested();
-
-                var game = gamesToRefresh[i];
-
-                if (!TryGetProductId(game, out var productId))
+            return await RefreshPipeline.RunProviderGamesAsync(
+                gamesToRefresh,
+                onGameStarting,
+                async (game, token) =>
                 {
-                    _logger?.Warn($"[GogAch] Skipping game without valid product ID: {game.Name}");
-                    continue;
-                }
+                    if (!TryGetProductId(game, out var productId))
+                    {
+                        _logger?.Warn($"[GogAch] Skipping game without valid product ID: {game?.Name}");
+                        return RefreshPipeline.ProviderGameResult.Skipped();
+                    }
 
-                progress.Emit(new ProviderRefreshUpdate
-                {
-                    CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"Product {productId}"
-                });
-
-                try
-                {
                     var data = await rateLimiter.ExecuteWithRetryAsync(
-                        () => FetchGameDataAsync(game, productId, cancel),
+                        () => FetchGameDataAsync(game, productId, token),
                         GogApiClient.IsTransientError,
-                        cancel).ConfigureAwait(false);
+                        token).ConfigureAwait(false);
 
-                    if (OnGameRefreshed != null && data != null)
+                    return new RefreshPipeline.ProviderGameResult
                     {
-                        await OnGameRefreshed(data).ConfigureAwait(false);
-                    }
-
-                    summary.GamesRefreshed++;
-
-                    if (data != null && data.HasAchievements)
-                        summary.GamesWithAchievements++;
-                    else
-                        summary.GamesWithoutAchievements++;
-
-                    // Reset consecutive errors on success
-                    consecutiveErrors = 0;
-
-                    // Rate limit protection: add delay before next request
-                    if (i < gamesToRefresh.Count - 1)
-                    {
-                        await rateLimiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
-                    }
-                }
-                catch (AuthRequiredException)
+                        Data = data
+                    };
+                },
+                onGameCompleted,
+                isAuthRequiredException: ex => ex is AuthRequiredException,
+                onGameError: (game, ex, consecutiveErrors) =>
                 {
-                    _logger?.Warn("[GogAch] GOG auth required during scan. Aborting.");
-                    report(new ProviderRefreshUpdate { AuthRequired = true });
-                    break;
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (CachePersistenceException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    consecutiveErrors++;
-                    _logger?.Debug(ex, $"[GogAch] Failed to scan achievements for {game.Name} (productId={productId}) after {consecutiveErrors} consecutive errors");
-
-                    // If we've hit too many consecutive errors, apply exponential backoff before continuing
-                    if (consecutiveErrors >= 3)
-                    {
-                        await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
-                    }
-                }
-
-                progress.Step();
-            }
-
-            return new RebuildPayload { Summary = summary };
+                    var productId = TryGetProductId(game, out var pid) ? pid : "?";
+                    _logger?.Debug(ex, $"[GogAch] Failed to scan achievements for {game?.Name} (productId={productId}) after {consecutiveErrors} consecutive errors");
+                },
+                delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
+                delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                cancel).ConfigureAwait(false);
         }
 
         /// <summary>

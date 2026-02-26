@@ -57,9 +57,9 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         public async Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
             _steamClient.ResetSteamDatetimeParseFailuresForScan();
@@ -72,15 +72,16 @@ namespace PlayniteAchievements.Providers.Steam
                     return new RebuildPayload { Summary = new RebuildSummary() };
                 }
 
-                var report = progressCallback ?? (_ => { });
-
                 _logger?.Info("[SteamAch] Probing Steam login status before scan...");
                 var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(cancel).ConfigureAwait(false);
                 if (!isLoggedIn)
                 {
                     _logger?.Warn("[SteamAch] Steam web auth check failed: not logged in. Aborting scan.");
-                    report(new ProviderRefreshUpdate { AuthRequired = true });
-                    return new RebuildPayload { Summary = new RebuildSummary() };
+                    return new RebuildPayload
+                    {
+                        Summary = new RebuildSummary(),
+                        AuthRequired = true
+                    };
                 }
                 _logger?.Info("[SteamAch] Steam web auth verified.");
 
@@ -93,80 +94,42 @@ namespace PlayniteAchievements.Providers.Steam
                 var playtimes = await GetPlaytimesAsync(_settings.Persisted.SteamUserId.Trim(), cancel).ConfigureAwait(false)
                     ?? new Dictionary<int, int>();
 
-                var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
-                var summary = new RebuildSummary();
-
                 // Create rate limiter with exponential backoff
                 var rateLimiter = new RateLimiter(
                     _settings.Persisted.ScanDelayMs,
                     _settings.Persisted.MaxRetryAttempts);
 
-                int consecutiveErrors = 0;
-
-                for (int i = 0; i < gamesToRefresh.Count; i++)
-                {
-                    cancel.ThrowIfCancellationRequested();
-
-                    var game = gamesToRefresh[i];
-
-                    if (!TryGetPlatformAppId(game, out var appId))
+                return await RefreshPipeline.RunProviderGamesAsync(
+                    gamesToRefresh,
+                    onGameStarting,
+                    async (game, token) =>
                     {
-                        _logger?.Warn($"Skipping game without valid AppId: {game.Name}");
-                        continue;
-                    }
+                        if (!TryGetPlatformAppId(game, out var appId))
+                        {
+                            _logger?.Warn($"Skipping game without valid AppId: {game?.Name}");
+                            return RefreshPipeline.ProviderGameResult.Skipped();
+                        }
 
-                    progress.Emit(new ProviderRefreshUpdate
-                    {
-                        CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : $"App {appId}"
-                    });
-
-                    try
-                    {
                         var data = await rateLimiter.ExecuteWithRetryAsync(
-                            () => FetchGameDataAsync(game, playtimes, cancel),
+                            () => FetchGameDataAsync(game, playtimes, token),
                             IsTransientError,
-                            cancel).ConfigureAwait(false);
+                            token).ConfigureAwait(false);
 
-                        if (OnGameRefreshed != null && data != null)
+                        return new RefreshPipeline.ProviderGameResult
                         {
-                            await OnGameRefreshed(data).ConfigureAwait(false);
-                        }
-
-                        summary.GamesRefreshed++;
-
-                        if (data != null && data.HasAchievements)
-                            summary.GamesWithAchievements++;
-                        else
-                            summary.GamesWithoutAchievements++;
-
-                        // Reset consecutive errors on success
-                        consecutiveErrors = 0;
-
-                    }
-                    catch (OperationCanceledException)
+                            Data = data
+                        };
+                    },
+                    onGameCompleted,
+                    isAuthRequiredException: _ => false,
+                    onGameError: (game, ex, consecutiveErrors) =>
                     {
-                        throw;
-                    }
-                    catch (CachePersistenceException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        consecutiveErrors++;
-                        _logger?.Warn($"[SteamAch] Skipping game after retries: {game.Name} (appId={appId}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
-
-                        // If we've hit too many consecutive errors, apply exponential backoff before continuing
-                        if (consecutiveErrors >= 3)
-                        {
-                            await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
-                        }
-                    }
-
-                    progress.Step();
-                }
-
-                return new RebuildPayload { Summary = summary };
+                        var appIdText = TryGetPlatformAppId(game, out var appId) ? appId.ToString() : "?";
+                        _logger?.Warn($"[SteamAch] Skipping game after retries: {game?.Name} (appId={appIdText}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
+                    },
+                    delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
+                    delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                    cancel).ConfigureAwait(false);
             }
             finally
             {

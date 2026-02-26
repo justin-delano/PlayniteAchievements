@@ -31,19 +31,20 @@ namespace PlayniteAchievements.Providers.Epic
         }
 
         public async Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            var report = progressCallback ?? (_ => { });
-
             var probeResult = await _sessionManager.ProbeAuthenticationAsync(cancel).ConfigureAwait(false);
             if (!probeResult.IsSuccess)
             {
                 _logger?.Warn("[EpicAch] Epic not authenticated - cannot scan achievements.");
-                report(new ProviderRefreshUpdate { AuthRequired = true });
-                return new RebuildPayload { Summary = new RebuildSummary() };
+                return new RebuildPayload
+                {
+                    Summary = new RebuildSummary(),
+                    AuthRequired = true
+                };
             }
 
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
@@ -51,87 +52,40 @@ namespace PlayniteAchievements.Providers.Epic
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
-            var summary = new RebuildSummary();
             var rateLimiter = new RateLimiter(
                 _settings.Persisted.ScanDelayMs,
                 _settings.Persisted.MaxRetryAttempts);
 
-            int consecutiveErrors = 0;
-
-            for (int i = 0; i < gamesToRefresh.Count; i++)
-            {
-                cancel.ThrowIfCancellationRequested();
-
-                var game = gamesToRefresh[i];
-                var gameId = game?.GameId?.Trim();
-                if (string.IsNullOrWhiteSpace(gameId))
+            return await RefreshPipeline.RunProviderGamesAsync(
+                gamesToRefresh,
+                onGameStarting,
+                async (game, token) =>
                 {
-                    continue;
-                }
+                    var gameId = game?.GameId?.Trim();
+                    if (string.IsNullOrWhiteSpace(gameId))
+                    {
+                        return RefreshPipeline.ProviderGameResult.Skipped();
+                    }
 
-                progress.Emit(new ProviderRefreshUpdate
-                {
-                    CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : gameId
-                });
-
-                try
-                {
                     var data = await rateLimiter.ExecuteWithRetryAsync(
-                        () => FetchGameDataAsync(game, gameId, cancel),
+                        () => FetchGameDataAsync(game, gameId, token),
                         EpicApiClient.IsTransientError,
-                        cancel).ConfigureAwait(false);
+                        token).ConfigureAwait(false);
 
-                    if (OnGameRefreshed != null && data != null)
+                    return new RefreshPipeline.ProviderGameResult
                     {
-                        await OnGameRefreshed(data).ConfigureAwait(false);
-                    }
-
-                    summary.GamesRefreshed++;
-                    if (data != null && data.HasAchievements)
-                    {
-                        summary.GamesWithAchievements++;
-                    }
-                    else
-                    {
-                        summary.GamesWithoutAchievements++;
-                    }
-
-                    consecutiveErrors = 0;
-
-                    if (i < gamesToRefresh.Count - 1)
-                    {
-                        await rateLimiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
-                    }
-                }
-                catch (EpicAuthRequiredException)
+                        Data = data
+                    };
+                },
+                onGameCompleted,
+                isAuthRequiredException: ex => ex is EpicAuthRequiredException,
+                onGameError: (game, ex, consecutiveErrors) =>
                 {
-                    report(new ProviderRefreshUpdate { AuthRequired = true });
-                    break;
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (CachePersistenceException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    consecutiveErrors++;
-                    _logger?.Debug(ex, $"[EpicAch] Failed to scan {game.Name} after {consecutiveErrors} consecutive errors.");
-
-                    if (consecutiveErrors >= 3)
-                    {
-                        await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
-                    }
-                }
-
-                progress.Step();
-            }
-
-            return new RebuildPayload { Summary = summary };
+                    _logger?.Debug(ex, $"[EpicAch] Failed to scan {game?.Name} after {consecutiveErrors} consecutive errors.");
+                },
+                delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
+                delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                cancel).ConfigureAwait(false);
         }
 
         private async Task<GameAchievementData> FetchGameDataAsync(Game game, string gameId, CancellationToken cancel)

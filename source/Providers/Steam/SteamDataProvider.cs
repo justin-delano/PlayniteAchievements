@@ -68,12 +68,12 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         public Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            return _scanner.RefreshAsync(gamesToRefresh, progressCallback, OnGameRefreshed, cancel);
+            return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
         }
 
         public void Dispose()

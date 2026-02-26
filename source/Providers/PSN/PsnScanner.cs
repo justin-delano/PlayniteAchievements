@@ -38,9 +38,9 @@ namespace PlayniteAchievements.Providers.PSN
         }
 
         public async Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
             var providerName = GetProviderName();
@@ -53,23 +53,26 @@ namespace PlayniteAchievements.Providers.PSN
             catch (PsnAuthRequiredException)
             {
                 _logger?.Warn("[PSNAch] Not authenticated (PSN token missing).");
-                progressCallback?.Invoke(new ProviderRefreshUpdate { AuthRequired = true });
-                return new RebuildPayload { Summary = new RebuildSummary() };
+                return new RebuildPayload
+                {
+                    Summary = new RebuildSummary(),
+                    AuthRequired = true
+                };
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "[PSNAch] Failed to acquire PSN token.");
-                progressCallback?.Invoke(new ProviderRefreshUpdate { AuthRequired = true });
-                return new RebuildPayload { Summary = new RebuildSummary() };
+                return new RebuildPayload
+                {
+                    Summary = new RebuildSummary(),
+                    AuthRequired = true
+                };
             }
 
-            var summary = new RebuildSummary();
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
-                return new RebuildPayload { Summary = summary };
+                return new RebuildPayload { Summary = new RebuildSummary() };
             }
-
-            var progress = new RebuildProgressReporter(progressCallback, gamesToRefresh.Count);
 
             using (var http = new HttpClient())
             {
@@ -83,42 +86,27 @@ namespace PlayniteAchievements.Providers.PSN
                     http.DefaultRequestHeaders.TryAddWithoutValidation("Accept-Language", acceptLanguage);
                 }
 
-                for (var i = 0; i < gamesToRefresh.Count; i++)
-                {
-                    cancel.ThrowIfCancellationRequested();
-                    var game = gamesToRefresh[i];
-
-                    progress.Emit(new ProviderRefreshUpdate { CurrentGameName = game?.Name });
-
-                    try
+                return await RefreshPipeline.RunProviderGamesAsync(
+                    gamesToRefresh,
+                    onGameStarting,
+                    async (game, tokenCancel) =>
                     {
-                        var data = await FetchGameDataAsync(http, game, providerName, cancel).ConfigureAwait(false);
-                        if (data != null && OnGameRefreshed != null)
+                        var data = await FetchGameDataAsync(http, game, providerName, tokenCancel).ConfigureAwait(false);
+                        return new RefreshPipeline.ProviderGameResult
                         {
-                            await OnGameRefreshed(data).ConfigureAwait(false);
-                        }
-
-                        summary.GamesRefreshed++;
-                        if (data != null && data.HasAchievements)
-                        {
-                            summary.GamesWithAchievements++;
-                        }
-                        else
-                        {
-                            summary.GamesWithoutAchievements++;
-                        }
-                    }
-                    catch (Exception ex)
+                            Data = data
+                        };
+                    },
+                    onGameCompleted,
+                    isAuthRequiredException: _ => false,
+                    onGameError: (game, ex, consecutiveErrors) =>
                     {
                         _logger?.Debug(ex, $"[PSNAch] Failed to scan {game?.Name}");
-                    }
-
-                    progress.Step();
-                }
+                    },
+                    delayBetweenGamesAsync: null,
+                    delayAfterErrorAsync: null,
+                    cancel).ConfigureAwait(false);
             }
-
-            progress.Emit(new ProviderRefreshUpdate { CurrentGameName = null }, force: true);
-            return new RebuildPayload { Summary = summary };
         }
 
         private async Task<GameAchievementData> FetchGameDataAsync(HttpClient http, Game game, string providerName, CancellationToken cancel)

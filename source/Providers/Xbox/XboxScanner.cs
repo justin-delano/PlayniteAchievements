@@ -47,22 +47,23 @@ namespace PlayniteAchievements.Providers.Xbox
         }
 
         public async Task<RebuildPayload> RefreshAsync(
-            List<Game> gamesToRefresh,
-            Action<ProviderRefreshUpdate> progressCallback,
-            Func<GameAchievementData, Task> OnGameRefreshed,
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
             try
             {
-                var report = progressCallback ?? (_ => { });
-
                 _logger?.Info("[XboxAch] Probing Xbox login status before scan...");
                 var authData = await _sessionManager.GetAuthorizationAsync(cancel).ConfigureAwait(false);
                 if (authData == null)
                 {
                     _logger?.Warn("[XboxAch] Xbox auth check failed: not logged in. Aborting scan.");
-                    report(new ProviderRefreshUpdate { AuthRequired = true });
-                    return new RebuildPayload { Summary = new RebuildSummary() };
+                    return new RebuildPayload
+                    {
+                        Summary = new RebuildSummary(),
+                        AuthRequired = true
+                    };
                 }
                 _logger?.Info("[XboxAch] Xbox auth verified.");
 
@@ -79,75 +80,42 @@ namespace PlayniteAchievements.Providers.Xbox
                     return new RebuildPayload { Summary = new RebuildSummary() };
                 }
 
-                var progress = new RebuildProgressReporter(report, gamesToRefresh.Count);
-                var summary = new RebuildSummary();
-
                 var rateLimiter = new RateLimiter(
                     _settings.Persisted.ScanDelayMs,
                     _settings.Persisted.MaxRetryAttempts);
 
-                int consecutiveErrors = 0;
-
-                for (int i = 0; i < gamesToRefresh.Count; i++)
-                {
-                    cancel.ThrowIfCancellationRequested();
-
-                    var game = gamesToRefresh[i];
-
-                    progress.Emit(new ProviderRefreshUpdate
-                    {
-                        CurrentGameName = !string.IsNullOrWhiteSpace(game.Name) ? game.Name : "Unknown Game"
-                    });
-
-                    try
+                return await RefreshPipeline.RunProviderGamesAsync(
+                    gamesToRefresh,
+                    onGameStarting,
+                    async (game, token) =>
                     {
                         var data = await rateLimiter.ExecuteWithRetryAsync(
-                            () => FetchGameDataAsync(game, authData, xuid, cancel),
+                            () => FetchGameDataAsync(game, authData, xuid, token),
                             IsTransientError,
-                            cancel).ConfigureAwait(false);
+                            token).ConfigureAwait(false);
 
-                        if (OnGameRefreshed != null && data != null)
+                        return new RefreshPipeline.ProviderGameResult
                         {
-                            await OnGameRefreshed(data).ConfigureAwait(false);
-                        }
-
-                        summary.GamesRefreshed++;
-
-                        if (data != null && data.HasAchievements)
-                            summary.GamesWithAchievements++;
-                        else
-                            summary.GamesWithoutAchievements++;
-
-                        consecutiveErrors = 0;
-                    }
-                    catch (OperationCanceledException)
+                            Data = data
+                        };
+                    },
+                    onGameCompleted,
+                    isAuthRequiredException: ex => ex is XboxAuthRequiredException,
+                    onGameError: (game, ex, consecutiveErrors) =>
                     {
-                        throw;
-                    }
-                    catch (CachePersistenceException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        consecutiveErrors++;
-                        _logger?.Warn($"[XboxAch] Skipping game after retries: {game.Name}. Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
-
-                        if (consecutiveErrors >= 3)
-                        {
-                            await rateLimiter.DelayAfterErrorAsync(consecutiveErrors, cancel).ConfigureAwait(false);
-                        }
-                    }
-
-                    progress.Step();
-                }
-
-                return new RebuildPayload { Summary = summary };
+                        _logger?.Warn($"[XboxAch] Skipping game after retries: {game?.Name}. Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
+                    },
+                    delayBetweenGamesAsync: null,
+                    delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                    cancel).ConfigureAwait(false);
             }
             catch (XboxAuthRequiredException)
             {
-                progressCallback?.Invoke(new ProviderRefreshUpdate { AuthRequired = true });
-                return new RebuildPayload { Summary = new RebuildSummary() };
+                return new RebuildPayload
+                {
+                    Summary = new RebuildSummary(),
+                    AuthRequired = true
+                };
             }
         }
 
