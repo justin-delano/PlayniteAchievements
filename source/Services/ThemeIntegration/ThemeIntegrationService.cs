@@ -115,7 +115,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _api;
-        private readonly AchievementManager _achievementManager;
+        private readonly AchievementService _achievementService;
+        private readonly RefreshCoordinator _refreshCoordinator;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly FullscreenWindowService _windowService;
         private readonly Action<Guid?> _requestSingleGameThemeUpdate;
@@ -137,14 +138,16 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         public ThemeIntegrationService(
             IPlayniteAPI api,
-            AchievementManager achievementManager,
+            AchievementService achievementService,
+            RefreshCoordinator refreshCoordinator,
             PlayniteAchievementsSettings settings,
             FullscreenWindowService windowService,
             Action<Guid?> requestSingleGameThemeUpdate,
             ILogger logger)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
-            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
+            _refreshCoordinator = refreshCoordinator ?? throw new ArgumentNullException(nameof(refreshCoordinator));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
             _requestSingleGameThemeUpdate = requestSingleGameThemeUpdate ?? throw new ArgumentNullException(nameof(requestSingleGameThemeUpdate));
@@ -170,13 +173,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.InstalledRefreshCommand = _installedRefreshCmd;
 
             _settings.PropertyChanged += Settings_PropertyChanged;
-            _achievementManager.CacheInvalidated += AchievementManager_CacheInvalidated;
+            _achievementService.CacheInvalidated += AchievementService_CacheInvalidated;
         }
 
         public void Dispose()
         {
             try { _settings.PropertyChanged -= Settings_PropertyChanged; } catch { }
-            try { _achievementManager.CacheInvalidated -= AchievementManager_CacheInvalidated; } catch { }
+            try { _achievementService.CacheInvalidated -= AchievementService_CacheInvalidated; } catch { }
 
             lock (_refreshLock)
             {
@@ -254,7 +257,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
-        private void AchievementManager_CacheInvalidated(object sender, EventArgs e)
+        private void AchievementService_CacheInvalidated(object sender, EventArgs e)
         {
             if (IsFullscreen() && _fullscreenInitialized)
             {
@@ -423,16 +426,26 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     catch { }
                 };
 
-                _achievementManager.RebuildProgress += progressHandler;
+                _achievementService.RebuildProgress += progressHandler;
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        var refreshTask = mode == RefreshModeType.Single && gameIdForThemeUpdate.HasValue
-                            ? _achievementManager.ExecuteRefreshAsync(mode, gameIdForThemeUpdate.Value)
-                            : _achievementManager.ExecuteRefreshAsync(mode);
+                        var request = new RefreshRequest
+                        {
+                            Mode = mode,
+                            SingleGameId = mode == RefreshModeType.Single ? gameIdForThemeUpdate : null
+                        };
 
-                        await refreshTask.ConfigureAwait(false);
+                        await _refreshCoordinator.ExecuteAsync(
+                            request,
+                            new RefreshExecutionPolicy
+                            {
+                                ValidateAuthentication = false,
+                                UseProgressWindow = false,
+                                SwallowExceptions = false,
+                                ErrorLogMessage = errorLogMessage
+                            }).ConfigureAwait(false);
 
                         try
                         {
@@ -460,7 +473,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     }
                     finally
                     {
-                        _achievementManager.RebuildProgress -= progressHandler;
+                        _achievementService.RebuildProgress -= progressHandler;
                         if (gameIdForThemeUpdate.HasValue)
                         {
                             try { _requestSingleGameThemeUpdate(gameIdForThemeUpdate.Value); } catch { }
@@ -481,7 +494,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 _logger?.Info("PopulateAllGamesDataSync: Starting to populate all-games achievement data.");
 
-                var allData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
+                var allData = _achievementService.GetAllGameAchievementData() ?? new List<GameAchievementData>();
                 _logger?.Info($"PopulateAllGamesDataSync: Found {allData.Count} total game data entries.");
 
                 var snapshot = AllGamesSnapshotService.BuildSnapshot(
@@ -512,7 +525,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             try
             {
-                var gameData = _achievementManager.GetGameAchievementData(gameId);
+                var gameData = _achievementService.GetGameAchievementData(gameId);
                 if (gameData == null || !gameData.HasAchievements)
                 {
                     ClearSingleGameThemeProperties();
@@ -573,12 +586,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     await Task.Delay(500, token).ConfigureAwait(false);
 
-                    var allData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
-                    var ids = allData
-                        .Where(d => d?.PlayniteGameId != null && d.HasAchievements && (d.Achievements?.Count ?? 0) > 0)
-                        .Select(d => d.PlayniteGameId.Value)
-                        .Distinct()
-                        .ToList();
+                    var allData = _achievementService.GetAllGameAchievementData() ?? new List<GameAchievementData>();
 
                     token.ThrowIfCancellationRequested();
 
@@ -821,3 +829,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         #endregion
     }
 }
+
+
+

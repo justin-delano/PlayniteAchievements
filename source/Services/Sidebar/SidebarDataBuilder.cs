@@ -12,13 +12,13 @@ namespace PlayniteAchievements.Services.Sidebar
 {
     public sealed class SidebarDataBuilder
     {
-        private readonly AchievementManager _achievementManager;
+        private readonly AchievementService _achievementService;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
 
-        public SidebarDataBuilder(AchievementManager achievementManager, IPlayniteAPI playniteApi, ILogger logger)
+        public SidebarDataBuilder(AchievementService achievementService, IPlayniteAPI playniteApi, ILogger logger)
         {
-            _achievementManager = achievementManager ?? throw new ArgumentNullException(nameof(achievementManager));
+            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
             _playniteApi = playniteApi;
             _logger = logger;
         }
@@ -57,7 +57,7 @@ namespace PlayniteAchievements.Services.Sidebar
             int totalRarePossible = 0;
             int totalUltraRarePossible = 0;
 
-            var allGameData = _achievementManager.GetAllGameAchievementData() ?? new List<GameAchievementData>();
+            var allGameData = _achievementService.GetAllGameAchievementData() ?? new List<GameAchievementData>();
             for (var i = 0; i < allGameData.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
@@ -189,13 +189,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 ProviderName = gameData.ProviderName ?? "Unknown"
             };
 
-            var showIcon = settings.Persisted?.ShowHiddenIcon ?? false;
-            var showTitle = settings.Persisted?.ShowHiddenTitle ?? false;
-            var showDescription = settings.Persisted?.ShowHiddenDescription ?? false;
-            var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
-            var canResolveReveals = anyHidingEnabled && revealedKeys.Count > 0;
-            var useScaledPoints = settings.Persisted?.RaPointsMode == "scaled" &&
-                                  string.Equals(gameData.ProviderName, "RetroAchievements", StringComparison.OrdinalIgnoreCase);
+            var projectionOptions = AchievementProjectionService.CreateOptions(settings, gameData, revealedKeys);
 
             var achievements = gameData.Achievements;
             int gameTotal = achievements.Count;
@@ -225,115 +219,25 @@ namespace PlayniteAchievements.Services.Sidebar
                     continue;
                 }
 
-                // Determine which points to display based on provider and settings
-                int? pointsToDisplay = ach.Points;
-                if (useScaledPoints)
+                var displayItem = AchievementProjectionService.CreateDisplayItem(gameData, ach, projectionOptions);
+                if (displayItem != null)
                 {
-                    pointsToDisplay = ach.ScaledPoints ?? ach.Points;
+                    fragment.Achievements.Add(displayItem);
                 }
-
-                var item = new AchievementDisplayItem
-                {
-                    GameName = gameData.GameName ?? "Unknown",
-                    SortingName = gameData.SortingName ?? gameData.GameName ?? "Unknown",
-                    PlayniteGameId = gameData.PlayniteGameId,
-                    DisplayName = ach.DisplayName ?? ach.ApiName ?? "Unknown",
-                    Description = ach.Description ?? string.Empty,
-                    IconPath = ach.UnlockedIconPath,
-                    UnlockTimeUtc = ach.UnlockTimeUtc,
-                    GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
-                    Unlocked = ach.Unlocked,
-                    Hidden = ach.Hidden,
-                    ApiName = ach.ApiName,
-                    ShowHiddenIcon = showIcon,
-                    ShowHiddenTitle = showTitle,
-                    ShowHiddenDescription = showDescription,
-                    ProgressNum = ach.ProgressNum,
-                    ProgressDenom = ach.ProgressDenom,
-                    PointsValue = pointsToDisplay,
-                    TrophyType = ach.TrophyType
-                };
-
-                if (canResolveReveals && ach.Hidden && !ach.Unlocked)
-                {
-                    var revealKey = MakeRevealKey(gameData.PlayniteGameId, ach.ApiName, gameData.GameName);
-                    item.IsRevealed = revealedKeys.Contains(revealKey);
-                }
-                else
-                {
-                    item.IsRevealed = false;
-                }
-
-                fragment.Achievements.Add(item);
 
                 // Calculate total rarity tier for ALL achievements (including locked)
                 // Only count if rarity data is available (null means no rarity info for this provider)
-                if (ach.GlobalPercentUnlocked.HasValue)
-                {
-                    var pctForTotal = ach.GlobalPercentUnlocked.Value;
-                    var tierForTotal = RarityHelper.GetRarityTier(pctForTotal);
-                    switch (tierForTotal)
-                    {
-                        case RarityTier.UltraRare:
-                            gameTotalUltraRare++;
-                            break;
-                        case RarityTier.Rare:
-                            gameTotalRare++;
-                            break;
-                        case RarityTier.Uncommon:
-                            gameTotalUncommon++;
-                            break;
-                        default:
-                            gameTotalCommon++;
-                            break;
-                    }
-                }
+                AchievementProjectionService.AccumulateRarity(ach, ref gameTotalCommon, ref gameTotalUncommon, ref gameTotalRare, ref gameTotalUltraRare);
 
                 if (ach.Unlocked)
                 {
                     gameUnlocked++;
 
                     // Only count rarity if data is available
-                    if (ach.GlobalPercentUnlocked.HasValue)
-                    {
-                        var pct = ach.GlobalPercentUnlocked.Value;
-                        var tier = RarityHelper.GetRarityTier(pct);
-                        switch (tier)
-                        {
-                            case RarityTier.UltraRare:
-                                gameUltraRare++;
-                                break;
-                            case RarityTier.Rare:
-                                gameRare++;
-                                break;
-                            case RarityTier.Uncommon:
-                                gameUncommon++;
-                                break;
-                            default:
-                                gameCommon++;
-                                break;
-                        }
-                    }
+                    AchievementProjectionService.AccumulateRarity(ach, ref gameCommon, ref gameUncommon, ref gameRare, ref gameUltraRare);
 
                     // Track trophy types for unlocked achievements
-                    if (!string.IsNullOrWhiteSpace(ach.TrophyType))
-                    {
-                        switch (ach.TrophyType.ToLowerInvariant())
-                        {
-                            case "platinum":
-                                gameTrophyPlatinum++;
-                                break;
-                            case "gold":
-                                gameTrophyGold++;
-                                break;
-                            case "silver":
-                                gameTrophySilver++;
-                                break;
-                            case "bronze":
-                                gameTrophyBronze++;
-                                break;
-                        }
-                    }
+                    AchievementProjectionService.AccumulateTrophy(ach, ref gameTrophyPlatinum, ref gameTrophyGold, ref gameTrophySilver, ref gameTrophyBronze);
 
                     if (ach.UnlockTimeUtc.HasValue)
                     {
@@ -342,24 +246,16 @@ namespace PlayniteAchievements.Services.Sidebar
 
                         if (gameData.PlayniteGameId.HasValue)
                         {
-                            fragment.RecentAchievements.Add(new RecentAchievementItem
+                            var recentItem = AchievementProjectionService.CreateRecentItem(
+                                gameData,
+                                ach,
+                                projectionOptions,
+                                gameIconPath,
+                                gameCoverPath);
+                            if (recentItem != null)
                             {
-                                ApiName = ach.ApiName,
-                                PlayniteGameId = gameData.PlayniteGameId,
-                                Name = ach.DisplayName ?? ach.ApiName ?? "Unknown",
-                                Description = ach.Description ?? string.Empty,
-                                GameName = gameData.GameName ?? "Unknown",
-                                IconPath = ach.UnlockedIconPath,
-                                UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
-                                GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
-                                PointsValue = pointsToDisplay,
-                                ProgressNum = ach.ProgressNum,
-                                ProgressDenom = ach.ProgressDenom,
-                                GameIconPath = gameIconPath,
-                                GameCoverPath = gameCoverPath,
-                                Hidden = ach.Hidden,
-                                TrophyType = ach.TrophyType
-                            });
+                                fragment.RecentAchievements.Add(recentItem);
+                            }
                         }
                     }
                 }
@@ -433,11 +329,8 @@ namespace PlayniteAchievements.Services.Sidebar
                 dict[date] = count;
             }
         }
-
-        private static string MakeRevealKey(Guid? playniteGameId, string apiName, string gameName)
-        {
-            var gamePart = playniteGameId?.ToString() ?? (gameName ?? string.Empty);
-            return $"{gamePart}\u001f{apiName ?? string.Empty}";
-        }
     }
 }
+
+
+
