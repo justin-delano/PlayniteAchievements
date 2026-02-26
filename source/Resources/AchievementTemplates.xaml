@@ -240,7 +240,8 @@
                        Foreground="{DynamicResource TextBrush}"
                        TextWrapping="Wrap">
                 <TextBlock.Style>
-                    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                    <Style TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
                         <Setter Property="Opacity" Value="0.7"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Unlocked}" Value="True">

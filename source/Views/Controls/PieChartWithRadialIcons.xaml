@@ -1,0 +1,65 @@
+<UserControl x:Class="PlayniteAchievements.Views.Controls.PieChartWithRadialIcons"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+             x:Name="Root">
+
+    <UserControl.Resources>
+        <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
+        <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <lvc:PieChart LegendLocation="None"
+                      InnerRadius="30"
+                      Margin="4"
+                      DisableAnimations="True"
+                      Hoverable="True"
+                      TooltipTimeout="0:0:0.1"
+                      Series="{Binding PieSeries, ElementName=Root}">
+            <lvc:PieChart.DataTooltip>
+                <controls:PieChartTooltip/>
+            </lvc:PieChart.DataTooltip>
+        </lvc:PieChart>
+
+        <!-- Icon overlay canvas -->
+        <Canvas IsHitTestVisible="False"
+                SnapsToDevicePixels="True">
+            <ItemsControl ItemsSource="{Binding IconPositions, ElementName=Root}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <Canvas/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                        <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Width="18" Height="18">
+                            <!-- Badge icons -->
+                            <Image Source="{Binding IconKey, Converter={StaticResource ResourceKeyToImage}}"
+                                   Effect="{StaticResource BadgeShadow}"
+                                   SnapsToDevicePixels="True"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            <!-- Provider icons -->
+                            <Image SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                <Image.Source>
+                                    <MultiBinding Converter="{StaticResource ProviderIconConverter}">
+                                        <Binding Path="IconKey"/>
+                                        <Binding Path="ColorHex"/>
+                                    </MultiBinding>
+                                </Image.Source>
+                            </Image>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Canvas>
+    </Grid>
+</UserControl>

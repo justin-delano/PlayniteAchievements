@@ -701,7 +701,8 @@
                                                        VerticalAlignment="Center"
                                                        TextTrimming="CharacterEllipsis">
                                                 <TextBlock.Style>
-                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
                                                         <Setter Property="FontWeight" Value="SemiBold"/>
                                                         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                                                     </Style>
@@ -912,27 +913,10 @@
                                            Opacity="0.7"
                                            HorizontalAlignment="Center"
                                            Margin="0,0,0,4"/>
-                                <Grid Grid.Row="1">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <lvc:PieChart Grid.Column="0"
-                                                  LegendLocation="None"
-                                                  InnerRadius="30"
-                                                  Margin="4"
-                                                  DisableAnimations="True"
-                                                  Hoverable="True"
-                                                  Series="{Binding GamesPieChart.PieSeries}">
-                                        <lvc:PieChart.DataTooltip>
-                                            <controls:PieChartTooltip/>
-                                        </lvc:PieChart.DataTooltip>
-                                    </lvc:PieChart>
-                                    <!-- Custom Games Legend with icons -->
-                                    <ItemsControl Grid.Column="1" Margin="6,0,0,0"
-                                                  ItemsSource="{Binding GamesPieChart.LegendItems}"
-                                                  ItemTemplate="{StaticResource LegendItemTemplate}"/>
-                                </Grid>
+                                <controls:PieChartWithRadialIcons Grid.Row="1"
+                                                                  PieSeries="{Binding GamesPieChart.PieSeries}"
+                                                                  LegendItems="{Binding GamesPieChart.LegendItems}"
+                                                                  IconOffset="12"/>
                             </Grid>
 
                             <!-- Provider Distribution Pie Chart -->
@@ -948,27 +932,10 @@
                                            Opacity="0.7"
                                            HorizontalAlignment="Center"
                                            Margin="0,0,0,4"/>
-                                <Grid Grid.Row="1">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <lvc:PieChart Grid.Column="0"
-                                                  LegendLocation="None"
-                                                  InnerRadius="30"
-                                                  Margin="4"
-                                                  DisableAnimations="True"
-                                                  Hoverable="True"
-                                                  Series="{Binding ProviderPieChart.PieSeries}">
-                                        <lvc:PieChart.DataTooltip>
-                                            <controls:PieChartTooltip/>
-                                        </lvc:PieChart.DataTooltip>
-                                    </lvc:PieChart>
-                                    <!-- Custom Provider Legend with icons -->
-                                    <ItemsControl Grid.Column="1" Margin="6,0,0,0"
-                                                  ItemsSource="{Binding ProviderPieChart.LegendItems}"
-                                                  ItemTemplate="{StaticResource LegendItemTemplate}"/>
-                                </Grid>
+                                <controls:PieChartWithRadialIcons Grid.Row="1"
+                                                                  PieSeries="{Binding ProviderPieChart.PieSeries}"
+                                                                  LegendItems="{Binding ProviderPieChart.LegendItems}"
+                                                                  IconOffset="12"/>
                             </Grid>
 
                             <!-- Rarity Pie Chart with Custom Legend -->
@@ -984,27 +951,10 @@
                                            Opacity="0.7"
                                            HorizontalAlignment="Center"
                                            Margin="0,0,0,4"/>
-                                <Grid Grid.Row="1">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <lvc:PieChart Grid.Column="0"
-                                                  LegendLocation="None"
-                                                  InnerRadius="30"
-                                                  Margin="4"
-                                                  DisableAnimations="True"
-                                                  Hoverable="True"
-                                                  Series="{Binding RarityPieChart.PieSeries}">
-                                        <lvc:PieChart.DataTooltip>
-                                            <controls:PieChartTooltip/>
-                                        </lvc:PieChart.DataTooltip>
-                                    </lvc:PieChart>
-                                    <!-- Custom Rarity Legend with icons -->
-                                    <ItemsControl Grid.Column="1" Margin="6,0,0,0"
-                                                  ItemsSource="{Binding RarityPieChart.LegendItems}"
-                                                  ItemTemplate="{StaticResource LegendItemTemplate}"/>
-                                </Grid>
+                                <controls:PieChartWithRadialIcons Grid.Row="1"
+                                                                  PieSeries="{Binding RarityPieChart.PieSeries}"
+                                                                  LegendItems="{Binding RarityPieChart.LegendItems}"
+                                                                  IconOffset="12"/>
                             </Grid>
                         </Grid>
                     </Border>
