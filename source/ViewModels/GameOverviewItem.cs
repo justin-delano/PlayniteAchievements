@@ -62,6 +62,12 @@ namespace PlayniteAchievements.ViewModels
         private int _ultraRareCount;
         public int UltraRareCount { get => _ultraRareCount; set => SetValue(ref _ultraRareCount, value); }
 
+        // Total rarity counts (including locked achievements)
+        public int TotalCommonPossible { get; set; }
+        public int TotalUncommonPossible { get; set; }
+        public int TotalRarePossible { get; set; }
+        public int TotalUltraRarePossible { get; set; }
+
         // Trophy counts for PlayStation games
         private int _trophyPlatinumCount;
         public int TrophyPlatinumCount { get => _trophyPlatinumCount; set => SetValue(ref _trophyPlatinumCount, value); }

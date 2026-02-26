@@ -1074,15 +1074,11 @@ namespace PlayniteAchievements.ViewModels
                 snapshot.TotalByProvider[provider] += game.TotalAchievements;
             }
 
-            // Preserve rarity "possible" totals from previous snapshot if available
-            // These cannot be computed from GamesOverview alone as it only has unlocked counts
-            if (_latestSnapshot != null)
-            {
-                snapshot.TotalCommonPossible = _latestSnapshot.TotalCommonPossible;
-                snapshot.TotalUncommonPossible = _latestSnapshot.TotalUncommonPossible;
-                snapshot.TotalRarePossible = _latestSnapshot.TotalRarePossible;
-                snapshot.TotalUltraRarePossible = _latestSnapshot.TotalUltraRarePossible;
-            }
+            // Aggregate rarity "possible" totals from GamesOverview
+            snapshot.TotalCommonPossible = snapshot.GamesOverview.Sum(g => g?.TotalCommonPossible ?? 0);
+            snapshot.TotalUncommonPossible = snapshot.GamesOverview.Sum(g => g?.TotalUncommonPossible ?? 0);
+            snapshot.TotalRarePossible = snapshot.GamesOverview.Sum(g => g?.TotalRarePossible ?? 0);
+            snapshot.TotalUltraRarePossible = snapshot.GamesOverview.Sum(g => g?.TotalUltraRarePossible ?? 0);
 
             return snapshot;
         }

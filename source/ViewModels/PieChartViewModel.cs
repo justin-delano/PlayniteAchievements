@@ -156,6 +156,17 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
+            // Filter out locked slices with zero count
+            dataPoints = dataPoints
+                .Where(d => !d.IsLocked || d.Count > 0)
+                .ToList();
+
+            if (dataPoints.Count == 0)
+            {
+                SynchronizePieChartAndLegend(new List<PieSliceData>());
+                return;
+            }
+
             var totalCount = dataPoints.Sum(d => d.Count);
             var minSlice = totalCount * 0.05;
             var adjustments = new Dictionary<int, double>();
