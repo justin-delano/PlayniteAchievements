@@ -834,7 +834,11 @@ namespace PlayniteAchievements.Services
 
             TryAutoEnablePointsColumnForPointsProvider(provider, data);
 
-            await PopulateAchievementIconCacheAsync(data, cancel).ConfigureAwait(false);
+            // Increment completion count early to get stable index for icon progress
+            var completedCount = Interlocked.Increment(ref _completedGamesCount);
+            Interlocked.Exchange(ref _currentOverallIndex, completedCount);
+
+            await PopulateAchievementIconCacheAsync(data, completedCount, totalGames, cancel).ConfigureAwait(false);
 
             var key = data.PlayniteGameId.Value.ToString();
 
@@ -861,9 +865,6 @@ namespace PlayniteAchievements.Services
                 NotifyCacheInvalidatedThrottled(force: false);
 
                 // Report progress based on actual completions for stable progress bar
-                var completedCount = Interlocked.Increment(ref _completedGamesCount);
-                Interlocked.Exchange(ref _currentOverallIndex, completedCount);
-
                 progressCallback?.Invoke(new RebuildUpdate
                 {
                     Kind = RebuildUpdateKind.UserProgress,
@@ -1069,7 +1070,7 @@ namespace PlayniteAchievements.Services
             return !string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath);
         }
 
-        private async Task PopulateAchievementIconCacheAsync(GameAchievementData data, CancellationToken cancel)
+        private async Task PopulateAchievementIconCacheAsync(GameAchievementData data, int gameIndex, int totalGames, CancellationToken cancel)
         {
             // Reset icon progress for each game to show per-game counts
             _iconProgressTracker.Reset();
@@ -1166,11 +1167,11 @@ namespace PlayniteAchievements.Services
                         CurrentGameName = data.GameName,
                         IconsDownloaded = downloaded,
                         TotalIcons = total,
-                        // Include overall progress for correct percentage display
-                        UserAppIndex = _currentOverallIndex - 1,
-                        UserAppCount = _totalGamesInRun,
-                        OverallIndex = _currentOverallIndex,
-                        OverallCount = _totalGamesInRun
+                        // Use stable game index passed from caller
+                        UserAppIndex = gameIndex - 1,
+                        UserAppCount = totalGames,
+                        OverallIndex = gameIndex,
+                        OverallCount = totalGames
                     });
                 }
 
