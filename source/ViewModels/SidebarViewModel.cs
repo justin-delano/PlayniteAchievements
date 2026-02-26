@@ -1049,6 +1049,8 @@ namespace PlayniteAchievements.ViewModels
                 ? (double)snapshot.TotalUnlocked / snapshot.TotalAchievements * 100
                 : 0;
 
+            snapshot.TotalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
             for (var i = 0; i < snapshot.GamesOverview.Count; i++)
             {
                 var game = snapshot.GamesOverview[i];
@@ -1063,7 +1065,23 @@ namespace PlayniteAchievements.ViewModels
                     snapshot.UnlockedByProvider[provider] = 0;
                 }
 
+                if (!snapshot.TotalByProvider.ContainsKey(provider))
+                {
+                    snapshot.TotalByProvider[provider] = 0;
+                }
+
                 snapshot.UnlockedByProvider[provider] += game.UnlockedAchievements;
+                snapshot.TotalByProvider[provider] += game.TotalAchievements;
+            }
+
+            // Preserve rarity "possible" totals from previous snapshot if available
+            // These cannot be computed from GamesOverview alone as it only has unlocked counts
+            if (_latestSnapshot != null)
+            {
+                snapshot.TotalCommonPossible = _latestSnapshot.TotalCommonPossible;
+                snapshot.TotalUncommonPossible = _latestSnapshot.TotalUncommonPossible;
+                snapshot.TotalRarePossible = _latestSnapshot.TotalRarePossible;
+                snapshot.TotalUltraRarePossible = _latestSnapshot.TotalUltraRarePossible;
             }
 
             return snapshot;
