@@ -1992,6 +1992,21 @@ namespace PlayniteAchievements.ViewModels
                         CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
                     }
                 }
+
+                // Update timeline to show selected game's unlock history
+                IDictionary<DateTime, int> selectedTimelineCounts = null;
+                if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
+                    _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var counts))
+                {
+                    selectedTimelineCounts = counts;
+                }
+                else
+                {
+                    selectedTimelineCounts = new Dictionary<DateTime, int>();
+                }
+
+                GlobalTimeline.SetCounts(selectedTimelineCounts);
+                SelectedGameTimeline.SetCounts(selectedTimelineCounts);
             }
             catch (Exception ex)
             {
