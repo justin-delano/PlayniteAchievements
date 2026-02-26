@@ -1097,33 +1097,30 @@ namespace PlayniteAchievements.Services
 
             const int iconDecodeSize = 128;
 
-            // Pre-filter icons: separate cached from needs-download
-            var cachedIcons = new List<string>();
+            // Pre-filter icons: compute cache paths once, then check existence
+            // This avoids computing SHA256 hash twice per icon
+            var cachedIconPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var iconsToProcess = new List<string>();
 
             foreach (var iconPath in groupedByIcon.Keys)
             {
-                if (_diskImageService.IsIconCached(iconPath, iconDecodeSize, gameIdStr))
+                var cachedPath = _diskImageService.GetIconCachePathFromUri(iconPath, iconDecodeSize, gameIdStr);
+                if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
                 {
-                    var cachedPath = _diskImageService.GetIconCachePathFromUri(iconPath, iconDecodeSize, gameIdStr);
-                    if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
-                    {
-                        cachedIcons.Add(iconPath);
-                        continue;
-                    }
+                    cachedIconPaths[iconPath] = cachedPath;
+                    continue;
                 }
                 iconsToProcess.Add(iconPath);
             }
 
             // Resolve cached icons without progress tracking
-            foreach (var iconPath in cachedIcons)
+            foreach (var kvp in cachedIconPaths)
             {
-                var cachedPath = _diskImageService.GetIconCachePathFromUri(iconPath, iconDecodeSize, gameIdStr);
-                if (groupedByIcon.TryGetValue(iconPath, out var grouped))
+                if (groupedByIcon.TryGetValue(kvp.Key, out var grouped))
                 {
                     foreach (var achievement in grouped)
                     {
-                        achievement.UnlockedIconPath = cachedPath;
+                        achievement.UnlockedIconPath = kvp.Value;
                     }
                 }
             }
