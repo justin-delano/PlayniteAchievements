@@ -1426,6 +1426,10 @@ namespace PlayniteAchievements
                     var badgesUri = new Uri("/PlayniteAchievements;component/Resources/RarityBadges.xaml", UriKind.Relative);
                     app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = badgesUri });
 
+                    // Load trophy badges (trophy geometries, fills, badge images)
+                    var trophyUri = new Uri("/PlayniteAchievements;component/Resources/TrophyBadges.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = trophyUri });
+
                     // Load achievement templates (datagrid styles, templates, converters)
                     var templatesUri = new Uri("/PlayniteAchievements;component/Resources/AchievementTemplates.xaml", UriKind.Relative);
                     app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary { Source = templatesUri });

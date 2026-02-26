@@ -87,22 +87,30 @@ namespace PlayniteAchievements.ViewModels
             } 
         }
 
-        private double _globalPercent;
-        public double GlobalPercent
+        private double? _globalPercentUnlocked;
+        /// <summary>
+        /// Global unlock percentage. Null if rarity data is not available for this provider.
+        /// </summary>
+        public double? GlobalPercentUnlocked
         {
-            get => _globalPercent;
+            get => _globalPercentUnlocked;
             set
             {
-                // Use explicit check
-                if (Math.Abs(_globalPercent - value) > 0.001)
+                if (SetValueAndReturn(ref _globalPercentUnlocked, value))
                 {
-                    SetValue(ref _globalPercent, value);
+                    OnPropertyChanged(nameof(GlobalPercent));
                     OnPropertyChanged(nameof(GlobalPercentText));
+                    OnPropertyChanged(nameof(HasRarity));
                     OnPropertyChanged(nameof(Rarity));
                     OnPropertyChanged(nameof(RarityBrush));
                 }
             }
         }
+
+        /// <summary>
+        /// Non-nullable version for backwards compatibility. Returns 0 if null.
+        /// </summary>
+        public double GlobalPercent => GlobalPercentUnlocked ?? 0;
 
         private int? _pointsValue;
         public int? PointsValue
@@ -146,17 +154,39 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _gameCoverPath, value); 
         }
 
+        private string _trophyType;
+        /// <summary>
+        /// Trophy type for PlayStation games: "bronze", "silver", "gold", "platinum".
+        /// Null for non-PlayStation achievements.
+        /// </summary>
+        public string TrophyType
+        {
+            get => _trophyType;
+            set
+            {
+                if (SetValueAndReturn(ref _trophyType, value))
+                {
+                    OnPropertyChanged(nameof(HasTrophyType));
+                }
+            }
+        }
+
+        /// <summary>
+        /// True if this achievement has PlayStation trophy type data.
+        /// </summary>
+        public bool HasTrophyType => !string.IsNullOrWhiteSpace(TrophyType);
+
         public string UnlockTimeText => UnlockTime.ToLocalTime().ToString("g");
-        public string GlobalPercentText => $"{GlobalPercent:F1}%";
+        public string GlobalPercentText => GlobalPercentUnlocked.HasValue ? $"{GlobalPercentUnlocked.Value:F1}%" : "-";
         public int Points => PointsValue ?? 0;
         public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
 
         /// <summary>
-        /// Always true for RecentAchievementItem since GlobalPercent is non-nullable.
+        /// True if rarity percentage data is available for this achievement.
         /// </summary>
-        public bool HasRarity => true;
+        public bool HasRarity => GlobalPercentUnlocked.HasValue;
 
-        public RarityTier Rarity => RarityHelper.GetRarityTier(GlobalPercent);
+        public RarityTier Rarity => RarityHelper.GetRarityTier(GlobalPercentUnlocked ?? 100);
 
         public System.Windows.Media.SolidColorBrush RarityBrush => Rarity.ToBrush();
         public string HiddenTitleSuffix => Hidden ? ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle_WithParens") : string.Empty;
@@ -174,12 +204,13 @@ namespace PlayniteAchievements.ViewModels
             GameName = other.GameName;
             IconPath = other.IconPath;
             UnlockTime = other.UnlockTime;
-            GlobalPercent = other.GlobalPercent;
+            GlobalPercentUnlocked = other.GlobalPercentUnlocked;
             PointsValue = other.PointsValue;
             ProgressNum = other.ProgressNum;
             ProgressDenom = other.ProgressDenom;
             GameIconPath = other.GameIconPath;
             GameCoverPath = other.GameCoverPath;
+            TrophyType = other.TrophyType;
         }
     }
 }

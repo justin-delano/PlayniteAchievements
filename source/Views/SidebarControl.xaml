@@ -776,11 +776,12 @@
                                                             Margin="6,0,0,0"/>
                                                 </Grid>
 
-                                                <!-- Row 2: Rarity mini-badges (right, under bar) -->
+                                                <!-- Row 2: Rarity mini-badges (shown when no trophy types) -->
                                                 <StackPanel Orientation="Horizontal"
                                                             HorizontalAlignment="Right"
                                                             VerticalAlignment="Center"
-                                                            Margin="0,6,4,0">
+                                                            Margin="0,6,4,0"
+                                                            Visibility="{Binding HasTrophyTypes, Converter={StaticResource InverseBoolToVis}}">
 
                                                     <StackPanel Orientation="Horizontal"
                                                                 Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}"
@@ -839,6 +840,79 @@
                                                             Effect="{StaticResource BadgeShadow}"
                                                             Width="18" Height="18"/>
                                                         <TextBlock Text="{Binding CommonCount}"
+                                                                FontSize="{DynamicResource FontSizeSmall}"
+                                                                FontWeight="Bold"
+                                                                Foreground="White"
+                                                                VerticalAlignment="Center"
+                                                                Margin="3,0,0,0"/>
+                                                    </StackPanel>
+
+                                                </StackPanel>
+
+                                                <!-- Row 2b: Trophy mini-badges (shown when trophy types exist) -->
+                                                <StackPanel Orientation="Horizontal"
+                                                            HorizontalAlignment="Right"
+                                                            VerticalAlignment="Center"
+                                                            Margin="0,6,4,0"
+                                                            Visibility="{Binding HasTrophyTypes, Converter={StaticResource BoolToVis}}">
+
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}"
+                                                                ToolTip="Platinum"
+                                                                Margin="4,0">
+                                                        <Image Source="{StaticResource TrophyPlatinum}"
+                                                            Style="{StaticResource RarityIcon}"
+                                                            Effect="{StaticResource BadgeShadow}"
+                                                            Width="18" Height="18"/>
+                                                        <TextBlock Text="{Binding TrophyPlatinumCount}"
+                                                                FontSize="{DynamicResource FontSizeSmall}"
+                                                                FontWeight="Bold"
+                                                                Foreground="White"
+                                                                VerticalAlignment="Center"
+                                                                Margin="3,0,0,0"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}"
+                                                                ToolTip="Gold"
+                                                                Margin="4,0">
+                                                        <Image Source="{StaticResource TrophyGold}"
+                                                            Style="{StaticResource RarityIcon}"
+                                                            Effect="{StaticResource BadgeShadow}"
+                                                            Width="18" Height="18"/>
+                                                        <TextBlock Text="{Binding TrophyGoldCount}"
+                                                                FontSize="{DynamicResource FontSizeSmall}"
+                                                                FontWeight="Bold"
+                                                                Foreground="White"
+                                                                VerticalAlignment="Center"
+                                                                Margin="3,0,0,0"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}"
+                                                                ToolTip="Silver"
+                                                                Margin="4,0">
+                                                        <Image Source="{StaticResource TrophySilver}"
+                                                            Style="{StaticResource RarityIcon}"
+                                                            Effect="{StaticResource BadgeShadow}"
+                                                            Width="18" Height="18"/>
+                                                        <TextBlock Text="{Binding TrophySilverCount}"
+                                                                FontSize="{DynamicResource FontSizeSmall}"
+                                                                FontWeight="Bold"
+                                                                Foreground="White"
+                                                                VerticalAlignment="Center"
+                                                                Margin="3,0,0,0"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}"
+                                                                ToolTip="Bronze"
+                                                                Margin="4,0">
+                                                        <Image Source="{StaticResource TrophyBronze}"
+                                                            Style="{StaticResource RarityIcon}"
+                                                            Effect="{StaticResource BadgeShadow}"
+                                                            Width="18" Height="18"/>
+                                                        <TextBlock Text="{Binding TrophyBronzeCount}"
                                                                 FontSize="{DynamicResource FontSizeSmall}"
                                                                 FontWeight="Bold"
                                                                 Foreground="White"
@@ -1208,6 +1282,10 @@
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
 
+                                    <!-- Trophy -->
+                                    <DataGridTemplateColumn Width="56" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="False" SortMemberPath="TrophyType"
+                                                            CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
+
                                     <!-- Rarity -->
                                     <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
                                                             CellTemplate="{StaticResource AchievementRarityTemplate}"/>
@@ -1313,6 +1391,10 @@
                                     <!-- Date / Progress -->
                                     <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate"
                                                             CellTemplate="{StaticResource AchievementUnlockDateTemplate}"/>
+
+                                    <!-- Trophy -->
+                                    <DataGridTemplateColumn Width="56" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="False" SortMemberPath="TrophyType"
+                                                            CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
 
                                     <!-- Rarity -->
                                     <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"

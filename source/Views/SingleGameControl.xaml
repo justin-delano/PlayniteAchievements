@@ -15,6 +15,7 @@
         <ResourceDictionary>
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
+            <converters:IntToVisibilityConverter x:Key="IntToVis"/>
 
             <!-- Style for Expander Header ToggleButton -->
             <Style x:Key="ExpanderHeaderStyle" TargetType="ToggleButton">
@@ -194,8 +195,9 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- Rarity Distribution -->
-                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <!-- Rarity Distribution (shown when no trophy types) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0"
+                                Visibility="{Binding HasTrophyTypes, Converter={StaticResource InverseBoolToVis}}">
                         <TextBlock Text="{DynamicResource LOCPlayAch_Label_Rarity}"
                                    Style="{DynamicResource BaseTextBlockStyle}"
                                    Foreground="{DynamicResource TextBrush}"
@@ -218,6 +220,38 @@
                         <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Common}" VerticalAlignment="Center">
                             <Image Source="{StaticResource BadgeBronzeTriangle}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
                             <TextBlock Text="{Binding CommonCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Trophy Distribution (shown when trophy types exist) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0"
+                                Visibility="{Binding HasTrophyTypes, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Label_Trophies}"
+                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Opacity="0.7"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,12,0"/>
+
+                        <StackPanel Orientation="Horizontal" ToolTip="Platinum" Margin="0,0,12,0" VerticalAlignment="Center"
+                                    Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}">
+                            <Image Source="{StaticResource TrophyPlatinum}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                            <TextBlock Text="{Binding TrophyPlatinumCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" ToolTip="Gold" Margin="0,0,12,0" VerticalAlignment="Center"
+                                    Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}">
+                            <Image Source="{StaticResource TrophyGold}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                            <TextBlock Text="{Binding TrophyGoldCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" ToolTip="Silver" Margin="0,0,12,0" VerticalAlignment="Center"
+                                    Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}">
+                            <Image Source="{StaticResource TrophySilver}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                            <TextBlock Text="{Binding TrophySilverCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" ToolTip="Bronze" VerticalAlignment="Center"
+                                    Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}">
+                            <Image Source="{StaticResource TrophyBronze}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                            <TextBlock Text="{Binding TrophyBronzeCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -459,6 +493,10 @@
                 <!-- Unlock Date / Progress -->
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate"
                                         CellTemplate="{StaticResource AchievementUnlockDateTemplate}"/>
+
+                <!-- Trophy -->
+                <DataGridTemplateColumn Width="64" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="True" SortMemberPath="TrophyType"
+                                        CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
 
                 <!-- Rarity -->
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"

@@ -211,6 +211,12 @@ namespace PlayniteAchievements.Services.Sidebar
             int gameTotalRare = 0;
             int gameTotalUltraRare = 0;
 
+            // Trophy counts (for PlayStation games)
+            int gameTrophyPlatinum = 0;
+            int gameTrophyGold = 0;
+            int gameTrophySilver = 0;
+            int gameTrophyBronze = 0;
+
             for (var i = 0; i < achievements.Count; i++)
             {
                 var ach = achievements[i];
@@ -244,7 +250,8 @@ namespace PlayniteAchievements.Services.Sidebar
                     ShowHiddenDescription = showDescription,
                     ProgressNum = ach.ProgressNum,
                     ProgressDenom = ach.ProgressDenom,
-                    PointsValue = pointsToDisplay
+                    PointsValue = pointsToDisplay,
+                    TrophyType = ach.TrophyType
                 };
 
                 if (canResolveReveals && ach.Hidden && !ach.Unlocked)
@@ -308,6 +315,26 @@ namespace PlayniteAchievements.Services.Sidebar
                         }
                     }
 
+                    // Track trophy types for unlocked achievements
+                    if (!string.IsNullOrWhiteSpace(ach.TrophyType))
+                    {
+                        switch (ach.TrophyType.ToLowerInvariant())
+                        {
+                            case "platinum":
+                                gameTrophyPlatinum++;
+                                break;
+                            case "gold":
+                                gameTrophyGold++;
+                                break;
+                            case "silver":
+                                gameTrophySilver++;
+                                break;
+                            case "bronze":
+                                gameTrophyBronze++;
+                                break;
+                        }
+                    }
+
                     if (ach.UnlockTimeUtc.HasValue)
                     {
                         var unlockDate = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value).Date;
@@ -324,13 +351,14 @@ namespace PlayniteAchievements.Services.Sidebar
                                 GameName = gameData.GameName ?? "Unknown",
                                 IconPath = ach.UnlockedIconPath,
                                 UnlockTime = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value),
-                                GlobalPercent = ach.GlobalPercentUnlocked ?? 0,
+                                GlobalPercentUnlocked = ach.GlobalPercentUnlocked,
                                 PointsValue = pointsToDisplay,
                                 ProgressNum = ach.ProgressNum,
                                 ProgressDenom = ach.ProgressDenom,
                                 GameIconPath = gameIconPath,
                                 GameCoverPath = gameCoverPath,
-                                Hidden = ach.Hidden
+                                Hidden = ach.Hidden,
+                                TrophyType = ach.TrophyType
                             });
                         }
                     }
@@ -343,6 +371,11 @@ namespace PlayniteAchievements.Services.Sidebar
             fragment.UncommonCount = gameUncommon;
             fragment.RareCount = gameRare;
             fragment.UltraRareCount = gameUltraRare;
+
+            fragment.TrophyPlatinumCount = gameTrophyPlatinum;
+            fragment.TrophyGoldCount = gameTrophyGold;
+            fragment.TrophySilverCount = gameTrophySilver;
+            fragment.TrophyBronzeCount = gameTrophyBronze;
 
             fragment.TotalCommonPossible = gameTotalCommon;
             fragment.TotalUncommonPossible = gameTotalUncommon;
@@ -365,6 +398,10 @@ namespace PlayniteAchievements.Services.Sidebar
                 UncommonCount = gameUncommon,
                 RareCount = gameRare,
                 UltraRareCount = gameUltraRare,
+                TrophyPlatinumCount = gameTrophyPlatinum,
+                TrophyGoldCount = gameTrophyGold,
+                TrophySilverCount = gameTrophySilver,
+                TrophyBronzeCount = gameTrophyBronze,
                 LastPlayed = playniteGame?.LastActivity,
                 IsCompleted = gameData.IsCompleted,
                 Provider = gameData.ProviderName ?? "Unknown"
