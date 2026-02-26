@@ -71,6 +71,7 @@ namespace PlayniteAchievements.Services
         // Tracks overall refresh progress for icon download progress updates
         private int _currentOverallIndex;
         private int _totalGamesInRun;
+        private int _completedGamesCount; // For monotonically increasing progress during parallel execution
 
         public ICacheManager Cache => _cacheService;
 
@@ -550,6 +551,7 @@ namespace PlayniteAchievements.Services
             _iconProgressTracker.Reset();
             Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
             Interlocked.Exchange(ref _lastCacheInvalidationTimestamp, -1);
+            Interlocked.Exchange(ref _completedGamesCount, 0);
 
             // Report immediately so UI updates buttons before any async work
             var startMsg = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
@@ -762,26 +764,15 @@ namespace PlayniteAchievements.Services
             // Track overall progress for icon download progress updates
             _totalGamesInRun = totalGames;
 
-            // Pre-compute starting offsets for each provider for parallel execution
-            var providerOffsets = new Dictionary<IDataProvider, int>();
-            var offset = 0;
-            foreach (var kvp in gamesByProvider)
-            {
-                providerOffsets[kvp.Key] = offset;
-                offset += kvp.Value.Count;
-            }
-
-            // Thread-safe counter for global progress tracking
-            var globalProgressCounter = 0;
-
             // Create provider tasks that run in parallel
+            // Progress is tracked via OnGameRefreshed callback for monotonically increasing progress
             var providerTasks = gamesByProvider.Select(kvp =>
             {
                 var provider = kvp.Key;
                 var games = kvp.Value;
-                var providerOffset = providerOffsets[provider];
 
-                // Create a localized callback for this provider with pre-computed offset
+                // Create a callback for provider-level events (auth required, etc.)
+                // Per-game progress is reported via OnGameRefreshed to avoid jumping
                 Action<ProviderRefreshUpdate> wrappedCallback = (u) =>
                 {
                     if (u == null) return;
@@ -792,42 +783,17 @@ namespace PlayniteAchievements.Services
                         return;
                     }
 
-                    // Map provider-local index to global index using pre-computed offset
-                    var localIndex = Math.Min(u.CurrentIndex, games.Count);
-                    var globalIndex = providerOffset + localIndex;
-
-                    // Track current game index for icon progress updates
-                    Interlocked.Exchange(ref _currentOverallIndex, globalIndex);
-
-                    var update = new RebuildUpdate
-                    {
-                        Kind = RebuildUpdateKind.UserProgress,
-                        Stage = RebuildStage.RefreshingUserAchievements,
-
-                        // Provider details
-                        // Use global counts for the text display so it doesn't look like it resets
-                        // UserAppIndex is 0-based for the text formatter
-                        UserAppIndex = globalIndex - 1,
-                        UserAppCount = totalGames,
-                        CurrentGameName = u.CurrentGameName,
-
-                        // Global details
-                        OverallIndex = globalIndex,
-                        OverallCount = totalGames
-                    };
-
-                    progressCallback?.Invoke(update);
+                    // Store current game name for progress display in OnGameRefreshed
+                    // but don't report progress here to avoid jumping
+                    Interlocked.Exchange(ref _currentOverallIndex, _completedGamesCount + 1);
                 };
 
                 return Task.Run(async () =>
                 {
                     cancel.ThrowIfCancellationRequested();
                     var payload = await provider
-                        .RefreshAsync(games, wrappedCallback, data => OnGameRefreshed(provider, data, cancel), cancel)
+                        .RefreshAsync(games, wrappedCallback, data => OnGameRefreshed(provider, data, progressCallback, totalGames, cancel), cancel)
                         .ConfigureAwait(false);
-
-                    // Update global counter for this provider's games
-                    Interlocked.Add(ref globalProgressCounter, games.Count);
 
                     return payload;
                 }, cancel);
@@ -850,7 +816,7 @@ namespace PlayniteAchievements.Services
             return new RebuildPayload { Summary = summary };
         }
 
-        private async Task OnGameRefreshed(IDataProvider provider, GameAchievementData data, CancellationToken cancel = default)
+        private async Task OnGameRefreshed(IDataProvider provider, GameAchievementData data, Action<RebuildUpdate> progressCallback, int totalGames, CancellationToken cancel = default)
         {
             if (data?.PlayniteGameId == null) return;
 
@@ -893,6 +859,21 @@ namespace PlayniteAchievements.Services
 
                 Interlocked.Increment(ref _savedGamesInCurrentRun);
                 NotifyCacheInvalidatedThrottled(force: false);
+
+                // Report progress based on actual completions for stable progress bar
+                var completedCount = Interlocked.Increment(ref _completedGamesCount);
+                Interlocked.Exchange(ref _currentOverallIndex, completedCount);
+
+                progressCallback?.Invoke(new RebuildUpdate
+                {
+                    Kind = RebuildUpdateKind.UserProgress,
+                    Stage = RebuildStage.RefreshingUserAchievements,
+                    UserAppIndex = completedCount - 1, // 0-based for text formatter
+                    UserAppCount = totalGames,
+                    CurrentGameName = data.GameName,
+                    OverallIndex = completedCount,
+                    OverallCount = totalGames
+                });
             }
         }
 
