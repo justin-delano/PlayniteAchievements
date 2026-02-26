@@ -630,6 +630,7 @@ namespace PlayniteAchievements.ViewModels
                 "UnlockTime" => CompareAchievementsByUnlockColumn,
                 "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
                 "Points" => (a, b) => a.Points.CompareTo(b.Points),
+                "TrophyType" => CompareAchievementsByTrophyType,
                 _ => null
             };
 
@@ -705,6 +706,25 @@ namespace PlayniteAchievements.ViewModels
             }
 
             return 0;
+        }
+
+        private static int CompareAchievementsByTrophyType(AchievementDisplayItem a, AchievementDisplayItem b)
+        {
+            // Trophy type order: platinum (4) > gold (3) > silver (2) > bronze (1) > none (0)
+            int GetTrophyRank(string trophyType)
+            {
+                if (string.IsNullOrWhiteSpace(trophyType)) return 0;
+                return trophyType.ToLowerInvariant() switch
+                {
+                    "platinum" => 4,
+                    "gold" => 3,
+                    "silver" => 2,
+                    "bronze" => 1,
+                    _ => 0
+                };
+            }
+
+            return GetTrophyRank(a.TrophyType).CompareTo(GetTrophyRank(b.TrophyType));
         }
 
         private void ApplySearchFilter()

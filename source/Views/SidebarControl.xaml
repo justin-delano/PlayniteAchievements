@@ -1333,7 +1333,7 @@
                                     </DataGridTemplateColumn>
 
                                     <!-- Trophy -->
-                                    <DataGridTemplateColumn Width="48" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="False"
+                                    <DataGridTemplateColumn Width="56" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="False" SortMemberPath="TrophyType"
                                                             CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
 
                                     <!-- Rarity -->
@@ -1443,7 +1443,7 @@
                                                             CellTemplate="{StaticResource AchievementUnlockDateTemplate}"/>
 
                                     <!-- Trophy -->
-                                    <DataGridTemplateColumn Width="48" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="False"
+                                    <DataGridTemplateColumn Width="56" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="False" SortMemberPath="TrophyType"
                                                             CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
 
                                     <!-- Rarity -->
