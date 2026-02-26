@@ -17,7 +17,8 @@ namespace PlayniteAchievements.Models
         Favorites,
         Single,
         LibrarySelected,
-        Missing
+        Missing,
+        Custom
     }
 
     /// <summary>
