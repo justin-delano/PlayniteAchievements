@@ -237,8 +237,8 @@ namespace PlayniteAchievements
 
                     _achievementService = new AchievementService(api, settings, _logger, this, providers, _diskImageService, _providerRegistry);
                     _notifications = new NotificationPublisher(api, settings, _logger);
-                    _backgroundUpdates = new BackgroundUpdater(_achievementService, settings, _logger, _notifications, null);
                     _refreshCoordinator = new RefreshCoordinator(_achievementService, _logger, ShowRefreshProgressControlAndRun);
+                    _backgroundUpdates = new BackgroundUpdater(_refreshCoordinator, _achievementService, settings, _logger, _notifications, null);
 
                     try
                     {
@@ -422,12 +422,6 @@ namespace PlayniteAchievements
                 {
                     _achievementService.CancelCurrentRebuild();
                 }
-            };
-
-            yield return new MainMenuItem
-            {
-                Description = "-",
-                MenuSection = PluginMainMenuSection
             };
         }
 
