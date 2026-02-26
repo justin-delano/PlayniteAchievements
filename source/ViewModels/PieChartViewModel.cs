@@ -326,22 +326,19 @@ namespace PlayniteAchievements.ViewModels
         {
             for (int i = 0; i < slices.Count; i++)
             {
-                LegendItem item;
-                if (i < LegendItems.Count)
-                {
-                    item = LegendItems[i];
-                }
-                else
-                {
-                    item = new LegendItem();
-                    LegendItems.Add(item);
-                }
+                var isNew = i >= LegendItems.Count;
+                var item = isNew ? new LegendItem() : LegendItems[i];
 
                 var slice = slices[i];
                 item.Label = slice.Label;
                 item.Count = slice.Count;
                 item.IconKey = slice.IconKey;
                 item.ColorHex = slice.ColorHex;
+
+                if (isNew)
+                {
+                    LegendItems.Add(item);
+                }
             }
 
             while (LegendItems.Count > slices.Count)

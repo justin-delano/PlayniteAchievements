@@ -50,6 +50,7 @@
                                     <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.UnlockedCount)"/>
                                     <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.TotalCount)"/>
                                     <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IsLocked)"/>
+                                    <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IconKey)"/>
                                 </MultiBinding>
                             </TextBlock.Text>
                         </TextBlock>
