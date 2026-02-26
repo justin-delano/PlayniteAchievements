@@ -20,13 +20,15 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Padding" Value="10,6"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridColumnHeader">
                     <Grid Background="{TemplateBinding Background}">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="Center"
-                                          Margin="{TemplateBinding Padding}"/>
+                                          Margin="{TemplateBinding Padding}"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
                         <Path x:Name="SortArrow"
                               HorizontalAlignment="Right"
                               Fill="{DynamicResource TextBrush}"
