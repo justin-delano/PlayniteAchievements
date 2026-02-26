@@ -109,7 +109,7 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             _logger?.Debug($"[SteamAch] Refreshing Steam session (Force={forceRefresh})...");
-            var refreshed = await _sessionManager.RefreshCookiesHeadlessAsync(ct).ConfigureAwait(false);
+            var refreshed = await _sessionManager.RefreshCookiesHeadlessAsync(ct, forceRefresh).ConfigureAwait(false);
             SyncCookieJarFromCefIfNeeded(force: true);
             lock (_cookieLock)
             {
