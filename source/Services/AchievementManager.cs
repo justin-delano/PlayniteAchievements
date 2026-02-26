@@ -26,12 +26,19 @@ namespace PlayniteAchievements.Services
     {
         private readonly object _runLock = new object();
         private readonly object _pointsColumnVisibilityLock = new object();
+        private readonly object _reportLock = new object();
         private CancellationTokenSource _activeRunCts;
 
         public event EventHandler<ProgressReport> RebuildProgress;
 
         private ProgressReport _lastProgress;
         private string _lastStatus;
+
+        // Progress throttling
+        private ProgressReport _pendingReport;
+        private DateTime _lastReportTime = DateTime.MinValue;
+        private System.Timers.Timer _reportThrottleTimer;
+        private const int ReportThrottleIntervalMs = 1000;
 
         public ProgressReport GetLastRebuildProgress() => _lastProgress;
         public string GetLastRebuildStatus() => _lastStatus;
@@ -182,6 +189,22 @@ namespace PlayniteAchievements.Services
 
         public void Dispose()
         {
+            // Dispose throttle timer
+            lock (_reportLock)
+            {
+                if (_reportThrottleTimer != null)
+                {
+                    try
+                    {
+                        _reportThrottleTimer.Stop();
+                        _reportThrottleTimer.Elapsed -= OnThrottleTimerElapsed;
+                        _reportThrottleTimer.Dispose();
+                        _reportThrottleTimer = null;
+                    }
+                    catch { }
+                }
+            }
+
             try
             {
                 if (_cacheService is IDisposable disposable)
@@ -223,6 +246,73 @@ namespace PlayniteAchievements.Services
             var handler = RebuildProgress;
             if (handler == null) return;
 
+            // Always report immediately for final/canceled updates
+            var isFinal = canceled || (total > 0 && current >= total);
+
+            lock (_reportLock)
+            {
+                var now = DateTime.UtcNow;
+                var timeSinceLastReport = (now - _lastReportTime).TotalMilliseconds;
+
+                if (isFinal || timeSinceLastReport >= ReportThrottleIntervalMs)
+                {
+                    // Enough time has passed or this is a final report - send immediately
+                    _lastReportTime = now;
+                    _pendingReport = null;
+                    StopThrottleTimer();
+                    SendReportToUi(report, handler);
+                }
+                else
+                {
+                    // Throttle - store pending report and start timer if not running
+                    _pendingReport = report;
+                    if (_reportThrottleTimer == null)
+                    {
+                        _reportThrottleTimer = new System.Timers.Timer(ReportThrottleIntervalMs);
+                        _reportThrottleTimer.AutoReset = false;
+                        _reportThrottleTimer.Elapsed += OnThrottleTimerElapsed;
+                    }
+                    if (!_reportThrottleTimer.Enabled)
+                    {
+                        _reportThrottleTimer.Start();
+                    }
+                }
+            }
+        }
+
+        private void OnThrottleTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            EventHandler<ProgressReport> handler;
+            ProgressReport reportToSend;
+
+            lock (_reportLock)
+            {
+                handler = RebuildProgress;
+                reportToSend = _pendingReport;
+                _pendingReport = null;
+                _lastReportTime = DateTime.UtcNow;
+            }
+
+            if (reportToSend != null && handler != null)
+            {
+                SendReportToUi(reportToSend, handler);
+            }
+        }
+
+        private void StopThrottleTimer()
+        {
+            if (_reportThrottleTimer != null)
+            {
+                try
+                {
+                    _reportThrottleTimer.Stop();
+                }
+                catch { }
+            }
+        }
+
+        private void SendReportToUi(ProgressReport report, EventHandler<ProgressReport> handler)
+        {
             PostToUi(() =>
             {
                 foreach (EventHandler<ProgressReport> subscriber in handler.GetInvocationList())
@@ -231,9 +321,9 @@ namespace PlayniteAchievements.Services
                     {
                         subscriber(this, report);
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        _logger?.Error(e, ResourceProvider.GetString("LOCPlayAch_Error_NotifySubscribers"));
+                        _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Error_NotifySubscribers"));
                     }
                 }
             });
