@@ -171,6 +171,19 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
+        public DateTime? GetOldestLastUpdatedUtc()
+        {
+            return WithDb(db =>
+            {
+                var value = db.ExecuteScalar<string>(
+                    @"SELECT MIN(ugp.LastUpdatedUtc)
+                      FROM UserGameProgress ugp
+                      INNER JOIN Users u ON u.Id = ugp.UserId
+                      WHERE u.IsCurrentUser = 1;");
+                return ParseUtc(value);
+            });
+        }
+
         public string GetCurrentUserScopeToken()
         {
             return WithDb(db =>

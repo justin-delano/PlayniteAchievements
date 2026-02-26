@@ -130,10 +130,30 @@ namespace PlayniteAchievements.Services
 
         private bool ShouldPerformUpdate(TimeSpan interval)
         {
-            var cacheValid = _achievementService.Cache?.IsCacheValid() ?? false;
-            _logger.Debug($"[PeriodicUpdate] Cache valid={cacheValid}");
+            if (!_settings.Persisted.EnablePeriodicUpdates)
+            {
+                return false;
+            }
 
-            return _settings.Persisted.EnablePeriodicUpdates && !cacheValid;
+            var cache = _achievementService.Cache;
+            if (cache == null || !cache.IsCacheValid())
+            {
+                _logger.Debug("[PeriodicUpdate] No valid cache; update needed.");
+                return true;
+            }
+
+            var oldestUpdate = cache.GetOldestLastUpdatedUtc();
+            if (!oldestUpdate.HasValue)
+            {
+                _logger.Debug("[PeriodicUpdate] No last update time found; update needed.");
+                return true;
+            }
+
+            var age = DateTime.UtcNow - oldestUpdate.Value;
+            var needsUpdate = age >= interval;
+            _logger.Debug($"[PeriodicUpdate] Oldest cache entry age={age.TotalHours:F1}h, interval={interval.TotalHours:F1}h, needsUpdate={needsUpdate}");
+
+            return needsUpdate;
         }
 
         private async Task ExecuteUpdate(CancellationToken token)

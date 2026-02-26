@@ -359,6 +359,23 @@ namespace PlayniteAchievements.Services
             return CoreArtifactsPresent();
         }
 
+        public DateTime? GetOldestLastUpdatedUtc()
+        {
+            try
+            {
+                lock (_sync)
+                {
+                    EnsureReady_Locked("GetOldestLastUpdatedUtc");
+                    return _store.GetOldestLastUpdatedUtc();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to get oldest last updated time.");
+                return null;
+            }
+        }
+
         public List<string> GetCachedGameIds()
         {
             try
