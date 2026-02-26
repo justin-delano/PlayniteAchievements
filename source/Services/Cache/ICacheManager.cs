@@ -14,7 +14,7 @@ namespace PlayniteAchievements.Services
         void EnsureDiskCacheOrClearMemory();
         bool CacheFileExists();
         bool IsCacheValid();
-        DateTime? GetOldestLastUpdatedUtc();
+        DateTime? GetMostRecentLastUpdatedUtc();
 
         // Per-game achievement cache
         List<string> GetCachedGameIds();

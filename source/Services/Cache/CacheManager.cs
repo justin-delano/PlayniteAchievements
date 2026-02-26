@@ -359,14 +359,14 @@ namespace PlayniteAchievements.Services
             return CoreArtifactsPresent();
         }
 
-        public DateTime? GetOldestLastUpdatedUtc()
+        public DateTime? GetMostRecentLastUpdatedUtc()
         {
             try
             {
                 lock (_sync)
                 {
-                    EnsureReady_Locked("GetOldestLastUpdatedUtc");
-                    return _store.GetOldestLastUpdatedUtc();
+                    EnsureReady_Locked("GetMostRecentLastUpdatedUtc");
+                    return _store.GetMostRecentLastUpdatedUtc();
                 }
             }
             catch (Exception ex)
@@ -414,16 +414,6 @@ namespace PlayniteAchievements.Services
                 catch (Exception ex)
                 {
                     HandleInitializationFailure(ex);
-                }
-
-                // Legacy cleanup retained for old dev builds that created provider-scoped cache folders.
-                try
-                {
-                    var legacy = Path.Combine(_storage.BaseDir, "achievement_cache_by_provider");
-                    _storage.DeleteDirectoryIfExists(legacy);
-                }
-                catch
-                {
                 }
             }
 
@@ -659,7 +649,6 @@ namespace PlayniteAchievements.Services
                     var normalized = UserKey(cacheKey);
                     RemoveMemoryGameData_Locked(normalized);
 
-                    _storage.DeleteUserAchievement(normalized);
                     _store.RemoveGameData(playniteGameId);
                 }
 

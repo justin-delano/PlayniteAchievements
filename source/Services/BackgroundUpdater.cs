@@ -142,16 +142,16 @@ namespace PlayniteAchievements.Services
                 return true;
             }
 
-            var oldestUpdate = cache.GetOldestLastUpdatedUtc();
-            if (!oldestUpdate.HasValue)
+            var lastUpdate = cache.GetMostRecentLastUpdatedUtc();
+            if (!lastUpdate.HasValue)
             {
                 _logger.Debug("[PeriodicUpdate] No last update time found; update needed.");
                 return true;
             }
 
-            var age = DateTime.UtcNow - oldestUpdate.Value;
+            var age = DateTime.UtcNow - lastUpdate.Value;
             var needsUpdate = age >= interval;
-            _logger.Debug($"[PeriodicUpdate] Oldest cache entry age={age.TotalHours:F1}h, interval={interval.TotalHours:F1}h, needsUpdate={needsUpdate}");
+            _logger.Debug($"[PeriodicUpdate] Last refresh was {age.TotalHours:F1}h ago, interval={interval.TotalHours:F1}h, needsUpdate={needsUpdate}");
 
             return needsUpdate;
         }
