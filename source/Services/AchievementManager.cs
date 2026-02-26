@@ -71,7 +71,6 @@ namespace PlayniteAchievements.Services
         // Tracks overall refresh progress for icon download progress updates
         private int _currentOverallIndex;
         private int _totalGamesInRun;
-        private int _completedGamesCount; // For monotonically increasing progress during parallel execution
 
         public ICacheManager Cache => _cacheService;
 
@@ -551,7 +550,6 @@ namespace PlayniteAchievements.Services
             _iconProgressTracker.Reset();
             Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
             Interlocked.Exchange(ref _lastCacheInvalidationTimestamp, -1);
-            Interlocked.Exchange(ref _completedGamesCount, 0);
 
             // Report immediately so UI updates buttons before any async work
             var startMsg = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
@@ -760,19 +758,17 @@ namespace PlayniteAchievements.Services
 
             var totalGames = gamesToRefresh.Count;
             var summary = new RebuildSummary();
+            var refreshedSoFar = 0;
 
             // Track overall progress for icon download progress updates
             _totalGamesInRun = totalGames;
 
-            // Create provider tasks that run in parallel
-            // Progress is tracked via OnGameRefreshed callback for monotonically increasing progress
-            var providerTasks = gamesByProvider.Select(kvp =>
+            foreach (var kvp in gamesByProvider)
             {
                 var provider = kvp.Key;
                 var games = kvp.Value;
 
-                // Create a callback for provider-level events (auth required, etc.)
-                // Per-game progress is reported via OnGameRefreshed to avoid jumping
+                // Create a localized callback for this provider
                 Action<ProviderRefreshUpdate> wrappedCallback = (u) =>
                 {
                     if (u == null) return;
@@ -783,28 +779,42 @@ namespace PlayniteAchievements.Services
                         return;
                     }
 
-                    // Store current game name for progress display in OnGameRefreshed
-                    // but don't report progress here to avoid jumping
-                    Interlocked.Exchange(ref _currentOverallIndex, _completedGamesCount + 1);
+                    // Map provider-local index to global index
+                    var localIndex = Math.Min(u.CurrentIndex, games.Count);
+
+                    // localIndex is 1-based (from progress reporter steps), so we just add the offset
+                    var globalIndex = refreshedSoFar + localIndex;
+
+                    // Track current game index for icon progress updates
+                    _currentOverallIndex = globalIndex;
+
+                    var update = new RebuildUpdate
+                    {
+                        Kind = RebuildUpdateKind.UserProgress,
+                        Stage = RebuildStage.RefreshingUserAchievements,
+                        
+                        // Provider details
+                        // Use global counts for the text display so it doesn't look like it resets
+                        // UserAppIndex is 0-based for the text formatter
+                        UserAppIndex = globalIndex - 1,
+                        UserAppCount = totalGames,
+                        CurrentGameName = u.CurrentGameName,
+                        
+                        // Global details
+                        OverallIndex = globalIndex,
+                        OverallCount = totalGames
+                    };
+
+                    progressCallback?.Invoke(update);
                 };
 
-                return Task.Run(async () =>
-                {
-                    cancel.ThrowIfCancellationRequested();
-                    var payload = await provider
-                        .RefreshAsync(games, wrappedCallback, data => OnGameRefreshed(provider, data, progressCallback, totalGames, cancel), cancel)
-                        .ConfigureAwait(false);
+                cancel.ThrowIfCancellationRequested();
+                var payload = await provider
+                    .RefreshAsync(games, wrappedCallback, data => OnGameRefreshed(provider, data, cancel), cancel)
+                    .ConfigureAwait(false);
 
-                    return payload;
-                }, cancel);
-            }).ToArray();
+                refreshedSoFar += games.Count;
 
-            // Wait for all providers to complete
-            var payloads = await Task.WhenAll(providerTasks).ConfigureAwait(false);
-
-            // Aggregate results from all providers
-            foreach (var payload in payloads)
-            {
                 if (payload?.Summary == null)
                     continue;
 
@@ -816,7 +826,7 @@ namespace PlayniteAchievements.Services
             return new RebuildPayload { Summary = summary };
         }
 
-        private async Task OnGameRefreshed(IDataProvider provider, GameAchievementData data, Action<RebuildUpdate> progressCallback, int totalGames, CancellationToken cancel = default)
+        private async Task OnGameRefreshed(IDataProvider provider, GameAchievementData data, CancellationToken cancel = default)
         {
             if (data?.PlayniteGameId == null) return;
 
@@ -834,11 +844,7 @@ namespace PlayniteAchievements.Services
 
             TryAutoEnablePointsColumnForPointsProvider(provider, data);
 
-            // Increment completion count early to get stable index for icon progress
-            var completedCount = Interlocked.Increment(ref _completedGamesCount);
-            Interlocked.Exchange(ref _currentOverallIndex, completedCount);
-
-            await PopulateAchievementIconCacheAsync(data, completedCount, totalGames, cancel).ConfigureAwait(false);
+            await PopulateAchievementIconCacheAsync(data, cancel).ConfigureAwait(false);
 
             var key = data.PlayniteGameId.Value.ToString();
 
@@ -863,18 +869,6 @@ namespace PlayniteAchievements.Services
 
                 Interlocked.Increment(ref _savedGamesInCurrentRun);
                 NotifyCacheInvalidatedThrottled(force: false);
-
-                // Report progress based on actual completions for stable progress bar
-                progressCallback?.Invoke(new RebuildUpdate
-                {
-                    Kind = RebuildUpdateKind.UserProgress,
-                    Stage = RebuildStage.RefreshingUserAchievements,
-                    UserAppIndex = completedCount - 1, // 0-based for text formatter
-                    UserAppCount = totalGames,
-                    CurrentGameName = data.GameName,
-                    OverallIndex = completedCount,
-                    OverallCount = totalGames
-                });
             }
         }
 
@@ -1070,10 +1064,10 @@ namespace PlayniteAchievements.Services
             return !string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath);
         }
 
-        private async Task PopulateAchievementIconCacheAsync(GameAchievementData data, int gameIndex, int totalGames, CancellationToken cancel)
+        private async Task PopulateAchievementIconCacheAsync(GameAchievementData data, CancellationToken cancel)
         {
-            // Use a local tracker for this game to avoid interference from parallel games
-            var localIconTracker = new IconProgressTracker();
+            // Reset icon progress for each game to show per-game counts
+            _iconProgressTracker.Reset();
 
             if (data?.Achievements == null || data.Achievements.Count == 0)
             {
@@ -1148,7 +1142,7 @@ namespace PlayniteAchievements.Services
             }
 
             // Only track progress for icons that actually need downloading
-            localIconTracker.IncrementTotal(iconsToProcess.Count);
+            _iconProgressTracker.IncrementTotal(iconsToProcess.Count);
 
             var iconTasks = iconsToProcess.Select(async iconPath =>
             {
@@ -1157,9 +1151,9 @@ namespace PlayniteAchievements.Services
                 // Only emit progress if not cancelled
                 if (!cancel.IsCancellationRequested)
                 {
-                    localIconTracker.IncrementDownloaded();
+                    _iconProgressTracker.IncrementDownloaded();
 
-                    var (downloaded, total) = localIconTracker.GetSnapshot();
+                    var (downloaded, total) = _iconProgressTracker.GetSnapshot();
                     HandleUpdate(new RebuildUpdate
                     {
                         Kind = RebuildUpdateKind.UserProgress,
@@ -1167,11 +1161,11 @@ namespace PlayniteAchievements.Services
                         CurrentGameName = data.GameName,
                         IconsDownloaded = downloaded,
                         TotalIcons = total,
-                        // Use stable game index passed from caller
-                        UserAppIndex = gameIndex - 1,
-                        UserAppCount = totalGames,
-                        OverallIndex = gameIndex,
-                        OverallCount = totalGames
+                        // Include overall progress for correct percentage display
+                        UserAppIndex = _currentOverallIndex - 1,
+                        UserAppCount = _totalGamesInRun,
+                        OverallIndex = _currentOverallIndex,
+                        OverallCount = _totalGamesInRun
                     });
                 }
 
@@ -1211,7 +1205,17 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                // Branch based on path type - disk image service handles cache checking internally
+                // Check if already cached
+                if (_diskImageService.IsIconCached(originalPath, iconDecodeSize, gameIdStr))
+                {
+                    var cachedPath = _diskImageService.GetIconCachePathFromUri(originalPath, iconDecodeSize, gameIdStr);
+                    if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
+                    {
+                        return (originalPath, cachedPath);
+                    }
+                }
+
+                // Branch based on path type
                 string localPath;
                 if (IsHttpIconPath(originalPath))
                 {
