@@ -53,10 +53,7 @@ namespace PlayniteAchievements.ViewModels
                 (completedLabel, completedGames, "BadgeCompletedGame", Color.FromRgb(33, 150, 243), string.Empty, completedGames, completedGames, false)
             };
 
-            if (incomplete > 0)
-            {
-                dataPoints.Add((incompleteLabel, incomplete, "BadgeLocked", LockedTransparent, string.Empty, incomplete, incomplete, true));
-            }
+            dataPoints.Add((incompleteLabel, incomplete, "BadgeLocked", LockedTransparent, string.Empty, incomplete, incomplete, true));
 
             ApplyMinimumVisibilityRule(dataPoints);
         }
@@ -91,10 +88,7 @@ namespace PlayniteAchievements.ViewModels
                 dataPoints.Add((commonLabel, commonUnlocked, "BadgeBronzeTriangle", Color.FromRgb(139, 69, 19), string.Empty, commonUnlocked, commonTotal, false));
             }
 
-            if (locked > 0)
-            {
-                dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent, string.Empty, locked, locked, true));
-            }
+            dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent, string.Empty, locked, locked, true));
 
             ApplyMinimumVisibilityRule(dataPoints);
         }
@@ -149,10 +143,7 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            if (totalLocked > 0)
-            {
-                dataPoints.Add((lockedLabel, totalLocked, "BadgeLocked", LockedTransparent, string.Empty, totalLocked, totalLocked, true));
-            }
+            dataPoints.Add((lockedLabel, totalLocked, "BadgeLocked", LockedTransparent, string.Empty, totalLocked, totalLocked, true));
 
             ApplyMinimumVisibilityRule(dataPoints);
         }
