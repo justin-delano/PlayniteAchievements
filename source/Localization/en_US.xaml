@@ -48,6 +48,8 @@
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Single Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ViewRefreshProgress">View</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Clear cached data for "{0}"?&#10;&#10;This removes cached achievements and icons for this game. Refresh again to fetch fresh data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear cached data for {0} selected game(s)?&#10;&#10;This removes cached achievements and icons for those games. Refresh again to fetch fresh data.</sys:String>
@@ -77,6 +79,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Refresh">Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Configure">Configure</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Ok">OK</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_Clear">Clear</sys:String>
@@ -92,6 +95,7 @@
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Selected">Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_LibrarySelected">Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Missing">Missing</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Custom">Custom</sys:String>
     <!-- Long versions for menus -->
     <sys:String x:Key="LOCPlayAch_RefreshMode_Recent">Recent Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Full Refresh</sys:String>
@@ -101,6 +105,50 @@
     <sys:String x:Key="LOCPlayAch_RefreshMode_Selected">Refresh Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_LibrarySelected">Refresh Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Missing">Refresh Missing</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_Custom">Custom Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_MenuItem">Custom Refresh...</sys:String>
+
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_WindowTitle">Custom Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Header">Build a one-time custom refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ProvidersHeader">Providers</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ScopeHeader">Game Scope</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_TargetingHeader">Include / Exclude Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_IncludeHeader">Include game IDs</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ExcludeHeader">Exclude game IDs</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ExecutionHeader">Execution</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_UseRecentLimit">Override recent limit</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_UseIncludeUnplayed">Override include unplayed</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_RespectExclusions">Respect user exclusions</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ForceIncludeBypass">Explicit includes bypass user exclusions</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_UseParallelOverride">Override parallel provider execution</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_SummaryFormat">Providers: {0} | Estimated targets: {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_None">None</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_InvalidRecentLimit">Recent limit override must be a positive number.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingProviders">No enabled and authenticated providers match this custom refresh request.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingGames">No games match this custom refresh request.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ProviderStatus_Ready">Ready</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ProviderStatus_Disabled">Disabled</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ProviderStatus_NoAuth">Not authenticated</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_All">All games</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_Installed">Installed</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_Favorites">Favorites</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_Recent">Recent</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_LibrarySelected">Library selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_Missing">Missing</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_Explicit">Explicit only</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_PresetsHeader">Presets</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Load">Load</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Save">Save</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_SaveAs">Save As</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Delete">Delete</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NoneOption"> </sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogTitle">Save Custom Refresh Preset</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogHint">Enter a preset name (1-64 characters).</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameInvalid">Preset name must be between 1 and {0} characters.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm">Overwrite preset "{0}"?</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_DeleteConfirm">Delete preset "{0}"?</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_MaxReached">You can save up to {0} presets.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_LoadPrunedSummary">Preset loaded with adjustments: removed {0} unavailable provider(s) and {1} missing game reference(s).</sys:String>
 
     <!-- ================================================================= -->
     <!-- COLUMNS (using common strings)                                    -->
@@ -394,6 +442,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Reveal hidden description</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Include unplayed games</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">If unchecked, games with 0 playtime will be skipped during refreshes.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh">Enable parallel provider refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh_Help">If disabled, providers refresh sequentially in deterministic order.</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use cover images instead of icons in games list</sys:String>
 
     <!-- ================================================================= -->
@@ -431,6 +481,7 @@
     <sys:String x:Key="LOCPlayAch_Status_Canceled">Refresh canceled.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteWithModeAndCount">{0} refresh complete: {1} games refreshed</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">Refresh complete!</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteAuthRequiredSuffix">Some providers require authentication.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">{0} of {1} ({2} unlocked) from {3} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} achievements ({1} unlocked) from {2} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Refreshing achievements for {0} ({1})</sys:String>
@@ -481,6 +532,9 @@
     <sys:String x:Key="LOCPlayAch_Log_RefreshSelectedFailed">Library selected games refresh failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshNoSelectedGames">No games selected in Playnite library for refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshMissingFailed">Missing games refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_CustomRefreshFailed">Custom refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_CustomRefreshNoMatchingProviders">Custom refresh aborted: no matching providers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Log_CustomRefreshNoMatchingGames">Custom refresh aborted: no matching games.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeKey">Unknown refresh mode key: {0}. Falling back to Recent.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshUnknownModeEnum">Unknown refresh mode: {0}. Falling back to Recent.</sys:String>
     <sys:String x:Key="LOCPlayAch_Log_RefreshCancelRequested">Cancel refresh requested.</sys:String>

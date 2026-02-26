@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Playnite.SDK;
+using PlayniteAchievements.Models;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -47,8 +48,10 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenDescription = false;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
+        private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
+        private List<CustomRefreshPreset> _customRefreshPresets = new List<CustomRefreshPreset>();
 
         private string _raUsername;
         private string _raWebApiKey;
@@ -282,6 +285,20 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _recentRefreshGamesCount, Math.Max(1, value));
         }
 
+        /// <summary>
+        /// Saved presets for Custom Refresh dialog.
+        /// </summary>
+        public List<CustomRefreshPreset> CustomRefreshPresets
+        {
+            get => _customRefreshPresets;
+            set
+            {
+                var normalized = new List<CustomRefreshPreset>(
+                    CustomRefreshPreset.NormalizePresets(value, CustomRefreshPreset.MaxPresetCount));
+                SetValue(ref _customRefreshPresets, normalized);
+            }
+        }
+
         #endregion
 
         #region Notification Settings
@@ -357,6 +374,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _includeUnplayedGames;
             set => SetValue(ref _includeUnplayedGames, value);
+        }
+
+        /// <summary>
+        /// When true, providers execute concurrently during refresh runs.
+        /// Disable to force deterministic sequential provider execution.
+        /// </summary>
+        public bool EnableParallelProviderRefresh
+        {
+            get => _enableParallelProviderRefresh;
+            set => SetValue(ref _enableParallelProviderRefresh, value);
         }
 
         /// <summary>
@@ -756,11 +783,15 @@ namespace PlayniteAchievements.Models.Settings
                 NotifyPeriodicUpdates = this.NotifyPeriodicUpdates,
                 NotifyOnRebuild = this.NotifyOnRebuild,
                 RecentRefreshGamesCount = this.RecentRefreshGamesCount,
+                CustomRefreshPresets = this.CustomRefreshPresets != null
+                    ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(this.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
+                    : new List<CustomRefreshPreset>(),
                 ShowHiddenIcon = this.ShowHiddenIcon,
                 ShowHiddenTitle = this.ShowHiddenTitle,
                 ShowHiddenDescription = this.ShowHiddenDescription,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
+                EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
                 RaUsername = this.RaUsername,

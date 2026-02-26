@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PlayniteAchievements.Models;
 
 namespace PlayniteAchievements.Models.Settings
 {
@@ -49,6 +50,9 @@ namespace PlayniteAchievements.Models.Settings
             target.EnablePeriodicUpdates = source.EnablePeriodicUpdates;
             target.PeriodicUpdateHours = source.PeriodicUpdateHours;
             target.RecentRefreshGamesCount = source.RecentRefreshGamesCount;
+            target.CustomRefreshPresets = source.CustomRefreshPresets != null
+                ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(source.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
+                : new List<CustomRefreshPreset>();
 
             // Notification Settings
             target.EnableNotifications = source.EnableNotifications;
@@ -132,6 +136,9 @@ namespace PlayniteAchievements.Models.Settings
                 EnablePeriodicUpdates = source.EnablePeriodicUpdates,
                 PeriodicUpdateHours = source.PeriodicUpdateHours,
                 RecentRefreshGamesCount = source.RecentRefreshGamesCount,
+                CustomRefreshPresets = source.CustomRefreshPresets != null
+                    ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(source.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
+                    : new List<CustomRefreshPreset>(),
 
                 // Notification Settings
                 EnableNotifications = source.EnableNotifications,
