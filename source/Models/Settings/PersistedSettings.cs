@@ -273,7 +273,7 @@ namespace PlayniteAchievements.Models.Settings
         public int PeriodicUpdateHours
         {
             get => _periodicUpdateHours;
-            set => SetValue(ref _periodicUpdateHours, value);
+            set => SetValue(ref _periodicUpdateHours, Math.Max(1, value));
         }
 
         /// <summary>
