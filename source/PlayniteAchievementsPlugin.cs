@@ -53,7 +53,7 @@ namespace PlayniteAchievements
         };
 
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
-        private readonly AchievementManager _achievementManager;
+        private readonly AchievementService _achievementService;
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly NotificationPublisher _notifications;
@@ -65,6 +65,8 @@ namespace PlayniteAchievements
         private readonly ProviderRegistry _providerRegistry;
 
         private readonly BackgroundUpdater _backgroundUpdates;
+        private readonly RefreshCoordinator _refreshCoordinator;
+        private bool _applicationStarted;
 
         // Theme integration
         private readonly ThemeIntegrationUpdateService _themeUpdateService;
@@ -100,12 +102,13 @@ namespace PlayniteAchievements
 
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
         public ProviderRegistry ProviderRegistry => _providerRegistry;
-        public AchievementManager AchievementManager => _achievementManager;
+        public AchievementService AchievementService => _achievementService;
         public MemoryImageService ImageService => _imageService;
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;
         public SteamSessionManager SteamSessionManager => _steamSessionManager;
         public EpicSessionManager EpicSessionManager => _epicSessionManager;
+        internal RefreshCoordinator RefreshCoordinator => _refreshCoordinator;
         public static PlayniteAchievementsPlugin Instance { get; private set; }
 
         /// <summary>
@@ -123,7 +126,11 @@ namespace PlayniteAchievements
         // AnikiHelper (PlayniteAchievements-based) will call this when available.
         public Task RequestSingleGameRefreshAsync(Guid playniteGameId)
         {
-            return _achievementManager?.ExecuteRefreshAsync(Models.RefreshModeType.Single, playniteGameId) ?? Task.CompletedTask;
+            return _refreshCoordinator?.ExecuteAsync(new RefreshRequest
+            {
+                Mode = RefreshModeType.Single,
+                SingleGameId = playniteGameId
+            }) ?? Task.CompletedTask;
         }
 
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
@@ -219,7 +226,7 @@ namespace PlayniteAchievements
                     };
                 }
 
-                using (PerfScope.StartStartup(_logger, "PluginCtor.AchievementManagerCreation", thresholdMs: 50))
+                using (PerfScope.StartStartup(_logger, "PluginCtor.AchievementServiceCreation", thresholdMs: 50))
                 {
                     _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
                     _imageService = new MemoryImageService(_logger, _diskImageService);
@@ -228,9 +235,22 @@ namespace PlayniteAchievements
                     _providerRegistry = new ProviderRegistry();
                     _providerRegistry.SyncFromSettings(settings.Persisted);
 
-                    _achievementManager = new AchievementManager(api, settings, _logger, this, providers, _diskImageService, _providerRegistry);
+                    _achievementService = new AchievementService(api, settings, _logger, this, providers, _diskImageService, _providerRegistry);
                     _notifications = new NotificationPublisher(api, settings, _logger);
-                    _backgroundUpdates = new BackgroundUpdater(_achievementManager, settings, _logger, _notifications, null);
+                    _backgroundUpdates = new BackgroundUpdater(_achievementService, settings, _logger, _notifications, null);
+                    _refreshCoordinator = new RefreshCoordinator(_achievementService, _logger, ShowRefreshProgressControlAndRun);
+
+                    try
+                    {
+                        if (settings?.Persisted != null)
+                        {
+                            settings.Persisted.PropertyChanged += PersistedSettings_PropertyChanged;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "Failed to subscribe to persisted settings changes.");
+                    }
                 }
 
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ThemeServicesWiring", thresholdMs: 50))
@@ -249,7 +269,8 @@ namespace PlayniteAchievements
 
                     _themeIntegrationService = new ThemeIntegrationService(
                         PlayniteApi,
-                        _achievementManager,
+                        _achievementService,
+                        _refreshCoordinator,
                         _settingsViewModel.Settings,
                         _fullscreenWindowService,
                         requestUpdate,
@@ -257,7 +278,7 @@ namespace PlayniteAchievements
 
                     themeUpdateService = new ThemeIntegrationUpdateService(
                         _themeIntegrationService,
-                        _achievementManager,
+                        _achievementService,
                         _settingsViewModel.Settings,
                         _logger,
                         PlayniteApi?.MainView?.UIDispatcher ?? System.Windows.Application.Current.Dispatcher);
@@ -332,12 +353,92 @@ namespace PlayniteAchievements
 
         // === Menus ===
 
+        private const string PluginGameMenuSection = "Playnite Achievements";
+        private const string PluginMainMenuSection = "@Playnite Achievements";
+
+        private bool IsRefreshInProgress()
+        {
+            return _achievementService?.IsRebuilding == true;
+        }
+
+        private IEnumerable<GameMenuItem> GetRefreshInProgressGameMenuHeader(Guid? singleGameRefreshId = null)
+        {
+            yield return new GameMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_RefreshInProgress"),
+                MenuSection = PluginGameMenuSection
+            };
+
+            yield return new GameMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewRefreshProgress"),
+                MenuSection = PluginGameMenuSection,
+                Action = (a) =>
+                {
+                    ShowRefreshProgressControl(singleGameRefreshId);
+                }
+            };
+
+            yield return new GameMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Button_Cancel"),
+                MenuSection = PluginGameMenuSection,
+                Action = (a) =>
+                {
+                    _achievementService.CancelCurrentRebuild();
+                }
+            };
+
+            yield return new GameMenuItem
+            {
+                Description = "-",
+                MenuSection = PluginGameMenuSection
+            };
+        }
+
+        private IEnumerable<MainMenuItem> GetRefreshInProgressMainMenuHeader()
+        {
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_RefreshInProgress"),
+                MenuSection = PluginMainMenuSection
+            };
+
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewRefreshProgress"),
+                MenuSection = PluginMainMenuSection,
+                Action = (a) =>
+                {
+                    ShowRefreshProgressControl();
+                }
+            };
+
+            yield return new MainMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Button_Cancel"),
+                MenuSection = PluginMainMenuSection,
+                Action = (a) =>
+                {
+                    _achievementService.CancelCurrentRebuild();
+                }
+            };
+
+            yield return new MainMenuItem
+            {
+                Description = "-",
+                MenuSection = PluginMainMenuSection
+            };
+        }
+
         public override IEnumerable<GameMenuItem> GetGameMenuItems(GetGameMenuItemsArgs args)
         {
             if (args?.Games == null || args.Games.Count == 0)
             {
                 yield break;
             }
+
+            var refreshInProgress = IsRefreshInProgress();
 
             // Multiple games selected - offer "Refresh Selected"
             if (args.Games.Count > 1)
@@ -348,20 +449,38 @@ namespace PlayniteAchievements
                     yield break;
                 }
 
-                yield return new GameMenuItem
+                if (refreshInProgress)
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_RefreshSelected"),
-                    MenuSection = "Playnite Achievements",
-                    Action = (a) =>
+                    foreach (var item in GetRefreshInProgressGameMenuHeader())
                     {
-                        ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.LibrarySelected));
+                        yield return item;
                     }
-                };
+                }
+                else
+                {
+                    yield return new GameMenuItem
+                    {
+                        Description = ResourceProvider.GetString("LOCPlayAch_Menu_RefreshSelected"),
+                        MenuSection = PluginGameMenuSection,
+                        Action = (a) =>
+                        {
+                            var selectedIds = selectedGames
+                                .Select(g => g.Id)
+                                .Where(id => id != Guid.Empty)
+                                .Distinct()
+                                .ToList();
+
+                            _ = _refreshCoordinator.ExecuteAsync(
+                                new RefreshRequest { GameIds = selectedIds },
+                                RefreshExecutionPolicy.ProgressWindow());
+                        }
+                    };
+                }
 
                 yield return new GameMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearData"),
-                    MenuSection = "Playnite Achievements",
+                    MenuSection = PluginGameMenuSection,
                     Action = (a) =>
                     {
                         ClearSelectedGamesData(selectedGames);
@@ -378,7 +497,7 @@ namespace PlayniteAchievements
                     Description = mostlyExcluded
                         ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeGames")
                         : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeGames"),
-                    MenuSection = "Playnite Achievements",
+                    MenuSection = PluginGameMenuSection,
                     Action = (a) =>
                     {
                         if (!mostlyExcluded)
@@ -397,7 +516,7 @@ namespace PlayniteAchievements
 
                         foreach (var g in selectedGames)
                         {
-                            _achievementManager.SetExcludedByUser(g.Id, !mostlyExcluded);
+                            _achievementService.SetExcludedByUser(g.Id, !mostlyExcluded);
                         }
                     }
                 };
@@ -412,10 +531,18 @@ namespace PlayniteAchievements
                 yield break;
             }
 
+            if (refreshInProgress)
+            {
+                foreach (var item in GetRefreshInProgressGameMenuHeader(game.Id))
+                {
+                    yield return item;
+                }
+            }
+
             yield return new GameMenuItem
             {
                 Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewAchievements"),
-                MenuSection = "Playnite Achievements",
+                MenuSection = PluginGameMenuSection,
                 Action = (a) =>
                 {
                     OpenSingleGameAchievementsView(game.Id);
@@ -425,29 +552,36 @@ namespace PlayniteAchievements
             yield return new GameMenuItem
             {
                 Description = ResourceProvider.GetString("LOCPlayAch_Menu_SetCapstone"),
-                MenuSection = "Playnite Achievements",
+                MenuSection = PluginGameMenuSection,
                 Action = (a) =>
                 {
                     OpenCapstoneView(game.Id);
                 }
             };
 
-            yield return new GameMenuItem
+            if (!refreshInProgress)
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_RefreshGame"),
-                MenuSection = "Playnite Achievements",
-                Action = (a) =>
+                yield return new GameMenuItem
                 {
-                    ShowRefreshProgressControlAndRun(
-                        () => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Single, game.Id),
-                        game.Id);
-                }
-            };
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_RefreshGame"),
+                    MenuSection = PluginGameMenuSection,
+                    Action = (a) =>
+                    {
+                        _ = _refreshCoordinator.ExecuteAsync(
+                            new RefreshRequest
+                            {
+                                Mode = RefreshModeType.Single,
+                                SingleGameId = game.Id
+                            },
+                            RefreshExecutionPolicy.ProgressWindow(game.Id));
+                    }
+                };
+            }
 
             yield return new GameMenuItem
             {
                 Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearData"),
-                MenuSection = "Playnite Achievements",
+                MenuSection = PluginGameMenuSection,
                 Action = (a) =>
                 {
                     ClearSingleGameData(game);
@@ -462,7 +596,7 @@ namespace PlayniteAchievements
                 Description = isExcluded
                     ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeGame")
                     : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeGame"),
-                MenuSection = "Playnite Achievements",
+                MenuSection = PluginGameMenuSection,
                 Action = (a) =>
                 {
                     if (!isExcluded)
@@ -478,12 +612,12 @@ namespace PlayniteAchievements
                             return;
                         }
                     }
-                    _achievementManager.SetExcludedByUser(game.Id, !isExcluded);
+                    _achievementService.SetExcludedByUser(game.Id, !isExcluded);
                 }
             };
 
             // Add RetroAchievements game ID override options (only for RA-capable games)
-            var raProvider = _achievementManager.GetProviders()
+            var raProvider = _achievementService.GetProviders()
                 .FirstOrDefault(p => p.ProviderKey == "RetroAchievements");
 
             if (raProvider?.IsCapable(game) == true)
@@ -495,7 +629,7 @@ namespace PlayniteAchievements
                     Description = hasOverride
                         ? ResourceProvider.GetString("LOCPlayAch_Menu_ChangeRaGameId")
                         : ResourceProvider.GetString("LOCPlayAch_Menu_SetRaGameId"),
-                    MenuSection = "Playnite Achievements",
+                    MenuSection = PluginGameMenuSection,
                     Action = (a) =>
                     {
                         ShowRaGameIdDialog(game);
@@ -507,7 +641,7 @@ namespace PlayniteAchievements
                     yield return new GameMenuItem
                     {
                         Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearRaGameId"),
-                        MenuSection = "Playnite Achievements",
+                        MenuSection = PluginGameMenuSection,
                         Action = (a) =>
                         {
                             ClearRaGameIdOverride(game);
@@ -537,7 +671,7 @@ namespace PlayniteAchievements
 
             try
             {
-                _achievementManager.RemoveGameCache(game.Id);
+                _achievementService.RemoveGameCache(game.Id);
                 PlayniteApi?.Dialogs?.ShowMessage(
                     string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_ConfirmSingle"), game.Name),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
@@ -584,7 +718,7 @@ namespace PlayniteAchievements
             {
                 try
                 {
-                    _achievementManager.RemoveGameCache(game.Id);
+                    _achievementService.RemoveGameCache(game.Id);
                     clearedCount++;
                 }
                 catch (Exception ex)
@@ -670,9 +804,13 @@ namespace PlayniteAchievements
             _logger?.Info($"Set RA game ID override for '{game.Name}' to {newId}");
 
             // Trigger a rescan for this game
-            ShowRefreshProgressControlAndRun(
-                () => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Single, game.Id),
-                game.Id);
+            _ = _refreshCoordinator.ExecuteAsync(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.Single,
+                    SingleGameId = game.Id
+                },
+                RefreshExecutionPolicy.ProgressWindow(game.Id));
         }
 
         private void ClearRaGameIdOverride(Game game)
@@ -742,7 +880,7 @@ namespace PlayniteAchievements
             var game = PlayniteApi?.Database?.Games?.Get(gameId);
             if (game == null) return false;
 
-            var raProvider = _achievementManager.GetProviders()
+            var raProvider = _achievementService.GetProviders()
                 .FirstOrDefault(p => p.ProviderKey == "RetroAchievements");
 
             return raProvider?.IsCapable(game) == true;
@@ -789,70 +927,120 @@ namespace PlayniteAchievements
                 }
             }
 
-            _achievementManager.SetExcludedByUser(gameId, !isExcluded);
+            _achievementService.SetExcludedByUser(gameId, !isExcluded);
         }
 
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
-            yield return new MainMenuItem
+            var refreshInProgress = IsRefreshInProgress();
+            if (refreshInProgress)
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Recent"),
-                MenuSection = "@Playnite Achievements",
-                Action = (a) =>
+                foreach (var item in GetRefreshInProgressMainMenuHeader())
                 {
-                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Recent));
+                    yield return item;
                 }
-            };
+            }
 
-            yield return new MainMenuItem
+            if (!refreshInProgress)
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Full"),
-                MenuSection = "@Playnite Achievements",
-                Action = (a) =>
+                yield return new MainMenuItem
                 {
-                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Full));
-                }
-            };
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Recent"),
+                    MenuSection = PluginMainMenuSection,
+                    Action = (a) =>
+                    {
+                        _ = _refreshCoordinator.ExecuteAsync(
+                            new RefreshRequest { Mode = RefreshModeType.Recent },
+                            RefreshExecutionPolicy.ProgressWindow());
+                    }
+                };
 
-            yield return new MainMenuItem
-            {
-                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Installed"),
-                MenuSection = "@Playnite Achievements",
-                Action = (a) =>
+                yield return new MainMenuItem
                 {
-                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Installed));
-                }
-            };
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Full"),
+                    MenuSection = PluginMainMenuSection,
+                    Action = (a) =>
+                    {
+                        _ = _refreshCoordinator.ExecuteAsync(
+                            new RefreshRequest { Mode = RefreshModeType.Full },
+                            RefreshExecutionPolicy.ProgressWindow());
+                    }
+                };
 
-            yield return new MainMenuItem
-            {
-                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Favorites"),
-                MenuSection = "@Playnite Achievements",
-                Action = (a) =>
+                yield return new MainMenuItem
                 {
-                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Favorites));
-                }
-            };
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Installed"),
+                    MenuSection = PluginMainMenuSection,
+                    Action = (a) =>
+                    {
+                        _ = _refreshCoordinator.ExecuteAsync(
+                            new RefreshRequest { Mode = RefreshModeType.Installed },
+                            RefreshExecutionPolicy.ProgressWindow());
+                    }
+                };
 
-            yield return new MainMenuItem
-            {
-                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Selected"),
-                MenuSection = "@Playnite Achievements",
-                Action = (a) =>
+                yield return new MainMenuItem
                 {
-                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.LibrarySelected.GetKey()));
-                }
-            };
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Favorites"),
+                    MenuSection = PluginMainMenuSection,
+                    Action = (a) =>
+                    {
+                        _ = _refreshCoordinator.ExecuteAsync(
+                            new RefreshRequest { Mode = RefreshModeType.Favorites },
+                            RefreshExecutionPolicy.ProgressWindow());
+                    }
+                };
 
-            yield return new MainMenuItem
-            {
-                Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Missing"),
-                MenuSection = "@Playnite Achievements",
-                Action = (a) =>
+                yield return new MainMenuItem
                 {
-                    ShowRefreshProgressControlAndRun(() => _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Missing));
-                }
-            };
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Selected"),
+                    MenuSection = PluginMainMenuSection,
+                    Action = (a) =>
+                    {
+                        _ = _refreshCoordinator.ExecuteAsync(
+                            new RefreshRequest { Mode = RefreshModeType.LibrarySelected },
+                            RefreshExecutionPolicy.ProgressWindow());
+                    }
+                };
+
+                yield return new MainMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_RefreshMode_Missing"),
+                    MenuSection = PluginMainMenuSection,
+                    Action = (a) =>
+                    {
+                        _ = _refreshCoordinator.ExecuteAsync(
+                            new RefreshRequest { Mode = RefreshModeType.Missing },
+                            RefreshExecutionPolicy.ProgressWindow());
+                    }
+                };
+
+                yield return new MainMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_MenuItem"),
+                    MenuSection = PluginMainMenuSection,
+                    Action = (a) =>
+                    {
+                        if (!CustomRefreshControl.TryShowDialog(
+                            PlayniteApi,
+                            _achievementService,
+                            _settingsViewModel.Settings,
+                            _logger,
+                            out var customOptions))
+                        {
+                            return;
+                        }
+
+                        _ = _refreshCoordinator.ExecuteAsync(
+                            new RefreshRequest
+                            {
+                                Mode = RefreshModeType.Custom,
+                                CustomOptions = customOptions
+                            },
+                            RefreshExecutionPolicy.ProgressWindow());
+                    }
+                };
+            }
         }
 
         // === Sidebar ===
@@ -867,10 +1055,10 @@ namespace PlayniteAchievements
                 Opened = () =>
                 {
                     return new SidebarHostControl(
-                        () => new SidebarControl(PlayniteApi, _logger, _achievementManager, _settingsViewModel.Settings),
+                        () => new SidebarControl(PlayniteApi, _logger, _achievementService, _refreshCoordinator, _settingsViewModel.Settings),
                         _logger,
                         PlayniteApi,
-                        _achievementManager,
+                        _achievementService,
                         this);
                 }
             };
@@ -894,7 +1082,11 @@ namespace PlayniteAchievements
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
             _logger.Info($"Game stopped: {args.Game.Name}. Triggering achievement refresh.");
-            _ = _achievementManager.ExecuteRefreshAsync(Models.RefreshModeType.Single, args.Game.Id);
+            _ = _refreshCoordinator.ExecuteAsync(new RefreshRequest
+            {
+                Mode = RefreshModeType.Single,
+                SingleGameId = args.Game.Id
+            });
         }
 
         // === Lifecycle ===
@@ -903,6 +1095,8 @@ namespace PlayniteAchievements
         {
             using (PerfScope.StartStartup(_logger, "OnApplicationStarted", thresholdMs: 50))
             {
+                _applicationStarted = true;
+
                 try
                 {
                     EnsureAchievementResourcesLoaded();
@@ -914,6 +1108,38 @@ namespace PlayniteAchievements
 
                 // Auto-migrate themes that have been updated since the last migration.
                 AutoMigrateUpgradedThemesOnStartup();
+
+                RestartBackgroundUpdater();
+            }
+        }
+
+        private void PersistedSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e == null)
+            {
+                return;
+            }
+
+            if (e.PropertyName == nameof(PersistedSettings.EnablePeriodicUpdates) ||
+                e.PropertyName == nameof(PersistedSettings.PeriodicUpdateHours))
+            {
+                RestartBackgroundUpdater();
+            }
+        }
+
+        private void RestartBackgroundUpdater()
+        {
+            try
+            {
+                _backgroundUpdates?.Stop();
+                if (_applicationStarted)
+                {
+                    _backgroundUpdates?.Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to restart background updater.");
             }
         }
 
@@ -1043,12 +1269,18 @@ namespace PlayniteAchievements
         public override void OnApplicationStopped(OnApplicationStoppedEventArgs args)
         {
             _logger.Info("OnApplicationStopped called.");
+            _applicationStarted = false;
             // Stop startup init if still running
             try
             {
 
 
                 PlayniteApi?.Database?.Games?.ItemCollectionChanged -= Games_ItemCollectionChanged;
+                var persisted = _settingsViewModel?.Settings?.Persisted;
+                if (persisted != null)
+                {
+                    persisted.PropertyChanged -= PersistedSettings_PropertyChanged;
+                }
 
             }
             catch (Exception ex)
@@ -1127,16 +1359,24 @@ namespace PlayniteAchievements
 
         private void ShowRefreshProgressControlAndRun(Func<Task> refreshTask, Guid? singleGameRefreshId = null)
         {
+            ShowRefreshProgressControl(singleGameRefreshId, refreshTask, validateCanStart: true);
+        }
+
+        private void ShowRefreshProgressControl(
+            Guid? singleGameRefreshId = null,
+            Func<Task> refreshTask = null,
+            bool validateCanStart = false)
+        {
             try
             {
                 // Validate authentication before showing progress window
-                if (!_achievementManager.ValidateCanStartRefresh())
+                if (validateCanStart && !_achievementService.ValidateCanStartRefresh())
                 {
                     return;
                 }
 
                 var progressWindow = new RefreshProgressControl(
-                    _achievementManager,
+                    _achievementService,
                     _logger,
                     singleGameRefreshId,
                     OpenSingleGameAchievementsView);
@@ -1178,18 +1418,21 @@ namespace PlayniteAchievements
                 }
                 catch { }
 
-                // Start the refresh task after setting up window
-                Task.Run(async () =>
+                if (refreshTask != null)
                 {
-                    try
+                    // Start the refresh task after setting up window
+                    Task.Run(async () =>
                     {
-                        await refreshTask().ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex, "Refresh task failed");
-                    }
-                });
+                        try
+                        {
+                            await refreshTask().ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, "Refresh task failed");
+                        }
+                    });
+                }
 
                 if (isFullscreen)
                 {
@@ -1242,7 +1485,7 @@ namespace PlayniteAchievements
             {
                 var view = new SingleGameControl(
                     gameId,
-                    _achievementManager,
+                    _achievementService,
                     PlayniteApi,
                     _logger,
                     _settingsViewModel.Settings);
@@ -1323,7 +1566,7 @@ namespace PlayniteAchievements
                     return;
                 }
 
-                var gameData = _achievementManager.GetGameAchievementData(gameId);
+                var gameData = _achievementService.GetGameAchievementData(gameId);
                 if (gameData == null || !gameData.HasAchievements || gameData.Achievements == null || gameData.Achievements.Count == 0)
                 {
                     PlayniteApi?.Dialogs?.ShowMessage(
@@ -1338,7 +1581,7 @@ namespace PlayniteAchievements
 
                 var view = new CapstoneControl(
                     gameId,
-                    _achievementManager,
+                    _achievementService,
                     PlayniteApi,
                     _logger,
                     _settingsViewModel.Settings);
@@ -1574,7 +1817,7 @@ namespace PlayniteAchievements
                     }
 
                     _logger.Info($"Detected {validGameIds.Count} new game(s); starting batched refresh.");
-                    await _achievementManager.ExecuteRefreshForGamesAsync(validGameIds).ConfigureAwait(false);
+                    await _refreshCoordinator.ExecuteAsync(new RefreshRequest { GameIds = validGameIds }).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -1590,7 +1833,7 @@ namespace PlayniteAchievements
                 try
                 {
                     _logger.Info($"Detected removed game '{game?.Name}' ({game?.GameId}); removing cached achievements and icons.");
-                    _achievementManager.RemoveGameCache(game.Id);
+                    _achievementService.RemoveGameCache(game.Id);
                 }
                 catch (Exception ex)
                 {
@@ -1600,3 +1843,5 @@ namespace PlayniteAchievements
         }
     }
 }
+
+
