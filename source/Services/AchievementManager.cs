@@ -1072,8 +1072,8 @@ namespace PlayniteAchievements.Services
 
         private async Task PopulateAchievementIconCacheAsync(GameAchievementData data, int gameIndex, int totalGames, CancellationToken cancel)
         {
-            // Reset icon progress for each game to show per-game counts
-            _iconProgressTracker.Reset();
+            // Use a local tracker for this game to avoid interference from parallel games
+            var localIconTracker = new IconProgressTracker();
 
             if (data?.Achievements == null || data.Achievements.Count == 0)
             {
@@ -1148,7 +1148,7 @@ namespace PlayniteAchievements.Services
             }
 
             // Only track progress for icons that actually need downloading
-            _iconProgressTracker.IncrementTotal(iconsToProcess.Count);
+            localIconTracker.IncrementTotal(iconsToProcess.Count);
 
             var iconTasks = iconsToProcess.Select(async iconPath =>
             {
@@ -1157,9 +1157,9 @@ namespace PlayniteAchievements.Services
                 // Only emit progress if not cancelled
                 if (!cancel.IsCancellationRequested)
                 {
-                    _iconProgressTracker.IncrementDownloaded();
+                    localIconTracker.IncrementDownloaded();
 
-                    var (downloaded, total) = _iconProgressTracker.GetSnapshot();
+                    var (downloaded, total) = localIconTracker.GetSnapshot();
                     HandleUpdate(new RebuildUpdate
                     {
                         Kind = RebuildUpdateKind.UserProgress,
