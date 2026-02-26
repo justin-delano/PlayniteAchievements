@@ -40,12 +40,19 @@ namespace PlayniteAchievements.Services.Images
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _pathWriteLocks =
             new ConcurrentDictionary<string, SemaphoreSlim>(StringComparer.OrdinalIgnoreCase);
 
-        public DiskImageService(ILogger logger, string cacheRoot, int downloadConcurrency = 4)
+        // Cache for computed icon cache paths to avoid repeated SHA256 computation
+        private readonly ConcurrentDictionary<string, string> _iconPathCache =
+            new ConcurrentDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        public DiskImageService(ILogger logger, string cacheRoot, int downloadConcurrency = 8)
         {
             _logger = logger ?? StaticLogger;
             _cacheRoot = cacheRoot ?? throw new ArgumentNullException(nameof(cacheRoot));
             _downloadGate = new SemaphoreSlim(Math.Max(1, downloadConcurrency), Math.Max(1, downloadConcurrency));
-            _rateLimitedDownloadGate = new SemaphoreSlim(4, 4); // Xbox CDN concurrency (was 2, increased since processing no longer blocks)
+            _rateLimitedDownloadGate = new SemaphoreSlim(4, 4); // Xbox CDN concurrency (kept at 4 due to rate limiting)
+
+            // Increase HTTP connection limit for parallel downloads (.NET Framework approach)
+            ServicePointManager.DefaultConnectionLimit = Math.Max(16, downloadConcurrency);
 
             _httpHandler = new HttpClientHandler
             {
@@ -69,6 +76,7 @@ namespace PlayniteAchievements.Services.Images
             try { _downloadGate?.Dispose(); } catch { }
             try { _rateLimitedDownloadGate?.Dispose(); } catch { }
             try { _pathWriteLocks.Clear(); } catch { }
+            try { _iconPathCache.Clear(); } catch { }
         }
 
         private string IconCacheDirectory => Path.Combine(_cacheRoot, "icon_cache");
@@ -92,9 +100,19 @@ namespace PlayniteAchievements.Services.Images
         /// <summary>
         /// Generate cache filename from URI using SHA256 hash.
         /// If gameId is provided, creates per-game subfolder structure.
+        /// Results are cached to avoid repeated SHA256 computation.
         /// </summary>
         public string GetIconCachePathFromUri(string uri, int decodeSize, string gameId = null)
         {
+            // Build cache key from all parameters
+            var cacheKey = $"{uri}|{decodeSize}|{gameId ?? ""}";
+
+            // Check cache first
+            if (_iconPathCache.TryGetValue(cacheKey, out var cachedPath))
+            {
+                return cachedPath;
+            }
+
             // Create hash-based filename from the URI
             using (var sha = SHA256.Create())
             {
@@ -107,7 +125,9 @@ namespace PlayniteAchievements.Services.Images
                     ? IconCacheDirectory
                     : Path.Combine(IconCacheDirectory, gameId);
 
-                return Path.Combine(cacheDir, $"{hashHex}{sizeSuffix}.png");
+                var path = Path.Combine(cacheDir, $"{hashHex}{sizeSuffix}.png");
+                _iconPathCache[cacheKey] = path;
+                return path;
             }
         }
 
@@ -358,7 +378,7 @@ namespace PlayniteAchievements.Services.Images
                             using (var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
                             using (var ms = new MemoryStream())
                             {
-                                var buffer = new byte[16 * 1024];
+                                var buffer = new byte[64 * 1024]; // 64KB buffer for faster downloads
                                 int read;
                                 int total = 0;
 

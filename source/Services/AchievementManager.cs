@@ -36,7 +36,7 @@ namespace PlayniteAchievements.Services
 
         // Progress throttling
         private ProgressReport _pendingReport;
-        private DateTime _lastReportTime = DateTime.MinValue;
+        private long _lastReportTimestamp = -1; // Stopwatch.GetTimestamp() for high-precision throttling
         private System.Timers.Timer _reportThrottleTimer;
         private const int ReportThrottleIntervalMs = 1000;
 
@@ -249,34 +249,44 @@ namespace PlayniteAchievements.Services
             // Always report immediately for final/canceled updates
             var isFinal = canceled || (total > 0 && current >= total);
 
+            // Fast path: use lock-free timestamp check for throttling decision
+            var nowTimestamp = Stopwatch.GetTimestamp();
+            if (!isFinal)
+            {
+                // Check if we're within the throttle window without taking the lock
+                var lastTimestamp = Interlocked.Read(ref _lastReportTimestamp);
+                if (lastTimestamp >= 0)
+                {
+                    var elapsedMs = (nowTimestamp - lastTimestamp) * 1000L / Stopwatch.Frequency;
+                    if (elapsedMs < ReportThrottleIntervalMs)
+                    {
+                        // Within throttle window - update pending report under lock
+                        lock (_reportLock)
+                        {
+                            _pendingReport = report;
+                            if (_reportThrottleTimer == null)
+                            {
+                                _reportThrottleTimer = new System.Timers.Timer(ReportThrottleIntervalMs);
+                                _reportThrottleTimer.AutoReset = false;
+                                _reportThrottleTimer.Elapsed += OnThrottleTimerElapsed;
+                            }
+                            if (!_reportThrottleTimer.Enabled)
+                            {
+                                _reportThrottleTimer.Start();
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
+
+            // Send immediately (either final report or throttle window elapsed)
             lock (_reportLock)
             {
-                var now = DateTime.UtcNow;
-                var timeSinceLastReport = (now - _lastReportTime).TotalMilliseconds;
-
-                if (isFinal || timeSinceLastReport >= ReportThrottleIntervalMs)
-                {
-                    // Enough time has passed or this is a final report - send immediately
-                    _lastReportTime = now;
-                    _pendingReport = null;
-                    StopThrottleTimer();
-                    SendReportToUi(report, handler);
-                }
-                else
-                {
-                    // Throttle - store pending report and start timer if not running
-                    _pendingReport = report;
-                    if (_reportThrottleTimer == null)
-                    {
-                        _reportThrottleTimer = new System.Timers.Timer(ReportThrottleIntervalMs);
-                        _reportThrottleTimer.AutoReset = false;
-                        _reportThrottleTimer.Elapsed += OnThrottleTimerElapsed;
-                    }
-                    if (!_reportThrottleTimer.Enabled)
-                    {
-                        _reportThrottleTimer.Start();
-                    }
-                }
+                Interlocked.Exchange(ref _lastReportTimestamp, nowTimestamp);
+                _pendingReport = null;
+                StopThrottleTimer();
+                SendReportToUi(report, handler);
             }
         }
 
@@ -290,7 +300,7 @@ namespace PlayniteAchievements.Services
                 handler = RebuildProgress;
                 reportToSend = _pendingReport;
                 _pendingReport = null;
-                _lastReportTime = DateTime.UtcNow;
+                Interlocked.Exchange(ref _lastReportTimestamp, Stopwatch.GetTimestamp());
             }
 
             if (reportToSend != null && handler != null)
@@ -1097,33 +1107,30 @@ namespace PlayniteAchievements.Services
 
             const int iconDecodeSize = 128;
 
-            // Pre-filter icons: separate cached from needs-download
-            var cachedIcons = new List<string>();
+            // Pre-filter icons: compute cache paths once, then check existence
+            // This avoids computing SHA256 hash twice per icon
+            var cachedIconPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var iconsToProcess = new List<string>();
 
             foreach (var iconPath in groupedByIcon.Keys)
             {
-                if (_diskImageService.IsIconCached(iconPath, iconDecodeSize, gameIdStr))
+                var cachedPath = _diskImageService.GetIconCachePathFromUri(iconPath, iconDecodeSize, gameIdStr);
+                if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
                 {
-                    var cachedPath = _diskImageService.GetIconCachePathFromUri(iconPath, iconDecodeSize, gameIdStr);
-                    if (!string.IsNullOrWhiteSpace(cachedPath) && File.Exists(cachedPath))
-                    {
-                        cachedIcons.Add(iconPath);
-                        continue;
-                    }
+                    cachedIconPaths[iconPath] = cachedPath;
+                    continue;
                 }
                 iconsToProcess.Add(iconPath);
             }
 
             // Resolve cached icons without progress tracking
-            foreach (var iconPath in cachedIcons)
+            foreach (var kvp in cachedIconPaths)
             {
-                var cachedPath = _diskImageService.GetIconCachePathFromUri(iconPath, iconDecodeSize, gameIdStr);
-                if (groupedByIcon.TryGetValue(iconPath, out var grouped))
+                if (groupedByIcon.TryGetValue(kvp.Key, out var grouped))
                 {
                     foreach (var achievement in grouped)
                     {
-                        achievement.UnlockedIconPath = cachedPath;
+                        achievement.UnlockedIconPath = kvp.Value;
                     }
                 }
             }

@@ -275,9 +275,9 @@ namespace PlayniteAchievements.ViewModels
                 return HiddenIconPath;
             }
 
-            var icon = achievement.Unlocked
-                ? FirstNonEmpty(achievement.UnlockedIconPath, achievement.LockedIconPath)
-                : FirstNonEmpty(achievement.LockedIconPath, achievement.UnlockedIconPath);
+            // Always use UnlockedIconPath (which is cached during refresh)
+            // Apply grayscale for locked achievements, same as theme integration
+            var icon = achievement.UnlockedIconPath;
 
             if (string.IsNullOrWhiteSpace(icon))
             {
@@ -343,24 +343,6 @@ namespace PlayniteAchievements.ViewModels
             }
 
             CurrentMarkerText = string.Format(format, markerText);
-        }
-
-        private static string FirstNonEmpty(params string[] values)
-        {
-            if (values == null)
-            {
-                return null;
-            }
-
-            for (int i = 0; i < values.Length; i++)
-            {
-                if (!string.IsNullOrWhiteSpace(values[i]))
-                {
-                    return values[i].Trim();
-                }
-            }
-
-            return null;
         }
     }
 
