@@ -352,32 +352,121 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             var cache = GetOrBuildTrophyFolderCache();
 
-            // Try to find npcommid using path extraction
             var installDir = ExpandGamePath(game, game?.InstallDirectory);
             if (!string.IsNullOrWhiteSpace(installDir))
             {
-                var match = Ps3IdPattern.Match(installDir);
-                if (match.Success)
+                // First try to find npcommid directly (e.g., NPWR05920_00 in TROPDIR path)
+                var npcommidMatch = NpCommIdPathPattern.Match(installDir);
+                if (npcommidMatch.Success)
                 {
-                    var ps3Id = match.Groups[1].Value.ToUpperInvariant();
-                    // If we found an ID, verify it exists in cache
-                    if (cache != null && cache.ContainsKey(ps3Id))
+                    var npcommid = npcommidMatch.Groups[1].Value.ToUpperInvariant();
+                    if (cache != null && cache.ContainsKey(npcommid))
                     {
                         return true;
                     }
-                    // ID found but not in cache - game doesn't have trophy data yet
+                    // npcommid found in path but not in cache - no synced trophy data
                     return false;
+                }
+
+                // Check for npcommid in TROPDIR subdirectories (PKG games)
+                var npcommidFromTropdir = FindNpCommIdInTropdir(installDir, cache);
+                if (!string.IsNullOrWhiteSpace(npcommidFromTropdir))
+                {
+                    return true;
+                }
+
+                // Fall back to game ID pattern (e.g., NPEB01947)
+                var gameIdMatch = Ps3IdPattern.Match(installDir);
+                if (gameIdMatch.Success)
+                {
+                    var gameId = gameIdMatch.Groups[1].Value.ToUpperInvariant();
+                    // Game ID might match cache directly (same value)
+                    if (cache != null && cache.ContainsKey(gameId))
+                    {
+                        return true;
+                    }
+                    // Game ID found but not in cache - fall through
                 }
             }
 
-            // If we can't verify by ID (no ID in path), fall back to true
+            // If we can't verify by ID, fall back to true
             // This allows name-based matching during the actual scan
             return true;
+        }
+
+        /// <summary>
+        /// Looks for npcommid in TROPDIR subdirectories and checks if it exists in cache.
+        /// PKG games have structure: {game_root}/TROPDIR/{npcommid}/TROPHY.TRP
+        /// </summary>
+        private string FindNpCommIdInTropdir(string gameDirectory, Dictionary<string, string> cache)
+        {
+            if (string.IsNullOrWhiteSpace(gameDirectory) || cache == null)
+            {
+                return null;
+            }
+
+            // Build list of directories to check
+            // Playnite may point to USRDIR, but TROPDIR folder is in the game root
+            var directoriesToCheck = new List<string> { gameDirectory };
+
+            var normalizedPath = gameDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (normalizedPath.EndsWith("USRDIR", StringComparison.OrdinalIgnoreCase))
+            {
+                var parentDir = Path.GetDirectoryName(normalizedPath);
+                if (!string.IsNullOrWhiteSpace(parentDir))
+                {
+                    directoriesToCheck.Add(parentDir);
+                }
+            }
+
+            foreach (var dir in directoriesToCheck)
+            {
+                var tropdir = Path.Combine(dir, "TROPDIR");
+                if (!Directory.Exists(tropdir))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    // TROPDIR subdirectories are named after npcommid (e.g., NPWR05920_00)
+                    foreach (var subDir in Directory.GetDirectories(tropdir))
+                    {
+                        var dirName = Path.GetFileName(subDir);
+                        if (string.IsNullOrWhiteSpace(dirName))
+                        {
+                            continue;
+                        }
+
+                        // Check if directory name matches npcommid pattern and exists in cache
+                        var npcommidMatch = NpCommIdPathPattern.Match(dirName);
+                        if (npcommidMatch.Success)
+                        {
+                            var npcommid = npcommidMatch.Groups[1].Value.ToUpperInvariant();
+                            if (cache.ContainsKey(npcommid))
+                            {
+                                return npcommid;
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore errors scanning TROPDIR
+                }
+            }
+
+            return null;
         }
 
         // PS3 title/serial ID patterns: BLUS, BLES, BCES, NPUB, NPEB, etc.
         private static readonly System.Text.RegularExpressions.Regex Ps3IdPattern =
             new System.Text.RegularExpressions.Regex(@"\b([A-Z]{2,4}\d{5})\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // npcommid pattern: NPWR05920_00 format (in TROPDIR subdirectory names)
+        private static readonly System.Text.RegularExpressions.Regex NpCommIdPathPattern =
+            new System.Text.RegularExpressions.Regex(@"\b([A-Z]{4}\d{5}_\d{2})\b",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
         /// <summary>
