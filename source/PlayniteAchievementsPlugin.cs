@@ -765,7 +765,7 @@ namespace PlayniteAchievements
                     window.Owner = PlayniteApi?.Dialogs?.GetCurrentAppWindow();
                 }
             }
-            catch { }
+            catch (Exception ex) { _logger?.Debug(ex, "Failed to set window owner"); }
 
             inputDialog.RequestClose += (s, ev) => window.Close();
             window.ShowDialog();
@@ -1284,14 +1284,14 @@ namespace PlayniteAchievements
 
             _backgroundUpdates.Stop();
 
-            try { _imageService?.Dispose(); } catch { }
-            try { _diskImageService?.Dispose(); } catch { }
-            try { _themeUpdateService?.Dispose(); } catch { }
-            try { _fullscreenWindowService?.Dispose(); } catch { }
-            try { _themeIntegrationService?.Dispose(); } catch { }
+            try { _imageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose imageService"); }
+            try { _diskImageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose diskImageService"); }
+            try { _themeUpdateService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeUpdateService"); }
+            try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
+            try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
 
             // Shutdown logging system
-            try { PluginLogger.Shutdown(); } catch { }
+            try { PluginLogger.Shutdown(); } catch (Exception ex) { System.Diagnostics.Trace.TraceError($"Failed to shutdown logger: {ex}"); }
         }
 
         // === Theme Integration ===
@@ -1410,7 +1410,7 @@ namespace PlayniteAchievements
                 {
                     isFullscreen = PlayniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
                 }
-                catch { }
+                catch (Exception ex) { _logger?.Debug(ex, "Failed to check fullscreen mode"); }
 
                 if (refreshTask != null)
                 {
@@ -1437,7 +1437,7 @@ namespace PlayniteAchievements
                         window.Activate();
                         window.Topmost = false;
                     }
-                    catch { }
+                    catch (Exception ex) { _logger?.Debug(ex, "Failed to activate window in fullscreen"); }
                 }
                 else
                 {
@@ -1517,7 +1517,7 @@ namespace PlayniteAchievements
                 {
                     isFullscreen = PlayniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
                 }
-                catch { }
+                catch (Exception ex) { _logger?.Debug(ex, "Failed to check fullscreen mode"); }
 
                 // In fullscreen mode, modal dialogs can effectively lock the UI if they fail to surface above the theme.
                 // Prefer a non-modal window.
@@ -1614,7 +1614,7 @@ namespace PlayniteAchievements
                 {
                     isFullscreen = PlayniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
                 }
-                catch { }
+                catch (Exception ex) { _logger?.Debug(ex, "Failed to check fullscreen mode"); }
 
                 if (isFullscreen)
                 {
@@ -1625,7 +1625,7 @@ namespace PlayniteAchievements
                         window.Activate();
                         window.Topmost = false;
                     }
-                    catch { }
+                    catch (Exception ex) { _logger?.Debug(ex, "Failed to activate window in fullscreen"); }
                 }
                 else
                 {
