@@ -306,6 +306,11 @@ namespace PlayniteAchievements.Views
             _viewModel.SortDataGrid((sender as DataGrid), e.Column.SortMemberPath, sortDirection.Value);
         }
 
+        private void OnProviderPieChartSliceClick(object sender, string providerName)
+        {
+            _viewModel?.ToggleProviderFilterFromPieChart(providerName);
+        }
+
         #endregion
 
         #region Column Persistence

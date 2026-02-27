@@ -12,6 +12,7 @@ using System.Windows.Input;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Sidebar;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Views;
@@ -146,6 +147,10 @@ namespace PlayniteAchievements.ViewModels
             if (_settings != null)
             {
                 _settings.PropertyChanged += OnSettingsChanged;
+                if (_settings.Persisted != null)
+                {
+                    _settings.Persisted.PropertyChanged += OnPersistedSettingsChanged;
+                }
             }
 
         }
@@ -254,6 +259,22 @@ namespace PlayniteAchievements.ViewModels
                         System.Windows.Threading.DispatcherPriority.ContextIdle);
                 }
             }
+        }
+
+        /// <summary>
+        /// Toggles the provider filter when a pie slice is clicked.
+        /// If the same provider is already selected, resets to "All".
+        /// </summary>
+        /// <param name="providerName">The provider name from the clicked slice</param>
+        public void ToggleProviderFilterFromPieChart(string providerName)
+        {
+            // Check if this provider exists in the filter options
+            if (ProviderFilterOptions == null || !ProviderFilterOptions.Contains(providerName)) return;
+
+            // If already selected, reset to "All", otherwise select the provider
+            SelectedProviderFilter = string.Equals(SelectedProviderFilter, providerName, StringComparison.OrdinalIgnoreCase)
+                ? "All"
+                : providerName;
         }
 
         public ObservableCollection<RefreshMode> RefreshModes { get; }
@@ -1229,6 +1250,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 // Refresh view when any hide setting changes
                 _ = RefreshViewAsync();
+            }
+        }
+
+        private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PersistedSettings.ShowSidebarPieCharts))
+            {
+                OnPropertyChanged(nameof(ShowSidebarPieCharts));
             }
         }
 
@@ -2236,6 +2265,10 @@ namespace PlayniteAchievements.ViewModels
             if (_settings != null)
             {
                 _settings.PropertyChanged -= OnSettingsChanged;
+                if (_settings.Persisted != null)
+                {
+                    _settings.Persisted.PropertyChanged -= OnPersistedSettingsChanged;
+                }
             }
             if (_refreshDebounceTimer != null)
             {

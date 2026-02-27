@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using LiveCharts;
 using LiveCharts.Wpf;
 using PlayniteAchievements.Models;
@@ -19,6 +20,12 @@ namespace PlayniteAchievements.Views.Controls
     {
         private static readonly double IconSize = 18.0;
         private List<PieSeries> subscribedSeries = new List<PieSeries>();
+
+        /// <summary>
+        /// Event raised when a pie slice is clicked.
+        /// Provides the label of the clicked slice.
+        /// </summary>
+        public event EventHandler<string> SliceClick;
 
         public static readonly DependencyProperty PieSeriesProperty =
             DependencyProperty.Register(nameof(PieSeries), typeof(SeriesCollection), typeof(PieChartWithRadialIcons),
@@ -236,6 +243,18 @@ namespace PlayniteAchievements.Views.Controls
             foreach (var pos in positions)
             {
                 IconPositions.Add(pos);
+            }
+        }
+
+        private void OnPieChartDataClick(object sender, ChartPoint chartPoint)
+        {
+            // Only respond to left clicks on actual data points
+            if (chartPoint == null || Mouse.LeftButton != MouseButtonState.Pressed) return;
+
+            // Get the label from the PieSeries that was clicked
+            if (chartPoint.SeriesView is PieSeries series && !string.IsNullOrEmpty(series.Title))
+            {
+                SliceClick?.Invoke(this, series.Title);
             }
         }
     }

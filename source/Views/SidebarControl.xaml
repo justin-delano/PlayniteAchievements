@@ -1007,10 +1007,12 @@
                                            Opacity="0.7"
                                            HorizontalAlignment="Center"
                                            Margin="0,0,0,4"/>
-                                <controls:PieChartWithRadialIcons Grid.Row="1"
+                                <controls:PieChartWithRadialIcons x:Name="ProviderPieChartControl"
+                                                                  Grid.Row="1"
                                                                   PieSeries="{Binding ProviderPieChart.PieSeries}"
                                                                   LegendItems="{Binding ProviderPieChart.LegendItems}"
-                                                                  IconOffset="12"/>
+                                                                  IconOffset="12"
+                                                                  SliceClick="OnProviderPieChartSliceClick"/>
                             </Grid>
 
                             <!-- Rarity Pie Chart with Custom Legend -->
