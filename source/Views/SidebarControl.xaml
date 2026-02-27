@@ -552,6 +552,16 @@
                     <Border Grid.Row="2" Grid.Column="0"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,0,1,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Grid.RowSpan" Value="1"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowSidebarPieCharts}" Value="False">
+                                        <Setter Property="Grid.RowSpan" Value="2"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
