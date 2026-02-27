@@ -383,7 +383,7 @@
                         Padding="16,10">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" MinWidth="100" MaxWidth="180"/>
+                            <ColumnDefinition Width="*" MinWidth="100"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="Auto"/>

@@ -115,7 +115,7 @@
 
     <sys:String x:Key="LOCPlayAch_CustomRefresh_WindowTitle">Custom Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Header">Build a one-time custom refresh</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_ProvidersHeader">Providers</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ProvidersHeader">Platforms</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ScopeHeader">Game Scope</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_TargetingHeader">Include / Exclude Games</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_IncludeHeader">Include game IDs</sys:String>
@@ -125,11 +125,11 @@
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseIncludeUnplayed">Override include unplayed</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_RespectExclusions">Respect user exclusions</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ForceIncludeBypass">Explicit includes bypass user exclusions</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_UseParallelOverride">Override parallel provider execution</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_SummaryFormat">Providers: {0} | Estimated targets: {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_UseParallelOverride">Override parallel platform execution</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_SummaryFormat">Platforms: {0} | Estimated targets: {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_None">None</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_InvalidRecentLimit">Recent limit override must be a positive number.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingProviders">No enabled and authenticated providers match this custom refresh request.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingProviders">No enabled and authenticated platforms match this custom refresh request.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingGames">No games match this custom refresh request.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ProviderStatus_Ready">Ready</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ProviderStatus_Disabled">Disabled</sys:String>
