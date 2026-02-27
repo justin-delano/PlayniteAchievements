@@ -48,6 +48,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenDescription = false;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
+        private bool _showSidebarPieCharts = true;
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
@@ -376,6 +377,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _includeUnplayedGames;
             set => SetValue(ref _includeUnplayedGames, value);
+        }
+
+        /// <summary>
+        /// When true, shows the pie charts section at the bottom of the sidebar.
+        /// When false, the games overview grid takes the full space.
+        /// </summary>
+        public bool ShowSidebarPieCharts
+        {
+            get => _showSidebarPieCharts;
+            set => SetValue(ref _showSidebarPieCharts, value);
         }
 
         /// <summary>
@@ -793,6 +804,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenDescription = this.ShowHiddenDescription,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
+                ShowSidebarPieCharts = this.ShowSidebarPieCharts,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
