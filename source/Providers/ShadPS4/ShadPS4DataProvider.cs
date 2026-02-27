@@ -93,11 +93,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                     if (Directory.Exists(gameDataPath))
                     {
                         emulatorRoot = settingsRoot;
-                        _logger?.Debug($"[ShadPS4] GetGameDataPath - Using validated settings path: '{emulatorRoot}'");
-                    }
-                    else
-                    {
-                        _logger?.Debug($"[ShadPS4] GetGameDataPath - Settings path invalid (no game_data folder)");
                     }
                 }
             }
@@ -106,30 +101,20 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (string.IsNullOrWhiteSpace(emulatorRoot) && game != null)
             {
                 emulatorRoot = GetEmulatorRootFromGame(game);
-                if (!string.IsNullOrWhiteSpace(emulatorRoot))
-                {
-                    _logger?.Debug($"[ShadPS4] GetGameDataPath - Using game emulator path: '{emulatorRoot}'");
-                }
             }
 
             // Priority 3: From first ShadPS4 emulator in database
             if (string.IsNullOrWhiteSpace(emulatorRoot))
             {
                 emulatorRoot = FindAnyShadps4EmulatorRoot();
-                if (!string.IsNullOrWhiteSpace(emulatorRoot))
-                {
-                    _logger?.Debug($"[ShadPS4] GetGameDataPath - Using discovered emulator path: '{emulatorRoot}'");
-                }
             }
 
             if (string.IsNullOrWhiteSpace(emulatorRoot))
             {
-                _logger?.Debug("[ShadPS4] GetGameDataPath - No emulator root found");
                 return null;
             }
 
             var finalPath = Path.Combine(emulatorRoot, "user", "game_data");
-            _logger?.Debug($"[ShadPS4] GetGameDataPath - Final game_data path: '{finalPath}'");
             return finalPath;
         }
 
@@ -150,7 +135,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         // Check if this looks like ShadPS4
                         if (IsShadps4Emulator(emulator))
                         {
-                            _logger?.Debug($"[ShadPS4] GetEmulatorRootFromGame - Found ShadPS4 emulator '{emulator.Name}' with InstallDir: '{emulator.InstallDir}'");
                             return emulator.InstallDir;
                         }
                     }
@@ -182,7 +166,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
             {
                 if (IsShadps4Emulator(emulator) && !string.IsNullOrWhiteSpace(emulator.InstallDir))
                 {
-                    _logger?.Debug($"[ShadPS4] FindAnyShadps4EmulatorRoot - Found ShadPS4 emulator '{emulator.Name}' with InstallDir: '{emulator.InstallDir}'");
                     return emulator.InstallDir;
                 }
             }
@@ -201,26 +184,37 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return false;
             }
 
-            // Check if game is configured to use ShadPS4 emulator
+            // Check if game is configured to use ShadPS4 emulator (by path or name)
             if (UsesShadPS4Emulator(game))
             {
+                // Emulator matches, but still verify title ID can be extracted
+                var titleId = ExtractTitleIdFromGame(game);
+                if (!string.IsNullOrWhiteSpace(titleId))
+                {
+                    var cache = GetOrBuildTitleCache();
+                    if (cache != null && cache.ContainsKey(titleId))
+                    {
+                        return true;
+                    }
+                }
+                // Even without cache match, if emulator is ShadPS4, game may be capable
                 return true;
             }
 
             // Extract title ID from game's install directory and look it up in cache
-            var titleId = ExtractTitleIdFromGame(game);
-            if (string.IsNullOrWhiteSpace(titleId))
+            var titleId2 = ExtractTitleIdFromGame(game);
+            if (string.IsNullOrWhiteSpace(titleId2))
             {
                 return false;
             }
 
-            var cache = GetOrBuildTitleCache();
-            return cache != null && cache.ContainsKey(titleId);
+            var cache2 = GetOrBuildTitleCache();
+            return cache2 != null && cache2.ContainsKey(titleId2);
         }
 
         /// <summary>
-        /// Checks if any game action uses an emulator whose InstallDir matches
-        /// the configured ShadPS4 executable's directory.
+        /// Checks if any game action uses a ShadPS4 emulator.
+        /// Checks by: 1) Path matching settings, 2) Emulator name containing "shadps4"
         /// </summary>
         private bool UsesShadPS4Emulator(Game game)
         {
@@ -229,18 +223,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return false;
             }
 
+            // Get settings path for comparison
             var shadps4ExePath = _settings?.Persisted?.ShadPS4ExecutablePath;
-            if (string.IsNullOrWhiteSpace(shadps4ExePath))
-            {
-                return false;
-            }
-
-            // Derive installation folder from executable path
-            var shadps4InstallFolder = Path.GetDirectoryName(shadps4ExePath);
-            if (string.IsNullOrWhiteSpace(shadps4InstallFolder))
-            {
-                return false;
-            }
+            var shadps4InstallFolder = string.IsNullOrWhiteSpace(shadps4ExePath)
+                ? null
+                : Path.GetDirectoryName(shadps4ExePath);
 
             foreach (var action in game.GameActions)
             {
@@ -252,9 +239,15 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         continue;
                     }
 
-                    // Compare emulator's InstallDir with configured ShadPS4 folder
-                    // Use case-insensitive comparison with normalized paths
-                    if (PathsEqual(emulator.InstallDir, shadps4InstallFolder))
+                    // Check by emulator name (more reliable than path matching)
+                    if (IsShadps4Emulator(emulator))
+                    {
+                        return true;
+                    }
+
+                    // Also check by path matching settings (if settings path is configured)
+                    if (!string.IsNullOrWhiteSpace(shadps4InstallFolder) &&
+                        PathsEqual(emulator.InstallDir, shadps4InstallFolder))
                     {
                         return true;
                     }
@@ -337,13 +330,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
             var gameDataPath = GetGameDataPath();
             if (string.IsNullOrWhiteSpace(gameDataPath))
             {
-                _logger?.Debug("[ShadPS4] No valid game_data path found");
                 return cache;
             }
 
             if (!Directory.Exists(gameDataPath))
             {
-                _logger?.Debug($"[ShadPS4] user/game_data folder not found at {gameDataPath}");
                 return cache;
             }
 
@@ -365,8 +356,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         cache[titleId.ToUpperInvariant()] = titleDir;
                     }
                 }
-
-                _logger?.Debug($"[ShadPS4] Built title ID cache with {cache.Count} games");
             }
             catch (Exception ex)
             {

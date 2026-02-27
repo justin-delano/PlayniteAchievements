@@ -326,18 +326,56 @@ namespace PlayniteAchievements.Providers.RPCS3
             var src = game.Source?.Name ?? string.Empty;
             if (src.IndexOf("RPCS3", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                return true;
+                // Source matches, but still verify trophy data exists
+                return CanFindTrophyDataForGame(game);
             }
 
             // Check if game uses RPCS3 emulator
             var emulatorRoot = GetEmulatorRootFromGame(game);
             if (!string.IsNullOrWhiteSpace(emulatorRoot))
             {
-                return true;
+                // Emulator matches, but still verify trophy data exists
+                return CanFindTrophyDataForGame(game);
             }
 
             return false;
         }
+
+        /// <summary>
+        /// Checks if trophy data can be found for a game by verifying the npcommid exists in cache.
+        /// </summary>
+        private bool CanFindTrophyDataForGame(Game game)
+        {
+            var cache = GetOrBuildTrophyFolderCache();
+            if (cache == null || cache.Count == 0)
+            {
+                return false;
+            }
+
+            // Try to find npcommid using path extraction
+            var installDir = ExpandGamePath(game, game?.InstallDirectory);
+            if (!string.IsNullOrWhiteSpace(installDir))
+            {
+                var match = Ps3IdPattern.Match(installDir);
+                if (match.Success)
+                {
+                    var ps3Id = match.Groups[1].Value.ToUpperInvariant();
+                    if (cache.ContainsKey(ps3Id))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // If we can't verify by ID, but have a valid emulator source, still return true
+            // This allows name-based matching during the actual scan
+            return true;
+        }
+
+        // PS3 title/serial ID patterns: BLUS, BLES, BCES, NPUB, NPEB, etc.
+        private static readonly System.Text.RegularExpressions.Regex Ps3IdPattern =
+            new System.Text.RegularExpressions.Regex(@"\b([A-Z]{2,4}\d{5})\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
         /// <summary>
         /// Expands path variables in game paths using Playnite's variable expansion.

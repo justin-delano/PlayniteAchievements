@@ -600,7 +600,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (!disc.FileExists(trpPath))
             {
-                _logger?.Debug($"[RPCS3] ExtractNpCommIdFromDisc - File not found: '{trpPath}'");
                 return null;
             }
 
@@ -608,7 +607,6 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 if (stream == null)
                 {
-                    _logger?.Debug($"[RPCS3] ExtractNpCommIdFromDisc - Could not open stream: '{trpPath}'");
                     return null;
                 }
 
@@ -651,9 +649,9 @@ namespace PlayniteAchievements.Providers.RPCS3
                 var files = Directory.GetFiles(directory, "*.iso");
                 results.AddRange(files);
             }
-            catch (Exception ex)
+            catch
             {
-                _logger?.Debug(ex, $"[RPCS3] FindIsoFiles - Error searching in '{directory}'");
+                // Ignore errors
             }
 
             return results;
@@ -667,18 +665,14 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (game == null || string.IsNullOrWhiteSpace(game.Name))
             {
-                _logger?.Debug("[RPCS3] FindNpCommIdByName - Game or game name is null");
                 return null;
             }
 
             var normalizedGameName = NormalizeGameName(game.Name);
             if (string.IsNullOrWhiteSpace(normalizedGameName))
             {
-                _logger?.Debug($"[RPCS3] FindNpCommIdByName - Normalized game name is empty for '{game.Name}'");
                 return null;
             }
-
-            _logger?.Debug($"[RPCS3] FindNpCommIdByName - Looking for match for '{game.Name}' (normalized: '{normalizedGameName}')");
 
             string bestMatch = null;
             int bestScore = 0;
@@ -706,18 +700,10 @@ namespace PlayniteAchievements.Providers.RPCS3
                 {
                     bestScore = score;
                     bestMatch = npcommid;
-                    _logger?.Debug($"[RPCS3] FindNpCommIdByName - Candidate: '{titleName}' (normalized: '{normalizedTitle}') score={score}");
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(bestMatch))
-            {
-                _logger?.Debug($"[RPCS3] FindNpCommIdByName - Best match: '{bestMatch}' with score {bestScore}");
-                return bestMatch;
-            }
-
-            _logger?.Debug($"[RPCS3] FindNpCommIdByName - No match found for '{game.Name}'");
-            return null;
+            return bestMatch;
         }
 
         /// <summary>
@@ -756,9 +742,9 @@ namespace PlayniteAchievements.Providers.RPCS3
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                _logger?.Debug(ex, $"[RPCS3] ExtractTitleNameFromTropconf - Error reading TROPCONF.SFM in '{trophyFolder}'");
+                // Ignore errors
             }
 
             return null;
@@ -873,28 +859,22 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (string.IsNullOrWhiteSpace(path))
             {
-                _logger?.Debug($"[RPCS3] ExpandGamePath - Path is null or empty, returning as-is");
                 return path;
             }
 
             // Use provider's expansion if available
             if (_provider != null)
             {
-                var expanded = _provider.ExpandGamePath(game, path);
-                _logger?.Debug($"[RPCS3] ExpandGamePath - Provider expansion: '{path}' -> '{expanded}'");
-                return expanded;
+                return _provider.ExpandGamePath(game, path);
             }
 
             // Fallback: use Playnite API directly if available
             try
             {
-                var expanded = _playniteApi?.ExpandGameVariables(game, path) ?? path;
-                _logger?.Debug($"[RPCS3] ExpandGamePath - Playnite API expansion: '{path}' -> '{expanded}'");
-                return expanded;
+                return _playniteApi?.ExpandGameVariables(game, path) ?? path;
             }
-            catch (Exception ex)
+            catch
             {
-                _logger?.Debug($"[RPCS3] ExpandGamePath - Expansion failed: {ex.Message}, returning original path");
                 return path;
             }
         }
@@ -943,7 +923,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (string.IsNullOrWhiteSpace(trophyFolderPath))
             {
-                _logger?.Debug($"[RPCS3] GetTrophyIconPath - Trophy folder path is null or empty");
                 return null;
             }
 
@@ -955,15 +934,13 @@ namespace PlayniteAchievements.Providers.RPCS3
 
                 if (!File.Exists(sourcePath))
                 {
-                    _logger?.Debug($"[RPCS3] GetTrophyIconPath - Icon not found at '{sourcePath}'");
                     return null;
                 }
 
                 return sourcePath;
             }
-            catch (Exception ex)
+            catch
             {
-                _logger?.Debug(ex, $"[RPCS3] GetTrophyIconPath - Failed to get icon path for trophy {trophyId}");
                 return null;
             }
         }
