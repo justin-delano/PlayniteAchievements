@@ -167,14 +167,13 @@ namespace PlayniteAchievements.Providers.RPCS3
                     {
                         _cachedUserId = name;
                         _cachedEmulatorRoot = emulatorRoot;
-                        _logger?.Debug($"[RPCS3] DiscoverUserId - Found user ID: '{name}' in '{emulatorRoot}'");
                         return name;
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"[RPCS3] DiscoverUserId - Error scanning '{homePath}'");
+                _logger?.Error(ex, $"[RPCS3] Error scanning '{homePath}'");
             }
 
             return null;
@@ -197,7 +196,6 @@ namespace PlayniteAchievements.Providers.RPCS3
                         // Check if this looks like RPCS3
                         if (IsRpcs3Emulator(emulator))
                         {
-                            _logger?.Debug($"[RPCS3] GetEmulatorRootFromGame - Found RPCS3 emulator '{emulator.Name}' with InstallDir: '{emulator.InstallDir}'");
                             return emulator.InstallDir;
                         }
                     }
@@ -229,11 +227,24 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 if (IsRpcs3Emulator(emulator) && !string.IsNullOrWhiteSpace(emulator.InstallDir))
                 {
-                    _logger?.Debug($"[RPCS3] FindAnyRpcs3EmulatorRoot - Found RPCS3 emulator '{emulator.Name}' with InstallDir: '{emulator.InstallDir}'");
                     return emulator.InstallDir;
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Gets the emulator root directory from an executable path.
+        /// </summary>
+        private string GetEmulatorRootFromExePath(string exePath)
+        {
+            if (string.IsNullOrWhiteSpace(exePath))
+                return null;
+
+            if (!File.Exists(exePath))
+                return null;
+
+            return Path.GetDirectoryName(exePath);
         }
 
         /// <summary>
@@ -247,18 +258,17 @@ namespace PlayniteAchievements.Providers.RPCS3
             string emulatorRoot = null;
 
             // Priority 1: From settings (user-configured, validated)
-            var settingsRoot = _settings?.Persisted?.Rpcs3InstallationFolder;
-            if (!string.IsNullOrWhiteSpace(settingsRoot))
+            var settingsExePath = _settings?.Persisted?.Rpcs3ExecutablePath;
+            if (!string.IsNullOrWhiteSpace(settingsExePath))
             {
-                var validation = ValidateRpcs3Path(settingsRoot);
-                if (validation.IsValid)
+                var settingsRoot = GetEmulatorRootFromExePath(settingsExePath);
+                if (!string.IsNullOrWhiteSpace(settingsRoot))
                 {
-                    emulatorRoot = settingsRoot;
-                    _logger?.Debug($"[RPCS3] GetTrophyFolder - Using validated settings path: '{emulatorRoot}'");
-                }
-                else
-                {
-                    _logger?.Debug($"[RPCS3] GetTrophyFolder - Settings path invalid: {validation.ErrorMessage}");
+                    var validation = ValidateRpcs3Path(settingsRoot);
+                    if (validation.IsValid)
+                    {
+                        emulatorRoot = settingsRoot;
+                    }
                 }
             }
 
@@ -266,37 +276,26 @@ namespace PlayniteAchievements.Providers.RPCS3
             if (string.IsNullOrWhiteSpace(emulatorRoot) && game != null)
             {
                 emulatorRoot = GetEmulatorRootFromGame(game);
-                if (!string.IsNullOrWhiteSpace(emulatorRoot))
-                {
-                    _logger?.Debug($"[RPCS3] GetTrophyFolder - Using game emulator path: '{emulatorRoot}'");
-                }
             }
 
             // Priority 3: From first RPCS3 emulator in database
             if (string.IsNullOrWhiteSpace(emulatorRoot))
             {
                 emulatorRoot = FindAnyRpcs3EmulatorRoot();
-                if (!string.IsNullOrWhiteSpace(emulatorRoot))
-                {
-                    _logger?.Debug($"[RPCS3] GetTrophyFolder - Using discovered emulator path: '{emulatorRoot}'");
-                }
             }
 
             if (string.IsNullOrWhiteSpace(emulatorRoot))
             {
-                _logger?.Debug("[RPCS3] GetTrophyFolder - No emulator root found");
                 return null;
             }
 
             var userId = DiscoverUserId(emulatorRoot);
             if (string.IsNullOrWhiteSpace(userId))
             {
-                _logger?.Debug($"[RPCS3] GetTrophyFolder - No user ID found in '{emulatorRoot}'");
                 return null;
             }
 
             var trophyFolder = Path.Combine(emulatorRoot, "dev_hdd0", "home", userId, "trophy");
-            _logger?.Debug($"[RPCS3] GetTrophyFolder - Final trophy path: '{trophyFolder}'");
             return trophyFolder;
         }
 
@@ -305,16 +304,13 @@ namespace PlayniteAchievements.Providers.RPCS3
             get
             {
                 var trophyFolder = GetTrophyFolder();
-                _logger?.Debug($"[RPCS3] IsAuthenticated check - Trophy path: '{trophyFolder ?? "(null)"}'");
 
                 if (string.IsNullOrWhiteSpace(trophyFolder))
                 {
-                    _logger?.Debug("[RPCS3] IsAuthenticated = false (no trophy folder found)");
                     return false;
                 }
 
                 var exists = Directory.Exists(trophyFolder);
-                _logger?.Debug($"[RPCS3] IsAuthenticated = {exists}");
                 return exists;
             }
         }
@@ -323,18 +319,13 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (game == null)
             {
-                _logger?.Debug("[RPCS3] IsCapable = false (game is null)");
                 return false;
             }
 
-            _logger?.Debug($"[RPCS3] IsCapable check for game '{game.Name}' (Id: {game.Id})");
-
             // Check source name
             var src = game.Source?.Name ?? string.Empty;
-            _logger?.Debug($"[RPCS3] IsCapable check - Source name: '{src}'");
             if (src.IndexOf("RPCS3", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                _logger?.Debug($"[RPCS3] IsCapable = true for '{game.Name}' (matched source name 'RPCS3')");
                 return true;
             }
 
@@ -342,11 +333,9 @@ namespace PlayniteAchievements.Providers.RPCS3
             var emulatorRoot = GetEmulatorRootFromGame(game);
             if (!string.IsNullOrWhiteSpace(emulatorRoot))
             {
-                _logger?.Debug($"[RPCS3] IsCapable = true for '{game.Name}' (uses RPCS3 emulator at '{emulatorRoot}')");
                 return true;
             }
 
-            _logger?.Debug($"[RPCS3] IsCapable = false for '{game.Name}' (no RPCS3 match found)");
             return false;
         }
 
@@ -381,35 +370,28 @@ namespace PlayniteAchievements.Providers.RPCS3
 
         private Dictionary<string, string> BuildTrophyFolderCache()
         {
-            _logger?.Debug("[RPCS3] BuildTrophyFolderCache - Starting cache build");
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             var trophyPath = GetTrophyFolder();
             if (string.IsNullOrWhiteSpace(trophyPath))
             {
-                _logger?.Debug("[RPCS3] BuildTrophyFolderCache - No valid trophy folder found");
                 return cache;
             }
 
-            _logger?.Debug($"[RPCS3] BuildTrophyFolderCache - Trophy path: '{trophyPath}'");
-
             if (!Directory.Exists(trophyPath))
             {
-                _logger?.Debug($"[RPCS3] BuildTrophyFolderCache - Trophy folder not found at '{trophyPath}'");
                 return cache;
             }
 
             try
             {
                 var npcommidDirectories = Directory.GetDirectories(trophyPath);
-                _logger?.Debug($"[RPCS3] BuildTrophyFolderCache - Found {npcommidDirectories.Length} directories in trophy folder");
 
                 foreach (var npcommidDir in npcommidDirectories)
                 {
                     var npcommid = Path.GetFileName(npcommidDir);
                     if (string.IsNullOrWhiteSpace(npcommid))
                     {
-                        _logger?.Debug($"[RPCS3] BuildTrophyFolderCache - Skipping directory with empty name: '{npcommidDir}'");
                         continue;
                     }
 
@@ -418,20 +400,12 @@ namespace PlayniteAchievements.Providers.RPCS3
                     if (File.Exists(tropconfPath))
                     {
                         cache[npcommid] = npcommidDir;
-                        _logger?.Debug($"[RPCS3] BuildTrophyFolderCache - Added npcommid '{npcommid}' -> '{npcommidDir}'");
-                    }
-                    else
-                    {
-                        _logger?.Debug($"[RPCS3] BuildTrophyFolderCache - Skipping '{npcommid}' (no TROPCONF.SFM at '{tropconfPath}')");
                     }
                 }
-
-                _logger?.Debug($"[RPCS3] BuildTrophyFolderCache - Complete with {cache.Count} valid trophy folders");
-                _logger?.Debug($"[RPCS3] BuildTrophyFolderCache - NPCommIDs found: [{string.Join(", ", cache.Keys)}]");
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"[RPCS3] BuildTrophyFolderCache - Failed to enumerate trophy directories at '{trophyPath}'");
+                _logger?.Error(ex, $"[RPCS3] Failed to enumerate trophy directories at '{trophyPath}'");
             }
 
             return cache;

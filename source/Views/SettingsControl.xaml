@@ -1852,7 +1852,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Settings_ShadPS4InstallationFolder}"
+                                               Text="{DynamicResource LOCPlayAch_Settings_ShadPS4ExecutablePath}"
                                                Foreground="{DynamicResource TextBrush}"
                                                VerticalAlignment="Top"
                                                Margin="0,8,0,0"/>
@@ -1918,7 +1918,7 @@
                                                            FontWeight="SemiBold"/>
                                             </Grid>
 
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ShadPS4InstallationFolderHint}"
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ShadPS4ExecutablePathHint}"
                                                        Style="{StaticResource MutedTextStyle}"
                                                        Margin="0,0,0,12"
                                                        TextWrapping="Wrap"/>
@@ -1930,7 +1930,7 @@
                                                 </Grid.ColumnDefinitions>
 
                                                 <TextBox Grid.Column="0"
-                                                         Text="{Binding Persisted.ShadPS4InstallationFolder, UpdateSourceTrigger=PropertyChanged}"
+                                                         Text="{Binding Persisted.ShadPS4ExecutablePath, UpdateSourceTrigger=PropertyChanged}"
                                                          VerticalAlignment="Center"
                                                          Padding="8,6"
                                                          Margin="0,0,8,0"/>
@@ -1995,7 +1995,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Settings_Rpcs3InstallationFolder}"
+                                               Text="{DynamicResource LOCPlayAch_Settings_Rpcs3ExecutablePath}"
                                                Foreground="{DynamicResource TextBrush}"
                                                VerticalAlignment="Top"
                                                Margin="0,8,0,0"/>
@@ -2077,7 +2077,7 @@
 
                                             <!-- Folder Path Section -->
                                             <StackPanel Grid.Row="1">
-                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3InstallationFolderHint}"
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3ExecutablePathHint}"
                                                            Foreground="{DynamicResource TextBrush}"
                                                            FontSize="{DynamicResource FontSizeSmall}"
                                                            Opacity="0.8"
@@ -2089,8 +2089,8 @@
                                                     </Grid.ColumnDefinitions>
 
                                                     <TextBox Grid.Column="0"
-                                                             Text="{Binding Persisted.Rpcs3InstallationFolder, UpdateSourceTrigger=PropertyChanged}"
-                                                             KeyDown="Rpcs3InstallationFolder_KeyDown"
+                                                             Text="{Binding Persisted.Rpcs3ExecutablePath, UpdateSourceTrigger=PropertyChanged}"
+                                                             KeyDown="Rpcs3ExecutablePath_KeyDown"
                                                              VerticalAlignment="Center"/>
 
                                                     <Button Grid.Column="1"

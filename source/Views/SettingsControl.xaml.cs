@@ -757,7 +757,7 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void Rpcs3InstallationFolder_KeyDown(object sender, KeyEventArgs e)
+        private void Rpcs3ExecutablePath_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
@@ -1833,12 +1833,12 @@ namespace PlayniteAchievements.Views
 
         private void ShadPS4_Browse_Click(object sender, RoutedEventArgs e)
         {
-            var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFolder();
+            var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFile("shadPS4.exe|shadPS4.exe|Executable files|*.exe");
             if (!string.IsNullOrWhiteSpace(selectedPath))
             {
-                _settingsViewModel.Settings.Persisted.ShadPS4InstallationFolder = selectedPath;
+                _settingsViewModel.Settings.Persisted.ShadPS4ExecutablePath = selectedPath;
 
-                // Check if the selected folder is valid
+                // Check if the selected file is valid
                 CheckShadPS4Auth();
             }
         }
@@ -1849,20 +1849,29 @@ namespace PlayniteAchievements.Views
 
         private void Rpcs3_Browse_Click(object sender, RoutedEventArgs e)
         {
-            var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFolder();
+            var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFile("rpcs3.exe|rpcs3.exe|Executable files|*.exe");
             if (!string.IsNullOrWhiteSpace(selectedPath))
             {
-                _settingsViewModel.Settings.Persisted.Rpcs3InstallationFolder = selectedPath;
+                _settingsViewModel.Settings.Persisted.Rpcs3ExecutablePath = selectedPath;
 
-                // Check if the selected folder is valid
+                // Check if the selected file is valid
                 CheckRpcs3Auth();
             }
         }
 
         private void CheckShadPS4Auth()
         {
-            var installFolder = _settingsViewModel.Settings?.Persisted?.ShadPS4InstallationFolder;
+            var exePath = _settingsViewModel.Settings?.Persisted?.ShadPS4ExecutablePath;
 
+            if (string.IsNullOrWhiteSpace(exePath))
+            {
+                SetShadPS4Authenticated(false);
+                SetShadPS4AuthStatusByKey("LOCPlayAch_Settings_ShadPS4_NotConfigured");
+                return;
+            }
+
+            // Derive installation folder from executable path
+            var installFolder = System.IO.Path.GetDirectoryName(exePath);
             if (string.IsNullOrWhiteSpace(installFolder))
             {
                 SetShadPS4Authenticated(false);
@@ -1918,8 +1927,17 @@ namespace PlayniteAchievements.Views
 
         private void CheckRpcs3Auth()
         {
-            var installFolder = _settingsViewModel.Settings?.Persisted?.Rpcs3InstallationFolder;
+            var exePath = _settingsViewModel.Settings?.Persisted?.Rpcs3ExecutablePath;
 
+            if (string.IsNullOrWhiteSpace(exePath))
+            {
+                SetRpcs3Authenticated(false);
+                SetRpcs3AuthStatusByKey("LOCPlayAch_Settings_Rpcs3_NotConfigured");
+                return;
+            }
+
+            // Derive installation folder from executable path
+            var installFolder = System.IO.Path.GetDirectoryName(exePath);
             if (string.IsNullOrWhiteSpace(installFolder))
             {
                 SetRpcs3Authenticated(false);

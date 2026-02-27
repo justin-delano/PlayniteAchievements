@@ -34,9 +34,9 @@ namespace PlayniteAchievements.Models.Settings
         private bool _retroAchievementsEnabled = true;
         private bool _xboxEnabled = true;
         private bool _shadPS4Enabled = true;
-        private string _shadPS4InstallationFolder = string.Empty;
+        private string _shadPS4ExecutablePath = string.Empty;
         private bool _rpcs3Enabled = true;
-        private string _rpcs3InstallationFolder = string.Empty;
+        private string _rpcs3ExecutablePath = string.Empty;
         private bool _enablePeriodicUpdates = true;
         private int _periodicUpdateHours = 6;
         private bool _enableNotifications = true;
@@ -228,12 +228,13 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Path to the ShadPS4 installation folder containing user/game_data.
+        /// Path to the ShadPS4 executable (shadPS4.exe).
+        /// The installation folder is derived from this path.
         /// </summary>
-        public string ShadPS4InstallationFolder
+        public string ShadPS4ExecutablePath
         {
-            get => _shadPS4InstallationFolder;
-            set => SetValue(ref _shadPS4InstallationFolder, value ?? string.Empty);
+            get => _shadPS4ExecutablePath;
+            set => SetValue(ref _shadPS4ExecutablePath, value ?? string.Empty);
         }
 
         /// <summary>
@@ -246,12 +247,13 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Path to the RPCS3 installation folder containing the trophy directory.
+        /// Path to the RPCS3 executable (rpcs3.exe).
+        /// The installation folder is derived from this path.
         /// </summary>
-        public string Rpcs3InstallationFolder
+        public string Rpcs3ExecutablePath
         {
-            get => _rpcs3InstallationFolder;
-            set => SetValue(ref _rpcs3InstallationFolder, value ?? string.Empty);
+            get => _rpcs3ExecutablePath;
+            set => SetValue(ref _rpcs3ExecutablePath, value ?? string.Empty);
         }
 
         #endregion
@@ -774,9 +776,9 @@ namespace PlayniteAchievements.Models.Settings
                 RetroAchievementsEnabled = this.RetroAchievementsEnabled,
                 XboxEnabled = this.XboxEnabled,
                 ShadPS4Enabled = this.ShadPS4Enabled,
-                ShadPS4InstallationFolder = this.ShadPS4InstallationFolder,
+                ShadPS4ExecutablePath = this.ShadPS4ExecutablePath,
                 Rpcs3Enabled = this.Rpcs3Enabled,
-                Rpcs3InstallationFolder = this.Rpcs3InstallationFolder,
+                Rpcs3ExecutablePath = this.Rpcs3ExecutablePath,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 EnableNotifications = this.EnableNotifications,

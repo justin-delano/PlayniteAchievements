@@ -39,37 +39,29 @@ namespace PlayniteAchievements.Providers.RPCS3
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            _logger?.Debug("[RPCS3] RefreshAsync - Starting refresh");
-
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
-                _logger?.Debug("[RPCS3] RefreshAsync - No games to refresh");
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
-
-            _logger?.Debug($"[RPCS3] RefreshAsync - Processing {gamesToRefresh.Count} games");
 
             // Use the provider's cache if available, otherwise build our own
             Dictionary<string, string> trophyFolderCache;
             if (_provider != null)
             {
-                _logger?.Debug("[RPCS3] RefreshAsync - Using provider's trophy folder cache");
                 trophyFolderCache = _provider.GetOrBuildTrophyFolderCache();
             }
             else
             {
-                _logger?.Debug("[RPCS3] RefreshAsync - Building trophy folder cache directly");
                 trophyFolderCache = await BuildTrophyFolderCacheAsync(cancel).ConfigureAwait(false);
             }
 
             if (trophyFolderCache == null || trophyFolderCache.Count == 0)
             {
-                _logger?.Warn("[RPCS3] RefreshAsync - No trophy folders found in RPCS3 trophy directory.");
+                _logger?.Warn("[RPCS3] No trophy folders found in RPCS3 trophy directory.");
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            _logger?.Info($"[RPCS3] RefreshAsync - Using trophy folder cache with {trophyFolderCache.Count} games.");
-            _logger?.Debug($"[RPCS3] RefreshAsync - Cache NPCommIDs: [{string.Join(", ", trophyFolderCache.Keys)}]");
+            _logger?.Info($"[RPCS3] Scanning {trophyFolderCache.Count} cached trophy folders.");
 
             var providerName = GetProviderName();
             var payload = await RefreshPipeline.RunProviderGamesAsync(
@@ -77,12 +69,10 @@ namespace PlayniteAchievements.Providers.RPCS3
                 game =>
                 {
                     onGameStarting?.Invoke(game);
-                    _logger?.Debug($"[RPCS3] RefreshAsync - Processing game '{game?.Name ?? "(null)"}'");
                 },
                 async (game, token) =>
                 {
                     var data = await FetchGameDataAsync(game, trophyFolderCache, providerName, token).ConfigureAwait(false);
-                    _logger?.Debug($"[RPCS3] RefreshAsync - FetchGameDataAsync result for '{game?.Name}': HasData={data != null}, HasAchievements={data?.HasAchievements ?? false}, AchievementCount={data?.Achievements?.Count ?? 0}");
                     return new RefreshPipeline.ProviderGameResult
                     {
                         Data = data
@@ -92,14 +82,12 @@ namespace PlayniteAchievements.Providers.RPCS3
                 isAuthRequiredException: _ => false,
                 onGameError: (game, ex, consecutiveErrors) =>
                 {
-                    _logger?.Debug(ex, $"[RPCS3] RefreshAsync - Failed to scan '{game?.Name}'");
+                    _logger?.Error(ex, $"[RPCS3] Failed to scan '{game?.Name}'");
                 },
                 delayBetweenGamesAsync: null,
                 delayAfterErrorAsync: null,
                 cancel).ConfigureAwait(false);
 
-            var summary = payload?.Summary ?? new RebuildSummary();
-            _logger?.Debug($"[RPCS3] RefreshAsync - Complete. GamesRefreshed={summary.GamesRefreshed}, GamesWithAchievements={summary.GamesWithAchievements}, GamesWithoutAchievements={summary.GamesWithoutAchievements}");
             return payload ?? new RebuildPayload { Summary = new RebuildSummary() };
         }
 
@@ -109,30 +97,32 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private async Task<Dictionary<string, string>> BuildTrophyFolderCacheAsync(CancellationToken cancel)
         {
-            _logger?.Debug("[RPCS3] BuildTrophyFolderCacheAsync - Starting");
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            var installFolder = _settings?.Persisted?.Rpcs3InstallationFolder;
-            if (string.IsNullOrWhiteSpace(installFolder))
+            var exePath = _settings?.Persisted?.Rpcs3ExecutablePath;
+            if (string.IsNullOrWhiteSpace(exePath))
             {
-                _logger?.Debug("[RPCS3] BuildTrophyFolderCacheAsync - No RPCS3 installation folder configured");
                 return cache;
             }
 
-            _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Install folder: '{installFolder}'");
+            // Derive installation folder from executable path
+            var installFolder = Path.GetDirectoryName(exePath);
+            if (string.IsNullOrWhiteSpace(installFolder))
+            {
+                return cache;
+            }
+
             var trophyPath = Path.Combine(installFolder, "trophy");
-            _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Trophy path: '{trophyPath}'");
 
             if (!Directory.Exists(trophyPath))
             {
-                _logger?.Warn($"[RPCS3] BuildTrophyFolderCacheAsync - Trophy folder not found at '{trophyPath}'");
+                _logger?.Warn($"[RPCS3] Trophy folder not found at '{trophyPath}'");
                 return cache;
             }
 
             try
             {
                 var npcommidDirectories = Directory.GetDirectories(trophyPath);
-                _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Found {npcommidDirectories.Length} directories in trophy folder");
 
                 foreach (var npcommidDir in npcommidDirectories)
                 {
@@ -141,7 +131,6 @@ namespace PlayniteAchievements.Providers.RPCS3
                     var npcommid = Path.GetFileName(npcommidDir);
                     if (string.IsNullOrWhiteSpace(npcommid))
                     {
-                        _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Skipping directory with empty name");
                         continue;
                     }
 
@@ -150,24 +139,16 @@ namespace PlayniteAchievements.Providers.RPCS3
                     if (File.Exists(tropconfPath))
                     {
                         cache[npcommid] = npcommidDir;
-                        _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Added '{npcommid}' -> '{npcommidDir}'");
-                    }
-                    else
-                    {
-                        _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Skipping '{npcommid}' (no TROPCONF.SFM)");
                     }
                 }
-
-                _logger?.Debug($"[RPCS3] BuildTrophyFolderCacheAsync - Complete with {cache.Count} valid trophy folders");
             }
             catch (OperationCanceledException)
             {
-                _logger?.Debug("[RPCS3] BuildTrophyFolderCacheAsync - Operation cancelled");
                 throw;
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"[RPCS3] BuildTrophyFolderCacheAsync - Failed to enumerate trophy directories at '{trophyPath}'");
+                _logger?.Error(ex, $"[RPCS3] Failed to enumerate trophy directories at '{trophyPath}'");
             }
 
             return await Task.FromResult(cache).ConfigureAwait(false);
@@ -181,21 +162,14 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (game == null)
             {
-                _logger?.Debug("[RPCS3] FetchGameDataAsync - Game is null, returning null");
                 return Task.FromResult<GameAchievementData>(null);
             }
 
-            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Starting for game '{game.Name}' (Id: {game.Id})");
-            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Game Source: '{game.Source?.Name ?? "(null)"}'");
-            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Game InstallDirectory: '{game.InstallDirectory ?? "(null)"}'");
-
             // Find npcommid for this game
             var npcommid = FindNpCommIdForGame(game, trophyFolderCache, cancel);
-            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Found npcommid: '{npcommid ?? "(null)"}'");
 
             if (string.IsNullOrWhiteSpace(npcommid))
             {
-                _logger?.Debug($"[RPCS3] FetchGameDataAsync - No npcommid found for game '{game.Name}', returning no achievements");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
@@ -204,70 +178,41 @@ namespace PlayniteAchievements.Providers.RPCS3
             // Look up trophy folder
             if (!trophyFolderCache.TryGetValue(npcommid, out var trophyFolderPath))
             {
-                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Trophy folder not found for npcommid '{npcommid}' in cache");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
-
-            _logger?.Debug($"[RPCS3] FetchGameDataAsync - Trophy folder path: '{trophyFolderPath}'");
 
             var tropconfPath = Path.Combine(trophyFolderPath, "TROPCONF.SFM");
             var tropusrPath = Path.Combine(trophyFolderPath, "TROPUSR.DAT");
 
-            _logger?.Debug($"[RPCS3] FetchGameDataAsync - TROPCONF.SFM path: '{tropconfPath}', Exists: {File.Exists(tropconfPath)}");
-            _logger?.Debug($"[RPCS3] FetchGameDataAsync - TROPUSR.DAT path: '{tropusrPath}', Exists: {File.Exists(tropusrPath)}");
-
             if (!File.Exists(tropconfPath))
             {
-                _logger?.Debug($"[RPCS3] FetchGameDataAsync - TROPCONF.SFM not found at '{tropconfPath}'");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
             try
             {
-                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Parsing trophy definitions from '{tropconfPath}'");
                 // Map global language to PS3 locale
                 var ps3Locale = Rpcs3TrophyParser.MapGlobalLanguageToPs3Locale(_settings?.Persisted?.GlobalLanguage);
-                _logger?.Debug($"[RPCS3] FetchGameDataAsync - GlobalLanguage: '{_settings?.Persisted?.GlobalLanguage}', PS3 locale: '{ps3Locale ?? "(default)"}'");
                 // Parse trophy definitions with language support
                 var trophies = Rpcs3TrophyParser.ParseTrophyDefinitions(tropconfPath, ps3Locale, _logger);
-                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Parsed {trophies.Count} trophy definitions");
 
                 // Parse unlock data
                 if (File.Exists(tropusrPath))
                 {
-                    _logger?.Debug($"[RPCS3] FetchGameDataAsync - Parsing unlock data from '{tropusrPath}'");
                     Rpcs3TrophyParser.ParseTrophyUnlockData(tropusrPath, trophies, _logger);
-                    var parsedUnlockedCount = trophies.Count(t => t.Unlocked);
-                    _logger?.Debug($"[RPCS3] FetchGameDataAsync - {parsedUnlockedCount}/{trophies.Count} trophies unlocked");
-                }
-                else
-                {
-                    _logger?.Debug($"[RPCS3] FetchGameDataAsync - No TROPUSR.DAT, all trophies remain locked");
                 }
 
                 if (trophies.Count == 0)
                 {
-                    _logger?.Debug($"[RPCS3] FetchGameDataAsync - No trophies parsed, returning no achievements");
                     return Task.FromResult(BuildNoAchievementsData(game, providerName));
                 }
 
                 // Convert to achievements
-                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Converting {trophies.Count} trophies to achievements");
                 var achievements = new List<AchievementDetail>();
-                var unlockedCount = 0;
 
                 foreach (var trophy in trophies)
                 {
-                    if (trophy.Unlocked)
-                    {
-                        unlockedCount++;
-                    }
-
                     var iconPath = GetTrophyIconPath(trophyFolderPath, npcommid, trophy.Id);
-                    if (iconPath == null)
-                    {
-                        _logger?.Debug($"[RPCS3] FetchGameDataAsync - No icon found for trophy {trophy.Id} ('{trophy.Name}')");
-                    }
 
                     var normalizedTrophyType = NormalizeTrophyType(trophy.TrophyType);
                     achievements.Add(new AchievementDetail
@@ -287,8 +232,6 @@ namespace PlayniteAchievements.Providers.RPCS3
                     });
                 }
 
-                _logger?.Debug($"[RPCS3] FetchGameDataAsync - Created {achievements.Count} achievements, {unlockedCount} unlocked");
-
                 return Task.FromResult(new GameAchievementData
                 {
                     ProviderName = providerName,
@@ -302,7 +245,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"[RPCS3] FetchGameDataAsync - Failed to parse trophy data for '{game.Name}'");
+                _logger?.Error(ex, $"[RPCS3] Failed to parse trophy data for '{game.Name}'");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
         }
@@ -333,41 +276,25 @@ namespace PlayniteAchievements.Providers.RPCS3
             var rawInstallDir = game?.InstallDirectory;
             var gameDirectory = ExpandGamePath(game, rawInstallDir);
 
-            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Game: '{game?.Name}'");
-            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Raw InstallDirectory: '{rawInstallDir ?? "(null)"}'");
-            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Expanded gameDirectory: '{gameDirectory ?? "(null)"}'");
-
             // Strategy 1: Extract PS3 ID from the path and look it up in cache
             if (!string.IsNullOrWhiteSpace(gameDirectory))
             {
                 var match = Ps3IdPattern.Match(gameDirectory);
-                _logger?.Debug($"[RPCS3] FindNpCommIdForGame - PS3 ID pattern match: Success={match.Success}");
 
                 if (match.Success)
                 {
                     var ps3Id = match.Groups[1].Value.ToUpperInvariant();
-                    _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Extracted PS3 ID: '{ps3Id}'");
 
                     if (trophyFolderCache.ContainsKey(ps3Id))
                     {
-                        _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Found matching npcommid '{ps3Id}' in cache");
                         return ps3Id;
                     }
-                    else
-                    {
-                        _logger?.Debug($"[RPCS3] FindNpCommIdForGame - PS3 ID '{ps3Id}' not found in cache");
-                    }
                 }
-            }
-            else
-            {
-                _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Game directory is null or empty");
             }
 
             // Strategy 1.5: For installed PKG games, check for TROPHY.TRP in game directory
             if (!string.IsNullOrWhiteSpace(gameDirectory))
             {
-                _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Trying installed game TROPHY.TRP extraction");
                 var npcommidFromInstall = FindNpCommIdFromInstalledGame(gameDirectory, trophyFolderCache);
                 if (!string.IsNullOrWhiteSpace(npcommidFromInstall))
                 {
@@ -376,7 +303,6 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             // Strategy 2: Extract npcommid from PS3 ISO file
-            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Trying ISO extraction fallback");
             var npcommidFromIso = FindNpCommIdFromIso(game, gameDirectory, trophyFolderCache);
             if (!string.IsNullOrWhiteSpace(npcommidFromIso))
             {
@@ -384,14 +310,12 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             // Strategy 3: Match by game name against TROPCONF.SFM titles
-            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - Trying name-based matching fallback");
             var npcommidFromName = FindNpCommIdByName(game, trophyFolderCache);
             if (!string.IsNullOrWhiteSpace(npcommidFromName))
             {
                 return npcommidFromName;
             }
 
-            _logger?.Debug($"[RPCS3] FindNpCommIdForGame - No npcommid found for game '{game?.Name}'");
             return null;
         }
 
@@ -403,7 +327,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (string.IsNullOrWhiteSpace(gameDirectory))
             {
-                _logger?.Debug("[RPCS3] FindNpCommIdFromIso - Game directory is empty");
                 return null;
             }
 
@@ -413,16 +336,11 @@ namespace PlayniteAchievements.Providers.RPCS3
                 var isoFiles = FindIsoFiles(gameDirectory);
                 if (isoFiles.Count == 0)
                 {
-                    _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - No ISO files found in '{gameDirectory}'");
                     return null;
                 }
 
-                _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Found {isoFiles.Count} ISO file(s)");
-
                 foreach (var isoPath in isoFiles)
                 {
-                    _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Checking ISO: '{isoPath}'");
-
                     string npcommid = null;
 
                     // First try DiscUtils (works for ISO9660)
@@ -440,37 +358,26 @@ namespace PlayniteAchievements.Providers.RPCS3
                             }
                         }
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - DiscUtils failed (likely UDF format): {ex.Message}");
+                        // DiscUtils failed, likely UDF format
                     }
 
                     // If DiscUtils failed, try raw byte scanning (works for UDF ISOs)
                     if (string.IsNullOrWhiteSpace(npcommid))
                     {
-                        _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Trying raw byte scan for UDF ISO");
                         npcommid = ExtractNpCommIdFromRawScan(isoPath);
                     }
 
-                    if (!string.IsNullOrWhiteSpace(npcommid))
+                    if (!string.IsNullOrWhiteSpace(npcommid) && trophyFolderCache.ContainsKey(npcommid))
                     {
-                        _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Extracted npcommid: '{npcommid}'");
-
-                        if (trophyFolderCache.ContainsKey(npcommid))
-                        {
-                            _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - Found matching npcommid '{npcommid}' in cache");
-                            return npcommid;
-                        }
-                        else
-                        {
-                            _logger?.Debug($"[RPCS3] FindNpCommIdFromIso - npcommid '{npcommid}' not in cache");
-                        }
+                        return npcommid;
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromIso - Error searching for ISO files");
+                _logger?.Error(ex, $"[RPCS3] Error searching for ISO files in '{gameDirectory}'");
             }
 
             return null;
@@ -488,7 +395,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             if (string.IsNullOrWhiteSpace(gameDirectory))
             {
-                _logger?.Debug("[RPCS3] FindNpCommIdFromInstalledGame - Game directory is empty");
                 return null;
             }
 
@@ -504,7 +410,6 @@ namespace PlayniteAchievements.Providers.RPCS3
                 if (!string.IsNullOrWhiteSpace(parentDir))
                 {
                     directoriesToCheck.Add(parentDir);
-                    _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Also checking parent directory: '{parentDir}'");
                 }
             }
 
@@ -529,9 +434,9 @@ namespace PlayniteAchievements.Providers.RPCS3
                             }
                         }
                     }
-                    catch (Exception ex)
+                    catch
                     {
-                        _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromInstalledGame - Error scanning TROPDIR at '{tropdir}'");
+                        // Ignore errors scanning TROPDIR
                     }
                 }
 
@@ -542,40 +447,25 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             foreach (var trpPath in trpPaths)
             {
-                _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Checking TROPHY.TRP path: '{trpPath}'");
-
                 if (!File.Exists(trpPath))
                 {
                     continue;
                 }
 
-                _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Found TROPHY.TRP at '{trpPath}'");
-
                 try
                 {
                     var npcommid = ExtractNpCommIdFromTrpFile(trpPath);
-                    if (!string.IsNullOrWhiteSpace(npcommid))
+                    if (!string.IsNullOrWhiteSpace(npcommid) && trophyFolderCache.ContainsKey(npcommid))
                     {
-                        _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Extracted npcommid: '{npcommid}'");
-
-                        if (trophyFolderCache.ContainsKey(npcommid))
-                        {
-                            _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - Found matching npcommid '{npcommid}' in cache");
-                            return npcommid;
-                        }
-                        else
-                        {
-                            _logger?.Debug($"[RPCS3] FindNpCommIdFromInstalledGame - npcommid '{npcommid}' not in cache");
-                        }
+                        return npcommid;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    _logger?.Debug(ex, $"[RPCS3] FindNpCommIdFromInstalledGame - Error reading TROPHY.TRP at '{trpPath}'");
+                    // Ignore errors reading TROPHY.TRP
                 }
             }
 
-            _logger?.Debug("[RPCS3] FindNpCommIdFromInstalledGame - No valid npcommid found from installed game");
             return null;
         }
 
@@ -681,7 +571,6 @@ namespace PlayniteAchievements.Providers.RPCS3
                                         Array.Copy(searchBuffer, startIndex, npcommidBytes, 0, length);
                                         var npcommid = System.Text.Encoding.ASCII.GetString(npcommidBytes).Trim();
 
-                                        _logger?.Debug($"[RPCS3] ExtractNpCommIdFromRawScan - Found npcommid: '{npcommid}'");
                                         return npcommid;
                                     }
                                 }
@@ -698,7 +587,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, $"[RPCS3] ExtractNpCommIdFromRawScan - Error scanning ISO '{isoPath}'");
+                _logger?.Error(ex, $"[RPCS3] Error scanning ISO '{isoPath}'");
             }
 
             return null;

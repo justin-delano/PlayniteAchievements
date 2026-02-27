@@ -324,22 +324,22 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Connection">ShadPS4 Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Description">Configure ShadPS4 emulator integration to track trophies from PlayStation 4 games played in the emulator.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Enabled">Enable ShadPS4 Trophy Tracking</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4InstallationFolder">Installation Folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4InstallationFolderHint">Path to your ShadPS4 folder containing user/game_data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4ExecutablePath">Executable Path</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4ExecutablePathHint">Path to shadPS4.exe (the folder containing user/game_data is derived from this)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Browse">Browse...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Verified">ShadPS4 installation folder verified.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_NotConfigured">ShadPS4 installation folder not configured.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Verified">ShadPS4 executable path verified.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_NotConfigured">ShadPS4 executable path not configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_FolderNotFound">ShadPS4 user/game_data folder not found.</sys:String>
 
     <!-- RPCS3 Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Connection">RPCS3 Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Description">Configure RPCS3 emulator integration to track trophies from PlayStation 3 games played in the emulator.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Enabled">Enable RPCS3 Trophy Tracking</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3InstallationFolder">Installation Folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3InstallationFolderHint">Path to your RPCS3 installation folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Executable Path</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Path to rpcs3.exe (the installation folder is derived from this)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Browse">Browse...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Verified">RPCS3 installation folder verified.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_NotConfigured">RPCS3 installation folder not configured.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Verified">RPCS3 executable path verified.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_NotConfigured">RPCS3 executable path not configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_FolderNotFound">RPCS3 trophy folder not found.</sys:String>
 
     <!-- RPCS3 Validation -->

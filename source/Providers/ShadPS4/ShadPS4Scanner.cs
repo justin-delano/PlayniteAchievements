@@ -96,7 +96,14 @@ namespace PlayniteAchievements.Providers.ShadPS4
         {
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            var installFolder = _settings?.Persisted?.ShadPS4InstallationFolder;
+            var exePath = _settings?.Persisted?.ShadPS4ExecutablePath;
+            if (string.IsNullOrWhiteSpace(exePath))
+            {
+                return cache;
+            }
+
+            // Derive installation folder from executable path
+            var installFolder = Path.GetDirectoryName(exePath);
             if (string.IsNullOrWhiteSpace(installFolder))
             {
                 return cache;

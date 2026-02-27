@@ -59,6 +59,20 @@ namespace PlayniteAchievements.Providers.ShadPS4
         }
 
         /// <summary>
+        /// Gets the emulator root directory from an executable path.
+        /// </summary>
+        private string GetEmulatorRootFromExePath(string exePath)
+        {
+            if (string.IsNullOrWhiteSpace(exePath))
+                return null;
+
+            if (!File.Exists(exePath))
+                return null;
+
+            return Path.GetDirectoryName(exePath);
+        }
+
+        /// <summary>
         /// Gets the game data path using priority order:
         /// 1. User settings (validated)
         /// 2. Game's emulator config
@@ -69,18 +83,22 @@ namespace PlayniteAchievements.Providers.ShadPS4
             string emulatorRoot = null;
 
             // Priority 1: From settings (user-configured)
-            var settingsRoot = _settings?.Persisted?.ShadPS4InstallationFolder;
-            if (!string.IsNullOrWhiteSpace(settingsRoot))
+            var settingsExePath = _settings?.Persisted?.ShadPS4ExecutablePath;
+            if (!string.IsNullOrWhiteSpace(settingsExePath))
             {
-                var gameDataPath = Path.Combine(settingsRoot, "user", "game_data");
-                if (Directory.Exists(gameDataPath))
+                var settingsRoot = GetEmulatorRootFromExePath(settingsExePath);
+                if (!string.IsNullOrWhiteSpace(settingsRoot))
                 {
-                    emulatorRoot = settingsRoot;
-                    _logger?.Debug($"[ShadPS4] GetGameDataPath - Using validated settings path: '{emulatorRoot}'");
-                }
-                else
-                {
-                    _logger?.Debug($"[ShadPS4] GetGameDataPath - Settings path invalid (no game_data folder)");
+                    var gameDataPath = Path.Combine(settingsRoot, "user", "game_data");
+                    if (Directory.Exists(gameDataPath))
+                    {
+                        emulatorRoot = settingsRoot;
+                        _logger?.Debug($"[ShadPS4] GetGameDataPath - Using validated settings path: '{emulatorRoot}'");
+                    }
+                    else
+                    {
+                        _logger?.Debug($"[ShadPS4] GetGameDataPath - Settings path invalid (no game_data folder)");
+                    }
                 }
             }
 
@@ -202,7 +220,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         /// <summary>
         /// Checks if any game action uses an emulator whose InstallDir matches
-        /// the configured ShadPS4 installation folder.
+        /// the configured ShadPS4 executable's directory.
         /// </summary>
         private bool UsesShadPS4Emulator(Game game)
         {
@@ -211,7 +229,14 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return false;
             }
 
-            var shadps4InstallFolder = _settings?.Persisted?.ShadPS4InstallationFolder;
+            var shadps4ExePath = _settings?.Persisted?.ShadPS4ExecutablePath;
+            if (string.IsNullOrWhiteSpace(shadps4ExePath))
+            {
+                return false;
+            }
+
+            // Derive installation folder from executable path
+            var shadps4InstallFolder = Path.GetDirectoryName(shadps4ExePath);
             if (string.IsNullOrWhiteSpace(shadps4InstallFolder))
             {
                 return false;
