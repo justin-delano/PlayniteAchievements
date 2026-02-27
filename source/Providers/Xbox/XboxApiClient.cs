@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Providers.Xbox
     /// <summary>
     /// HTTP client for Xbox Live achievement APIs.
     /// </summary>
-    internal sealed class XboxApiClient
+    internal sealed class XboxApiClient : IDisposable
     {
         private readonly ILogger _logger;
         private readonly HttpClient _httpClient;
@@ -320,6 +320,11 @@ namespace PlayniteAchievements.Providers.Xbox
         private string GetLocale()
         {
             return MapGlobalLanguageToXboxLocale(_globalLanguage);
+        }
+
+        public void Dispose()
+        {
+            _httpClient?.Dispose();
         }
     }
 }

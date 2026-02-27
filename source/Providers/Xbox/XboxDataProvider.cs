@@ -15,13 +15,14 @@ namespace PlayniteAchievements.Providers.Xbox
     /// Data provider for Xbox achievement data.
     /// Supports Xbox One/Series X|S, Xbox 360, and PC Game Pass games.
     /// </summary>
-    internal sealed class XboxDataProvider : IDataProvider
+    internal sealed class XboxDataProvider : IDataProvider, IDisposable
     {
         // Xbox library plugin ID from Playnite
         internal static readonly Guid XboxLibraryPluginId = Guid.Parse("7e4fbb5b-4594-4c5a-8a69-1e3f41b39c52");
 
         private readonly XboxSessionManager _sessionManager;
         private readonly XboxScanner _scanner;
+        private readonly XboxApiClient _apiClient;
         private readonly ILogger _logger;
 
         public XboxDataProvider(
@@ -36,8 +37,8 @@ namespace PlayniteAchievements.Providers.Xbox
             _logger = logger;
             _sessionManager = sessionManager;
 
-            var apiClient = new XboxApiClient(logger, settings.Persisted.GlobalLanguage);
-            _scanner = new XboxScanner(settings, sessionManager, apiClient, logger);
+            _apiClient = new XboxApiClient(logger, settings.Persisted.GlobalLanguage);
+            _scanner = new XboxScanner(settings, sessionManager, _apiClient, logger);
 
             _ = _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);
         }
@@ -87,6 +88,11 @@ namespace PlayniteAchievements.Providers.Xbox
             CancellationToken cancel)
         {
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
+        }
+
+        public void Dispose()
+        {
+            _apiClient?.Dispose();
         }
     }
 }
