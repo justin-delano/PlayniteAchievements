@@ -325,7 +325,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Description">Configure ShadPS4 emulator integration to track trophies from PlayStation 4 games played in the emulator.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Enabled">Enable ShadPS4 Trophy Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4ExecutablePath">Executable Path</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4ExecutablePathHint">Path to shadPS4.exe (the folder containing user/game_data is derived from this)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4ExecutablePathHint">Path to shadPS4.exe</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Browse">Browse...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Verified">ShadPS4 executable path verified.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_NotConfigured">ShadPS4 executable path not configured.</sys:String>
@@ -336,7 +336,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Description">Configure RPCS3 emulator integration to track trophies from PlayStation 3 games played in the emulator.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Enabled">Enable RPCS3 Trophy Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Executable Path</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Path to rpcs3.exe (the installation folder is derived from this)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Path to rpcs3.exe</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Browse">Browse...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Verified">RPCS3 executable path verified.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_NotConfigured">RPCS3 executable path not configured.</sys:String>
@@ -347,7 +347,7 @@
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">Not a valid RPCS3 installation - missing dev_hdd0\home</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">No user profile found in dev_hdd0\home</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">Trophy folder not found</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_Success">Valid - Found {0} trophy folders</sys:String>
+    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_Success">RPCS3 executable path verified.</sys:String>
 
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->

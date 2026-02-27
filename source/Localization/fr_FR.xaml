@@ -337,7 +337,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Description">Configurez l'intégration de l'émulateur RPCS3 pour suivre les trophées des jeux PlayStation 3 joués dans l'émulateur.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Enabled">Activer le suivi des trophées RPCS3</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Chemin de l'exécutable</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Chemin vers rpcs3.exe (le dossier d'installation est déduit de ce chemin)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Chemin vers rpcs3.exe</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Browse">Parcourir...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Verified">Chemin de l'exécutable RPCS3 vérifié.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_NotConfigured">Chemin de l'exécutable RPCS3 non configuré.</sys:String>
