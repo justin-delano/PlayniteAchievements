@@ -32,6 +32,8 @@
     <!-- ================================================================= -->
     <!-- PROVIDERS                                                          -->
     <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Display</sys:String>
+
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
@@ -391,7 +393,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Cache_Wiped">Cache cleared.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailed">Failed to clear cache (files remain).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailedWithError">Failed to wipe cache: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Description">Clear the plugin's in-memory achievement icon cache (icons will re-load as they appear in view).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Description">Clear the plugin's in-memory achievement icon cache.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Clear">Clear Image Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Cleared">Image cache cleared.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_ClearFailed">Failed to clear image cache</sys:String>
