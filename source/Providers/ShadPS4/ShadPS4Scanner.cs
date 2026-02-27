@@ -81,7 +81,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 isAuthRequiredException: _ => false,
                 onGameError: (game, ex, consecutiveErrors) =>
                 {
-                    _logger?.Debug(ex, $"[ShadPS4] Failed to scan {game?.Name}");
                 },
                 delayBetweenGamesAsync: null,
                 delayAfterErrorAsync: null,
@@ -217,14 +216,12 @@ namespace PlayniteAchievements.Providers.ShadPS4
             var titleId = ExtractTitleIdFromGame(game);
             if (string.IsNullOrWhiteSpace(titleId))
             {
-                _logger?.Debug($"[ShadPS4] No title ID found in game path for '{game.Name}'");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
             // Look up trophy data directory in cache
             if (!titleCache.TryGetValue(titleId, out var trophyDataPath))
             {
-                _logger?.Debug($"[ShadPS4] Title ID '{titleId}' not found in cache for '{game.Name}'");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
@@ -233,7 +230,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
             var xmlPath = Path.Combine(trophyDataPath, "trophyfiles", "trophy00", "Xml", "TROP.XML");
             if (!File.Exists(xmlPath))
             {
-                _logger?.Debug($"[ShadPS4] TROP.XML not found at {xmlPath}");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
@@ -247,7 +243,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
                 // Map global language to PS4 locale (same format as PS3)
                 var ps4Locale = MapGlobalLanguageToPs4Locale(_settings?.Persisted?.GlobalLanguage);
-                _logger?.Debug($"[ShadPS4] GlobalLanguage: '{_settings?.Persisted?.GlobalLanguage}', PS4 locale: '{ps4Locale ?? "(default)"}'");
 
                 foreach (var trophyElement in doc.Descendants("trophy"))
                 {
@@ -290,8 +285,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                         IsCapstone = trophyType?.ToUpperInvariant() == "P"
                     });
                 }
-
-                _logger?.Debug($"[ShadPS4] Parsed {achievements.Count} achievements, {unlockedCount} unlocked");
 
                 return Task.FromResult(new GameAchievementData
                 {
@@ -369,9 +362,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
                 return utcTime;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger?.Debug(ex, $"[ShadPS4] Failed to convert timestamp: {timestamp}");
                 return null;
             }
         }
@@ -417,9 +409,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
                 return null;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger?.Debug(ex, $"[ShadPS4] Failed to get icon path for trophy {trophyId}");
                 return null;
             }
         }
