@@ -111,18 +111,10 @@
                                               VerticalAlignment="Center"
                                               Margin="0,0,8,0" />
 
-                                    <StackPanel Grid.Column="1"
-                                                Orientation="Horizontal"
-                                                VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding ProviderName}"
-                                                   Style="{DynamicResource BaseTextBlockStyle}" />
-                                        <TextBlock Text=" ("
-                                                   Style="{DynamicResource BaseTextBlockStyle}" />
-                                        <TextBlock Text="{Binding ProviderKey}"
-                                                   Style="{DynamicResource BaseTextBlockStyle}" />
-                                        <TextBlock Text=")"
-                                                   Style="{DynamicResource BaseTextBlockStyle}" />
-                                    </StackPanel>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding ProviderName}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                               VerticalAlignment="Center" />
 
                                     <TextBlock Grid.Column="2"
                                                Text="{Binding StatusText}"
