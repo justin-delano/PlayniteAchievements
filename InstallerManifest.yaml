@@ -1,5 +1,25 @@
 AddonId: PlayniteAchievements
 Packages:
+  - Version: 1.5.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-02-26
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.5.0/PlayniteAchievements_1_5_0.pext
+    Changelog:
+      - "New Platforms: Xbox Live, RPCS3 (PS3 emulator), and ShadPS4 (PS4 emulator). Please raise any issues on Github if you encounter any problems with these!"
+      - "PlayStation Trophy System added in addition to rarity & points"
+      - "Enhanced Pie Charts: New hover tooltips and icon placement"
+      - "Custom Refresh Dialog - New unified refresh UI allowing for full customization of which games and platforms are refreshed"
+      - "Started to implement Display settings via a new tab in settings, with options to hide some Sidebar charts."
+      - "Performance - Parallel platform refresh option (enabled by default) and various optimizations throughout"
+      - "Theme Migration - Auto-migrate upgraded themes that had been migrated, and notifications on startup"
+      - "New Logging - Dedicated plugin data folder & log file accessible from settings"
+      - "Steam, GOG, and Epic auth fixes"
+      - "Grids now sort by Playnite SortingName instead of display name"
+      - "Background refreshes are re-enabled, after fixing some issues"
+      - "Removed rarity imputation for games without rarity data, data refreshes will remove this stale data."
+      - "Various other UI improvements, bug fixes, and optimizations throughout"
+      - "Next up: New, modern theme integration (and updated migration), a few more platforms to add, and other UI elements and settings."
+
   - Version: 1.4.2
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-22
