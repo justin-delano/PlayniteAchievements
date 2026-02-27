@@ -1106,6 +1106,16 @@
                     
                     <!-- RIGHT: Content (Recent List OR Game Details) -->
                     <Grid Grid.Row="2" Grid.Column="2" ClipToBounds="True">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Grid.RowSpan" Value="1"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ShowSidebarBarCharts}" Value="False">
+                                        <Setter Property="Grid.RowSpan" Value="2"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
@@ -1426,7 +1436,8 @@
                             Background="{DynamicResource ControlBackgroundBrush}"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,0,0,0"
-                            Padding="12,10">
+                            Padding="12,10"
+                            Visibility="{Binding ShowSidebarBarCharts, Converter={StaticResource BoolToVis}}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
