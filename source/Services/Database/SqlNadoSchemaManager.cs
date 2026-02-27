@@ -96,6 +96,7 @@ namespace PlayniteAchievements.Services.Database
                 UnlockedIconPath TEXT NULL,
                 LockedIconPath TEXT NULL,
                 Points INTEGER NULL,
+                ScaledPoints INTEGER NULL,
                 Category TEXT NULL,
                 TrophyType TEXT NULL,
                 Hidden INTEGER NOT NULL DEFAULT 0,
@@ -159,19 +160,34 @@ namespace PlayniteAchievements.Services.Database
                 ON UserAchievements (AchievementDefinitionId);");
 
             var storedVersion = GetStoredSchemaVersion(db);
+            var verification = VerifyRequiredColumns(db);
 
-            // Skip reconciliation if schema is already at target version
-            if (storedVersion >= SchemaVersion)
+            if (verification.Success)
             {
-                var verification = VerifyRequiredColumns(db);
-                if (verification.Success)
+                // Schema is correct - ensure version is set if needed
+                if (storedVersion < SchemaVersion)
+                {
+                    db.ExecuteNonQuery(
+                        "INSERT OR REPLACE INTO CacheMetadata (Key, Value) VALUES (?, ?);",
+                        "schema_version",
+                        SchemaVersion.ToString(CultureInfo.InvariantCulture));
+                    _logger?.Info($"[Schema] Schema verified and version set to {SchemaVersion}.");
+                }
+                else
                 {
                     _logger?.Info($"[Schema] Schema up-to-date (version {storedVersion}), skipping reconciliation.");
-                    return;
                 }
-                _logger?.Warn($"[Schema] Schema version {storedVersion} but verification failed, running reconciliation.");
+                return;
             }
 
+            // Verification failed - only valid for existing databases that need migration
+            if (storedVersion == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Fresh database verification failed. This indicates a bug in CREATE TABLE statements. {verification.Message}");
+            }
+
+            _logger?.Warn($"[Schema] Schema version {storedVersion} but verification failed, running reconciliation.");
             var backupPath = ReconcileSchema(db);
 
             var verification2 = VerifyRequiredColumns(db);
@@ -452,6 +468,7 @@ namespace PlayniteAchievements.Services.Database
             EnsureRequiredColumn(definitionColumns, "UnlockedIconPath", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "LockedIconPath", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "Points", "AchievementDefinitions", missing);
+            EnsureRequiredColumn(definitionColumns, "ScaledPoints", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "Category", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "TrophyType", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "IsCapstone", "AchievementDefinitions", missing);
