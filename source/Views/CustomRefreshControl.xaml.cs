@@ -930,7 +930,7 @@ namespace PlayniteAchievements.Views
         private string L(string key, string fallback)
         {
             var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return string.IsNullOrWhiteSpace(value) || value == key ? fallback : value;
         }
 
         private bool TryCreateCurrentOptions(out CustomRefreshOptions options)
