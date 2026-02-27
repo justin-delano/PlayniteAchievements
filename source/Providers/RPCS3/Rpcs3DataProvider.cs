@@ -205,13 +205,15 @@ namespace PlayniteAchievements.Providers.RPCS3
         }
 
         /// <summary>
-        /// Checks if an emulator is RPCS3 by name or install directory.
+        /// Checks if an emulator is RPCS3 by built-in ID, name, or install directory.
         /// </summary>
         private bool IsRpcs3Emulator(Emulator emulator)
         {
+            var builtInId = emulator.BuiltInConfigId ?? string.Empty;
             var name = emulator.Name ?? string.Empty;
             var installDir = emulator.InstallDir ?? string.Empty;
-            return name.IndexOf("rpcs3", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            return builtInId.IndexOf("rpcs3", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.IndexOf("rpcs3", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    installDir.IndexOf("rpcs3", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 

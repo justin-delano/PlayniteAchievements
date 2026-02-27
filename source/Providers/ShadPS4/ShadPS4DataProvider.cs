@@ -144,13 +144,15 @@ namespace PlayniteAchievements.Providers.ShadPS4
         }
 
         /// <summary>
-        /// Checks if an emulator is ShadPS4 by name or install directory.
+        /// Checks if an emulator is ShadPS4 by built-in ID, name, or install directory.
         /// </summary>
         private bool IsShadps4Emulator(Emulator emulator)
         {
+            var builtInId = emulator.BuiltInConfigId ?? string.Empty;
             var name = emulator.Name ?? string.Empty;
             var installDir = emulator.InstallDir ?? string.Empty;
-            return name.IndexOf("shadps4", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            return builtInId.IndexOf("shadps4", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   name.IndexOf("shadps4", StringComparison.OrdinalIgnoreCase) >= 0 ||
                    installDir.IndexOf("shadps4", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
