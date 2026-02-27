@@ -75,7 +75,14 @@ namespace PlayniteAchievements.Services.Images
             try { _httpHandler?.Dispose(); } catch { }
             try { _downloadGate?.Dispose(); } catch { }
             try { _rateLimitedDownloadGate?.Dispose(); } catch { }
-            try { _pathWriteLocks.Clear(); } catch { }
+            try
+            {
+                foreach (var kvp in _pathWriteLocks)
+                {
+                    try { kvp.Value?.Dispose(); } catch { }
+                }
+                _pathWriteLocks.Clear();
+            } catch { }
             try { _iconPathCache.Clear(); } catch { }
         }
 
