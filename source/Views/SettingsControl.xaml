@@ -1719,7 +1719,7 @@
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding XboxAuthenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                  Value="True">
-                                                        <Setter Property="BorderBrush" Value="#107C10"/>
+                                                        <Setter Property="BorderBrush" Value="#06FFA5"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -1746,7 +1746,7 @@
                                                                 <DataTrigger Binding="{Binding XboxAuthenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                              Value="True">
                                                                     <Setter Property="Text" Value="&#xE73E;"/>
-                                                                    <Setter Property="Foreground" Value="#107C10"/>
+                                                                    <Setter Property="Foreground" Value="#06FFA5"/>
                                                                     <Setter Property="FontWeight" Value="Bold"/>
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding XboxAuthenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -1784,7 +1784,7 @@
                                             <ProgressBar Height="3"
                                                          Margin="0,8,0,0"
                                                          IsIndeterminate="True"
-                                                         Foreground="#107C10">
+                                                         Foreground="#06FFA5">
                                                 <ProgressBar.Style>
                                                     <Style TargetType="ProgressBar">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -1868,7 +1868,7 @@
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding ShadPS4Authenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                  Value="True">
-                                                        <Setter Property="BorderBrush" Value="#107C10"/>
+                                                        <Setter Property="BorderBrush" Value="#06FFA5"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -1895,7 +1895,7 @@
                                                                 <DataTrigger Binding="{Binding ShadPS4Authenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                              Value="True">
                                                                     <Setter Property="Text" Value="&#xE73E;"/>
-                                                                    <Setter Property="Foreground" Value="#107C10"/>
+                                                                    <Setter Property="Foreground" Value="#06FFA5"/>
                                                                     <Setter Property="FontWeight" Value="Bold"/>
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding ShadPS4Authenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -2011,26 +2011,19 @@
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Rpcs3Authenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                  Value="True">
-                                                        <Setter Property="BorderBrush" Value="#107C10"/>
+                                                        <Setter Property="BorderBrush" Value="#06FFA5"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </Border.Style>
 
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
-
-                                            <!-- Status Row -->
-                                            <Grid Grid.Row="0" Margin="0,0,0,14">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,10">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto"/>
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
 
-                                                <!-- Status Icon -->
                                                 <TextBlock Grid.Column="0"
                                                            FontFamily="Segoe MDL2 Assets"
                                                            FontSize="{DynamicResource FontSize}"
@@ -2045,7 +2038,7 @@
                                                                 <DataTrigger Binding="{Binding Rpcs3Authenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                              Value="True">
                                                                     <Setter Property="Text" Value="&#xE73E;"/>
-                                                                    <Setter Property="Foreground" Value="#107C10"/>
+                                                                    <Setter Property="Foreground" Value="#06FFA5"/>
                                                                     <Setter Property="FontWeight" Value="Bold"/>
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding Rpcs3Authenticated, Mode=OneWay, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -2059,7 +2052,6 @@
                                                     </TextBlock.Style>
                                                 </TextBlock>
 
-                                                <!-- Status Text -->
                                                 <TextBlock Grid.Column="1"
                                                            Text="{Binding Rpcs3AuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                            Foreground="{DynamicResource TextBrush}"
@@ -2069,38 +2061,30 @@
                                                            FontWeight="SemiBold"/>
                                             </Grid>
 
-                                            <!-- Separator -->
-                                            <Border Grid.Row="0" Height="1"
-                                                    Background="{DynamicResource ControlBorderBrush}"
-                                                    Opacity="0.5"
-                                                    Margin="36,0,0,14"/>
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3ExecutablePathHint}"
+                                                       Style="{StaticResource MutedTextStyle}"
+                                                       Margin="0,0,0,12"
+                                                       TextWrapping="Wrap"/>
 
-                                            <!-- Folder Path Section -->
-                                            <StackPanel Grid.Row="1">
-                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3ExecutablePathHint}"
-                                                           Foreground="{DynamicResource TextBrush}"
-                                                           FontSize="{DynamicResource FontSizeSmall}"
-                                                           Opacity="0.8"
-                                                           Margin="0,0,0,4"/>
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
 
-                                                    <TextBox Grid.Column="0"
-                                                             Text="{Binding Persisted.Rpcs3ExecutablePath, UpdateSourceTrigger=PropertyChanged}"
-                                                             KeyDown="Rpcs3ExecutablePath_KeyDown"
-                                                             VerticalAlignment="Center"/>
+                                                <TextBox Grid.Column="0"
+                                                         Text="{Binding Persisted.Rpcs3ExecutablePath, UpdateSourceTrigger=PropertyChanged}"
+                                                         KeyDown="Rpcs3ExecutablePath_KeyDown"
+                                                         VerticalAlignment="Center"
+                                                         Padding="8,6"
+                                                         Margin="0,0,8,0"/>
 
-                                                    <Button Grid.Column="1"
-                                                            Content="{DynamicResource LOCPlayAch_Settings_Rpcs3_Browse}"
-                                                            Click="Rpcs3_Browse_Click"
-                                                            Padding="14,6"
-                                                            Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </StackPanel>
-                                        </Grid>
+                                                <Button Grid.Column="1"
+                                                        Content="{DynamicResource LOCPlayAch_Settings_Rpcs3_Browse}"
+                                                        Click="Rpcs3_Browse_Click"
+                                                        Padding="14,6"/>
+                                            </Grid>
+                                        </StackPanel>
                                     </Border>
                                 </Grid>
                             </StackPanel>
