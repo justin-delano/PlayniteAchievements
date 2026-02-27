@@ -330,6 +330,8 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowSidebarPieCharts => _settings?.Persisted?.ShowSidebarPieCharts ?? true;
 
+        public bool ShowSidebarBarCharts => _settings?.Persisted?.ShowSidebarBarCharts ?? true;
+
         private int _totalGamesOverview;
         public int TotalGamesOverview
         {
@@ -1244,6 +1246,10 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(ShowSidebarPieCharts));
             }
+            else if (e.PropertyName == "Persisted.ShowSidebarBarCharts")
+            {
+                OnPropertyChanged(nameof(ShowSidebarBarCharts));
+            }
             else if (e.PropertyName == "Persisted.ShowHiddenIcon"
                 || e.PropertyName == "Persisted.ShowHiddenTitle"
                 || e.PropertyName == "Persisted.ShowHiddenDescription")
@@ -1258,6 +1264,10 @@ namespace PlayniteAchievements.ViewModels
             if (e.PropertyName == nameof(PersistedSettings.ShowSidebarPieCharts))
             {
                 OnPropertyChanged(nameof(ShowSidebarPieCharts));
+            }
+            else if (e.PropertyName == nameof(PersistedSettings.ShowSidebarBarCharts))
+            {
+                OnPropertyChanged(nameof(ShowSidebarBarCharts));
             }
         }
 
