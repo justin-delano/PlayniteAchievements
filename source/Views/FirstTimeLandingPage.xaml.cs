@@ -130,8 +130,20 @@ namespace PlayniteAchievements.Views
                     ? RefreshModeType.Installed.GetKey()
                     : value;
                 OnPropertyChanged(nameof(SelectedRefreshMode));
+                OnPropertyChanged(nameof(RefreshActionButtonText));
             }
         }
+
+        /// <summary>
+        /// Gets the button text for the refresh action, adapting based on selected mode.
+        /// Shows "Configure" when Custom mode is selected, otherwise "Begin Refresh".
+        /// </summary>
+        public string RefreshActionButtonText => string.Equals(
+            SelectedRefreshMode,
+            RefreshModeType.Custom.GetKey(),
+            StringComparison.Ordinal)
+            ? ResourceProvider.GetString("LOCPlayAch_Button_Configure")
+            : ResourceProvider.GetString("LOCPlayAch_Landing_BeginRefresh");
 
         /// <summary>
         /// Gets or sets the global language for achievement text.

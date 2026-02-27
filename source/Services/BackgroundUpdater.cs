@@ -135,6 +135,19 @@ namespace PlayniteAchievements.Services
                 return false;
             }
 
+            // Skip if landing page should be shown (user hasn't completed setup)
+            var firstTimeCompleted = _settings.Persisted.FirstTimeSetupCompleted;
+            var seenThemeMigration = _settings.Persisted.SeenThemeMigration;
+            var cachedIds = _achievementService.Cache?.GetCachedGameIds();
+            var hasCachedData = cachedIds != null && cachedIds.Count > 0;
+            bool showLandingPage = !seenThemeMigration || !firstTimeCompleted || !hasCachedData;
+
+            if (showLandingPage)
+            {
+                _logger.Debug("[PeriodicUpdate] Skipping update - landing page should be shown.");
+                return false;
+            }
+
             var cache = _achievementService.Cache;
             if (cache == null || !cache.IsCacheValid())
             {
