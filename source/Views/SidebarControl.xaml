@@ -964,7 +964,8 @@
                             Background="{DynamicResource ControlBackgroundBrush}"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,1,1,0"
-                            Padding="12,10">
+                            Padding="12,10"
+                            Visibility="{Binding ShowSidebarPieCharts, Converter={StaticResource BoolToVis}}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
