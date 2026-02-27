@@ -205,19 +205,23 @@
                                    VerticalAlignment="Center"
                                    Margin="0,0,12,0"/>
 
-                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_UltraRare}" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_UltraRare}" Margin="0,0,12,0" VerticalAlignment="Center"
+                                    Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource BadgePlatinumHexagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
                             <TextBlock Text="{Binding UltraRareCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Rare}" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Rare}" Margin="0,0,12,0" VerticalAlignment="Center"
+                                    Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource BadgeGoldPentagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
                             <TextBlock Text="{Binding RareCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Uncommon}" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Uncommon}" Margin="0,0,12,0" VerticalAlignment="Center"
+                                    Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource BadgeSilverSquare}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
                             <TextBlock Text="{Binding UncommonCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Common}" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Common}" VerticalAlignment="Center"
+                                    Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource BadgeBronzeTriangle}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
                             <TextBlock Text="{Binding CommonCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
                         </StackPanel>
