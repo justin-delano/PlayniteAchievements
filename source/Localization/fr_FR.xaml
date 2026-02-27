@@ -32,6 +32,8 @@
     <!-- ================================================================= -->
     <!-- PROVIDERS                                                          -->
     <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Affichage</sys:String>
+
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
@@ -392,7 +394,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Cache_Wiped">Cache supprimé.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailed">Impossible de supprimer le cache (des fichiers restent).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailedWithError">Échec de la suppression du cache : {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Description">Vider le cache en mémoire des icônes de succès (elles se rechargeront à l'affichage).</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Description">Vider le cache en mémoire des icônes de succès.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Clear">Vider le cache d'images</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Cleared">Cache d'images vidé.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_ClearFailed">Échec du vidage du cache d'images</sys:String>
