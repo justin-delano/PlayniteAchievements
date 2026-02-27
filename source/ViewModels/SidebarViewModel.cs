@@ -307,6 +307,8 @@ namespace PlayniteAchievements.ViewModels
 
         public bool UseCoverImages => _settings?.Persisted?.UseCoverImages ?? false;
 
+        public bool ShowSidebarPieCharts => _settings?.Persisted?.ShowSidebarPieCharts ?? true;
+
         private int _totalGamesOverview;
         public int TotalGamesOverview
         {
@@ -1216,6 +1218,10 @@ namespace PlayniteAchievements.ViewModels
             else if (e.PropertyName == "Persisted.IncludeUnplayedGames")
             {
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
+            }
+            else if (e.PropertyName == "Persisted.ShowSidebarPieCharts")
+            {
+                OnPropertyChanged(nameof(ShowSidebarPieCharts));
             }
             else if (e.PropertyName == "Persisted.ShowHiddenIcon"
                 || e.PropertyName == "Persisted.ShowHiddenTitle"
