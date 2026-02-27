@@ -35,6 +35,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Affichage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">Barre latérale</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPieCharts">Afficher les graphiques circulaires</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Afficher les graphiques à barres</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>

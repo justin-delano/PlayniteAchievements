@@ -35,6 +35,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Display</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">Sidebar</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPieCharts">Show Sidebar Pie Charts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Show Sidebar Bar Charts</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
