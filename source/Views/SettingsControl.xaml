@@ -816,6 +816,7 @@
 
                                                 <TextBox Text="{Binding Persisted.SteamApiKey, UpdateSourceTrigger=PropertyChanged}"
                                                          KeyDown="SteamApiKey_KeyDown"
+                                                         LostFocus="SteamApiKey_LostFocus"
                                                          Margin="0,0,0,6"/>
 
                                                 <TextBlock Style="{StaticResource MutedTextStyle}">
@@ -1008,6 +1009,7 @@
                                                                Margin="0,0,0,4"/>
                                                     <TextBox Text="{Binding Persisted.RaUsername, UpdateSourceTrigger=PropertyChanged}"
                                                              KeyDown="RaUsername_KeyDown"
+                                                             LostFocus="RaUsername_LostFocus"
                                                              Margin="0,0,0,4"/>
                                                     <TextBlock Style="{StaticResource MutedTextStyle}">
                                                         <Run Text="{DynamicResource LOCPlayAch_Label_Username_Help}" />
@@ -1023,6 +1025,7 @@
                                                                Margin="0,0,0,4"/>
                                                     <TextBox Text="{Binding Persisted.RaWebApiKey, UpdateSourceTrigger=PropertyChanged}"
                                                              KeyDown="RaApiKey_KeyDown"
+                                                             LostFocus="RaApiKey_LostFocus"
                                                              Margin="0,0,0,4"/>
                                                     <TextBlock Style="{StaticResource MutedTextStyle}">
                                                         <Run Text="{DynamicResource LOCPlayAch_Label_WebApiKey_Help}" />
@@ -1535,7 +1538,8 @@
                                              TextWrapping="Wrap"
                                              AcceptsReturn="False"
                                              VerticalScrollBarVisibility="Auto"
-                                             KeyDown="PsnNpsso_KeyDown"/>
+                                             KeyDown="PsnNpsso_KeyDown"
+                                             LostFocus="PsnNpsso_LostFocus"/>
                                 </Grid>
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
@@ -1931,6 +1935,8 @@
 
                                                 <TextBox Grid.Column="0"
                                                          Text="{Binding Persisted.ShadPS4ExecutablePath, UpdateSourceTrigger=PropertyChanged}"
+                                                         KeyDown="ShadPS4ExecutablePath_KeyDown"
+                                                         LostFocus="ShadPS4ExecutablePath_LostFocus"
                                                          VerticalAlignment="Center"
                                                          Padding="8,6"
                                                          Margin="0,0,8,0"/>
@@ -2075,6 +2081,7 @@
                                                 <TextBox Grid.Column="0"
                                                          Text="{Binding Persisted.Rpcs3ExecutablePath, UpdateSourceTrigger=PropertyChanged}"
                                                          KeyDown="Rpcs3ExecutablePath_KeyDown"
+                                                         LostFocus="Rpcs3ExecutablePath_LostFocus"
                                                          VerticalAlignment="Center"
                                                          Padding="8,6"
                                                          Margin="0,0,8,0"/>

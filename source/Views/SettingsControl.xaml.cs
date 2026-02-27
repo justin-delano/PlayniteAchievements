@@ -735,6 +735,12 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private async void SteamApiKey_LostFocus(object sender, RoutedEventArgs e)
+        {
+            (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            await CheckSteamAuthAsync().ConfigureAwait(false);
+        }
+
         private void RaUsername_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -744,6 +750,12 @@ namespace PlayniteAchievements.Views
                 UpdateRaAuthState();
                 MoveFocusFrom((TextBox)sender);
             }
+        }
+
+        private void RaUsername_LostFocus(object sender, RoutedEventArgs e)
+        {
+            (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            UpdateRaAuthState();
         }
 
         private void RaApiKey_KeyDown(object sender, KeyEventArgs e)
@@ -757,6 +769,12 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void RaApiKey_LostFocus(object sender, RoutedEventArgs e)
+        {
+            (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            UpdateRaAuthState();
+        }
+
         private void Rpcs3ExecutablePath_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -766,6 +784,29 @@ namespace PlayniteAchievements.Views
                 CheckRpcs3Auth();
                 MoveFocusFrom((TextBox)sender);
             }
+        }
+
+        private void Rpcs3ExecutablePath_LostFocus(object sender, RoutedEventArgs e)
+        {
+            (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            CheckRpcs3Auth();
+        }
+
+        private void ShadPS4ExecutablePath_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                CheckShadPS4Auth();
+                MoveFocusFrom((TextBox)sender);
+            }
+        }
+
+        private void ShadPS4ExecutablePath_LostFocus(object sender, RoutedEventArgs e)
+        {
+            (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            CheckShadPS4Auth();
         }
 
         private void MoveFocusFrom(TextBox textBox)
@@ -1394,6 +1435,12 @@ namespace PlayniteAchievements.Views
                 await CheckPsnAuthAsync().ConfigureAwait(false);
                 _ = Dispatcher.BeginInvoke(new Action(() => MoveFocusFrom((TextBox)sender)));
             }
+        }
+
+        private async void PsnNpsso_LostFocus(object sender, RoutedEventArgs e)
+        {
+            (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            await CheckPsnAuthAsync().ConfigureAwait(false);
         }
 
         private async void PsnAuth_Check_Click(object sender, RoutedEventArgs e)
