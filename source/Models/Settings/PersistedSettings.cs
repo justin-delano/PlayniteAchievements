@@ -49,6 +49,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
         private bool _showSidebarPieCharts = true;
+        private bool _showSidebarBarCharts = true;
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
@@ -387,6 +388,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showSidebarPieCharts;
             set => SetValue(ref _showSidebarPieCharts, value);
+        }
+
+        /// <summary>
+        /// When true, shows the timeline bar chart at the bottom of the right sidebar.
+        /// When false, the achievements list takes the full space.
+        /// </summary>
+        public bool ShowSidebarBarCharts
+        {
+            get => _showSidebarBarCharts;
+            set => SetValue(ref _showSidebarBarCharts, value);
         }
 
         /// <summary>
@@ -805,6 +816,7 @@ namespace PlayniteAchievements.Models.Settings
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowSidebarPieCharts = this.ShowSidebarPieCharts,
+                ShowSidebarBarCharts = this.ShowSidebarBarCharts,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
