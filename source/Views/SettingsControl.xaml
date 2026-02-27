@@ -652,6 +652,45 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- ================== TAB: DISPLAY ================== -->
+            <TabItem x:Name="DisplayTab" Header="{DynamicResource LOCPlayAch_Settings_TabDisplay}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <!-- Plugin Header -->
+                        <StackPanel Margin="0,0,0,24">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabDisplay}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6" />
+                            <!-- Decorative accent line -->
+                            <Border Height="2"
+                                    Width="60"
+                                    HorizontalAlignment="Left"
+                                    Background="#4CC9F0"
+                                    CornerRadius="1"
+                                    Margin="0,8,0,0"/>
+                        </StackPanel>
+
+                        <!-- ================== SIDEBAR SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_SidebarSection}"
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,12"/>
+
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowSidebarPieCharts}"
+                                          IsChecked="{Binding Persisted.ShowSidebarPieCharts}"
+                                          Margin="0,0,0,8"/>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- ================== TAB: STEAM SETTINGS ================== -->
             <TabItem x:Name="SteamTab" Header="{DynamicResource LOCPlayAch_Provider_Steam}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -2213,45 +2252,6 @@
                                            Style="{StaticResource MutedTextStyle}"
                                            Margin="0,8,0,0"
                                            Visibility="{Binding ShowNoRevertableThemesMessage, ElementName=SettingsControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </StackPanel>
-                        </Border>
-
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- ================== TAB: DISPLAY ================== -->
-            <TabItem x:Name="DisplayTab" Header="{DynamicResource LOCPlayAch_Settings_TabDisplay}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="20">
-
-                        <!-- Plugin Header -->
-                        <StackPanel Margin="0,0,0,24">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabDisplay}"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,6" />
-                            <!-- Decorative accent line -->
-                            <Border Height="2"
-                                    Width="60"
-                                    HorizontalAlignment="Left"
-                                    Background="#4CC9F0"
-                                    CornerRadius="1"
-                                    Margin="0,8,0,0"/>
-                        </StackPanel>
-
-                        <!-- ================== SIDEBAR SECTION ================== -->
-                        <Border Style="{StaticResource SectionBorderStyle}">
-                            <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_SidebarSection}"
-                                           Style="{StaticResource SectionHeaderStyle}"
-                                           Margin="0,0,0,12"/>
-
-                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowSidebarPieCharts}"
-                                          IsChecked="{Binding ShowSidebarPieCharts}"
-                                          Margin="0,0,0,8"/>
                             </StackPanel>
                         </Border>
 
