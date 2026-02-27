@@ -146,7 +146,7 @@
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Save">Enregistrer</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_SaveAs">Enregistrer sous</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Delete">Supprimer</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NoneOption"> </sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NoneOption">&#160;</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogTitle">Enregistrer un préréglage personnalisé</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogHint">Entrez un nom de préréglage (1-64 caractères).</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameInvalid">Le nom du préréglage doit contenir entre 1 et {0} caractères.</sys:String>
