@@ -684,6 +684,9 @@
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowSidebarPieCharts}"
                                           IsChecked="{Binding Persisted.ShowSidebarPieCharts}"
                                           Margin="0,0,0,8"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowSidebarBarCharts}"
+                                          IsChecked="{Binding Persisted.ShowSidebarBarCharts}"
+                                          Margin="0,0,0,8"/>
                             </StackPanel>
                         </Border>
 
