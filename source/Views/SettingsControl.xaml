@@ -493,9 +493,8 @@
                                                    Foreground="{DynamicResource TextBrush}"
                                                    FontWeight="SemiBold"
                                                    Margin="0,0,0,2"/>
-                                        <TextBlock Style="{StaticResource MutedTextStyle}">
-                                            Language for achievement text. Providers will use this language when available, falling back to English if not supported.
-                                        </TextBlock>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GlobalLanguageHint}"
+                                                   Style="{StaticResource MutedTextStyle}"/>
                                     </StackPanel>
 
                                     <ComboBox Grid.Column="1"

@@ -90,13 +90,12 @@
                                Margin="0,0,12,0"/>
 
                     <TextBlock Grid.Column="1"
+                               Text="{DynamicResource LOCPlayAch_Landing_LanguageHint}"
                                FontSize="{DynamicResource FontSize}"
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.6"
                                VerticalAlignment="Center"
-                               TextWrapping="Wrap">
-                        Language for achievement text. Providers will use this when available.
-                    </TextBlock>
+                               TextWrapping="Wrap"/>
 
                     <ComboBox Grid.Column="2"
                               Width="180"

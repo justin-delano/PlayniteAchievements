@@ -651,6 +651,14 @@
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeDisabled">DISABLED</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Language">Achievement Language</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_EnableProvider">Enable</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_LanguageHint">Language for achievement text. Platforms will use this when available.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GlobalLanguageHint">Language for achievement text. Platforms will use this language when available, falling back to English if not supported.</sys:String>
+
+    <!-- ================================================================= -->
+    <!-- SETTINGS - THEME INTEGRATION                                      -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Settings_ThemeIntegration_Title">Theme Integration</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ThemeIntegration_Description">Native PlayniteAchievements theme integration</sys:String>
 
     <!-- ================================================================= -->
     <!-- Refresh PROGRESS WINDOW                                               -->
