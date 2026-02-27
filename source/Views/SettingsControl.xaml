@@ -2219,6 +2219,32 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- ================== TAB: DISPLAY ================== -->
+            <TabItem x:Name="DisplayTab" Header="{DynamicResource LOCPlayAch_Settings_TabDisplay}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <!-- Plugin Header -->
+                        <StackPanel Margin="0,0,0,24">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabDisplay}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       Margin="0,0,0,6" />
+                            <!-- Decorative accent line -->
+                            <Border Height="2"
+                                    Width="60"
+                                    HorizontalAlignment="Left"
+                                    Background="#4CC9F0"
+                                    CornerRadius="1"
+                                    Margin="0,8,0,0"/>
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
     </Grid>
 </UserControl>
