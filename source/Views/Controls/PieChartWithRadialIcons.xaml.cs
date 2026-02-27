@@ -20,6 +20,7 @@ namespace PlayniteAchievements.Views.Controls
     {
         private static readonly double IconSize = 18.0;
         private List<PieSeries> subscribedSeries = new List<PieSeries>();
+        private bool calculationScheduled;
 
         /// <summary>
         /// Event raised when a pie slice is clicked.
@@ -62,15 +63,24 @@ namespace PlayniteAchievements.Views.Controls
         public PieChartWithRadialIcons()
         {
             InitializeComponent();
-            Loaded += OnLoaded;
             SizeChanged += OnSizeChanged;
         }
 
-        private void OnLoaded(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Schedule position calculation to run after LiveCharts completes rendering.
+        /// Multiple calls are deduplicated to a single calculation.
+        /// </summary>
+        private void ScheduleCalculation()
         {
-            // Defer position calculation until layout pass completes
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+            if (calculationScheduled)
             {
+                return;
+            }
+            calculationScheduled = true;
+            // Use ContextIdle to ensure we run after LiveCharts render pass completes
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ContextIdle, new Action(() =>
+            {
+                calculationScheduled = false;
                 CalculatePositions();
             }));
         }
@@ -88,7 +98,7 @@ namespace PlayniteAchievements.Views.Controls
                 newSeries.CollectionChanged += control.OnSeriesCollectionChanged;
                 control.SubscribeToSeries(newSeries);
             }
-            control.CalculatePositions();
+            control.ScheduleCalculation();
         }
 
         private void UnsubscribeFromSeries()
@@ -127,13 +137,13 @@ namespace PlayniteAchievements.Views.Controls
         {
             if (e.PropertyName == "Values")
             {
-                CalculatePositions();
+                ScheduleCalculation();
             }
         }
 
         private void OnChartValuesChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            CalculatePositions();
+            ScheduleCalculation();
         }
 
         private static void OnLegendItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -147,17 +157,17 @@ namespace PlayniteAchievements.Views.Controls
             {
                 newItems.CollectionChanged += control.OnLegendItemsCollectionChanged;
             }
-            control.CalculatePositions();
+            control.ScheduleCalculation();
         }
 
         private static void OnLayoutPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            ((PieChartWithRadialIcons)d).CalculatePositions();
+            ((PieChartWithRadialIcons)d).ScheduleCalculation();
         }
 
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
-            CalculatePositions();
+            ScheduleCalculation();
         }
 
         private void OnSeriesCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -167,12 +177,12 @@ namespace PlayniteAchievements.Views.Controls
             {
                 SubscribeToSeries(PieSeries);
             }
-            CalculatePositions();
+            ScheduleCalculation();
         }
 
         private void OnLegendItemsCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            CalculatePositions();
+            ScheduleCalculation();
         }
 
         private void CalculatePositions()

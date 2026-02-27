@@ -246,8 +246,11 @@ namespace PlayniteAchievements.ViewModels
 
         private void SynchronizePieChartAndLegend(IReadOnlyList<PieSliceData> slices)
         {
-            SynchronizePieSeries(slices);
+            // Update legend first, then pie series.
+            // This ensures when CalculatePositions fires after PieSeries changes,
+            // LegendItems already contains matching data.
             SynchronizeLegendItems(slices);
+            SynchronizePieSeries(slices);
         }
 
         private void SynchronizePieSeries(IReadOnlyList<PieSliceData> slices)
