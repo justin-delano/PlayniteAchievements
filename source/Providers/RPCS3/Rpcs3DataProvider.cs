@@ -343,14 +343,12 @@ namespace PlayniteAchievements.Providers.RPCS3
 
         /// <summary>
         /// Checks if trophy data can be found for a game by verifying the npcommid exists in cache.
+        /// Returns true if the game's npcommid is found in cache, or falls back to true if
+        /// we can't verify (allows name-based matching during the actual scan).
         /// </summary>
         private bool CanFindTrophyDataForGame(Game game)
         {
             var cache = GetOrBuildTrophyFolderCache();
-            if (cache == null || cache.Count == 0)
-            {
-                return false;
-            }
 
             // Try to find npcommid using path extraction
             var installDir = ExpandGamePath(game, game?.InstallDirectory);
@@ -360,14 +358,17 @@ namespace PlayniteAchievements.Providers.RPCS3
                 if (match.Success)
                 {
                     var ps3Id = match.Groups[1].Value.ToUpperInvariant();
-                    if (cache.ContainsKey(ps3Id))
+                    // If we found an ID, verify it exists in cache
+                    if (cache != null && cache.ContainsKey(ps3Id))
                     {
                         return true;
                     }
+                    // ID found but not in cache - game doesn't have trophy data yet
+                    return false;
                 }
             }
 
-            // If we can't verify by ID, but have a valid emulator source, still return true
+            // If we can't verify by ID (no ID in path), fall back to true
             // This allows name-based matching during the actual scan
             return true;
         }
