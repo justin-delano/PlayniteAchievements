@@ -62,7 +62,17 @@ namespace PlayniteAchievements.Views.Controls
         public PieChartWithRadialIcons()
         {
             InitializeComponent();
+            Loaded += OnLoaded;
             SizeChanged += OnSizeChanged;
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            // Defer position calculation until layout pass completes
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+            {
+                CalculatePositions();
+            }));
         }
 
         private static void OnPieSeriesChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
