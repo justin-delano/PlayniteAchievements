@@ -2242,6 +2242,19 @@
                                     Margin="0,8,0,0"/>
                         </StackPanel>
 
+                        <!-- ================== SIDEBAR SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_SidebarSection}"
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,12"/>
+
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowSidebarPieCharts}"
+                                          IsChecked="{Binding ShowSidebarPieCharts}"
+                                          Margin="0,0,0,8"/>
+                            </StackPanel>
+                        </Border>
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
