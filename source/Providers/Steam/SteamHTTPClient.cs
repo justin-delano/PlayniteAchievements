@@ -567,6 +567,17 @@ namespace PlayniteAchievements.Providers.Steam
                     if (isSteamAuth)
                         req.Headers.Referrer = uri.Host.Contains("store") ? StoreBase : CommunityBase;
 
+                    // Diagnostic: Log pre-request cookies
+                    lock (_cookieLock)
+                    {
+                        var requestCookies = _cookieJar.GetCookies(uri);
+                        _logger?.Debug($"[SteamAch.Diag] Request to {uri} will send {requestCookies.Count} cookies");
+                        foreach (Cookie c in requestCookies)
+                        {
+                            _logger?.Debug($"[SteamAch.Diag] Sending: Name={c.Name}, Domain={c.Domain}");
+                        }
+                    }
+
                     try
                     {
                         using (var resp = await _http.SendAsync(req, ct).ConfigureAwait(false))
@@ -582,7 +593,22 @@ namespace PlayniteAchievements.Providers.Steam
                                 bool softRedirect = result.FinalUrl.Contains("/login") || result.FinalUrl.Contains("openid");
                                 if (resp.StatusCode == HttpStatusCode.Unauthorized || resp.StatusCode == HttpStatusCode.Forbidden || softRedirect)
                                 {
-                                    _logger.Warn($"[SteamAch] Auth failed for {url} (Status={resp.StatusCode}, Url={result.FinalUrl}). Forcing session refresh.");
+                                    _logger.Warn($"[SteamAch.Diag] 403/401 for {url}");
+                                    _logger.Warn($"[SteamAch.Diag] FinalUrl={result.FinalUrl}, WasRedirected={result.WasRedirected}");
+
+                                    // Log response headers (especially Cloudflare or Steam-specific ones)
+                                    foreach (var h in resp.Headers)
+                                    {
+                                        _logger.Warn($"[SteamAch.Diag] ResponseHeader: {h.Key}={string.Join(",", h.Value)}");
+                                    }
+
+                                    // Check if we have cookies to send
+                                    lock (_cookieLock)
+                                    {
+                                        var jarCookies = _cookieJar.GetCookies(uri);
+                                        _logger.Warn($"[SteamAch.Diag] CookieJar had {jarCookies.Count} cookies for this request");
+                                    }
+
                                     await EnsureSessionAsync(ct, forceRefresh: true).ConfigureAwait(false);
                                     continue;
                                 }
