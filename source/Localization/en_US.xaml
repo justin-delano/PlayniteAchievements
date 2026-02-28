@@ -771,7 +771,4 @@
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_FetchFailed">Failed to fetch achievement data from Steam: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_ApiKeyRequired">Steam API key is required to fetch achievement data. Configure it in plugin settings.</sys:String>
 
-    <!-- Rarity column -->
-    <sys:String x:Key="LOCPlayAch_Column_Rarity">Rarity</sys:String>
-
 </ResourceDictionary>
