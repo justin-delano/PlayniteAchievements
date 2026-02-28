@@ -46,9 +46,6 @@ namespace PlayniteAchievements.Providers.GOG
 
             _sessionManager = sessionManager;
             _scanner = new GogScanner(settings, apiClient, sessionManager, logger);
-
-            // Best-effort startup hydration of GOG auth state from existing web session cookies.
-            _ = _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_GOG");
