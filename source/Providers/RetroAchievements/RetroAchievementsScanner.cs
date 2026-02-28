@@ -320,17 +320,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
         private static GameAchievementData BuildNoAchievements(Game game, int appId)
         {
-            return new GameAchievementData
-            {
-                AppId = appId,
-                GameName = game?.Name,
-                ProviderName = "RetroAchievements",
-                LibrarySourceName = game?.Source?.Name,
-                LastUpdatedUtc = DateTime.UtcNow,
-                HasAchievements = false,
-                PlayniteGameId = game?.Id,
-                Achievements = new List<AchievementDetail>()
-            };
+            return null;
         }
 
         private static bool TryMatchHash(Dictionary<string, int> index, IReadOnlyList<string> hashes, out string matchedHash, out int gameId)
