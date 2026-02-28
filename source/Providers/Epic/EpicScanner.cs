@@ -114,17 +114,9 @@ namespace PlayniteAchievements.Providers.Epic
         {
             cancel.ThrowIfCancellationRequested();
 
-            return Task.FromResult(new GameAchievementData
-            {
-                AppId = 0,
-                GameName = game?.Name,
-                ProviderName = ResourceProvider.GetString("LOCPlayAch_Provider_Epic"),
-                LibrarySourceName = game?.Source?.Name,
-                LastUpdatedUtc = DateTime.UtcNow,
-                HasAchievements = false,
-                PlayniteGameId = game != null ? game.Id : Guid.Empty,
-                Achievements = new List<AchievementDetail>()
-            });
+            _logger?.Warn($"[EpicAch] API unavailable for gameId={gameId}, game={game?.Name}. " +
+                          "Skipping refresh to preserve existing cached data.");
+            return Task.FromResult<GameAchievementData>(null);
         }
 
         private static GameAchievementData MapToGameData(Game game, string gameId, List<EpicAchievementItem> items)
