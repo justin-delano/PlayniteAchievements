@@ -1296,6 +1296,17 @@ namespace PlayniteAchievements.Services
             return !string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath);
         }
 
+        /// <summary>
+        /// Downloads and caches achievement icons for a GameAchievementData object.
+        /// Updates icon paths in-place to point to local cached files.
+        /// </summary>
+        public async Task DownloadAchievementIconsAsync(
+            GameAchievementData data,
+            CancellationToken cancel = default)
+        {
+            await PopulateAchievementIconCacheAsync(data, cancel).ConfigureAwait(false);
+        }
+
         private async Task PopulateAchievementIconCacheAsync(
             GameAchievementData data,
             CancellationToken cancel,
