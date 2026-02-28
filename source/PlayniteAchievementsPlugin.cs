@@ -188,6 +188,7 @@ namespace PlayniteAchievements
                     _manualProvider = new ManualAchievementsProvider(_logger, settings, pluginUserDataPath);
                     providers = new List<IDataProvider>
                     {
+                        _manualProvider,  // Manual provider first - explicit user overrides take priority
                         new SteamDataProvider(
                             _logger,
                             settings,
@@ -225,8 +226,7 @@ namespace PlayniteAchievements
                         new Rpcs3DataProvider(
                             _logger,
                             settings,
-                            PlayniteApi),
-                        _manualProvider
+                            PlayniteApi)
                     };
                 }
 
@@ -1016,9 +1016,18 @@ namespace PlayniteAchievements
                 // Auto-trigger search when control loads if search text is pre-filled
                 searchControl.Loaded += async (s, e) =>
                 {
+                    _logger?.Info($"ManualAchievementsSearchControl.Loaded fired, SearchText='{searchVm.SearchText}'");
                     if (!string.IsNullOrWhiteSpace(searchVm.SearchText))
                     {
-                        await searchVm.SearchAsync();
+                        _logger?.Info("Auto-triggering search...");
+                        try
+                        {
+                            await searchVm.SearchAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.Error(ex, "Auto-search failed");
+                        }
                     }
                 };
 
@@ -1172,13 +1181,29 @@ namespace PlayniteAchievements
 
                 _logger?.Info($"Saved manual achievement link for '{game.Name}' (source={link.SourceKey}, gameId={link.SourceGameId})");
 
-                // Trigger a refresh for this game
-                _ = _refreshCoordinator.ExecuteAsync(
-                    new RefreshRequest
+                // Build and cache achievement data immediately for instant UI update
+                try
+                {
+                    var providerName = _manualProvider.ProviderName;
+                    var gameData = editVm.BuildGameAchievementData(game, providerName);
+
+                    // Write to cache
+                    var writeResult = _achievementService.Cache.SaveGameData(game.Id.ToString(), gameData);
+                    if (writeResult == null || !writeResult.Success)
                     {
-                        Mode = RefreshModeType.Single,
-                        SingleGameId = game.Id
-                    });
+                        _logger?.Warn($"Failed to cache manual achievements for '{game.Name}': {writeResult?.ErrorMessage}");
+                    }
+                    else
+                    {
+                        _logger?.Info($"Cached manual achievements for '{game.Name}' with {gameData.Achievements?.Count ?? 0} achievements");
+                        // Notify UI to refresh immediately
+                        _achievementService.Cache.NotifyCacheInvalidated();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, $"Failed to cache manual achievements for '{game.Name}'");
+                }
             }
         }
 
