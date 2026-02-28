@@ -102,6 +102,7 @@ namespace PlayniteAchievements.Services.Database
         private readonly SqlNadoSchemaManager _schemaManager;
         private readonly Dictionary<string, CachedCurrentUserState> _cachedCurrentUsersByProvider =
             new Dictionary<string, CachedCurrentUserState>(StringComparer.OrdinalIgnoreCase);
+        private readonly string _pluginUserDataPath;
         private SQLiteDatabase _db;
         private bool _initialized;
 
@@ -111,7 +112,8 @@ namespace PlayniteAchievements.Services.Database
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
-            DatabasePath = Path.Combine(baseDir ?? string.Empty, "achievement_cache.db");
+            _pluginUserDataPath = baseDir ?? string.Empty;
+            DatabasePath = Path.Combine(_pluginUserDataPath, "achievement_cache.db");
             _schemaManager = new SqlNadoSchemaManager(logger, DatabasePath, baseDir);
         }
 
@@ -314,8 +316,8 @@ namespace PlayniteAchievements.Services.Database
                         ApiName = row.ApiName,
                         DisplayName = row.DisplayName,
                         Description = row.Description,
-                        UnlockedIconPath = row.UnlockedIconPath,
-                        LockedIconPath = row.LockedIconPath,
+                        UnlockedIconPath = MakeAbsolutePath(row.UnlockedIconPath),
+                        LockedIconPath = MakeAbsolutePath(row.LockedIconPath),
                         Points = row.Points,
                         ScaledPoints = row.ScaledPoints,
                         Category = row.Category,
@@ -467,8 +469,8 @@ namespace PlayniteAchievements.Services.Database
                         ApiName = row.ApiName,
                         DisplayName = row.DisplayName,
                         Description = row.Description,
-                        UnlockedIconPath = row.UnlockedIconPath,
-                        LockedIconPath = row.LockedIconPath,
+                        UnlockedIconPath = MakeAbsolutePath(row.UnlockedIconPath),
+                        LockedIconPath = MakeAbsolutePath(row.LockedIconPath),
                         Points = row.Points,
                         ScaledPoints = row.ScaledPoints,
                         Category = row.Category,
@@ -1202,8 +1204,8 @@ namespace PlayniteAchievements.Services.Database
                         apiName,
                         DbValue(achievement.DisplayName),
                         DbValue(achievement.Description),
-                        DbValue(achievement.UnlockedIconPath),
-                        DbValue(achievement.LockedIconPath),
+                        DbValue(MakeRelativePath(achievement.UnlockedIconPath)),
+                        DbValue(MakeRelativePath(achievement.LockedIconPath)),
                         achievement.Points.HasValue ? (object)achievement.Points.Value : DBNull.Value,
                         achievement.ScaledPoints.HasValue ? (object)achievement.ScaledPoints.Value : DBNull.Value,
                         DbValue(achievement.Category),
@@ -1228,8 +1230,8 @@ namespace PlayniteAchievements.Services.Database
 
                 var incomingDisplayName = NormalizeDbText(achievement.DisplayName);
                 var incomingDescription = NormalizeDbText(achievement.Description);
-                var incomingUnlockedIconPath = NormalizeDbText(achievement.UnlockedIconPath);
-                var incomingLockedIconPath = NormalizeDbText(achievement.LockedIconPath);
+                var incomingUnlockedIconPath = MakeRelativePath(NormalizeDbText(achievement.UnlockedIconPath));
+                var incomingLockedIconPath = MakeRelativePath(NormalizeDbText(achievement.LockedIconPath));
                 var incomingPoints = achievement.Points;
                 var incomingScaledPoints = achievement.ScaledPoints;
                 var incomingCategory = NormalizeDbText(achievement.Category);
@@ -1523,6 +1525,90 @@ namespace PlayniteAchievements.Services.Database
         private static string ToIso(DateTime dateTime)
         {
             return DateTimeUtilities.AsUtcKind(dateTime).ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// Convert an absolute cache path to a relative path for database storage.
+        /// Returns the original path if it's already relative, a URL, or not under the plugin data path.
+        /// </summary>
+        private string MakeRelativePath(string absolutePath)
+        {
+            if (string.IsNullOrWhiteSpace(absolutePath))
+            {
+                return absolutePath;
+            }
+
+            // Already relative or URL - pass through unchanged
+            if (!Path.IsPathRooted(absolutePath))
+            {
+                return absolutePath;
+            }
+
+            if (absolutePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                return absolutePath;
+            }
+
+            if (string.IsNullOrWhiteSpace(_pluginUserDataPath))
+            {
+                return absolutePath;
+            }
+
+            try
+            {
+                var fullBasePath = Path.GetFullPath(_pluginUserDataPath).TrimEnd(Path.DirectorySeparatorChar);
+                var fullPath = Path.GetFullPath(absolutePath);
+
+                if (fullPath.StartsWith(fullBasePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                {
+                    return fullPath.Substring(fullBasePath.Length + 1);
+                }
+            }
+            catch
+            {
+                // Path operations can fail with invalid characters - return original
+            }
+
+            return absolutePath;
+        }
+
+        /// <summary>
+        /// Convert a relative path to an absolute path for runtime use.
+        /// Returns the original path if it's already absolute or a URL.
+        /// </summary>
+        private string MakeAbsolutePath(string relativeOrAbsolutePath)
+        {
+            if (string.IsNullOrWhiteSpace(relativeOrAbsolutePath))
+            {
+                return relativeOrAbsolutePath;
+            }
+
+            // Already absolute - pass through unchanged
+            if (Path.IsPathRooted(relativeOrAbsolutePath))
+            {
+                return relativeOrAbsolutePath;
+            }
+
+            // URL - pass through unchanged
+            if (relativeOrAbsolutePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                return relativeOrAbsolutePath;
+            }
+
+            if (string.IsNullOrWhiteSpace(_pluginUserDataPath))
+            {
+                return relativeOrAbsolutePath;
+            }
+
+            try
+            {
+                return Path.Combine(_pluginUserDataPath, relativeOrAbsolutePath);
+            }
+            catch
+            {
+                // Path operations can fail with invalid characters - return original
+                return relativeOrAbsolutePath;
+            }
         }
 
         /// <summary>
