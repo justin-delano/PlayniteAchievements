@@ -84,6 +84,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Refresh">Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Search">Search</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Configure">Configure</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Ok">OK</sys:String>

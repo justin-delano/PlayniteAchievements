@@ -83,6 +83,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Button_Clear">Effacer</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Refresh">Actualiser</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Search">Rechercher</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Configure">Configurer</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Scan">Actualiser</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Annuler</sys:String>
