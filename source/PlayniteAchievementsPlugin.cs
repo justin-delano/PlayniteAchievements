@@ -983,7 +983,8 @@ namespace PlayniteAchievements
                     _manualProvider.GetSteamManualSource(),
                     game.Name,
                     _settingsViewModel.Settings.Persisted.GlobalLanguage ?? "english",
-                    _logger);
+                    _logger,
+                    game.Name);  // Pre-fill search with game name
 
                 var searchControl = new ManualAchievementsSearchControl(searchVm);
                 var windowOptions = new WindowOptions
@@ -1011,6 +1012,16 @@ namespace PlayniteAchievements
                 catch (Exception ex) { _logger?.Debug(ex, "Failed to set window owner"); }
 
                 searchVm.RequestClose += (s, ev) => window.Close();
+
+                // Auto-trigger search when control loads if search text is pre-filled
+                searchControl.Loaded += async (s, e) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(searchVm.SearchText))
+                    {
+                        await searchVm.SearchAsync();
+                    }
+                };
+
                 window.ShowDialog();
 
                 if (searchVm.DialogResult != true || searchVm.SelectedResult == null)
