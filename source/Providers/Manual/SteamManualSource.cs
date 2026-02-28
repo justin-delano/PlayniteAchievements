@@ -278,7 +278,7 @@ namespace PlayniteAchievements.Providers.Manual
         [DataContract]
         private sealed class StoreSearchItem
         {
-            [DataMember(Name = "appid")]
+            [DataMember(Name = "id")]
             public int AppId { get; set; }
 
             [DataMember(Name = "name")]
