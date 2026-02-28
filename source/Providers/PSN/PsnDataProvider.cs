@@ -27,7 +27,6 @@ namespace PlayniteAchievements.Providers.PSN
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
 
             _scanner = new PsnScanner(logger, _settings, _sessionManager);
-            _ = _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);
         }
 
         public string ProviderName
