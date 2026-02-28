@@ -104,12 +104,17 @@ namespace PlayniteAchievements.ViewModels
             IManualSource source,
             string playniteGameName,
             string language,
-            ILogger logger)
+            ILogger logger,
+            string initialSearchText = null)
         {
             _source = source ?? throw new ArgumentNullException(nameof(source));
             _logger = logger;
             _language = language ?? "english";
             PlayniteGameName = playniteGameName ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(initialSearchText))
+            {
+                _searchText = initialSearchText;
+            }
 
             SearchCommand = new RelayCommand(
                 async _ => await ExecuteSearchAsync(),
@@ -200,6 +205,14 @@ namespace PlayniteAchievements.ViewModels
         public void CancelSearch()
         {
             _searchCts?.Cancel();
+        }
+
+        /// <summary>
+        /// Triggers a search programmatically. Used for auto-search on dialog open.
+        /// </summary>
+        public async Task SearchAsync()
+        {
+            await ExecuteSearchAsync();
         }
 
         private void OnPropertyChanged([CallerMemberName] string propertyName = null)
