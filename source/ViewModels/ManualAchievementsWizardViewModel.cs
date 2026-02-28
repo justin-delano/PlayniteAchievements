@@ -429,12 +429,7 @@ namespace PlayniteAchievements.ViewModels
 
                 var request = new RefreshRequest
                 {
-                    CustomOptions = new CustomRefreshOptions
-                    {
-                        ProviderKeys = new List<string> { "Manual" },
-                        Scope = CustomGameScope.Explicit,
-                        IncludeGameIds = new List<Guid> { _playniteGame.Id }
-                    }
+                    GameIds = new List<Guid> { _playniteGame.Id }
                 };
 
                 await _achievementService.ExecuteRefreshAsync(request);
