@@ -1301,12 +1301,18 @@ namespace PlayniteAchievements.Services.Database
                 existingIdsByApiName,
                 desiredApiNames);
 
-            for (int i = 0; i < staleDefinitionIds.Count; i++)
+            // Only delete stale definitions if we have incoming definitions to replace them.
+            // This protects against API failures returning empty lists that would accidentally
+            // delete all existing achievement data.
+            if (desiredApiNames.Count > 0 && staleDefinitionIds.Count > 0)
             {
-                db.ExecuteNonQuery(
-                    @"DELETE FROM AchievementDefinitions
-                      WHERE Id = ?;",
-                    staleDefinitionIds[i]);
+                for (int i = 0; i < staleDefinitionIds.Count; i++)
+                {
+                    db.ExecuteNonQuery(
+                        @"DELETE FROM AchievementDefinitions
+                          WHERE Id = ?;",
+                        staleDefinitionIds[i]);
+                }
             }
 
             return idsByApiName;
