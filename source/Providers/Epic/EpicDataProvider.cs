@@ -39,8 +39,6 @@ namespace PlayniteAchievements.Providers.Epic
 
             var apiClient = new EpicApiClient(_httpClient, logger, sessionManager, settings.Persisted);
             _scanner = new EpicScanner(settings, apiClient, sessionManager, logger);
-
-            _ = _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Epic");
