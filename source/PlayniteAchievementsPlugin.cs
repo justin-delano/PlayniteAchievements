@@ -1100,6 +1100,33 @@ namespace PlayniteAchievements
                     // ignore
                 }
 
+                // Defer authentication probing to avoid WebView disposal race condition during plugin initialization.
+                // This ensures the UI dispatcher is fully ready and serializes WebView creation.
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(1000).ConfigureAwait(false); // Let Playnite fully initialize
+                    try
+                    {
+                        await _gogSessionManager.PrimeAuthenticationStateAsync(default).ConfigureAwait(false);
+                    }
+                    catch { }
+                    try
+                    {
+                        await _epicSessionManager.PrimeAuthenticationStateAsync(default).ConfigureAwait(false);
+                    }
+                    catch { }
+                    try
+                    {
+                        await _psnSessionManager.PrimeAuthenticationStateAsync(default).ConfigureAwait(false);
+                    }
+                    catch { }
+                    try
+                    {
+                        await _xboxSessionManager.PrimeAuthenticationStateAsync(default).ConfigureAwait(false);
+                    }
+                    catch { }
+                });
+
                 // Auto-migrate themes that have been updated since the last migration.
                 AutoMigrateUpgradedThemesOnStartup();
 
