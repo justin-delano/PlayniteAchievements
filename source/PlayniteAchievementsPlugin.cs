@@ -1187,6 +1187,9 @@ namespace PlayniteAchievements
                     var providerName = _manualProvider.ProviderName;
                     var gameData = editVm.BuildGameAchievementData(game, providerName);
 
+                    // Download achievement icons (updates paths in-place)
+                    _achievementService.DownloadAchievementIconsAsync(gameData).GetAwaiter().GetResult();
+
                     // Write to cache
                     var writeResult = _achievementService.Cache.SaveGameData(game.Id.ToString(), gameData);
                     if (writeResult == null || !writeResult.Success)
