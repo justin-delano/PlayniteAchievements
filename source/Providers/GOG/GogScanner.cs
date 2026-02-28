@@ -138,8 +138,9 @@ namespace PlayniteAchievements.Providers.GOG
             var clientId = await _apiClient.GetClientIdAsync(productId, cancel).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(clientId))
             {
-                _logger?.Debug($"[GogAch] No client_id found for productId={productId}");
-                return CreateNoAchievementsData(game, productId);
+                _logger?.Warn($"[GogAch] client_id not found for productId={productId}, game={game?.Name}. " +
+                              "Skipping refresh to preserve existing cached data.");
+                return null;
             }
 
             // Get user ID from auth client
@@ -168,6 +169,11 @@ namespace PlayniteAchievements.Providers.GOG
                 PlayniteGameId = game.Id,
                 Achievements = new List<AchievementDetail>()
             };
+
+            if (!gameData.HasAchievements && achievements != null)
+            {
+                _logger?.Debug($"[GogAch] No achievements found for productId={productId}, game={game?.Name}");
+            }
 
             if (gameData.HasAchievements)
             {
