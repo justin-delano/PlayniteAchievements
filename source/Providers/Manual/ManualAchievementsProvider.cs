@@ -43,8 +43,18 @@ namespace PlayniteAchievements.Providers.Manual
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _diskImageService = new DiskImageService(logger, pluginUserDataPath);
 
-            // Create Steam manual source with HTTP client
-            var httpClient = new System.Net.Http.HttpClient();
+            // Create Steam manual source with properly configured HTTP client
+            var handler = new System.Net.Http.HttpClientHandler
+            {
+                AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
+                AllowAutoRedirect = true
+            };
+            var httpClient = new System.Net.Http.HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(30)
+            };
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             _steamManualSource = new SteamManualSource(
                 httpClient,
                 logger,
