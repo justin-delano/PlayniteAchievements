@@ -305,8 +305,9 @@ namespace PlayniteAchievements.ViewModels
 
             if (_startAtEditingStage)
             {
-                CurrentStage = WizardStage.Editing;
-                LoadEditFromExistingLink();
+                // Start at refreshing stage to ensure cache is populated via provider
+                CurrentStage = WizardStage.Refreshing;
+                _ = RefreshExistingAndTransitionToEditAsync();
             }
         }
 
@@ -482,6 +483,66 @@ namespace PlayniteAchievements.ViewModels
             CurrentStage = WizardStage.Search;
         }
 
+        /// <summary>
+        /// Refreshes cache for an existing link and transitions to editing.
+        /// Called when opening the wizard for an existing manual link.
+        /// </summary>
+        private async Task RefreshExistingAndTransitionToEditAsync()
+        {
+            if (_existingLink == null)
+            {
+                ErrorMessage = ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_NoAchievements");
+                CurrentStage = WizardStage.Search;
+                return;
+            }
+
+            ErrorMessage = string.Empty;
+            ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Refreshing");
+            ProgressPercent = 0;
+            CanCancelRefresh = true;
+
+            _refreshCts = new CancellationTokenSource();
+
+            try
+            {
+                _achievementService.RebuildProgress += OnRebuildProgress;
+
+                var request = new RefreshRequest
+                {
+                    GameIds = new List<Guid> { _playniteGame.Id }
+                };
+
+                await _achievementService.ExecuteRefreshAsync(request);
+
+                if (_refreshCts.Token.IsCancellationRequested)
+                {
+                    CurrentStage = WizardStage.Search;
+                    return;
+                }
+
+                TransitionToEditing(_existingLink);
+            }
+            catch (OperationCanceledException)
+            {
+                CurrentStage = WizardStage.Search;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Manual achievement refresh failed during edit flow");
+                ErrorMessage = string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_FetchFailed"),
+                    ex.Message);
+                CanCancelRefresh = false;
+                CurrentStage = WizardStage.Search;
+            }
+            finally
+            {
+                _achievementService.RebuildProgress -= OnRebuildProgress;
+                _refreshCts?.Dispose();
+                _refreshCts = null;
+            }
+        }
+
         #endregion
 
         #region Edit Logic
@@ -502,55 +563,6 @@ namespace PlayniteAchievements.ViewModels
             SourceGameName = cachedData.GameName ?? link.SourceGameId;
 
             CurrentStage = WizardStage.Editing;
-        }
-
-        private void LoadEditFromExistingLink()
-        {
-            if (_existingLink == null)
-            {
-                return;
-            }
-
-            var cachedData = _achievementService.Cache.LoadGameData(_playniteGame.Id.ToString());
-            if (cachedData?.Achievements == null || cachedData.Achievements.Count == 0)
-            {
-                Task.Run(async () =>
-                {
-                    try
-                    {
-                        var achievements = await _source.GetAchievementsAsync(
-                            _existingLink.SourceGameId,
-                            _language,
-                            CancellationToken.None);
-
-                        if (achievements == null || achievements.Count == 0)
-                        {
-                            ErrorMessage = ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_NoAchievements");
-                            return;
-                        }
-
-                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            PopulateAchievements(achievements, _existingLink);
-                            SourceGameId = _existingLink.SourceGameId;
-                            SourceGameName = _existingLink.SourceGameId;
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Error(ex, "Failed to load achievements for existing link");
-                        ErrorMessage = string.Format(
-                            ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_FetchFailed"),
-                            ex.Message);
-                    }
-                });
-
-                return;
-            }
-
-            PopulateAchievements(cachedData.Achievements, _existingLink);
-            SourceGameId = _existingLink.SourceGameId;
-            SourceGameName = cachedData.GameName ?? _existingLink.SourceGameId;
         }
 
         private void PopulateAchievements(List<AchievementDetail> achievements, ManualAchievementLink link)
