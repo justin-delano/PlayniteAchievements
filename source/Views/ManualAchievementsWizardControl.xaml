@@ -27,7 +27,7 @@
         <!-- Stage Content -->
         <Grid Grid.Row="1">
             <!-- Stage 1: Search -->
-            <Grid Visibility="{Binding IsSearchStage,
+            <Grid Visibility="{Binding DataContext.IsSearchStage,
                     RelativeSource={RelativeSource AncestorType=UserControl},
                     Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.RowDefinitions>
@@ -146,7 +146,7 @@
             </Grid>
 
             <!-- Stage 2: Refreshing -->
-            <Grid Visibility="{Binding IsRefreshingStage,
+            <Grid Visibility="{Binding DataContext.IsRefreshingStage,
                     RelativeSource={RelativeSource AncestorType=UserControl},
                     Converter={StaticResource BooleanToVisibilityConverter}}"
                   VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -189,7 +189,7 @@
             </Grid>
 
             <!-- Stage 3: Editing -->
-            <Grid Visibility="{Binding IsEditingStage,
+            <Grid Visibility="{Binding DataContext.IsEditingStage,
                     RelativeSource={RelativeSource AncestorType=UserControl},
                     Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid.RowDefinitions>
@@ -433,7 +433,7 @@
             </Grid>
 
             <!-- Error state -->
-            <StackPanel Visibility="{Binding HasError,
+            <StackPanel Visibility="{Binding DataContext.HasError,
                     RelativeSource={RelativeSource AncestorType=UserControl},
                     Converter={StaticResource BooleanToVisibilityConverter}}"
                         VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -465,7 +465,7 @@
                     Margin="0,16,0,0">
             <!-- Search stage buttons -->
             <StackPanel Orientation="Horizontal"
-                        Visibility="{Binding IsSearchStage,
+                        Visibility="{Binding DataContext.IsSearchStage,
                             RelativeSource={RelativeSource AncestorType=UserControl},
                             Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Button Content="{DynamicResource LOCPlayAch_Button_Next}"
@@ -483,7 +483,7 @@
 
             <!-- Editing stage buttons -->
             <StackPanel Orientation="Horizontal"
-                        Visibility="{Binding IsEditingStage,
+                        Visibility="{Binding DataContext.IsEditingStage,
                             RelativeSource={RelativeSource AncestorType=UserControl},
                             Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Button Content="{DynamicResource LOCPlayAch_Button_Save}"
