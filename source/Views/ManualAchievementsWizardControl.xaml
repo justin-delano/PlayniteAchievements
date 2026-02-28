@@ -3,11 +3,11 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:local="clr-namespace:PlayniteAchievements.Views"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800"
-             d:DataContext="{d:DesignInstance vm:ManualAchievementsWizardViewModel}">
+             d:DataContext="{d:DesignInstance vm:ManualAchievementsWizardViewModel}"
+             FocusManager.FocusedElement="{Binding ElementName=SearchTextBox}">
 
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -27,11 +27,123 @@
         <!-- Stage Content -->
         <Grid Grid.Row="1">
             <!-- Stage 1: Search -->
-            <local:ManualAchievementsSearchControl
-                DataContext="{Binding SearchVm}"
-                Visibility="{Binding DataContext.IsSearchStage,
+            <Grid Visibility="{Binding IsSearchStage,
                     RelativeSource={RelativeSource AncestorType=UserControl},
-                    Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <TextBlock Grid.Row="0"
+                           Text="{DynamicResource LOCPlayAch_ManualAchievements_Search_Header}"
+                           Style="{DynamicResource BaseTextBlockStyle}"
+                           Foreground="{DynamicResource TextBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8"/>
+
+                <!-- Game name hint -->
+                <TextBlock Grid.Row="1"
+                           Foreground="{DynamicResource TextBrush}"
+                           Opacity="0.75"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12">
+                    <Run Text="{DynamicResource LOCPlayAch_ManualAchievements_Search_GameLabel}"/>
+                    <Run Text="{Binding PlayniteGameName, Mode=OneTime}" FontWeight="Bold"/>
+                </TextBlock>
+
+                <!-- Search bar -->
+                <Grid Grid.Row="2" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="SearchTextBox"
+                             Grid.Column="0"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                             Padding="8,6"
+                             VerticalContentAlignment="Center"
+                             KeyDown="SearchTextBox_KeyDown"/>
+
+                    <Button Grid.Column="1"
+                            Content="{DynamicResource LOCPlayAch_Button_Search}"
+                            Command="{Binding SearchCommand}"
+                            Padding="12,6"
+                            MinWidth="80"
+                            Margin="8,0,0,0"/>
+                </Grid>
+
+                <!-- Results grid -->
+                <Border Grid.Row="3"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderBrush="{DynamicResource NormalBorderBrush}"
+                        BorderThickness="1"
+                        Margin="0,0,0,8">
+                    <DataGrid ItemsSource="{Binding SearchResults}"
+                              SelectedItem="{Binding SelectedResult, Mode=TwoWay}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              CanUserReorderColumns="True"
+                              CanUserResizeColumns="True"
+                              CanUserSortColumns="True"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              BorderThickness="0"
+                              MouseDoubleClick="SearchDataGrid_MouseDoubleClick">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="" Width="48" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Image Source="{Binding IconUrl}"
+                                               Width="32" Height="32"
+                                               Stretch="UniformToFill"
+                                               RenderOptions.BitmapScalingMode="LowQuality"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Search_Column_Name}"
+                                                Binding="{Binding Name}"
+                                                Width="*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                        <Setter Property="TextWrapping" Value="NoWrap"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Search_Column_AppId}"
+                                                Binding="{Binding SourceGameId}"
+                                                Width="80">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+
+                <!-- Status -->
+                <TextBlock Grid.Row="4"
+                           Text="{Binding SearchStatusMessage}"
+                           Foreground="{DynamicResource TextBrush}"
+                           Opacity="0.75"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,12"/>
+            </Grid>
 
             <!-- Stage 2: Refreshing -->
             <Grid Visibility="{Binding IsRefreshingStage,
@@ -77,11 +189,248 @@
             </Grid>
 
             <!-- Stage 3: Editing -->
-            <local:ManualAchievementsEditControl
-                DataContext="{Binding EditVm}"
-                Visibility="{Binding DataContext.IsEditingStage,
+            <Grid Visibility="{Binding IsEditingStage,
                     RelativeSource={RelativeSource AncestorType=UserControl},
-                    Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <TextBlock Grid.Row="0"
+                           Text="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Header}"
+                           Style="{DynamicResource BaseTextBlockStyle}"
+                           Foreground="{DynamicResource TextBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,8"/>
+
+                <!-- Game info -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
+                    <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.75">
+                        <Run Text="{DynamicResource LOCPlayAch_ManualAchievements_Edit_LinkedInfo}"/>
+                    </TextBlock>
+                    <TextBlock Text="{Binding SourceGameName, Mode=OneWay}"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource TextBrush}"
+                               Margin="4,0,0,0"/>
+                    <TextBlock Text="("
+                               Foreground="{DynamicResource TextBrush}"
+                               Opacity="0.6"
+                               Margin="4,0,0,0"/>
+                    <TextBlock Text="{Binding SourceGameId, Mode=OneWay}"
+                               Foreground="{DynamicResource TextBrush}"
+                               Opacity="0.6"/>
+                    <TextBlock Text=")"
+                               Foreground="{DynamicResource TextBrush}"
+                               Opacity="0.6"/>
+                </StackPanel>
+
+                <!-- Progress and action bar -->
+                <Grid Grid.Row="2" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Progress stats -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Foreground="{DynamicResource TextBrush}" Opacity="0.75">
+                            <Run Text="{Binding UnlockedCount, Mode=OneWay}"/>
+                            <Run Text="/"/>
+                            <Run Text="{Binding TotalCount, Mode=OneWay}"/>
+                            <Run Text="("/>
+                            <Run Text="{Binding CompletionPercent, StringFormat={}{0:F1}, Mode=OneWay}"/>
+                            <Run Text="%)"/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!-- Search filter -->
+                    <TextBox Grid.Column="1"
+                             Text="{Binding EditSearchFilter, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                             Padding="8,4"
+                             VerticalContentAlignment="Center"
+                             Width="200"
+                             HorizontalAlignment="Center"
+                             MinWidth="120">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Style.Resources>
+                                    <VisualBrush x:Key="PlaceholderBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                                        <VisualBrush.Visual>
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_ManualAchievements_Edit_SearchPlaceholder}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.4"
+                                                       IsHitTestVisible="False"
+                                                       Padding="4,0"/>
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </Style.Resources>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding EditSearchFilter}" Value="">
+                                        <Setter Property="Background" Value="{StaticResource PlaceholderBrush}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding EditSearchFilter}" Value="{x:Null}">
+                                        <Setter Property="Background" Value="{StaticResource PlaceholderBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+
+                    <!-- Action buttons -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{DynamicResource LOCPlayAch_ManualAchievements_Edit_UnlockAll}"
+                                Command="{Binding UnlockAllCommand}"
+                                Padding="8,4"
+                                Margin="0,0,8,0"/>
+                        <Button Content="{DynamicResource LOCPlayAch_ManualAchievements_Edit_LockAll}"
+                                Command="{Binding LockAllCommand}"
+                                Padding="8,4"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Achievements grid -->
+                <Border Grid.Row="3"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        BorderBrush="{DynamicResource NormalBorderBrush}"
+                        BorderThickness="1"
+                        Margin="0,0,0,12">
+                    <DataGrid ItemsSource="{Binding FilteredAchievements}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              CanUserReorderColumns="True"
+                              CanUserResizeColumns="True"
+                              CanUserSortColumns="True"
+                              GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column"
+                              BorderThickness="0"
+                              VirtualizingPanel.IsVirtualizing="True"
+                              VirtualizingPanel.VirtualizationMode="Recycling">
+                        <DataGrid.Columns>
+                            <!-- Icon -->
+                            <DataGridTemplateColumn Header="" Width="48" IsReadOnly="True" SortMemberPath="IsUnlocked">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Image>
+                                            <Image.Style>
+                                                <Style TargetType="Image">
+                                                    <Setter Property="Source" Value="{Binding LockedIconUrl, IsAsync=True}"/>
+                                                    <Setter Property="Opacity" Value="0.5"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
+                                                            <Setter Property="Source" Value="{Binding UnlockedIconUrl, IsAsync=True}"/>
+                                                            <Setter Property="Opacity" Value="1.0"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Image.Style>
+                                        </Image>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Name -->
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Name}"
+                                                Binding="{Binding DisplayName, Mode=OneWay}"
+                                                Width="*"
+                                                IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                        <Setter Property="TextWrapping" Value="NoWrap"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!-- Description -->
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Description}"
+                                                Binding="{Binding Description, Mode=OneWay}"
+                                                Width="2*"
+                                                IsReadOnly="True">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="VerticalAlignment" Value="Center"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                        <Setter Property="TextWrapping" Value="NoWrap"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+
+                            <!-- Unlocked checkbox -->
+                            <DataGridCheckBoxColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Unlocked}"
+                                                   Binding="{Binding IsUnlocked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                   Width="70"/>
+
+                            <!-- Unlock date -->
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Date}"
+                                                    Width="120">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <DatePicker SelectedDate="{Binding UnlockDate, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                   IsEnabled="{Binding IsUnlocked}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Padding="4,2"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Unlock time -->
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Time}"
+                                                    Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Text="{Binding UnlockTimeOfDay, StringFormat=hh\\:mm, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                     IsEnabled="{Binding IsUnlocked}"
+                                                     VerticalContentAlignment="Center"
+                                                     HorizontalContentAlignment="Center"
+                                                     Padding="4,2"
+                                                     Grid.Column="0"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Rarity -->
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Rarity}"
+                                                    Width="70"
+                                                    IsReadOnly="True"
+                                                    SortMemberPath="GlobalPercentUnlocked">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock VerticalAlignment="Center"
+                                                   HorizontalAlignment="Center"
+                                                   Text="{Binding GlobalPercentUnlocked, StringFormat={}{0:F1}%}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasRarity}" Value="False">
+                                                            <Setter Property="Opacity" Value="0.4"/>
+                                                            <Setter Property="Text" Value="--"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+            </Grid>
 
             <!-- Error state -->
             <StackPanel Visibility="{Binding HasError,
