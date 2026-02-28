@@ -60,7 +60,7 @@ namespace PlayniteAchievements.Providers.Manual
                     {
                         if (!response.IsSuccessStatusCode)
                         {
-                            _logger?.Debug($"Steam Store search failed with status {(int)response.StatusCode}");
+                            _logger?.Error($"Steam Store search failed with status {(int)response.StatusCode}");
                             return new List<ManualGameSearchResult>();
                         }
 
@@ -71,6 +71,11 @@ namespace PlayniteAchievements.Providers.Manual
                         }
 
                         var envelope = Serialization.FromJson<StoreSearchEnvelope>(json);
+                        if (envelope == null)
+                        {
+                            _logger?.Warn($"Steam Store search returned unparseable JSON for query: {query}");
+                            return new List<ManualGameSearchResult>();
+                        }
                         var items = envelope?.Items;
 
                         if (items == null || items.Count == 0)
