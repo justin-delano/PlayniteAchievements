@@ -96,7 +96,7 @@
                                 Width="{Binding ElementName=PART_GridContener, Path=Tag}"
                                 Height="{Binding ElementName=PART_GridContener, Path=Tag}"
                                 Icon="{Binding UnlockedIconDisplay, IsAsync=True}"
-                                IconCustom="{Binding LockedIconDisplay, IsAsync=True}"
+                                IconCustom="{Binding UnlockedIconDisplay, IsAsync=True}"
                                 IsLocked="{Binding Unlocked, Converter={StaticResource InvertBoolConverter}}"
                                 Percent="{Binding GlobalPercentUnlocked}"
                                 EnableRaretyIndicator="True"
