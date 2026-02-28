@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Playnite.SDK;
+using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Manual;
@@ -372,6 +373,46 @@ namespace PlayniteAchievements.ViewModels
             }
 
             return link;
+        }
+
+        /// <summary>
+        /// Builds a GameAchievementData object suitable for caching.
+        /// Combines achievement schema with user-set unlock times.
+        /// </summary>
+        public GameAchievementData BuildGameAchievementData(Game game, string providerName)
+        {
+            var achievements = new List<AchievementDetail>();
+
+            foreach (var item in AllAchievements)
+            {
+                var detail = new AchievementDetail
+                {
+                    ApiName = item.ApiName,
+                    DisplayName = item.DisplayName,
+                    Description = item.Description,
+                    UnlockedIconPath = item.Source.UnlockedIconPath,
+                    LockedIconPath = item.Source.LockedIconPath,
+                    Hidden = item.Hidden,
+                    GlobalPercentUnlocked = item.GlobalPercentUnlocked,
+                    Points = item.Points,
+                    Unlocked = item.IsUnlocked,
+                    UnlockTimeUtc = item.UnlockTime
+                };
+                achievements.Add(detail);
+            }
+
+            return new GameAchievementData
+            {
+                LastUpdatedUtc = DateTime.UtcNow,
+                ProviderName = providerName,
+                LibrarySourceName = game != null ? game.PluginId.ToString() : string.Empty,
+                HasAchievements = achievements.Count > 0,
+                GameName = game?.Name ?? PlayniteGameName,
+                AppId = int.TryParse(SourceGameId, out var appId) ? appId : 0,
+                PlayniteGameId = game?.Id,
+                Game = game,
+                Achievements = achievements
+            };
         }
 
         private void CloseDialog(bool result)
