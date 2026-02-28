@@ -59,63 +59,40 @@ namespace PlayniteAchievements.Providers.ShadPS4
         }
 
         /// <summary>
-        /// Gets the emulator root directory from an executable path.
-        /// </summary>
-        private string GetEmulatorRootFromExePath(string exePath)
-        {
-            if (string.IsNullOrWhiteSpace(exePath))
-                return null;
-
-            if (!File.Exists(exePath))
-                return null;
-
-            return Path.GetDirectoryName(exePath);
-        }
-
-        /// <summary>
         /// Gets the game data path using priority order:
-        /// 1. User settings (validated)
+        /// 1. User settings (validated game_data folder)
         /// 2. Game's emulator config
         /// 3. First ShadPS4 emulator in database
         /// </summary>
         public string GetGameDataPath(Game game = null)
         {
-            string emulatorRoot = null;
-
-            // Priority 1: From settings (user-configured)
-            var settingsExePath = _settings?.Persisted?.ShadPS4ExecutablePath;
-            if (!string.IsNullOrWhiteSpace(settingsExePath))
+            // Priority 1: From settings (user-configured game_data path)
+            var settingsGameDataPath = _settings?.Persisted?.ShadPS4GameDataPath;
+            if (!string.IsNullOrWhiteSpace(settingsGameDataPath) && Directory.Exists(settingsGameDataPath))
             {
-                var settingsRoot = GetEmulatorRootFromExePath(settingsExePath);
-                if (!string.IsNullOrWhiteSpace(settingsRoot))
-                {
-                    var gameDataPath = Path.Combine(settingsRoot, "user", "game_data");
-                    if (Directory.Exists(gameDataPath))
-                    {
-                        emulatorRoot = settingsRoot;
-                    }
-                }
+                return settingsGameDataPath;
             }
 
             // Priority 2: From game's emulator config
-            if (string.IsNullOrWhiteSpace(emulatorRoot) && game != null)
+            var emulatorRoot = GetEmulatorRootFromGame(game);
+            if (!string.IsNullOrWhiteSpace(emulatorRoot))
             {
-                emulatorRoot = GetEmulatorRootFromGame(game);
+                var gameDataPath = Path.Combine(emulatorRoot, "user", "game_data");
+                if (Directory.Exists(gameDataPath))
+                {
+                    return gameDataPath;
+                }
             }
 
             // Priority 3: From first ShadPS4 emulator in database
-            if (string.IsNullOrWhiteSpace(emulatorRoot))
+            emulatorRoot = FindAnyShadps4EmulatorRoot();
+            if (!string.IsNullOrWhiteSpace(emulatorRoot))
             {
-                emulatorRoot = FindAnyShadps4EmulatorRoot();
+                var gameDataPath = Path.Combine(emulatorRoot, "user", "game_data");
+                return gameDataPath;
             }
 
-            if (string.IsNullOrWhiteSpace(emulatorRoot))
-            {
-                return null;
-            }
-
-            var finalPath = Path.Combine(emulatorRoot, "user", "game_data");
-            return finalPath;
+            return null;
         }
 
         /// <summary>
@@ -225,11 +202,14 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return false;
             }
 
-            // Get settings path for comparison
-            var shadps4ExePath = _settings?.Persisted?.ShadPS4ExecutablePath;
-            var shadps4InstallFolder = string.IsNullOrWhiteSpace(shadps4ExePath)
-                ? null
-                : Path.GetDirectoryName(shadps4ExePath);
+            // Get settings path for comparison - derive emulator root from game_data path
+            var shadps4GameDataPath = _settings?.Persisted?.ShadPS4GameDataPath;
+            string shadps4InstallFolder = null;
+            if (!string.IsNullOrWhiteSpace(shadps4GameDataPath))
+            {
+                // game_data is under user/, so go up two levels to get emulator root
+                shadps4InstallFolder = Path.GetDirectoryName(Path.GetDirectoryName(shadps4GameDataPath));
+            }
 
             foreach (var action in game.GameActions)
             {

@@ -1897,7 +1897,7 @@
                                     </Grid.ColumnDefinitions>
 
                                     <TextBlock Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Settings_ShadPS4ExecutablePath}"
+                                               Text="{DynamicResource LOCPlayAch_Settings_ShadPS4GameDataPath}"
                                                Foreground="{DynamicResource TextBrush}"
                                                VerticalAlignment="Top"
                                                Margin="0,8,0,0"/>
@@ -1963,7 +1963,7 @@
                                                            FontWeight="SemiBold"/>
                                             </Grid>
 
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ShadPS4ExecutablePathHint}"
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ShadPS4GameDataPathHint}"
                                                        Style="{StaticResource MutedTextStyle}"
                                                        Margin="0,0,0,12"
                                                        TextWrapping="Wrap"/>
@@ -1975,9 +1975,9 @@
                                                 </Grid.ColumnDefinitions>
 
                                                 <TextBox Grid.Column="0"
-                                                         Text="{Binding Persisted.ShadPS4ExecutablePath, UpdateSourceTrigger=PropertyChanged}"
-                                                         KeyDown="ShadPS4ExecutablePath_KeyDown"
-                                                         LostFocus="ShadPS4ExecutablePath_LostFocus"
+                                                         Text="{Binding Persisted.ShadPS4GameDataPath, UpdateSourceTrigger=PropertyChanged}"
+                                                         KeyDown="ShadPS4GameDataPath_KeyDown"
+                                                         LostFocus="ShadPS4GameDataPath_LostFocus"
                                                          VerticalAlignment="Center"
                                                          Padding="8,6"
                                                          Margin="0,0,8,0"/>

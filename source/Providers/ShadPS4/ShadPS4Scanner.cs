@@ -95,23 +95,15 @@ namespace PlayniteAchievements.Providers.ShadPS4
         {
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            var exePath = _settings?.Persisted?.ShadPS4ExecutablePath;
-            if (string.IsNullOrWhiteSpace(exePath))
+            var gameDataPath = _settings?.Persisted?.ShadPS4GameDataPath;
+            if (string.IsNullOrWhiteSpace(gameDataPath))
             {
                 return cache;
             }
 
-            // Derive installation folder from executable path
-            var installFolder = Path.GetDirectoryName(exePath);
-            if (string.IsNullOrWhiteSpace(installFolder))
-            {
-                return cache;
-            }
-
-            var gameDataPath = Path.Combine(installFolder, "user", "game_data");
             if (!Directory.Exists(gameDataPath))
             {
-                _logger?.Warn($"[ShadPS4] user/game_data folder not found at {gameDataPath}");
+                _logger?.Warn($"[ShadPS4] game_data folder not found at {gameDataPath}");
                 return cache;
             }
 

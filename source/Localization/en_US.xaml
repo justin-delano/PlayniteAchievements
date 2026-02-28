@@ -329,12 +329,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Connection">ShadPS4 Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Description">Configure ShadPS4 emulator integration to track trophies from PlayStation 4 games played in the emulator.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Enabled">Enable ShadPS4 Trophy Tracking</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4ExecutablePath">Executable Path</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4ExecutablePathHint">Path to shadPS4.exe</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Game Data Folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Path to the user/game_data folder containing trophy data</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Browse">Browse...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Verified">ShadPS4 executable path verified.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_NotConfigured">ShadPS4 executable path not configured.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_FolderNotFound">ShadPS4 user/game_data folder not found.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Verified">ShadPS4 game data folder verified.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_NotConfigured">ShadPS4 game data folder not configured.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_FolderNotFound">ShadPS4 game data folder not found.</sys:String>
 
     <!-- RPCS3 Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Connection">RPCS3 Connection</sys:String>

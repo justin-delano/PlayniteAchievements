@@ -792,7 +792,7 @@ namespace PlayniteAchievements.Views
             CheckRpcs3Auth();
         }
 
-        private void ShadPS4ExecutablePath_KeyDown(object sender, KeyEventArgs e)
+        private void ShadPS4GameDataPath_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
@@ -803,7 +803,7 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void ShadPS4ExecutablePath_LostFocus(object sender, RoutedEventArgs e)
+        private void ShadPS4GameDataPath_LostFocus(object sender, RoutedEventArgs e)
         {
             (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
             CheckShadPS4Auth();
@@ -1880,12 +1880,10 @@ namespace PlayniteAchievements.Views
 
         private void ShadPS4_Browse_Click(object sender, RoutedEventArgs e)
         {
-            var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFile("shadPS4.exe|shadPS4.exe|Executable files|*.exe");
+            var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFolder();
             if (!string.IsNullOrWhiteSpace(selectedPath))
             {
-                _settingsViewModel.Settings.Persisted.ShadPS4ExecutablePath = selectedPath;
-
-                // Check if the selected file is valid
+                _settingsViewModel.Settings.Persisted.ShadPS4GameDataPath = selectedPath;
                 CheckShadPS4Auth();
             }
         }
@@ -1908,25 +1906,15 @@ namespace PlayniteAchievements.Views
 
         private void CheckShadPS4Auth()
         {
-            var exePath = _settingsViewModel.Settings?.Persisted?.ShadPS4ExecutablePath;
+            var gameDataPath = _settingsViewModel.Settings?.Persisted?.ShadPS4GameDataPath;
 
-            if (string.IsNullOrWhiteSpace(exePath))
+            if (string.IsNullOrWhiteSpace(gameDataPath))
             {
                 SetShadPS4Authenticated(false);
                 SetShadPS4AuthStatusByKey("LOCPlayAch_Settings_ShadPS4_NotConfigured");
                 return;
             }
 
-            // Derive installation folder from executable path
-            var installFolder = System.IO.Path.GetDirectoryName(exePath);
-            if (string.IsNullOrWhiteSpace(installFolder))
-            {
-                SetShadPS4Authenticated(false);
-                SetShadPS4AuthStatusByKey("LOCPlayAch_Settings_ShadPS4_NotConfigured");
-                return;
-            }
-
-            var gameDataPath = System.IO.Path.Combine(installFolder, "user", "game_data");
             if (System.IO.Directory.Exists(gameDataPath))
             {
                 SetShadPS4Authenticated(true);

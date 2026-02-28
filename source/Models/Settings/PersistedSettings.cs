@@ -34,7 +34,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _retroAchievementsEnabled = true;
         private bool _xboxEnabled = true;
         private bool _shadPS4Enabled = true;
-        private string _shadPS4ExecutablePath = string.Empty;
+        private string _shadPS4GameDataPath = string.Empty;
         private bool _rpcs3Enabled = true;
         private string _rpcs3ExecutablePath = string.Empty;
         private bool _enablePeriodicUpdates = true;
@@ -230,13 +230,12 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Path to the ShadPS4 executable (shadPS4.exe).
-        /// The installation folder is derived from this path.
+        /// Path to the ShadPS4 user/game_data folder containing trophy data.
         /// </summary>
-        public string ShadPS4ExecutablePath
+        public string ShadPS4GameDataPath
         {
-            get => _shadPS4ExecutablePath;
-            set => SetValue(ref _shadPS4ExecutablePath, value ?? string.Empty);
+            get => _shadPS4GameDataPath;
+            set => SetValue(ref _shadPS4GameDataPath, value ?? string.Empty);
         }
 
         /// <summary>
@@ -798,7 +797,7 @@ namespace PlayniteAchievements.Models.Settings
                 RetroAchievementsEnabled = this.RetroAchievementsEnabled,
                 XboxEnabled = this.XboxEnabled,
                 ShadPS4Enabled = this.ShadPS4Enabled,
-                ShadPS4ExecutablePath = this.ShadPS4ExecutablePath,
+                ShadPS4GameDataPath = this.ShadPS4GameDataPath,
                 Rpcs3Enabled = this.Rpcs3Enabled,
                 Rpcs3ExecutablePath = this.Rpcs3ExecutablePath,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
