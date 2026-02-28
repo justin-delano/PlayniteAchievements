@@ -50,7 +50,7 @@
                      KeyDown="SearchTextBox_KeyDown"/>
 
             <Button Grid.Column="1"
-                    Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                    Content="{DynamicResource LOCPlayAch_Button_Search}"
                     Command="{Binding SearchCommand}"
                     Padding="12,6"
                     MinWidth="80"
