@@ -20,6 +20,7 @@ using PlayniteAchievements.Providers.PSN;
 using PlayniteAchievements.Providers.Xbox;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.RPCS3;
+using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -63,6 +64,7 @@ namespace PlayniteAchievements
         private readonly PsnSessionManager _psnSessionManager;
         private readonly XboxSessionManager _xboxSessionManager;
         private readonly ProviderRegistry _providerRegistry;
+        private readonly ManualAchievementsProvider _manualProvider;
 
         private readonly BackgroundUpdater _backgroundUpdates;
         private readonly RefreshCoordinator _refreshCoordinator;
@@ -183,6 +185,7 @@ namespace PlayniteAchievements
                 List<IDataProvider> providers;
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
                 {
+                    _manualProvider = new ManualAchievementsProvider(_logger, settings, pluginUserDataPath);
                     providers = new List<IDataProvider>
                     {
                         new SteamDataProvider(
@@ -222,7 +225,8 @@ namespace PlayniteAchievements
                         new Rpcs3DataProvider(
                             _logger,
                             settings,
-                            PlayniteApi)
+                            PlayniteApi),
+                        _manualProvider
                     };
                 }
 
@@ -643,6 +647,46 @@ namespace PlayniteAchievements
                     };
                 }
             }
+
+            // Add manual achievements menu items
+            var hasManualLink = _settingsViewModel.Settings.Persisted.ManualAchievementLinks.ContainsKey(game.Id);
+
+            if (!hasManualLink)
+            {
+                // Show "Link Steam Achievements" when game is not linked
+                yield return new GameMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_LinkSteamAchievements"),
+                    MenuSection = PluginGameMenuSection,
+                    Action = (a) =>
+                    {
+                        OpenManualAchievementsSearchDialog(game);
+                    }
+                };
+            }
+            else
+            {
+                // Show "Edit Manual Achievements" and "Unlink Achievements" when game is linked
+                yield return new GameMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_EditManualAchievements"),
+                    MenuSection = PluginGameMenuSection,
+                    Action = (a) =>
+                    {
+                        OpenManualAchievementsEditDialog(game);
+                    }
+                };
+
+                yield return new GameMenuItem
+                {
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_UnlinkAchievements"),
+                    MenuSection = PluginGameMenuSection,
+                    Action = (a) =>
+                    {
+                        UnlinkManualAchievements(game);
+                    }
+                };
+            }
         }
 
         private void ClearSingleGameData(Game game)
@@ -922,6 +966,239 @@ namespace PlayniteAchievements
             }
 
             _achievementService.SetExcludedByUser(gameId, !isExcluded);
+        }
+
+        // === Manual Achievements Dialog Methods ===
+
+        private void OpenManualAchievementsSearchDialog(Game game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var searchVm = new ManualAchievementsSearchViewModel(
+                    _manualProvider.GetSteamManualSource(),
+                    game.Name,
+                    _settingsViewModel.Settings.Persisted.GlobalLanguage ?? "english",
+                    _logger);
+
+                var searchControl = new ManualAchievementsSearchControl(searchVm);
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true,
+                    CanBeResizable = false,
+                    Width = 600,
+                    Height = 500
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Search_Title"),
+                    searchControl,
+                    windowOptions);
+
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch (Exception ex) { _logger?.Debug(ex, "Failed to set window owner"); }
+
+                searchVm.RequestClose += (s, ev) => window.Close();
+                window.ShowDialog();
+
+                if (searchVm.DialogResult != true || searchVm.SelectedResult == null)
+                {
+                    return;
+                }
+
+                // Open edit dialog with selected game
+                OpenManualAchievementsEditDialogForSelection(game, searchVm.SelectedResult);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to open manual achievements search dialog for game '{game.Name}'");
+                PlayniteApi?.Dialogs?.ShowErrorMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_FetchFailed"), ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+            }
+        }
+
+        private async void OpenManualAchievementsEditDialogForSelection(Game playniteGame, ManualGameSearchResult searchResult)
+        {
+            try
+            {
+                var language = _settingsViewModel.Settings.Persisted.GlobalLanguage ?? "english";
+                var source = _manualProvider.GetSteamManualSource();
+
+                var achievements = await source.GetAchievementsAsync(searchResult.SourceGameId, language, CancellationToken.None);
+                if (achievements == null || achievements.Count == 0)
+                {
+                    PlayniteApi?.Dialogs?.ShowMessage(
+                        ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_NoAchievements"),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
+                var editVm = new ManualAchievementsEditViewModel(
+                    source,
+                    achievements,
+                    searchResult.SourceGameId,
+                    searchResult.Name,
+                    null,
+                    playniteGame.Name,
+                    language,
+                    _logger);
+
+                ShowManualEditDialog(editVm, playniteGame);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to fetch achievements for manual link: {searchResult.SourceGameId}");
+                PlayniteApi?.Dialogs?.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_FetchFailed"), ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private async void OpenManualAchievementsEditDialog(Game game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            if (!_settingsViewModel.Settings.Persisted.ManualAchievementLinks.TryGetValue(game.Id, out var link) || link == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var language = _settingsViewModel.Settings.Persisted.GlobalLanguage ?? "english";
+                var source = _manualProvider.GetSteamManualSource();
+
+                var achievements = await source.GetAchievementsAsync(link.SourceGameId, language, CancellationToken.None);
+                if (achievements == null || achievements.Count == 0)
+                {
+                    PlayniteApi?.Dialogs?.ShowMessage(
+                        ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Schema_NoAchievements"),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
+                var editVm = new ManualAchievementsEditViewModel(
+                    source,
+                    achievements,
+                    link.SourceGameId,
+                    link.SourceGameId,
+                    link,
+                    game.Name,
+                    language,
+                    _logger);
+
+                ShowManualEditDialog(editVm, game);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to open manual achievements edit dialog for game '{game.Name}'");
+                PlayniteApi?.Dialogs?.ShowErrorMessage(
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_ManualAchievements_Edit_SaveFailed"), ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+            }
+        }
+
+        private void ShowManualEditDialog(ManualAchievementsEditViewModel editVm, Game game)
+        {
+            var editControl = new ManualAchievementsEditControl(editVm);
+            var windowOptions = new WindowOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = true,
+                ShowCloseButton = true,
+                CanBeResizable = true,
+                Width = 800,
+                Height = 600
+            };
+
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                editVm.WindowTitle,
+                editControl,
+                windowOptions);
+
+            window.MinWidth = 600;
+            window.MinHeight = 400;
+
+            try
+            {
+                if (window.Owner == null)
+                {
+                    window.Owner = PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+                }
+            }
+            catch (Exception ex) { _logger?.Debug(ex, "Failed to set window owner"); }
+
+            editVm.RequestClose += (s, ev) => window.Close();
+            window.ShowDialog();
+
+            if (editVm.DialogResult == true)
+            {
+                var link = editVm.BuildLink();
+                _settingsViewModel.Settings.Persisted.ManualAchievementLinks[game.Id] = link;
+                SavePluginSettings(_settingsViewModel.Settings);
+
+                _logger?.Info($"Saved manual achievement link for '{game.Name}' (source={link.SourceKey}, gameId={link.SourceGameId})");
+
+                // Trigger a refresh for this game
+                _ = _refreshCoordinator.ExecuteAsync(
+                    new RefreshRequest
+                    {
+                        Mode = RefreshModeType.Single,
+                        SingleGameId = game.Id
+                    });
+            }
+        }
+
+        private void UnlinkManualAchievements(Game game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            var result = PlayniteApi?.Dialogs?.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_UnlinkAchievements_Confirm"), game.Name),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            _settingsViewModel.Settings.Persisted.ManualAchievementLinks.Remove(game.Id);
+            SavePluginSettings(_settingsViewModel.Settings);
+
+            _logger?.Info($"Unlinked manual achievements for '{game.Name}'");
+
+            PlayniteApi?.Dialogs?.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_UnlinkAchievements_Success"), game.Name),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
 
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)

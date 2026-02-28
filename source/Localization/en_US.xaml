@@ -724,4 +724,54 @@
     <sys:String x:Key="LOCPlayAch_ChartAll">All</sys:String>
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Group by unlocked</sys:String>
 
+    <!-- ================================================================= -->
+    <!-- MANUAL ACHIEVEMENTS                                                -->
+    <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Provider_Manual">Manual</sys:String>
+
+    <!-- Game context menu -->
+    <sys:String x:Key="LOCPlayAch_Menu_LinkSteamAchievements">Link Steam Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_EditManualAchievements">Edit Manual Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements">Unlink Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Unlink achievements for "{0}"?&#10;&#10;This will remove the manual achievement link and delete all manually set unlock times. The cached achievement data will be removed on next refresh.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Success">Achievements unlinked for "{0}".</sys:String>
+
+    <!-- Search dialog -->
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Title">Link Steam Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Header">Search for a Steam game to link achievements from. The selected game's achievements will be linked to this Playnite game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_GameLabel">Playnite game:</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Placeholder">Enter game name to search...</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Column_Name">Name</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Column_AppId">App ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">No games found. Try a different search term.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_ResultsFormat">Found {0} game(s)</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Error">Search failed: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Loading">Searching...</sys:String>
+
+    <!-- Edit dialog -->
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Title">Edit Manual Achievements - {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">Check off achievements you've unlocked and set unlock times. Changes are saved when you click OK.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_LinkedInfo">Linked to Steam App ID:</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_SearchPlaceholder">Filter achievements...</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Column_Name">Achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Column_Description">Description</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Column_Unlocked">Unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Column_Date">Date</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Column_Time">Time</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Column_Rarity">Rarity</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_UnlockAll">Unlock All</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_LockAll">Lock All</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Saving">Saving...</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_NoAchievements">No achievements found for this game. The linked Steam game may not have achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_SaveSuccess">Manual achievements saved.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_SaveFailed">Failed to save manual achievements: {0}</sys:String>
+
+    <!-- Schema fetch errors -->
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_NoAchievements">The selected Steam game has no achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_FetchFailed">Failed to fetch achievement data from Steam: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_ApiKeyRequired">Steam API key is required to fetch achievement data. Configure it in plugin settings.</sys:String>
+
+    <!-- Rarity column -->
+    <sys:String x:Key="LOCPlayAch_Column_Rarity">Rarity</sys:String>
+
 </ResourceDictionary>

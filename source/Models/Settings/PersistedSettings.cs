@@ -39,6 +39,7 @@ namespace PlayniteAchievements.Models.Settings
         private string _rpcs3ExecutablePath = string.Empty;
         private bool _enablePeriodicUpdates = true;
         private int _periodicUpdateHours = 6;
+        private bool _manualEnabled = true;
         private bool _enableNotifications = true;
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
@@ -79,6 +80,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _seenThemeMigration = false;
         private HashSet<Guid> _excludedGameIds = new HashSet<Guid>();
         private Dictionary<Guid, string> _manualCapstones = new Dictionary<Guid, string>();
+        private Dictionary<Guid, ManualAchievementLink> _manualAchievementLinks = new Dictionary<Guid, ManualAchievementLink>();
         private Dictionary<string, ThemeMigrationCacheEntry> _themeMigrationVersionCache =
             new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase);
 
@@ -239,12 +241,21 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Enable or disable RPCS3 trophy scanning.
+        /// Enable or disable RPCS3 trophy tracking.
         /// </summary>
         public bool Rpcs3Enabled
         {
             get => _rpcs3Enabled;
             set => SetValue(ref _rpcs3Enabled, value);
+        }
+
+        /// <summary>
+        /// Enable or disable Manual achievement tracking.
+        /// </summary>
+        public bool ManualEnabled
+        {
+            get => _manualEnabled;
+            set => SetValue(ref _manualEnabled, value);
         }
 
         /// <summary>
@@ -768,6 +779,17 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _manualCapstones, value ?? new Dictionary<Guid, string>());
         }
 
+        /// <summary>
+        /// Manual achievement links. Key = Playnite Game ID, Value = ManualAchievementLink.
+        /// Links any Playnite game to achievements from a source (e.g., Steam).
+        /// Unlock times are stored here and persist across cache clears.
+        /// </summary>
+        public Dictionary<Guid, ManualAchievementLink> ManualAchievementLinks
+        {
+            get => _manualAchievementLinks;
+            set => SetValue(ref _manualAchievementLinks, value ?? new Dictionary<Guid, ManualAchievementLink>());
+        }
+
         #endregion
 
         #region Clone Method
@@ -873,7 +895,13 @@ namespace PlayniteAchievements.Models.Settings
                     : new HashSet<Guid>(),
                 ManualCapstones = this.ManualCapstones != null
                     ? new Dictionary<Guid, string>(this.ManualCapstones)
-                    : new Dictionary<Guid, string>()
+                    : new Dictionary<Guid, string>(),
+                ManualAchievementLinks = this.ManualAchievementLinks != null
+                    ? this.ManualAchievementLinks.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Clone())
+                    : new Dictionary<Guid, ManualAchievementLink>(),
+                ManualEnabled = this.ManualEnabled
             };
         }
 

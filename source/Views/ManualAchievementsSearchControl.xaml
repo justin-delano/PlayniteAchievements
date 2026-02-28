@@ -1,0 +1,144 @@
+<UserControl x:Class="PlayniteAchievements.Views.ManualAchievementsSearchControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="480" d:DesignWidth="520"
+             FocusManager.FocusedElement="{Binding ElementName=SearchTextBox}">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0"
+                   Text="{DynamicResource LOCPlayAch_ManualAchievements_Search_Header}"
+                   Style="{DynamicResource BaseTextBlockStyle}"
+                   Foreground="{DynamicResource TextBrush}"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,8"/>
+
+        <!-- Game name -->
+        <TextBlock Grid.Row="1"
+                   Foreground="{DynamicResource TextBrush}"
+                   Opacity="0.75"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12">
+            <Run Text="{DynamicResource LOCPlayAch_ManualAchievements_Search_GameLabel}"/>
+            <Run Text="{Binding PlayniteGameName, Mode=OneTime}" FontWeight="Bold"/>
+        </TextBlock>
+
+        <!-- Search bar -->
+        <Grid Grid.Row="2" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox x:Name="SearchTextBox"
+                     Grid.Column="0"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                     Padding="8,6"
+                     VerticalContentAlignment="Center"
+                     KeyDown="SearchTextBox_KeyDown"/>
+
+            <Button Grid.Column="1"
+                    Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                    Command="{Binding SearchCommand}"
+                    Padding="12,6"
+                    MinWidth="80"
+                    Margin="8,0,0,0"/>
+        </Grid>
+
+        <!-- Results grid -->
+        <Border Grid.Row="3"
+                Background="{DynamicResource ControlBackgroundBrush}"
+                BorderBrush="{DynamicResource NormalBorderBrush}"
+                BorderThickness="1"
+                Margin="0,0,0,8">
+            <DataGrid ItemsSource="{Binding SearchResults}"
+                      SelectedItem="{Binding SelectedResult, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserReorderColumns="True"
+                      CanUserResizeColumns="True"
+                      CanUserSortColumns="True"
+                      GridLinesVisibility="Horizontal"
+                      HeadersVisibility="Column"
+                      BorderThickness="0"
+                      MouseDoubleClick="DataGrid_MouseDoubleClick">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="" Width="48" IsReadOnly="True">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Image Source="{Binding IconUrl}"
+                                       Width="32" Height="32"
+                                       Stretch="UniformToFill"
+                                       RenderOptions.BitmapScalingMode="LowQuality"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+
+                    <DataGridTextColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Search_Column_Name}"
+                                        Binding="{Binding Name}"
+                                        Width="*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                <Setter Property="TextWrapping" Value="NoWrap"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <DataGridTextColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Search_Column_AppId}"
+                                        Binding="{Binding SourceGameId}"
+                                        Width="80">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="VerticalAlignment" Value="Center"/>
+                                <Setter Property="HorizontalAlignment" Value="Center"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Status -->
+        <TextBlock Grid.Row="4"
+                   Text="{Binding StatusMessage}"
+                   Foreground="{DynamicResource TextBrush}"
+                   Opacity="0.75"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12"/>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="5"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Content="{DynamicResource LOCPlayAch_Button_Ok}"
+                    Click="OkButton_Click"
+                    Padding="12,6"
+                    MinWidth="80"
+                    Margin="0,0,8,0"
+                    IsDefault="True"/>
+
+            <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                    Click="CancelButton_Click"
+                    Padding="12,6"
+                    MinWidth="80"
+                    IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

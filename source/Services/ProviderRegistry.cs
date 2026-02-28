@@ -20,7 +20,8 @@ namespace PlayniteAchievements.Services
             { "RetroAchievements", true },
             { "Xbox", true },
             { "ShadPS4", true },
-            { "RPCS3", true }
+            { "RPCS3", true },
+            { "Manual", true }
         };
 
         /// <summary>
@@ -84,6 +85,7 @@ namespace PlayniteAchievements.Services
             _enabledState["Xbox"] = settings.XboxEnabled;
             _enabledState["ShadPS4"] = settings.ShadPS4Enabled;
             _enabledState["RPCS3"] = settings.Rpcs3Enabled;
+            _enabledState["Manual"] = settings.ManualEnabled;
         }
 
         /// <summary>
@@ -106,6 +108,7 @@ namespace PlayniteAchievements.Services
             settings.XboxEnabled = IsProviderEnabled("Xbox");
             settings.ShadPS4Enabled = IsProviderEnabled("ShadPS4");
             settings.Rpcs3Enabled = IsProviderEnabled("RPCS3");
+            settings.ManualEnabled = IsProviderEnabled("Manual");
         }
     }
 

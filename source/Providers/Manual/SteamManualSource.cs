@@ -1,0 +1,294 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Runtime.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
+using Playnite.SDK;
+using Playnite.SDK.Data;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Steam.Models;
+
+namespace PlayniteAchievements.Providers.Manual
+{
+    /// <summary>
+    /// Manual source implementation for Steam.
+    /// Uses Steam Store API for search and Steam Web API for achievement schema.
+    /// </summary>
+    internal sealed class SteamManualSource : IManualSource
+    {
+        private const string StoreSearchUrl = "https://store.steampowered.com/api/storesearch/";
+        private const string DefaultUserAgent =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+        private readonly HttpClient _httpClient;
+        private readonly ILogger _logger;
+        private readonly Func<string> _getApiKey;
+
+        public string SourceKey => "Steam";
+        public string SourceName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
+
+        public SteamManualSource(HttpClient httpClient, ILogger logger, Func<string> getApiKey)
+        {
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _logger = logger;
+            _getApiKey = getApiKey ?? throw new ArgumentNullException(nameof(getApiKey));
+        }
+
+        public async Task<List<ManualGameSearchResult>> SearchGamesAsync(string query, string language, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return new List<ManualGameSearchResult>();
+            }
+
+            try
+            {
+                // Map language to Steam Store language code
+                var steamLanguage = MapLanguageToSteam(language);
+                var cc = "US";
+
+                var url = $"{StoreSearchUrl}?term={Uri.EscapeDataString(query)}&l={Uri.EscapeDataString(steamLanguage)}&cc={cc}";
+
+                using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+                {
+                    request.Headers.TryAddWithoutValidation("User-Agent", DefaultUserAgent);
+                    request.Headers.TryAddWithoutValidation("Accept", "application/json");
+
+                    using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
+                    {
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            _logger?.Debug($"Steam Store search failed with status {(int)response.StatusCode}");
+                            return new List<ManualGameSearchResult>();
+                        }
+
+                        var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(json))
+                        {
+                            return new List<ManualGameSearchResult>();
+                        }
+
+                        var envelope = Serialization.FromJson<StoreSearchEnvelope>(json);
+                        var items = envelope?.Items;
+
+                        if (items == null || items.Count == 0)
+                        {
+                            return new List<ManualGameSearchResult>();
+                        }
+
+                        var results = new List<ManualGameSearchResult>(items.Count);
+                        foreach (var item in items)
+                        {
+                            if (item == null || item.AppId <= 0)
+                            {
+                                continue;
+                            }
+
+                            results.Add(new ManualGameSearchResult
+                            {
+                                SourceGameId = item.AppId.ToString(),
+                                Name = item.Name ?? string.Empty,
+                                IconUrl = GetTallestImageUrl(item),
+                                HasAchievements = false // Will be determined on schema fetch
+                            });
+                        }
+
+                        return results;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Steam Store search failed");
+                return new List<ManualGameSearchResult>();
+            }
+        }
+
+        public async Task<List<AchievementDetail>> GetAchievementsAsync(string sourceGameId, string language, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(sourceGameId) || !int.TryParse(sourceGameId, out var appId) || appId <= 0)
+            {
+                return null;
+            }
+
+            var apiKey = _getApiKey();
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                _logger?.Warn("Steam API key not configured; cannot fetch manual achievements");
+                return null;
+            }
+
+            try
+            {
+                var steamLanguage = MapLanguageToSteam(language);
+                var url = $"https://api.steampowered.com/IPlayerService/GetGameAchievements/v1/" +
+                          $"?key={Uri.EscapeDataString(apiKey)}" +
+                          $"&appid={appId}" +
+                          $"&language={Uri.EscapeDataString(steamLanguage)}";
+
+                using (var response = await _httpClient.GetAsync(url, ct).ConfigureAwait(false))
+                {
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger?.Debug($"GetGameAchievements API non-success: {(int)response.StatusCode} for appId={appId}");
+                        return null;
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        return null;
+                    }
+
+                    var root = Serialization.FromJson<GetGameAchievementsRoot>(json);
+                    var achievements = root?.Response?.Achievements;
+
+                    if (achievements == null || achievements.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    var result = new List<AchievementDetail>(achievements.Count);
+
+                    foreach (var ach in achievements)
+                    {
+                        if (ach == null || string.IsNullOrWhiteSpace(ach.InternalName))
+                        {
+                            continue;
+                        }
+
+                        double? globalPercent = null;
+                        if (!string.IsNullOrWhiteSpace(ach.PlayerPercentUnlocked) &&
+                            double.TryParse(ach.PlayerPercentUnlocked, System.Globalization.NumberStyles.Any,
+                                System.Globalization.CultureInfo.InvariantCulture, out var percent))
+                        {
+                            globalPercent = percent;
+                        }
+
+                        var detail = new AchievementDetail
+                        {
+                            ApiName = ach.InternalName,
+                            DisplayName = ach.LocalizedName ?? ach.InternalName,
+                            Description = ach.LocalizedDesc ?? string.Empty,
+                            UnlockedIconPath = $"https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/{appId}/{ach.Icon}",
+                            LockedIconPath = $"https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/{appId}/{ach.IconGray}",
+                            Hidden = ach.Hidden,
+                            GlobalPercentUnlocked = globalPercent,
+                            Unlocked = false,
+                            UnlockTimeUtc = null
+                        };
+
+                        result.Add(detail);
+                    }
+
+                    return result;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to fetch Steam achievements for appId={appId}");
+                return null;
+            }
+        }
+
+        private static string MapLanguageToSteam(string language)
+        {
+            if (string.IsNullOrWhiteSpace(language))
+            {
+                return "english";
+            }
+
+            // Map common language codes to Steam Store language names
+            var lower = language.ToLowerInvariant().Trim();
+            return lower switch
+            {
+                "english" => "english",
+                "german" or "deutsch" or "de" => "german",
+                "french" or "français" or "fr" => "french",
+                "spanish" or "español" or "es" => "spanish",
+                "italian" or "italiano" or "it" => "italian",
+                "portuguese" or "pt" => "portuguese",
+                "brazilian" or "pt-br" or "brazilian portuguese" => "brazilian",
+                "russian" or "русский" or "ru" => "russian",
+                "polish" or "polski" or "pl" => "polish",
+                "dutch" or "nederlands" or "nl" => "dutch",
+                "swedish" or "svenska" or "sv" => "swedish",
+                "finnish" or "suomi" or "fi" => "finnish",
+                "danish" or "dansk" or "da" => "danish",
+                "norwegian" or "norsk" or "no" => "norwegian",
+                "hungarian" or "magyar" or "hu" => "hungarian",
+                "czech" or "čeština" or "cs" => "czech",
+                "romanian" or "română" or "ro" => "romanian",
+                "turkish" or "türkçe" or "tr" => "turkish",
+                "greek" or "ελληνικά" or "el" => "greek",
+                "bulgarian" or "български" or "bg" => "bulgarian",
+                "ukrainian" or "українська" or "uk" => "ukrainian",
+                "thai" or "ไทย" or "th" => "thai",
+                "vietnamese" or "tiếng việt" or "vi" => "vietnamese",
+                "japanese" or "日本語" or "ja" => "japanese",
+                "korean" or "한국어" or "ko" => "korean",
+                "schinese" or "simplified chinese" or "简体中文" or "zh-cn" => "schinese",
+                "tchinese" or "traditional chinese" or "繁體中文" or "zh-tw" => "tchinese",
+                "arabic" or "العربية" or "ar" => "arabic",
+                _ => "english"
+            };
+        }
+
+        private static string GetTallestImageUrl(StoreSearchItem item)
+        {
+            // Prefer the tallest image (usually box art) for better visibility
+            if (!string.IsNullOrWhiteSpace(item.ImgHdrUrl))
+            {
+                return item.ImgHdrUrl;
+            }
+            if (!string.IsNullOrWhiteSpace(item.ImgGridUrl))
+            {
+                return item.ImgGridUrl;
+            }
+            return item.IconUrl ?? string.Empty;
+        }
+
+        #region Steam Store Search API Models
+
+        [DataContract]
+        private sealed class StoreSearchEnvelope
+        {
+            [DataMember(Name = "items")]
+            public List<StoreSearchItem> Items { get; set; }
+
+            [DataMember(Name = "total")]
+            public int? Total { get; set; }
+        }
+
+        [DataContract]
+        private sealed class StoreSearchItem
+        {
+            [DataMember(Name = "appid")]
+            public int AppId { get; set; }
+
+            [DataMember(Name = "name")]
+            public string Name { get; set; }
+
+            [DataMember(Name = "tiny_image")]
+            public string IconUrl { get; set; }
+
+            [DataMember(Name = "header_image")]
+            public string ImgHdrUrl { get; set; }
+
+            [DataMember(Name = "boxart")]
+            public string ImgGridUrl { get; set; }
+        }
+
+        #endregion
+    }
+}
