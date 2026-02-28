@@ -205,23 +205,5 @@ namespace PlayniteAchievements.Providers.GOG
 
             return gameData;
         }
-
-        /// <summary>
-        /// Creates game data for games without achievements.
-        /// </summary>
-        private static GameAchievementData CreateNoAchievementsData(Game game, string productId)
-        {
-            return new GameAchievementData
-            {
-                AppId = int.TryParse(productId, out var pid) ? pid : 0,
-                GameName = game.Name,
-                ProviderName = ResourceProvider.GetString("LOCPlayAch_Provider_GOG"),
-                LibrarySourceName = game?.Source?.Name,
-                LastUpdatedUtc = DateTime.UtcNow,
-                HasAchievements = false,
-                PlayniteGameId = game.Id,
-                Achievements = new List<AchievementDetail>()
-            };
-        }
     }
 }
