@@ -339,7 +339,7 @@ namespace PlayniteAchievements.Providers.Steam
         public async Task<(bool IsLoggedIn, string FinalUrl)> ProbeLoggedInAsync(CancellationToken ct)
         {
             var probeUrl = "https://steamcommunity.com/my/friends";
-            var res = await GetSteamPageAsync(probeUrl, ct).ConfigureAwait(false);
+            var res = await GetSteamPageAsyncCef(probeUrl, ct).ConfigureAwait(false);
 
             var finalUrl = res.FinalUrl ?? "";
             if (string.IsNullOrWhiteSpace(finalUrl))
@@ -354,7 +354,7 @@ namespace PlayniteAchievements.Providers.Steam
             return (isLoggedIn, finalUrl);
         }
 
-        private async Task<(string FinalUrl, string Html)> GetSteamPageAsync(string url, CancellationToken ct)
+        public async Task<(string FinalUrl, string Html)> GetSteamPageAsyncCef(string url, CancellationToken ct)
         {
             string finalUrl = url;
             string html = "";
