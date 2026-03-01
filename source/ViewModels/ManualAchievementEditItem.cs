@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.ViewModels
@@ -12,6 +13,7 @@ namespace PlayniteAchievements.ViewModels
     public sealed class ManualAchievementEditItem : INotifyPropertyChanged
     {
         private bool _isUnlocked;
+        private bool _isRevealed;
         private DateTime? _unlockTime;
 
         public AchievementDetail Source { get; }
@@ -37,6 +39,10 @@ namespace PlayniteAchievements.ViewModels
                     _isUnlocked = value;
                     OnPropertyChanged(nameof(IsUnlocked));
                     OnPropertyChanged(nameof(DisplayIconUrl));
+                    OnPropertyChanged(nameof(CanReveal));
+                    OnPropertyChanged(nameof(IsHidden));
+                    OnPropertyChanged(nameof(DisplayNameResolved));
+                    OnPropertyChanged(nameof(DescriptionResolved));
 
                     // Auto-set unlock time to now when unlocking without a time
                     if (value && !_unlockTime.HasValue)
@@ -65,6 +71,60 @@ namespace PlayniteAchievements.ViewModels
                     icon = AchievementIconResolver.ApplyGrayPrefix(icon);
                 }
                 return icon;
+            }
+        }
+
+        /// <summary>
+        /// Whether this hidden achievement can be revealed (hidden and not unlocked).
+        /// </summary>
+        public bool CanReveal => Hidden && !IsUnlocked;
+
+        /// <summary>
+        /// Whether the achievement info should be hidden (can reveal and not yet revealed).
+        /// </summary>
+        public bool IsHidden => CanReveal && !_isRevealed;
+
+        /// <summary>
+        /// Whether the hidden achievement has been revealed in this session.
+        /// </summary>
+        public bool IsRevealed
+        {
+            get => _isRevealed;
+            set
+            {
+                if (_isRevealed != value)
+                {
+                    _isRevealed = value;
+                    OnPropertyChanged(nameof(IsRevealed));
+                    OnPropertyChanged(nameof(IsHidden));
+                    OnPropertyChanged(nameof(DisplayNameResolved));
+                    OnPropertyChanged(nameof(DescriptionResolved));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Display name, masked if hidden and not revealed.
+        /// </summary>
+        public string DisplayNameResolved => IsHidden
+            ? ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle")
+            : DisplayName;
+
+        /// <summary>
+        /// Description, masked if hidden and not revealed.
+        /// </summary>
+        public string DescriptionResolved => IsHidden
+            ? ResourceProvider.GetString("LOCPlayAch_Achievements_ClickToReveal")
+            : Description;
+
+        /// <summary>
+        /// Toggles the reveal state if the achievement can be revealed.
+        /// </summary>
+        public void ToggleReveal()
+        {
+            if (CanReveal)
+            {
+                IsRevealed = !IsRevealed;
             }
         }
 

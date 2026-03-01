@@ -255,6 +255,7 @@ namespace PlayniteAchievements.ViewModels
         public ICommand RetryCommand { get; }
         public RelayCommand UnlockAllCommand { get; }
         public RelayCommand LockAllCommand { get; }
+        public RelayCommand RevealAchievementCommand { get; }
 
         #endregion
 
@@ -302,6 +303,7 @@ namespace PlayniteAchievements.ViewModels
             // Edit commands
             UnlockAllCommand = new RelayCommand(_ => SetAllUnlocked(true));
             LockAllCommand = new RelayCommand(_ => SetAllUnlocked(false));
+            RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as ManualAchievementEditItem));
 
             if (_startAtEditingStage)
             {
@@ -652,6 +654,16 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(TotalCount));
             OnPropertyChanged(nameof(UnlockedCount));
             OnPropertyChanged(nameof(CompletionPercent));
+        }
+
+        private void RevealAchievement(ManualAchievementEditItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            item.ToggleReveal();
         }
 
         private bool CanSave()
