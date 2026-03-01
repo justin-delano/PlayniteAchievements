@@ -33,6 +33,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _psnEnabled = true;
         private bool _retroAchievementsEnabled = true;
         private bool _xboxEnabled = true;
+        private bool _xboxLowResIcons = false;
         private bool _shadPS4Enabled = true;
         private string _shadPS4GameDataPath = string.Empty;
         private bool _rpcs3Enabled = true;
@@ -218,6 +219,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _xboxEnabled;
             set => SetValue(ref _xboxEnabled, value);
+        }
+
+        /// <summary>
+        /// When true, requests smaller 128px icons from Xbox CDN to improve download speed.
+        /// Enable if Xbox icon downloads are slow.
+        /// </summary>
+        public bool XboxLowResIcons
+        {
+            get => _xboxLowResIcons;
+            set => SetValue(ref _xboxLowResIcons, value);
         }
 
         /// <summary>
@@ -796,6 +807,7 @@ namespace PlayniteAchievements.Models.Settings
                 PsnEnabled = this.PsnEnabled,
                 RetroAchievementsEnabled = this.RetroAchievementsEnabled,
                 XboxEnabled = this.XboxEnabled,
+                XboxLowResIcons = this.XboxLowResIcons,
                 ShadPS4Enabled = this.ShadPS4Enabled,
                 ShadPS4GameDataPath = this.ShadPS4GameDataPath,
                 Rpcs3Enabled = this.Rpcs3Enabled,
