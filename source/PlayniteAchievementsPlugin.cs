@@ -653,7 +653,7 @@ namespace PlayniteAchievements
 
             if (!hasManualLink)
             {
-                // Show "Link Steam Achievements" when game is not linked
+                // Show "Enable Manual Tracking" when game is not linked
                 yield return new GameMenuItem
                 {
                     Description = ResourceProvider.GetString("LOCPlayAch_Menu_LinkSteamAchievements"),
