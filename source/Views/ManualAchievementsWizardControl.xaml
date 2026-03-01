@@ -498,34 +498,11 @@
                                                     CellStyle="{StaticResource AchievementCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock Text="—" Opacity="0.5">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                            <DatePicker SelectedDate="{Binding UnlockDate, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                                        HorizontalAlignment="Center"
-                                                        VerticalAlignment="Center"
-                                                        Padding="4,2">
-                                                <DatePicker.Style>
-                                                    <Style TargetType="DatePicker">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </DatePicker.Style>
-                                            </DatePicker>
-                                        </Grid>
+                                        <DatePicker SelectedDate="{Binding UnlockDate, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                    IsEnabled="{Binding IsUnlocked}"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Padding="4,2"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -537,34 +514,11 @@
                                                     CellStyle="{StaticResource AchievementCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <TextBlock Text="—" Opacity="0.5">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                            <TextBox Text="{Binding UnlockTimeOfDay, StringFormat=hh\\:mm, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                                     VerticalContentAlignment="Center"
-                                                     HorizontalContentAlignment="Center"
-                                                     Padding="4,2">
-                                                <TextBox.Style>
-                                                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUnlocked}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBox.Style>
-                                            </TextBox>
-                                        </Grid>
+                                        <TextBox Text="{Binding UnlockTimeOfDay, StringFormat=hh\\:mm, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                 IsEnabled="{Binding IsUnlocked}"
+                                                 VerticalContentAlignment="Center"
+                                                 HorizontalContentAlignment="Center"
+                                                 Padding="4,2"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
