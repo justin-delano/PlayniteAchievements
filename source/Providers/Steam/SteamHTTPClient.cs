@@ -619,16 +619,36 @@ namespace PlayniteAchievements.Providers.Steam
                                     try
                                     {
                                         var (cefFinalUrl, cefHtml) = await _sessionManager.GetSteamPageAsyncCef(url, ct).ConfigureAwait(false);
-                                        if (!string.IsNullOrEmpty(cefHtml) && !LooksUnauthenticatedStatsPayload(cefHtml, cefFinalUrl))
+                                        if (!string.IsNullOrEmpty(cefHtml))
                                         {
-                                            _logger.Info($"[SteamAch] CEF fallback succeeded for {url}");
-                                            result.Html = cefHtml;
-                                            result.FinalUrl = cefFinalUrl;
-                                            result.StatusCode = HttpStatusCode.OK;
-                                            result.WasRedirected = !string.Equals(result.FinalUrl, url, StringComparison.OrdinalIgnoreCase);
-                                            return result;
+                                            // Log HTML sample for debugging
+                                            var sample = cefHtml.Length > 1000 ? cefHtml.Substring(0, 1000) : cefHtml;
+                                            _logger?.Debug($"[SteamAch.Diag] CEF HTML sample (first 1000 chars): {sample}");
+                                            _logger?.Debug($"[SteamAch.Diag] CEF FinalUrl: {cefFinalUrl}, HTML length: {cefHtml.Length}");
+
+                                            if (!LooksUnauthenticatedStatsPayload(cefHtml, cefFinalUrl))
+                                            {
+                                                // Additional check: verify the HTML actually contains achievement content
+                                                if (HasAnyAchievementRows(cefHtml))
+                                                {
+                                                    _logger.Info($"[SteamAch] CEF fallback succeeded for {url}");
+                                                    result.Html = cefHtml;
+                                                    result.FinalUrl = cefFinalUrl;
+                                                    result.StatusCode = HttpStatusCode.OK;
+                                                    result.WasRedirected = !string.Equals(result.FinalUrl, url, StringComparison.OrdinalIgnoreCase);
+                                                    return result;
+                                                }
+                                                _logger.Warn($"[SteamAch] CEF fallback for {url} returned HTML with no achievement rows (length={cefHtml.Length}, finalUrl={cefFinalUrl})");
+                                            }
+                                            else
+                                            {
+                                                _logger.Warn($"[SteamAch] CEF fallback returned unauthenticated content for {url}");
+                                            }
                                         }
-                                        _logger.Warn($"[SteamAch] CEF fallback returned unauthenticated content for {url}");
+                                        else
+                                        {
+                                            _logger.Warn($"[SteamAch] CEF fallback returned empty HTML for {url}");
+                                        }
                                     }
                                     catch (Exception cefEx)
                                     {
