@@ -4,6 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="800"
              d:DataContext="{d:DesignInstance vm:ManualAchievementsWizardViewModel}"
@@ -11,6 +13,9 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
+            <!-- Converters -->
+            <converters:BooleanConverter x:Key="InvertedBooleanConverter" Mode="Inverted"/>
+
             <!-- Cursor style for hidden achievements -->
             <Style x:Key="HiddenAchievementTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                 <Setter Property="Cursor" Value="Arrow"/>
@@ -24,6 +29,13 @@
                         <Setter Property="FontStyle" Value="Italic"/>
                     </DataTrigger>
                 </Style.Triggers>
+            </Style>
+
+            <!-- Checkbox style for DataGrid -->
+            <Style x:Key="DataGridCheckBoxStyle" TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="0"/>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -284,7 +296,7 @@
                                                        Foreground="{DynamicResource TextBrush}"
                                                        Opacity="0.4"
                                                        IsHitTestVisible="False"
-                                                       Padding="4,0"/>
+                                                       Padding="8,0"/>
                                         </VisualBrush.Visual>
                                     </VisualBrush>
                                 </Style.Resources>
@@ -336,10 +348,10 @@
                             <DataGridTemplateColumn Header="" Width="48" IsReadOnly="True" SortMemberPath="IsUnlocked">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Image Source="{Binding DisplayIconUrl, IsAsync=True}"
-                                               Width="32" Height="32"
+                                        <Image Width="32" Height="32"
                                                Stretch="UniformToFill"
-                                               RenderOptions.BitmapScalingMode="LowQuality"/>
+                                               RenderOptions.BitmapScalingMode="LowQuality"
+                                               helpers:AsyncImage.Uri="{Binding DisplayIconUrl}"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -354,13 +366,8 @@
                                                    VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis"
                                                    TextWrapping="NoWrap"
-                                                   Style="{StaticResource HiddenAchievementTextStyle}">
-                                            <TextBlock.InputBindings>
-                                                <MouseBinding MouseAction="LeftClick"
-                                                              Command="{Binding DataContext.RevealAchievementCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                              CommandParameter="{Binding}"/>
-                                            </TextBlock.InputBindings>
-                                        </TextBlock>
+                                                   Style="{StaticResource HiddenAchievementTextStyle}"
+                                                   PreviewMouseDown="HiddenText_PreviewMouseDown"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -375,21 +382,32 @@
                                                    VerticalAlignment="Center"
                                                    TextTrimming="CharacterEllipsis"
                                                    TextWrapping="NoWrap"
-                                                   Style="{StaticResource HiddenAchievementTextStyle}">
-                                            <TextBlock.InputBindings>
-                                                <MouseBinding MouseAction="LeftClick"
-                                                              Command="{Binding DataContext.RevealAchievementCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                              CommandParameter="{Binding}"/>
-                                            </TextBlock.InputBindings>
-                                        </TextBlock>
+                                                   Style="{StaticResource HiddenAchievementTextStyle}"
+                                                   PreviewMouseDown="HiddenText_PreviewMouseDown"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
                             <!-- Unlocked checkbox -->
-                            <DataGridCheckBoxColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Unlocked}"
-                                                   Binding="{Binding IsUnlocked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                                   Width="70"/>
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Unlocked}"
+                                                    Width="70">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsUnlocked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Style="{StaticResource DataGridCheckBoxStyle}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                                <DataGridTemplateColumn.CellEditingTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsUnlocked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Style="{StaticResource DataGridCheckBoxStyle}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellEditingTemplate>
+                            </DataGridTemplateColumn>
 
                             <!-- Unlock date -->
                             <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Date}"

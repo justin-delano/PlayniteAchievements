@@ -97,6 +97,18 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void HiddenText_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is TextBlock textBlock && textBlock.DataContext is ManualAchievementEditItem item)
+            {
+                if (item.CanReveal)
+                {
+                    _viewModel?.RevealAchievementCommand.Execute(item);
+                    e.Handled = true;
+                }
+            }
+        }
+
         public void Cleanup()
         {
             if (_viewModel != null)

@@ -212,7 +212,20 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _sourceGameName, value);
         }
 
-        public string SourceGameId { get; private set; }
+        private string _sourceGameId;
+
+        public string SourceGameId
+        {
+            get => _sourceGameId;
+            private set
+            {
+                if (_sourceGameId != value)
+                {
+                    _sourceGameId = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
         public string EditSearchFilter
         {
