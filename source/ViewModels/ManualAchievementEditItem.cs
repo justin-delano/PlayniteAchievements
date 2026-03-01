@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -245,9 +247,9 @@ namespace PlayniteAchievements.ViewModels
         private static readonly TimeMode[] TimeModes = Enum.GetValues(typeof(TimeMode)).Cast<TimeMode>().ToArray();
 
         /// <summary>
-        /// Available hour values based on current time mode.
+        /// Available hour values - ObservableCollection for WPF binding updates.
         /// </summary>
-        public IEnumerable<int> AvailableHours => SelectedTimeMode == TimeMode.TwentyFourHour ? Hours24 : Hours12;
+        public ObservableCollection<int> AvailableHours { get; } = new ObservableCollection<int>();
 
         /// <summary>
         /// Available minute values (0-59).
@@ -258,6 +260,21 @@ namespace PlayniteAchievements.ViewModels
         /// Available time modes.
         /// </summary>
         public IEnumerable<TimeMode> AvailableTimeModes => TimeModes;
+
+        private void UpdateAvailableHours()
+        {
+            var targetHours = _selectedTimeMode == TimeMode.TwentyFourHour ? Hours24 : Hours12;
+
+            // Only update if different
+            if (!AvailableHours.SequenceEqual(targetHours))
+            {
+                AvailableHours.Clear();
+                foreach (var h in targetHours)
+                {
+                    AvailableHours.Add(h);
+                }
+            }
+        }
 
         /// <summary>
         /// Selected time mode (AM/PM/24hr).
@@ -285,8 +302,8 @@ namespace PlayniteAchievements.ViewModels
                     // Switching between AM and PM - keep hour the same
 
                     _selectedTimeMode = value;
+                    UpdateAvailableHours();
                     OnPropertyChanged(nameof(SelectedTimeMode));
-                    OnPropertyChanged(nameof(AvailableHours));
                     OnPropertyChanged(nameof(SelectedHour));
                     UpdateUnlockTimeFromPicker();
                 }
@@ -392,10 +409,10 @@ namespace PlayniteAchievements.ViewModels
                 _selectedTimeMode = TimeMode.PM;
             }
 
+            UpdateAvailableHours();
             OnPropertyChanged(nameof(SelectedHour));
             OnPropertyChanged(nameof(SelectedMinute));
             OnPropertyChanged(nameof(SelectedTimeMode));
-            OnPropertyChanged(nameof(AvailableHours));
         }
 
         public ManualAchievementEditItem(AchievementDetail source, bool isUnlocked, DateTime? unlockTime)
