@@ -1,11 +1,22 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.ViewModels
 {
+    /// <summary>
+    /// Time display mode for the time picker.
+    /// </summary>
+    public enum TimeMode
+    {
+        AM,
+        PM,
+        TwentyFourHour
+    }
     /// <summary>
     /// Item representing an editable achievement in the manual achievements wizard.
     /// Uses AchievementDetail directly to avoid duplicating definition.
@@ -152,6 +163,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(UnlockTimeLocal));
                     OnPropertyChanged(nameof(UnlockDate));
                     OnPropertyChanged(nameof(UnlockTimeOfDay));
+                    InitializeTimePickerFromUnlockTime();
 
                     // Ensure unlocked state matches
                     if (value.HasValue && !_isUnlocked)
@@ -221,11 +233,181 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        // Time picker properties
+        private TimeMode _selectedTimeMode;
+        private int _selectedHour;
+        private int _selectedMinute;
+
+        /// <summary>
+        /// Available hour values based on current time mode.
+        /// </summary>
+        public IEnumerable<int> AvailableHours => SelectedTimeMode == TimeMode.TwentyFourHour
+            ? Enumerable.Range(0, 24)
+            : Enumerable.Range(1, 12);
+
+        /// <summary>
+        /// Available minute values (0-59).
+        /// </summary>
+        public IEnumerable<int> AvailableMinutes => Enumerable.Range(0, 60);
+
+        /// <summary>
+        /// Available time modes.
+        /// </summary>
+        public IEnumerable<TimeMode> AvailableTimeModes => Enum.GetValues(typeof(TimeMode)).Cast<TimeMode>();
+
+        /// <summary>
+        /// Selected time mode (AM/PM/24hr).
+        /// </summary>
+        public TimeMode SelectedTimeMode
+        {
+            get => _selectedTimeMode;
+            set
+            {
+                if (_selectedTimeMode != value)
+                {
+                    var previousMode = _selectedTimeMode;
+                    _selectedTimeMode = value;
+                    OnPropertyChanged(nameof(SelectedTimeMode));
+                    OnPropertyChanged(nameof(AvailableHours));
+
+                    // Adjust hour when switching modes
+                    if (previousMode != value)
+                    {
+                        if (value == TimeMode.TwentyFourHour)
+                        {
+                            // Switching to 24hr: convert from 12hr
+                            _selectedHour = Convert12To24Hour(_selectedHour, previousMode);
+                        }
+                        else if (previousMode == TimeMode.TwentyFourHour)
+                        {
+                            // Switching from 24hr to 12hr
+                            Convert24To12Hour(_selectedHour, out _selectedHour, out _selectedTimeMode);
+                            // Re-apply since we may have changed mode
+                            value = _selectedTimeMode;
+                        }
+                        else
+                        {
+                            // Switching between AM and PM - keep hour the same
+                        }
+
+                        OnPropertyChanged(nameof(SelectedHour));
+                        UpdateUnlockTimeFromPicker();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Selected hour (1-12 for AM/PM, 0-23 for 24hr).
+        /// </summary>
+        public int SelectedHour
+        {
+            get => _selectedHour;
+            set
+            {
+                if (_selectedHour != value)
+                {
+                    _selectedHour = value;
+                    OnPropertyChanged(nameof(SelectedHour));
+                    UpdateUnlockTimeFromPicker();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Selected minute (0-59).
+        /// </summary>
+        public int SelectedMinute
+        {
+            get => _selectedMinute;
+            set
+            {
+                if (_selectedMinute != value)
+                {
+                    _selectedMinute = value;
+                    OnPropertyChanged(nameof(SelectedMinute));
+                    UpdateUnlockTimeFromPicker();
+                }
+            }
+        }
+
+        private void UpdateUnlockTimeFromPicker()
+        {
+            if (!UnlockDate.HasValue) return;
+
+            int hour24 = SelectedTimeMode == TimeMode.TwentyFourHour
+                ? SelectedHour
+                : Convert12To24Hour(SelectedHour, SelectedTimeMode);
+
+            UnlockTimeLocal = UnlockDate.Value.Date + new TimeSpan(hour24, SelectedMinute, 0);
+        }
+
+        private int Convert12To24Hour(int hour12, TimeMode mode)
+        {
+            if (mode == TimeMode.TwentyFourHour) return hour12;
+
+            if (mode == TimeMode.AM)
+            {
+                return hour12 == 12 ? 0 : hour12;
+            }
+            else // PM
+            {
+                return hour12 == 12 ? 12 : hour12 + 12;
+            }
+        }
+
+        private void Convert24To12Hour(int hour24, out int hour12, out TimeMode mode)
+        {
+            if (hour24 == 0)
+            {
+                hour12 = 12;
+                mode = TimeMode.AM;
+            }
+            else if (hour24 < 12)
+            {
+                hour12 = hour24;
+                mode = TimeMode.AM;
+            }
+            else if (hour24 == 12)
+            {
+                hour12 = 12;
+                mode = TimeMode.PM;
+            }
+            else
+            {
+                hour12 = hour24 - 12;
+                mode = TimeMode.PM;
+            }
+        }
+
+        private void InitializeTimePickerFromUnlockTime()
+        {
+            if (UnlockTimeLocal.HasValue)
+            {
+                var time = UnlockTimeLocal.Value.TimeOfDay;
+                Convert24To12Hour(time.Hours, out _selectedHour, out _selectedTimeMode);
+                _selectedMinute = time.Minutes;
+            }
+            else
+            {
+                // Default to noon
+                _selectedHour = 12;
+                _selectedMinute = 0;
+                _selectedTimeMode = TimeMode.PM;
+            }
+
+            OnPropertyChanged(nameof(SelectedHour));
+            OnPropertyChanged(nameof(SelectedMinute));
+            OnPropertyChanged(nameof(SelectedTimeMode));
+            OnPropertyChanged(nameof(AvailableHours));
+        }
+
         public ManualAchievementEditItem(AchievementDetail source, bool isUnlocked, DateTime? unlockTime)
         {
             Source = source ?? throw new ArgumentNullException(nameof(source));
             _isUnlocked = isUnlocked;
             _unlockTime = unlockTime;
+            InitializeTimePickerFromUnlockTime();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
