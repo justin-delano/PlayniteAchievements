@@ -363,7 +363,10 @@ namespace PlayniteAchievements.Providers.Xbox
             }
 
             // Use first media asset directly (matches reference implementation pattern)
-            var iconUrl = xboxAch.mediaAssets?.FirstOrDefault()?.url;
+            var rawUrl = xboxAch.mediaAssets?.FirstOrDefault()?.url;
+            var iconUrl = _settings.Persisted.XboxLowResIcons
+                ? AddXboxResizeParam(rawUrl)
+                : rawUrl;
 
             if (string.IsNullOrWhiteSpace(iconUrl))
             {
@@ -428,6 +431,25 @@ namespace PlayniteAchievements.Providers.Xbox
             // SqlDateTime.MinValue: 1753-01-01 00:00:00
             if (date.Year == 1753 && date.Month == 1 && date.Day == 1) return false;
             return true;
+        }
+
+        /// <summary>
+        /// Adds the w=128 resize parameter to Xbox EDS image URLs to request smaller icons.
+        /// This significantly reduces download time for achievement icons.
+        /// </summary>
+        private static string AddXboxResizeParam(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return url;
+
+            // EDS image proxy supports w= parameter for width scaling
+            if (url.IndexOf("images-eds-ssl.xboxlive.com", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                // Request 128px width - matches decode size, height auto-scales
+                var separator = url.IndexOf("?") >= 0 ? "&" : "?";
+                return $"{url}{separator}w=128";
+            }
+
+            return url;
         }
     }
 }
