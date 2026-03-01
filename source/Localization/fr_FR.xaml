@@ -325,6 +325,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_Xbox_Help">Cliquez sur Connexion pour vous authentifier avec Xbox Live via votre compte Microsoft.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_CheckingExistingSession">Vérification de la session Xbox existante...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxAuth_Completed">Authentification Xbox terminée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons">Télécharger des icônes plus petites</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons_Help">Activer si les téléchargements d'icônes Xbox sont lents. Demande des icônes de 128px au lieu de la résolution complète.</sys:String>
 
     <!-- ShadPS4 Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Connection">Connexion ShadPS4</sys:String>
