@@ -369,7 +369,7 @@ namespace PlayniteAchievements.Providers.Steam
                     {
                         await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
                         finalUrl = view.GetCurrentAddress();
-                        html = await view.GetPageTextAsync();
+                        html = await view.GetPageSourceAsync();
                         tcs.TrySetResult((finalUrl, html));
                     }
                 }
