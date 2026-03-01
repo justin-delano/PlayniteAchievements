@@ -502,19 +502,10 @@
                                             <TextBlock Text="—" Opacity="0.5"
                                                        Visibility="{Binding IsUnlocked, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
                                             <DatePicker SelectedDate="{Binding UnlockDate, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                        Visibility="{Binding IsUnlocked, Converter={StaticResource BooleanToVisibilityConverter}}"
                                                         HorizontalAlignment="Center"
                                                         VerticalAlignment="Center"
-                                                        Padding="4,2">
-                                                <DatePicker.Style>
-                                                    <Style TargetType="DatePicker">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUnlocked}" Value="False">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </DatePicker.Style>
-                                            </DatePicker>
+                                                        Padding="4,2"/>
                                         </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -531,19 +522,10 @@
                                             <TextBlock Text="—" Opacity="0.5"
                                                        Visibility="{Binding IsUnlocked, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
                                             <TextBox Text="{Binding UnlockTimeOfDay, StringFormat=hh\\:mm, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                     Visibility="{Binding IsUnlocked, Converter={StaticResource BooleanToVisibilityConverter}}"
                                                      VerticalContentAlignment="Center"
                                                      HorizontalContentAlignment="Center"
-                                                     Padding="4,2">
-                                                <TextBox.Style>
-                                                    <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsUnlocked}" Value="False">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBox.Style>
-                                            </TextBox>
+                                                     Padding="4,2"/>
                                         </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
