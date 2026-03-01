@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.Serialization;
+using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Models.Achievements
@@ -42,6 +43,14 @@ namespace PlayniteAchievements.Models.Achievements
         /// Auto-set to true for platinum trophies; can be manually configured via Capstone control.
         /// </summary>
         public bool IsCapstone { get; set; }
+
+        /// <summary>
+        /// Playnite Game reference for theme bindings.
+        /// Populated during snapshot building for all-games views.
+        /// Not persisted to cache.
+        /// </summary>
+        [IgnoreDataMember]
+        public Game Game { get; set; }
 
         [IgnoreDataMember]
         public string IconDisplay => UnlockedIconPath ?? AchievementIconResolver.GetDefaultIcon();
