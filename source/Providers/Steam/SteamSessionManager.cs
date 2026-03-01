@@ -367,8 +367,10 @@ namespace PlayniteAchievements.Providers.Steam
                     ct.ThrowIfCancellationRequested();
                     using (var view = _api.WebViews.CreateOffscreenView())
                     {
+                        _logger?.Debug($"[SteamAch.Diag] CEF navigating to {url}");
                         await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
                         finalUrl = view.GetCurrentAddress();
+                        _logger?.Debug($"[SteamAch.Diag] CEF navigated to {url}, finalUrl={finalUrl}");
                         html = await view.GetPageSourceAsync();
                         tcs.TrySetResult((finalUrl, html));
                     }
