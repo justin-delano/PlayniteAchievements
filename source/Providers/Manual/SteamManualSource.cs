@@ -19,8 +19,16 @@ namespace PlayniteAchievements.Providers.Manual
     internal sealed class SteamManualSource : IManualSource
     {
         private const string StoreSearchUrl = "https://store.steampowered.com/api/storesearch/";
+        private const string AppDetailsUrl = "https://store.steampowered.com/api/appdetails";
         private const string DefaultUserAgent =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+        private static readonly string[] ExcludedNamePatterns = new[]
+        {
+            " Demo", " Soundtrack", " OST", " Artbook", " Art Book",
+            " DLC", " Pack", " Bundle", " Season Pass", " Expansion",
+            " Collector's Edition", " Pre-Order", " Preorder"
+        };
 
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
@@ -83,10 +91,25 @@ namespace PlayniteAchievements.Providers.Manual
                             return new List<ManualGameSearchResult>();
                         }
 
+                        // Filter by type using AppDetails API
+                        var validAppIds = await FilterGamesByTypeAsync(items.Select(i => i.AppId).ToList(), ct).ConfigureAwait(false);
+
                         var results = new List<ManualGameSearchResult>(items.Count);
                         foreach (var item in items)
                         {
                             if (item == null || item.AppId <= 0)
+                            {
+                                continue;
+                            }
+
+                            // Skip if not a game type
+                            if (validAppIds != null && !validAppIds.Contains(item.AppId))
+                            {
+                                continue;
+                            }
+
+                            // Fallback: filter by name patterns if AppDetails failed
+                            if (validAppIds == null && IsExcludedByName(item.Name))
                             {
                                 continue;
                             }
@@ -249,6 +272,105 @@ namespace PlayniteAchievements.Providers.Manual
             };
         }
 
+        /// <summary>
+        /// Filters app IDs to only include games (not demos, DLC, soundtracks, etc.)
+        /// using the Steam AppDetails API.
+        /// </summary>
+        /// <returns>Set of valid game app IDs, or null if the API call failed.</returns>
+        private async Task<HashSet<int>> FilterGamesByTypeAsync(List<int> appIds, CancellationToken ct)
+        {
+            if (appIds == null || appIds.Count == 0)
+            {
+                return new HashSet<int>();
+            }
+
+            try
+            {
+                // Batch request up to 20 apps at a time (Steam API limit)
+                var batchSize = 20;
+                var validIds = new HashSet<int>();
+
+                for (var i = 0; i < appIds.Count; i += batchSize)
+                {
+                    var batch = appIds.Skip(i).Take(batchSize).ToList();
+                    var appIdsParam = string.Join(",", batch);
+                    var url = $"{AppDetailsUrl}?appids={appIdsParam}&filters=type";
+
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+                    {
+                        request.Headers.TryAddWithoutValidation("User-Agent", DefaultUserAgent);
+                        request.Headers.TryAddWithoutValidation("Accept", "application/json");
+
+                        using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
+                        {
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                _logger?.Debug($"AppDetails API returned {(int)response.StatusCode}, using fallback filter");
+                                return null;
+                            }
+
+                            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            if (string.IsNullOrWhiteSpace(json))
+                            {
+                                return null;
+                            }
+
+                            var details = Serialization.FromJson<Dictionary<string, AppDetailsEnvelope>>(json);
+                            if (details == null)
+                            {
+                                continue;
+                            }
+
+                            foreach (var kvp in details)
+                            {
+                                if (kvp.Value?.Success == true &&
+                                    string.Equals(kvp.Value.Data?.Type, "game", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    if (int.TryParse(kvp.Key, out var appId))
+                                    {
+                                        validIds.Add(appId);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return validIds;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "AppDetails API failed, using fallback name filter");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Checks if a game name matches patterns for non-game content.
+        /// Used as a fallback when AppDetails API is unavailable.
+        /// </summary>
+        private static bool IsExcludedByName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return false;
+            }
+
+            foreach (var pattern in ExcludedNamePatterns)
+            {
+                if (name.IndexOf(pattern, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static string GetTallestImageUrl(StoreSearchItem item)
         {
             // Prefer the tallest image (usually box art) for better visibility
@@ -292,6 +414,23 @@ namespace PlayniteAchievements.Providers.Manual
 
             [DataMember(Name = "boxart")]
             public string ImgGridUrl { get; set; }
+        }
+
+        [DataContract]
+        private sealed class AppDetailsEnvelope
+        {
+            [DataMember(Name = "success")]
+            public bool Success { get; set; }
+
+            [DataMember(Name = "data")]
+            public AppDetailsData Data { get; set; }
+        }
+
+        [DataContract]
+        private sealed class AppDetailsData
+        {
+            [DataMember(Name = "type")]
+            public string Type { get; set; }
         }
 
         #endregion
