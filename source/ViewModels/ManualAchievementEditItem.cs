@@ -238,22 +238,26 @@ namespace PlayniteAchievements.ViewModels
         private int _selectedHour;
         private int _selectedMinute;
 
+        // Cached lists for dropdowns
+        private static readonly int[] Hours12 = Enumerable.Range(1, 12).ToArray();
+        private static readonly int[] Hours24 = Enumerable.Range(0, 24).ToArray();
+        private static readonly int[] Minutes = Enumerable.Range(0, 60).ToArray();
+        private static readonly TimeMode[] TimeModes = Enum.GetValues(typeof(TimeMode)).Cast<TimeMode>().ToArray();
+
         /// <summary>
         /// Available hour values based on current time mode.
         /// </summary>
-        public IEnumerable<int> AvailableHours => SelectedTimeMode == TimeMode.TwentyFourHour
-            ? Enumerable.Range(0, 24)
-            : Enumerable.Range(1, 12);
+        public IEnumerable<int> AvailableHours => SelectedTimeMode == TimeMode.TwentyFourHour ? Hours24 : Hours12;
 
         /// <summary>
         /// Available minute values (0-59).
         /// </summary>
-        public IEnumerable<int> AvailableMinutes => Enumerable.Range(0, 60);
+        public IEnumerable<int> AvailableMinutes => Minutes;
 
         /// <summary>
         /// Available time modes.
         /// </summary>
-        public IEnumerable<TimeMode> AvailableTimeModes => Enum.GetValues(typeof(TimeMode)).Cast<TimeMode>();
+        public IEnumerable<TimeMode> AvailableTimeModes => TimeModes;
 
         /// <summary>
         /// Selected time mode (AM/PM/24hr).
