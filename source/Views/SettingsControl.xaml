@@ -1732,26 +1732,6 @@
                             </TextBlock.Style>
                         </TextBlock>
 
-                        <!-- Low-Res Icons Toggle -->
-                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_XboxLowResIcons}"
-                                  IsChecked="{Binding Persisted.XboxLowResIcons}"
-                                  IsEnabled="{Binding Persisted.XboxEnabled}"
-                                  Margin="0,0,0,4"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_XboxLowResIcons_Help}"
-                                   Margin="24,0,0,16"
-                                   TextWrapping="Wrap">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Persisted.XboxEnabled}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-
                         <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Persisted.XboxEnabled}">
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_XboxConnection}"
@@ -1867,6 +1847,26 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
+
+                        <!-- Low-Res Icons Toggle -->
+                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_XboxLowResIcons}"
+                                  IsChecked="{Binding Persisted.XboxLowResIcons}"
+                                  IsEnabled="{Binding Persisted.XboxEnabled}"
+                                  Margin="0,0,0,4"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_XboxLowResIcons_Help}"
+                                   Margin="24,0,0,16"
+                                   TextWrapping="Wrap">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Persisted.XboxEnabled}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
 
                     </StackPanel>
                 </ScrollViewer>
