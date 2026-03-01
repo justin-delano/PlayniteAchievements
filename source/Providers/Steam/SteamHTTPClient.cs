@@ -561,8 +561,13 @@ namespace PlayniteAchievements.Providers.Steam
 
                 using (var req = new HttpRequestMessage(HttpMethod.Get, uri))
                 {
+                    // Browser-like headers in typical order
                     req.Headers.TryAddWithoutValidation("User-Agent", DefaultUserAgent);
+                    req.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8");
                     req.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
+                    req.Headers.TryAddWithoutValidation("Accept-Encoding", "gzip, deflate, br");
+                    req.Headers.TryAddWithoutValidation("Cache-Control", "no-cache");
+                    req.Headers.TryAddWithoutValidation("Connection", "keep-alive");
 
                     if (isSteamAuth)
                         req.Headers.Referrer = uri.Host.Contains("store") ? StoreBase : CommunityBase;
@@ -607,6 +612,27 @@ namespace PlayniteAchievements.Providers.Steam
                                     {
                                         var jarCookies = _cookieJar.GetCookies(uri);
                                         _logger.Warn($"[SteamAch.Diag] CookieJar had {jarCookies.Count} cookies for this request");
+                                    }
+
+                                    // Try CEF fallback before refreshing session
+                                    _logger.Info($"[SteamAch] Attempting CEF fallback for {url}");
+                                    try
+                                    {
+                                        var (cefFinalUrl, cefHtml) = await _sessionManager.GetSteamPageAsyncCef(url, ct).ConfigureAwait(false);
+                                        if (!string.IsNullOrEmpty(cefHtml) && !LooksUnauthenticatedStatsPayload(cefHtml, cefFinalUrl))
+                                        {
+                                            _logger.Info($"[SteamAch] CEF fallback succeeded for {url}");
+                                            result.Html = cefHtml;
+                                            result.FinalUrl = cefFinalUrl;
+                                            result.StatusCode = HttpStatusCode.OK;
+                                            result.WasRedirected = !string.Equals(result.FinalUrl, url, StringComparison.OrdinalIgnoreCase);
+                                            return result;
+                                        }
+                                        _logger.Warn($"[SteamAch] CEF fallback returned unauthenticated content for {url}");
+                                    }
+                                    catch (Exception cefEx)
+                                    {
+                                        _logger.Warn(cefEx, $"[SteamAch] CEF fallback failed for {url}");
                                     }
 
                                     await EnsureSessionAsync(ct, forceRefresh: true).ConfigureAwait(false);
