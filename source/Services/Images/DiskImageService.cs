@@ -28,7 +28,8 @@ namespace PlayniteAchievements.Services.Images
         private static readonly string[] RateLimitedDomains = new[]
         {
             "image-ssl.xboxlive.com",
-            "xboxlive.com"
+            "xboxlive.com",
+            "images-eds-ssl.xboxlive.com"
         };
 
         private readonly ILogger _logger;
@@ -49,7 +50,7 @@ namespace PlayniteAchievements.Services.Images
             _logger = logger ?? StaticLogger;
             _cacheRoot = cacheRoot ?? throw new ArgumentNullException(nameof(cacheRoot));
             _downloadGate = new SemaphoreSlim(Math.Max(1, downloadConcurrency), Math.Max(1, downloadConcurrency));
-            _rateLimitedDownloadGate = new SemaphoreSlim(4, 4); // Xbox CDN concurrency (kept at 4 due to rate limiting)
+            _rateLimitedDownloadGate = new SemaphoreSlim(8, 8); // Xbox CDN concurrency (increased for EDS with w=128 param)
 
             // Increase HTTP connection limit for parallel downloads (.NET Framework approach)
             ServicePointManager.DefaultConnectionLimit = Math.Max(16, downloadConcurrency);
