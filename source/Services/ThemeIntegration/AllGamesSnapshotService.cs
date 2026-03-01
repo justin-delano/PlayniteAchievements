@@ -180,6 +180,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     {
                         if (achievement != null)
                         {
+                            achievement.Game = data.Game;
                             allAchievements.Add(achievement);
                         }
                     }
@@ -235,6 +236,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                             continue;
                         }
 
+                        achievement.Game = data.Game;
                         unlockedAchievements.Add(achievement);
                     }
                 }
