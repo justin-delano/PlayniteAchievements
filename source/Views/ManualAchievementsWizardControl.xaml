@@ -661,7 +661,7 @@
                             RelativeSource={RelativeSource AncestorType=UserControl},
                             Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Button Content="{DynamicResource LOCPlayAch_Button_Save}"
-                        Click="SaveButton_Click"
+                        Command="{Binding SaveCommand}"
                         Padding="12,6"
                         MinWidth="80"
                         Margin="0,0,8,0"
