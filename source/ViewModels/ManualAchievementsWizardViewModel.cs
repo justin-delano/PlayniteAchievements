@@ -621,6 +621,13 @@ namespace PlayniteAchievements.ViewModels
             {
                 UpdateCounts();
             }
+
+            // Re-evaluate save capability when time validation changes
+            if (e.PropertyName == nameof(ManualAchievementEditItem.IsValidHour) ||
+                e.PropertyName == nameof(ManualAchievementEditItem.IsValidMinute))
+            {
+                ((RelayCommand)SaveCommand).RaiseCanExecuteChanged();
+            }
         }
 
         private void SetAllUnlocked(bool unlocked)
@@ -681,7 +688,21 @@ namespace PlayniteAchievements.ViewModels
 
         private bool CanSave()
         {
-            return CurrentStage == WizardStage.Editing && AllAchievements.Count > 0;
+            if (CurrentStage != WizardStage.Editing || AllAchievements.Count == 0)
+            {
+                return false;
+            }
+
+            // Disable save if any unlocked achievement has invalid time input
+            foreach (var item in AllAchievements)
+            {
+                if (item.IsUnlocked && (!item.IsValidHour || !item.IsValidMinute))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private ManualAchievementLink BuildLink()
