@@ -1,6 +1,8 @@
 // --SUCCESSSTORY--
 using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
@@ -83,7 +85,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
                 ? ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle")
                 : achievement.DisplayName;
 
-            return new AchievementImage
+            var image = new AchievementImage
             {
                 Width = IconHeight,
                 Height = IconHeight,
@@ -94,9 +96,53 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
                 Percent = achievement.GlobalPercentUnlocked ?? 0,
                 EnableRaretyIndicator = true,
                 DisplayRaretyValue = true,
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-                VerticalAlignment = System.Windows.VerticalAlignment.Center
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Cursor = achievement.Hidden && !achievement.Unlocked ? Cursors.Hand : null,
+                Tag = achievement // Store achievement for click handler
             };
+
+            // Add click handler for hidden achievements
+            if (achievement.Hidden && !achievement.Unlocked)
+            {
+                image.MouseLeftButtonDown += HiddenAchievement_MouseLeftButtonDown;
+                HiddenRevealHelper.SetIsRevealed(image, false);
+            }
+
+            return image;
+        }
+
+        private void HiddenAchievement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.Tag is AchievementDetail achievement)
+            {
+                if (achievement.Hidden && !achievement.Unlocked)
+                {
+                    var current = HiddenRevealHelper.GetIsRevealed(fe);
+                    HiddenRevealHelper.SetIsRevealed(fe, !current);
+
+                    // Update the display
+                    bool isRevealed = !current;
+                    bool isHiddenAndObscured = !isRevealed;
+
+                    string displayIcon = isHiddenAndObscured
+                        ? AchievementIconResolver.GetDefaultIcon()
+                        : achievement.UnlockedIconDisplay;
+
+                    string displayToolTip = isHiddenAndObscured
+                        ? ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle")
+                        : achievement.DisplayName;
+
+                    if (fe is AchievementImage image)
+                    {
+                        image.Icon = displayIcon;
+                        image.IconCustom = displayIcon;
+                        image.ToolTip = displayToolTip;
+                    }
+
+                    e.Handled = true;
+                }
+            }
         }
 
         public bool HasLocked => GetTotalCount() > 0;
