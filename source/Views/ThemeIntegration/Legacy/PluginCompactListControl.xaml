@@ -86,24 +86,6 @@
                                     <Binding RelativeSource="{RelativeSource AncestorType=Grid}" Path="(localLegacy:HiddenRevealHelper.IsRevealed)" />
                                 </MultiBinding>
                             </StackPanel.ToolTip>
-                            <StackPanel.Style>
-                                <Style TargetType="{x:Type StackPanel}">
-                                    <Style.Triggers>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowHiddenIcon}" Value="False" />
-                                                <Condition Binding="{Binding Hidden}" Value="True" />
-                                                <Condition Binding="{Binding Unlocked}" Value="False" />
-                                            </MultiDataTrigger.Conditions>
-                                            <Setter Property="Effect">
-                                                <Setter.Value>
-                                                    <BlurEffect Radius="4.0" KernelType="Box" />
-                                                </Setter.Value>
-                                            </Setter>
-                                        </MultiDataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </StackPanel.Style>
 
                             <localControls:AchievementImage
                                 Width="{Binding ElementName=PART_GridContener, Path=Tag}"
