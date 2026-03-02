@@ -40,29 +40,19 @@ namespace PlayniteAchievements.Providers.ShadPS4
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            _logger?.Debug($"[ShadPS4] RefreshAsync: starting scan with {gamesToRefresh?.Count ?? 0} games");
-
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
-                _logger?.Debug("[ShadPS4] RefreshAsync: no games to refresh, returning empty payload");
                 return new RebuildPayload { Summary = new RebuildSummary() };
-            }
-
-            foreach (var g in gamesToRefresh)
-            {
-                _logger?.Debug($"[ShadPS4] RefreshAsync: will process game '{g.Name}' (Id: {g.Id})");
             }
 
             // Use the provider's cache if available, otherwise build our own
             Dictionary<string, string> titleCache;
             if (_provider != null)
             {
-                _logger?.Debug("[ShadPS4] RefreshAsync: getting title cache from provider");
                 titleCache = _provider.GetOrBuildTitleCache();
             }
             else
             {
-                _logger?.Debug("[ShadPS4] RefreshAsync: building title cache locally");
                 titleCache = await BuildTitleIdCacheAsync(cancel).ConfigureAwait(false);
             }
 
@@ -72,11 +62,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            _logger?.Info($"[ShadPS4] Using title cache with {titleCache.Count} games.");
-            foreach (var kvp in titleCache)
-            {
-                _logger?.Debug($"[ShadPS4] RefreshAsync: title cache entry - '{kvp.Key}' -> '{kvp.Value}'");
-            }
+            _logger?.Info($"[ShadPS4] Scanning {titleCache.Count} titles from game_data folder.");
 
             var providerName = GetProviderName();
 
@@ -95,7 +81,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 isAuthRequiredException: _ => false,
                 onGameError: (game, ex, consecutiveErrors) =>
                 {
-                    _logger?.Error(ex, $"[ShadPS4] RefreshAsync: error processing game '{game?.Name}'");
+                    _logger?.Error(ex, $"[ShadPS4] Error processing game '{game?.Name}'");
                 },
                 delayBetweenGamesAsync: null,
                 delayAfterErrorAsync: null,
@@ -108,30 +94,25 @@ namespace PlayniteAchievements.Providers.ShadPS4
         /// </summary>
         private async Task<Dictionary<string, string>> BuildTitleIdCacheAsync(CancellationToken cancel)
         {
-            _logger?.Debug("[ShadPS4] BuildTitleIdCacheAsync: starting");
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             var gameDataPath = _settings?.Persisted?.ShadPS4GameDataPath;
-            _logger?.Debug($"[ShadPS4] BuildTitleIdCacheAsync: game_data path from settings = '{gameDataPath}'");
 
             if (string.IsNullOrWhiteSpace(gameDataPath))
             {
-                _logger?.Warn("[ShadPS4] BuildTitleIdCacheAsync: no game_data path configured in settings");
+                _logger?.Warn("[ShadPS4] No game_data path configured in settings");
                 return cache;
             }
 
             if (!Directory.Exists(gameDataPath))
             {
-                _logger?.Warn($"[ShadPS4] BuildTitleIdCacheAsync: game_data folder not found at {gameDataPath}");
+                _logger?.Warn($"[ShadPS4] game_data folder not found at {gameDataPath}");
                 return cache;
             }
-
-            _logger?.Debug($"[ShadPS4] BuildTitleIdCacheAsync: game_data folder exists, enumerating subdirectories");
 
             try
             {
                 var titleDirectories = Directory.GetDirectories(gameDataPath);
-                _logger?.Debug($"[ShadPS4] BuildTitleIdCacheAsync: found {titleDirectories.Length} subdirectories");
 
                 foreach (var titleDir in titleDirectories)
                 {
@@ -140,22 +121,14 @@ namespace PlayniteAchievements.Providers.ShadPS4
                     var titleId = Path.GetFileName(titleDir);
                     if (string.IsNullOrWhiteSpace(titleId))
                     {
-                        _logger?.Debug($"[ShadPS4] BuildTitleIdCacheAsync: skipping directory with no name: '{titleDir}'");
                         continue;
                     }
 
                     // Verify trophy data exists
                     var xmlPath = Path.Combine(titleDir, "trophyfiles", "trophy00", "Xml", "TROP.XML");
-                    _logger?.Debug($"[ShadPS4] BuildTitleIdCacheAsync: checking titleId '{titleId}', TROP.XML path = '{xmlPath}'");
-
                     if (File.Exists(xmlPath))
                     {
                         cache[titleId.ToUpperInvariant()] = titleDir;
-                        _logger?.Debug($"[ShadPS4] BuildTitleIdCacheAsync: added titleId '{titleId}' -> '{titleDir}'");
-                    }
-                    else
-                    {
-                        _logger?.Debug($"[ShadPS4] BuildTitleIdCacheAsync: TROP.XML not found for titleId '{titleId}', skipping");
                     }
                 }
             }
@@ -164,7 +137,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 _logger?.Error(ex, "[ShadPS4] Failed to enumerate title directories.");
             }
 
-            _logger?.Debug($"[ShadPS4] BuildTitleIdCacheAsync: completed with {cache.Count} entries");
             return await Task.FromResult(cache).ConfigureAwait(false);
         }
 
@@ -175,28 +147,24 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private string ExtractTitleIdFromGame(Game game)
         {
             var rawInstallDir = game?.InstallDirectory;
-            _logger?.Debug($"[ShadPS4] ExtractTitleIdFromGame: game '{game?.Name}', raw install dir = '{rawInstallDir}'");
-
             if (string.IsNullOrWhiteSpace(rawInstallDir))
             {
-                _logger?.Debug($"[ShadPS4] ExtractTitleIdFromGame: raw install dir is empty for game '{game?.Name}'");
                 return null;
             }
 
-            // Expand path variables
             var installDir = ExpandGamePath(game, rawInstallDir);
-            _logger?.Debug($"[ShadPS4] ExtractTitleIdFromGame: expanded install dir = '{installDir}'");
+            if (string.IsNullOrWhiteSpace(installDir))
+            {
+                return null;
+            }
 
             // Search for title ID pattern in the path
             var match = TitleIdPattern.Match(installDir);
             if (match.Success)
             {
-                var titleId = match.Groups[1].Value.ToUpperInvariant();
-                _logger?.Debug($"[ShadPS4] ExtractTitleIdFromGame: found titleId '{titleId}' in path for game '{game?.Name}'");
-                return titleId;
+                return match.Groups[1].Value.ToUpperInvariant();
             }
 
-            _logger?.Debug($"[ShadPS4] ExtractTitleIdFromGame: no titleId pattern match in '{installDir}' for game '{game?.Name}'");
             return null;
         }
 
@@ -238,47 +206,35 @@ namespace PlayniteAchievements.Providers.ShadPS4
             string providerName,
             CancellationToken cancel)
         {
-            _logger?.Debug($"[ShadPS4] FetchGameDataAsync: starting for game '{game?.Name}' (Id: {game?.Id})");
-
             if (game == null)
             {
-                _logger?.Debug("[ShadPS4] FetchGameDataAsync: game is null, returning null");
                 return Task.FromResult<GameAchievementData>(null);
             }
 
             // Extract title ID from game's install directory
             var titleId = ExtractTitleIdFromGame(game);
-            _logger?.Debug($"[ShadPS4] FetchGameDataAsync: extracted titleId = '{titleId}' for game '{game.Name}'");
 
             if (string.IsNullOrWhiteSpace(titleId))
             {
-                _logger?.Debug($"[ShadPS4] FetchGameDataAsync: no titleId for game '{game.Name}', returning no achievements");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
             // Look up trophy data directory in cache
             if (!titleCache.TryGetValue(titleId, out var trophyDataPath))
             {
-                _logger?.Debug($"[ShadPS4] FetchGameDataAsync: titleId '{titleId}' not in cache for game '{game.Name}', returning no achievements");
-                _logger?.Debug($"[ShadPS4] FetchGameDataAsync: cache contains {titleCache.Count} entries: [{string.Join(", ", titleCache.Keys.Take(10))}{(titleCache.Count > 10 ? "..." : "")}]");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
-
-            _logger?.Debug($"[ShadPS4] FetchGameDataAsync: found titleId '{titleId}' in cache, trophyDataPath = '{trophyDataPath}'");
 
             cancel.ThrowIfCancellationRequested();
 
             var xmlPath = Path.Combine(trophyDataPath, "trophyfiles", "trophy00", "Xml", "TROP.XML");
-            _logger?.Debug($"[ShadPS4] FetchGameDataAsync: TROP.XML path = '{xmlPath}', exists = {File.Exists(xmlPath)}");
 
             if (!File.Exists(xmlPath))
             {
-                _logger?.Debug($"[ShadPS4] FetchGameDataAsync: TROP.XML not found for game '{game.Name}', returning no achievements");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
             var iconsFolder = Path.Combine(trophyDataPath, "trophyfiles", "trophy00", "Icons");
-            _logger?.Debug($"[ShadPS4] FetchGameDataAsync: icons folder = '{iconsFolder}', exists = {Directory.Exists(iconsFolder)}");
 
             try
             {
@@ -288,7 +244,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
                 // Map global language to PS4 locale (same format as PS3)
                 var ps4Locale = MapGlobalLanguageToPs4Locale(_settings?.Persisted?.GlobalLanguage);
-                _logger?.Debug($"[ShadPS4] FetchGameDataAsync: global language = '{_settings?.Persisted?.GlobalLanguage}', mapped PS4 locale = '{ps4Locale}'");
 
                 foreach (var trophyElement in doc.Descendants("trophy"))
                 {
@@ -332,7 +287,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
                     });
                 }
 
-                _logger?.Info($"[ShadPS4] FetchGameDataAsync: parsed {achievements.Count} trophies for game '{game.Name}' ({unlockedCount} unlocked)");
+                _logger?.Info($"[ShadPS4] Parsed {achievements.Count} trophies for '{game.Name}' ({unlockedCount} unlocked)");
 
                 return Task.FromResult(new GameAchievementData
                 {
@@ -347,7 +302,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"[ShadPS4] FetchGameDataAsync: failed to parse TROP.XML for {game.Name}");
+                _logger?.Error(ex, $"[ShadPS4] Failed to parse TROP.XML for {game.Name}");
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
         }
@@ -532,4 +487,3 @@ namespace PlayniteAchievements.Providers.ShadPS4
         }
     }
 }
-
