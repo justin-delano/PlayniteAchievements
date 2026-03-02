@@ -367,10 +367,8 @@ namespace PlayniteAchievements.Providers.Steam
                     ct.ThrowIfCancellationRequested();
                     using (var view = _api.WebViews.CreateOffscreenView())
                     {
-                        _logger?.Debug($"[SteamAch.Diag] CEF navigating to {url}");
                         await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
                         finalUrl = view.GetCurrentAddress();
-                        _logger?.Debug($"[SteamAch.Diag] CEF navigated to {url}, finalUrl={finalUrl}");
 
                         // Wait for JavaScript to render dynamic content (achievement rows)
                         // Steam pages use client-side rendering for the achievement list
@@ -537,14 +535,6 @@ namespace PlayniteAchievements.Providers.Steam
                         .Where(c => IsSteamDomain(c.Domain))
                         .ToList();
 
-                    // Diagnostic: Log CEF cookie inventory
-                    logger?.Debug($"[SteamAch.Diag] CEF found {steamCookies.Count} Steam domain cookies");
-                    foreach (var c in steamCookies)
-                    {
-                        logger?.Debug($"[SteamAch.Diag] CEF cookie: Name={c.Name}, Domain={c.Domain}, Path={c.Path}, " +
-                            $"Expires={c.Expires}, HasValue={!string.IsNullOrWhiteSpace(c.Value)}, Secure={c.Secure}");
-                    }
-
                     // Check if we can extract ID from these cookies while we're at it
                     var authCookie = steamCookies.FirstOrDefault(c => 
                         c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
@@ -584,17 +574,8 @@ namespace PlayniteAchievements.Providers.Steam
                         }
                         catch (Exception ex)
                         {
-                            logger?.Warn($"[SteamAch.Diag] Failed to add cookie '{c.Name}' to jar: {ex.Message}");
+                            logger?.Debug($"Failed to add cookie '{c.Name}' to jar: {ex.Message}");
                         }
-                    }
-
-                    // Diagnostic: Log CookieJar contents after loading
-                    var communityCookies = cookieJar.GetCookies(CommunityBase);
-                    logger?.Debug($"[SteamAch.Diag] CookieJar[steamcommunity.com] has {communityCookies.Count} cookies");
-                    foreach (Cookie c in communityCookies)
-                    {
-                        logger?.Debug($"[SteamAch.Diag] Jar: Name={c.Name}, Domain={c.Domain}, Path={c.Path}, " +
-                            $"Expires={c.Expires}, HasValue={!string.IsNullOrEmpty(c.Value)}");
                     }
 
                     AddSteamTimezoneCookie(cookieJar, logger);

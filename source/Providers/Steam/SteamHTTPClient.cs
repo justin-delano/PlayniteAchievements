@@ -572,17 +572,6 @@ namespace PlayniteAchievements.Providers.Steam
                     if (isSteamAuth)
                         req.Headers.Referrer = uri.Host.Contains("store") ? StoreBase : CommunityBase;
 
-                    // Diagnostic: Log pre-request cookies
-                    lock (_cookieLock)
-                    {
-                        var requestCookies = _cookieJar.GetCookies(uri);
-                        _logger?.Debug($"[SteamAch.Diag] Request to {uri} will send {requestCookies.Count} cookies");
-                        foreach (Cookie c in requestCookies)
-                        {
-                            _logger?.Debug($"[SteamAch.Diag] Sending: Name={c.Name}, Domain={c.Domain}");
-                        }
-                    }
-
                     try
                     {
                         using (var resp = await _http.SendAsync(req, ct).ConfigureAwait(false))
@@ -598,34 +587,13 @@ namespace PlayniteAchievements.Providers.Steam
                                 bool softRedirect = result.FinalUrl.Contains("/login") || result.FinalUrl.Contains("openid");
                                 if (resp.StatusCode == HttpStatusCode.Unauthorized || resp.StatusCode == HttpStatusCode.Forbidden || softRedirect)
                                 {
-                                    _logger.Warn($"[SteamAch.Diag] 403/401 for {url}");
-                                    _logger.Warn($"[SteamAch.Diag] FinalUrl={result.FinalUrl}, WasRedirected={result.WasRedirected}");
-
-                                    // Log response headers (especially Cloudflare or Steam-specific ones)
-                                    foreach (var h in resp.Headers)
-                                    {
-                                        _logger.Warn($"[SteamAch.Diag] ResponseHeader: {h.Key}={string.Join(",", h.Value)}");
-                                    }
-
-                                    // Check if we have cookies to send
-                                    lock (_cookieLock)
-                                    {
-                                        var jarCookies = _cookieJar.GetCookies(uri);
-                                        _logger.Warn($"[SteamAch.Diag] CookieJar had {jarCookies.Count} cookies for this request");
-                                    }
-
                                     // Try CEF fallback before refreshing session
-                                    _logger.Info($"[SteamAch] Attempting CEF fallback for {url}");
+                                    _logger.Info($"[SteamAch] HTTP auth failed, attempting CEF fallback for {url}");
                                     try
                                     {
                                         var (cefFinalUrl, cefHtml) = await _sessionManager.GetSteamPageAsyncCef(url, ct).ConfigureAwait(false);
                                         if (!string.IsNullOrEmpty(cefHtml))
                                         {
-                                            // Log HTML sample for debugging
-                                            var sample = cefHtml.Length > 1000 ? cefHtml.Substring(0, 1000) : cefHtml;
-                                            _logger?.Debug($"[SteamAch.Diag] CEF HTML sample (first 1000 chars): {sample}");
-                                            _logger?.Debug($"[SteamAch.Diag] CEF FinalUrl: {cefFinalUrl}, HTML length: {cefHtml.Length}");
-
                                             if (!LooksUnauthenticatedStatsPayload(cefHtml, cefFinalUrl))
                                             {
                                                 // Additional check: verify the HTML actually contains achievement content
