@@ -243,13 +243,13 @@ namespace PlayniteAchievements.ViewModels
         private bool _isValidMinute = true;
         private bool _isUpdatingFromText;
 
-        // Cached time modes for dropdown
-        private static readonly TimeMode[] TimeModes = Enum.GetValues(typeof(TimeMode)).Cast<TimeMode>().ToArray();
+        // Cached time mode display strings for dropdown
+        private static readonly string[] TimeModeDisplayNames = { "AM", "PM", "24hr" };
 
         /// <summary>
-        /// Available time modes.
+        /// Available time mode display strings.
         /// </summary>
-        public IEnumerable<TimeMode> AvailableTimeModes => TimeModes;
+        public IEnumerable<string> AvailableTimeModes => TimeModeDisplayNames;
 
         /// <summary>
         /// Hour text for TextBox binding.
@@ -352,20 +352,32 @@ namespace PlayniteAchievements.ViewModels
         }
 
         /// <summary>
-        /// Selected time mode (AM/PM/24hr).
+        /// Selected time mode display string for ComboBox binding.
         /// </summary>
-        public TimeMode SelectedTimeMode
+        public string SelectedTimeModeText
         {
-            get => _selectedTimeMode;
+            get => _selectedTimeMode switch
+            {
+                TimeMode.TwentyFourHour => "24hr",
+                TimeMode.PM => "PM",
+                _ => "AM"
+            };
             set
             {
-                if (_selectedTimeMode != value)
+                var newMode = value switch
+                {
+                    "24hr" => TimeMode.TwentyFourHour,
+                    "PM" => TimeMode.PM,
+                    _ => TimeMode.AM
+                };
+
+                if (_selectedTimeMode != newMode)
                 {
                     var previousMode = _selectedTimeMode;
-                    _selectedTimeMode = value;
+                    _selectedTimeMode = newMode;
 
                     // Convert hour value when switching modes
-                    if (value == TimeMode.TwentyFourHour)
+                    if (newMode == TimeMode.TwentyFourHour)
                     {
                         // Switching to 24hr: convert from 12hr
                         _selectedHour = Convert12To24Hour(_selectedHour, previousMode);
@@ -395,11 +407,16 @@ namespace PlayniteAchievements.ViewModels
                         _isUpdatingFromText = false;
                     }
 
-                    OnPropertyChanged(nameof(SelectedTimeMode));
+                    OnPropertyChanged(nameof(SelectedTimeModeText));
                     UpdateUnlockTimeFromPicker();
                 }
             }
         }
+
+        /// <summary>
+        /// Gets the internal TimeMode value.
+        /// </summary>
+        private TimeMode SelectedTimeMode => _selectedTimeMode;
 
         private void UpdateUnlockTimeFromPicker()
         {
@@ -480,7 +497,7 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(MinuteText));
                 OnPropertyChanged(nameof(IsValidHour));
                 OnPropertyChanged(nameof(IsValidMinute));
-                OnPropertyChanged(nameof(SelectedTimeMode));
+                OnPropertyChanged(nameof(SelectedTimeModeText));
             }
             finally
             {
