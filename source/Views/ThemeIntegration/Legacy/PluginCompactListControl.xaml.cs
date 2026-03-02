@@ -1,8 +1,11 @@
 // --SUCCESSSTORY--
 using System;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
@@ -77,6 +80,24 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
                 control.CompactHeight = Math.Max(0, iconHeight + 28.0);
             }
         }
+
+        #region Hidden Achievement Reveal
+
+        private void AchievementGrid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement fe && fe.DataContext is AchievementDetail achievement)
+            {
+                // Only toggle reveal for hidden, unlocked achievements
+                if (achievement.Hidden && !achievement.Unlocked)
+                {
+                    var current = HiddenRevealHelper.GetIsRevealed(fe);
+                    HiddenRevealHelper.SetIsRevealed(fe, !current);
+                    e.Handled = true;
+                }
+            }
+        }
+
+        #endregion
     }
 }
 // --END SUCCESSSTORY--

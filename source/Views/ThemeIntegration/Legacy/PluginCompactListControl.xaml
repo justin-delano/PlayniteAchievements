@@ -73,7 +73,9 @@
 
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <Grid HorizontalAlignment="Left">
+                    <Grid HorizontalAlignment="Left"
+                          MouseLeftButtonDown="AchievementGrid_MouseLeftButtonDown"
+                          localLegacy:HiddenRevealHelper.IsRevealed="False">
                         <StackPanel Margin="2" HorizontalAlignment="Left">
                             <StackPanel.ToolTip>
                                 <MultiBinding Converter="{StaticResource HiddenTitleConverter}">
@@ -81,6 +83,7 @@
                                     <Binding Path="Hidden" />
                                     <Binding Path="Unlocked" />
                                     <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                    <Binding RelativeSource="{RelativeSource AncestorType=Grid}" Path="(localLegacy:HiddenRevealHelper.IsRevealed)" />
                                 </MultiBinding>
                             </StackPanel.ToolTip>
                             <StackPanel.Style>
@@ -115,6 +118,7 @@
                                         <Binding Path="Hidden" />
                                         <Binding Path="Unlocked" />
                                         <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                        <Binding RelativeSource="{RelativeSource AncestorType=Grid}" Path="(localLegacy:HiddenRevealHelper.IsRevealed)" />
                                     </MultiBinding>
                                 </localControls:AchievementImage.Icon>
                                 <localControls:AchievementImage.IconCustom>
@@ -123,6 +127,7 @@
                                         <Binding Path="Hidden" />
                                         <Binding Path="Unlocked" />
                                         <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                        <Binding RelativeSource="{RelativeSource AncestorType=Grid}" Path="(localLegacy:HiddenRevealHelper.IsRevealed)" />
                                     </MultiBinding>
                                 </localControls:AchievementImage.IconCustom>
                             </localControls:AchievementImage>
