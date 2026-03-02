@@ -52,7 +52,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             nameof(ShowHiddenIcon),
             typeof(bool),
             typeof(PluginCompactListControl),
-            new FrameworkPropertyMetadata(true));
+            new FrameworkPropertyMetadata(false));
 
         public bool ShowHiddenIcon
         {
