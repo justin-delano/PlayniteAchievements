@@ -43,14 +43,18 @@ namespace PlayniteAchievements.Views.Converters
             // values[1] = Hidden (bool)
             // values[2] = Unlocked (bool)
             // values[3] = ShowHidden setting (bool) from control
+            // values[4] = IsRevealed (bool) from attached property (optional)
 
             if (values.Length >= 4 &&
                 values[1] is bool hidden &&
                 values[2] is bool unlocked &&
                 values[3] is bool showSetting)
             {
-                // Only show placeholder when: hidden AND locked AND setting is false
-                if (hidden && !unlocked && !showSetting)
+                // Check if achievement has been locally revealed via click
+                bool isRevealed = values.Length >= 5 && values[4] is bool revealed && revealed;
+
+                // Only show placeholder when: hidden AND locked AND setting is false AND not locally revealed
+                if (hidden && !unlocked && !showSetting && !isRevealed)
                 {
                     return ConversionMode switch
                     {
