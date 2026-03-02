@@ -22,6 +22,8 @@
         <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
         <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
         <converters:BooleanConverter x:Key="InvertBoolConverter" Mode="Inverted" />
+        <converters:HiddenAchievementConverter x:Key="HiddenIconConverter" ConversionMode="Icon" />
+        <converters:HiddenAchievementConverter x:Key="HiddenTitleConverter" ConversionMode="Title" />
     </local:ThemeControlBase.Resources>
 
     <Grid Name="PART_GridContener"
@@ -72,7 +74,15 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Grid HorizontalAlignment="Left">
-                        <StackPanel ToolTip="{Binding DisplayName}" Margin="2" HorizontalAlignment="Left">
+                        <StackPanel Margin="2" HorizontalAlignment="Left">
+                            <StackPanel.ToolTip>
+                                <MultiBinding Converter="{StaticResource HiddenTitleConverter}">
+                                    <Binding Path="DisplayName" />
+                                    <Binding Path="Hidden" />
+                                    <Binding Path="Unlocked" />
+                                    <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                </MultiBinding>
+                            </StackPanel.ToolTip>
                             <StackPanel.Style>
                                 <Style TargetType="{x:Type StackPanel}">
                                     <Style.Triggers>
@@ -95,12 +105,27 @@
                             <localControls:AchievementImage
                                 Width="{Binding ElementName=PART_GridContener, Path=Tag}"
                                 Height="{Binding ElementName=PART_GridContener, Path=Tag}"
-                                Icon="{Binding UnlockedIconDisplay, IsAsync=True}"
-                                IconCustom="{Binding UnlockedIconDisplay, IsAsync=True}"
                                 IsLocked="{Binding Unlocked, Converter={StaticResource InvertBoolConverter}}"
                                 Percent="{Binding GlobalPercentUnlocked}"
                                 EnableRaretyIndicator="True"
-                                DisplayRaretyValue="True" />
+                                DisplayRaretyValue="True">
+                                <localControls:AchievementImage.Icon>
+                                    <MultiBinding Converter="{StaticResource HiddenIconConverter}">
+                                        <Binding Path="UnlockedIconDisplay" IsAsync="True" />
+                                        <Binding Path="Hidden" />
+                                        <Binding Path="Unlocked" />
+                                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                    </MultiBinding>
+                                </localControls:AchievementImage.Icon>
+                                <localControls:AchievementImage.IconCustom>
+                                    <MultiBinding Converter="{StaticResource HiddenIconConverter}">
+                                        <Binding Path="UnlockedIconDisplay" IsAsync="True" />
+                                        <Binding Path="Hidden" />
+                                        <Binding Path="Unlocked" />
+                                        <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                    </MultiBinding>
+                                </localControls:AchievementImage.IconCustom>
+                            </localControls:AchievementImage>
                         </StackPanel>
                     </Grid>
                 </DataTemplate>
