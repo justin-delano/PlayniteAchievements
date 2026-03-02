@@ -371,6 +371,11 @@ namespace PlayniteAchievements.Providers.Steam
                         await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
                         finalUrl = view.GetCurrentAddress();
                         _logger?.Debug($"[SteamAch.Diag] CEF navigated to {url}, finalUrl={finalUrl}");
+
+                        // Wait for JavaScript to render dynamic content (achievement rows)
+                        // Steam pages use client-side rendering for the achievement list
+                        await Task.Delay(2000, ct);
+
                         html = await view.GetPageSourceAsync();
                         tcs.TrySetResult((finalUrl, html));
                     }
