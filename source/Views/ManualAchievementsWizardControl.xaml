@@ -522,17 +522,41 @@
                                                        Visibility="{Binding IsUnlocked, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
                                             <StackPanel Orientation="Horizontal"
                                                         Visibility="{Binding IsUnlocked, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                <ComboBox ItemsSource="{Binding AvailableHours}"
-                                                          SelectedItem="{Binding SelectedHour, Mode=TwoWay}"
-                                                          Width="40"
-                                                          VerticalContentAlignment="Center"
-                                                          Padding="4,0"/>
+                                                <TextBox Text="{Binding HourText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                         Width="32"
+                                                         VerticalContentAlignment="Center"
+                                                         HorizontalContentAlignment="Center"
+                                                         Padding="2,0"
+                                                         MaxLength="2">
+                                                    <TextBox.Style>
+                                                        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsValidHour}" Value="False">
+                                                                    <Setter Property="BorderBrush" Value="Red"/>
+                                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBox.Style>
+                                                </TextBox>
                                                 <TextBlock Text=":" VerticalAlignment="Center" Margin="2,0"/>
-                                                <ComboBox ItemsSource="{Binding AvailableMinutes}"
-                                                          SelectedItem="{Binding SelectedMinute, Mode=TwoWay}"
-                                                          Width="40"
-                                                          VerticalContentAlignment="Center"
-                                                          Padding="4,0"/>
+                                                <TextBox Text="{Binding MinuteText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                         Width="32"
+                                                         VerticalContentAlignment="Center"
+                                                         HorizontalContentAlignment="Center"
+                                                         Padding="2,0"
+                                                         MaxLength="2">
+                                                    <TextBox.Style>
+                                                        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsValidMinute}" Value="False">
+                                                                    <Setter Property="BorderBrush" Value="Red"/>
+                                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBox.Style>
+                                                </TextBox>
                                                 <ComboBox ItemsSource="{Binding AvailableTimeModes}"
                                                           SelectedItem="{Binding SelectedTimeMode, Mode=TwoWay}"
                                                           Width="50"
