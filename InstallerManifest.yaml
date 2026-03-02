@@ -1,5 +1,19 @@
 AddonId: PlayniteAchievements
 Packages:
+
+  - Version: 1.5.1
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-03-01
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.5.1/PlayniteAchievements_1_5_1.pext
+    Changelog:
+      - ShadPS4 settings now accept user/game_data folder path instead of executable path
+      - Fixed rare cases of data loss
+      - Fixed locked icons in desktop theme integration
+      - Fixed startup crashes
+      - Experimental - Added option in Xbox settings to download lower resolution images. May help in cases where Xbox icon downloads are very slow.
+      - Experimental - RPCS3 suppport for unlaunched games
+      - SuccessStory theme integration improvements - Hidden achievements now hide and can be clicked to reveal 
+
   - Version: 1.5.0
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-02-26
