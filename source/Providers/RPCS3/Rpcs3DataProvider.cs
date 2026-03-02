@@ -347,6 +347,7 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// Checks if trophy data can be found for a game by verifying the npcommid exists in cache.
         /// Returns true if the game's npcommid is found in cache, or falls back to true if
         /// we can't verify (allows name-based matching during the actual scan).
+        /// Also checks for TROPHY.TRP as pre-launch fallback when cache doesn't exist.
         /// </summary>
         private bool CanFindTrophyDataForGame(Game game)
         {
@@ -364,7 +365,12 @@ namespace PlayniteAchievements.Providers.RPCS3
                     {
                         return true;
                     }
-                    // npcommid found in path but not in cache - no synced trophy data
+                    // npcommid found in path but not in cache - check for TROPHY.TRP fallback
+                    var trpPath = FindTrpPathForGameDirectory(installDir);
+                    if (!string.IsNullOrWhiteSpace(trpPath) && File.Exists(trpPath))
+                    {
+                        return true; // Pre-launch detection possible
+                    }
                     return false;
                 }
 
@@ -385,13 +391,87 @@ namespace PlayniteAchievements.Providers.RPCS3
                     {
                         return true;
                     }
-                    // Game ID found but not in cache - fall through
+                    // Game ID found but not in cache - check for TROPHY.TRP fallback
+                    var trpPath = FindTrpPathForGameDirectory(installDir);
+                    if (!string.IsNullOrWhiteSpace(trpPath) && File.Exists(trpPath))
+                    {
+                        return true; // Pre-launch detection possible
+                    }
                 }
             }
 
             // If we can't verify by ID, fall back to true
             // This allows name-based matching during the actual scan
             return true;
+        }
+
+        /// <summary>
+        /// Finds the TROPHY.TRP path for a game directory.
+        /// Used for pre-launch trophy detection when RPCS3 cache doesn't exist yet.
+        /// </summary>
+        /// <param name="gameDirectory">The game installation directory.</param>
+        /// <returns>Path to TROPHY.TRP file, or null if not found.</returns>
+        internal string FindTrpPathForGameDirectory(string gameDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(gameDirectory))
+            {
+                return null;
+            }
+
+            // Build list of directories to check
+            // Playnite may point to USRDIR, but TROPHY folder is in the game root
+            var directoriesToCheck = new List<string> { gameDirectory };
+
+            // If path ends with USRDIR, also check parent directory
+            var normalizedPath = gameDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (normalizedPath.EndsWith("USRDIR", StringComparison.OrdinalIgnoreCase))
+            {
+                var parentDir = Path.GetDirectoryName(normalizedPath);
+                if (!string.IsNullOrWhiteSpace(parentDir))
+                {
+                    directoriesToCheck.Add(parentDir);
+                }
+            }
+
+            foreach (var dir in directoriesToCheck)
+            {
+                // PKG games: TROPDIR contains subdirectories named after npcommid
+                var tropdir = Path.Combine(dir, "TROPDIR");
+                if (Directory.Exists(tropdir))
+                {
+                    try
+                    {
+                        foreach (var subDir in Directory.GetDirectories(tropdir))
+                        {
+                            var trpPath = Path.Combine(subDir, "TROPHY.TRP");
+                            if (File.Exists(trpPath))
+                            {
+                                return trpPath;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors scanning TROPDIR
+                    }
+                }
+
+                // Disc-based game: TROPHY/TROPHY.TRP
+                var discTrpPath = Path.Combine(dir, "TROPHY", "TROPHY.TRP");
+                if (File.Exists(discTrpPath))
+                {
+                    return discTrpPath;
+                }
+
+                // Alternative disc structure: PS3_GAME/TROPHY/TROPHY.TRP
+                var altDiscTrpPath = Path.Combine(dir, "PS3_GAME", "TROPHY", "TROPHY.TRP");
+                if (File.Exists(altDiscTrpPath))
+                {
+                    return altDiscTrpPath;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

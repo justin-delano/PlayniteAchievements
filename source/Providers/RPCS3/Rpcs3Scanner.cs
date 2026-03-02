@@ -15,6 +15,22 @@ using System.Threading.Tasks;
 namespace PlayniteAchievements.Providers.RPCS3
 {
     /// <summary>
+    /// Represents the trophy source for a game, including both RPCS3 cache and fallback paths.
+    /// </summary>
+    internal class GameTrophySource
+    {
+        /// <summary>
+        /// The npcommid for the game (e.g., NPWR05920_00).
+        /// </summary>
+        public string NpCommId { get; set; }
+
+        /// <summary>
+        /// Path to TROPHY.TRP file for pre-launch fallback.
+        /// </summary>
+        public string TrpPath { get; set; }
+    }
+
+    /// <summary>
     /// Scanner for RPCS3 PlayStation 3 emulator trophy data.
     /// Orchestrates trophy folder discovery and game matching.
     /// </summary>
@@ -165,19 +181,26 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return Task.FromResult<GameAchievementData>(null);
             }
 
-            // Find npcommid for this game
-            var npcommid = FindNpCommIdForGame(game, trophyFolderCache, cancel);
+            // Find npcommid and TRP path for this game
+            var source = FindNpCommIdForGame(game, trophyFolderCache, cancel);
 
-            if (string.IsNullOrWhiteSpace(npcommid))
+            if (source == null || string.IsNullOrWhiteSpace(source.NpCommId))
             {
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
             cancel.ThrowIfCancellationRequested();
 
-            // Look up trophy folder
-            if (!trophyFolderCache.TryGetValue(npcommid, out var trophyFolderPath))
+            // Look up trophy folder in RPCS3 cache
+            if (!trophyFolderCache.TryGetValue(source.NpCommId, out var trophyFolderPath))
             {
+                // Cache miss - try TROPHY.TRP fallback for pre-launch detection
+                if (!string.IsNullOrWhiteSpace(source.TrpPath))
+                {
+                    _logger?.Debug($"[RPCS3] No cache for '{source.NpCommId}', falling back to TROPHY.TRP at '{source.TrpPath}'");
+                    return FetchFromTrpAsync(game, source.NpCommId, source.TrpPath, providerName);
+                }
+
                 return Task.FromResult(BuildNoAchievementsData(game, providerName));
             }
 
@@ -212,7 +235,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
                 foreach (var trophy in trophies)
                 {
-                    var iconPath = GetTrophyIconPath(trophyFolderPath, npcommid, trophy.Id);
+                    var iconPath = GetTrophyIconPath(trophyFolderPath, source.NpCommId, trophy.Id);
 
                     var normalizedTrophyType = NormalizeTrophyType(trophy.TrophyType);
                     achievements.Add(new AchievementDetail
@@ -250,6 +273,79 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
         }
 
+        /// <summary>
+        /// Fetches trophy data from TROPHY.TRP file for pre-launch detection.
+        /// Used when RPCS3 cache doesn't exist yet (game not launched).
+        /// All trophies are marked as locked since unlock data isn't available.
+        /// </summary>
+        private Task<GameAchievementData> FetchFromTrpAsync(Game game, string npcommid, string trpPath, string providerName)
+        {
+            _logger?.Debug($"[RPCS3] FetchFromTrpAsync - Loading pre-launch trophies for '{game?.Name}' from '{trpPath}'");
+
+            if (string.IsNullOrWhiteSpace(trpPath) || !File.Exists(trpPath))
+            {
+                _logger?.Debug($"[RPCS3] FetchFromTrpAsync - TRP file not found: '{trpPath}'");
+                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+            }
+
+            try
+            {
+                // Map global language to PS3 locale
+                var ps3Locale = Rpcs3TrophyParser.MapGlobalLanguageToPs3Locale(_settings?.Persisted?.GlobalLanguage);
+
+                // Parse trophy definitions from TROPHY.TRP (all locked)
+                var trophies = Rpcs3TrophyParser.ParseTrophyDefinitionsFromTrp(trpPath, ps3Locale, _logger);
+
+                if (trophies.Count == 0)
+                {
+                    _logger?.Debug($"[RPCS3] FetchFromTrpAsync - No trophies found in '{trpPath}'");
+                    return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                }
+
+                // Convert to achievements (all Unlocked = false, icons = null for placeholder)
+                var achievements = new List<AchievementDetail>();
+
+                foreach (var trophy in trophies)
+                {
+                    var normalizedTrophyType = NormalizeTrophyType(trophy.TrophyType);
+                    achievements.Add(new AchievementDetail
+                    {
+                        ApiName = trophy.Id.ToString(),
+                        DisplayName = trophy.Name,
+                        Description = trophy.Description,
+                        // Icons not available pre-launch - UI shows placeholder
+                        UnlockedIconPath = null,
+                        LockedIconPath = null,
+                        Hidden = trophy.Hidden,
+                        Unlocked = false, // Pre-launch: all locked
+                        UnlockTimeUtc = null,
+                        GlobalPercentUnlocked = null,
+                        TrophyType = normalizedTrophyType,
+                        IsCapstone = normalizedTrophyType == "platinum",
+                        Category = trophy.GroupName
+                    });
+                }
+
+                _logger?.Info($"[RPCS3] FetchFromTrpAsync - Loaded {achievements.Count} pre-launch trophies for '{game?.Name}' (npcommid: {npcommid})");
+
+                return Task.FromResult(new GameAchievementData
+                {
+                    ProviderName = providerName,
+                    LibrarySourceName = game?.Source?.Name,
+                    GameName = game?.Name,
+                    PlayniteGameId = game?.Id,
+                    HasAchievements = achievements.Count > 0,
+                    Achievements = achievements,
+                    LastUpdatedUtc = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"[RPCS3] FetchFromTrpAsync - Failed to parse TROPHY.TRP for '{game?.Name}'");
+                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+            }
+        }
+
         // PS3 title/serial ID patterns: BLUS, BLES, BCES, NPUB, NPEB, etc.
         private static readonly System.Text.RegularExpressions.Regex Ps3IdPattern =
             new System.Text.RegularExpressions.Regex(@"\b([A-Z]{2,4}\d{5})\b",
@@ -270,8 +366,9 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// 1. Extract PS3 ID from the install path (e.g., BLUS12345)
         /// 2. Extract npcommid from PS3 ISO file
         /// 3. Match by game name against TROPCONF.SFM titles
+        /// Also returns the TROPHY.TRP path for pre-launch fallback.
         /// </summary>
-        private string FindNpCommIdForGame(Game game, Dictionary<string, string> trophyFolderCache, CancellationToken cancel)
+        private GameTrophySource FindNpCommIdForGame(Game game, Dictionary<string, string> trophyFolderCache, CancellationToken cancel)
         {
             var rawInstallDir = game?.InstallDirectory;
             var gameDirectory = ExpandGamePath(game, rawInstallDir);
@@ -287,7 +384,9 @@ namespace PlayniteAchievements.Providers.RPCS3
 
                     if (trophyFolderCache.ContainsKey(ps3Id))
                     {
-                        return ps3Id;
+                        // Found in cache, but also try to find TRP for fallback
+                        var trpPath = FindTrpPathForGameDirectory(gameDirectory);
+                        return new GameTrophySource { NpCommId = ps3Id, TrpPath = trpPath };
                     }
                 }
             }
@@ -295,10 +394,10 @@ namespace PlayniteAchievements.Providers.RPCS3
             // Strategy 1.5: For installed PKG games, check for TROPHY.TRP in game directory
             if (!string.IsNullOrWhiteSpace(gameDirectory))
             {
-                var npcommidFromInstall = FindNpCommIdFromInstalledGame(gameDirectory, trophyFolderCache);
-                if (!string.IsNullOrWhiteSpace(npcommidFromInstall))
+                var (npcommid, trpPath) = FindNpCommIdAndTrpFromInstalledGame(gameDirectory, trophyFolderCache);
+                if (!string.IsNullOrWhiteSpace(npcommid))
                 {
-                    return npcommidFromInstall;
+                    return new GameTrophySource { NpCommId = npcommid, TrpPath = trpPath };
                 }
             }
 
@@ -306,14 +405,15 @@ namespace PlayniteAchievements.Providers.RPCS3
             var npcommidFromIso = FindNpCommIdFromIso(game, gameDirectory, trophyFolderCache);
             if (!string.IsNullOrWhiteSpace(npcommidFromIso))
             {
-                return npcommidFromIso;
+                // For ISO games, we can't use TRP fallback (it's inside the ISO)
+                return new GameTrophySource { NpCommId = npcommidFromIso, TrpPath = null };
             }
 
             // Strategy 3: Match by game name against TROPCONF.SFM titles
             var npcommidFromName = FindNpCommIdByName(game, trophyFolderCache);
             if (!string.IsNullOrWhiteSpace(npcommidFromName))
             {
-                return npcommidFromName;
+                return new GameTrophySource { NpCommId = npcommidFromName, TrpPath = null };
             }
 
             return null;
@@ -384,18 +484,18 @@ namespace PlayniteAchievements.Providers.RPCS3
         }
 
         /// <summary>
-        /// Extracts the npcommid from an installed PKG game's TROPHY.TRP file.
+        /// Extracts the npcommid and TROPHY.TRP path from an installed PKG game.
         /// PKG-installed games have TROPHY.TRP at {gameDir}/TROPHY/TROPHY.TRP or
         /// {gameDir}/PS3_GAME/TROPHY/TROPHY.TRP.
         /// Note: Playnite's InstallDirectory often points to USRDIR, but TROPHY is
         /// in the parent game folder (sibling to USRDIR).
         /// </summary>
-        private string FindNpCommIdFromInstalledGame(string gameDirectory,
+        private (string npcommid, string trpPath) FindNpCommIdAndTrpFromInstalledGame(string gameDirectory,
             Dictionary<string, string> trophyFolderCache)
         {
             if (string.IsNullOrWhiteSpace(gameDirectory))
             {
-                return null;
+                return (null, null);
             }
 
             // Build list of directories to check
@@ -455,14 +555,88 @@ namespace PlayniteAchievements.Providers.RPCS3
                 try
                 {
                     var npcommid = ExtractNpCommIdFromTrpFile(trpPath);
-                    if (!string.IsNullOrWhiteSpace(npcommid) && trophyFolderCache.ContainsKey(npcommid))
+                    // Return if found in cache OR if we just have a valid TRP file (for pre-launch fallback)
+                    if (!string.IsNullOrWhiteSpace(npcommid))
                     {
-                        return npcommid;
+                        if (trophyFolderCache.ContainsKey(npcommid))
+                        {
+                            return (npcommid, trpPath);
+                        }
+                        // Not in cache but valid TRP - still return for pre-launch fallback
+                        return (npcommid, trpPath);
                     }
                 }
                 catch
                 {
                     // Ignore errors reading TROPHY.TRP
+                }
+            }
+
+            return (null, null);
+        }
+
+        /// <summary>
+        /// Finds the TROPHY.TRP path for a game directory.
+        /// Used for pre-launch trophy detection when RPCS3 cache doesn't exist yet.
+        /// </summary>
+        /// <param name="gameDirectory">The game installation directory.</param>
+        /// <returns>Path to TROPHY.TRP file, or null if not found.</returns>
+        internal string FindTrpPathForGameDirectory(string gameDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(gameDirectory))
+            {
+                return null;
+            }
+
+            // Build list of directories to check
+            var directoriesToCheck = new List<string> { gameDirectory };
+
+            // If path ends with USRDIR, also check parent directory
+            var normalizedPath = gameDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (normalizedPath.EndsWith("USRDIR", StringComparison.OrdinalIgnoreCase))
+            {
+                var parentDir = Path.GetDirectoryName(normalizedPath);
+                if (!string.IsNullOrWhiteSpace(parentDir))
+                {
+                    directoriesToCheck.Add(parentDir);
+                }
+            }
+
+            foreach (var dir in directoriesToCheck)
+            {
+                // PKG games: TROPDIR contains subdirectories named after npcommid
+                var tropdir = Path.Combine(dir, "TROPDIR");
+                if (Directory.Exists(tropdir))
+                {
+                    try
+                    {
+                        foreach (var subDir in Directory.GetDirectories(tropdir))
+                        {
+                            var trpPath = Path.Combine(subDir, "TROPHY.TRP");
+                            if (File.Exists(trpPath))
+                            {
+                                return trpPath;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors scanning TROPDIR
+                    }
+                }
+
+                // Disc-based game: TROPHY/TROPHY.TRP
+                var discTrpPath = Path.Combine(dir, "TROPHY", "TROPHY.TRP");
+                if (File.Exists(discTrpPath))
+                {
+                    return discTrpPath;
+                }
+
+                // Alternative disc structure: PS3_GAME/TROPHY/TROPHY.TRP
+                var altDiscTrpPath = Path.Combine(dir, "PS3_GAME", "TROPHY", "TROPHY.TRP");
+                if (File.Exists(altDiscTrpPath))
+                {
+                    return altDiscTrpPath;
                 }
             }
 

@@ -501,6 +501,132 @@ namespace PlayniteAchievements.Providers.RPCS3
         }
 
         /// <summary>
+        /// Parses trophy definitions from a TROPHY.TRP file.
+        /// Used for pre-launch trophy detection before RPCS3 creates cache files.
+        /// </summary>
+        /// <param name="trophyTrpPath">Path to TROPHY.TRP file.</param>
+        /// <param name="language">Target language code (e.g., "en", "fr") for localized names.</param>
+        /// <param name="logger">Logger for error reporting.</param>
+        /// <returns>List of trophy definitions (all Unlocked = false), or empty list on error.</returns>
+        public static List<Rpcs3Trophy> ParseTrophyDefinitionsFromTrp(string trophyTrpPath, string language, ILogger logger)
+        {
+            logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - Starting parse of '{trophyTrpPath ?? "(null)"}'");
+            var trophies = new List<Rpcs3Trophy>();
+
+            if (string.IsNullOrWhiteSpace(trophyTrpPath))
+            {
+                logger?.Debug("[RPCS3] ParseTrophyDefinitionsFromTrp - Path is null or empty");
+                return trophies;
+            }
+
+            if (!File.Exists(trophyTrpPath))
+            {
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - File not found at '{trophyTrpPath}'");
+                return trophies;
+            }
+
+            try
+            {
+                var fileInfo = new FileInfo(trophyTrpPath);
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - File size: {fileInfo.Length} bytes");
+
+                // Read TROPHY.TRP as UTF-8 bytes and convert to string
+                var bytes = File.ReadAllBytes(trophyTrpPath);
+                var content = Encoding.UTF8.GetString(bytes);
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - Read {bytes.Length} bytes, string length: {content.Length}");
+
+                // Search for <trophyconf> start and end tags to extract XML content
+                var tagStart = content.IndexOf("<trophyconf>", StringComparison.OrdinalIgnoreCase);
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - <trophyconf> tag search result: index={tagStart}");
+
+                if (tagStart < 0)
+                {
+                    logger?.Debug("[RPCS3] ParseTrophyDefinitionsFromTrp - <trophyconf> tag not found");
+                    return trophies;
+                }
+
+                var tagEnd = content.IndexOf("</trophyconf>", tagStart, StringComparison.OrdinalIgnoreCase);
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - Closing tag at index: {tagEnd}");
+
+                if (tagEnd < 0)
+                {
+                    logger?.Debug("[RPCS3] ParseTrophyDefinitionsFromTrp - Closing </trophyconf> tag not found");
+                    return trophies;
+                }
+
+                // Extract the full trophyconf element (include both tags for valid XML)
+                var xmlContent = content.Substring(tagStart, tagEnd - tagStart + "</trophyconf>".Length);
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - Extracted XML content length: {xmlContent.Length}");
+
+                // Parse with XDocument.Parse() since we have string content
+                var doc = XDocument.Parse(xmlContent);
+                logger?.Debug("[RPCS3] ParseTrophyDefinitionsFromTrp - Successfully parsed XML document");
+
+                // Build group names dictionary for DLC trophy categorization
+                var groupNames = BuildGroupNamesDictionary(doc, logger);
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - Found {groupNames.Count} trophy groups");
+
+                var trophyElements = doc.Descendants("trophy");
+                var elementCount = trophyElements.Count();
+                logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - Found {elementCount} trophy elements in XML");
+
+                foreach (var trophyElement in trophyElements)
+                {
+                    try
+                    {
+                        var idAttr = trophyElement.Attribute("id")?.Value;
+                        var ttypeAttr = trophyElement.Attribute("ttype")?.Value;
+                        var hiddenAttr = trophyElement.Attribute("hidden")?.Value;
+                        var nameElement = GetLocalizedElement(trophyElement, "name", language);
+                        var detailElement = GetLocalizedElement(trophyElement, "detail", language);
+                        var gidAttr = trophyElement.Attribute("gid")?.Value;
+
+                        var groupId = gidAttr?.Trim() ?? "0";
+                        var groupName = groupNames.TryGetValue(groupId, out var name) ? name : null;
+
+                        logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - Trophy element: id='{idAttr}', ttype='{ttypeAttr}', hidden='{hiddenAttr}', name='{nameElement}', gid='{groupId}'");
+
+                        var trophy = new Rpcs3Trophy
+                        {
+                            Id = ParseIntAttribute(trophyElement, "id", -1),
+                            TrophyType = ttypeAttr?.Trim() ?? "B",
+                            Hidden = string.Equals(hiddenAttr, "yes", StringComparison.OrdinalIgnoreCase),
+                            Name = nameElement?.Trim() ?? string.Empty,
+                            Description = detailElement?.Trim() ?? string.Empty,
+                            GroupId = groupId,
+                            GroupName = groupName,
+                            // Pre-launch: all trophies are locked (no unlock data available)
+                            Unlocked = false,
+                            UnlockTimeUtc = null
+                        };
+
+                        if (trophy.Id >= 0)
+                        {
+                            trophies.Add(trophy);
+                            logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - Added trophy Id={trophy.Id}, Name='{trophy.Name}', Type='{trophy.TrophyType}', Hidden={trophy.Hidden}");
+                        }
+                        else
+                        {
+                            logger?.Debug($"[RPCS3] ParseTrophyDefinitionsFromTrp - Skipped trophy with invalid Id={idAttr}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger?.Debug(ex, $"[RPCS3] ParseTrophyDefinitionsFromTrp - Failed to parse trophy element");
+                    }
+                }
+
+                logger?.Info($"[RPCS3] ParseTrophyDefinitionsFromTrp - Parsed {trophies.Count} trophy definitions from '{trophyTrpPath}' (pre-launch, all locked)");
+            }
+            catch (Exception ex)
+            {
+                logger?.Error(ex, $"[RPCS3] ParseTrophyDefinitionsFromTrp - Failed to parse TROPHY.TRP at '{trophyTrpPath}'");
+            }
+
+            return trophies;
+        }
+
+        /// <summary>
         /// Maps a global language setting to PS3 locale code.
         /// </summary>
         /// <param name="globalLanguage">The global language setting (e.g., "english", "french").</param>
