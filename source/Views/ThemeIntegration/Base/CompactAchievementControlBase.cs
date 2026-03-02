@@ -46,6 +46,22 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         #endregion
 
+        #region ShowHiddenIcon Property
+
+        public static readonly DependencyProperty ShowHiddenIconProperty = DependencyProperty.Register(
+            nameof(ShowHiddenIcon),
+            typeof(bool),
+            typeof(CompactAchievementControlBase),
+            new FrameworkPropertyMetadata(true));
+
+        public bool ShowHiddenIcon
+        {
+            get => (bool)GetValue(ShowHiddenIconProperty);
+            set => SetValue(ShowHiddenIconProperty, value);
+        }
+
+        #endregion
+
         /// <summary>
         /// Gets the source collection to display. Derived classes implement this to provide
         /// either the filtered locked achievements or the unlocked achievements.
