@@ -7,6 +7,7 @@
                    xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
                    xmlns:local="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
                    xmlns:localControls="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Legacy.Controls"
+                   xmlns:localLegacy="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Legacy"
                    xmlns:wpftk="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
                    mc:Ignorable="d"
@@ -132,7 +133,9 @@
 
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid Margin="5" Name="PART_Grid" d:DesignWidth="400" Height="65">
+                        <Grid Margin="5" Name="PART_Grid" d:DesignWidth="400" Height="65"
+                              MouseLeftButtonDown="AchievementGrid_MouseLeftButtonDown"
+                              localLegacy:HiddenRevealHelper.IsRevealed="False">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="auto" />
                                 <ColumnDefinition Width="auto" />
@@ -168,6 +171,7 @@
                                             <Binding Path="Hidden" />
                                             <Binding Path="Unlocked" />
                                             <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                            <Binding RelativeSource="{RelativeSource AncestorType=Grid}" Path="(localLegacy:HiddenRevealHelper.IsRevealed)" />
                                         </MultiBinding>
                                     </localControls:AchievementImage.Icon>
                                     <localControls:AchievementImage.IconCustom>
@@ -176,6 +180,7 @@
                                             <Binding Path="Hidden" />
                                             <Binding Path="Unlocked" />
                                             <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                            <Binding RelativeSource="{RelativeSource AncestorType=Grid}" Path="(localLegacy:HiddenRevealHelper.IsRevealed)" />
                                         </MultiBinding>
                                     </localControls:AchievementImage.IconCustom>
                                 </localControls:AchievementImage>
@@ -227,6 +232,7 @@
                                                 <Binding Path="Hidden" />
                                                 <Binding Path="Unlocked" />
                                                 <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenTitle" />
+                                                <Binding RelativeSource="{RelativeSource AncestorType=Grid}" Path="(localLegacy:HiddenRevealHelper.IsRevealed)" />
                                             </MultiBinding>
                                         </TextBlock.Text>
                                         <TextBlock.Style>
@@ -256,6 +262,7 @@
                                             <Binding Path="Hidden" />
                                             <Binding Path="Unlocked" />
                                             <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenDescription" />
+                                            <Binding RelativeSource="{RelativeSource AncestorType=Grid}" Path="(localLegacy:HiddenRevealHelper.IsRevealed)" />
                                         </MultiBinding>
                                     </TextBlock.Text>
                                     <TextBlock.Width>
