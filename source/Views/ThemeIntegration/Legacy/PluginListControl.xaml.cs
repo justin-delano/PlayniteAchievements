@@ -59,7 +59,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             nameof(ShowHiddenIcon),
             typeof(bool),
             typeof(PluginListControl),
-            new FrameworkPropertyMetadata(true));
+            new FrameworkPropertyMetadata(false));
 
         public bool ShowHiddenIcon
         {
@@ -71,7 +71,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             nameof(ShowHiddenTitle),
             typeof(bool),
             typeof(PluginListControl),
-            new FrameworkPropertyMetadata(true));
+            new FrameworkPropertyMetadata(false));
 
         public bool ShowHiddenTitle
         {
@@ -83,7 +83,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             nameof(ShowHiddenDescription),
             typeof(bool),
             typeof(PluginListControl),
-            new FrameworkPropertyMetadata(true));
+            new FrameworkPropertyMetadata(false));
 
         public bool ShowHiddenDescription
         {
