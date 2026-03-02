@@ -1,6 +1,7 @@
 // --SUCCESSSTORY--
 using System.Collections.Generic;
 using System.Windows.Controls;
+using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
@@ -69,14 +70,26 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
         protected override AchievementImage CreateAchievementImage(AchievementDetail achievement)
         {
+            // Check if achievement is hidden and should be obscured
+            bool isHiddenAndObscured = achievement.Hidden &&
+                                       !achievement.Unlocked &&
+                                       !ShowHiddenIcon;
+
+            string displayIcon = isHiddenAndObscured
+                ? AchievementIconResolver.GetDefaultIcon()
+                : achievement.UnlockedIconDisplay;
+
+            string displayToolTip = isHiddenAndObscured
+                ? ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle")
+                : achievement.DisplayName;
+
             return new AchievementImage
             {
                 Width = IconHeight,
                 Height = IconHeight,
-                ToolTip = achievement.DisplayName,
-                // Use UnlockedIconDisplay for both states; grayscale is applied when IsLocked=true
-                Icon = achievement.UnlockedIconDisplay,
-                IconCustom = achievement.UnlockedIconDisplay,
+                ToolTip = displayToolTip,
+                Icon = displayIcon,
+                IconCustom = displayIcon,
                 IsLocked = true,
                 Percent = achievement.GlobalPercentUnlocked ?? 0,
                 EnableRaretyIndicator = true,
