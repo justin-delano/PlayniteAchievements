@@ -21,6 +21,9 @@
         <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
         <converters:LocalDateTimeConverter x:Key="LocalDateTimeConverter" />
         <converters:ValueOperationConverter x:Key="ValueOperationConverter" />
+        <converters:HiddenAchievementConverter x:Key="HiddenIconConverter" ConversionMode="Icon" />
+        <converters:HiddenAchievementConverter x:Key="HiddenTitleConverter" ConversionMode="Title" />
+        <converters:HiddenAchievementConverter x:Key="HiddenDescriptionConverter" ConversionMode="Description" />
     </local:ThemeControlBase.Resources>
 
     <Grid x:Name="PART_Root">
@@ -155,12 +158,27 @@
                                 <localControls:AchievementImage
                                     Width="{Binding ElementName=lbAchievements, Path=Tag}"
                                     Height="{Binding ElementName=lbAchievements, Path=Tag}"
-                                    Icon="{Binding UnlockedIconDisplay, IsAsync=True}"
                                     IsLocked="{Binding Unlocked, Converter={StaticResource InvertBoolConverter}}"
-                                    IconCustom="{Binding UnlockedIconDisplay, IsAsync=True}"
                                     Percent="{Binding GlobalPercentUnlocked}"
                                     EnableRaretyIndicator="True"
-                                    DisplayRaretyValue="True" />
+                                    DisplayRaretyValue="True">
+                                    <localControls:AchievementImage.Icon>
+                                        <MultiBinding Converter="{StaticResource HiddenIconConverter}">
+                                            <Binding Path="UnlockedIconDisplay" IsAsync="True" />
+                                            <Binding Path="Hidden" />
+                                            <Binding Path="Unlocked" />
+                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                        </MultiBinding>
+                                    </localControls:AchievementImage.Icon>
+                                    <localControls:AchievementImage.IconCustom>
+                                        <MultiBinding Converter="{StaticResource HiddenIconConverter}">
+                                            <Binding Path="UnlockedIconDisplay" IsAsync="True" />
+                                            <Binding Path="Hidden" />
+                                            <Binding Path="Unlocked" />
+                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenIcon" />
+                                        </MultiBinding>
+                                    </localControls:AchievementImage.IconCustom>
+                                </localControls:AchievementImage>
                             </StackPanel>
 
                             <!-- Achievement Details -->
@@ -201,8 +219,16 @@
                                     </Grid>
 
                                     <!-- Achievement Name with Blur for Hidden -->
-                                    <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource TextBrush}"
+                                    <TextBlock Foreground="{DynamicResource TextBrush}"
                                                TextTrimming="CharacterEllipsis" FontWeight="SemiBold">
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{StaticResource HiddenTitleConverter}">
+                                                <Binding Path="DisplayName" />
+                                                <Binding Path="Hidden" />
+                                                <Binding Path="Unlocked" />
+                                                <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenTitle" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
                                         <TextBlock.Style>
                                             <Style TargetType="{x:Type TextBlock}">
                                                 <Style.Triggers>
@@ -223,8 +249,15 @@
                                 <!-- Description with Blur for Hidden -->
                                 <TextBlock Grid.Row="1" VerticalAlignment="Top" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextBrushDarker}"
-                                           Name="PART_Desc"
-                                           Text="{Binding Description}">
+                                           Name="PART_Desc">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource HiddenDescriptionConverter}">
+                                            <Binding Path="Description" />
+                                            <Binding Path="Hidden" />
+                                            <Binding Path="Unlocked" />
+                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="ShowHiddenDescription" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
                                     <TextBlock.Width>
                                         <MultiBinding Converter="{StaticResource ValueOperationConverter}" ConverterParameter="-">
                                             <Binding ElementName="PART_GridContener" Path="ActualWidth" />
