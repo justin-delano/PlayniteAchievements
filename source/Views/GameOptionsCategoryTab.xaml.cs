@@ -266,7 +266,7 @@ namespace PlayniteAchievements.Views
 
             var addTypeMenu = new MenuItem
             {
-                Header = L("LOCPlayAch_GameOptions_Category_Context_AddType", "Add Type")
+                Header = L("LOCPlayAch_Common_AddType", "Add Type")
             };
             addTypeMenu.Items.Add(CreateMenuItem(
                 L("LOCPlayAch_GameOptions_Category_Type_Base", "Base"),
@@ -283,7 +283,7 @@ namespace PlayniteAchievements.Views
             menu.Items.Add(addTypeMenu);
 
             menu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_GameOptions_Category_Context_SetLabel", "Set Label..."),
+                L("LOCPlayAch_Common_SetLabelEllipsis", "Set Label..."),
                 () => SetLabelFromContext(contextItem)));
 
             menu.Items.Add(CreateMenuItem(

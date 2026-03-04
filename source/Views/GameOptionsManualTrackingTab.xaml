@@ -220,7 +220,7 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Search_Column_Name}"
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Column_Name}"
                                                 Binding="{Binding Name}"
                                                 Width="*">
                                 <DataGridTextColumn.ElementStyle>
@@ -232,7 +232,7 @@
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Search_Column_AppId}"
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Column_AppId}"
                                                 Binding="{Binding SourceGameId}"
                                                 Width="80">
                                 <DataGridTextColumn.ElementStyle>
@@ -438,7 +438,7 @@
 
                         <DataGrid.Columns>
                             <!-- Unlocked checkbox -->
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Unlocked}"
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Unlocked}"
                                                     Width="80"
                                                     SortMemberPath="IsUnlocked"
                                                     HeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
@@ -499,7 +499,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Unlock date -->
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Date}"
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Date}"
                                                     Width="120"
                                                     HeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
                                                     CellStyle="{StaticResource AchievementCellStyle}">
@@ -519,7 +519,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Unlock time -->
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Column_Time}"
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Time}"
                                                     Width="150"
                                                     HeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
                                                     CellStyle="{StaticResource AchievementCellStyle}">

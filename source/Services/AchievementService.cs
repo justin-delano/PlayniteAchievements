@@ -96,7 +96,7 @@ namespace PlayniteAchievements.Services
                 return true;
             }
 
-            _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshAttemptedNoProviders"));
+            _logger.Info("Refresh attempted but no platforms are authenticated.");
             _api.Dialogs.ShowMessage(
                 ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"),
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
@@ -554,7 +554,7 @@ namespace PlayniteAchievements.Services
             {
                 if (_activeRunCts != null)
                 {
-                    _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshAlreadyInProgress"));
+                    _logger.Info("Refresh already in progress.");
                     cts = null;
                     Report(
                         _lastStatus ?? ResourceProvider.GetString("LOCPlayAch_Status_UpdatingCache"),
@@ -566,7 +566,7 @@ namespace PlayniteAchievements.Services
                     return false;
                 }
 
-                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshStarting"));
+                _logger.Info("Starting new refresh.");
                 _activeRunCts = new CancellationTokenSource();
                 _activeOperationId = operationId;
                 _activeRefreshMode = mode;
@@ -578,7 +578,7 @@ namespace PlayniteAchievements.Services
 
         private void EndRun()
         {
-            _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshEndRun"));
+            _logger.Info("Refresh ended.");
             lock (_runLock)
             {
                 _activeRunCts?.Dispose();
@@ -600,7 +600,7 @@ namespace PlayniteAchievements.Services
 
             if (!HasAnyAuthenticatedProvider())
             {
-                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshRequestedNoProviders"));
+                _logger.Info("Refresh requested but no platforms are authenticated.");
                 Report(
                     ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"),
                     0,
@@ -640,7 +640,7 @@ namespace PlayniteAchievements.Services
             }
             catch (OperationCanceledException)
             {
-                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshCanceled"));
+                _logger.Info("User achievement refresh was canceled.");
                 Report(
                     ResourceProvider.GetString("LOCPlayAch_Status_Canceled"),
                     0,
@@ -732,7 +732,7 @@ namespace PlayniteAchievements.Services
                 catch (Exception ex)
                 {
                     _logger?.Debug(ex, string.Format(
-                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshProviderCapabilityCheckFailed"),
+                        "Platform capability check failed for game '{0}'.",
                         game?.Name));
                 }
             }
@@ -842,7 +842,7 @@ namespace PlayniteAchievements.Services
                 .ToList();
             if (authenticatedProviders.Count == 0)
             {
-                _logger?.Warn(ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoAuthenticatedProviders"));
+                _logger?.Warn("No authenticated platforms available for refresh.");
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
@@ -862,14 +862,14 @@ namespace PlayniteAchievements.Services
                 .ToList();
 
             _logger.Debug(string.Format(
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshSummary"),
+                "Games to refresh: {0}, Platforms: {1}, Grouped platforms: {2}",
                 refreshTargets.Count,
                 _providers.Count,
                 providerPlans.Count));
 
             if (providerPlans.Count == 0)
             {
-                _logger?.Warn(ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoMatchingProviders"));
+                _logger?.Warn("No matching platforms available for refresh options.");
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
@@ -1478,7 +1478,7 @@ namespace PlayniteAchievements.Services
             catch (Exception ex)
             {
                 _logger?.Debug(ex, string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Log_RefreshResolveIconPathFailed"),
+                    "Failed to resolve achievement icon path for {0}.",
                     originalPath));
                 return default;
             }
@@ -1619,7 +1619,7 @@ namespace PlayniteAchievements.Services
                 .ToList();
             if (authenticatedProviders.Count == 0)
             {
-                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshMissingNoAuthenticatedProviders"));
+                _logger.Info("No authenticated platforms available for missing refresh.");
                 return new List<Guid>();
             }
 
@@ -1648,12 +1648,12 @@ namespace PlayniteAchievements.Services
 
             if (missingGameIds.Count == 0)
             {
-                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshMissingNoGames"));
+                _logger.Info("No games missing achievement data found.");
                 return missingGameIds;
             }
 
             _logger.Info(string.Format(
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshMissingFoundGames"),
+                "Found {0} games missing achievement data.",
                 missingGameIds.Count));
             return missingGameIds;
         }
@@ -1869,14 +1869,14 @@ namespace PlayniteAchievements.Services
             var resolution = ResolveCustomRefresh(options);
             if (resolution.Providers.Count == 0)
             {
-                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_CustomRefreshNoMatchingProviders"));
+                _logger.Info("Custom refresh aborted: no matching platforms.");
                 ShowCustomRefreshMessage(ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingProviders"));
                 return Task.CompletedTask;
             }
 
             if (resolution.TargetGameIds.Count == 0)
             {
-                _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_CustomRefreshNoMatchingGames"));
+                _logger.Info("Custom refresh aborted: no matching games.");
                 ShowCustomRefreshMessage(ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingGames"));
                 return Task.CompletedTask;
             }
@@ -1898,7 +1898,7 @@ namespace PlayniteAchievements.Services
                     providerScope: resolution.Providers,
                     runProvidersInParallelOverride: resolution.RunProvidersInParallel),
                 payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Custom, payload?.Summary?.GamesRefreshed ?? 0),
-                ResourceProvider.GetString("LOCPlayAch_Log_CustomRefreshFailed"));
+                "Custom refresh failed.");
         }
 
         private async Task StartManagedMissingRefreshAsync()
@@ -1908,7 +1908,7 @@ namespace PlayniteAchievements.Services
                 RefreshModeType.Missing,
                 missingGameIds,
                 payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Missing, payload?.Summary?.GamesRefreshed ?? 0),
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshMissingFailed"))
+                "Missing games refresh failed.")
                 .ConfigureAwait(false);
         }
 
@@ -1918,7 +1918,7 @@ namespace PlayniteAchievements.Services
                 RefreshModeType.Full,
                 FullRefreshOptions(),
                 payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Full, payload?.Summary?.GamesRefreshed ?? 0),
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshFullFailed")
+                "Full achievement refresh failed."
             );
         }
 
@@ -1928,7 +1928,7 @@ namespace PlayniteAchievements.Services
                 RefreshModeType.Single,
                 SingleGameOptions(playniteGameId),
                 payload => ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete"),
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshSingleFailed"),
+                "Single game refresh failed.",
                 playniteGameId
             );
         }
@@ -1939,7 +1939,7 @@ namespace PlayniteAchievements.Services
                 RefreshModeType.Recent,
                 RecentRefreshOptions(),
                 payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Recent, payload?.Summary?.GamesRefreshed ?? 0),
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshRecentFailed")
+                "Recent refresh failed."
             );
         }
 
@@ -1952,7 +1952,7 @@ namespace PlayniteAchievements.Services
             if (!Enum.TryParse<RefreshModeType>(modeKey, out var mode))
             {
                 _logger.Warn(string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Log_RefreshUnknownModeKey"),
+                    "Unknown refresh mode key: {0}. Falling back to Recent.",
                     modeKey));
                 mode = RefreshModeType.Recent;
             }
@@ -2004,8 +2004,8 @@ namespace PlayniteAchievements.Services
                 RefreshModeType.LibrarySelected,
                 ids,
                 payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.LibrarySelected, payload?.Summary?.GamesRefreshed ?? 0),
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshSelectedFailed"),
-                ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoSelectedGames"),
+                "Library selected games refresh failed.",
+                "No games selected in Playnite library for refresh.",
                 bypassExclusions: true);
         }
 
@@ -2027,21 +2027,21 @@ namespace PlayniteAchievements.Services
                         RefreshModeType.Installed,
                         GetInstalledGameIds(),
                         payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Installed, payload?.Summary?.GamesRefreshed ?? 0),
-                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshInstalledFailed"),
-                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoInstalledGames"));
+                        "Installed games refresh failed.",
+                        "No installed games found for refresh.");
 
                 case RefreshModeType.Favorites:
                     return StartManagedGameIdRefreshAsync(
                         RefreshModeType.Favorites,
                         GetFavoriteGameIds(),
                         payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.Favorites, payload?.Summary?.GamesRefreshed ?? 0),
-                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshFavoritesFailed"),
-                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoFavoriteGames"));
+                        "Favorites refresh failed.",
+                        "No favorite games found for refresh.");
 
                 case RefreshModeType.Single:
                     if (singleGameId.HasValue)
                         return StartManagedSingleGameRefreshAsync(singleGameId.Value);
-                    _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshSingleNoGameId"));
+                    _logger.Info("Single refresh mode requested but no game ID provided.");
                     return Task.CompletedTask;
 
                 case RefreshModeType.LibrarySelected:
@@ -2049,8 +2049,8 @@ namespace PlayniteAchievements.Services
                         RefreshModeType.LibrarySelected,
                         GetLibrarySelectedGameIds(),
                         payload => FormatRefreshCompletionWithModeAndCount(RefreshModeType.LibrarySelected, payload?.Summary?.GamesRefreshed ?? 0),
-                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshSelectedFailed"),
-                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshNoSelectedGames"),
+                        "Library selected games refresh failed.",
+                        "No games selected in Playnite library for refresh.",
                         bypassExclusions: true);
 
                 case RefreshModeType.Missing:
@@ -2061,7 +2061,7 @@ namespace PlayniteAchievements.Services
 
                 default:
                     _logger.Warn(string.Format(
-                        ResourceProvider.GetString("LOCPlayAch_Log_RefreshUnknownModeEnum"),
+                        "Unknown refresh mode: {0}. Falling back to Recent.",
                         mode));
                     return StartManagedRecentRefreshAsync();
             }
@@ -2069,7 +2069,7 @@ namespace PlayniteAchievements.Services
 
         public void CancelCurrentRebuild()
         {
-            _logger.Info(ResourceProvider.GetString("LOCPlayAch_Log_RefreshCancelRequested"));
+            _logger.Info("Cancel refresh requested.");
             lock (_runLock)
             {
                 _activeRunCts?.Cancel();
@@ -2308,7 +2308,7 @@ namespace PlayniteAchievements.Services
             catch (Exception ex)
             {
                 _logger?.Error(ex, string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Log_RefreshGetGameDataFailed"),
+                    "Failed to get achievement data for gameId={0}",
                     playniteGameId));
                 return null;
             }
@@ -2333,7 +2333,7 @@ namespace PlayniteAchievements.Services
             catch (Exception ex)
             {
                 _logger?.Error(ex, string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Log_RefreshGetGameDataFailed"),
+                    "Failed to get achievement data for gameId={0}",
                     playniteGameId));
                 return null;
             }
@@ -2380,7 +2380,7 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, ResourceProvider.GetString("LOCPlayAch_Log_RefreshGetAllGameDataFailed"));
+                _logger?.Error(ex, "Failed to get all achievement data");
                 return new();
             }
         }

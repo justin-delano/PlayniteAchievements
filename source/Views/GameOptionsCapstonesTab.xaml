@@ -209,7 +209,7 @@
                 <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserSort="False" CanUserResize="False"
                                         CellTemplate="{StaticResource AchievementIconTemplate}"/>
 
-                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Capstone_Column_Achievement}"
+                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}"
                                         CanUserSort="False"
                                         CellTemplate="{StaticResource AchievementInfoTemplate}"/>
 

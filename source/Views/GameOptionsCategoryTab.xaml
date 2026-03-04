@@ -104,8 +104,8 @@
                                TextWrapping="Wrap"
                                Margin="0,6,0,0" />
                 </StackPanel>
-                <Button Grid.Column="1"
-                        Content="{DynamicResource LOCPlayAch_GameOptions_Category_Reset}"
+                <Button Grid.Column="4"
+                    Content="{DynamicResource LOCPlayAch_Button_Reset}"
                         Click="ResetCategoryButton_Click"
                         Margin="12,0,0,0"
                         VerticalAlignment="Top"
@@ -217,12 +217,12 @@
                         Orientation="Horizontal"
                         VerticalAlignment="Center"
                         Margin="8,0,0,0">
-                <Button Content="{DynamicResource LOCPlayAch_GameOptions_Category_SelectAll}"
+                <Button Content="{DynamicResource LOCPlayAch_Common_SelectAll}"
                         Click="SelectAllButton_Click"
                         Height="30"
                         Padding="10,2"
                         Margin="0,0,8,0" />
-                <Button Content="{DynamicResource LOCPlayAch_GameOptions_Category_DeselectAll}"
+                <Button Content="{DynamicResource LOCPlayAch_Common_DeselectAll}"
                         Click="DeselectAllButton_Click"
                         Height="30"
                         Padding="10,2" />
@@ -299,7 +299,7 @@
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}"
                                         CellTemplate="{StaticResource CategoryAchievementInfoTemplate}" />
 
-                <DataGridTextColumn Width="160" Header="{DynamicResource LOCPlayAch_GameOptions_Category_Column_Type}" Binding="{Binding CategoryTypeDisplay}">
+                <DataGridTextColumn Width="160" Header="{DynamicResource LOCPlayAch_Column_Type}" Binding="{Binding CategoryTypeDisplay}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
@@ -317,7 +317,7 @@
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Width="190" Header="{DynamicResource LOCPlayAch_GameOptions_Category_Column_Category}" Binding="{Binding CategoryDisplay}">
+                <DataGridTextColumn Width="190" Header="{DynamicResource LOCPlayAch_Column_Category}" Binding="{Binding CategoryDisplay}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
@@ -349,7 +349,7 @@
                       BorderThickness="0">
                 <Expander.Header>
                     <StackPanel>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Category_BulkHeader}"
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Common_Edit}"
                                    Foreground="{DynamicResource TextBrush}"
                                    FontWeight="SemiBold" />
                         <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Category_BulkHint}"
@@ -411,9 +411,9 @@
                         </Button.ContextMenu>
                     </Button>
 
-                    <Button Grid.Row="1"
+                        <Button Grid.Row="1"
                             Grid.Column="1"
-                            Content="{DynamicResource LOCPlayAch_GameOptions_Category_BulkClearSelected}"
+                            Content="{DynamicResource LOCPlayAch_Common_ClearSelected}"
                             Click="ClearSelectedButton_Click"
                             Padding="12,6"
                             Height="30"
@@ -450,17 +450,17 @@
                         </TextBlock.Style>
                     </TextBlock>
 
-                    <Button Grid.Row="2"
+                        <Button Grid.Row="2"
                             Grid.Column="1"
-                            Content="{DynamicResource LOCPlayAch_GameOptions_Category_BulkApply}"
+                            Content="{DynamicResource LOCPlayAch_Common_ApplyToSelected}"
                             Click="ApplyBulkButton_Click"
                             Padding="12,6"
                             Height="30"
                             Margin="8,8,0,0" />
 
-                    <Button Grid.Row="2"
+                        <Button Grid.Row="2"
                             Grid.Column="2"
-                            Content="{DynamicResource LOCPlayAch_GameOptions_Category_RenameOpen}"
+                            Content="{DynamicResource LOCPlayAch_Common_RenameLabelEllipsis}"
                             Click="RenameCategoryButton_Click"
                             Padding="12,6"
                             Height="30"

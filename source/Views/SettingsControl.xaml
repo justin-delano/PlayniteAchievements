@@ -501,34 +501,34 @@
                                                Width="200"
                                                SelectedValuePath="Tag"
                                                SelectedValue="{Binding Persisted.GlobalLanguage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_English}" Tag="english"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_German}" Tag="german"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_French}" Tag="french"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Spanish}" Tag="spanish"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Italian}" Tag="italian"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Portuguese}" Tag="portuguese"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_BrazilianPortuguese}" Tag="brazilian"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Russian}" Tag="russian"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Polish}" Tag="polish"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Dutch}" Tag="dutch"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Swedish}" Tag="swedish"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Finnish}" Tag="finnish"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Danish}" Tag="danish"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Norwegian}" Tag="norwegian"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Hungarian}" Tag="hungarian"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Czech}" Tag="czech"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Romanian}" Tag="romanian"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Turkish}" Tag="turkish"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Greek}" Tag="greek"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Bulgarian}" Tag="bulgarian"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Ukrainian}" Tag="ukrainian"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Thai}" Tag="thai"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Vietnamese}" Tag="vietnamese"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Japanese}" Tag="japanese"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Korean}" Tag="koreana"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_SimplifiedChinese}" Tag="schinese"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_TraditionalChinese}" Tag="tchinese"/>
-                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_SteamLanguage_Arabic}" Tag="arabic"/>
+                                        <ComboBoxItem Content="English" Tag="english"/>
+                                        <ComboBoxItem Content="German (Deutsch)" Tag="german"/>
+                                        <ComboBoxItem Content="French (Français)" Tag="french"/>
+                                        <ComboBoxItem Content="Spanish (Español)" Tag="spanish"/>
+                                        <ComboBoxItem Content="Italian (Italiano)" Tag="italian"/>
+                                        <ComboBoxItem Content="Portuguese" Tag="portuguese"/>
+                                        <ComboBoxItem Content="Brazilian Portuguese" Tag="brazilian"/>
+                                        <ComboBoxItem Content="Russian (Русский)" Tag="russian"/>
+                                        <ComboBoxItem Content="Polish (Polski)" Tag="polish"/>
+                                        <ComboBoxItem Content="Dutch (Nederlands)" Tag="dutch"/>
+                                        <ComboBoxItem Content="Swedish (Svenska)" Tag="swedish"/>
+                                        <ComboBoxItem Content="Finnish (Suomi)" Tag="finnish"/>
+                                        <ComboBoxItem Content="Danish (Dansk)" Tag="danish"/>
+                                        <ComboBoxItem Content="Norwegian (Norsk)" Tag="norwegian"/>
+                                        <ComboBoxItem Content="Hungarian (Magyar)" Tag="hungarian"/>
+                                        <ComboBoxItem Content="Czech (Čeština)" Tag="czech"/>
+                                        <ComboBoxItem Content="Romanian (Română)" Tag="romanian"/>
+                                        <ComboBoxItem Content="Turkish (Türkçe)" Tag="turkish"/>
+                                        <ComboBoxItem Content="Greek (Ελληνικά)" Tag="greek"/>
+                                        <ComboBoxItem Content="Bulgarian (Български)" Tag="bulgarian"/>
+                                        <ComboBoxItem Content="Ukrainian (Українська)" Tag="ukrainian"/>
+                                        <ComboBoxItem Content="Thai (ไทย)" Tag="thai"/>
+                                        <ComboBoxItem Content="Vietnamese (Tiếng Việt)" Tag="vietnamese"/>
+                                        <ComboBoxItem Content="Japanese (日本語)" Tag="japanese"/>
+                                        <ComboBoxItem Content="Korean (한국어)" Tag="koreana"/>
+                                        <ComboBoxItem Content="Simplified Chinese (简体中文)" Tag="schinese"/>
+                                        <ComboBoxItem Content="Traditional Chinese (繁體中文)" Tag="tchinese"/>
+                                        <ComboBoxItem Content="Arabic (العربية)" Tag="arabic"/>
                                     </ComboBox>
                                 </Grid>
                             </StackPanel>
@@ -817,8 +817,8 @@
                                                             Click="SteamAuth_Authenticate_Click"
                                                             Padding="14,6"
                                                             Margin="0,0,8,0"/>
-                                                    <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
-                                                            ToolTip="{DynamicResource LOCPlayAch_Tooltip_Clear}"
+                                                        <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                                            ToolTip="{DynamicResource LOCPlayAch_Button_Clear}"
                                                             Style="{StaticResource SteamAuthActionButtonStyle}"
                                                             Click="SteamAuth_Clear_Click"
                                                             Padding="14,6"/>
@@ -1317,12 +1317,12 @@
 
                                             <!-- Login/Logout buttons -->
                                             <StackPanel Orientation="Horizontal">
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Gog_Login}"
+                                                <Button Content="{DynamicResource LOCPlayAch_Button_Login}"
                                                         Style="{StaticResource GogAuthActionButtonStyle}"
                                                         Click="GogAuth_Login_Click"
                                                         Padding="14,6"
                                                         Margin="0,0,8,0"/>
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Gog_Clear}"
+                                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                         Style="{StaticResource GogAuthActionButtonStyle}"
                                                         Click="GogAuth_Clear_Click"
                                                         Padding="14,6"/>
@@ -1467,7 +1467,7 @@
 
                                             <!-- Login/Logout buttons -->
                                             <StackPanel Orientation="Horizontal">
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Epic_Login}"
+                                                <Button Content="{DynamicResource LOCPlayAch_Button_Login}"
                                                         Style="{StaticResource EpicAuthActionButtonStyle}"
                                                         Click="EpicAuth_Login_Click"
                                                         Padding="14,6"
@@ -1477,7 +1477,7 @@
                                                         Click="EpicAuth_LoginAlternative_Click"
                                                         Padding="14,6"
                                                         Margin="0,0,8,0"/>
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Epic_Clear}"
+                                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                         Style="{StaticResource EpicAuthActionButtonStyle}"
                                                         Click="EpicAuth_Clear_Click"
                                                         Padding="14,6"/>
@@ -1671,7 +1671,7 @@
                                                         Click="PsnAuth_Login_Click"
                                                         Padding="14,6"
                                                         Margin="0,0,8,0"/>
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Psn_Clear}"
+                                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                         Style="{StaticResource PsnAuthActionButtonStyle}"
                                                         Click="PsnAuth_Clear_Click"
                                                         Padding="14,6"/>
@@ -1815,12 +1815,12 @@
                                             </Grid>
 
                                             <StackPanel Orientation="Horizontal">
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Xbox_Login}"
+                                                <Button Content="{DynamicResource LOCPlayAch_Button_Login}"
                                                         Style="{StaticResource XboxAuthActionButtonStyle}"
                                                         Click="XboxAuth_Login_Click"
                                                         Padding="14,6"
                                                         Margin="0,0,8,0"/>
-                                                <Button Content="{DynamicResource LOCPlayAch_Settings_Xbox_Clear}"
+                                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                         Style="{StaticResource XboxAuthActionButtonStyle}"
                                                         Click="XboxAuth_Clear_Click"
                                                         Padding="14,6"/>

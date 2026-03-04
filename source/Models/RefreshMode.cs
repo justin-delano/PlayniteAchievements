@@ -29,12 +29,30 @@ namespace PlayniteAchievements.Models
         /// <summary>
         /// Gets the localization resource key for the full display name.
         /// </summary>
-        public static string GetResourceKey(this RefreshModeType mode) => $"LOCPlayAch_RefreshMode_{mode}";
+        public static string GetResourceKey(this RefreshModeType mode)
+        {
+            switch (mode)
+            {
+                case RefreshModeType.LibrarySelected:
+                    return "LOCPlayAch_RefreshMode_Selected";
+                default:
+                    return $"LOCPlayAch_RefreshMode_{mode}";
+            }
+        }
 
         /// <summary>
         /// Gets the localization resource key for the short display name.
         /// </summary>
-        public static string GetShortResourceKey(this RefreshModeType mode) => $"LOCPlayAch_RefreshModeShort_{mode}";
+        public static string GetShortResourceKey(this RefreshModeType mode)
+        {
+            switch (mode)
+            {
+                case RefreshModeType.LibrarySelected:
+                    return "LOCPlayAch_RefreshModeShort_Selected";
+                default:
+                    return $"LOCPlayAch_RefreshModeShort_{mode}";
+            }
+        }
 
         /// <summary>
         /// Gets the string key for this refresh mode.

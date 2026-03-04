@@ -63,7 +63,9 @@ namespace PlayniteAchievements.Views
                 nameof(GogAuthStatus),
                 typeof(string),
                 typeof(SettingsControl),
-                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_GogAuth_NotChecked")));
+                new PropertyMetadata(string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotChecked"),
+                    ResourceProvider.GetString("LOCPlayAch_Provider_GOG"))));
 
         public string GogAuthStatus
         {
@@ -102,7 +104,9 @@ namespace PlayniteAchievements.Views
                 nameof(EpicAuthStatus),
                 typeof(string),
                 typeof(SettingsControl),
-                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_EpicAuth_NotChecked")));
+                new PropertyMetadata(string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotChecked"),
+                    ResourceProvider.GetString("LOCPlayAch_Provider_Epic"))));
 
         public string EpicAuthStatus
         {
@@ -141,7 +145,9 @@ namespace PlayniteAchievements.Views
                 nameof(PsnAuthStatus),
                 typeof(string),
                 typeof(SettingsControl),
-                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_PsnAuth_NotChecked")));
+                new PropertyMetadata(string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotChecked"),
+                    ResourceProvider.GetString("LOCPlayAch_Provider_PlayStation"))));
 
         public string PsnAuthStatus
         {
@@ -180,7 +186,9 @@ namespace PlayniteAchievements.Views
                 nameof(XboxAuthStatus),
                 typeof(string),
                 typeof(SettingsControl),
-                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Settings_XboxAuth_NotChecked")));
+                new PropertyMetadata(string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotChecked"),
+                    ResourceProvider.GetString("LOCPlayAch_Provider_Xbox"))));
 
         public string XboxAuthStatus
         {
@@ -1077,25 +1085,121 @@ namespace PlayniteAchievements.Views
             SetGogAuthStatusByKey(statusKey);
         }
 
+        private static string TryMapProviderAuthKeyToGeneric(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return null;
+            }
+
+            var authMarkerIndex = key.IndexOf("Auth_", StringComparison.Ordinal);
+            if (authMarkerIndex < 0)
+            {
+                return null;
+            }
+
+            var suffixStart = authMarkerIndex + "Auth_".Length;
+            if (suffixStart >= key.Length)
+            {
+                return null;
+            }
+
+            var suffix = key.Substring(suffixStart);
+            switch (suffix)
+            {
+                case "NotChecked":
+                case "Checking":
+                case "CheckingExistingSession":
+                case "OpeningWindow":
+                case "WaitingForLogin":
+                case "VerifyingSession":
+                case "Completed":
+                case "Verified":
+                case "NotAuthenticated":
+                case "TimedOut":
+                case "Failed":
+                case "Cancelled":
+                case "CookiesCleared":
+                case "AlreadyAuthenticated":
+                case "ProbeFailed":
+                case "WindowNotOpened":
+                    return $"LOCPlayAch_Settings_Auth_{suffix}";
+                default:
+                    return null;
+            }
+        }
+
+        private static string ResolveAuthStatusValue(string key, string providerResourceKey, params object[] args)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return null;
+            }
+
+            var mappedKey = TryMapProviderAuthKeyToGeneric(key);
+            var resourceKey = string.IsNullOrWhiteSpace(mappedKey) ? key : mappedKey;
+            var value = ResourceProvider.GetString(resourceKey);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                value = resourceKey;
+            }
+
+            var formatArgs = args;
+            if (!string.IsNullOrWhiteSpace(mappedKey))
+            {
+                var providerName = ResourceProvider.GetString(providerResourceKey);
+                if (string.IsNullOrWhiteSpace(providerName))
+                {
+                    providerName = providerResourceKey;
+                }
+
+                if (args == null || args.Length == 0)
+                {
+                    formatArgs = new object[] { providerName };
+                }
+                else
+                {
+                    var combinedArgs = new object[args.Length + 1];
+                    combinedArgs[0] = providerName;
+                    Array.Copy(args, 0, combinedArgs, 1, args.Length);
+                    formatArgs = combinedArgs;
+                }
+            }
+
+            if (formatArgs != null && formatArgs.Length > 0)
+            {
+                try
+                {
+                    return string.Format(value, formatArgs);
+                }
+                catch
+                {
+                    return value;
+                }
+            }
+
+            return value;
+        }
+
         private static string GetDefaultMessageKeyForOutcome(GogAuthOutcome outcome)
         {
             switch (outcome)
             {
                 case GogAuthOutcome.Authenticated:
-                    return "LOCPlayAch_Settings_GogAuth_Verified";
+                    return "LOCPlayAch_Settings_Auth_Verified";
                 case GogAuthOutcome.AlreadyAuthenticated:
-                    return "LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated";
+                    return "LOCPlayAch_Settings_Auth_AlreadyAuthenticated";
                 case GogAuthOutcome.NotAuthenticated:
-                    return "LOCPlayAch_Settings_GogAuth_NotAuthenticated";
+                    return "LOCPlayAch_Settings_Auth_NotAuthenticated";
                 case GogAuthOutcome.Cancelled:
-                    return "LOCPlayAch_Settings_GogAuth_Cancelled";
+                    return "LOCPlayAch_Settings_Auth_Cancelled";
                 case GogAuthOutcome.TimedOut:
-                    return "LOCPlayAch_Settings_GogAuth_TimedOut";
+                    return "LOCPlayAch_Settings_Auth_TimedOut";
                 case GogAuthOutcome.ProbeFailed:
-                    return "LOCPlayAch_Settings_GogAuth_ProbeFailed";
+                    return "LOCPlayAch_Settings_Auth_ProbeFailed";
                 case GogAuthOutcome.Failed:
                 default:
-                    return "LOCPlayAch_Settings_GogAuth_Failed";
+                    return "LOCPlayAch_Settings_Auth_Failed";
             }
         }
 
@@ -1104,18 +1208,18 @@ namespace PlayniteAchievements.Views
             switch (step)
             {
                 case GogAuthProgressStep.CheckingExistingSession:
-                    return "LOCPlayAch_Settings_GogAuth_CheckingExistingSession";
+                    return "LOCPlayAch_Settings_Auth_CheckingExistingSession";
                 case GogAuthProgressStep.OpeningLoginWindow:
-                    return "LOCPlayAch_Settings_GogAuth_OpeningWindow";
+                    return "LOCPlayAch_Settings_Auth_OpeningWindow";
                 case GogAuthProgressStep.WaitingForUserLogin:
-                    return "LOCPlayAch_Settings_GogAuth_WaitingForLogin";
+                    return "LOCPlayAch_Settings_Auth_WaitingForLogin";
                 case GogAuthProgressStep.VerifyingSession:
-                    return "LOCPlayAch_Settings_GogAuth_VerifyingSession";
+                    return "LOCPlayAch_Settings_Auth_VerifyingSession";
                 case GogAuthProgressStep.Completed:
-                    return "LOCPlayAch_Settings_GogAuth_Completed";
+                    return "LOCPlayAch_Settings_Auth_Completed";
                 case GogAuthProgressStep.Failed:
                 default:
-                    return "LOCPlayAch_Settings_GogAuth_Failed";
+                    return "LOCPlayAch_Settings_Auth_Failed";
             }
         }
 
@@ -1126,7 +1230,7 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var value = ResourceProvider.GetString(key);
+            var value = ResolveAuthStatusValue(key, "LOCPlayAch_Provider_GOG");
             SetGogAuthStatus(string.IsNullOrWhiteSpace(value) ? key : value);
         }
 
@@ -1320,20 +1424,20 @@ namespace PlayniteAchievements.Views
             switch (outcome)
             {
                 case EpicAuthOutcome.Authenticated:
-                    return "LOCPlayAch_Settings_EpicAuth_Verified";
+                    return "LOCPlayAch_Settings_Auth_Verified";
                 case EpicAuthOutcome.AlreadyAuthenticated:
-                    return "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated";
+                    return "LOCPlayAch_Settings_Auth_AlreadyAuthenticated";
                 case EpicAuthOutcome.NotAuthenticated:
-                    return "LOCPlayAch_Settings_EpicAuth_NotAuthenticated";
+                    return "LOCPlayAch_Settings_Auth_NotAuthenticated";
                 case EpicAuthOutcome.Cancelled:
-                    return "LOCPlayAch_Settings_EpicAuth_Cancelled";
+                    return "LOCPlayAch_Settings_Auth_Cancelled";
                 case EpicAuthOutcome.TimedOut:
-                    return "LOCPlayAch_Settings_EpicAuth_TimedOut";
+                    return "LOCPlayAch_Settings_Auth_TimedOut";
                 case EpicAuthOutcome.ProbeFailed:
-                    return "LOCPlayAch_Settings_EpicAuth_ProbeFailed";
+                    return "LOCPlayAch_Settings_Auth_ProbeFailed";
                 case EpicAuthOutcome.Failed:
                 default:
-                    return "LOCPlayAch_Settings_EpicAuth_Failed";
+                    return "LOCPlayAch_Settings_Auth_Failed";
             }
         }
 
@@ -1342,18 +1446,18 @@ namespace PlayniteAchievements.Views
             switch (step)
             {
                 case EpicAuthProgressStep.CheckingExistingSession:
-                    return "LOCPlayAch_Settings_EpicAuth_CheckingExistingSession";
+                    return "LOCPlayAch_Settings_Auth_CheckingExistingSession";
                 case EpicAuthProgressStep.OpeningLoginWindow:
-                    return "LOCPlayAch_Settings_EpicAuth_OpeningWindow";
+                    return "LOCPlayAch_Settings_Auth_OpeningWindow";
                 case EpicAuthProgressStep.WaitingForUserLogin:
-                    return "LOCPlayAch_Settings_EpicAuth_WaitingForLogin";
+                    return "LOCPlayAch_Settings_Auth_WaitingForLogin";
                 case EpicAuthProgressStep.VerifyingSession:
-                    return "LOCPlayAch_Settings_EpicAuth_VerifyingSession";
+                    return "LOCPlayAch_Settings_Auth_VerifyingSession";
                 case EpicAuthProgressStep.Completed:
-                    return "LOCPlayAch_Settings_EpicAuth_Completed";
+                    return "LOCPlayAch_Settings_Auth_Completed";
                 case EpicAuthProgressStep.Failed:
                 default:
-                    return "LOCPlayAch_Settings_EpicAuth_Failed";
+                    return "LOCPlayAch_Settings_Auth_Failed";
             }
         }
 
@@ -1364,26 +1468,8 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var value = ResourceProvider.GetString(key);
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                SetEpicAuthStatus(key);
-            }
-            else if (args != null && args.Length > 0)
-            {
-                try
-                {
-                    SetEpicAuthStatus(string.Format(value, args));
-                }
-                catch
-                {
-                    SetEpicAuthStatus(value);
-                }
-            }
-            else
-            {
-                SetEpicAuthStatus(value);
-            }
+            var value = ResolveAuthStatusValue(key, "LOCPlayAch_Provider_Epic", args);
+            SetEpicAuthStatus(string.IsNullOrWhiteSpace(value) ? key : value);
         }
 
         private void SetEpicAuthStatus(string status)
@@ -1560,20 +1646,20 @@ namespace PlayniteAchievements.Views
             switch (outcome)
             {
                 case PsnAuthOutcome.Authenticated:
-                    return "LOCPlayAch_Settings_PsnAuth_Verified";
+                    return "LOCPlayAch_Settings_Auth_Verified";
                 case PsnAuthOutcome.AlreadyAuthenticated:
-                    return "LOCPlayAch_Settings_PsnAuth_AlreadyAuthenticated";
+                    return "LOCPlayAch_Settings_Auth_AlreadyAuthenticated";
                 case PsnAuthOutcome.NotAuthenticated:
-                    return "LOCPlayAch_Settings_PsnAuth_NotAuthenticated";
+                    return "LOCPlayAch_Settings_Auth_NotAuthenticated";
                 case PsnAuthOutcome.Cancelled:
-                    return "LOCPlayAch_Settings_PsnAuth_Cancelled";
+                    return "LOCPlayAch_Settings_Auth_Cancelled";
                 case PsnAuthOutcome.TimedOut:
-                    return "LOCPlayAch_Settings_PsnAuth_TimedOut";
+                    return "LOCPlayAch_Settings_Auth_TimedOut";
                 case PsnAuthOutcome.ProbeFailed:
-                    return "LOCPlayAch_Settings_PsnAuth_ProbeFailed";
+                    return "LOCPlayAch_Settings_Auth_ProbeFailed";
                 case PsnAuthOutcome.Failed:
                 default:
-                    return "LOCPlayAch_Settings_PsnAuth_Failed";
+                    return "LOCPlayAch_Settings_Auth_Failed";
             }
         }
 
@@ -1582,16 +1668,16 @@ namespace PlayniteAchievements.Views
             switch (step)
             {
                 case PsnAuthProgressStep.CheckingExistingSession:
-                    return "LOCPlayAch_Settings_PsnAuth_CheckingExistingSession";
+                    return "LOCPlayAch_Settings_Auth_CheckingExistingSession";
                 case PsnAuthProgressStep.OpeningLoginWindow:
-                    return "LOCPlayAch_Settings_PsnAuth_OpeningWindow";
+                    return "LOCPlayAch_Settings_Auth_OpeningWindow";
                 case PsnAuthProgressStep.WaitingForUserLogin:
-                    return "LOCPlayAch_Settings_PsnAuth_WaitingForLogin";
+                    return "LOCPlayAch_Settings_Auth_WaitingForLogin";
                 case PsnAuthProgressStep.Completed:
-                    return "LOCPlayAch_Settings_PsnAuth_Completed";
+                    return "LOCPlayAch_Settings_Auth_Completed";
                 case PsnAuthProgressStep.Failed:
                 default:
-                    return "LOCPlayAch_Settings_PsnAuth_Failed";
+                    return "LOCPlayAch_Settings_Auth_Failed";
             }
         }
 
@@ -1602,26 +1688,8 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var value = ResourceProvider.GetString(key);
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                SetPsnAuthStatus(key);
-            }
-            else if (args != null && args.Length > 0)
-            {
-                try
-                {
-                    SetPsnAuthStatus(string.Format(value, args));
-                }
-                catch
-                {
-                    SetPsnAuthStatus(value);
-                }
-            }
-            else
-            {
-                SetPsnAuthStatus(value);
-            }
+            var value = ResolveAuthStatusValue(key, "LOCPlayAch_Provider_PlayStation", args);
+            SetPsnAuthStatus(string.IsNullOrWhiteSpace(value) ? key : value);
         }
 
         private void SetPsnAuthStatus(string status)
@@ -1774,20 +1842,20 @@ namespace PlayniteAchievements.Views
             switch (outcome)
             {
                 case XboxAuthOutcome.Authenticated:
-                    return "LOCPlayAch_Settings_XboxAuth_Verified";
+                    return "LOCPlayAch_Settings_Auth_Verified";
                 case XboxAuthOutcome.AlreadyAuthenticated:
-                    return "LOCPlayAch_Settings_XboxAuth_AlreadyAuthenticated";
+                    return "LOCPlayAch_Settings_Auth_AlreadyAuthenticated";
                 case XboxAuthOutcome.NotAuthenticated:
-                    return "LOCPlayAch_Settings_XboxAuth_NotAuthenticated";
+                    return "LOCPlayAch_Settings_Auth_NotAuthenticated";
                 case XboxAuthOutcome.Cancelled:
-                    return "LOCPlayAch_Settings_XboxAuth_Cancelled";
+                    return "LOCPlayAch_Settings_Auth_Cancelled";
                 case XboxAuthOutcome.TimedOut:
-                    return "LOCPlayAch_Settings_XboxAuth_TimedOut";
+                    return "LOCPlayAch_Settings_Auth_TimedOut";
                 case XboxAuthOutcome.ProbeFailed:
-                    return "LOCPlayAch_Settings_XboxAuth_ProbeFailed";
+                    return "LOCPlayAch_Settings_Auth_ProbeFailed";
                 case XboxAuthOutcome.Failed:
                 default:
-                    return "LOCPlayAch_Settings_XboxAuth_Failed";
+                    return "LOCPlayAch_Settings_Auth_Failed";
             }
         }
 
@@ -1796,16 +1864,16 @@ namespace PlayniteAchievements.Views
             switch (step)
             {
                 case XboxAuthProgressStep.CheckingExistingSession:
-                    return "LOCPlayAch_Settings_XboxAuth_CheckingExistingSession";
+                    return "LOCPlayAch_Settings_Auth_CheckingExistingSession";
                 case XboxAuthProgressStep.OpeningLoginWindow:
-                    return "LOCPlayAch_Settings_XboxAuth_OpeningWindow";
+                    return "LOCPlayAch_Settings_Auth_OpeningWindow";
                 case XboxAuthProgressStep.WaitingForUserLogin:
-                    return "LOCPlayAch_Settings_XboxAuth_WaitingForLogin";
+                    return "LOCPlayAch_Settings_Auth_WaitingForLogin";
                 case XboxAuthProgressStep.Completed:
-                    return "LOCPlayAch_Settings_XboxAuth_Completed";
+                    return "LOCPlayAch_Settings_Auth_Completed";
                 case XboxAuthProgressStep.Failed:
                 default:
-                    return "LOCPlayAch_Settings_XboxAuth_Failed";
+                    return "LOCPlayAch_Settings_Auth_Failed";
             }
         }
 
@@ -1816,26 +1884,8 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var value = ResourceProvider.GetString(key);
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                SetXboxAuthStatus(key);
-            }
-            else if (args != null && args.Length > 0)
-            {
-                try
-                {
-                    SetXboxAuthStatus(string.Format(value, args));
-                }
-                catch
-                {
-                    SetXboxAuthStatus(value);
-                }
-            }
-            else
-            {
-                SetXboxAuthStatus(value);
-            }
+            var value = ResolveAuthStatusValue(key, "LOCPlayAch_Provider_Xbox", args);
+            SetXboxAuthStatus(string.IsNullOrWhiteSpace(value) ? key : value);
         }
 
         private void SetXboxAuthStatus(string status)

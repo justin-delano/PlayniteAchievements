@@ -30,7 +30,7 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.Column="0"
-                       Text="{DynamicResource LOCPlayAch_GameOptions_Category_RenameDialog_SourceLabel}"
+                       Text="{DynamicResource LOCPlayAch_Common_ExistingLabel}"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center" />
             <ComboBox Grid.Column="1"
@@ -46,7 +46,7 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.Column="0"
-                       Text="{DynamicResource LOCPlayAch_GameOptions_Category_RenameDialog_TargetLabel}"
+                       Text="{DynamicResource LOCPlayAch_Common_NewLabel}"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center" />
             <TextBox x:Name="TargetLabelTextBox"

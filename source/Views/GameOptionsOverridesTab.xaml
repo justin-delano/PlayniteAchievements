@@ -77,12 +77,12 @@
                                  Text="{Binding RaOverrideInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  Padding="8,6" />
                         <Button Grid.Column="1"
-                                Content="{DynamicResource LOCPlayAch_GameOptions_Overrides_Apply}"
+                            Content="{DynamicResource LOCPlayAch_Button_Apply}"
                                 Command="{Binding ApplyRaOverrideCommand}"
                                 Padding="12,6"
                                 Margin="8,0,0,0" />
                         <Button Grid.Column="2"
-                                Content="{DynamicResource LOCPlayAch_GameOptions_Overrides_Clear}"
+                                Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                 Command="{Binding ClearRaOverrideCommand}"
                                 Padding="12,6"
                                 Margin="8,0,0,0" />
