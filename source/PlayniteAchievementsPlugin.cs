@@ -20,6 +20,7 @@ using PlayniteAchievements.Providers.PSN;
 using PlayniteAchievements.Providers.Xbox;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.RPCS3;
+using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -63,6 +64,7 @@ namespace PlayniteAchievements
         private readonly PsnSessionManager _psnSessionManager;
         private readonly XboxSessionManager _xboxSessionManager;
         private readonly ProviderRegistry _providerRegistry;
+        private readonly ManualAchievementsProvider _manualProvider;
 
         private readonly BackgroundUpdater _backgroundUpdates;
         private readonly RefreshCoordinator _refreshCoordinator;
@@ -183,8 +185,10 @@ namespace PlayniteAchievements
                 List<IDataProvider> providers;
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
                 {
+                    _manualProvider = new ManualAchievementsProvider(_logger, settings, pluginUserDataPath);
                     providers = new List<IDataProvider>
                     {
+                        _manualProvider,  // Manual provider first - explicit user overrides take priority
                         new SteamDataProvider(
                             _logger,
                             settings,
@@ -545,11 +549,11 @@ namespace PlayniteAchievements
 
             yield return new GameMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_SetCapstone"),
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_GameOptions"),
                 MenuSection = PluginGameMenuSection,
                 Action = (a) =>
                 {
-                    OpenCapstoneView(game.Id);
+                    OpenGameOptionsView(game.Id);
                 }
             };
 
@@ -581,68 +585,6 @@ namespace PlayniteAchievements
                     ClearSingleGameData(game);
                 }
             };
-
-            // Add exclude/include toggle based on current state
-            var isExcluded = _settingsViewModel.Settings.Persisted.ExcludedGameIds.Contains(game.Id);
-
-            yield return new GameMenuItem
-            {
-                Description = isExcluded
-                    ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeGame")
-                    : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeGame"),
-                MenuSection = PluginGameMenuSection,
-                Action = (a) =>
-                {
-                    if (!isExcluded)
-                    {
-                        var result = PlayniteApi?.Dialogs?.ShowMessage(
-                            string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_Exclude_ConfirmSingle"), game.Name),
-                            ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Warning) ?? MessageBoxResult.None;
-
-                        if (result != MessageBoxResult.Yes)
-                        {
-                            return;
-                        }
-                    }
-                    _achievementService.SetExcludedByUser(game.Id, !isExcluded);
-                }
-            };
-
-            // Add RetroAchievements game ID override options (only for RA-capable games)
-            var raProvider = _achievementService.GetProviders()
-                .FirstOrDefault(p => p.ProviderKey == "RetroAchievements");
-
-            if (raProvider?.IsCapable(game) == true)
-            {
-                var hasOverride = _settingsViewModel.Settings.Persisted.RaGameIdOverrides.ContainsKey(game.Id);
-
-                yield return new GameMenuItem
-                {
-                    Description = hasOverride
-                        ? ResourceProvider.GetString("LOCPlayAch_Menu_ChangeRaGameId")
-                        : ResourceProvider.GetString("LOCPlayAch_Menu_SetRaGameId"),
-                    MenuSection = PluginGameMenuSection,
-                    Action = (a) =>
-                    {
-                        ShowRaGameIdDialog(game);
-                    }
-                };
-
-                if (hasOverride)
-                {
-                    yield return new GameMenuItem
-                    {
-                        Description = ResourceProvider.GetString("LOCPlayAch_Menu_ClearRaGameId"),
-                        MenuSection = PluginGameMenuSection,
-                        Action = (a) =>
-                        {
-                            ClearRaGameIdOverride(game);
-                        }
-                    };
-                }
-            }
         }
 
         private void ClearSingleGameData(Game game)
@@ -791,13 +733,22 @@ namespace PlayniteAchievements
                 return;
             }
 
-            // Update the override
+            TrySetRaGameIdOverride(game.Id, newId);
+        }
+
+        public bool TrySetRaGameIdOverride(Guid gameId, int newId)
+        {
+            var game = PlayniteApi?.Database?.Games?.Get(gameId);
+            if (game == null || newId <= 0)
+            {
+                return false;
+            }
+
             _settingsViewModel.Settings.Persisted.RaGameIdOverrides[game.Id] = newId;
             SavePluginSettings(_settingsViewModel.Settings);
 
             _logger?.Info($"Set RA game ID override for '{game.Name}' to {newId}");
 
-            // Trigger a rescan for this game
             _ = _refreshCoordinator.ExecuteAsync(
                 new RefreshRequest
                 {
@@ -805,6 +756,8 @@ namespace PlayniteAchievements
                     SingleGameId = game.Id
                 },
                 RefreshExecutionPolicy.ProgressWindow(game.Id));
+
+            return true;
         }
 
         private void ClearRaGameIdOverride(Game game)
@@ -922,6 +875,49 @@ namespace PlayniteAchievements
             }
 
             _achievementService.SetExcludedByUser(gameId, !isExcluded);
+        }
+
+        private bool UnlinkManualAchievements(Game game)
+        {
+            if (game == null)
+            {
+                return false;
+            }
+
+            var result = PlayniteApi?.Dialogs?.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_UnlinkAchievements_Confirm"), game.Name),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return false;
+            }
+
+            _settingsViewModel.Settings.Persisted.ManualAchievementLinks.Remove(game.Id);
+            SavePluginSettings(_settingsViewModel.Settings);
+
+            _logger?.Info($"Unlinked manual achievements for '{game.Name}'");
+
+            PlayniteApi?.Dialogs?.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_UnlinkAchievements_Success"), game.Name),
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return true;
+        }
+
+        public bool UnlinkManualAchievementsForGame(Guid gameId)
+        {
+            var game = PlayniteApi?.Database?.Games?.Get(gameId);
+            if (game == null)
+            {
+                return false;
+            }
+
+            return UnlinkManualAchievements(game);
         }
 
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
@@ -1574,7 +1570,7 @@ namespace PlayniteAchievements
             }
         }
 
-        public void OpenCapstoneView(Guid gameId)
+        public void OpenGameOptionsView(Guid gameId, GameOptionsTab initialTab = GameOptionsTab.Overview)
         {
             try
             {
@@ -1587,34 +1583,25 @@ namespace PlayniteAchievements
                     return;
                 }
 
-                var gameData = _achievementService.GetGameAchievementData(gameId);
-                if (gameData == null || !gameData.HasAchievements || gameData.Achievements == null || gameData.Achievements.Count == 0)
-                {
-                    PlayniteApi?.Dialogs?.ShowMessage(
-                        string.Format(
-                            ResourceProvider.GetString("LOCPlayAch_Capstone_NoCachedData"),
-                            game.Name),
-                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                    return;
-                }
+                EnsureAchievementResourcesLoaded();
 
-                var view = new CapstoneControl(
+                var view = new GameOptionsControl(
                     gameId,
+                    initialTab,
                     _achievementService,
                     PlayniteApi,
                     _logger,
-                    _settingsViewModel.Settings);
+                    _settingsViewModel.Settings,
+                    _manualProvider);
 
                 var windowOptions = new WindowOptions
                 {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = false,
+                    ShowMinimizeButton = true,
+                    ShowMaximizeButton = true,
                     ShowCloseButton = true,
                     CanBeResizable = true,
-                    Width = 760,
-                    Height = 640
+                    Width = 1080,
+                    Height = 760
                 };
 
                 var window = PlayniteUiProvider.CreateExtensionWindow(
@@ -1622,8 +1609,8 @@ namespace PlayniteAchievements
                     view,
                     windowOptions);
 
-                window.MinWidth = 560;
-                window.MinHeight = 480;
+                window.MinWidth = 860;
+                window.MinHeight = 620;
                 try
                 {
                     if (window.Owner == null)
@@ -1633,7 +1620,6 @@ namespace PlayniteAchievements
                 }
                 catch { }
 
-                view.RequestClose += (s, e) => window.Close();
                 window.Closed += (s, e) => view.Cleanup();
 
                 var isFullscreen = false;
@@ -1652,7 +1638,7 @@ namespace PlayniteAchievements
                         window.Activate();
                         window.Topmost = false;
                     }
-                    catch (Exception ex) { _logger?.Debug(ex, "Failed to activate window in fullscreen"); }
+                    catch (Exception ex) { _logger?.Debug(ex, "Failed to activate Game Options window in fullscreen"); }
                 }
                 else
                 {
@@ -1661,11 +1647,16 @@ namespace PlayniteAchievements
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, $"Failed to open capstone view for gameId={gameId}");
+                _logger.Error(ex, $"Failed to open Game Options view for gameId={gameId}");
                 PlayniteApi?.Dialogs?.ShowErrorMessage(
-                    string.Format(ResourceProvider.GetString("LOCPlayAch_Capstone_Error_OpenFailed"), ex.Message),
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+                    $"Failed to open game options view: {ex.Message}",
+                    "Playnite Achievements");
             }
+        }
+
+        public void OpenCapstoneView(Guid gameId)
+        {
+            OpenGameOptionsView(gameId, GameOptionsTab.Capstones);
         }
 
         private void EnsureAchievementResourcesLoaded()

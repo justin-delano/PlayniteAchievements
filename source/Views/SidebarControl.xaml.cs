@@ -150,7 +150,15 @@ namespace PlayniteAchievements.Views
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (_viewModel == null || e.PropertyName != nameof(SidebarViewModel.IsGameSelected)) return;
+            if (_viewModel == null || e == null) return;
+
+            if (e.PropertyName == nameof(SidebarViewModel.SelectedGameHasCustomAchievementOrder))
+            {
+                ResetAchievementsSortDirection();
+                return;
+            }
+
+            if (e.PropertyName != nameof(SidebarViewModel.IsGameSelected)) return;
 
             if (!_viewModel.IsGameSelected)
             {
@@ -948,32 +956,10 @@ namespace PlayniteAchievements.Views
             var menu = new ContextMenu();
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_RefreshGame",
                 () => ExecuteCommand(_viewModel?.RefreshSingleGameCommand, data)));
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_SetCapstone", () => OpenCapstone(data)));
+            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_GameOptions", () => OpenGameOptions(data)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_OpenGameInLibrary",
                 () => ExecuteCommand(_viewModel?.OpenGameInLibraryCommand, data)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ClearData", () => ClearGameData(data)));
-
-            if (TryGetGameId(data, out var gameId))
-            {
-                var plugin = PlayniteAchievementsPlugin.Instance;
-                var isExcluded = plugin?.IsGameExcluded(gameId) ?? false;
-                menu.Items.Add(CreateMenuItem(
-                    isExcluded ? "LOCPlayAch_Menu_IncludeGame" : "LOCPlayAch_Menu_ExcludeGame",
-                    () => plugin?.ToggleGameExclusion(gameId)));
-
-                if (plugin?.IsRaCapable(gameId) == true)
-                {
-                    var hasOverride = plugin.HasRaGameIdOverride(gameId);
-                    menu.Items.Add(CreateMenuItem(
-                        hasOverride ? "LOCPlayAch_Menu_ChangeRaGameId" : "LOCPlayAch_Menu_SetRaGameId",
-                        () => plugin.ShowRaGameIdDialogForGame(gameId)));
-                    if (hasOverride)
-                    {
-                        menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ClearRaGameId",
-                            () => plugin.ClearRaGameIdOverrideForGame(gameId)));
-                    }
-                }
-            }
 
             return menu;
         }
@@ -1029,10 +1015,12 @@ namespace PlayniteAchievements.Views
                 command.Execute(parameter);
         }
 
-        private void OpenCapstone(object data)
+        private void OpenGameOptions(object data)
         {
             if (TryGetGameId(data, out var gameId))
-                PlayniteAchievementsPlugin.Instance?.OpenCapstoneView(gameId);
+            {
+                PlayniteAchievementsPlugin.Instance?.OpenGameOptionsView(gameId);
+            }
         }
 
         private void ClearGameData(object data)
@@ -1088,8 +1076,17 @@ namespace PlayniteAchievements.Views
         {
             if (GameAchievementsDataGrid == null) return;
             foreach (var c in GameAchievementsDataGrid.Columns) c.SortDirection = null;
+
+            if (_viewModel?.SelectedGameHasCustomAchievementOrder == true)
+            {
+                return;
+            }
+
             var unlockCol = GameAchievementsDataGrid.Columns.FirstOrDefault(c => c.SortMemberPath == "UnlockTime");
-            if (unlockCol != null) unlockCol.SortDirection = ListSortDirection.Descending;
+            if (unlockCol != null)
+            {
+                unlockCol.SortDirection = ListSortDirection.Descending;
+            }
         }
 
         private void ResetRecentAchievementsSortDirection()
