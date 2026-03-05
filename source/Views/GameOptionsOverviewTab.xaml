@@ -55,12 +55,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="{Binding GameName}"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   FontWeight="Bold"
-                                   FontSize="{DynamicResource FontSizeLarge}" />
-
-                        <WrapPanel Margin="0,10,0,0">
+                        <WrapPanel Margin="0,0,0,0">
                             <Border Style="{StaticResource MetaChipStyle}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Style="{StaticResource ChipTextStyle}"
@@ -94,12 +89,24 @@
                         </StackPanel>
                     </StackPanel>
 
-                    <Button Grid.Column="1"
-                            Content="{DynamicResource LOCPlayAch_Menu_ViewAchievements}"
-                            Command="{Binding OpenAchievementsCommand}"
-                            Padding="12,6"
-                            MinWidth="130"
-                            VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    VerticalAlignment="Top">
+                                <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                    Command="{Binding ClearGameDataCommand}"
+                                    Padding="12,6"
+                                    MinWidth="100"
+                                    Margin="0,0,8,0" />
+                                <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                                    Command="{Binding RefreshGameCommand}"
+                                    Padding="12,6"
+                                    MinWidth="100"
+                                    Margin="0,0,8,0" />
+                                <Button Content="{DynamicResource LOCPlayAch_Menu_ViewAchievements}"
+                                    Command="{Binding OpenAchievementsCommand}"
+                                    Padding="12,6"
+                                    MinWidth="130" />
+                                </StackPanel>
                 </Grid>
             </Border>
 
@@ -151,7 +158,6 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"
@@ -163,13 +169,11 @@
                                Text="{Binding GameIdText}" />
 
                     <TextBlock Grid.Row="1"
-                               Style="{StaticResource FieldLabelStyle}"
-                               Text="{DynamicResource LOCPlayAch_GameOptions_Overview_Excluded}"
-                               Margin="0,8,0,0" />
-                    <TextBlock Grid.Row="1"
-                               Grid.Column="1"
-                               Style="{StaticResource FieldValueStyle}"
+                               Grid.Column="0"
+                               Grid.ColumnSpan="2"
                                Text="{Binding ExclusionStatusText}"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontWeight="SemiBold"
                                Margin="0,8,0,0" />
 
                     <TextBlock Grid.Row="2"
@@ -183,16 +187,6 @@
                                Text="{Binding RaStatusText}"
                                Margin="0,8,0,0"
                                Visibility="{Binding IsRaCapable, Converter={StaticResource BoolToVis}}" />
-
-                    <TextBlock Grid.Row="3"
-                               Style="{StaticResource FieldLabelStyle}"
-                               Text="{DynamicResource LOCPlayAch_GameOptions_Overview_Provider}"
-                               Margin="0,8,0,0" />
-                    <TextBlock Grid.Row="3"
-                               Grid.Column="1"
-                               Style="{StaticResource FieldValueStyle}"
-                               Text="{Binding ProviderName}"
-                               Margin="0,8,0,0" />
                 </Grid>
             </Border>
         </StackPanel>
