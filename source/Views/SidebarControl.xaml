@@ -292,7 +292,8 @@
                 Background="{DynamicResource ControlBackgroundBrush}"
                 BorderBrush="{DynamicResource NormalBorderBrush}"
                 BorderThickness="0,0,0,1"
-                Padding="16,12,16,12">
+                Padding="16,12,16,12"
+                WindowChrome.IsHitTestVisibleInChrome="True">
             <Grid>
                 <!-- Left: Back button and title -->
                 <StackPanel Orientation="Horizontal"
