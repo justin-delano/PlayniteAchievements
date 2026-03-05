@@ -309,6 +309,7 @@ namespace PlayniteAchievements.ViewModels
             _logger = logger;
             _language = settings.Persisted.GlobalLanguage ?? "english";
             _startAtEditingStage = startAtEditingStage;
+            ManualSourceName = ResolveSourceName(_source?.SourceKey);
 
             if (startAtEditingStage)
             {

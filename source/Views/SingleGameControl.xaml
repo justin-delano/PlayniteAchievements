@@ -17,6 +17,14 @@
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
             <converters:IntToVisibilityConverter x:Key="IntToVis"/>
 
+            <Style x:Key="CardBorderStyle" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="6" />
+                <Setter Property="Padding" Value="12" />
+            </Style>
+
             <!-- Style for Expander Header ToggleButton -->
             <Style x:Key="ExpanderHeaderStyle" TargetType="ToggleButton">
                 <Setter Property="Background" Value="Transparent"/>
@@ -78,10 +86,9 @@
 
         <!-- Game Header -->
         <Border Grid.Row="0"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="16,12">
+            Style="{StaticResource CardBorderStyle}"
+            Margin="0,0,0,8"
+            Padding="16,12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -119,10 +126,12 @@
                         <Run Text="{Binding UnlockedAchievements, Mode=OneWay}"/>
                         <Run Text="/"/>
                         <Run Text="{Binding TotalAchievements, Mode=OneWay}"/>
-                        <Run Text=" achievements)"/>
+                        <Run Text=" "/>
+                        <Run Text="{DynamicResource LOCPlayAch_Achievements}"/>
+                        <Run Text=")"/>
                     </TextBlock>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}" Command="{Binding RefreshGameCommand}" Margin="12,0,0,0" VerticalAlignment="Center" IsEnabled="{Binding !IsRefreshing}" />
+                    <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}" Command="{Binding RefreshGameCommand}" Margin="12,0,0,0" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding RefreshStatusMessage}" VerticalAlignment="Center" Margin="10,0,0,0" Visibility="{Binding IsStatusMessageVisible, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource TextBrush}"/>
                 </StackPanel>
 
@@ -147,10 +156,9 @@
 
         <!-- Stats and Timeline -->
         <Border Grid.Row="1"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="0,0,0,1"
-                Padding="16,12,16,0"
+            Style="{StaticResource CardBorderStyle}"
+            Margin="0,0,0,8"
+            Padding="16,12,16,12"
                 Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
             <Grid>
                 <Grid.RowDefinitions>
@@ -208,22 +216,22 @@
                         <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_UltraRare}" Margin="0,0,12,0" VerticalAlignment="Center"
                                     Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource BadgePlatinumHexagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                            <TextBlock Text="{Binding UltraRareCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            <TextBlock Text="{Binding UltraRareCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Rare}" Margin="0,0,12,0" VerticalAlignment="Center"
                                     Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource BadgeGoldPentagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                            <TextBlock Text="{Binding RareCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            <TextBlock Text="{Binding RareCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Uncommon}" Margin="0,0,12,0" VerticalAlignment="Center"
                                     Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource BadgeSilverSquare}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                            <TextBlock Text="{Binding UncommonCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            <TextBlock Text="{Binding UncommonCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Common}" VerticalAlignment="Center"
                                     Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource BadgeBronzeTriangle}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                            <TextBlock Text="{Binding CommonCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            <TextBlock Text="{Binding CommonCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
 
@@ -237,25 +245,25 @@
                                    VerticalAlignment="Center"
                                    Margin="0,0,12,0"/>
 
-                        <StackPanel Orientation="Horizontal" ToolTip="Platinum" Margin="0,0,12,0" VerticalAlignment="Center"
+                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Trophy_Platinum}" Margin="0,0,12,0" VerticalAlignment="Center"
                                     Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource TrophyPlatinum}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                            <TextBlock Text="{Binding TrophyPlatinumCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            <TextBlock Text="{Binding TrophyPlatinumCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" ToolTip="Gold" Margin="0,0,12,0" VerticalAlignment="Center"
+                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Trophy_Gold}" Margin="0,0,12,0" VerticalAlignment="Center"
                                     Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource TrophyGold}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                            <TextBlock Text="{Binding TrophyGoldCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            <TextBlock Text="{Binding TrophyGoldCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" ToolTip="Silver" Margin="0,0,12,0" VerticalAlignment="Center"
+                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Trophy_Silver}" Margin="0,0,12,0" VerticalAlignment="Center"
                                     Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource TrophySilver}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                            <TextBlock Text="{Binding TrophySilverCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            <TextBlock Text="{Binding TrophySilverCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" ToolTip="Bronze" VerticalAlignment="Center"
+                        <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Trophy_Bronze}" VerticalAlignment="Center"
                                     Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}">
                             <Image Source="{StaticResource TrophyBronze}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
-                            <TextBlock Text="{Binding TrophyBronzeCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="White" Margin="4,0,0,0"/>
+                            <TextBlock Text="{Binding TrophyBronzeCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
@@ -339,16 +347,18 @@
         </Border>
 
         <!-- Search Achievements -->
-        <Grid Grid.Row="2"
-              Margin="0,8,0,8"
-              Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+        <Border Grid.Row="2"
+                Style="{StaticResource CardBorderStyle}"
+                Margin="0,0,0,8"
+                Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0">
+                <Grid Grid.Column="0">
                 <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                          Style="{StaticResource SearchTextBoxStyle}"/>
                 <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
@@ -371,7 +381,7 @@
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
-            </Grid>
+                </Grid>
 
                 <StackPanel Grid.Column="1"
                     Orientation="Horizontal"
@@ -412,7 +422,8 @@
                     </Style>
                 </Button.Style>
             </Button>
-        </Grid>
+            </Grid>
+        </Border>
 
         <!-- No Achievements Placeholder -->
         <Grid Grid.Row="3"
@@ -454,8 +465,9 @@
                   HeadersVisibility="Column"
                   GridLinesVisibility="None"
                   RowBackground="Transparent"
-                  BorderThickness="0"
-                  Background="Transparent"
+                  BorderThickness="1"
+                  BorderBrush="{DynamicResource NormalBorderBrush}"
+                  Background="{DynamicResource ControlBackgroundBrush}"
                   CanUserAddRows="False"
                   CanUserDeleteRows="False"
                   CanUserResizeRows="False"

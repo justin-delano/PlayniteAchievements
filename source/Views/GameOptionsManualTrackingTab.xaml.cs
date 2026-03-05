@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Views
@@ -73,6 +74,27 @@ namespace PlayniteAchievements.Views
             if (_viewModel?.SelectedResult != null && _viewModel.NextCommand.CanExecute(null))
             {
                 _viewModel.NextCommand.Execute(null);
+            }
+        }
+
+        private void SearchDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!(sender is DataGrid dataGrid))
+            {
+                return;
+            }
+
+            var source = e.OriginalSource as DependencyObject;
+            var row = VisualTreeHelpers.FindVisualParent<DataGridRow>(source);
+            if (row?.Item == null)
+            {
+                return;
+            }
+
+            if (!row.IsSelected)
+            {
+                dataGrid.SelectedItem = row.Item;
+                row.Focus();
             }
         }
 

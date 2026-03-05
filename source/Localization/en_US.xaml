@@ -14,6 +14,10 @@
     <!-- Label with Colon (for labels that need trailing punctuation) -->
     <sys:String x:Key="LOCPlayAch_Label_Rarity">Rarity:</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Trophies">Trophies:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Platinum">Platinum</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Gold">Gold</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Silver">Silver</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Bronze">Bronze</sys:String>
 
     <!-- Common Statuses -->
     <sys:String x:Key="LOCPlayAch_Status_Refreshing">Refreshing...</sys:String>
@@ -106,6 +110,8 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Value_NotAvailable">N/A</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_Excluded">Excluded</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_Included">Included</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromRefreshes">Excluded from Bulk Refreshes</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Status_IncludedFromRefreshes">Included in Bulk Refreshes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_ManualLinked">Linked</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_ManualUnlinked">Not linked</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_RaOverrideNone">No override set</sys:String>

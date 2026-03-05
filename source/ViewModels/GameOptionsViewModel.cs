@@ -1,11 +1,13 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
@@ -41,6 +43,7 @@ namespace PlayniteAchievements.ViewModels
         private string _manualTrackingSummary;
         private bool _hasCapstoneData;
         private string _capstoneEmptyMessage;
+        private bool _isRefreshing;
 
         public RelayCommand OpenAchievementsCommand { get; }
         public RelayCommand ToggleExclusionCommand { get; }
@@ -48,6 +51,8 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand ClearRaOverrideCommand { get; }
         public RelayCommand UnlinkManualTrackingCommand { get; }
         public RelayCommand RefreshStateCommand { get; }
+        public AsyncCommand RefreshGameCommand { get; }
+        public RelayCommand ClearGameDataCommand { get; }
 
         public GameOptionsViewModel(
             Guid gameId,
@@ -72,6 +77,8 @@ namespace PlayniteAchievements.ViewModels
             ClearRaOverrideCommand = new RelayCommand(_ => ClearRaOverride(), _ => HasGame && IsRaCapable && HasRaOverride);
             UnlinkManualTrackingCommand = new RelayCommand(_ => UnlinkManualTracking(), _ => HasGame && HasManualTrackingLink);
             RefreshStateCommand = new RelayCommand(_ => Reload());
+            RefreshGameCommand = new AsyncCommand(_ => RefreshGameAsync(), _ => HasGame && !IsRefreshing && !(_achievementService?.IsRebuilding ?? false));
+            ClearGameDataCommand = new RelayCommand(_ => ClearGameData(), _ => HasGame);
 
             Reload();
         }
@@ -220,8 +227,8 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public string ExclusionStatusText => IsExcluded
-            ? L("LOCPlayAch_GameOptions_Status_Excluded", "Excluded")
-            : L("LOCPlayAch_GameOptions_Status_Included", "Included");
+            ? L("LOCPlayAch_GameOptions_Status_ExcludedFromRefreshes", "Excluded from Refreshes")
+            : L("LOCPlayAch_GameOptions_Status_IncludedFromRefreshes", "Included from Refreshes");
 
         public string ExclusionActionText => IsExcluded
             ? L("LOCPlayAch_Menu_IncludeGame", "Include this Game")
@@ -326,6 +333,18 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _capstoneEmptyMessage, value);
         }
 
+        public bool IsRefreshing
+        {
+            get => _isRefreshing;
+            private set
+            {
+                if (SetValueAndReturn(ref _isRefreshing, value))
+                {
+                    RaiseCommandStates();
+                }
+            }
+        }
+
         public void Reload()
         {
             try
@@ -334,11 +353,10 @@ namespace PlayniteAchievements.ViewModels
                 HasGame = game != null;
                 GameName = game?.Name ?? L("LOCPlayAch_Text_UnknownGame", "Unknown Game");
 
-                var useCover = _settings?.Persisted?.UseCoverImages ?? false;
                 var imagePath = string.Empty;
                 if (game != null)
                 {
-                    if (useCover && !string.IsNullOrWhiteSpace(game.CoverImage))
+                    if (!string.IsNullOrWhiteSpace(game.CoverImage))
                     {
                         imagePath = _playniteApi?.Database?.GetFullFilePath(game.CoverImage);
                     }
@@ -482,6 +500,97 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private async Task RefreshGameAsync()
+        {
+            if (!HasGame || IsRefreshing)
+            {
+                return;
+            }
+
+            try
+            {
+                IsRefreshing = true;
+                if (_plugin?.RefreshCoordinator != null)
+                {
+                    await _plugin.RefreshCoordinator.ExecuteAsync(
+                        new RefreshRequest
+                        {
+                            Mode = RefreshModeType.Single,
+                            SingleGameId = _gameId
+                        },
+                        RefreshExecutionPolicy.ProgressWindow(_gameId)).ConfigureAwait(false);
+                }
+                else
+                {
+                    await _achievementService.ExecuteRefreshAsync(RefreshModeType.Single, _gameId).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to refresh game options data for gameId={_gameId}");
+                _playniteApi?.Dialogs?.ShowMessage(
+                    string.Format(
+                        L("LOCPlayAch_Error_RefreshFailed", "Refresh failed: {0}"),
+                        ex.Message),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsRefreshing = false;
+                Reload();
+            }
+        }
+
+        private void ClearGameData()
+        {
+            if (!HasGame)
+            {
+                return;
+            }
+
+            var result = _playniteApi?.Dialogs?.ShowMessage(
+                string.Format(
+                    L("LOCPlayAch_Menu_ClearData_ConfirmSingle", "Clear cached data for \"{0}\"?\n\nThis removes cached achievements and icons for this game. Refresh again to fetch fresh data."),
+                    GameName),
+                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning) ?? System.Windows.MessageBoxResult.None;
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                _achievementService?.RemoveGameCache(_gameId);
+                _playniteApi?.Dialogs?.ShowMessage(
+                    string.Format(
+                        L("LOCPlayAch_Menu_ClearData_SuccessSingle", "Cleared cached data for \"{0}\"."),
+                        GameName),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to clear cached data for gameId={_gameId}");
+                _playniteApi?.Dialogs?.ShowMessage(
+                    string.Format(
+                        L("LOCPlayAch_Menu_ClearData_Failed", "Failed to clear cached data: {0}"),
+                        ex.Message),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
+            finally
+            {
+                Reload();
+            }
+        }
+
         private void RaiseCommandStates()
         {
             OpenAchievementsCommand?.RaiseCanExecuteChanged();
@@ -490,6 +599,8 @@ namespace PlayniteAchievements.ViewModels
             ClearRaOverrideCommand?.RaiseCanExecuteChanged();
             UnlinkManualTrackingCommand?.RaiseCanExecuteChanged();
             RefreshStateCommand?.RaiseCanExecuteChanged();
+            RefreshGameCommand?.RaiseCanExecuteChanged();
+            ClearGameDataCommand?.RaiseCanExecuteChanged();
         }
 
         private string ResolveLibrarySourceDisplayName(Playnite.SDK.Models.Game game, string cachedLibrarySource)

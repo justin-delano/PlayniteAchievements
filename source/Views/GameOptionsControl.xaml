@@ -80,23 +80,18 @@
                                Foreground="{DynamicResource TextBrush}"
                                FontSize="{DynamicResource FontSizeLarge}"
                                FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding GameName}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.75"
-                               Margin="0,4,0,0"
-                               TextWrapping="Wrap" />
                 </StackPanel>
 
                 <Border Grid.Row="2"
-                        Height="150"
+                        Height="190"
                         CornerRadius="6"
-                        ClipToBounds="True"
+                        ClipToBounds="False"
                         Background="Transparent">
                     <Image Stretch="Uniform"
                            VerticalAlignment="Center"
                            HorizontalAlignment="Center"
-                           helpers:AsyncImage.Uri="{Binding GameImagePath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
-                           helpers:AsyncImage.DecodePixel="320" />
+                           helpers:AsyncImage.Uri="{Binding GameImagePath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
+                           helpers:AsyncImage.DecodePixel="480" />
                 </Border>
 
                 <TextBlock Grid.Row="4"
