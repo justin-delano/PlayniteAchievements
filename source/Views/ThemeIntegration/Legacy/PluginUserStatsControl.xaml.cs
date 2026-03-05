@@ -1,15 +1,8 @@
 // --SUCCESSSTORY--
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Windows;
-using Playnite.SDK.Controls;
-using Playnite.SDK.Models;
-using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
-using PlayniteAchievements.Views.ThemeIntegration.Legacy;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 {
@@ -20,51 +13,28 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
     {
         private readonly UserStatsViewModel _viewModel = new UserStatsViewModel();
 
+        protected override bool EnableAutomaticThemeDataUpdates => true;
+
+        protected override bool ShouldHandleSettingsDataChange(string propertyName)
+        {
+            return propertyName == nameof(PlayniteAchievementsSettings.Unlocked) ||
+                   propertyName == nameof(PlayniteAchievementsSettings.Locked) ||
+                   propertyName == nameof(PlayniteAchievementsSettings.Common) ||
+                   propertyName == nameof(PlayniteAchievementsSettings.Uncommon) ||
+                   propertyName == nameof(PlayniteAchievementsSettings.Rare) ||
+                   propertyName == nameof(PlayniteAchievementsSettings.UltraRare);
+        }
+
+        protected override void OnThemeDataUpdated()
+        {
+            UpdateFromSettings();
+        }
+
         public PluginUserStatsControl()
         {
             InitializeComponent();
 
             DataContext = _viewModel;
-
-            Loaded += OnLoaded;
-            Unloaded += OnUnloaded;
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            if (Plugin?.Settings != null)
-            {
-                Plugin.Settings.PropertyChanged -= Settings_PropertyChanged;
-                Plugin.Settings.PropertyChanged += Settings_PropertyChanged;
-            }
-            UpdateFromSettings();
-        }
-
-        private void OnUnloaded(object sender, RoutedEventArgs e)
-        {
-            if (Plugin?.Settings != null)
-            {
-                Plugin.Settings.PropertyChanged -= Settings_PropertyChanged;
-            }
-        }
-
-        private void Settings_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == "Unlocked"
-                || e.PropertyName == "Locked"
-                || e.PropertyName == "Common"
-                || e.PropertyName == "Uncommon"
-                || e.PropertyName == "Rare"
-                || e.PropertyName == "UltraRare")
-            {
-                UpdateFromSettings();
-            }
-        }
-
-        public override void GameContextChanged(Game oldContext, Game newContext)
-        {
-            base.GameContextChanged(oldContext, newContext);
-            UpdateFromSettings();
         }
 
         protected void UpdateFromSettings()

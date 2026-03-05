@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +25,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
     public partial class PluginListControl : ThemeControlBase
     {
         private CancellationTokenSource _sortCts;
+
+        protected override bool EnableAutomaticThemeDataUpdates => true;
+
+        protected override bool ShouldHandleSettingsDataChange(string propertyName)
+        {
+            return propertyName == nameof(PlayniteAchievementsSettings.ListAchievements);
+        }
+
+        protected override void OnThemeDataUpdated()
+        {
+            _ = RefreshFromSettingsAsync();
+        }
 
         public BulkObservableCollection<AchievementDetail> DisplayedAchievements { get; } = new BulkObservableCollection<AchievementDetail>();
 
@@ -111,41 +122,12 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             InitializeComponent();
 
             DataContext = this;
-            Loaded += OnLoaded;
             Unloaded += OnUnloaded;
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            if (Plugin?.Settings != null)
-            {
-                Plugin.Settings.PropertyChanged -= Settings_PropertyChanged;
-                Plugin.Settings.PropertyChanged += Settings_PropertyChanged;
-            }
-            _ = RefreshFromSettingsAsync();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            if (Plugin?.Settings != null)
-            {
-                Plugin.Settings.PropertyChanged -= Settings_PropertyChanged;
-            }
             CancelPendingSort();
-        }
-
-        private void Settings_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == "ListAchievements")
-            {
-                _ = RefreshFromSettingsAsync();
-            }
-        }
-
-        public override void GameContextChanged(Game oldContext, Game newContext)
-        {
-            base.GameContextChanged(oldContext, newContext);
-            // Refresh is triggered by PlayniteAchievementsSettings.AllAchievements change.
         }
 
         private void CancelPendingSort()

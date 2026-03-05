@@ -1,13 +1,9 @@
 // --SUCCESSSTORY--
 using System;
 using System.Windows;
-using Playnite.SDK.Controls;
-using Playnite.SDK.Models;
-using PlayniteAchievements.Models.ThemeIntegration;
-using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
-using PlayniteAchievements.Views.ThemeIntegration.Legacy;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 {
@@ -18,6 +14,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
     {
         private readonly ChartViewModel _viewModel = new ChartViewModel();
 
+        protected override bool EnableAutomaticThemeDataUpdates => true;
+
+        protected override bool ShouldHandleLegacyThemeDataChange(string propertyName)
+        {
+            return propertyName == nameof(LegacyThemeData.ListAchUnlockDateAsc);
+        }
+
+        protected override void OnThemeDataUpdated()
+        {
+            UpdateChart();
+        }
+
         public PluginChartControl()
         {
             InitializeComponent();
@@ -27,19 +35,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             _viewModel.AllPeriod = true;
             _viewModel.CutPeriod = false;
             _viewModel.DisableAnimations = true;
-
-            Loaded += OnLoaded;
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            UpdateChart();
-        }
-
-        public override void GameContextChanged(Game oldContext, Game newContext)
-        {
-            base.GameContextChanged(oldContext, newContext);
-            UpdateChart();
         }
 
         private void UpdateChart()

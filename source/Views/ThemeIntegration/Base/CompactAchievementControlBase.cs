@@ -5,11 +5,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
-using PlayniteAchievements.Common;
-using Playnite.SDK.Controls;
-using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
-using PlayniteAchievements.Views.ThemeIntegration.Base;
 using PlayniteAchievements.Views.ThemeIntegration.Legacy.Controls;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Base
@@ -23,6 +19,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
     {
         private static readonly List<AchievementDetail> EmptyAchievements = new List<AchievementDetail>();
         private List<AchievementDetail> _visibleAchievements = EmptyAchievements;
+
+        protected override bool EnableAutomaticThemeDataUpdates => true;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -90,6 +88,30 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         /// </summary>
         protected abstract string[] GetSettingsPropertyNames();
 
+        protected override bool ShouldHandleLegacyThemeDataChange(string propertyName)
+        {
+            var watchedProperties = GetSettingsPropertyNames();
+            if (watchedProperties == null || watchedProperties.Length == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < watchedProperties.Length; i++)
+            {
+                if (watchedProperties[i] == propertyName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        protected override void OnThemeDataUpdated()
+        {
+            UpdateFilteredAchievements();
+        }
+
         /// <summary>
         /// Gets the compact view grid that displays achievements.
         /// Derived classes must implement this to provide access to their XAML-defined grid.
@@ -123,50 +145,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         {
             IconHeight = 48.0;
 
-            Loaded += OnLoaded;
-            Unloaded += OnUnloaded;
             SizeChanged += OnSizeChanged;
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            if (Plugin?.Settings?.LegacyTheme != null)
-            {
-                Plugin.Settings.LegacyTheme.PropertyChanged -= Settings_PropertyChanged;
-                Plugin.Settings.LegacyTheme.PropertyChanged += Settings_PropertyChanged;
-            }
-
-            UpdateFilteredAchievements();
-
-            // Also trigger a layout update when the control is rendered
-            Dispatcher?.BeginInvoke(new Action(() =>
-            {
-                if (_visibleAchievements.Count > 0)
-                {
-                    UpdateCompactLayout();
-                }
-            }), System.Windows.Threading.DispatcherPriority.Loaded);
-        }
-
-        private void OnUnloaded(object sender, RoutedEventArgs e)
-        {
-            if (Plugin?.Settings?.LegacyTheme != null)
-            {
-                Plugin.Settings.LegacyTheme.PropertyChanged -= Settings_PropertyChanged;
-            }
-        }
-
-        private void Settings_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            var watchedProperties = GetSettingsPropertyNames();
-            foreach (var prop in watchedProperties)
-            {
-                if (e.PropertyName == prop)
-                {
-                    Dispatcher?.InvokeIfNeeded(UpdateFilteredAchievements);
-                    return;
-                }
-            }
         }
 
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)

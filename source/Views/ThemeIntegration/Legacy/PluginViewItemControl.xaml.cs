@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 using System.Windows;
-using System.Windows.Data;
+using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
@@ -22,6 +22,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
     {
         private static readonly ILogger _logger = PluginLogger.GetLogger(nameof(PluginViewItemControl));
         private PlayniteAchievementsPlugin Plugin => PlayniteAchievementsPlugin.Instance;
+        private bool _isCacheInvalidationSubscribed;
+        private bool _cacheInvalidationRefreshQueued;
 
         #region IntegrationViewItemWithProgressBar Property
 
@@ -64,15 +66,95 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             InitializeComponent();
             DataContextChanged += OnDataContextChanged;
             Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            SubscribeToCacheInvalidation();
             TryUpdateFromDataContext();
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            UnsubscribeFromCacheInvalidation();
+            _cacheInvalidationRefreshQueued = false;
         }
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
+            TryUpdateFromDataContext();
+        }
+
+        private void SubscribeToCacheInvalidation()
+        {
+            if (_isCacheInvalidationSubscribed)
+            {
+                return;
+            }
+
+            var service = Plugin?.AchievementService;
+            if (service == null)
+            {
+                return;
+            }
+
+            service.CacheInvalidated -= AchievementService_CacheInvalidated;
+            service.CacheInvalidated += AchievementService_CacheInvalidated;
+            _isCacheInvalidationSubscribed = true;
+        }
+
+        private void UnsubscribeFromCacheInvalidation()
+        {
+            if (!_isCacheInvalidationSubscribed)
+            {
+                return;
+            }
+
+            try
+            {
+                Plugin?.AchievementService.CacheInvalidated -= AchievementService_CacheInvalidated;
+            }
+            catch
+            {
+            }
+
+            _isCacheInvalidationSubscribed = false;
+        }
+
+        private void AchievementService_CacheInvalidated(object sender, EventArgs e)
+        {
+            QueueRefreshFromCacheInvalidation();
+        }
+
+        private void QueueRefreshFromCacheInvalidation()
+        {
+            if (!IsLoaded || _cacheInvalidationRefreshQueued)
+            {
+                return;
+            }
+
+            _cacheInvalidationRefreshQueued = true;
+            var dispatcher = Dispatcher;
+            if (dispatcher == null)
+            {
+                RunQueuedCacheInvalidationRefresh();
+                return;
+            }
+
+            dispatcher.BeginInvoke(
+                new Action(RunQueuedCacheInvalidationRefresh),
+                DispatcherPriority.Background);
+        }
+
+        private void RunQueuedCacheInvalidationRefresh()
+        {
+            _cacheInvalidationRefreshQueued = false;
+            if (!IsLoaded)
+            {
+                return;
+            }
+
             TryUpdateFromDataContext();
         }
 
