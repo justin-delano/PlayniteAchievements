@@ -109,11 +109,14 @@ namespace PlayniteAchievements.Services.Images
         /// Generate cache filename from URI using SHA256 hash.
         /// If gameId is provided, creates per-game subfolder structure.
         /// Results are cached to avoid repeated SHA256 computation.
+        /// Decode-size suffix is included to preserve "_128" naming convention.
         /// </summary>
         public string GetIconCachePathFromUri(string uri, int decodeSize, string gameId = null)
         {
-            // Build cache key from uri and gameId (decodeSize doesn't affect filename)
-            var cacheKey = string.IsNullOrEmpty(gameId) ? uri : $"{uri}|{gameId}";
+            var useDecodeSizeSuffix = decodeSize > 0;
+            var cacheKey = useDecodeSizeSuffix
+                ? (string.IsNullOrEmpty(gameId) ? $"{uri}|{decodeSize}" : $"{uri}|{decodeSize}|{gameId}")
+                : (string.IsNullOrEmpty(gameId) ? uri : $"{uri}|{gameId}");
 
             // Check cache first
             if (_iconPathCache.TryGetValue(cacheKey, out var cachedPath))
@@ -132,7 +135,8 @@ namespace PlayniteAchievements.Services.Images
                     ? IconCacheDirectory
                     : Path.Combine(IconCacheDirectory, gameId);
 
-                var path = Path.Combine(cacheDir, $"{hashHex}.png");
+                var sizeSuffix = useDecodeSizeSuffix ? $"_{decodeSize}" : string.Empty;
+                var path = Path.Combine(cacheDir, $"{hashHex}{sizeSuffix}.png");
                 _iconPathCache[cacheKey] = path;
                 return path;
             }
