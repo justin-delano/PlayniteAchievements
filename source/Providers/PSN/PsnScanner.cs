@@ -114,7 +114,7 @@ namespace PlayniteAchievements.Providers.PSN
             var npCommId = await ResolveNpCommunicationIdAsync(http, game, cancel).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(npCommId))
             {
-                return BuildNoAchievementsData(game, providerName);
+                return null;
             }
 
             var normalizedId = NormalizeGameId(game?.GameId);
@@ -155,7 +155,7 @@ namespace PlayniteAchievements.Providers.PSN
                 catch
                 {
                     _logger?.Warn(ex, $"[PSNAch] Failed to fetch trophy details for '{game?.Name}' (npCommId='{npCommId}')");
-                    return BuildNoAchievementsData(game, providerName);
+                    return null;
                 }
             }
 
@@ -208,7 +208,7 @@ namespace PlayniteAchievements.Providers.PSN
 
                 achievements.Add(new AchievementDetail
                 {
-                    ApiName = detail.TrophyId.ToString(CultureInfo.InvariantCulture),
+                    ApiName = GetTrophyKey(detail),
                     DisplayName = detail.TrophyName,
                     Description = detail.TrophyDetail,
                     UnlockedIconPath = detail.TrophyIconUrl,
@@ -235,19 +235,6 @@ namespace PlayniteAchievements.Providers.PSN
             };
         }
 
-        private static GameAchievementData BuildNoAchievementsData(Game game, string providerName)
-        {
-            return new GameAchievementData
-            {
-                ProviderName = providerName,
-                LibrarySourceName = game?.Source?.Name,
-                GameName = game?.Name,
-                PlayniteGameId = game?.Id,
-                HasAchievements = false,
-                LastUpdatedUtc = DateTime.UtcNow
-            };
-        }
-
         private static string GetProviderName()
         {
             var value = ResourceProvider.GetString("LOCPlayAch_Provider_PlayStation");
@@ -256,12 +243,26 @@ namespace PlayniteAchievements.Providers.PSN
 
         private static string GetTrophyKey(PsnUserTrophy trophy)
         {
-            return (trophy?.TrophyId ?? 0).ToString(CultureInfo.InvariantCulture);
+            var group = (trophy?.TrophyGroupId ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(group))
+            {
+                group = "default";
+            }
+
+            var trophyId = (trophy?.TrophyId ?? 0).ToString(CultureInfo.InvariantCulture);
+            return $"{group}:{trophyId}";
         }
 
         private static string GetTrophyKey(PsnTrophyDetail trophy)
         {
-            return (trophy?.TrophyId ?? 0).ToString(CultureInfo.InvariantCulture);
+            var group = (trophy?.TrophyGroupId ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(group))
+            {
+                group = "default";
+            }
+
+            var trophyId = (trophy?.TrophyId ?? 0).ToString(CultureInfo.InvariantCulture);
+            return $"{group}:{trophyId}";
         }
 
         private static string MapTrophyGroupToCategoryType(string trophyGroupId)
