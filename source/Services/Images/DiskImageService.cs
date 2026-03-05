@@ -112,8 +112,8 @@ namespace PlayniteAchievements.Services.Images
         /// </summary>
         public string GetIconCachePathFromUri(string uri, int decodeSize, string gameId = null)
         {
-            // Build cache key from all parameters
-            var cacheKey = $"{uri}|{decodeSize}|{gameId ?? ""}";
+            // Build cache key from uri and gameId (decodeSize doesn't affect filename)
+            var cacheKey = string.IsNullOrEmpty(gameId) ? uri : $"{uri}|{gameId}";
 
             // Check cache first
             if (_iconPathCache.TryGetValue(cacheKey, out var cachedPath))
@@ -126,14 +126,13 @@ namespace PlayniteAchievements.Services.Images
             {
                 var hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(uri));
                 var hashHex = BitConverter.ToString(hashBytes).Replace("-", "").Substring(0, 16);
-                var sizeSuffix = decodeSize > 0 ? $"_{decodeSize}" : "";
 
                 // Use per-game subfolder if gameId is provided
                 var cacheDir = string.IsNullOrEmpty(gameId)
                     ? IconCacheDirectory
                     : Path.Combine(IconCacheDirectory, gameId);
 
-                var path = Path.Combine(cacheDir, $"{hashHex}{sizeSuffix}.png");
+                var path = Path.Combine(cacheDir, $"{hashHex}.png");
                 _iconPathCache[cacheKey] = path;
                 return path;
             }
