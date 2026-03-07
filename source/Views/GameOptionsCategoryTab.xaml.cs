@@ -39,8 +39,7 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            TypeSelectionContextMenu.PlacementTarget = TypeSelectionButton;
-            TypeSelectionContextMenu.IsOpen = true;
+            OpenSelectorContextMenu(TypeSelectionButton, TypeSelectionContextMenu);
         }
 
         private void FilterTypeSelectionButton_Click(object sender, RoutedEventArgs e)
@@ -50,8 +49,24 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            FilterTypeSelectionContextMenu.PlacementTarget = FilterTypeSelectionButton;
-            FilterTypeSelectionContextMenu.IsOpen = true;
+            OpenSelectorContextMenu(FilterTypeSelectionButton, FilterTypeSelectionContextMenu);
+        }
+
+        private void CategoryLabelFilterSelectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel == null ||
+                CategoryLabelFilterSelectionButton == null ||
+                CategoryLabelFilterSelectionContextMenu == null)
+            {
+                return;
+            }
+
+            OpenMultiSelectFilterContextMenu(
+                CategoryLabelFilterSelectionButton,
+                CategoryLabelFilterSelectionContextMenu,
+                ViewModel.CategoryLabelFilterOptions,
+                option => ViewModel.IsCategoryLabelFilterSelected(option),
+                (option, isSelected) => ViewModel.SetCategoryLabelFilterSelected(option, isSelected));
         }
 
         private void RenameCategoryButton_Click(object sender, RoutedEventArgs e)
@@ -88,10 +103,7 @@ namespace PlayniteAchievements.Views
             {
                 CategoryInputTextBox.Text = string.Empty;
                 ViewModel.ResetBulkEditorInputs();
-            }
-            else
-            {
-                ShowStatusMessageIfAny();
+                ViewModel.ClearAllSelections();
             }
         }
 
@@ -115,10 +127,6 @@ namespace PlayniteAchievements.Views
             {
                 CategoryInputTextBox.Text = string.Empty;
                 ViewModel.ResetBulkEditorInputs();
-            }
-            else
-            {
-                ShowStatusMessageIfAny();
             }
         }
 
@@ -171,27 +179,9 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var renamed = ViewModel.RenameCategoryLabel(
+            ViewModel.RenameCategoryLabel(
                 dialog.SelectedSourceLabel,
                 dialog.TargetLabel);
-            if (!renamed)
-            {
-                ShowStatusMessageIfAny();
-            }
-        }
-
-        private void ShowStatusMessageIfAny()
-        {
-            if (ViewModel == null || string.IsNullOrWhiteSpace(ViewModel.StatusMessage))
-            {
-                return;
-            }
-
-            API.Instance.Dialogs.ShowMessage(
-                ViewModel.StatusMessage,
-                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
         }
 
         private void CategoryDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -313,11 +303,7 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var applied = ViewModel.AddCategoryTypesToSelection(rows, new[] { categoryType });
-            if (!applied)
-            {
-                ShowStatusMessageIfAny();
-            }
+            ViewModel.AddCategoryTypesToSelection(rows, new[] { categoryType });
         }
 
         private void SetLabelFromContext(GameOptionsCategoryItem contextItem)
@@ -334,55 +320,36 @@ namespace PlayniteAchievements.Views
             }
 
             var inputText = contextItem?.CategoryDisplay ?? string.Empty;
-            while (true)
+            var inputDialog = new TextInputDialog(
+                L(
+                    "LOCPlayAch_GameOptions_Category_Context_SetLabelHint",
+                    "Enter a category label for the selected achievements."),
+                inputText);
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                L(
+                    "LOCPlayAch_GameOptions_Category_Context_SetLabelTitle",
+                    "Set Category Label"),
+                inputDialog,
+                new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true,
+                    CanBeResizable = false,
+                    Width = 500,
+                    Height = 200
+                });
+
+            inputDialog.RequestClose += (s, e) => window.Close();
+            window.ShowDialog();
+
+            if (inputDialog.DialogResult != true)
             {
-                var inputDialog = new TextInputDialog(
-                    L(
-                        "LOCPlayAch_GameOptions_Category_Context_SetLabelHint",
-                        "Enter a category label for the selected achievements."),
-                    inputText);
-                var window = PlayniteUiProvider.CreateExtensionWindow(
-                    L(
-                        "LOCPlayAch_GameOptions_Category_Context_SetLabelTitle",
-                        "Set Category Label"),
-                    inputDialog,
-                    new WindowOptions
-                    {
-                        ShowMinimizeButton = false,
-                        ShowMaximizeButton = false,
-                        ShowCloseButton = true,
-                        CanBeResizable = false,
-                        Width = 500,
-                        Height = 200
-                    });
-
-                inputDialog.RequestClose += (s, e) => window.Close();
-                window.ShowDialog();
-
-                if (inputDialog.DialogResult != true)
-                {
-                    return;
-                }
-
-                inputText = (inputDialog.InputText ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(inputText))
-                {
-                    API.Instance.Dialogs.ShowMessage(
-                        L("LOCPlayAch_GameOptions_Category_Bulk_Status_NoLabelInput", "Enter a category label."),
-                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    continue;
-                }
-
-                var applied = ViewModel.SetCategoryLabelForSelection(rows, inputText);
-                if (!applied)
-                {
-                    ShowStatusMessageIfAny();
-                }
-
                 return;
             }
+
+            inputText = (inputDialog.InputText ?? string.Empty).Trim();
+            ViewModel.SetCategoryLabelForSelection(rows, inputText);
         }
 
         private void ClearRowsFromContext(GameOptionsCategoryItem contextItem)
@@ -403,10 +370,6 @@ namespace PlayniteAchievements.Views
             {
                 CategoryInputTextBox.Text = string.Empty;
                 ViewModel.ResetBulkEditorInputs();
-            }
-            else
-            {
-                ShowStatusMessageIfAny();
             }
         }
 
@@ -491,6 +454,69 @@ namespace PlayniteAchievements.Views
         {
             var value = ResourceProvider.GetString(key);
             return string.IsNullOrWhiteSpace(value) ? fallback : value;
+        }
+
+        private static void OpenSelectorContextMenu(Button button, ContextMenu menu)
+        {
+            if (button == null || menu == null)
+            {
+                return;
+            }
+
+            RoutedEventHandler onClosed = null;
+            onClosed = (_, __) =>
+            {
+                menu.Closed -= onClosed;
+                button.ReleaseMouseCapture();
+            };
+
+            menu.Closed += onClosed;
+            menu.PlacementTarget = button;
+            menu.IsOpen = true;
+        }
+
+        private static void OpenMultiSelectFilterContextMenu(
+            Button button,
+            ContextMenu menu,
+            IEnumerable<string> options,
+            Func<string, bool> isSelected,
+            Action<string, bool> setSelection)
+        {
+            if (button == null || menu == null || isSelected == null || setSelection == null)
+            {
+                return;
+            }
+
+            menu.Items.Clear();
+            if (options == null)
+            {
+                return;
+            }
+
+            var itemStyle = button.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
+            foreach (var option in options.Where(value => !string.IsNullOrWhiteSpace(value)))
+            {
+                var item = new MenuItem
+                {
+                    Header = option,
+                    IsCheckable = true,
+                    StaysOpenOnClick = true,
+                    IsChecked = isSelected(option)
+                };
+                if (itemStyle != null)
+                {
+                    item.Style = itemStyle;
+                }
+                item.Click += (_, __) => setSelection(option, item.IsChecked);
+                menu.Items.Add(item);
+            }
+
+            if (menu.Items.Count == 0)
+            {
+                return;
+            }
+
+            OpenSelectorContextMenu(button, menu);
         }
     }
 }

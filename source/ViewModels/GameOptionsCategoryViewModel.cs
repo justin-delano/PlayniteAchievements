@@ -26,10 +26,8 @@ namespace PlayniteAchievements.ViewModels
         private bool _showUnlocked = true;
         private bool _showLocked = true;
         private bool _showHidden = true;
-        private string _statusMessage = string.Empty;
-        private bool _hasStatusMessage;
-        private readonly string _allFilterOption;
-        private string _selectedCategoryLabelFilter;
+        private readonly HashSet<string> _selectedCategoryLabelFilters =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _hasCustomOverrides;
         private bool _typeBaseSelected;
         private bool _typeDlcSelected;
@@ -54,8 +52,6 @@ namespace PlayniteAchievements.ViewModels
             AchievementRows = new ObservableCollection<GameOptionsCategoryItem>();
             CategoryLabelOptions = new ObservableCollection<string>();
             CategoryLabelFilterOptions = new ObservableCollection<string>();
-            _allFilterOption = L("LOCPlayAch_GameOptions_Category_Filter_All", "All");
-            _selectedCategoryLabelFilter = _allFilterOption;
             ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty);
 
             ReloadData();
@@ -174,7 +170,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 var selected = AchievementCategoryTypeHelper.ParseValues(GetSelectedCategoryTypeValue());
                 return selected.Count == 0
-                    ? L("LOCPlayAch_GameOptions_Category_TypeSelectorPlaceholder", "Select category type(s)")
+                    ? L("LOCPlayAch_GameOptions_Category_TypeSelectorPlaceholder", "Type")
                     : string.Join(", ", selected);
             }
         }
@@ -237,21 +233,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 var selected = GetSelectedCategoryTypeFilterValues();
                 return selected.Count == 0
-                    ? L("LOCPlayAch_GameOptions_Category_Filter_Type_All", "All Types")
+                    ? L("LOCPlayAch_GameOptions_Category_TypeSelectorPlaceholder", "Type")
                     : string.Join(", ", selected);
             }
-        }
-
-        public string StatusMessage
-        {
-            get => _statusMessage;
-            private set => SetValue(ref _statusMessage, value ?? string.Empty);
-        }
-
-        public bool HasStatusMessage
-        {
-            get => _hasStatusMessage;
-            private set => SetValue(ref _hasStatusMessage, value);
         }
 
         public bool HasCustomOverrides
@@ -260,16 +244,59 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _hasCustomOverrides, value);
         }
 
-        public string SelectedCategoryLabelFilter
+        public string SelectedCategoryLabelFilterText
         {
-            get => _selectedCategoryLabelFilter;
-            set
+            get
             {
-                if (SetValueAndReturn(ref _selectedCategoryLabelFilter, value ?? _allFilterOption))
+                if (_selectedCategoryLabelFilters.Count == 0)
                 {
-                    ApplyFilter();
+                    return L(
+                        "LOCPlayAch_GameOptions_Category_Filter_LabelSelectorPlaceholder",
+                        "Category");
                 }
+
+                var ordered = CategoryLabelFilterOptions
+                    .Where(label => _selectedCategoryLabelFilters.Contains(label))
+                    .ToList();
+                if (ordered.Count == 0)
+                {
+                    ordered = _selectedCategoryLabelFilters
+                        .OrderBy(label => label, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                }
+
+                return string.Join(", ", ordered);
             }
+        }
+
+        public bool IsCategoryLabelFilterSelected(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            return _selectedCategoryLabelFilters.Contains(value.Trim());
+        }
+
+        public void SetCategoryLabelFilterSelected(string value, bool isSelected)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            var normalized = value.Trim();
+            var changed = isSelected
+                ? _selectedCategoryLabelFilters.Add(normalized)
+                : _selectedCategoryLabelFilters.Remove(normalized);
+            if (!changed)
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
+            ApplyFilter();
         }
 
         public void ReloadData()
@@ -383,8 +410,9 @@ namespace PlayniteAchievements.ViewModels
                 _allRows = new List<GameOptionsCategoryItem>();
                 CollectionHelper.SynchronizeCollection(AchievementRows, _allRows);
                 CollectionHelper.SynchronizeCollection(CategoryLabelOptions, new List<string>());
-                CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, new List<string> { _allFilterOption });
-                SelectedCategoryLabelFilter = _allFilterOption;
+                CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, new List<string>());
+                _selectedCategoryLabelFilters.Clear();
+                OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
                 HasAchievements = false;
                 HasCustomOverrides = false;
             }
@@ -428,10 +456,6 @@ namespace PlayniteAchievements.ViewModels
                 : new List<string>();
             if (!hasCategoryInput && !hasCategoryTypeInput)
             {
-                StatusMessage = L(
-                    "LOCPlayAch_GameOptions_Category_Bulk_Status_NoInput",
-                    "Enter a category label and/or select at least one category type.");
-                HasStatusMessage = true;
                 return false;
             }
 
@@ -475,11 +499,6 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            if (!categoryChanged && !categoryTypeChanged)
-            {
-                return false;
-            }
-
             if (categoryChanged)
             {
                 _achievementService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
@@ -490,12 +509,11 @@ namespace PlayniteAchievements.ViewModels
                 _achievementService.SetAchievementCategoryTypeOverrides(_gameId, categoryTypeOverrideMap);
             }
 
-            StatusMessage = L(
-                "LOCPlayAch_GameOptions_Category_Bulk_Status_Applied",
-                "Category and category type applied to selected achievements.");
-            HasStatusMessage = true;
+            if (categoryChanged || categoryTypeChanged)
+            {
+                ReloadData();
+            }
 
-            ReloadData();
             return true;
         }
 
@@ -513,10 +531,6 @@ namespace PlayniteAchievements.ViewModels
             var selectedCategoryTypes = AchievementCategoryTypeHelper.ParseValues(normalizedTypes);
             if (selectedCategoryTypes.Count == 0)
             {
-                StatusMessage = L(
-                    "LOCPlayAch_GameOptions_Category_Bulk_Status_NoTypeInput",
-                    "Select at least one category type.");
-                HasStatusMessage = true;
                 return false;
             }
 
@@ -552,11 +566,6 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _achievementService.SetAchievementCategoryTypeOverrides(_gameId, categoryTypeOverrideMap);
-            StatusMessage = L(
-                "LOCPlayAch_GameOptions_Category_Context_Status_TypeApplied",
-                "Category type added for selected achievements.");
-            HasStatusMessage = true;
-
             ReloadData();
             return true;
         }
@@ -573,10 +582,6 @@ namespace PlayniteAchievements.ViewModels
             var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategory(categoryLabel);
             if (string.IsNullOrWhiteSpace(normalizedCategory))
             {
-                StatusMessage = L(
-                    "LOCPlayAch_GameOptions_Category_Bulk_Status_NoLabelInput",
-                    "Enter a category label.");
-                HasStatusMessage = true;
                 return false;
             }
 
@@ -605,11 +610,6 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _achievementService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
-            StatusMessage = L(
-                "LOCPlayAch_GameOptions_Category_Context_Status_LabelApplied",
-                "Category label applied to selected achievements.");
-            HasStatusMessage = true;
-
             ReloadData();
             return true;
         }
@@ -660,11 +660,6 @@ namespace PlayniteAchievements.ViewModels
                 _achievementService.SetAchievementCategoryTypeOverrides(_gameId, categoryTypeOverrideMap);
             }
 
-            StatusMessage = L(
-                "LOCPlayAch_GameOptions_Category_Bulk_Status_Cleared",
-                "Cleared category label and category type overrides for selected achievements.");
-            HasStatusMessage = true;
-
             ReloadData();
             return true;
         }
@@ -674,10 +669,6 @@ namespace PlayniteAchievements.ViewModels
             var normalizedSourceCategory = AchievementCategoryTypeHelper.NormalizeCategory(sourceCategoryLabel);
             if (string.IsNullOrWhiteSpace(normalizedSourceCategory))
             {
-                StatusMessage = L(
-                    "LOCPlayAch_GameOptions_Category_Rename_Status_SelectSource",
-                    "Select a category label to rename.");
-                HasStatusMessage = true;
                 return false;
             }
 
@@ -686,10 +677,6 @@ namespace PlayniteAchievements.ViewModels
                 AchievementCategoryTypeHelper.DefaultCategoryLabel,
                 StringComparison.OrdinalIgnoreCase))
             {
-                StatusMessage = L(
-                    "LOCPlayAch_GameOptions_Category_Rename_Status_DefaultBlocked",
-                    "Default category label cannot be renamed.");
-                HasStatusMessage = true;
                 return false;
             }
 
@@ -723,30 +710,15 @@ namespace PlayniteAchievements.ViewModels
 
             if (affectedCount == 0)
             {
-                StatusMessage = L(
-                    "LOCPlayAch_GameOptions_Category_Rename_Status_NoMatches",
-                    "No achievements match the selected category label.");
-                HasStatusMessage = true;
                 return false;
             }
 
             if (!changed)
             {
-                StatusMessage = L(
-                    "LOCPlayAch_GameOptions_Category_Rename_Status_NoChange",
-                    "Selected label is already using the requested name.");
-                HasStatusMessage = true;
                 return false;
             }
 
             _achievementService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
-            StatusMessage = string.Format(
-                L(
-                    "LOCPlayAch_GameOptions_Category_Rename_Status_Applied",
-                    "Renamed category label for {0} achievement(s)."),
-                affectedCount);
-            HasStatusMessage = true;
-
             ReloadData();
             return true;
         }
@@ -757,6 +729,14 @@ namespace PlayniteAchievements.ViewModels
             TypeDlcSelected = false;
             TypeSingleplayerSelected = false;
             TypeMultiplayerSelected = false;
+        }
+
+        public void ClearAllSelections()
+        {
+            foreach (var item in _allRows.Where(row => row != null))
+            {
+                item.IsSelected = false;
+            }
         }
 
         private void ApplyFilter()
@@ -798,13 +778,16 @@ namespace PlayniteAchievements.ViewModels
                 });
             }
 
-            if (!IsAllFilterOption(SelectedCategoryLabelFilter))
+            if (_selectedCategoryLabelFilters.Count > 0)
             {
+                var selectedCategorySet = new HashSet<string>(
+                    _selectedCategoryLabelFilters
+                        .Select(AchievementCategoryTypeHelper.NormalizeCategoryOrDefault)
+                        .Where(value => !string.IsNullOrWhiteSpace(value)),
+                    StringComparer.OrdinalIgnoreCase);
                 filtered = filtered.Where(a =>
-                    string.Equals(
-                        a.CategoryDisplay,
-                        SelectedCategoryLabelFilter,
-                        StringComparison.OrdinalIgnoreCase));
+                    selectedCategorySet.Contains(
+                        AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryDisplay)));
             }
 
             CollectionHelper.SynchronizeCollection(AchievementRows, filtered.ToList());
@@ -827,15 +810,15 @@ namespace PlayniteAchievements.ViewModels
                 .ToList();
             CollectionHelper.SynchronizeCollection(CategoryLabelOptions, renameableLabels);
 
-            var categoryLabelFilterOptions = new List<string> { _allFilterOption };
-            categoryLabelFilterOptions.AddRange(labels);
+            var categoryLabelFilterOptions = new List<string>(labels);
             CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, categoryLabelFilterOptions);
 
-            if (!categoryLabelFilterOptions.Any(value =>
-                    string.Equals(value, SelectedCategoryLabelFilter, StringComparison.OrdinalIgnoreCase)))
+            if (PruneCategoryLabelFilterSelections(categoryLabelFilterOptions))
             {
-                SelectedCategoryLabelFilter = _allFilterOption;
+                ApplyFilter();
             }
+
+            OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
         }
 
         private Dictionary<string, string> GetCurrentCategoryOverrideMap()
@@ -894,10 +877,12 @@ namespace PlayniteAchievements.ViewModels
             return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
         }
 
-        private bool IsAllFilterOption(string value)
+        private bool PruneCategoryLabelFilterSelections(IEnumerable<string> options)
         {
-            return string.IsNullOrWhiteSpace(value) ||
-                   string.Equals(value, _allFilterOption, StringComparison.OrdinalIgnoreCase);
+            var optionSet = new HashSet<string>(
+                (options ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value)),
+                StringComparer.OrdinalIgnoreCase);
+            return _selectedCategoryLabelFilters.RemoveWhere(value => !optionSet.Contains(value)) > 0;
         }
 
         private List<string> GetSelectedCategoryTypeFilterValues()
@@ -963,8 +948,11 @@ namespace PlayniteAchievements.ViewModels
     {
         private bool _isSelected;
 
-        public string Category { get; set; }
-        public string CategoryType { get; set; }
+        public string Category
+        {
+            get => CategoryLabel;
+            set => CategoryLabel = value;
+        }
 
         public bool IsSelected
         {
@@ -973,6 +961,5 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public string CategoryDisplay => AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(Category);
-        public string CategoryTypeDisplay => AchievementCategoryTypeHelper.ToDisplayText(CategoryType);
     }
 }

@@ -119,12 +119,11 @@
                 <ColumnDefinition Width="150" />
                 <ColumnDefinition Width="130" />
                 <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Grid Grid.Column="0">
                 <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Style="{StaticResource SearchTextBoxStyle}"
+                         Style="{StaticResource ClearableSearchTextBoxStyle}"
                          Height="30"
                          VerticalAlignment="Center" />
                 <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Category_SearchPlaceholder}"
@@ -147,34 +146,41 @@
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
+                <Button Tag="{Binding SearchText}"
+                        Command="{Binding ClearSearchCommand}"
+                        Style="{StaticResource ClearSearchButtonStyle}" />
             </Grid>
 
             <Button x:Name="FilterTypeSelectionButton"
+                    Style="{StaticResource AchievementSelectorButtonStyle}"
                     Grid.Column="1"
                     Content="{Binding SelectedCategoryTypeFilterText}"
                     Click="FilterTypeSelectionButton_Click"
                     Height="30"
-                    Padding="10,4"
-                    HorizontalContentAlignment="Left"
                     Margin="6,0,0,0"
                     VerticalAlignment="Center"
                     ToolTip="{DynamicResource LOCPlayAch_GameOptions_Category_Filter_Type}">
                 <Button.ContextMenu>
                     <ContextMenu x:Name="FilterTypeSelectionContextMenu"
-                                 DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                  DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                  ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}">
                         <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Base}"
+                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
                                   IsCheckable="True"
                                   StaysOpenOnClick="True"
                                   IsChecked="{Binding TypeFilterBaseSelected, Mode=TwoWay}" />
                         <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_DLC}"
+                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
                                   IsCheckable="True"
                                   StaysOpenOnClick="True"
                                   IsChecked="{Binding TypeFilterDlcSelected, Mode=TwoWay}" />
                         <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Singleplayer}"
+                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
                                   IsCheckable="True"
                                   StaysOpenOnClick="True"
                                   IsChecked="{Binding TypeFilterSingleplayerSelected, Mode=TwoWay}" />
                         <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Multiplayer}"
+                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
                                   IsCheckable="True"
                                   StaysOpenOnClick="True"
                                   IsChecked="{Binding TypeFilterMultiplayerSelected, Mode=TwoWay}" />
@@ -182,38 +188,22 @@
                 </Button.ContextMenu>
             </Button>
 
-            <ComboBox Grid.Column="2"
-                      ItemsSource="{Binding CategoryLabelFilterOptions}"
-                      SelectedItem="{Binding SelectedCategoryLabelFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                      Margin="6,0,0,0"
-                      Height="30"
-                      VerticalAlignment="Center"
-                      ToolTip="{DynamicResource LOCPlayAch_GameOptions_Category_Filter_Label}" />
-
-            <Button Grid.Column="3"
-                    Content="✕"
-                    Command="{Binding ClearSearchCommand}"
-                    Width="30"
-                    Height="30"
+            <Button x:Name="CategoryLabelFilterSelectionButton"
+                    Style="{StaticResource AchievementSelectorButtonStyle}"
+                    Grid.Column="2"
+                    Content="{Binding SelectedCategoryLabelFilterText}"
+                    Click="CategoryLabelFilterSelectionButton_Click"
                     Margin="6,0,0,0"
-                    Padding="0"
-                    VerticalAlignment="Center">
-                <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                        <Setter Property="Visibility" Value="Visible" />
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding SearchText}" Value="">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
-                                <Setter Property="Visibility" Value="Collapsed" />
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
+                    Height="30"
+                    VerticalAlignment="Center"
+                    ToolTip="{DynamicResource LOCPlayAch_GameOptions_Category_Filter_Label}">
+                <Button.ContextMenu>
+                    <ContextMenu x:Name="CategoryLabelFilterSelectionContextMenu"
+                                 ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                </Button.ContextMenu>
             </Button>
 
-            <StackPanel Grid.Column="4"
+            <StackPanel Grid.Column="3"
                         Orientation="Horizontal"
                         VerticalAlignment="Center"
                         Margin="8,0,0,0">
@@ -380,30 +370,34 @@
                                Opacity="0.9" />
 
                     <Button x:Name="TypeSelectionButton"
+                            Style="{StaticResource AchievementSelectorButtonStyle}"
                             Grid.Row="1"
                             Grid.Column="0"
                             Content="{Binding SelectedTypeSelectionText}"
                             Click="TypeSelectionButton_Click"
                             Height="30"
-                            Padding="10,4"
-                            HorizontalContentAlignment="Left"
                             Margin="0,6,0,0">
                         <Button.ContextMenu>
                             <ContextMenu x:Name="TypeSelectionContextMenu"
-                                         DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                         DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                         ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}">
                                 <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Base}"
+                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
                                           IsCheckable="True"
                                           StaysOpenOnClick="True"
                                           IsChecked="{Binding TypeBaseSelected, Mode=TwoWay}" />
                                 <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_DLC}"
+                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
                                           IsCheckable="True"
                                           StaysOpenOnClick="True"
                                           IsChecked="{Binding TypeDlcSelected, Mode=TwoWay}" />
                                 <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Singleplayer}"
+                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
                                           IsCheckable="True"
                                           StaysOpenOnClick="True"
                                           IsChecked="{Binding TypeSingleplayerSelected, Mode=TwoWay}" />
                                 <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Multiplayer}"
+                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
                                           IsCheckable="True"
                                           StaysOpenOnClick="True"
                                           IsChecked="{Binding TypeMultiplayerSelected, Mode=TwoWay}" />
@@ -413,7 +407,7 @@
 
                         <Button Grid.Row="1"
                             Grid.Column="1"
-                            Content="{DynamicResource LOCPlayAch_Common_ClearSelected}"
+                            Content="{DynamicResource LOCPlayAch_Common_ResetSelected}"
                             Click="ClearSelectedButton_Click"
                             Padding="12,6"
                             Height="30"
