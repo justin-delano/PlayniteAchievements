@@ -1572,12 +1572,15 @@ namespace PlayniteAchievements
                     {
                         _themeUpdateService.RequestUpdate(null);
                         _themeIntegrationService?.NotifySelectionChanged(null);
+                        _themeIntegrationService?.ClearSingleGameThemeProperties();
                         _settingsViewModel.Settings.SelectedGame = null;
                         return;
                     }
 
                     _themeUpdateService.RequestUpdate(game.Id);
                     _themeIntegrationService?.NotifySelectionChanged(game.Id);
+                    // Populate ThemeData for desktop theme controls
+                    _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
                     _settingsViewModel.Settings.SelectedGame = game;
                 }
                 else
@@ -1585,6 +1588,7 @@ namespace PlayniteAchievements
                     // Clear theme data when no game or multiple games selected
                     _themeUpdateService.RequestUpdate(null);
                     _themeIntegrationService?.NotifySelectionChanged(null);
+                    _themeIntegrationService?.ClearSingleGameThemeProperties();
                     _settingsViewModel.Settings.SelectedGame = null;
                 }
             }
