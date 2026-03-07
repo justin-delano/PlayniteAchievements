@@ -1535,7 +1535,7 @@
             </TabItem>
 
             <!-- ================== TAB: PLAYSTATION SETTINGS ================== -->
-            <TabItem x:Name="PsnTab" Header="{DynamicResource LOCPlayAch_Provider_PlayStation}">
+            <TabItem x:Name="PsnTab" Header="{DynamicResource LOCPlayAch_Provider_PSN}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">

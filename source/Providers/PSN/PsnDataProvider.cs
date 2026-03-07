@@ -33,7 +33,7 @@ namespace PlayniteAchievements.Providers.PSN
         {
             get
             {
-                var value = ResourceProvider.GetString("LOCPlayAch_Provider_PlayStation");
+                var value = ResourceProvider.GetString("LOCPlayAch_Provider_PSN");
                 return string.IsNullOrWhiteSpace(value) ? "PlayStation" : value;
             }
         }
