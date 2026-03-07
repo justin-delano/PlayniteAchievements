@@ -811,7 +811,7 @@ namespace PlayniteAchievements
             {
                 _achievementService.RemoveGameCache(game.Id);
                 PlayniteApi?.Dialogs?.ShowMessage(
-                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_ConfirmSingle"), game.Name),
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_SuccessSingle"), game.Name),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
