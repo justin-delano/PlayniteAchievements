@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Desktop.Shared
 {
@@ -95,19 +96,32 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop.Shared
         /// </summary>
         public void UpdateFromThemeData(Models.ThemeIntegration.ThemeData theme)
         {
-            BadgeItems.Clear();
-
             if (theme == null)
             {
+                BadgeItems.Clear();
                 return;
             }
 
+            UpdateFromRarityStats(theme.UltraRare, theme.Rare, theme.Uncommon, theme.Common);
+        }
+
+        /// <summary>
+        /// Updates badge items directly from rarity stats.
+        /// </summary>
+        public void UpdateFromRarityStats(
+            Models.Achievements.AchievementRarityStats ultraRare,
+            Models.Achievements.AchievementRarityStats rare,
+            Models.Achievements.AchievementRarityStats uncommon,
+            Models.Achievements.AchievementRarityStats common)
+        {
+            BadgeItems.Clear();
+
             var badges = new (ImageSource Icon, int Count, int Total)[]
             {
-                ((ImageSource)Application.Current.FindResource("BadgePlatinumHexagon"), GetCount(theme.UltraRare), theme.UltraRare.Total),
-                ((ImageSource)Application.Current.FindResource("BadgeGoldPentagon"), GetCount(theme.Rare), theme.Rare.Total),
-                ((ImageSource)Application.Current.FindResource("BadgeSilverSquare"), GetCount(theme.Uncommon), theme.Uncommon.Total),
-                ((ImageSource)Application.Current.FindResource("BadgeBronzeTriangle"), GetCount(theme.Common), theme.Common.Total)
+                ((ImageSource)Application.Current.FindResource("BadgePlatinumHexagon"), GetCount(ultraRare), ultraRare.Total),
+                ((ImageSource)Application.Current.FindResource("BadgeGoldPentagon"), GetCount(rare), rare.Total),
+                ((ImageSource)Application.Current.FindResource("BadgeSilverSquare"), GetCount(uncommon), uncommon.Total),
+                ((ImageSource)Application.Current.FindResource("BadgeBronzeTriangle"), GetCount(common), common.Total)
             };
 
             foreach (var (icon, count, total) in badges)
@@ -123,7 +137,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop.Shared
             }
         }
 
-        private int GetCount(Models.Achievements.AchievementRarityStats stats)
+        private int GetCount(AchievementRarityStats stats)
         {
             return DisplayMode switch
             {
