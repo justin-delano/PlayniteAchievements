@@ -64,14 +64,12 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
             _logger?.Info($"[ShadPS4] Scanning {titleCache.Count} titles from game_data folder.");
 
-            var providerName = GetProviderName();
-
             return await RefreshPipeline.RunProviderGamesAsync(
                 gamesToRefresh,
                 onGameStarting,
                 async (game, token) =>
                 {
-                    var data = await FetchGameDataAsync(game, titleCache, providerName, token).ConfigureAwait(false);
+                    var data = await FetchGameDataAsync(game, titleCache, token).ConfigureAwait(false);
                     return new RefreshPipeline.ProviderGameResult
                     {
                         Data = data
@@ -203,7 +201,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private Task<GameAchievementData> FetchGameDataAsync(
             Game game,
             Dictionary<string, string> titleCache,
-            string providerName,
             CancellationToken cancel)
         {
             if (game == null)
@@ -216,13 +213,13 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
             if (string.IsNullOrWhiteSpace(titleId))
             {
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
 
             // Look up trophy data directory in cache
             if (!titleCache.TryGetValue(titleId, out var trophyDataPath))
             {
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
 
             cancel.ThrowIfCancellationRequested();
@@ -231,7 +228,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
             if (!File.Exists(xmlPath))
             {
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
 
             var iconsFolder = Path.Combine(trophyDataPath, "trophyfiles", "trophy00", "Icons");
@@ -297,7 +294,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
                 return Task.FromResult(new GameAchievementData
                 {
-                    ProviderName = providerName,
+                    ProviderKey = "ShadPS4",
                     LibrarySourceName = game?.Source?.Name,
                     GameName = game?.Name,
                     PlayniteGameId = game?.Id,
@@ -309,7 +306,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"[ShadPS4] Failed to parse TROP.XML for {game.Name}");
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
         }
 
@@ -351,11 +348,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
             return "DLC";
         }
 
-        private static GameAchievementData BuildNoAchievementsData(Game game, string providerName)
+        private static GameAchievementData BuildNoAchievementsData(Game game)
         {
             return new GameAchievementData
             {
-                ProviderName = providerName,
+                ProviderKey = "ShadPS4",
                 LibrarySourceName = game?.Source?.Name,
                 GameName = game?.Name,
                 PlayniteGameId = game?.Id,
@@ -366,7 +363,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         private static string GetProviderName()
         {
-            return "ShadPS4";
+            var value = ResourceProvider.GetString("LOCPlayAch_Provider_ShadPS4");
+            return string.IsNullOrWhiteSpace(value) ? "ShadPS4" : value;
         }
 
         /// <summary>

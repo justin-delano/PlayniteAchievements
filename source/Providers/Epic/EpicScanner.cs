@@ -125,7 +125,7 @@ namespace PlayniteAchievements.Providers.Epic
             {
                 AppId = 0,
                 GameName = game?.Name,
-                ProviderName = "Epic",
+                ProviderKey = "Epic",
                 LibrarySourceName = game?.Source?.Name,
                 LastUpdatedUtc = DateTime.UtcNow,
                 HasAchievements = items != null && items.Count > 0,

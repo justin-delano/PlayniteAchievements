@@ -29,7 +29,7 @@ namespace PlayniteAchievements.Services
                 ShowHiddenTitle = settings?.Persisted?.ShowHiddenTitle ?? false,
                 ShowHiddenDescription = settings?.Persisted?.ShowHiddenDescription ?? false,
                 UseScaledPoints = (settings?.Persisted?.RaPointsMode == "scaled") &&
-                                  string.Equals(gameData?.ProviderName, "RetroAchievements", StringComparison.OrdinalIgnoreCase),
+                                  string.Equals(gameData?.ProviderKey, "RetroAchievements", StringComparison.OrdinalIgnoreCase),
                 RevealedKeys = revealedKeys
             };
         }

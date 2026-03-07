@@ -451,16 +451,16 @@ namespace PlayniteAchievements.ViewModels
 
                 var gameData = _achievementService?.GetGameAchievementData(_gameId);
                 HasCachedData = gameData != null;
-                _cachedProviderName = gameData?.ProviderName?.Trim();
+                _cachedProviderName = gameData?.ProviderKey?.Trim();
                 _cachedHasAchievements = gameData?.HasAchievements ?? false;
                 var allowManualOverride = _settings?.Persisted?.ManualTrackingOverrideEnabled == true;
                 var isExcluded = _plugin?.IsGameExcluded(_gameId) ?? false;
                 var hasNonManualProviderData = ShouldWarnAboutManualTrackingOverride(out _);
                 ShowManualTrackingTab = allowManualOverride ||
                     (!isExcluded && (!_cachedHasAchievements || !hasNonManualProviderData));
-                ProviderName = string.IsNullOrWhiteSpace(gameData?.ProviderName)
+                ProviderName = string.IsNullOrWhiteSpace(gameData?.ProviderDisplayName)
                     ? L("LOCPlayAch_GameOptions_Value_NotAvailable", "N/A")
-                    : gameData.ProviderName;
+                    : gameData.ProviderDisplayName;
                 LibrarySourceName = ResolveLibrarySourceDisplayName(game, gameData?.LibrarySourceName);
 
                 if (gameData?.LastUpdatedUtc > DateTime.MinValue)

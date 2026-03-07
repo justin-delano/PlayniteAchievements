@@ -79,7 +79,6 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             _logger?.Info($"[RPCS3] Scanning {trophyFolderCache.Count} cached trophy folders.");
 
-            var providerName = GetProviderName();
             var payload = await RefreshPipeline.RunProviderGamesAsync(
                 gamesToRefresh,
                 game =>
@@ -88,7 +87,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                 },
                 async (game, token) =>
                 {
-                    var data = await FetchGameDataAsync(game, trophyFolderCache, providerName, token).ConfigureAwait(false);
+                    var data = await FetchGameDataAsync(game, trophyFolderCache, token).ConfigureAwait(false);
                     return new RefreshPipeline.ProviderGameResult
                     {
                         Data = data
@@ -173,7 +172,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         private Task<GameAchievementData> FetchGameDataAsync(
             Game game,
             Dictionary<string, string> trophyFolderCache,
-            string providerName,
             CancellationToken cancel)
         {
             if (game == null)
@@ -186,7 +184,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             if (source == null || string.IsNullOrWhiteSpace(source.NpCommId))
             {
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
 
             cancel.ThrowIfCancellationRequested();
@@ -198,10 +196,10 @@ namespace PlayniteAchievements.Providers.RPCS3
                 if (!string.IsNullOrWhiteSpace(source.TrpPath))
                 {
                     _logger?.Debug($"[RPCS3] No cache for '{source.NpCommId}', falling back to TROPHY.TRP at '{source.TrpPath}'");
-                    return FetchFromTrpAsync(game, source.NpCommId, source.TrpPath, providerName);
+                    return FetchFromTrpAsync(game, source.NpCommId, source.TrpPath);
                 }
 
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
 
             var tropconfPath = Path.Combine(trophyFolderPath, "TROPCONF.SFM");
@@ -209,7 +207,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             if (!File.Exists(tropconfPath))
             {
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
 
             try
@@ -227,7 +225,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
                 if (trophies.Count == 0)
                 {
-                    return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                    return Task.FromResult(BuildNoAchievementsData(game));
                 }
 
                 // Convert to achievements
@@ -258,7 +256,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
                 return Task.FromResult(new GameAchievementData
                 {
-                    ProviderName = providerName,
+                    ProviderKey = "RPCS3",
                     LibrarySourceName = game?.Source?.Name,
                     GameName = game?.Name,
                     PlayniteGameId = game?.Id,
@@ -270,7 +268,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"[RPCS3] Failed to parse trophy data for '{game.Name}'");
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
         }
 
@@ -279,14 +277,14 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// Used when RPCS3 cache doesn't exist yet (game not launched).
         /// All trophies are marked as locked since unlock data isn't available.
         /// </summary>
-        private Task<GameAchievementData> FetchFromTrpAsync(Game game, string npcommid, string trpPath, string providerName)
+        private Task<GameAchievementData> FetchFromTrpAsync(Game game, string npcommid, string trpPath)
         {
             _logger?.Debug($"[RPCS3] FetchFromTrpAsync - Loading pre-launch trophies for '{game?.Name}' from '{trpPath}'");
 
             if (string.IsNullOrWhiteSpace(trpPath) || !File.Exists(trpPath))
             {
                 _logger?.Debug($"[RPCS3] FetchFromTrpAsync - TRP file not found: '{trpPath}'");
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
 
             try
@@ -300,7 +298,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                 if (trophies.Count == 0)
                 {
                     _logger?.Debug($"[RPCS3] FetchFromTrpAsync - No trophies found in '{trpPath}'");
-                    return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                    return Task.FromResult(BuildNoAchievementsData(game));
                 }
 
                 // Convert to achievements (all Unlocked = false, icons = null for placeholder)
@@ -331,7 +329,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
                 return Task.FromResult(new GameAchievementData
                 {
-                    ProviderName = providerName,
+                    ProviderKey = "RPCS3",
                     LibrarySourceName = game?.Source?.Name,
                     GameName = game?.Name,
                     PlayniteGameId = game?.Id,
@@ -343,7 +341,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"[RPCS3] FetchFromTrpAsync - Failed to parse TROPHY.TRP for '{game?.Name}'");
-                return Task.FromResult(BuildNoAchievementsData(game, providerName));
+                return Task.FromResult(BuildNoAchievementsData(game));
             }
         }
 
@@ -1054,22 +1052,17 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
         }
 
-        private static GameAchievementData BuildNoAchievementsData(Game game, string providerName)
+        private static GameAchievementData BuildNoAchievementsData(Game game)
         {
             return new GameAchievementData
             {
-                ProviderName = providerName,
+                ProviderKey = "RPCS3",
                 LibrarySourceName = game?.Source?.Name,
                 GameName = game?.Name,
                 PlayniteGameId = game?.Id,
                 HasAchievements = false,
                 LastUpdatedUtc = DateTime.UtcNow
             };
-        }
-
-        private static string GetProviderName()
-        {
-            return "RPCS3";
         }
 
         private static string NormalizeTrophyType(string trophyType)

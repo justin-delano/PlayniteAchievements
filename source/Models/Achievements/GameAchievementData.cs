@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Models.Achievements
 {
@@ -14,10 +15,17 @@ namespace PlayniteAchievements.Models.Achievements
         public DateTime LastUpdatedUtc { get; set; }
 
         /// <summary>
-        /// Name of the provider that produced this entry (e.g. Steam, RetroAchievements).
-        /// Used for diagnostics and future multi-provider caching.
+        /// Stable identifier for the provider (e.g., "PSN", "Steam").
+        /// Used for database storage and internal lookups.
         /// </summary>
-        public string ProviderName { get; set; }
+        public string ProviderKey { get; set; }
+
+        /// <summary>
+        /// Localized display name resolved from ProviderKey.
+        /// Not persisted - computed at runtime for UI display.
+        /// </summary>
+        [IgnoreDataMember]
+        public string ProviderDisplayName => ProviderRegistry.GetLocalizedName(ProviderKey);
 
         /// <summary>
         /// Playnite library source name for the game at refresh time (e.g. Steam, GOG).

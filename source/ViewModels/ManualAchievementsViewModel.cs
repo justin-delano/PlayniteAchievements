@@ -649,14 +649,14 @@ namespace PlayniteAchievements.ViewModels
         {
             var cachedData = _achievementService.Cache.LoadGameData(_playniteGame.Id.ToString());
             var hydratedData = _achievementService.GetGameAchievementData(_playniteGame.Id);
-            string providerName = cachedData?.ProviderName;
+            string providerKey = cachedData?.ProviderKey;
             var achievements = cachedData?.Achievements?
                 .Where(a => a != null)
                 .ToList();
 
             if (achievements == null || achievements.Count == 0)
             {
-                providerName = hydratedData?.ProviderName;
+                providerKey = hydratedData?.ProviderKey;
                 achievements = hydratedData?.Achievements?
                     .Where(a => a != null)
                     .ToList();
@@ -669,10 +669,8 @@ namespace PlayniteAchievements.ViewModels
 
             if (requireManualProviderData)
             {
-                var manualProviderName = ResourceProvider.GetString("LOCPlayAch_Provider_Manual");
-                if (string.IsNullOrWhiteSpace(providerName) ||
-                    string.IsNullOrWhiteSpace(manualProviderName) ||
-                    !string.Equals(providerName.Trim(), manualProviderName.Trim(), StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrWhiteSpace(providerKey) ||
+                    !string.Equals(providerKey, "Manual", StringComparison.OrdinalIgnoreCase))
                 {
                     return false;
                 }

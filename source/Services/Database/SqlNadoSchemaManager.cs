@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 6;
+        public const int SchemaVersion = 7;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -40,18 +40,18 @@ namespace PlayniteAchievements.Services.Database
 
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS Users (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ProviderName TEXT NOT NULL COLLATE NOCASE,
+                ProviderKey TEXT NOT NULL COLLATE NOCASE,
                 ExternalUserId TEXT NOT NULL COLLATE NOCASE,
                 DisplayName TEXT NULL,
                 IsCurrentUser INTEGER NOT NULL DEFAULT 0,
                 FriendSource TEXT NULL,
                 CreatedUtc TEXT NOT NULL,
                 UpdatedUtc TEXT NOT NULL,
-                UNIQUE (ProviderName, ExternalUserId)
+                UNIQUE (ProviderKey, ExternalUserId)
             );");
 
             ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Users_CurrentPerProvider
-                ON Users (ProviderName)
+                ON Users (ProviderKey)
                 WHERE IsCurrentUser = 1;");
 
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Users_CurrentUser_Id
@@ -59,7 +59,7 @@ namespace PlayniteAchievements.Services.Database
 
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS Games (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ProviderName TEXT NOT NULL COLLATE NOCASE,
+                ProviderKey TEXT NOT NULL COLLATE NOCASE,
                 ProviderGameId INTEGER NULL,
                 PlayniteGameId TEXT NULL,
                 GameName TEXT NULL,
@@ -69,16 +69,16 @@ namespace PlayniteAchievements.Services.Database
             );");
 
             ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_Playnite
-                ON Games (ProviderName, PlayniteGameId)
+                ON Games (ProviderKey, PlayniteGameId)
                 WHERE PlayniteGameId IS NOT NULL;");
 
             ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
-                ON Games (ProviderName, ProviderGameId)
+                ON Games (ProviderKey, ProviderGameId)
                 WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
-                  AND ProviderName <> 'RetroAchievements';");
+                  AND ProviderKey <> 'RetroAchievements';");
 
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
-                ON Games (ProviderName, ProviderGameId)
+                ON Games (ProviderKey, ProviderGameId)
                 WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;");
 
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_PlayniteGameId
@@ -298,7 +298,199 @@ namespace PlayniteAchievements.Services.Database
                     "Migrated NoAchievements to HasAchievements (inverted) in UserGameProgress.");
             }
 
-            ReconcileGamesProviderGameIdIndexes(db, ref backupPath);
+            // Check if migration needed for Games: ProviderName -> ProviderKey
+            var gamesColumns = GetColumnNames(db, "Games");
+            if (gamesColumns.Contains("providername") && !gamesColumns.Contains("providerkey"))
+            {
+                _logger?.Info("[Schema] Migrating Games table from ProviderName to ProviderKey");
+
+                // Step 1: Drop old indexes that reference ProviderName
+                ExecuteSchemaChangeWithBackup(db,
+                    "DROP INDEX IF EXISTS UX_Games_Provider_Playnite;",
+                    ref backupPath,
+                    "Dropped UX_Games_Provider_Playnite");
+                ExecuteSchemaChangeWithBackup(db,
+                    "DROP INDEX IF EXISTS IX_Games_Provider_GameId;",
+                    ref backupPath,
+                    "Dropped IX_Games_Provider_GameId");
+                ExecuteSchemaChangeWithBackup(db,
+                    "DROP INDEX IF EXISTS UX_Games_Provider_GameId_NonRA;",
+                    ref backupPath,
+                    "Dropped UX_Games_Provider_GameId_NonRA");
+
+                // Step 2: Create new Games table with ProviderKey column
+                ExecuteSchemaChangeWithBackup(db,
+                    @"CREATE TABLE Games_New (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ProviderKey TEXT NOT NULL COLLATE NOCASE,
+                        ProviderGameId INTEGER NULL,
+                        PlayniteGameId TEXT NULL,
+                        GameName TEXT NULL,
+                        LibrarySourceName TEXT NULL,
+                        FirstSeenUtc TEXT NOT NULL,
+                        LastUpdatedUtc TEXT NOT NULL
+                    );",
+                    ref backupPath,
+                    "Created Games_New table");
+
+                // Step 3: Insert data from Games into Games_New with value transformation
+                ExecuteSchemaChangeWithBackup(db,
+                    @"INSERT INTO Games_New (Id, ProviderKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
+                      SELECT
+                        Id,
+                        CASE
+                            WHEN LOWER(ProviderName) = 'steam' THEN 'Steam'
+                            WHEN LOWER(ProviderName) = 'epic' THEN 'Epic'
+                            WHEN LOWER(ProviderName) = 'epic games' THEN 'Epic'
+                            WHEN LOWER(ProviderName) = 'gog' THEN 'GOG'
+                            WHEN LOWER(ProviderName) = 'xbox' THEN 'Xbox'
+                            WHEN LOWER(ProviderName) = 'psn' THEN 'PSN'
+                            WHEN LOWER(ProviderName) = 'playstation' THEN 'PSN'
+                            WHEN LOWER(ProviderName) LIKE '%playstation%' THEN 'PSN'
+                            WHEN LOWER(ProviderName) = 'retroachievements' THEN 'RetroAchievements'
+                            WHEN LOWER(ProviderName) LIKE '%retro%' THEN 'RetroAchievements'
+                            WHEN LOWER(ProviderName) = 'rpcs3' THEN 'RPCS3'
+                            WHEN LOWER(ProviderName) = 'shadps4' THEN 'ShadPS4'
+                            WHEN LOWER(ProviderName) = 'manual' THEN 'Manual'
+                            WHEN LOWER(ProviderName) = 'manuel' THEN 'Manual'
+                            WHEN LOWER(ProviderName) = 'unmapped' THEN 'Unmapped'
+                            ELSE ProviderName
+                        END,
+                        ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                      FROM Games;",
+                    ref backupPath,
+                    "Migrated Games data to ProviderKey");
+
+                // Step 4: Drop the old Games table
+                ExecuteSchemaChangeWithBackup(db,
+                    "DROP TABLE Games;",
+                    ref backupPath,
+                    "Dropped old Games table");
+
+                // Step 5: Rename Games_New to Games
+                ExecuteSchemaChangeWithBackup(db,
+                    "ALTER TABLE Games_New RENAME TO Games;",
+                    ref backupPath,
+                    "Renamed Games_New to Games");
+
+                // Step 6: Recreate indexes with ProviderKey
+                ExecuteSchemaChangeWithBackup(db,
+                    @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_Playnite
+                        ON Games (ProviderKey, PlayniteGameId)
+                        WHERE PlayniteGameId IS NOT NULL;",
+                    ref backupPath,
+                    "Created UX_Games_Provider_Playnite");
+                ExecuteSchemaChangeWithBackup(db,
+                    @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
+                        ON Games (ProviderKey, ProviderGameId)
+                        WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
+                          AND ProviderKey <> 'RetroAchievements';",
+                    ref backupPath,
+                    "Created UX_Games_Provider_GameId_NonRA");
+                ExecuteSchemaChangeWithBackup(db,
+                    @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
+                        ON Games (ProviderKey, ProviderGameId)
+                        WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;",
+                    ref backupPath,
+                    "Created IX_Games_Provider_GameId");
+                ExecuteSchemaChangeWithBackup(db,
+                    "CREATE INDEX IF NOT EXISTS IX_Games_PlayniteGameId ON Games (PlayniteGameId);",
+                    ref backupPath,
+                    "Created IX_Games_PlayniteGameId");
+                ExecuteSchemaChangeWithBackup(db,
+                    "CREATE INDEX IF NOT EXISTS IX_Games_LastUpdatedUtc ON Games (LastUpdatedUtc);",
+                    ref backupPath,
+                    "Created IX_Games_LastUpdatedUtc");
+
+                _logger?.Info("[Schema] Games table migration completed");
+            }
+
+            // Check if migration needed for Users: ProviderName -> ProviderKey
+            var usersColumns = GetColumnNames(db, "Users");
+            if (usersColumns.Contains("providername") && !usersColumns.Contains("providerkey"))
+            {
+                _logger?.Info("[Schema] Migrating Users table from ProviderName to ProviderKey");
+
+                // Step 1: Drop old indexes that reference ProviderName
+                ExecuteSchemaChangeWithBackup(db,
+                    "DROP INDEX IF EXISTS UX_Users_CurrentPerProvider;",
+                    ref backupPath,
+                    "Dropped UX_Users_CurrentPerProvider");
+                ExecuteSchemaChangeWithBackup(db,
+                    "DROP INDEX IF EXISTS IX_Users_CurrentUser_Id;",
+                    ref backupPath,
+                    "Dropped IX_Users_CurrentUser_Id");
+
+                // Step 2: Create new Users table with ProviderKey column
+                ExecuteSchemaChangeWithBackup(db,
+                    @"CREATE TABLE Users_New (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        ProviderKey TEXT NOT NULL COLLATE NOCASE,
+                        ExternalUserId TEXT NOT NULL COLLATE NOCASE,
+                        DisplayName TEXT NULL,
+                        IsCurrentUser INTEGER NOT NULL DEFAULT 0,
+                        FriendSource TEXT NULL,
+                        CreatedUtc TEXT NOT NULL,
+                        UpdatedUtc TEXT NOT NULL,
+                        UNIQUE (ProviderKey, ExternalUserId)
+                    );",
+                    ref backupPath,
+                    "Created Users_New table");
+
+                // Step 3: Insert data from Users into Users_New with value transformation
+                ExecuteSchemaChangeWithBackup(db,
+                    @"INSERT INTO Users_New (Id, ProviderKey, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, CreatedUtc, UpdatedUtc)
+                      SELECT
+                        Id,
+                        CASE
+                            WHEN LOWER(ProviderName) = 'steam' THEN 'Steam'
+                            WHEN LOWER(ProviderName) = 'epic' THEN 'Epic'
+                            WHEN LOWER(ProviderName) = 'epic games' THEN 'Epic'
+                            WHEN LOWER(ProviderName) = 'gog' THEN 'GOG'
+                            WHEN LOWER(ProviderName) = 'xbox' THEN 'Xbox'
+                            WHEN LOWER(ProviderName) = 'psn' THEN 'PSN'
+                            WHEN LOWER(ProviderName) = 'playstation' THEN 'PSN'
+                            WHEN LOWER(ProviderName) LIKE '%playstation%' THEN 'PSN'
+                            WHEN LOWER(ProviderName) = 'retroachievements' THEN 'RetroAchievements'
+                            WHEN LOWER(ProviderName) LIKE '%retro%' THEN 'RetroAchievements'
+                            WHEN LOWER(ProviderName) = 'rpcs3' THEN 'RPCS3'
+                            WHEN LOWER(ProviderName) = 'shadps4' THEN 'ShadPS4'
+                            WHEN LOWER(ProviderName) = 'manual' THEN 'Manual'
+                            WHEN LOWER(ProviderName) = 'manuel' THEN 'Manual'
+                            WHEN LOWER(ProviderName) = 'unmapped' THEN 'Unmapped'
+                            ELSE ProviderName
+                        END,
+                        ExternalUserId, DisplayName, IsCurrentUser, FriendSource, CreatedUtc, UpdatedUtc
+                      FROM Users;",
+                    ref backupPath,
+                    "Migrated Users data to ProviderKey");
+
+                // Step 4: Drop the old Users table
+                ExecuteSchemaChangeWithBackup(db,
+                    "DROP TABLE Users;",
+                    ref backupPath,
+                    "Dropped old Users table");
+
+                // Step 5: Rename Users_New to Users
+                ExecuteSchemaChangeWithBackup(db,
+                    "ALTER TABLE Users_New RENAME TO Users;",
+                    ref backupPath,
+                    "Renamed Users_New to Users");
+
+                // Step 6: Recreate indexes with ProviderKey
+                ExecuteSchemaChangeWithBackup(db,
+                    @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Users_CurrentPerProvider
+                        ON Users (ProviderKey)
+                        WHERE IsCurrentUser = 1;",
+                    ref backupPath,
+                    "Created UX_Users_CurrentPerProvider");
+                ExecuteSchemaChangeWithBackup(db,
+                    "CREATE INDEX IF NOT EXISTS IX_Users_CurrentUser_Id ON Users (IsCurrentUser, Id);",
+                    ref backupPath,
+                    "Created IX_Users_CurrentUser_Id");
+
+                _logger?.Info("[Schema] Users table migration completed");
+            }
 
             return backupPath;
         }
@@ -318,9 +510,9 @@ namespace PlayniteAchievements.Services.Database
                 db,
                 GamesProviderGameIdNonRaIndexName,
                 @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
-                    ON Games (ProviderName, ProviderGameId)
+                    ON Games (ProviderKey, ProviderGameId)
                     WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
-                      AND ProviderName <> 'RetroAchievements';",
+                      AND ProviderKey <> 'RetroAchievements';",
                 ref backupPath,
                 $"Ensured index {GamesProviderGameIdNonRaIndexName}.");
 
@@ -328,7 +520,7 @@ namespace PlayniteAchievements.Services.Database
                 db,
                 GamesProviderGameIdLookupIndexName,
                 @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
-                    ON Games (ProviderName, ProviderGameId)
+                    ON Games (ProviderKey, ProviderGameId)
                     WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;",
                 ref backupPath,
                 $"Ensured index {GamesProviderGameIdLookupIndexName}.");

@@ -177,8 +177,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 var summary = items.FirstOrDefault(i => i.GameId == data.PlayniteGameId.Value);
                 if (summary == null) continue;
 
-                var providerName = data.ProviderName ?? "";
-                switch (providerName)
+                var providerKey = data.ProviderKey ?? "";
+                switch (providerKey)
                 {
                     case "Steam":
                         steamGames.Add(summary);

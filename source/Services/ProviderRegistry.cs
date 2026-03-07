@@ -1,3 +1,4 @@
+using Playnite.SDK;
 using System;
 using System.Collections.Generic;
 using PlayniteAchievements.Models.Settings;
@@ -11,6 +12,33 @@ namespace PlayniteAchievements.Services
     /// </summary>
     public class ProviderRegistry
     {
+        /// <summary>
+        /// Gets the localized display name for a provider key.
+        /// Maps ProviderKey to the correct localization resource key.
+        /// </summary>
+        /// <param name="providerKey">The stable provider key (e.g., "PSN", "Steam").</param>
+        /// <returns>Localized display name, or the key itself if no localization found.</returns>
+        public static string GetLocalizedName(string providerKey)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+                return "Unknown";
+
+            var locKey = GetLocalizationKey(providerKey);
+            var value = ResourceProvider.GetString(locKey);
+            return string.IsNullOrWhiteSpace(value) ? providerKey : value;
+        }
+
+        private static string GetLocalizationKey(string providerKey)
+        {
+            switch (providerKey?.Trim())
+            {
+                case "PSN":
+                    return "LOCPlayAch_Provider_PlayStation";
+                default:
+                    return $"LOCPlayAch_Provider_{providerKey}";
+            }
+        }
+
         private readonly Dictionary<string, bool> _enabledState = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
         {
             { "Steam", true },
