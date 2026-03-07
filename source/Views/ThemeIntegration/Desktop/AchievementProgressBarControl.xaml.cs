@@ -5,20 +5,41 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
     /// <summary>
     /// Desktop PlayniteAchievements progress bar control for theme integration.
     /// Displays progress bar with percentage overlay and rarity badges.
+    /// Binds directly to Plugin.Settings.Theme properties.
     /// </summary>
-    public partial class AchievementProgressBarControl : SingleGameDataControlBase
+    public partial class AchievementProgressBarControl : ThemeControlBase
     {
+        /// <summary>
+        /// Gets a value indicating whether this control should subscribe to theme data change notifications.
+        /// </summary>
+        protected override bool EnableAutomaticThemeDataUpdates => true;
+
         public AchievementProgressBarControl()
         {
             InitializeComponent();
         }
 
         /// <summary>
-        /// Called after data is loaded. Updates the rarity badges.
+        /// Determines whether a change raised from ThemeData should trigger a refresh.
         /// </summary>
-        protected override void OnDataLoaded()
+        protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
-            Badges?.UpdateFromRarityStats(UltraRare, Rare, Uncommon, Common);
+            return propertyName == nameof(Models.ThemeIntegration.ThemeData.UltraRare) ||
+                   propertyName == nameof(Models.ThemeIntegration.ThemeData.Rare) ||
+                   propertyName == nameof(Models.ThemeIntegration.ThemeData.Uncommon) ||
+                   propertyName == nameof(Models.ThemeIntegration.ThemeData.Common);
+        }
+
+        /// <summary>
+        /// Called when theme data changes. Updates the rarity badges.
+        /// </summary>
+        protected override void OnThemeDataUpdated()
+        {
+            var theme = Plugin?.Settings?.Theme;
+            if (theme != null)
+            {
+                Badges?.UpdateFromRarityStats(theme.UltraRare, theme.Rare, theme.Uncommon, theme.Common);
+            }
         }
     }
 }
