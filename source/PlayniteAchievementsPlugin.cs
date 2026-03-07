@@ -190,7 +190,7 @@ namespace PlayniteAchievements
                 List<IDataProvider> providers;
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
                 {
-                    _manualProvider = new ManualAchievementsProvider(_logger, settings, pluginUserDataPath, _exophaseSessionManager);
+                    _manualProvider = new ManualAchievementsProvider(_logger, settings, pluginUserDataPath, PlayniteApi, _exophaseSessionManager);
                     providers = new List<IDataProvider>
                     {
                         _manualProvider,  // Manual provider first - explicit user overrides take priority
