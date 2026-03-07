@@ -6,14 +6,13 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
-using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
 {
     /// <summary>
-    /// Base class for compact list controls that get data directly from AchievementService.
+    /// Base class for compact list controls that get data from ThemeData.
     /// Provides filtering by unlock state and overflow limiting.
     /// </summary>
     public abstract class AchievementCompactListControlBase : ThemeControlBase
@@ -128,7 +127,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         #endregion
 
         private bool _isLoaded;
-        private bool _isSubscribedToCacheEvents;
 
         protected AchievementCompactListControlBase()
         {
@@ -140,7 +138,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             _isLoaded = true;
-            SubscribeToCacheEvents();
             LoadData();
 
             // Attach mouse wheel handler for horizontal scrolling
@@ -150,56 +147,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             _isLoaded = false;
-            UnsubscribeFromCacheEvents();
             PreviewMouseWheel -= OnPreviewMouseWheel;
-        }
-
-        private void SubscribeToCacheEvents()
-        {
-            if (_isSubscribedToCacheEvents || Plugin?.AchievementService == null)
-                return;
-
-            Plugin.AchievementService.GameCacheUpdated += OnGameCacheUpdated;
-            Plugin.AchievementService.CacheDeltaUpdated += OnCacheDeltaUpdated;
-            _isSubscribedToCacheEvents = true;
-        }
-
-        private void UnsubscribeFromCacheEvents()
-        {
-            if (!_isSubscribedToCacheEvents || Plugin?.AchievementService == null)
-                return;
-
-            Plugin.AchievementService.GameCacheUpdated -= OnGameCacheUpdated;
-            Plugin.AchievementService.CacheDeltaUpdated -= OnCacheDeltaUpdated;
-            _isSubscribedToCacheEvents = false;
-        }
-
-        private void OnGameCacheUpdated(object sender, Services.GameCacheUpdatedEventArgs e)
-        {
-            if (!_isLoaded) return;
-
-            var game = Plugin?.Settings?.SelectedGame;
-            if (game == null) return;
-
-            // Check if the updated game matches our current game
-            if (e.GameId != null && Guid.TryParse(e.GameId, out var gameId) && gameId == game.Id)
-            {
-                Dispatcher.BeginInvoke(new Action(LoadData));
-            }
-        }
-
-        private void OnCacheDeltaUpdated(object sender, Models.CacheDeltaEventArgs e)
-        {
-            if (!_isLoaded) return;
-
-            var game = Plugin?.Settings?.SelectedGame;
-            if (game == null) return;
-
-            // Check if any delta affects our current game (Key is the game ID)
-            if (e.Key != null && Guid.TryParse(e.Key, out var gameId) && gameId == game.Id)
-            {
-                Dispatcher.BeginInvoke(new Action(LoadData));
-            }
         }
 
         /// <summary>
@@ -209,34 +157,28 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         protected virtual bool FilterAchievement(AchievementDetail achievement) => true;
 
         /// <summary>
-        /// Loads data from AchievementService and applies filtering.
+        /// Loads data from ThemeData and applies filtering.
         /// </summary>
         protected virtual void LoadData()
         {
-            var game = Plugin?.Settings?.SelectedGame;
-            if (game == null)
+            var theme = Plugin?.Settings?.Theme;
+            if (theme == null || !theme.HasAchievements)
             {
                 ClearItems();
                 return;
             }
 
-            var gameData = Plugin?.AchievementService?.GetGameAchievementData(game.Id);
-            if (gameData == null || !gameData.HasAchievements)
-            {
-                ClearItems();
-                return;
-            }
+            var allItems = theme.AllAchievementDisplayItems ?? new List<AchievementDisplayItem>();
+            var allAchievements = theme.AllAchievements ?? new List<AchievementDetail>();
 
-            var options = AchievementProjectionService.CreateOptions(Plugin.Settings, gameData);
+            // Build filtered display items
             var displayItems = new List<AchievementDisplayItem>();
 
-            foreach (var ach in gameData.Achievements)
+            for (int i = 0; i < allAchievements.Count && i < allItems.Count; i++)
             {
-                if (FilterAchievement(ach))
+                if (FilterAchievement(allAchievements[i]))
                 {
-                    var item = AchievementProjectionService.CreateDisplayItem(gameData, ach, options, game.Id);
-                    if (item != null)
-                        displayItems.Add(item);
+                    displayItems.Add(allItems[i]);
                 }
             }
 
@@ -316,7 +258,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
             // Refresh when achievement data changes
-            return propertyName == nameof(Models.ThemeIntegration.ThemeData.AllAchievementDisplayItems);
+            return propertyName == nameof(Models.ThemeIntegration.ThemeData.AllAchievementDisplayItems) ||
+                   propertyName == nameof(Models.ThemeIntegration.ThemeData.AllAchievements);
         }
 
         /// <summary>
@@ -332,7 +275,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// </summary>
         public override void GameContextChanged(Game oldContext, Game newContext)
         {
-            // Load data for the new game context directly
+            // ThemeData is already populated by OnGameSelected in the plugin
             if (_isLoaded)
             {
                 LoadData();
