@@ -41,6 +41,7 @@ namespace PlayniteAchievements.Providers.Manual
             ILogger logger,
             PlayniteAchievementsSettings settings,
             string pluginUserDataPath,
+            IPlayniteAPI playniteApi,
             ExophaseSessionManager exophaseSessionManager)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -68,6 +69,7 @@ namespace PlayniteAchievements.Providers.Manual
             // Create Exophase manual source (reuses the same HTTP client)
             _exophaseManualSource = new ExophaseManualSource(
                 httpClient,
+                playniteApi,
                 exophaseSessionManager,
                 logger,
                 () => settings.Persisted.GlobalLanguage);
