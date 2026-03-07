@@ -563,11 +563,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         }
 
         /// <summary>
-        /// Synchronously populates single-game achievement data before opening a game window.
-        /// Uses existing cached data without triggering a refresh. This prevents stale data by
-        /// ensuring the snapshot is applied before the window opens.
+        /// Synchronously populates single-game achievement data for the specified game.
+        /// Uses existing cached data without triggering a refresh.
+        /// Called on desktop game selection changes to populate ThemeData for theme controls.
         /// </summary>
-        private void PopulateSingleGameDataSync(Guid gameId)
+        /// <param name="gameId">The ID of the game to populate data for.</param>
+        internal void PopulateSingleGameDataSync(Guid gameId)
         {
             try
             {
