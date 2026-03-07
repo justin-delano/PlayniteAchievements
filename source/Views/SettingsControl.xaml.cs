@@ -148,7 +148,7 @@ namespace PlayniteAchievements.Views
                 typeof(SettingsControl),
                 new PropertyMetadata(string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotChecked"),
-                    ResourceProvider.GetString("LOCPlayAch_Provider_PlayStation"))));
+                    ResourceProvider.GetString("LOCPlayAch_Provider_PSN"))));
 
         public string PsnAuthStatus
         {
@@ -1769,7 +1769,7 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var value = ResolveAuthStatusValue(key, "LOCPlayAch_Provider_PlayStation", args);
+            var value = ResolveAuthStatusValue(key, "LOCPlayAch_Provider_PSN", args);
             SetPsnAuthStatus(string.IsNullOrWhiteSpace(value) ? key : value);
         }
 

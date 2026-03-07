@@ -570,7 +570,7 @@ namespace PlayniteAchievements.Services
 
                 var normalizedKey = UserKey(key);
                 var writeTime = DateTime.UtcNow;
-                var providerName = data?.ProviderName;
+                var providerKey = data?.ProviderKey;
                 var scopeChanged = false;
 
                 if (_initializationFailure != null)
@@ -610,7 +610,7 @@ namespace PlayniteAchievements.Services
                 {
                     _logger?.Error(
                         ex,
-                        $"Cache write failed. key={normalizedKey}, provider={providerName ?? "unknown"}, " +
+                        $"Cache write failed. key={normalizedKey}, provider={providerKey ?? "unknown"}, " +
                         "phase=SaveGameData, operation=SaveCurrentUserGameData");
 
                     return CacheWriteResult.CreateFailure(
@@ -713,7 +713,7 @@ namespace PlayniteAchievements.Services
             var copy = new GameAchievementData
             {
                 LastUpdatedUtc = DateTimeUtilities.AsUtcKind(source.LastUpdatedUtc),
-                ProviderName = source.ProviderName,
+                ProviderKey = source.ProviderKey,
                 LibrarySourceName = source.LibrarySourceName,
                 HasAchievements = source.HasAchievements,
                 ExcludedByUser = source.ExcludedByUser,

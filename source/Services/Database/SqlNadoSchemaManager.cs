@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 6;
+        public const int SchemaVersion = 7;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -38,28 +38,23 @@ namespace PlayniteAchievements.Services.Database
                 Value TEXT NOT NULL
             );");
 
+            // Create tables with IF NOT EXISTS - these will silently skip if tables exist
+            // Note: We create indexes AFTER migration check to avoid referencing non-existent columns
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS Users (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ProviderName TEXT NOT NULL COLLATE NOCASE,
+                ProviderKey TEXT NOT NULL COLLATE NOCASE,
                 ExternalUserId TEXT NOT NULL COLLATE NOCASE,
                 DisplayName TEXT NULL,
                 IsCurrentUser INTEGER NOT NULL DEFAULT 0,
                 FriendSource TEXT NULL,
                 CreatedUtc TEXT NOT NULL,
                 UpdatedUtc TEXT NOT NULL,
-                UNIQUE (ProviderName, ExternalUserId)
+                UNIQUE (ProviderKey, ExternalUserId)
             );");
-
-            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Users_CurrentPerProvider
-                ON Users (ProviderName)
-                WHERE IsCurrentUser = 1;");
-
-            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Users_CurrentUser_Id
-                ON Users (IsCurrentUser, Id);");
 
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS Games (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                ProviderName TEXT NOT NULL COLLATE NOCASE,
+                ProviderKey TEXT NOT NULL COLLATE NOCASE,
                 ProviderGameId INTEGER NULL,
                 PlayniteGameId TEXT NULL,
                 GameName TEXT NULL,
@@ -67,25 +62,6 @@ namespace PlayniteAchievements.Services.Database
                 FirstSeenUtc TEXT NOT NULL,
                 LastUpdatedUtc TEXT NOT NULL
             );");
-
-            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_Playnite
-                ON Games (ProviderName, PlayniteGameId)
-                WHERE PlayniteGameId IS NOT NULL;");
-
-            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
-                ON Games (ProviderName, ProviderGameId)
-                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
-                  AND ProviderName <> 'RetroAchievements';");
-
-            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
-                ON Games (ProviderName, ProviderGameId)
-                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;");
-
-            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_PlayniteGameId
-                ON Games (PlayniteGameId);");
-
-            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_LastUpdatedUtc
-                ON Games (LastUpdatedUtc);");
 
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS AchievementDefinitions (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -165,6 +141,9 @@ namespace PlayniteAchievements.Services.Database
 
             if (verification.Success)
             {
+                // Create ProviderKey-dependent indexes (only after verifying schema is correct)
+                CreateProviderKeyIndexes(db);
+
                 BackfillRequiredAchievementCategoryValues(db);
 
                 // Schema is correct - ensure version is set if needed
@@ -205,6 +184,9 @@ namespace PlayniteAchievements.Services.Database
                     $"Schema verification failed after reconciliation. {verification2.Message}");
             }
 
+            // Create ProviderKey-dependent indexes after successful migration
+            CreateProviderKeyIndexes(db);
+
             db.ExecuteNonQuery(
                 "INSERT OR REPLACE INTO CacheMetadata (Key, Value) VALUES (?, ?);",
                 "schema_version",
@@ -224,6 +206,39 @@ namespace PlayniteAchievements.Services.Database
                 _logger?.Error(ex, $"Failed schema SQL: {sql}");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Creates indexes that reference ProviderKey column.
+        /// Called only after schema verification passes or migration completes.
+        /// </summary>
+        private void CreateProviderKeyIndexes(SQLiteDatabase db)
+        {
+            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Users_CurrentPerProvider
+                ON Users (ProviderKey)
+                WHERE IsCurrentUser = 1;");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Users_CurrentUser_Id
+                ON Users (IsCurrentUser, Id);");
+
+            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_Playnite
+                ON Games (ProviderKey, PlayniteGameId)
+                WHERE PlayniteGameId IS NOT NULL;");
+
+            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
+                ON Games (ProviderKey, ProviderGameId)
+                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
+                  AND ProviderKey <> 'RetroAchievements';");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
+                ON Games (ProviderKey, ProviderGameId)
+                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_PlayniteGameId
+                ON Games (PlayniteGameId);");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_LastUpdatedUtc
+                ON Games (LastUpdatedUtc);");
         }
 
         private void BackfillRequiredAchievementCategoryValues(SQLiteDatabase db)
@@ -298,7 +313,192 @@ namespace PlayniteAchievements.Services.Database
                     "Migrated NoAchievements to HasAchievements (inverted) in UserGameProgress.");
             }
 
-            ReconcileGamesProviderGameIdIndexes(db, ref backupPath);
+            // Check if migration needed for Games: ProviderName -> ProviderKey
+            var gamesColumns = GetColumnNames(db, "Games");
+            var usersColumns = GetColumnNames(db, "Users");
+            var needsGamesMigration = gamesColumns.Contains("providername") && !gamesColumns.Contains("providerkey");
+            var needsUsersMigration = usersColumns.Contains("providername") && !usersColumns.Contains("providerkey");
+
+            if (needsGamesMigration || needsUsersMigration)
+            {
+                // Create backup BEFORE any schema changes
+                if (string.IsNullOrWhiteSpace(backupPath))
+                {
+                    backupPath = CreateMigrationBackup();
+                }
+
+                // Disable foreign keys to prevent cascade deletion during table recreation
+                var fkEnabled = db.ExecuteScalar<string>("PRAGMA foreign_keys;");
+                if (fkEnabled == "1")
+                {
+                    ExecuteSafe(db, "PRAGMA foreign_keys = OFF;");
+                    _logger?.Info("[Schema] Disabled foreign keys for migration");
+                }
+
+                try
+                {
+                    if (needsGamesMigration)
+                    {
+                        _logger?.Info("[Schema] Migrating Games table from ProviderName to ProviderKey");
+
+                        // Drop old indexes
+                        ExecuteSafe(db, "DROP INDEX IF EXISTS UX_Games_Provider_Playnite;");
+                        ExecuteSafe(db, "DROP INDEX IF EXISTS IX_Games_Provider_GameId;");
+                        ExecuteSafe(db, "DROP INDEX IF EXISTS UX_Games_Provider_GameId_NonRA;");
+                        _logger?.Info("[Schema] Dropped old Games indexes");
+
+                        // Clean up any leftover from failed migration
+                        ExecuteSafe(db, "DROP TABLE IF EXISTS Games_New;");
+
+                        // Create new table
+                        ExecuteSafe(db,
+                            @"CREATE TABLE Games_New (
+                                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                ProviderKey TEXT NOT NULL COLLATE NOCASE,
+                                ProviderGameId INTEGER NULL,
+                                PlayniteGameId TEXT NULL,
+                                GameName TEXT NULL,
+                                LibrarySourceName TEXT NULL,
+                                FirstSeenUtc TEXT NOT NULL,
+                                LastUpdatedUtc TEXT NOT NULL
+                            );");
+                        _logger?.Info("[Schema] Created Games_New table");
+
+                        // Migrate data with value transformation (INSERT OR IGNORE to handle duplicates)
+                        ExecuteSafe(db,
+                            @"INSERT OR IGNORE INTO Games_New (Id, ProviderKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
+                              SELECT
+                                Id,
+                                CASE
+                                    WHEN ProviderName IS NULL THEN 'Unmapped'
+                                    WHEN LOWER(ProviderName) = 'steam' THEN 'Steam'
+                                    WHEN LOWER(ProviderName) = 'epic' THEN 'Epic'
+                                    WHEN LOWER(ProviderName) = 'epic games' THEN 'Epic'
+                                    WHEN LOWER(ProviderName) = 'gog' THEN 'GOG'
+                                    WHEN LOWER(ProviderName) = 'xbox' THEN 'Xbox'
+                                    WHEN LOWER(ProviderName) = 'psn' THEN 'PSN'
+                                    WHEN LOWER(ProviderName) = 'playstation' THEN 'PSN'
+                                    WHEN LOWER(ProviderName) LIKE '%playstation%' THEN 'PSN'
+                                    WHEN LOWER(ProviderName) = 'retroachievements' THEN 'RetroAchievements'
+                                    WHEN LOWER(ProviderName) LIKE '%retro%' THEN 'RetroAchievements'
+                                    WHEN LOWER(ProviderName) = 'rpcs3' THEN 'RPCS3'
+                                    WHEN LOWER(ProviderName) = 'shadps4' THEN 'ShadPS4'
+                                    WHEN LOWER(ProviderName) = 'manual' THEN 'Manual'
+                                    WHEN LOWER(ProviderName) = 'manuel' THEN 'Manual'
+                                    WHEN LOWER(ProviderName) = 'unmapped' THEN 'Unmapped'
+                                    ELSE 'Unmapped'
+                                END,
+                                ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                              FROM Games;");
+                        _logger?.Info("[Schema] Migrated Games data to ProviderKey");
+
+                        // Drop old and rename
+                        ExecuteSafe(db, "DROP TABLE Games;");
+                        ExecuteSafe(db, "ALTER TABLE Games_New RENAME TO Games;");
+                        _logger?.Info("[Schema] Renamed Games_New to Games");
+
+                        // Recreate indexes
+                        ExecuteSafe(db,
+                            @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_Playnite
+                                ON Games (ProviderKey, PlayniteGameId)
+                                WHERE PlayniteGameId IS NOT NULL;");
+                        ExecuteSafe(db,
+                            @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
+                                ON Games (ProviderKey, ProviderGameId)
+                                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
+                                  AND ProviderKey <> 'RetroAchievements';");
+                        ExecuteSafe(db,
+                            @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
+                                ON Games (ProviderKey, ProviderGameId)
+                                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;");
+                        ExecuteSafe(db, "CREATE INDEX IF NOT EXISTS IX_Games_PlayniteGameId ON Games (PlayniteGameId);");
+                        ExecuteSafe(db, "CREATE INDEX IF NOT EXISTS IX_Games_LastUpdatedUtc ON Games (LastUpdatedUtc);");
+                        _logger?.Info("[Schema] Recreated Games indexes");
+
+                        _logger?.Info("[Schema] Games table migration completed");
+                    }
+
+                    if (needsUsersMigration)
+                    {
+                        _logger?.Info("[Schema] Migrating Users table from ProviderName to ProviderKey");
+
+                        // Drop old indexes
+                        ExecuteSafe(db, "DROP INDEX IF EXISTS UX_Users_CurrentPerProvider;");
+                        ExecuteSafe(db, "DROP INDEX IF EXISTS IX_Users_CurrentUser_Id;");
+                        _logger?.Info("[Schema] Dropped old Users indexes");
+
+                        // Clean up any leftover from failed migration
+                        ExecuteSafe(db, "DROP TABLE IF EXISTS Users_New;");
+
+                        // Create new table
+                        ExecuteSafe(db,
+                            @"CREATE TABLE Users_New (
+                                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                ProviderKey TEXT NOT NULL COLLATE NOCASE,
+                                ExternalUserId TEXT NOT NULL COLLATE NOCASE,
+                                DisplayName TEXT NULL,
+                                IsCurrentUser INTEGER NOT NULL DEFAULT 0,
+                                FriendSource TEXT NULL,
+                                CreatedUtc TEXT NOT NULL,
+                                UpdatedUtc TEXT NOT NULL,
+                                UNIQUE (ProviderKey, ExternalUserId)
+                            );");
+                        _logger?.Info("[Schema] Created Users_New table");
+
+                        // Migrate data with value transformation (INSERT OR IGNORE to handle duplicates)
+                        ExecuteSafe(db,
+                            @"INSERT OR IGNORE INTO Users_New (Id, ProviderKey, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, CreatedUtc, UpdatedUtc)
+                              SELECT
+                                Id,
+                                CASE
+                                    WHEN ProviderName IS NULL THEN 'Unmapped'
+                                    WHEN LOWER(ProviderName) = 'steam' THEN 'Steam'
+                                    WHEN LOWER(ProviderName) = 'epic' THEN 'Epic'
+                                    WHEN LOWER(ProviderName) = 'epic games' THEN 'Epic'
+                                    WHEN LOWER(ProviderName) = 'gog' THEN 'GOG'
+                                    WHEN LOWER(ProviderName) = 'xbox' THEN 'Xbox'
+                                    WHEN LOWER(ProviderName) = 'psn' THEN 'PSN'
+                                    WHEN LOWER(ProviderName) = 'playstation' THEN 'PSN'
+                                    WHEN LOWER(ProviderName) LIKE '%playstation%' THEN 'PSN'
+                                    WHEN LOWER(ProviderName) = 'retroachievements' THEN 'RetroAchievements'
+                                    WHEN LOWER(ProviderName) LIKE '%retro%' THEN 'RetroAchievements'
+                                    WHEN LOWER(ProviderName) = 'rpcs3' THEN 'RPCS3'
+                                    WHEN LOWER(ProviderName) = 'shadps4' THEN 'ShadPS4'
+                                    WHEN LOWER(ProviderName) = 'manual' THEN 'Manual'
+                                    WHEN LOWER(ProviderName) = 'manuel' THEN 'Manual'
+                                    WHEN LOWER(ProviderName) = 'unmapped' THEN 'Unmapped'
+                                    ELSE 'Unmapped'
+                                END,
+                                ExternalUserId, DisplayName, IsCurrentUser, FriendSource, CreatedUtc, UpdatedUtc
+                              FROM Users;");
+                        _logger?.Info("[Schema] Migrated Users data to ProviderKey");
+
+                        // Drop old and rename
+                        ExecuteSafe(db, "DROP TABLE Users;");
+                        ExecuteSafe(db, "ALTER TABLE Users_New RENAME TO Users;");
+                        _logger?.Info("[Schema] Renamed Users_New to Users");
+
+                        // Recreate indexes
+                        ExecuteSafe(db,
+                            @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Users_CurrentPerProvider
+                                ON Users (ProviderKey)
+                                WHERE IsCurrentUser = 1;");
+                        ExecuteSafe(db, "CREATE INDEX IF NOT EXISTS IX_Users_CurrentUser_Id ON Users (IsCurrentUser, Id);");
+                        _logger?.Info("[Schema] Recreated Users indexes");
+
+                        _logger?.Info("[Schema] Users table migration completed");
+                    }
+                }
+                finally
+                {
+                    // Re-enable foreign keys if they were enabled before
+                    if (fkEnabled == "1")
+                    {
+                        ExecuteSafe(db, "PRAGMA foreign_keys = ON;");
+                        _logger?.Info("[Schema] Re-enabled foreign keys after migration");
+                    }
+                }
+            }
 
             return backupPath;
         }
@@ -318,9 +518,9 @@ namespace PlayniteAchievements.Services.Database
                 db,
                 GamesProviderGameIdNonRaIndexName,
                 @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
-                    ON Games (ProviderName, ProviderGameId)
+                    ON Games (ProviderKey, ProviderGameId)
                     WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
-                      AND ProviderName <> 'RetroAchievements';",
+                      AND ProviderKey <> 'RetroAchievements';",
                 ref backupPath,
                 $"Ensured index {GamesProviderGameIdNonRaIndexName}.");
 
@@ -328,7 +528,7 @@ namespace PlayniteAchievements.Services.Database
                 db,
                 GamesProviderGameIdLookupIndexName,
                 @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
-                    ON Games (ProviderName, ProviderGameId)
+                    ON Games (ProviderKey, ProviderGameId)
                     WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;",
                 ref backupPath,
                 $"Ensured index {GamesProviderGameIdLookupIndexName}.");
@@ -494,6 +694,13 @@ namespace PlayniteAchievements.Services.Database
             EnsureRequiredColumn(definitionColumns, "CategoryType", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "TrophyType", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "IsCapstone", "AchievementDefinitions", missing);
+
+            // Verify ProviderKey column exists in Games and Users tables (migration from ProviderName)
+            var gamesColumns = GetColumnNames(db, "Games");
+            EnsureRequiredColumn(gamesColumns, "ProviderKey", "Games", missing);
+
+            var usersColumns = GetColumnNames(db, "Users");
+            EnsureRequiredColumn(usersColumns, "ProviderKey", "Users", missing);
 
             if (IndexExists(db, LegacyGamesProviderGameIdIndexName))
             {

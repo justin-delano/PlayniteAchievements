@@ -303,7 +303,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 {
                     AppId = gameId,
                     GameName = game?.Name,
-                    ProviderName = "RetroAchievements",
+                    ProviderKey = "RetroAchievements",
                     LibrarySourceName = game?.Source?.Name,
                     LastUpdatedUtc = DateTime.UtcNow,
                     HasAchievements = achievements.Count > 0,

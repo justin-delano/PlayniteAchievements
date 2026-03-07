@@ -1056,9 +1056,9 @@ namespace PlayniteAchievements.Services
             // Ensure provider metadata is persisted for diagnostics and future multi-provider caching.
             try
             {
-                if (string.IsNullOrWhiteSpace(data.ProviderName))
+                if (string.IsNullOrWhiteSpace(data.ProviderKey))
                 {
-                    data.ProviderName = provider?.ProviderName;
+                    data.ProviderKey = provider?.ProviderKey;
                 }
             }
             catch
@@ -1088,9 +1088,9 @@ namespace PlayniteAchievements.Services
 
                     throw new CachePersistenceException(
                         key,
-                        provider?.ProviderName ?? data.ProviderName,
+                        provider?.ProviderKey ?? data.ProviderKey,
                         errorCode,
-                        $"Persisting refreshed game data failed. key={key}, provider={provider?.ProviderName ?? data.ProviderName}, code={errorCode}, message={errorMessage}",
+                        $"Persisting refreshed game data failed. key={key}, provider={provider?.ProviderKey ?? data.ProviderKey}, code={errorCode}, message={errorMessage}",
                         writeResult?.Exception);
                 }
 
@@ -1210,7 +1210,7 @@ namespace PlayniteAchievements.Services
                 return true;
             }
 
-            return ContainsEpicToken(data?.ProviderName) || ContainsEpicToken(data?.LibrarySourceName);
+            return ContainsEpicToken(data?.ProviderKey) || ContainsEpicToken(data?.LibrarySourceName);
         }
 
         private static bool ContainsEpicToken(string value)
@@ -1227,8 +1227,8 @@ namespace PlayniteAchievements.Services
                 return true;
             }
 
-            return !string.IsNullOrWhiteSpace(data?.ProviderName) &&
-                   data.ProviderName.IndexOf("RetroAchievements", StringComparison.OrdinalIgnoreCase) >= 0;
+            return !string.IsNullOrWhiteSpace(data?.ProviderKey) &&
+                   data.ProviderKey.IndexOf("RetroAchievements", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private void TryPersistSettings(bool notifySettingsSaved)

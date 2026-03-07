@@ -201,7 +201,7 @@ namespace PlayniteAchievements.Providers.Manual
                 return new GameAchievementData
                 {
                     LastUpdatedUtc = DateTime.UtcNow,
-                    ProviderName = ProviderName,
+                    ProviderKey = ProviderKey,
                     LibrarySourceName = game.PluginId.ToString(),
                     HasAchievements = false,
                     GameName = game.Name,
@@ -243,7 +243,7 @@ namespace PlayniteAchievements.Providers.Manual
             return new GameAchievementData
             {
                 LastUpdatedUtc = DateTime.UtcNow,
-                ProviderName = ProviderName,
+                ProviderKey = ProviderKey,
                 LibrarySourceName = game.PluginId.ToString(),
                 HasAchievements = true,
                 GameName = game.Name,

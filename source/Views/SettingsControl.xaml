@@ -717,6 +717,12 @@
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowSidebarBarCharts}"
                                           IsChecked="{Binding Persisted.ShowSidebarBarCharts}"
                                           Margin="0,0,0,8"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGamesWithNoUnlocks}"
+                                          IsChecked="{Binding Persisted.ShowGamesWithNoUnlocks}"
+                                          Margin="0,0,0,8"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowUnplayedGames}"
+                                          IsChecked="{Binding Persisted.ShowUnplayedGames}"
+                                          Margin="0,0,0,8"/>
                             </StackPanel>
                         </Border>
 
@@ -1541,7 +1547,7 @@
             </TabItem>
 
             <!-- ================== TAB: PLAYSTATION SETTINGS ================== -->
-            <TabItem x:Name="PsnTab" Header="{DynamicResource LOCPlayAch_Provider_PlayStation}">
+            <TabItem x:Name="PsnTab" Header="{DynamicResource LOCPlayAch_Provider_PSN}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">

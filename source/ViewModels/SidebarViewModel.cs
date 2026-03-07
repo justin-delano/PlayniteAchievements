@@ -478,31 +478,9 @@ namespace PlayniteAchievements.ViewModels
             ? ResourceProvider.GetString("LOCPlayAch_Button_Configure")
             : ResourceProvider.GetString("LOCPlayAch_Button_Refresh");
 
-        private bool _showGamesWithNoUnlocks = false;
-        public bool ShowGamesWithNoUnlocks
-        {
-            get => _showGamesWithNoUnlocks;
-            set
-            {
-                if (SetValueAndReturn(ref _showGamesWithNoUnlocks, value))
-                {
-                    ApplyLeftFilters();
-                }
-            }
-        }
+        public bool ShowGamesWithNoUnlocks => _settings?.Persisted?.ShowGamesWithNoUnlocks ?? false;
 
-        private bool _showUnplayedGames = false;
-        public bool ShowUnplayedGames
-        {
-            get => _showUnplayedGames;
-            set
-            {
-                if (SetValueAndReturn(ref _showUnplayedGames, value))
-                {
-                    ApplyLeftFilters();
-                }
-            }
-        }
+        public bool ShowUnplayedGames => _settings?.Persisted?.ShowUnplayedGames ?? false;
 
         public bool UseCoverImages => _settings?.Persisted?.UseCoverImages ?? false;
 
@@ -1366,9 +1344,11 @@ namespace PlayniteAchievements.ViewModels
             GlobalProgression = snapshot.GlobalProgressionPercent;
 
             var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
+            var providerDisplayNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (var provider in _achievementService.GetProviders())
             {
-                providerLookup[provider.ProviderName] = (provider.ProviderIconKey, provider.ProviderColorHex);
+                providerLookup[provider.ProviderKey] = (provider.ProviderIconKey, provider.ProviderColorHex);
+                providerDisplayNames[provider.ProviderKey] = provider.ProviderName;
             }
 
             var completedLabel = ResourceProvider.GetString("LOCPlayAch_Filter_Complete");
@@ -1383,7 +1363,7 @@ namespace PlayniteAchievements.ViewModels
             var trophyBronzeLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Bronze");
             var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Locked");
 
-            ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
+            ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalByProvider, snapshot.TotalLocked, lockedLabel, providerLookup, providerDisplayNames);
 
             GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.CompletedGames, completedLabel, incompleteLabel);
             UpdateContextualPieCharts(
@@ -1509,6 +1489,16 @@ namespace PlayniteAchievements.ViewModels
                 // Refresh view when any hide setting changes
                 _ = RefreshViewAsync();
             }
+            else if (e.PropertyName == "Persisted.ShowGamesWithNoUnlocks")
+            {
+                OnPropertyChanged(nameof(ShowGamesWithNoUnlocks));
+                ApplyLeftFilters();
+            }
+            else if (e.PropertyName == "Persisted.ShowUnplayedGames")
+            {
+                OnPropertyChanged(nameof(ShowUnplayedGames));
+                ApplyLeftFilters();
+            }
         }
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
@@ -1524,6 +1514,16 @@ namespace PlayniteAchievements.ViewModels
             else if (e.PropertyName == nameof(PersistedSettings.ShowSidebarBarCharts))
             {
                 OnPropertyChanged(nameof(ShowSidebarBarCharts));
+            }
+            else if (e.PropertyName == nameof(PersistedSettings.ShowGamesWithNoUnlocks))
+            {
+                OnPropertyChanged(nameof(ShowGamesWithNoUnlocks));
+                ApplyLeftFilters();
+            }
+            else if (e.PropertyName == nameof(PersistedSettings.ShowUnplayedGames))
+            {
+                OnPropertyChanged(nameof(ShowUnplayedGames));
+                ApplyLeftFilters();
             }
         }
 
