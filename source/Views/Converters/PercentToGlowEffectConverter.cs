@@ -7,63 +7,56 @@ using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Views.Converters
 {
-    internal static class SuccessStoryRarityPalette
-    {
-        // SuccessStory-like palette:
-        // - Ultra Rare: Gold
-        // - Rare: Silver
-        // - Everything else: Transparent (no highlight)
-        internal static readonly Color UltraRareGold = Color.FromRgb(0xFF, 0xD7, 0x00); // Gold
-        internal static readonly Color RareSilver = Color.FromRgb(0xC0, 0xC0, 0xC0);    // Silver
-
-        /// <summary>
-        /// Gets the color associated with a rarity tier.
-        /// </summary>
-        internal static Color GetColor(RarityTier tier) => tier switch
-        {
-            RarityTier.UltraRare => UltraRareGold,
-            RarityTier.Rare => RareSilver,
-            _ => Colors.Transparent
-        };
-    }
-
     /// <summary>
     /// Multi-value converter that returns a DropShadowEffect with color based on rarity.
     /// Expects values: [GlobalPercentUnlocked, UltraRareThreshold, RareThreshold, UncommonThreshold]
     /// </summary>
     public class PercentToGlowEffectConverter : IMultiValueConverter
     {
+        private static readonly DropShadowEffect UltraRareGlow;
+        private static readonly DropShadowEffect RareGlow;
+
+        static PercentToGlowEffectConverter()
+        {
+            UltraRareGlow = new DropShadowEffect
+            {
+                BlurRadius = 22,
+                ShadowDepth = 0,
+                Color = Color.FromRgb(0x4F, 0xC3, 0xF7),
+                Opacity = 1.0
+            };
+            UltraRareGlow.Freeze();
+
+            RareGlow = new DropShadowEffect
+            {
+                BlurRadius = 22,
+                ShadowDepth = 0,
+                Color = Color.FromRgb(0xFF, 0xD7, 0x00),
+                Opacity = 1.0
+            };
+            RareGlow.Freeze();
+        }
+
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
             if (values == null || values.Length < 4)
                 return null;
 
-            // Handle nullable double - null means no rarity data, so no glow
             if (values[0] == null)
                 return null;
 
-            double? percent = values[0] as double? ?? (values[0] is double d ? d : (double?)null);
-            if (percent == null)
-                return null;
-
-            if (values[1] is double ultraRareThreshold &&
-                values[2] is double rareThreshold &&
+            if (values[0] is double percent &&
+                values[1] is double _ &&
+                values[2] is double _ &&
                 values[3] is double _)
             {
-                // Use canonical RarityHelper for classification
-                var tier = RarityHelper.GetRarityTier(percent.Value);
-                var color = SuccessStoryRarityPalette.GetColor(tier);
+                var tier = RarityHelper.GetRarityTier(percent);
 
-                // Common/uncommon: no border/glow.
-                if (tier == RarityTier.Common || tier == RarityTier.Uncommon)
-                    return null;
-
-                return new DropShadowEffect
+                return tier switch
                 {
-                    BlurRadius = 22,
-                    ShadowDepth = 0,
-                    Color = color,
-                    Opacity = 1.0
+                    RarityTier.UltraRare => UltraRareGlow,
+                    RarityTier.Rare => RareGlow,
+                    _ => null
                 };
             }
 

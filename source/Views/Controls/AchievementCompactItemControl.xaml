@@ -22,7 +22,8 @@
 
     <Grid x:Name="RootGrid"
           Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
-          Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}">
+          Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
+          ClipToBounds="False">
         <Grid.ToolTip>
             <ToolTip MaxWidth="300">
                 <ToolTip.Content>
@@ -95,22 +96,8 @@
             </ToolTip>
         </Grid.ToolTip>
 
-        <!-- Border with clipping - matches legacy AchievementImage -->
-        <Border ClipToBounds="True">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Style.Triggers>
-                        <!-- Rarity indicator glow effect - only for unlocked achievements with rarity -->
-                        <MultiDataTrigger>
-                            <MultiDataTrigger.Conditions>
-                                <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                <Condition Binding="{Binding HasRarity}" Value="True"/>
-                            </MultiDataTrigger.Conditions>
-                            <Setter Property="Effect" Value="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlowConverter}}"/>
-                        </MultiDataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
+        <!-- Border for achievement icon -->
+        <Border Effect="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlowConverter}}">
             <!-- Achievement Icon - matches legacy styling -->
             <Image Stretch="UniformToFill"
                    RenderOptions.BitmapScalingMode="Fant"
