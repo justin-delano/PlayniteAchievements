@@ -92,6 +92,9 @@
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromSummaries">Exclude from Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshes">Exclude from Refreshes</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData">Exclude from Refreshes and Clear Data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IncludeInSummaries">Include in Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">Include in Refreshes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">Include in Refreshes and Refresh Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSingle">Exclude "{0}" and clear cached data?&#10;&#10;This will remove the game from the achievements view and delete its cached data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSelected">Exclude {0} selected game(s) and clear cached data?&#10;&#10;This will remove these games from the achievements view and delete their cached data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetRaGameId">Set RetroAchievements Game ID</sys:String>
