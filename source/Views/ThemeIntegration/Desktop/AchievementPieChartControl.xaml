@@ -1,14 +1,14 @@
-<desktop:SingleGameDataControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Desktop.AchievementPieChartControl"
+<base:ThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Desktop.AchievementPieChartControl"
                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                   xmlns:desktop="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Desktop"
+                   xmlns:base="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
                    xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
                    mc:Ignorable="d"
                    d:DesignHeight="200" d:DesignWidth="200">
 
-    <controls:PieChartWithRadialIcons PieSeries="{Binding PieSeries, RelativeSource={RelativeSource AncestorType=desktop:AchievementPieChartControl}, Mode=OneWay}"
-                                      LegendItems="{Binding LegendItems, RelativeSource={RelativeSource AncestorType=desktop:AchievementPieChartControl}, Mode=OneWay}"
+    <controls:PieChartWithRadialIcons PieSeries="{Binding PieSeries, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, Mode=OneWay}"
+                                      LegendItems="{Binding LegendItems, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, Mode=OneWay}"
                                       IconOffset="12"/>
-</desktop:SingleGameDataControlBase>
+</base:ThemeControlBase>
