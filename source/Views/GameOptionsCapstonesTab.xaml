@@ -86,7 +86,7 @@
                     <TextBlock Text="{DynamicResource LOCPlayAch_Capstone_SearchPlaceholder}"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Left"
-                               Margin="9,0,0,0"
+                               Margin="12,0,0,0"
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.5"
                                IsHitTestVisible="False">

@@ -125,7 +125,7 @@
                         <TextBlock Text="{DynamicResource LOCPlayAch_ManualAchievements_Search_Placeholder}"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Left"
-                                   Margin="9,0,0,0"
+                                   Margin="12,0,0,0"
                                    Foreground="{DynamicResource TextBrush}"
                                    Opacity="0.5"
                                    IsHitTestVisible="False">
@@ -341,7 +341,7 @@
                             <TextBlock Text="{DynamicResource LOCPlayAch_ManualAchievements_Edit_SearchPlaceholder}"
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Left"
-                                       Margin="9,0,0,0"
+                                       Margin="12,0,0,0"
                                        Foreground="{DynamicResource TextBrush}"
                                        Opacity="0.5"
                                        IsHitTestVisible="False">

@@ -128,7 +128,7 @@
                          VerticalAlignment="Center" />
                 <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Category_SearchPlaceholder}"
                            VerticalAlignment="Center"
-                           Margin="9,0,0,0"
+                           Margin="12,0,0,0"
                            Foreground="{DynamicResource TextBrush}"
                            Opacity="0.5"
                            IsHitTestVisible="False">

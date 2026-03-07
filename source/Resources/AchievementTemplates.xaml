@@ -500,14 +500,14 @@
     <!-- Search TextBox Style -->
     <Style x:Key="SearchTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Padding" Value="10,4"/>
+        <Setter Property="Padding" Value="6,4"/>
         <Setter Property="Background" Value="Transparent"/>
     </Style>
 
     <Style x:Key="ClearableSearchTextBoxStyle"
            TargetType="TextBox"
            BasedOn="{StaticResource SearchTextBoxStyle}">
-        <Setter Property="Padding" Value="10,4,30,4"/>
+        <Setter Property="Padding" Value="8,4,30,4"/>
     </Style>
 
     <!-- Progress bar style -->
