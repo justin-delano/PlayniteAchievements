@@ -80,7 +80,8 @@ namespace PlayniteAchievements.Services
             _logger = logger;
             _sourceResolver = sourceResolver ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                ["Steam"] = "Steam"
+                ["Steam"] = "Steam",
+                ["Exophase"] = "Exophase"
             };
         }
 
@@ -270,7 +271,14 @@ namespace PlayniteAchievements.Services
         {
             sourceGameId = null;
 
+            // Try Steam stats URL pattern first
             if (TryExtractAppIdFromStatsUrl(sourceUrl, out sourceGameId))
+            {
+                return true;
+            }
+
+            // Try Exophase achievement page URL
+            if (TryExtractExophaseUrl(sourceUrl, out sourceGameId))
             {
                 return true;
             }
@@ -335,6 +343,28 @@ namespace PlayniteAchievements.Services
 
             appId = match.Groups["id"]?.Value;
             return !string.IsNullOrWhiteSpace(appId);
+        }
+
+        private static bool TryExtractExophaseUrl(string url, out string exophaseUrl)
+        {
+            exophaseUrl = null;
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return false;
+            }
+
+            // Exophase achievement URLs follow patterns like:
+            // https://www.exophase.com/game/<platform>/<game-slug>/achievements
+            // https://www.exophase.com/game/<game-id>/achievements
+            // The full URL is used as the SourceGameId for Exophase
+            if (url.IndexOf("exophase.com/game/", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                url.IndexOf("/achievements", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                exophaseUrl = url.Trim();
+                return true;
+            }
+
+            return false;
         }
 
         private static bool TryParseLegacyUnlock(string value, out DateTime? utc)
