@@ -57,12 +57,13 @@ namespace PlayniteAchievements.Services.Sidebar
             int totalRarePossible = 0;
             int totalUltraRarePossible = 0;
 
+            var providerLookup = BuildProviderLookup();
             var allGameData = _achievementService.GetAllGameAchievementData() ?? new List<GameAchievementData>();
             for (var i = 0; i < allGameData.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
 
-                var fragment = BuildGameFragment(settings, revealedKeys, allGameData[i]);
+                var fragment = BuildGameFragment(settings, revealedKeys, allGameData[i], providerLookup);
                 if (fragment == null)
                 {
                     continue;
@@ -162,15 +163,26 @@ namespace PlayniteAchievements.Services.Sidebar
         public SidebarGameFragment BuildGameFragment(
             PlayniteAchievementsSettings settings,
             ISet<string> revealedKeys,
-            GameAchievementData gameData)
+            GameAchievementData gameData,
+            IReadOnlyDictionary<string, (string iconKey, string colorHex)> providerLookup = null)
         {
             settings ??= new PlayniteAchievementsSettings();
             revealedKeys ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (gameData?.PlayniteGameId.HasValue == true &&
+                settings?.Persisted?.ExcludedFromSummariesGameIds?.Contains(gameData.PlayniteGameId.Value) == true)
+            {
+                return null;
+            }
 
             if (gameData?.Achievements == null || !gameData.HasAchievements || gameData.Achievements.Count == 0)
             {
                 return null;
             }
+
+            providerLookup ??= BuildProviderLookup();
+            var providerName = gameData.ProviderName ?? "Unknown";
+            providerLookup.TryGetValue(providerName, out var providerMetadata);
 
             var playniteGame = gameData.PlayniteGameId.HasValue
                 ? _playniteApi?.Database?.Games?.Get(gameData.PlayniteGameId.Value)
@@ -186,7 +198,7 @@ namespace PlayniteAchievements.Services.Sidebar
             {
                 CacheKey = gameData.PlayniteGameId?.ToString(),
                 PlayniteGameId = gameData.PlayniteGameId,
-                ProviderName = gameData.ProviderName ?? "Unknown"
+                ProviderName = providerName
             };
 
             var projectionOptions = AchievementProjectionService.CreateOptions(settings, gameData, revealedKeys);
@@ -210,6 +222,10 @@ namespace PlayniteAchievements.Services.Sidebar
             int gameTrophyGold = 0;
             int gameTrophySilver = 0;
             int gameTrophyBronze = 0;
+            int gameTrophyPlatinumTotal = 0;
+            int gameTrophyGoldTotal = 0;
+            int gameTrophySilverTotal = 0;
+            int gameTrophyBronzeTotal = 0;
 
             for (var i = 0; i < achievements.Count; i++)
             {
@@ -228,6 +244,12 @@ namespace PlayniteAchievements.Services.Sidebar
                 // Calculate total rarity tier for ALL achievements (including locked)
                 // Only count if rarity data is available (null means no rarity info for this provider)
                 AchievementProjectionService.AccumulateRarity(ach, ref gameTotalCommon, ref gameTotalUncommon, ref gameTotalRare, ref gameTotalUltraRare);
+                AchievementProjectionService.AccumulateTrophy(
+                    ach,
+                    ref gameTrophyPlatinumTotal,
+                    ref gameTrophyGoldTotal,
+                    ref gameTrophySilverTotal,
+                    ref gameTrophyBronzeTotal);
 
                 if (ach.Unlocked)
                 {
@@ -272,6 +294,10 @@ namespace PlayniteAchievements.Services.Sidebar
             fragment.TrophyGoldCount = gameTrophyGold;
             fragment.TrophySilverCount = gameTrophySilver;
             fragment.TrophyBronzeCount = gameTrophyBronze;
+            fragment.TrophyPlatinumTotal = gameTrophyPlatinumTotal;
+            fragment.TrophyGoldTotal = gameTrophyGoldTotal;
+            fragment.TrophySilverTotal = gameTrophySilverTotal;
+            fragment.TrophyBronzeTotal = gameTrophyBronzeTotal;
 
             fragment.TotalCommonPossible = gameTotalCommon;
             fragment.TotalUncommonPossible = gameTotalUncommon;
@@ -302,12 +328,40 @@ namespace PlayniteAchievements.Services.Sidebar
                 TrophyGoldCount = gameTrophyGold,
                 TrophySilverCount = gameTrophySilver,
                 TrophyBronzeCount = gameTrophyBronze,
+                TrophyPlatinumTotal = gameTrophyPlatinumTotal,
+                TrophyGoldTotal = gameTrophyGoldTotal,
+                TrophySilverTotal = gameTrophySilverTotal,
+                TrophyBronzeTotal = gameTrophyBronzeTotal,
                 LastPlayed = playniteGame?.LastActivity,
                 IsCompleted = gameData.IsCompleted,
-                Provider = gameData.ProviderName ?? "Unknown"
+                Provider = providerName,
+                ProviderIconKey = providerMetadata.iconKey,
+                ProviderColorHex = providerMetadata.colorHex
             };
 
             return fragment;
+        }
+
+        private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup()
+        {
+            var lookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
+            var providers = _achievementService?.GetProviders();
+            if (providers == null)
+            {
+                return lookup;
+            }
+
+            foreach (var provider in providers)
+            {
+                if (provider == null || string.IsNullOrWhiteSpace(provider.ProviderName))
+                {
+                    continue;
+                }
+
+                lookup[provider.ProviderName] = (provider.ProviderIconKey, provider.ProviderColorHex);
+            }
+
+            return lookup;
         }
 
         private static void Increment(Dictionary<DateTime, int> dict, DateTime date)

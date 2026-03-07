@@ -69,6 +69,8 @@ namespace PlayniteAchievements.Services
                 ProgressDenom = achievement.ProgressDenom,
                 PointsValue = ResolvePoints(achievement, options),
                 TrophyType = achievement.TrophyType,
+                CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(achievement.CategoryType),
+                CategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category),
                 IsRevealed = IsRevealed(gameData, achievement, options, gameId)
             };
 
@@ -106,7 +108,9 @@ namespace PlayniteAchievements.Services
                 GameIconPath = gameIconPath,
                 GameCoverPath = gameCoverPath,
                 Hidden = achievement.Hidden,
-                TrophyType = achievement.TrophyType
+                TrophyType = achievement.TrophyType,
+                CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(achievement.CategoryType),
+                CategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category)
             };
         }
 
@@ -137,12 +141,17 @@ namespace PlayniteAchievements.Services
 
         public static void AccumulateTrophy(AchievementDetail achievement, ref int platinum, ref int gold, ref int silver, ref int bronze)
         {
-            if (achievement == null || string.IsNullOrWhiteSpace(achievement.TrophyType))
+            AccumulateTrophy(achievement?.TrophyType, ref platinum, ref gold, ref silver, ref bronze);
+        }
+
+        public static void AccumulateTrophy(string trophyType, ref int platinum, ref int gold, ref int silver, ref int bronze)
+        {
+            if (string.IsNullOrWhiteSpace(trophyType))
             {
                 return;
             }
 
-            switch (achievement.TrophyType.ToLowerInvariant())
+            switch (trophyType.Trim().ToLowerInvariant())
             {
                 case "platinum":
                     platinum++;

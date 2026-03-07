@@ -35,6 +35,10 @@ namespace PlayniteAchievements.Services.Sidebar
         public int TrophyGoldCount { get; set; }
         public int TrophySilverCount { get; set; }
         public int TrophyBronzeCount { get; set; }
+        public int TrophyPlatinumTotal { get; set; }
+        public int TrophyGoldTotal { get; set; }
+        public int TrophySilverTotal { get; set; }
+        public int TrophyBronzeTotal { get; set; }
 
         public bool IsCompleted { get; set; }
     }
