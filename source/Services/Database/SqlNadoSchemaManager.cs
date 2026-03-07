@@ -674,6 +674,13 @@ namespace PlayniteAchievements.Services.Database
             EnsureRequiredColumn(definitionColumns, "TrophyType", "AchievementDefinitions", missing);
             EnsureRequiredColumn(definitionColumns, "IsCapstone", "AchievementDefinitions", missing);
 
+            // Verify ProviderKey column exists in Games and Users tables (migration from ProviderName)
+            var gamesColumns = GetColumnNames(db, "Games");
+            EnsureRequiredColumn(gamesColumns, "ProviderKey", "Games", missing);
+
+            var usersColumns = GetColumnNames(db, "Users");
+            EnsureRequiredColumn(usersColumns, "ProviderKey", "Users", missing);
+
             if (IndexExists(db, LegacyGamesProviderGameIdIndexName))
             {
                 missing.Add($"Unexpected legacy index: {LegacyGamesProviderGameIdIndexName}");
