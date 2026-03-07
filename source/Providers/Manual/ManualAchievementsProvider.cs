@@ -27,7 +27,7 @@ namespace PlayniteAchievements.Providers.Manual
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Manual");
         public string ProviderKey => "Manual";
         public string ProviderIconKey => "ProviderIconManual";
-        public string ProviderColorHex => "#9B59B6";
+        public string ProviderColorHex => "#ff652c";
 
         /// <summary>
         /// Manual provider is always authenticated (no credentials needed).

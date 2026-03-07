@@ -1,6 +1,7 @@
 using System;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.ViewModels
@@ -171,6 +172,28 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private string _categoryType;
+        public string CategoryType
+        {
+            get => _categoryType;
+            set
+            {
+                if (SetValueAndReturn(ref _categoryType, value))
+                {
+                    OnPropertyChanged(nameof(CategoryTypeDisplay));
+                }
+            }
+        }
+
+        public string CategoryTypeDisplay => AchievementCategoryTypeHelper.ToDisplayText(CategoryType);
+
+        private string _categoryLabel;
+        public string CategoryLabel
+        {
+            get => _categoryLabel;
+            set => SetValue(ref _categoryLabel, value);
+        }
+
         /// <summary>
         /// True if this achievement has PlayStation trophy type data.
         /// </summary>
@@ -211,6 +234,8 @@ namespace PlayniteAchievements.ViewModels
             GameIconPath = other.GameIconPath;
             GameCoverPath = other.GameCoverPath;
             TrophyType = other.TrophyType;
+            CategoryType = other.CategoryType;
+            CategoryLabel = other.CategoryLabel;
         }
     }
 }

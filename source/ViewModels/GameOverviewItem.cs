@@ -81,10 +81,27 @@ namespace PlayniteAchievements.ViewModels
         private int _trophyBronzeCount;
         public int TrophyBronzeCount { get => _trophyBronzeCount; set => SetValue(ref _trophyBronzeCount, value); }
 
+        public int TrophyPlatinumTotal { get; set; }
+        public int TrophyGoldTotal { get; set; }
+        public int TrophySilverTotal { get; set; }
+        public int TrophyBronzeTotal { get; set; }
+
         /// <summary>
         /// True if this game has PlayStation trophy type data.
         /// </summary>
         public bool HasTrophyTypes => TrophyPlatinumCount > 0 || TrophyGoldCount > 0 || TrophySilverCount > 0 || TrophyBronzeCount > 0;
+
+        public bool HasRarityPieChartData =>
+            TotalCommonPossible > 0 ||
+            TotalUncommonPossible > 0 ||
+            TotalRarePossible > 0 ||
+            TotalUltraRarePossible > 0;
+
+        public bool HasTrophyPieChartData =>
+            TrophyPlatinumTotal > 0 ||
+            TrophyGoldTotal > 0 ||
+            TrophySilverTotal > 0 ||
+            TrophyBronzeTotal > 0;
 
         private DateTime? _lastPlayed;
         public DateTime? LastPlayed 
@@ -105,6 +122,12 @@ namespace PlayniteAchievements.ViewModels
 
         private string _provider;
         public string Provider { get => _provider; set => SetValue(ref _provider, value); }
+
+        private string _providerIconKey;
+        public string ProviderIconKey { get => _providerIconKey; set => SetValue(ref _providerIconKey, value); }
+
+        private string _providerColorHex;
+        public string ProviderColorHex { get => _providerColorHex; set => SetValue(ref _providerColorHex, value); }
 
 
         public double Progression => TotalAchievements > 0

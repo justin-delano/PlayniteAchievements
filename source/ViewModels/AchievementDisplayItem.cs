@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
@@ -283,6 +284,28 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private string _categoryType;
+        public string CategoryType
+        {
+            get => _categoryType;
+            set
+            {
+                if (SetValueAndReturn(ref _categoryType, value))
+                {
+                    OnPropertyChanged(nameof(CategoryTypeDisplay));
+                }
+            }
+        }
+
+        public string CategoryTypeDisplay => AchievementCategoryTypeHelper.ToDisplayText(CategoryType);
+
+        private string _categoryLabel;
+        public string CategoryLabel
+        {
+            get => _categoryLabel;
+            set => SetValue(ref _categoryLabel, value);
+        }
+
         /// <summary>
         /// True if this achievement has PlayStation trophy type data.
         /// </summary>
@@ -391,6 +414,8 @@ namespace PlayniteAchievements.ViewModels
             ProgressDenom = source.ProgressDenom;
             PointsValue = source.Points;
             TrophyType = source.TrophyType;
+            CategoryType = source.CategoryType;
+            CategoryLabel = source.Category;
         }
 
         public string UnlockTimeText =>
