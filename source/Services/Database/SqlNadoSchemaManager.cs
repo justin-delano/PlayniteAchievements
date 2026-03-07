@@ -38,6 +38,8 @@ namespace PlayniteAchievements.Services.Database
                 Value TEXT NOT NULL
             );");
 
+            // Create tables with IF NOT EXISTS - these will silently skip if tables exist
+            // Note: We create indexes AFTER migration check to avoid referencing non-existent columns
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS Users (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ProviderKey TEXT NOT NULL COLLATE NOCASE,
@@ -50,13 +52,6 @@ namespace PlayniteAchievements.Services.Database
                 UNIQUE (ProviderKey, ExternalUserId)
             );");
 
-            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Users_CurrentPerProvider
-                ON Users (ProviderKey)
-                WHERE IsCurrentUser = 1;");
-
-            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Users_CurrentUser_Id
-                ON Users (IsCurrentUser, Id);");
-
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS Games (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ProviderKey TEXT NOT NULL COLLATE NOCASE,
@@ -67,25 +62,6 @@ namespace PlayniteAchievements.Services.Database
                 FirstSeenUtc TEXT NOT NULL,
                 LastUpdatedUtc TEXT NOT NULL
             );");
-
-            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_Playnite
-                ON Games (ProviderKey, PlayniteGameId)
-                WHERE PlayniteGameId IS NOT NULL;");
-
-            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
-                ON Games (ProviderKey, ProviderGameId)
-                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
-                  AND ProviderKey <> 'RetroAchievements';");
-
-            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
-                ON Games (ProviderKey, ProviderGameId)
-                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;");
-
-            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_PlayniteGameId
-                ON Games (PlayniteGameId);");
-
-            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_LastUpdatedUtc
-                ON Games (LastUpdatedUtc);");
 
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS AchievementDefinitions (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -165,6 +141,9 @@ namespace PlayniteAchievements.Services.Database
 
             if (verification.Success)
             {
+                // Create ProviderKey-dependent indexes (only after verifying schema is correct)
+                CreateProviderKeyIndexes(db);
+
                 BackfillRequiredAchievementCategoryValues(db);
 
                 // Schema is correct - ensure version is set if needed
@@ -205,6 +184,9 @@ namespace PlayniteAchievements.Services.Database
                     $"Schema verification failed after reconciliation. {verification2.Message}");
             }
 
+            // Create ProviderKey-dependent indexes after successful migration
+            CreateProviderKeyIndexes(db);
+
             db.ExecuteNonQuery(
                 "INSERT OR REPLACE INTO CacheMetadata (Key, Value) VALUES (?, ?);",
                 "schema_version",
@@ -224,6 +206,39 @@ namespace PlayniteAchievements.Services.Database
                 _logger?.Error(ex, $"Failed schema SQL: {sql}");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Creates indexes that reference ProviderKey column.
+        /// Called only after schema verification passes or migration completes.
+        /// </summary>
+        private void CreateProviderKeyIndexes(SQLiteDatabase db)
+        {
+            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Users_CurrentPerProvider
+                ON Users (ProviderKey)
+                WHERE IsCurrentUser = 1;");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Users_CurrentUser_Id
+                ON Users (IsCurrentUser, Id);");
+
+            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_Playnite
+                ON Games (ProviderKey, PlayniteGameId)
+                WHERE PlayniteGameId IS NOT NULL;");
+
+            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_GameId_NonRA
+                ON Games (ProviderKey, ProviderGameId)
+                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0
+                  AND ProviderKey <> 'RetroAchievements';");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameId
+                ON Games (ProviderKey, ProviderGameId)
+                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_PlayniteGameId
+                ON Games (PlayniteGameId);");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_LastUpdatedUtc
+                ON Games (LastUpdatedUtc);");
         }
 
         private void BackfillRequiredAchievementCategoryValues(SQLiteDatabase db)
