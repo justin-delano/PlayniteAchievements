@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
     /// Desktop PlayniteAchievements pie chart control for theme integration.
     /// Displays rarity distribution as a pie chart with radial badge icons.
     /// </summary>
-    public partial class AchievementPieChartControl : ThemeControlBase
+    public partial class AchievementPieChartControl : SingleGameDataControlBase
     {
         private readonly PieChartViewModel _viewModel = new PieChartViewModel();
 
@@ -25,41 +25,19 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// </summary>
         public ObservableCollection<LegendItem> LegendItems => _viewModel.LegendItems;
 
-        /// <summary>
-        /// Gets a value indicating whether this control should subscribe to theme data change notifications.
-        /// </summary>
-        protected override bool EnableAutomaticThemeDataUpdates => true;
-
         public AchievementPieChartControl()
         {
             InitializeComponent();
         }
 
         /// <summary>
-        /// Called when theme data changes and the pie chart needs to be refreshed.
+        /// Called after data is loaded. Updates the pie chart.
         /// </summary>
-        protected override void OnThemeDataUpdated()
+        protected override void OnDataLoaded()
         {
-            var theme = Plugin.Settings.Theme;
-            if (theme == null)
-            {
-                return;
-            }
-
-            var commonUnlocked = theme.Common.Unlocked;
-            var uncommonUnlocked = theme.Uncommon.Unlocked;
-            var rareUnlocked = theme.Rare.Unlocked;
-            var ultraRareUnlocked = theme.UltraRare.Unlocked;
-            var locked = theme.LockedCount;
-
-            var commonTotal = theme.Common.Total;
-            var uncommonTotal = theme.Uncommon.Total;
-            var rareTotal = theme.Rare.Total;
-            var ultraRareTotal = theme.UltraRare.Total;
-
             _viewModel.SetRarityData(
-                commonUnlocked, uncommonUnlocked, rareUnlocked, ultraRareUnlocked, locked,
-                commonTotal, uncommonTotal, rareTotal, ultraRareTotal,
+                Common.Unlocked, Uncommon.Unlocked, Rare.Unlocked, UltraRare.Unlocked, LockedCount,
+                Common.Total, Uncommon.Total, Rare.Total, UltraRare.Total,
                 "Common", "Uncommon", "Rare", "Ultra Rare", "Locked");
         }
     }
