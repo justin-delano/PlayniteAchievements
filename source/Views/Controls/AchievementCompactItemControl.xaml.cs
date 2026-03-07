@@ -13,11 +13,11 @@ namespace PlayniteAchievements.Views.Controls
     {
         public static readonly DependencyProperty IconSizeProperty =
             DependencyProperty.Register(nameof(IconSize), typeof(double), typeof(AchievementCompactItemControl),
-                new PropertyMetadata(56.0, OnIconSizeChanged));
+                new PropertyMetadata(48.0, OnIconSizeChanged));
 
         /// <summary>
         /// Gets or sets the size of the achievement icon (both width and height).
-        /// Default is 56 to allow space for glow effect around the icon.
+        /// Default is 48 to match legacy SuccessStory styling.
         /// </summary>
         public double IconSize
         {
@@ -29,9 +29,9 @@ namespace PlayniteAchievements.Views.Controls
         {
             if (d is AchievementCompactItemControl control && e.NewValue is double size)
             {
-                // Add 8px padding for glow effect visibility
-                control.Width = size + 8;
-                control.Height = size + 8;
+                // Match legacy behavior - control size matches icon size
+                control.Width = size;
+                control.Height = size;
             }
         }
 

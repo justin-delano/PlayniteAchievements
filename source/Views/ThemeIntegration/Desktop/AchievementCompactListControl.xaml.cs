@@ -21,11 +21,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// </summary>
         public static readonly DependencyProperty IconSizeProperty =
             DependencyProperty.Register(nameof(IconSize), typeof(double), typeof(AchievementCompactListControl),
-                new PropertyMetadata(56.0));
+                new PropertyMetadata(48.0));
 
         /// <summary>
         /// Gets or sets the size of each achievement icon.
-        /// Default is 56 to allow space for glow effect around the icon.
+        /// Default is 48 to match legacy SuccessStory styling.
         /// </summary>
         public double IconSize
         {

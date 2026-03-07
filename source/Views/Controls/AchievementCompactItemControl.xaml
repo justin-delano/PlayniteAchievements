@@ -7,23 +7,22 @@
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              mc:Ignorable="d"
-             d:DesignHeight="68" d:DesignWidth="68"
+             d:DesignHeight="48" d:DesignWidth="48"
              d:DataContext="{d:DesignInstance vm:AchievementDisplayItem}">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
+            <converters:PercentToGlowEffectConverter x:Key="PercentToGlowEffectConverter"/>
             <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility"/>
+            <converters:BooleanConverter x:Key="InvertedBooleanConverter" Mode="Inverted"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <!-- Add padding around the icon so glow effect is visible -->
     <Grid x:Name="RootGrid"
           Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
-          Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
-          Margin="4">
+          Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}">
         <Grid.ToolTip>
             <ToolTip MaxWidth="300">
                 <ToolTip.Content>
@@ -96,84 +95,81 @@
             </ToolTip>
         </Grid.ToolTip>
 
-        <!-- Main container with corner radius and glow effect -->
-        <Border x:Name="MainBorder"
-                CornerRadius="4"
-                ClipToBounds="True"
-                RenderOptions.BitmapScalingMode="HighQuality">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="Opacity" Value="0.45"/>
-                    <Setter Property="Effect" Value="{x:Null}"/>
-                    <Style.Triggers>
-                        <!-- Unlocked: full opacity and rarity glow -->
-                        <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                            <Setter Property="Opacity" Value="1"/>
-                            <Setter Property="Effect" Value="{Binding GlobalPercent, Mode=OneWay, Converter={StaticResource PercentToRarityGlow}}"/>
-                        </DataTrigger>
+        <!-- Border with clipping - matches legacy AchievementImage -->
+        <Border ClipToBounds="True">
+            <!-- Achievement Icon - matches legacy styling -->
+            <Image Stretch="UniformToFill"
+                   RenderOptions.BitmapScalingMode="Fant"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   helpers:AsyncImage.Uri="{Binding DisplayIcon, Mode=OneWay}"
+                   helpers:AsyncImage.Gray="{Binding Unlocked, Converter={StaticResource InvertedBooleanConverter}}"
+                   helpers:AsyncImage.DecodePixel="64">
+                <Image.Style>
+                    <Style TargetType="Image">
+                        <Style.Triggers>
+                            <!-- Rarity indicator glow effect - only for unlocked achievements with rarity -->
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                    <Condition Binding="{Binding HasRarity}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <MultiBinding Converter="{StaticResource PercentToGlowEffectConverter}">
+                                            <Binding Path="GlobalPercent" Mode="OneWay"/>
+                                            <Binding Source="5" Mode="OneWay"/>
+                                            <Binding Source="20" Mode="OneWay"/>
+                                            <Binding Source="50" Mode="OneWay"/>
+                                        </MultiBinding>
+                                    </Setter.Value>
+                                </Setter>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Image.Style>
+            </Image>
+        </Border>
 
-                        <!-- Hidden locked (showing question mark): full opacity but no glow -->
-                        <DataTrigger Binding="{Binding IsIconHidden}" Value="True">
-                            <Setter Property="Opacity" Value="1"/>
-                        </DataTrigger>
+        <!-- Lock icon overlay for locked achievements (when not showing hidden icon) -->
+        <TextBlock Text="&#xf023;"
+                   FontFamily="{DynamicResource FontIcoFont}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="16"
+                   Foreground="{DynamicResource TextBrush}"
+                   Opacity="0.7">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding Unlocked}" Value="False"/>
+                                <Condition Binding="{Binding IsIconHidden}" Value="False"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </MultiDataTrigger>
                     </Style.Triggers>
                 </Style>
-            </Border.Style>
+            </TextBlock.Style>
+        </TextBlock>
 
-            <!-- Background gradient for depth -->
-            <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Color="#20000000" Offset="0"/>
-                    <GradientStop Color="Transparent" Offset="0.5"/>
-                    <GradientStop Color="#15000000" Offset="1"/>
-                </LinearGradientBrush>
-            </Border.Background>
-
-            <Grid>
-                <!-- Achievement Icon -->
-                <Border CornerRadius="4">
-                    <Border.Background>
-                        <ImageBrush Stretch="UniformToFill"
-                                    helpers:AsyncImage.Uri="{Binding DisplayIcon, Mode=OneWay}"
-                                    helpers:AsyncImage.DecodePixel="128"/>
-                    </Border.Background>
-                </Border>
-
-                <!-- Progress bar overlay at bottom -->
-                <Grid VerticalAlignment="Bottom"
-                      Visibility="{Binding HasProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <ProgressBar Height="6"
-                                 Maximum="100"
-                                 Value="{Binding ProgressPercent, Mode=OneWay}"
-                                 Background="#80000000"
-                                 Foreground="{DynamicResource HighlightGlyphBrush}"
-                                 BorderThickness="0"/>
-                </Grid>
-
-                <!-- Lock icon overlay for locked achievements -->
-                <TextBlock Text="&#xf023;"
-                           FontFamily="{DynamicResource FontIcoFont}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           FontSize="20"
-                           Foreground="{DynamicResource TextBrush}"
-                           Opacity="0.6">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding Unlocked}" Value="False"/>
-                                        <Condition Binding="{Binding IsIconHidden}" Value="False"/>
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
-            </Grid>
-        </Border>
+        <!-- Progress bar overlay at bottom -->
+        <Grid VerticalAlignment="Bottom"
+              Visibility="{Binding HasProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <ProgressBar Height="10"
+                         Maximum="100"
+                         Value="{Binding ProgressPercent, Mode=OneWay}"
+                         Background="#80000000"
+                         Foreground="{DynamicResource HighlightGlyphBrush}"
+                         BorderThickness="0"/>
+            <TextBlock Text="{Binding ProgressPercent, Mode=OneWay, StringFormat={}{0:F0}%}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="8"
+                       FontWeight="SemiBold"
+                       Foreground="White"/>
+        </Grid>
     </Grid>
 </UserControl>

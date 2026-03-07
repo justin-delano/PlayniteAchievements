@@ -244,9 +244,11 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 }
 
                 var settings = PlayniteAchievementsPlugin.Instance?.Settings;
-                var hideIcon = settings?.Persisted?.ShowHiddenIcon ?? false;
-                var hideTitle = settings?.Persisted?.ShowHiddenTitle ?? false;
-                var hideDescription = settings?.Persisted?.ShowHiddenDescription ?? false;
+                // Settings.ShowHiddenIcon means "show actual icon for hidden achievements" (not question mark)
+                // UpdateFrom expects hideIcon meaning "should we hide the icon", so we invert
+                var hideIcon = !(settings?.Persisted?.ShowHiddenIcon ?? false);
+                var hideTitle = !(settings?.Persisted?.ShowHiddenTitle ?? false);
+                var hideDescription = !(settings?.Persisted?.ShowHiddenDescription ?? false);
 
                 var items = new List<AchievementDisplayItem>(_allAchievements.Count);
                 foreach (var achievement in _allAchievements)
