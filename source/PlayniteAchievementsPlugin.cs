@@ -770,7 +770,18 @@ namespace PlayniteAchievements
                 }
             }
 
-            if (gameIdsToRefresh.Count > 0)
+            if (gameIdsToRefresh.Count == 1)
+            {
+                var gameId = gameIdsToRefresh[0];
+                _ = _refreshCoordinator.ExecuteAsync(
+                    new RefreshRequest
+                    {
+                        Mode = RefreshModeType.Single,
+                        SingleGameId = gameId
+                    },
+                    RefreshExecutionPolicy.ProgressWindow(gameId));
+            }
+            else if (gameIdsToRefresh.Count > 1)
             {
                 _ = _refreshCoordinator.ExecuteAsync(
                     new RefreshRequest { GameIds = gameIdsToRefresh },
