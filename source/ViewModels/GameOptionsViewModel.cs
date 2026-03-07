@@ -46,7 +46,7 @@ namespace PlayniteAchievements.ViewModels
         private bool _hasCapstoneData;
         private string _capstoneEmptyMessage;
         private bool _isRefreshing;
-        private string _cachedProviderName;
+        private string _cachedProviderKey;
         private bool _cachedHasAchievements;
         private string _manualTrackingWarningAcceptedForProvider;
         private bool _showManualTrackingTab = true;
@@ -119,14 +119,15 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 if (value == GameOptionsTab.ManualTracking &&
-                    ShouldWarnAboutManualTrackingOverride(out var existingProvider) &&
-                    !string.Equals(_manualTrackingWarningAcceptedForProvider, existingProvider, StringComparison.OrdinalIgnoreCase))
+                    ShouldWarnAboutManualTrackingOverride(out var existingProviderKey) &&
+                    !string.Equals(_manualTrackingWarningAcceptedForProvider, existingProviderKey, StringComparison.OrdinalIgnoreCase))
                 {
+                    var displayName = ProviderRegistry.GetLocalizedName(existingProviderKey);
                     var message = string.Format(
                         L(
                             "LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning",
                             "Manual tracking can replace cached achievement data from {0}. Continue?"),
-                        existingProvider);
+                        displayName);
 
                     var result = _playniteApi?.Dialogs?.ShowMessage(
                         message,
@@ -139,7 +140,7 @@ namespace PlayniteAchievements.ViewModels
                         return;
                     }
 
-                    _manualTrackingWarningAcceptedForProvider = existingProvider;
+                    _manualTrackingWarningAcceptedForProvider = existingProviderKey;
                 }
 
                 SetValue(ref _selectedTab, value);
@@ -451,16 +452,16 @@ namespace PlayniteAchievements.ViewModels
 
                 var gameData = _achievementService?.GetGameAchievementData(_gameId);
                 HasCachedData = gameData != null;
-                _cachedProviderName = gameData?.ProviderName?.Trim();
+                _cachedProviderKey = gameData?.ProviderKey?.Trim();
                 _cachedHasAchievements = gameData?.HasAchievements ?? false;
                 var allowManualOverride = _settings?.Persisted?.ManualTrackingOverrideEnabled == true;
                 var isExcluded = _plugin?.IsGameExcluded(_gameId) ?? false;
                 var hasNonManualProviderData = ShouldWarnAboutManualTrackingOverride(out _);
                 ShowManualTrackingTab = allowManualOverride ||
                     (!isExcluded && (!_cachedHasAchievements || !hasNonManualProviderData));
-                ProviderName = string.IsNullOrWhiteSpace(gameData?.ProviderName)
+                ProviderName = string.IsNullOrWhiteSpace(gameData?.ProviderDisplayName)
                     ? L("LOCPlayAch_GameOptions_Value_NotAvailable", "N/A")
-                    : gameData.ProviderName;
+                    : gameData.ProviderDisplayName;
                 LibrarySourceName = ResolveLibrarySourceDisplayName(game, gameData?.LibrarySourceName);
 
                 if (gameData?.LastUpdatedUtc > DateTime.MinValue)
@@ -711,17 +712,15 @@ namespace PlayniteAchievements.ViewModels
             ClearGameDataCommand?.RaiseCanExecuteChanged();
         }
 
-        private bool ShouldWarnAboutManualTrackingOverride(out string providerName)
+        private bool ShouldWarnAboutManualTrackingOverride(out string providerKey)
         {
-            providerName = (_cachedProviderName ?? string.Empty).Trim();
-            if (!HasCachedData || !_cachedHasAchievements || string.IsNullOrWhiteSpace(providerName))
+            providerKey = (_cachedProviderKey ?? string.Empty).Trim();
+            if (!HasCachedData || !_cachedHasAchievements || string.IsNullOrWhiteSpace(providerKey))
             {
                 return false;
             }
 
-            var manualProviderName = L("LOCPlayAch_Provider_Manual", "Manual");
-            return !string.Equals(providerName, "Manual", StringComparison.OrdinalIgnoreCase) &&
-                   !string.Equals(providerName, manualProviderName, StringComparison.OrdinalIgnoreCase);
+            return !string.Equals(providerKey, "Manual", StringComparison.OrdinalIgnoreCase);
         }
 
         private string ResolveLibrarySourceDisplayName(Playnite.SDK.Models.Game game, string cachedLibrarySource)

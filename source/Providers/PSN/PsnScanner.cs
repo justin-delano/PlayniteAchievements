@@ -44,8 +44,6 @@ namespace PlayniteAchievements.Providers.PSN
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            var providerName = GetProviderName();
-
             string token;
             try
             {
@@ -91,7 +89,7 @@ namespace PlayniteAchievements.Providers.PSN
                     onGameStarting,
                     async (game, tokenCancel) =>
                     {
-                        var data = await FetchGameDataAsync(http, game, providerName, tokenCancel).ConfigureAwait(false);
+                        var data = await FetchGameDataAsync(http, game, tokenCancel).ConfigureAwait(false);
                         return new RefreshPipeline.ProviderGameResult
                         {
                             Data = data
@@ -109,7 +107,7 @@ namespace PlayniteAchievements.Providers.PSN
             }
         }
 
-        private async Task<GameAchievementData> FetchGameDataAsync(HttpClient http, Game game, string providerName, CancellationToken cancel)
+        private async Task<GameAchievementData> FetchGameDataAsync(HttpClient http, Game game, CancellationToken cancel)
         {
             var npCommId = await ResolveNpCommunicationIdAsync(http, game, cancel).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(npCommId))
@@ -257,7 +255,7 @@ namespace PlayniteAchievements.Providers.PSN
 
             return new GameAchievementData
             {
-                ProviderName = providerName,
+                ProviderKey = "PSN",
                 LibrarySourceName = game?.Source?.Name,
                 GameName = game?.Name,
                 PlayniteGameId = game?.Id,
@@ -353,12 +351,6 @@ namespace PlayniteAchievements.Providers.PSN
                 StatusCode = statusCode;
                 Url = url;
             }
-        }
-
-        private static string GetProviderName()
-        {
-            var value = ResourceProvider.GetString("LOCPlayAch_Provider_PlayStation");
-            return string.IsNullOrWhiteSpace(value) ? "PlayStation" : value;
         }
 
         private static string MapTrophyGroupToCategoryType(string trophyGroupId)

@@ -267,7 +267,7 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 AppId = appId,
                 GameName = game.Name,
-                ProviderName = "Steam",
+                ProviderKey = "Steam",
                 LibrarySourceName = game?.Source?.Name,
                 LastUpdatedUtc = DateTime.UtcNow,
                 HasAchievements = schema?.Achievements != null && schema.Achievements.Count > 0,

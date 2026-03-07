@@ -3,7 +3,7 @@ namespace PlayniteAchievements.Services.Database.Rows
     internal sealed class GameRow
     {
         public long Id { get; set; }
-        public string ProviderName { get; set; }
+        public string ProviderKey { get; set; }
         public long? ProviderGameId { get; set; }
         public string PlayniteGameId { get; set; }
         public string GameName { get; set; }
