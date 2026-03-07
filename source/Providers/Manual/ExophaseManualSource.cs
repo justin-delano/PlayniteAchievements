@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Exophase;
 
 namespace PlayniteAchievements.Providers.Manual
 {
