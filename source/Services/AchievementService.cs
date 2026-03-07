@@ -2268,19 +2268,80 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public void SetExcludedByUser(Guid playniteGameId, bool excluded)
         {
+            SetExcludedByUser(playniteGameId, excluded, clearCachedDataWhenExcluding: true);
+        }
+
+        /// <summary>
+        /// Sets the ExcludedByUser flag for a game and optionally clears cached data when excluding.
+        /// </summary>
+        public void SetExcludedByUser(Guid playniteGameId, bool excluded, bool clearCachedDataWhenExcluding)
+        {
             if (playniteGameId == Guid.Empty)
+            {
                 return;
+            }
 
             // Update settings (survives cache clear)
             if (excluded)
             {
                 _settings.Persisted.ExcludedGameIds.Add(playniteGameId);
-                // Clear cached data when excluding
+                if (clearCachedDataWhenExcluding)
+                {
+                    _cacheService.RemoveGameData(playniteGameId);
+                }
+            }
+            else
+            {
+                _settings.Persisted.ExcludedGameIds.Remove(playniteGameId);
+            }
+
+            TryPersistSettings(notifySettingsSaved: true);
+            NotifyCacheInvalidatedThrottled(force: true);
+        }
+
+        /// <summary>
+        /// Applies tracking exclusion directly from Playnite's hidden state.
+        /// Hiding excludes the game and clears cached data; unhiding includes it again.
+        /// </summary>
+        public void SetExcludedFromHiddenState(Guid playniteGameId, bool hidden)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return;
+            }
+
+            if (hidden)
+            {
+                _settings.Persisted.ExcludedGameIds.Add(playniteGameId);
                 _cacheService.RemoveGameData(playniteGameId);
             }
             else
             {
                 _settings.Persisted.ExcludedGameIds.Remove(playniteGameId);
+            }
+
+            TryPersistSettings(notifySettingsSaved: true);
+            NotifyCacheInvalidatedThrottled(force: true);
+        }
+
+        /// <summary>
+        /// Sets whether a game is excluded from summary surfaces (sidebar and all-games snapshots).
+        /// The exclusion is persisted in settings and survives cache clears.
+        /// </summary>
+        public void SetExcludedFromSummaries(Guid playniteGameId, bool excluded)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return;
+            }
+
+            if (excluded)
+            {
+                _settings.Persisted.ExcludedFromSummariesGameIds.Add(playniteGameId);
+            }
+            else
+            {
+                _settings.Persisted.ExcludedFromSummariesGameIds.Remove(playniteGameId);
             }
 
             TryPersistSettings(notifySettingsSaved: true);
