@@ -1,6 +1,4 @@
 using System.Windows;
-using System.Windows.Controls;
-using Playnite.SDK.Controls;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
@@ -9,13 +7,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
     /// Desktop PlayniteAchievements button control for theme integration.
     /// Displays progress information with detailed and non-detailed display modes.
     /// </summary>
-    public partial class AchievementButtonControl : ThemeControlBase
+    public partial class AchievementButtonControl : SingleGameDataControlBase
     {
-        /// <summary>
-        /// Gets a value indicating whether this control should subscribe to theme data change notifications.
-        /// </summary>
-        protected override bool EnableAutomaticThemeDataUpdates => true;
-
         /// <summary>
         /// Identifies the <see cref="DisplayDetails"/> dependency property.
         /// </summary>
