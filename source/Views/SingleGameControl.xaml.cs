@@ -25,6 +25,8 @@ namespace PlayniteAchievements.Views
             {
                 ["Achievement"] = 460,
                 ["UnlockDate"] = 240,
+                ["CategoryType"] = 210,
+                ["CategoryLabel"] = 210,
                 ["Rarity"] = 170,
                 ["Points"] = 100
             };
@@ -252,6 +254,102 @@ namespace PlayniteAchievements.Views
         private void ClearSearch_Click(object sender, RoutedEventArgs e)
         {
             ViewModel?.ClearSearch();
+        }
+
+        private void CategoryTypeFilterSelectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            OpenMultiSelectFilterContextMenu(
+                CategoryTypeFilterSelectionButton,
+                ViewModel.CategoryTypeFilterOptions,
+                option => ViewModel.IsCategoryTypeFilterSelected(option),
+                (option, isSelected) => ViewModel.SetCategoryTypeFilterSelected(option, isSelected));
+        }
+
+        private void CategoryLabelFilterSelectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            OpenMultiSelectFilterContextMenu(
+                CategoryLabelFilterSelectionButton,
+                ViewModel.CategoryLabelFilterOptions,
+                option => ViewModel.IsCategoryLabelFilterSelected(option),
+                (option, isSelected) => ViewModel.SetCategoryLabelFilterSelected(option, isSelected));
+        }
+
+        private void OpenMultiSelectFilterContextMenu(
+            Button button,
+            IEnumerable<string> options,
+            Func<string, bool> isSelected,
+            Action<string, bool> setSelection)
+        {
+            if (button == null || isSelected == null || setSelection == null)
+            {
+                return;
+            }
+
+            var menu = button.ContextMenu;
+            if (menu == null)
+            {
+                return;
+            }
+
+            menu.Items.Clear();
+            if (options == null)
+            {
+                return;
+            }
+
+            var itemStyle = button.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
+            foreach (var option in options.Where(value => !string.IsNullOrWhiteSpace(value)))
+            {
+                var item = new MenuItem
+                {
+                    Header = option,
+                    IsCheckable = true,
+                    StaysOpenOnClick = true,
+                    IsChecked = isSelected(option)
+                };
+                if (itemStyle != null)
+                {
+                    item.Style = itemStyle;
+                }
+                item.Click += (_, __) => setSelection(option, item.IsChecked);
+                menu.Items.Add(item);
+            }
+
+            if (menu.Items.Count == 0)
+            {
+                return;
+            }
+
+            OpenSelectorContextMenu(button, menu);
+        }
+
+        private static void OpenSelectorContextMenu(Button button, ContextMenu menu)
+        {
+            if (button == null || menu == null)
+            {
+                return;
+            }
+
+            RoutedEventHandler onClosed = null;
+            onClosed = (_, __) =>
+            {
+                menu.Closed -= onClosed;
+                button.ReleaseMouseCapture();
+            };
+
+            menu.Closed += onClosed;
+            menu.PlacementTarget = button;
+            menu.IsOpen = true;
         }
     }
 }

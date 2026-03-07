@@ -13,6 +13,9 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
             <converters:EnumToBoolConverter x:Key="EnumToBool"/>
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
             <converters:IntToVisibilityConverter x:Key="IntToVis"/>
@@ -355,38 +358,68 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <Grid Grid.Column="0">
-                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Style="{StaticResource SearchTextBoxStyle}"/>
-                <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
-                           VerticalAlignment="Center"
-                           Margin="9,0,0,0"
-                           Foreground="{DynamicResource TextBrush}"
-                           Opacity="0.5"
-                           IsHitTestVisible="False">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SearchText}" Value="">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
+                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource ClearableSearchTextBoxStyle}"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
+                               VerticalAlignment="Center"
+                               Margin="9,0,0,0"
+                               Foreground="{DynamicResource TextBrush}"
+                               Opacity="0.5"
+                               IsHitTestVisible="False">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SearchText}" Value="">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Button Tag="{Binding SearchText}"
+                            Click="ClearSearch_Click"
+                            Style="{StaticResource ClearSearchButtonStyle}"/>
                 </Grid>
 
                 <StackPanel Grid.Column="1"
                     Orientation="Horizontal"
                     VerticalAlignment="Center"
                     Margin="8,0,0,0">
+                <Button x:Name="CategoryTypeFilterSelectionButton"
+                        Style="{StaticResource AchievementSelectorButtonStyle}"
+                        Content="{Binding SelectedCategoryTypeFilterText}"
+                        Click="CategoryTypeFilterSelectionButton_Click"
+                        Width="120"
+                        Height="30"
+                        Margin="0,0,8,0"
+                        VerticalAlignment="Center"
+                        ToolTip="{DynamicResource LOCPlayAch_GameOptions_Category_Filter_Type}">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="CategoryTypeFilterSelectionContextMenu"
+                                     ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                    </Button.ContextMenu>
+                </Button>
+                <Button x:Name="CategoryLabelFilterSelectionButton"
+                        Style="{StaticResource AchievementSelectorButtonStyle}"
+                        Content="{Binding SelectedCategoryLabelFilterText}"
+                        Click="CategoryLabelFilterSelectionButton_Click"
+                        Width="140"
+                        Height="30"
+                        Margin="0,0,8,0"
+                        VerticalAlignment="Center"
+                        ToolTip="{DynamicResource LOCPlayAch_GameOptions_Category_Filter_Label}">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="CategoryLabelFilterSelectionContextMenu"
+                                     ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                    </Button.ContextMenu>
+                </Button>
                 <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Unlocked}"
                       IsChecked="{Binding ShowUnlocked}"
                       VerticalAlignment="Center"
@@ -400,28 +433,6 @@
                       VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <Button Grid.Column="2"
-                    Content="✕"
-                    Click="ClearSearch_Click"
-                    Width="24"
-                    Height="24"
-                    Margin="4,0,0,0"
-                    Padding="0"
-                    VerticalAlignment="Center">
-                <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                        <Setter Property="Visibility" Value="Visible"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding SearchText}" Value="">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
             </Grid>
         </Border>
 
@@ -511,6 +522,34 @@
                 <!-- Unlock Date / Progress -->
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate"
                                         CellTemplate="{StaticResource AchievementUnlockDateTemplate}"/>
+
+                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Type}" SortMemberPath="CategoryType" helpers:ColumnVisibilityHelper.ColumnKey="CategoryType">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CategoryTypeDisplay}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.7"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Category}" SortMemberPath="CategoryLabel" helpers:ColumnVisibilityHelper.ColumnKey="CategoryLabel">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CategoryLabel}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.7"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
 
                 <!-- Trophy -->
                 <DataGridTemplateColumn Width="100" MinWidth="90" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="True" SortMemberPath="TrophyType"

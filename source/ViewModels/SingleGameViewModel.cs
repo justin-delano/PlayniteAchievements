@@ -36,6 +36,8 @@ namespace PlayniteAchievements.ViewModels
         private bool _showLocked = true;
         private bool _showHidden = true;
         private bool _hasCustomAchievementOrder;
+        private readonly HashSet<string> _selectedCategoryTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _selectedCategoryLabelFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public SingleGameControlModel(
             Guid gameId,
@@ -52,6 +54,9 @@ namespace PlayniteAchievements.ViewModels
 
             Timeline = new TimelineViewModel();
             OnPropertyChanged(nameof(Timeline));
+
+            CategoryTypeFilterOptions = new ObservableCollection<string>();
+            CategoryLabelFilterOptions = new ObservableCollection<string>();
 
             // Initialize commands
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
@@ -323,6 +328,52 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public ObservableCollection<string> CategoryTypeFilterOptions { get; }
+
+        public string SelectedCategoryTypeFilterText => GetSelectedFilterText(
+            _selectedCategoryTypeFilters,
+            CategoryTypeFilterOptions,
+            L("LOCPlayAch_GameOptions_Category_TypeSelectorPlaceholder", "Type"));
+
+        public bool IsCategoryTypeFilterSelected(string value)
+        {
+            return IsFilterSelected(_selectedCategoryTypeFilters, value);
+        }
+
+        public void SetCategoryTypeFilterSelected(string value, bool isSelected)
+        {
+            if (!SetFilterSelection(_selectedCategoryTypeFilters, value, isSelected))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
+            ApplySearchFilter();
+        }
+
+        public ObservableCollection<string> CategoryLabelFilterOptions { get; }
+
+        public string SelectedCategoryLabelFilterText => GetSelectedFilterText(
+            _selectedCategoryLabelFilters,
+            CategoryLabelFilterOptions,
+            L("LOCPlayAch_GameOptions_Category_Filter_LabelSelectorPlaceholder", "Category"));
+
+        public bool IsCategoryLabelFilterSelected(string value)
+        {
+            return IsFilterSelected(_selectedCategoryLabelFilters, value);
+        }
+
+        public void SetCategoryLabelFilterSelected(string value, bool isSelected)
+        {
+            if (!SetFilterSelection(_selectedCategoryLabelFilters, value, isSelected))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
+            ApplySearchFilter();
+        }
+
         #endregion
 
         #region Commands
@@ -334,6 +385,129 @@ namespace PlayniteAchievements.ViewModels
         #endregion
 
         #region Private Methods
+
+        private static bool IsFilterSelected(HashSet<string> selectedValues, string value)
+        {
+            if (selectedValues == null || string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            return selectedValues.Contains(value.Trim());
+        }
+
+        private static bool SetFilterSelection(HashSet<string> selectedValues, string value, bool isSelected)
+        {
+            if (selectedValues == null || string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var normalized = value.Trim();
+            return isSelected
+                ? selectedValues.Add(normalized)
+                : selectedValues.Remove(normalized);
+        }
+
+        private static bool PruneFilterSelections(HashSet<string> selectedValues, IEnumerable<string> options)
+        {
+            if (selectedValues == null)
+            {
+                return false;
+            }
+
+            var optionSet = new HashSet<string>(
+                (options ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value)),
+                StringComparer.OrdinalIgnoreCase);
+            return selectedValues.RemoveWhere(value => !optionSet.Contains(value)) > 0;
+        }
+
+        private static string GetSelectedFilterText(
+            HashSet<string> selectedValues,
+            IEnumerable<string> options,
+            string placeholder)
+        {
+            if (selectedValues == null || selectedValues.Count == 0)
+            {
+                return placeholder;
+            }
+
+            var ordered = new List<string>();
+            foreach (var option in options ?? Enumerable.Empty<string>())
+            {
+                if (!string.IsNullOrWhiteSpace(option) && selectedValues.Contains(option))
+                {
+                    ordered.Add(option);
+                }
+            }
+
+            if (ordered.Count == 0)
+            {
+                ordered.AddRange(selectedValues.OrderBy(value => value, StringComparer.OrdinalIgnoreCase));
+            }
+
+            return string.Join(", ", ordered);
+        }
+
+        private static string L(string key, string fallback)
+        {
+            var value = ResourceProvider.GetString(key);
+            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+        }
+
+        private void UpdateAchievementFilterOptions(IEnumerable<AchievementDisplayItem> source)
+        {
+            var typeValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var categoryValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (source != null)
+            {
+                foreach (var item in source)
+                {
+                    if (item == null)
+                    {
+                        continue;
+                    }
+
+                    var parsedTypes = AchievementCategoryTypeHelper.ParseValues(
+                        AchievementCategoryTypeHelper.NormalizeOrDefault(item.CategoryType));
+                    foreach (var parsedType in parsedTypes)
+                    {
+                        if (!string.IsNullOrWhiteSpace(parsedType))
+                        {
+                            typeValues.Add(parsedType);
+                        }
+                    }
+
+                    var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel);
+                    if (!string.IsNullOrWhiteSpace(normalizedCategory))
+                    {
+                        categoryValues.Add(normalizedCategory);
+                    }
+                }
+            }
+
+            var typeOptions = AchievementCategoryTypeHelper.AllowedCategoryTypes
+                .Where(typeValues.Contains)
+                .ToList();
+
+            var categoryOptions = categoryValues
+                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            CollectionHelper.SynchronizeCollection(CategoryTypeFilterOptions, typeOptions);
+            CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, categoryOptions);
+
+            if (PruneFilterSelections(_selectedCategoryTypeFilters, CategoryTypeFilterOptions))
+            {
+                OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
+            }
+
+            if (PruneFilterSelections(_selectedCategoryLabelFilters, CategoryLabelFilterOptions))
+            {
+                OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
+            }
+        }
 
         private void LoadGameData()
         {
@@ -362,6 +536,7 @@ namespace PlayniteAchievements.ViewModels
                     RareCount = 0;
                     UltraRareCount = 0;
                     _allAchievements = new List<AchievementDisplayItem>();
+                    UpdateAchievementFilterOptions(null);
                     HasCustomAchievementOrder = false;
 
                     System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
@@ -457,6 +632,7 @@ namespace PlayniteAchievements.ViewModels
                         .ToList();
                 }
 
+                UpdateAchievementFilterOptions(_allAchievements);
                 ApplySearchFilter();
 
                 OnPropertyChanged(nameof(Progression));
@@ -603,6 +779,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
                 "UnlockTime" => CompareAchievementsByUnlockColumn,
+                "CategoryType" => CompareAchievementsByCategoryTypeThenUnlock,
+                "CategoryLabel" => CompareAchievementsByCategoryLabelThenUnlock,
                 "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
                 "Points" => (a, b) => a.Points.CompareTo(b.Points),
                 "TrophyType" => CompareAchievementsByTrophyType,
@@ -666,6 +844,46 @@ namespace PlayniteAchievements.ViewModels
             return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
         }
 
+        private static int CompareAchievementsByCategoryTypeThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
+        {
+            var typeComparison = string.Compare(
+                AchievementCategoryTypeHelper.ToDisplayText(a.CategoryType),
+                AchievementCategoryTypeHelper.ToDisplayText(b.CategoryType),
+                StringComparison.OrdinalIgnoreCase);
+            if (typeComparison != 0)
+            {
+                return typeComparison;
+            }
+
+            var unlockComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
+            if (unlockComparison != 0)
+            {
+                return unlockComparison;
+            }
+
+            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int CompareAchievementsByCategoryLabelThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
+        {
+            var labelComparison = string.Compare(
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel),
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(b.CategoryLabel),
+                StringComparison.OrdinalIgnoreCase);
+            if (labelComparison != 0)
+            {
+                return labelComparison;
+            }
+
+            var unlockComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
+            if (unlockComparison != 0)
+            {
+                return unlockComparison;
+            }
+
+            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+        }
+
         private static int CompareProgressFraction(int? aNum, int? aDenom, int? bNum, int? bDenom)
         {
             var aHasProgress = aNum.HasValue && aDenom.HasValue && aDenom.Value > 0;
@@ -718,6 +936,31 @@ namespace PlayniteAchievements.ViewModels
             }
 
             filtered = filtered.Where(a => a.Unlocked ? ShowUnlocked : ShowLocked);
+
+            if (_selectedCategoryTypeFilters.Count > 0)
+            {
+                var selectedTypeSet = new HashSet<string>(
+                    _selectedCategoryTypeFilters
+                        .Select(AchievementCategoryTypeHelper.NormalizeOrDefault)
+                        .Where(value => !string.IsNullOrWhiteSpace(value)),
+                    StringComparer.OrdinalIgnoreCase);
+                filtered = filtered.Where(a =>
+                    AchievementCategoryTypeHelper.ParseValues(
+                            AchievementCategoryTypeHelper.NormalizeOrDefault(a.CategoryType))
+                        .Any(selectedTypeSet.Contains));
+            }
+
+            if (_selectedCategoryLabelFilters.Count > 0)
+            {
+                var selectedCategorySet = new HashSet<string>(
+                    _selectedCategoryLabelFilters
+                        .Select(AchievementCategoryTypeHelper.NormalizeCategoryOrDefault)
+                        .Where(value => !string.IsNullOrWhiteSpace(value)),
+                    StringComparer.OrdinalIgnoreCase);
+                filtered = filtered.Where(a =>
+                    selectedCategorySet.Contains(
+                        AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel)));
+            }
 
             if (!string.IsNullOrEmpty(_searchText))
             {
