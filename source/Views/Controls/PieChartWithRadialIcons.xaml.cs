@@ -4,11 +4,15 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using LiveCharts;
 using LiveCharts.Wpf;
+using LiveCharts.Wpf.Points;
 using PlayniteAchievements.Models;
 
 namespace PlayniteAchievements.Views.Controls
@@ -19,8 +23,20 @@ namespace PlayniteAchievements.Views.Controls
     public partial class PieChartWithRadialIcons : UserControl
     {
         private static readonly double IconSize = 18.0;
+        private const double SliceHighlightOffset = 5.0;
+        private const double LiveChartsRotationOffset = 45.0;
+        private static readonly Duration SliceAnimationDuration = new Duration(TimeSpan.FromMilliseconds(150));
+        private static readonly PropertyInfo PiePointViewSliceProperty =
+            typeof(PieSlice).Assembly
+                .GetType("LiveCharts.Wpf.Points.PiePointView")?
+                .GetProperty("Slice", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        private static readonly IEasingFunction SliceAnimationEasing = new QuadraticEase
+        {
+            EasingMode = EasingMode.EaseOut
+        };
         private List<PieSeries> subscribedSeries = new List<PieSeries>();
         private bool calculationScheduled;
+        private string hoveredSliceLabel;
 
         /// <summary>
         /// Event raised when a pie slice is clicked.
@@ -40,6 +56,10 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(nameof(IconOffset), typeof(double), typeof(PieChartWithRadialIcons),
                 new PropertyMetadata(12.0, OnLayoutPropertyChanged));
 
+        public static readonly DependencyProperty HighlightedLabelsProperty =
+            DependencyProperty.Register(nameof(HighlightedLabels), typeof(ObservableCollection<string>), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(null, OnHighlightedLabelsChanged));
+
         public SeriesCollection PieSeries
         {
             get => (SeriesCollection)GetValue(PieSeriesProperty);
@@ -56,6 +76,12 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (double)GetValue(IconOffsetProperty);
             set => SetValue(IconOffsetProperty, value);
+        }
+
+        public ObservableCollection<string> HighlightedLabels
+        {
+            get => (ObservableCollection<string>)GetValue(HighlightedLabelsProperty);
+            set => SetValue(HighlightedLabelsProperty, value);
         }
 
         public ObservableCollection<PieIconPosition> IconPositions { get; } = new ObservableCollection<PieIconPosition>();
@@ -165,6 +191,20 @@ namespace PlayniteAchievements.Views.Controls
             ((PieChartWithRadialIcons)d).ScheduleCalculation();
         }
 
+        private static void OnHighlightedLabelsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var control = (PieChartWithRadialIcons)d;
+            if (e.OldValue is ObservableCollection<string> oldLabels)
+            {
+                oldLabels.CollectionChanged -= control.OnHighlightedLabelsCollectionChanged;
+            }
+            if (e.NewValue is ObservableCollection<string> newLabels)
+            {
+                newLabels.CollectionChanged += control.OnHighlightedLabelsCollectionChanged;
+            }
+            control.ApplySliceTransforms();
+        }
+
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             ScheduleCalculation();
@@ -185,16 +225,22 @@ namespace PlayniteAchievements.Views.Controls
             ScheduleCalculation();
         }
 
+        private void OnHighlightedLabelsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            ApplySliceTransforms();
+        }
+
         private void CalculatePositions()
         {
             if (PieSeries == null || PieSeries.Count == 0 || LegendItems == null || LegendItems.Count == 0)
             {
                 IconPositions.Clear();
+                ClearSliceTransforms();
                 return;
             }
 
-            var chartValues = PieSeries
-                .OfType<PieSeries>()
+            var seriesList = PieSeries.OfType<PieSeries>().ToList();
+            var chartValues = seriesList
                 .Select(s =>
                 {
                     var values = s.Values as ChartValues<PieSliceChartData>;
@@ -205,26 +251,39 @@ namespace PlayniteAchievements.Views.Controls
             if (chartValues.Count == 0 || chartValues.All(v => v == 0))
             {
                 IconPositions.Clear();
+                ClearSliceTransforms();
                 return;
             }
 
             double totalValue = chartValues.Sum();
-            double controlSize = Math.Min(ActualWidth, ActualHeight);
+            var margin = Chart?.Margin ?? new Thickness(0);
+            double availableWidth = Math.Max(0, ActualWidth - margin.Left - margin.Right);
+            double availableHeight = Math.Max(0, ActualHeight - margin.Top - margin.Bottom);
+            double controlSize = Math.Min(availableWidth, availableHeight);
             if (controlSize <= 0)
             {
                 return;
             }
 
-            double pieRadius = (controlSize - 8) / 2.0;
+            double pieRadius = controlSize / 2.0;
             double iconRadius = pieRadius + IconOffset;
-            double centerX = ActualWidth / 2.0;
-            double centerY = ActualHeight / 2.0;
+            double centerX = margin.Left + (availableWidth / 2.0);
+            double centerY = margin.Top + (availableHeight / 2.0);
 
-            // LiveCharts renders first slice at approximately 1:00 position
-            // Offset by -30° to align icons with slice midpoints
-            const double LiveChartsRotationOffset = 45;
+            // Build highlight set for computing offsets in single pass
+            var highlighted = new HashSet<string>(
+                (HighlightedLabels ?? Enumerable.Empty<string>())
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .Select(label => label.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(hoveredSliceLabel))
+            {
+                highlighted.Add(hoveredSliceLabel);
+            }
+
             double currentAngle = LiveChartsRotationOffset;
             var positions = new List<PieIconPosition>();
+            var sliceTransformData = new List<(PieSlice Slice, double OffsetX, double OffsetY)>();
 
             for (int i = 0; i < chartValues.Count && i < LegendItems.Count; i++)
             {
@@ -233,6 +292,18 @@ namespace PlayniteAchievements.Views.Controls
                 double angleRadians = midpointAngle * Math.PI / 180.0;
 
                 var legend = LegendItems[i];
+                var series = seriesList[i];
+                var isHighlighted = !string.IsNullOrWhiteSpace(series?.Title) && highlighted.Contains(series.Title);
+                var highlightOffset = isHighlighted ? SliceHighlightOffset : 0.0;
+                var offsetX = highlightOffset * Math.Sin(angleRadians);
+                var offsetY = -highlightOffset * Math.Cos(angleRadians);
+
+                // Collect slice transform data for batch application
+                var slice = GetPieSlice(series);
+                if (slice != null)
+                {
+                    sliceTransformData.Add((slice, offsetX, offsetY));
+                }
 
                 // Only show icon if count > 0
                 if (legend.Count > 0)
@@ -243,26 +314,61 @@ namespace PlayniteAchievements.Views.Controls
 
                     positions.Add(new PieIconPosition
                     {
+                        Label = legend.Label,
                         IconKey = legend.IconKey,
                         ColorHex = legend.ColorHex,
                         Count = legend.Count,
                         X = x,
-                        Y = y
+                        Y = y,
+                        OffsetX = offsetX,
+                        OffsetY = offsetY
                     });
                 }
 
                 currentAngle += sliceArc;
             }
 
+            // Apply all updates in sequence (but computed in single pass above)
             SynchronizePositions(positions);
+            ApplySliceTransformsBatch(sliceTransformData);
+        }
+
+        private void ApplySliceTransformsBatch(List<(PieSlice Slice, double OffsetX, double OffsetY)> transformData)
+        {
+            foreach (var (slice, offsetX, offsetY) in transformData)
+            {
+                SetSliceTransform(slice, offsetX, offsetY);
+            }
         }
 
         private void SynchronizePositions(IReadOnlyList<PieIconPosition> positions)
         {
-            IconPositions.Clear();
-            foreach (var pos in positions)
+            // Remove extra positions from the end
+            while (IconPositions.Count > positions.Count)
             {
-                IconPositions.Add(pos);
+                IconPositions.RemoveAt(IconPositions.Count - 1);
+            }
+
+            // Update existing or add new positions
+            for (int i = 0; i < positions.Count; i++)
+            {
+                var newPos = positions[i];
+                if (i < IconPositions.Count)
+                {
+                    // Update existing position in-place
+                    var existing = IconPositions[i];
+                    existing.Label = newPos.Label;
+                    existing.IconKey = newPos.IconKey;
+                    existing.ColorHex = newPos.ColorHex;
+                    existing.Count = newPos.Count;
+                    existing.X = newPos.X;
+                    existing.Y = newPos.Y;
+                }
+                else
+                {
+                    // Add new position
+                    IconPositions.Add(newPos);
+                }
             }
         }
 
@@ -276,6 +382,209 @@ namespace PlayniteAchievements.Views.Controls
             {
                 SliceClick?.Invoke(this, series.Title);
             }
+        }
+
+        private void OnPieChartDataHover(object sender, ChartPoint chartPoint)
+        {
+            hoveredSliceLabel = (chartPoint?.SeriesView as PieSeries)?.Title;
+            ApplySliceTransforms();
+        }
+
+        private void OnPieChartMouseLeave(object sender, MouseEventArgs e)
+        {
+            if (string.IsNullOrEmpty(hoveredSliceLabel))
+            {
+                return;
+            }
+
+            hoveredSliceLabel = null;
+            ApplySliceTransforms();
+        }
+
+        private void ApplySliceTransforms(IReadOnlyList<double> chartValues = null)
+        {
+            var seriesList = PieSeries?.OfType<PieSeries>().ToList();
+            if (seriesList == null || seriesList.Count == 0)
+            {
+                return;
+            }
+
+            chartValues = chartValues ?? seriesList
+                .Select(series =>
+                {
+                    var values = series.Values as ChartValues<PieSliceChartData>;
+                    return values?.Count > 0 ? values[0].ChartValue : 0;
+                })
+                .ToList();
+
+            if (chartValues.Count == 0 || chartValues.All(value => value == 0))
+            {
+                ClearSliceTransforms();
+                return;
+            }
+
+            var highlighted = new HashSet<string>(
+                (HighlightedLabels ?? Enumerable.Empty<string>())
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .Select(label => label.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            if (!string.IsNullOrWhiteSpace(hoveredSliceLabel))
+            {
+                highlighted.Add(hoveredSliceLabel);
+            }
+
+            var totalValue = chartValues.Sum();
+            if (totalValue <= 0)
+            {
+                ClearSliceTransforms();
+                return;
+            }
+
+            double currentAngle = LiveChartsRotationOffset;
+            var iconOffsets = new Dictionary<string, (double X, double Y)>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < seriesList.Count; i++)
+            {
+                var series = seriesList[i];
+                var sliceValue = i < chartValues.Count ? chartValues[i] : 0;
+                var sliceArc = (sliceValue / totalValue) * 360.0;
+                var midpointAngle = currentAngle + (sliceArc / 2.0);
+                var angleRadians = midpointAngle * Math.PI / 180.0;
+                var isHighlighted = !string.IsNullOrWhiteSpace(series.Title) && highlighted.Contains(series.Title);
+                var offset = isHighlighted ? SliceHighlightOffset : 0.0;
+                var slice = GetPieSlice(series);
+                var offsetX = offset * Math.Sin(angleRadians);
+                var offsetY = -offset * Math.Cos(angleRadians);
+
+                if (!string.IsNullOrWhiteSpace(series.Title))
+                {
+                    iconOffsets[series.Title] = (offsetX, offsetY);
+                }
+
+                SetSliceTransform(
+                    slice,
+                    offsetX,
+                    offsetY);
+
+                currentAngle += sliceArc;
+            }
+
+            ApplyIconOffsets(iconOffsets);
+        }
+
+        private void ClearSliceTransforms()
+        {
+            if (PieSeries == null)
+            {
+                return;
+            }
+
+            foreach (var series in PieSeries.OfType<PieSeries>())
+            {
+                SetSliceTransform(GetPieSlice(series), 0, 0);
+            }
+
+            ClearIconOffsets();
+        }
+
+        private static PieSlice GetPieSlice(PieSeries series)
+        {
+            if (series == null)
+            {
+                return null;
+            }
+
+            var chartPoint = series.ChartPoints?.FirstOrDefault();
+            if (chartPoint == null)
+            {
+                return null;
+            }
+
+            var pointView = chartPoint.View;
+            if (pointView == null || PiePointViewSliceProperty == null)
+            {
+                return null;
+            }
+
+            return PiePointViewSliceProperty?.GetValue(pointView) as PieSlice;
+        }
+
+        private void ApplyIconOffsets(IReadOnlyDictionary<string, (double X, double Y)> iconOffsets)
+        {
+            if (IconPositions.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var iconPosition in IconPositions)
+            {
+                var offset = !string.IsNullOrWhiteSpace(iconPosition.Label) &&
+                             iconOffsets != null &&
+                             iconOffsets.TryGetValue(iconPosition.Label, out var resolvedOffset)
+                    ? resolvedOffset
+                    : (0.0, 0.0);
+
+                iconPosition.OffsetX = offset.Item1;
+                iconPosition.OffsetY = offset.Item2;
+            }
+        }
+
+        private void ClearIconOffsets()
+        {
+            if (IconPositions.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var iconPosition in IconPositions)
+            {
+                iconPosition.OffsetX = 0;
+                iconPosition.OffsetY = 0;
+            }
+        }
+
+        private static void SetSliceTransform(PieSlice slice, double x, double y)
+        {
+            if (slice == null)
+            {
+                return;
+            }
+
+            if (!(slice.RenderTransform is TranslateTransform transform))
+            {
+                transform = new TranslateTransform();
+                slice.RenderTransform = transform;
+            }
+
+            AnimateTransformAxis(transform, TranslateTransform.XProperty, x);
+            AnimateTransformAxis(transform, TranslateTransform.YProperty, y);
+        }
+
+        private static void AnimateTransformAxis(TranslateTransform transform, DependencyProperty property, double target)
+        {
+            var current = property == TranslateTransform.XProperty ? transform.X : transform.Y;
+            if (Math.Abs(current - target) < 0.01)
+            {
+                if (property == TranslateTransform.XProperty)
+                {
+                    transform.X = target;
+                }
+                else
+                {
+                    transform.Y = target;
+                }
+                return;
+            }
+
+            var animation = new DoubleAnimation
+            {
+                To = target,
+                Duration = SliceAnimationDuration,
+                EasingFunction = SliceAnimationEasing,
+                FillBehavior = FillBehavior.HoldEnd
+            };
+
+            transform.BeginAnimation(property, animation, HandoffBehavior.SnapshotAndReplace);
         }
     }
 }

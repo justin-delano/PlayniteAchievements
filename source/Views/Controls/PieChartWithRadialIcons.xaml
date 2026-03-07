@@ -12,13 +12,17 @@
     </UserControl.Resources>
 
     <Grid>
-        <lvc:PieChart LegendLocation="None"
+        <lvc:PieChart x:Name="Chart"
+                      LegendLocation="None"
                       InnerRadius="30"
-                      Margin="4"
+                      Margin="10"
                       DisableAnimations="True"
                       Hoverable="True"
+                      HoverPushOut="0"
                       TooltipTimeout="0:0:0.1"
                       Series="{Binding PieSeries, ElementName=Root}"
+                      DataHover="OnPieChartDataHover"
+                      MouseLeave="OnPieChartMouseLeave"
                       DataClick="OnPieChartDataClick">
             <lvc:PieChart.DataTooltip>
                 <controls:PieChartTooltip/>
@@ -43,6 +47,9 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Grid Width="18" Height="18">
+                            <Grid.RenderTransform>
+                                <TranslateTransform X="{Binding OffsetX}" Y="{Binding OffsetY}"/>
+                            </Grid.RenderTransform>
                             <!-- Badge icons -->
                             <Image Source="{Binding IconKey, Converter={StaticResource ResourceKeyToImage}}"
                                    Effect="{StaticResource BadgeShadow}"

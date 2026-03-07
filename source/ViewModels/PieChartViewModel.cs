@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -31,9 +32,32 @@ namespace PlayniteAchievements.ViewModels
         public SeriesCollection PieSeries { get; } = new SeriesCollection();
         public ObservableCollection<LegendItem> LegendItems { get; } = new ObservableCollection<LegendItem>();
 
+        private ObservableCollection<string> _highlightedLabels = new ObservableCollection<string>();
+        public ObservableCollection<string> HighlightedLabels
+        {
+            get => _highlightedLabels;
+            private set => SetValue(ref _highlightedLabels, value);
+        }
+
         // Consistent transparent locked color for all pie charts
         private static readonly Color LockedTransparent = Color.FromArgb(0, 102, 102, 102);
         private const string LockedLegendColor = "#666666";
+        private static readonly Color UltraRarePieColor = Color.FromRgb(135, 206, 250);
+        private static readonly Color RarePieColor = Color.FromRgb(255, 193, 7);
+        private static readonly Color UncommonPieColor = Color.FromRgb(158, 158, 158);
+        private static readonly Color CommonPieColor = Color.FromRgb(139, 69, 19);
+
+        public void SetSelectedLabels(IEnumerable<string> labels)
+        {
+            var normalizedLabels = new HashSet<string>(
+                (labels ?? Enumerable.Empty<string>())
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .Select(label => label.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            HighlightedLabels = new ObservableCollection<string>(
+                normalizedLabels.OrderBy(label => label, StringComparer.OrdinalIgnoreCase));
+        }
 
         /// <summary>
         /// Sets the pie chart data for Games completion (Completed vs Incomplete).
@@ -70,22 +94,22 @@ namespace PlayniteAchievements.ViewModels
 
             if (ultraRareUnlocked > 0 || ultraRareTotal > 0)
             {
-                dataPoints.Add((ultraRareLabel, ultraRareUnlocked, "BadgePlatinumHexagon", Color.FromRgb(135, 206, 250), string.Empty, ultraRareUnlocked, ultraRareTotal, false));
+                dataPoints.Add((ultraRareLabel, ultraRareUnlocked, "BadgePlatinumHexagon", UltraRarePieColor, string.Empty, ultraRareUnlocked, ultraRareTotal, false));
             }
 
             if (rareUnlocked > 0 || rareTotal > 0)
             {
-                dataPoints.Add((rareLabel, rareUnlocked, "BadgeGoldPentagon", Color.FromRgb(255, 193, 7), string.Empty, rareUnlocked, rareTotal, false));
+                dataPoints.Add((rareLabel, rareUnlocked, "BadgeGoldPentagon", RarePieColor, string.Empty, rareUnlocked, rareTotal, false));
             }
 
             if (uncommonUnlocked > 0 || uncommonTotal > 0)
             {
-                dataPoints.Add((uncommonLabel, uncommonUnlocked, "BadgeSilverSquare", Color.FromRgb(158, 158, 158), string.Empty, uncommonUnlocked, uncommonTotal, false));
+                dataPoints.Add((uncommonLabel, uncommonUnlocked, "BadgeSilverSquare", UncommonPieColor, string.Empty, uncommonUnlocked, uncommonTotal, false));
             }
 
             if (commonUnlocked > 0 || commonTotal > 0)
             {
-                dataPoints.Add((commonLabel, commonUnlocked, "BadgeBronzeTriangle", Color.FromRgb(139, 69, 19), string.Empty, commonUnlocked, commonTotal, false));
+                dataPoints.Add((commonLabel, commonUnlocked, "BadgeBronzeTriangle", CommonPieColor, string.Empty, commonUnlocked, commonTotal, false));
             }
 
             dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent, string.Empty, locked, locked, true));
@@ -144,6 +168,59 @@ namespace PlayniteAchievements.ViewModels
             }
 
             dataPoints.Add((lockedLabel, totalLocked, "BadgeLocked", LockedTransparent, string.Empty, totalLocked, totalLocked, true));
+
+            ApplyMinimumVisibilityRule(dataPoints);
+        }
+
+        /// <summary>
+        /// Sets the pie chart data for trophy distribution (Platinum, Gold, Silver, Bronze, Locked).
+        /// </summary>
+        public void SetTrophyData(
+            int platinumUnlocked,
+            int goldUnlocked,
+            int silverUnlocked,
+            int bronzeUnlocked,
+            int platinumTotal,
+            int goldTotal,
+            int silverTotal,
+            int bronzeTotal,
+            string platinumLabel,
+            string goldLabel,
+            string silverLabel,
+            string bronzeLabel,
+            string lockedLabel)
+        {
+            var totalTrophies = platinumTotal + goldTotal + silverTotal + bronzeTotal;
+            if (totalTrophies <= 0)
+            {
+                SynchronizePieChartAndLegend(new List<PieSliceData>());
+                return;
+            }
+
+            var locked = Math.Max(0, totalTrophies - (platinumUnlocked + goldUnlocked + silverUnlocked + bronzeUnlocked));
+            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)>();
+
+            if (platinumUnlocked > 0 || platinumTotal > 0)
+            {
+                dataPoints.Add((platinumLabel, platinumUnlocked, "TrophyPlatinum", UltraRarePieColor, string.Empty, platinumUnlocked, platinumTotal, false));
+            }
+
+            if (goldUnlocked > 0 || goldTotal > 0)
+            {
+                dataPoints.Add((goldLabel, goldUnlocked, "TrophyGold", RarePieColor, string.Empty, goldUnlocked, goldTotal, false));
+            }
+
+            if (silverUnlocked > 0 || silverTotal > 0)
+            {
+                dataPoints.Add((silverLabel, silverUnlocked, "TrophySilver", UncommonPieColor, string.Empty, silverUnlocked, silverTotal, false));
+            }
+
+            if (bronzeUnlocked > 0 || bronzeTotal > 0)
+            {
+                dataPoints.Add((bronzeLabel, bronzeUnlocked, "TrophyBronze", CommonPieColor, string.Empty, bronzeUnlocked, bronzeTotal, false));
+            }
+
+            dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent, string.Empty, locked, locked, true));
 
             ApplyMinimumVisibilityRule(dataPoints);
         }
@@ -349,5 +426,6 @@ namespace PlayniteAchievements.ViewModels
                 LegendItems.RemoveAt(LegendItems.Count - 1);
             }
         }
+
     }
 }
