@@ -65,6 +65,10 @@ namespace PlayniteAchievements.ViewModels
         private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
         private List<string> _availableProviders = new List<string>();
+        private readonly HashSet<string> _selectedProviderFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _selectedCompletenessFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _selectedGameTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _selectedGameCategoryFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Sort state tracking for quick reverse
         private string _overviewSortPath;
@@ -113,6 +117,9 @@ namespace PlayniteAchievements.ViewModels
             GamesOverview = new BulkObservableCollection<GameOverviewItem>();
             RecentAchievements = new BulkObservableCollection<RecentAchievementItem>();
             SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
+            SelectedGameTypeFilterOptions = new ObservableCollection<string>();
+            SelectedGameCategoryFilterOptions = new ObservableCollection<string>();
+            CompletenessFilterOptions = new ObservableCollection<string>();
 
             // Initialize refresh mode options from service (exclude LibrarySelected - context menu only)
             RefreshModes = new ObservableCollection<RefreshMode>(
@@ -124,6 +131,7 @@ namespace PlayniteAchievements.ViewModels
             GamesPieChart = new PieChartViewModel();
             RarityPieChart = new PieChartViewModel();
             ProviderPieChart = new PieChartViewModel();
+            TrophyPieChart = new PieChartViewModel();
 
             // Set defaults: Unlocked Only, sorted by Unlock Date
             _showUnlockedOnly = true;
@@ -199,6 +207,62 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private ObservableCollection<string> _selectedGameTypeFilterOptions;
+        public ObservableCollection<string> SelectedGameTypeFilterOptions
+        {
+            get => _selectedGameTypeFilterOptions;
+            private set => SetValue(ref _selectedGameTypeFilterOptions, value);
+        }
+
+        public string SelectedGameTypeFilterText => GetSelectedFilterText(
+            _selectedGameTypeFilters,
+            SelectedGameTypeFilterOptions,
+            L("LOCPlayAch_GameOptions_Category_TypeSelectorPlaceholder", "Type"));
+
+        public bool IsSelectedGameTypeFilterSelected(string value)
+        {
+            return IsFilterSelected(_selectedGameTypeFilters, value);
+        }
+
+        public void SetSelectedGameTypeFilterSelected(string value, bool isSelected)
+        {
+            if (!SetFilterSelection(_selectedGameTypeFilters, value, isSelected))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(SelectedGameTypeFilterText));
+            ApplyRightFilters();
+        }
+
+        private ObservableCollection<string> _selectedGameCategoryFilterOptions;
+        public ObservableCollection<string> SelectedGameCategoryFilterOptions
+        {
+            get => _selectedGameCategoryFilterOptions;
+            private set => SetValue(ref _selectedGameCategoryFilterOptions, value);
+        }
+
+        public string SelectedGameCategoryFilterText => GetSelectedFilterText(
+            _selectedGameCategoryFilters,
+            SelectedGameCategoryFilterOptions,
+            L("LOCPlayAch_GameOptions_Category_Filter_LabelSelectorPlaceholder", "Category"));
+
+        public bool IsSelectedGameCategoryFilterSelected(string value)
+        {
+            return IsFilterSelected(_selectedGameCategoryFilters, value);
+        }
+
+        public void SetSelectedGameCategoryFilterSelected(string value, bool isSelected)
+        {
+            if (!SetFilterSelection(_selectedGameCategoryFilters, value, isSelected))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(SelectedGameCategoryFilterText));
+            ApplyRightFilters();
+        }
+
         private bool _showSelectedGameUnlocked = true;
         public bool ShowSelectedGameUnlocked
         {
@@ -252,36 +316,137 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _providerFilterOptions, value);
         }
 
-        private string _selectedProviderFilter = "All";
-        public string SelectedProviderFilter
+        public string SelectedProviderFilterText => GetSelectedFilterText(
+            _selectedProviderFilters,
+            ProviderFilterOptions,
+            L("LOCPlayAch_Filter_ProviderSelectorPlaceholder", "Platform"));
+
+        public bool IsProviderFilterSelected(string providerName)
         {
-            get => _selectedProviderFilter;
-            set
+            return IsFilterSelected(_selectedProviderFilters, providerName);
+        }
+
+        public void SetProviderFilterSelected(string providerName, bool isSelected)
+        {
+            if (!SetFilterSelection(_selectedProviderFilters, providerName, isSelected))
             {
-                if (SetValueAndReturn(ref _selectedProviderFilter, value))
-                {
-                    // Defer filter application to avoid interfering with ComboBox selection
-                    System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                        new Action(() => ApplyLeftFilters()),
-                        System.Windows.Threading.DispatcherPriority.ContextIdle);
-                }
+                return;
             }
+
+            OnPropertyChanged(nameof(SelectedProviderFilterText));
+            UpdateOverviewPieChartSelectionStates();
+            // Defer filter application to avoid interfering with menu click handling.
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
+                new Action(() => ApplyLeftFilters()),
+                System.Windows.Threading.DispatcherPriority.ContextIdle);
+        }
+
+        public void ClearProviderFilters()
+        {
+            if (_selectedProviderFilters.Count == 0)
+            {
+                return;
+            }
+
+            _selectedProviderFilters.Clear();
+            OnPropertyChanged(nameof(SelectedProviderFilterText));
+            UpdateOverviewPieChartSelectionStates();
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
+                new Action(() => ApplyLeftFilters()),
+                System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
         /// <summary>
-        /// Toggles the provider filter when a pie slice is clicked.
-        /// If the same provider is already selected, resets to "All".
+        /// Toggles a provider filter when a pie slice is clicked.
         /// </summary>
         /// <param name="providerName">The provider name from the clicked slice</param>
         public void ToggleProviderFilterFromPieChart(string providerName)
         {
-            // Check if this provider exists in the filter options
-            if (ProviderFilterOptions == null || !ProviderFilterOptions.Contains(providerName)) return;
+            if (string.IsNullOrWhiteSpace(providerName))
+            {
+                return;
+            }
 
-            // If already selected, reset to "All", otherwise select the provider
-            SelectedProviderFilter = string.Equals(SelectedProviderFilter, providerName, StringComparison.OrdinalIgnoreCase)
-                ? "All"
-                : providerName;
+            if (string.Equals(providerName, L("LOCPlayAch_Sidebar_Locked", "Locked"), StringComparison.OrdinalIgnoreCase))
+            {
+                ClearProviderFilters();
+                return;
+            }
+
+            if (ProviderFilterOptions == null || !ProviderFilterOptions.Contains(providerName))
+            {
+                return;
+            }
+
+            var currentlySelected = IsProviderFilterSelected(providerName);
+            SetProviderFilterSelected(providerName, !currentlySelected);
+        }
+
+        private ObservableCollection<string> _completenessFilterOptions;
+        public ObservableCollection<string> CompletenessFilterOptions
+        {
+            get => _completenessFilterOptions;
+            private set => SetValue(ref _completenessFilterOptions, value);
+        }
+
+        public string SelectedCompletenessFilterText => GetSelectedFilterText(
+            _selectedCompletenessFilters,
+            CompletenessFilterOptions,
+            L("LOCPlayAch_Filter_CompletenessSelectorPlaceholder", "Completeness"));
+
+        public bool IsCompletenessFilterSelected(string value)
+        {
+            return IsFilterSelected(_selectedCompletenessFilters, value);
+        }
+
+        public void SetCompletenessFilterSelected(string value, bool isSelected)
+        {
+            if (!SetFilterSelection(_selectedCompletenessFilters, value, isSelected))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(SelectedCompletenessFilterText));
+            UpdateOverviewPieChartSelectionStates();
+            // Defer filter application to avoid interfering with menu click handling.
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
+                new Action(() => ApplyLeftFilters()),
+                System.Windows.Threading.DispatcherPriority.ContextIdle);
+        }
+
+        /// <summary>
+        /// Selects exactly one completeness filter when a games pie slice is clicked.
+        /// Pie chart clicks are binary: Complete or Incomplete, never both.
+        /// </summary>
+        /// <param name="completenessLabel">The completeness label from the clicked slice.</param>
+        public void ToggleCompletenessFilterFromPieChart(string completenessLabel)
+        {
+            if (string.IsNullOrWhiteSpace(completenessLabel) ||
+                CompletenessFilterOptions == null ||
+                !CompletenessFilterOptions.Contains(completenessLabel))
+            {
+                return;
+            }
+
+            var isOnlySelected =
+                _selectedCompletenessFilters.Count == 1 &&
+                _selectedCompletenessFilters.Contains(completenessLabel);
+
+            if (isOnlySelected)
+            {
+                _selectedCompletenessFilters.Clear();
+            }
+            else
+            {
+                _selectedCompletenessFilters.Clear();
+                _selectedCompletenessFilters.Add(completenessLabel);
+            }
+
+            OnPropertyChanged(nameof(SelectedCompletenessFilterText));
+            UpdateOverviewPieChartSelectionStates();
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
+                new Action(() => ApplyLeftFilters()),
+                System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
         public ObservableCollection<RefreshMode> RefreshModes { get; }
@@ -299,6 +464,12 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
         }
+
+        public string RefreshModeSelectionText => RefreshModes?
+            .FirstOrDefault(mode => string.Equals(mode?.Key, SelectedRefreshMode, StringComparison.Ordinal))?
+            .ShortDisplayName
+            ?? RefreshModes?.FirstOrDefault()?.ShortDisplayName
+            ?? L("LOCPlayAch_Button_Refresh", "Refresh");
 
         public string RefreshActionButtonText => string.Equals(
             SelectedRefreshMode,
@@ -335,7 +506,19 @@ namespace PlayniteAchievements.ViewModels
 
         public bool UseCoverImages => _settings?.Persisted?.UseCoverImages ?? false;
 
-        public bool ShowSidebarPieCharts => _settings?.Persisted?.ShowSidebarPieCharts ?? true;
+        public bool ShowSidebarPieCharts =>
+            ShowSidebarGamesPieChart ||
+            ShowSidebarProviderPieChart ||
+            ShowSidebarRarityPieChart ||
+            ShowSidebarTrophyPieChart;
+
+        public bool ShowSidebarGamesPieChart => _settings?.Persisted?.ShowSidebarGamesPieChart ?? true;
+
+        public bool ShowSidebarProviderPieChart => _settings?.Persisted?.ShowSidebarProviderPieChart ?? true;
+
+        public bool ShowSidebarRarityPieChart => _settings?.Persisted?.ShowSidebarRarityPieChart ?? true;
+
+        public bool ShowSidebarTrophyPieChart => _settings?.Persisted?.ShowSidebarTrophyPieChart ?? true;
 
         public bool ShowSidebarBarCharts => _settings?.Persisted?.ShowSidebarBarCharts ?? true;
 
@@ -420,6 +603,8 @@ namespace PlayniteAchievements.ViewModels
 
                     ResetSelectedGameAchievementVisibilityFilters();
                     OnPropertyChanged(nameof(IsGameSelected));
+                    OnPropertyChanged(nameof(TimelineSectionTitle));
+                    UpdateContextualPieCharts(_latestSnapshot);
                     (RefreshCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                     LoadSelectedGameAchievements();
                 }
@@ -458,10 +643,40 @@ namespace PlayniteAchievements.ViewModels
 
         public TimelineViewModel GlobalTimeline { get; private set; }
         public TimelineViewModel SelectedGameTimeline { get; private set; }
+        public string TimelineSectionTitle
+        {
+            get
+            {
+                var title = L("LOCPlayAch_Section_Timeline", "Achievements Over Time");
+                var selectedGameName = SelectedGame?.GameName;
+                return string.IsNullOrWhiteSpace(selectedGameName)
+                    ? title
+                    : $"{title} ({selectedGameName})";
+            }
+        }
 
         public PieChartViewModel GamesPieChart { get; private set; }
         public PieChartViewModel RarityPieChart { get; private set; }
         public PieChartViewModel ProviderPieChart { get; private set; }
+        public PieChartViewModel TrophyPieChart { get; private set; }
+
+        private string _rarityPieChartTitle;
+        public string RarityPieChartTitle
+        {
+            get => string.IsNullOrWhiteSpace(_rarityPieChartTitle)
+                ? L("LOCPlayAch_Sidebar_RarityPieChart", "Achievements by Rarity")
+                : _rarityPieChartTitle;
+            private set => SetValue(ref _rarityPieChartTitle, value);
+        }
+
+        private string _trophyPieChartTitle;
+        public string TrophyPieChartTitle
+        {
+            get => string.IsNullOrWhiteSpace(_trophyPieChartTitle)
+                ? L("LOCPlayAch_Sidebar_TrophyPieChart", "Achievements by Trophy")
+                : _trophyPieChartTitle;
+            private set => SetValue(ref _trophyPieChartTitle, value);
+        }
 
         // Rarity percentage properties for distribution bars
         public double CommonPercentage => TotalUnlockedOverview > 0
@@ -799,6 +1014,7 @@ namespace PlayniteAchievements.ViewModels
         private void HandleRefreshModeSelectionChanged()
         {
             OnPropertyChanged(nameof(RefreshActionButtonText));
+            OnPropertyChanged(nameof(RefreshModeSelectionText));
         }
 
         private void NavigateToGame(GameOverviewItem game)
@@ -949,6 +1165,7 @@ namespace PlayniteAchievements.ViewModels
             _allRecentAchievements = snapshot.RecentAchievements ?? new List<RecentAchievementItem>();
 
             UpdateProviderFilterOptions(_allGamesOverview);
+            UpdateCompletenessFilterOptions();
 
             // Initialize filtered lists
             _filteredRecentAchievements = new List<RecentAchievementItem>(_allRecentAchievements);
@@ -1131,6 +1348,7 @@ namespace PlayniteAchievements.ViewModels
             if (updateProviderFilterOptions)
             {
                 UpdateProviderFilterOptions(snapshot.GamesOverview ?? new List<GameOverviewItem>());
+                UpdateCompletenessFilterOptions();
             }
 
             _totalCount = snapshot.TotalAchievements;
@@ -1153,33 +1371,33 @@ namespace PlayniteAchievements.ViewModels
                 providerLookup[provider.ProviderName] = (provider.ProviderIconKey, provider.ProviderColorHex);
             }
 
-            var completedLabel = ResourceProvider.GetString("LOCPlayAch_Completed");
+            var completedLabel = ResourceProvider.GetString("LOCPlayAch_Filter_Complete");
             var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Incomplete");
             var commonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Common");
             var uncommonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Uncommon");
             var rareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Rare");
             var ultraRareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_UltraRare");
+            var trophyPlatinumLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Platinum");
+            var trophyGoldLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Gold");
+            var trophySilverLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Silver");
+            var trophyBronzeLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Bronze");
             var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Locked");
 
             ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalByProvider, snapshot.TotalLocked, lockedLabel, providerLookup);
 
             GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.CompletedGames, completedLabel, incompleteLabel);
-            RarityPieChart.SetRarityData(
-                snapshot.TotalCommon,
-                snapshot.TotalUncommon,
-                snapshot.TotalRare,
-                snapshot.TotalUltraRare,
-                snapshot.TotalLocked,
-                snapshot.TotalCommonPossible,
-                snapshot.TotalUncommonPossible,
-                snapshot.TotalRarePossible,
-                snapshot.TotalUltraRarePossible,
+            UpdateContextualPieCharts(
+                snapshot,
                 commonLabel,
                 uncommonLabel,
                 rareLabel,
                 ultraRareLabel,
-                lockedLabel
-            );
+                trophyPlatinumLabel,
+                trophyGoldLabel,
+                trophySilverLabel,
+                trophyBronzeLabel,
+                lockedLabel);
+            UpdateOverviewPieChartSelectionStates();
 
             OnPropertyChanged(nameof(CommonPercentage));
             OnPropertyChanged(nameof(UncommonPercentage));
@@ -1213,12 +1431,10 @@ namespace PlayniteAchievements.ViewModels
             var providers = (games ?? new List<GameOverviewItem>())
                 .Select(g => g?.Provider)
                 .Where(p => !string.IsNullOrEmpty(p))
-                .Distinct()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            var providerOptions = new List<string> { "All" };
-            providerOptions.AddRange(providers);
-
-            var previousProviderFilter = SelectedProviderFilter;
+            var providerOptions = new List<string>(providers);
 
             if (ProviderFilterOptions == null)
             {
@@ -1229,14 +1445,39 @@ namespace PlayniteAchievements.ViewModels
                 CollectionHelper.SynchronizeCollection(ProviderFilterOptions, providerOptions);
             }
 
-            if (previousProviderFilter != null && ProviderFilterOptions.Contains(previousProviderFilter))
+            if (PruneFilterSelections(_selectedProviderFilters, ProviderFilterOptions))
             {
-                SelectedProviderFilter = previousProviderFilter;
+                ApplyLeftFilters();
+            }
+
+            OnPropertyChanged(nameof(SelectedProviderFilterText));
+            UpdateOverviewPieChartSelectionStates();
+        }
+
+        private void UpdateCompletenessFilterOptions()
+        {
+            var options = new List<string>
+            {
+                L("LOCPlayAch_Filter_Complete", "Complete"),
+                L("LOCPlayAch_Sidebar_Incomplete", "Incomplete")
+            };
+
+            if (CompletenessFilterOptions == null)
+            {
+                CompletenessFilterOptions = new ObservableCollection<string>(options);
             }
             else
             {
-                SelectedProviderFilter = "All";
+                CollectionHelper.SynchronizeCollection(CompletenessFilterOptions, options);
             }
+
+            if (PruneFilterSelections(_selectedCompletenessFilters, CompletenessFilterOptions))
+            {
+                ApplyLeftFilters();
+            }
+
+            OnPropertyChanged(nameof(SelectedCompletenessFilterText));
+            UpdateOverviewPieChartSelectionStates();
         }
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
@@ -1249,9 +1490,13 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
             }
-            else if (e.PropertyName == "Persisted.ShowSidebarPieCharts")
+            else if (e.PropertyName == "Persisted.ShowSidebarPieCharts"
+                || e.PropertyName == "Persisted.ShowSidebarGamesPieChart"
+                || e.PropertyName == "Persisted.ShowSidebarProviderPieChart"
+                || e.PropertyName == "Persisted.ShowSidebarRarityPieChart"
+                || e.PropertyName == "Persisted.ShowSidebarTrophyPieChart")
             {
-                OnPropertyChanged(nameof(ShowSidebarPieCharts));
+                RaiseSidebarPieChartVisibilityChanged();
             }
             else if (e.PropertyName == "Persisted.ShowSidebarBarCharts")
             {
@@ -1268,14 +1513,27 @@ namespace PlayniteAchievements.ViewModels
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(PersistedSettings.ShowSidebarPieCharts))
+            if (e.PropertyName == nameof(PersistedSettings.ShowSidebarPieCharts)
+                || e.PropertyName == nameof(PersistedSettings.ShowSidebarGamesPieChart)
+                || e.PropertyName == nameof(PersistedSettings.ShowSidebarProviderPieChart)
+                || e.PropertyName == nameof(PersistedSettings.ShowSidebarRarityPieChart)
+                || e.PropertyName == nameof(PersistedSettings.ShowSidebarTrophyPieChart))
             {
-                OnPropertyChanged(nameof(ShowSidebarPieCharts));
+                RaiseSidebarPieChartVisibilityChanged();
             }
             else if (e.PropertyName == nameof(PersistedSettings.ShowSidebarBarCharts))
             {
                 OnPropertyChanged(nameof(ShowSidebarBarCharts));
             }
+        }
+
+        private void RaiseSidebarPieChartVisibilityChanged()
+        {
+            OnPropertyChanged(nameof(ShowSidebarPieCharts));
+            OnPropertyChanged(nameof(ShowSidebarGamesPieChart));
+            OnPropertyChanged(nameof(ShowSidebarProviderPieChart));
+            OnPropertyChanged(nameof(ShowSidebarRarityPieChart));
+            OnPropertyChanged(nameof(ShowSidebarTrophyPieChart));
         }
 
         private void RevealAchievement(AchievementDisplayItem item)
@@ -1692,9 +1950,29 @@ namespace PlayniteAchievements.ViewModels
             }
 
             // Provider filter
-            if (SelectedProviderFilter != "All")
+            if (_selectedProviderFilters.Count > 0)
             {
-                filtered = filtered.Where(g => g.Provider == SelectedProviderFilter);
+                filtered = filtered.Where(g =>
+                    !string.IsNullOrWhiteSpace(g.Provider) &&
+                    _selectedProviderFilters.Contains(g.Provider));
+            }
+
+            // Completeness filter
+            if (_selectedCompletenessFilters.Count > 0)
+            {
+                var completeOption = L("LOCPlayAch_Filter_Complete", "Complete");
+                var incompleteOption = L("LOCPlayAch_Sidebar_Incomplete", "Incomplete");
+                var includeComplete = _selectedCompletenessFilters.Contains(completeOption);
+                var includeIncomplete = _selectedCompletenessFilters.Contains(incompleteOption);
+
+                if (includeComplete && !includeIncomplete)
+                {
+                    filtered = filtered.Where(g => g.IsCompleted);
+                }
+                else if (!includeComplete && includeIncomplete)
+                {
+                    filtered = filtered.Where(g => !g.IsCompleted);
+                }
             }
 
             // Hide games with no unlocked
@@ -1738,6 +2016,340 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private void UpdateOverviewPieChartSelectionStates()
+        {
+            ProviderPieChart?.SetSelectedLabels(_selectedProviderFilters);
+            GamesPieChart?.SetSelectedLabels(_selectedCompletenessFilters);
+        }
+
+        private void UpdateContextualPieCharts(
+            SidebarDataSnapshot snapshot,
+            string commonLabel = null,
+            string uncommonLabel = null,
+            string rareLabel = null,
+            string ultraRareLabel = null,
+            string trophyPlatinumLabel = null,
+            string trophyGoldLabel = null,
+            string trophySilverLabel = null,
+            string trophyBronzeLabel = null,
+            string lockedLabel = null)
+        {
+            commonLabel ??= L("LOCPlayAch_Rarity_Common", "Common");
+            uncommonLabel ??= L("LOCPlayAch_Rarity_Uncommon", "Uncommon");
+            rareLabel ??= L("LOCPlayAch_Rarity_Rare", "Rare");
+            ultraRareLabel ??= L("LOCPlayAch_Rarity_UltraRare", "Ultra Rare");
+            trophyPlatinumLabel ??= L("LOCPlayAch_Trophy_Platinum", "Platinum");
+            trophyGoldLabel ??= L("LOCPlayAch_Trophy_Gold", "Gold");
+            trophySilverLabel ??= L("LOCPlayAch_Trophy_Silver", "Silver");
+            trophyBronzeLabel ??= L("LOCPlayAch_Trophy_Bronze", "Bronze");
+            lockedLabel ??= L("LOCPlayAch_Sidebar_Locked", "Locked");
+
+            var selectedGame = ResolveSelectedGameForChartContext(snapshot);
+            var useSelectedRarity = selectedGame?.HasRarityPieChartData == true;
+            var useSelectedTrophy = selectedGame?.HasTrophyPieChartData == true;
+
+            if (useSelectedRarity)
+            {
+                RarityPieChart.SetRarityData(
+                    selectedGame.CommonCount,
+                    selectedGame.UncommonCount,
+                    selectedGame.RareCount,
+                    selectedGame.UltraRareCount,
+                    GetSelectedGameLockedAchievementCount(selectedGame),
+                    selectedGame.TotalCommonPossible,
+                    selectedGame.TotalUncommonPossible,
+                    selectedGame.TotalRarePossible,
+                    selectedGame.TotalUltraRarePossible,
+                    commonLabel,
+                    uncommonLabel,
+                    rareLabel,
+                    ultraRareLabel,
+                    lockedLabel);
+            }
+            else
+            {
+                RarityPieChart.SetRarityData(
+                    snapshot?.TotalCommon ?? 0,
+                    snapshot?.TotalUncommon ?? 0,
+                    snapshot?.TotalRare ?? 0,
+                    snapshot?.TotalUltraRare ?? 0,
+                    snapshot?.TotalLocked ?? 0,
+                    snapshot?.TotalCommonPossible ?? 0,
+                    snapshot?.TotalUncommonPossible ?? 0,
+                    snapshot?.TotalRarePossible ?? 0,
+                    snapshot?.TotalUltraRarePossible ?? 0,
+                    commonLabel,
+                    uncommonLabel,
+                    rareLabel,
+                    ultraRareLabel,
+                    lockedLabel);
+            }
+
+            if (useSelectedTrophy)
+            {
+                TrophyPieChart.SetTrophyData(
+                    selectedGame.TrophyPlatinumCount,
+                    selectedGame.TrophyGoldCount,
+                    selectedGame.TrophySilverCount,
+                    selectedGame.TrophyBronzeCount,
+                    selectedGame.TrophyPlatinumTotal,
+                    selectedGame.TrophyGoldTotal,
+                    selectedGame.TrophySilverTotal,
+                    selectedGame.TrophyBronzeTotal,
+                    trophyPlatinumLabel,
+                    trophyGoldLabel,
+                    trophySilverLabel,
+                    trophyBronzeLabel,
+                    lockedLabel);
+            }
+            else
+            {
+                var trophySummary = BuildTrophySummary(snapshot?.Achievements);
+                TrophyPieChart.SetTrophyData(
+                    trophySummary.PlatinumUnlocked,
+                    trophySummary.GoldUnlocked,
+                    trophySummary.SilverUnlocked,
+                    trophySummary.BronzeUnlocked,
+                    trophySummary.PlatinumTotal,
+                    trophySummary.GoldTotal,
+                    trophySummary.SilverTotal,
+                    trophySummary.BronzeTotal,
+                    trophyPlatinumLabel,
+                    trophyGoldLabel,
+                    trophySilverLabel,
+                    trophyBronzeLabel,
+                    lockedLabel);
+            }
+
+            var rarityTitle = L("LOCPlayAch_Sidebar_RarityPieChart", "Achievements by Rarity");
+            var trophyTitle = L("LOCPlayAch_Sidebar_TrophyPieChart", "Achievements by Trophy");
+            RarityPieChartTitle = BuildContextualPieChartTitle(rarityTitle, useSelectedRarity ? selectedGame?.GameName : null);
+            TrophyPieChartTitle = BuildContextualPieChartTitle(trophyTitle, useSelectedTrophy ? selectedGame?.GameName : null);
+        }
+
+        private GameOverviewItem ResolveSelectedGameForChartContext(SidebarDataSnapshot snapshot)
+        {
+            if (SelectedGame?.PlayniteGameId.HasValue != true)
+            {
+                return SelectedGame;
+            }
+
+            var selectedGameId = SelectedGame.PlayniteGameId.Value;
+            return snapshot?.GamesOverview?.FirstOrDefault(game => game?.PlayniteGameId == selectedGameId)
+                ?? SelectedGame;
+        }
+
+        private static int GetSelectedGameLockedAchievementCount(GameOverviewItem game)
+        {
+            if (game == null)
+            {
+                return 0;
+            }
+
+            return Math.Max(0, game.TotalAchievements - game.UnlockedAchievements);
+        }
+
+        private static string BuildContextualPieChartTitle(string baseTitle, string gameName)
+        {
+            return string.IsNullOrWhiteSpace(gameName)
+                ? baseTitle
+                : $"{baseTitle} ({gameName})";
+        }
+
+        private static (
+            int PlatinumUnlocked,
+            int GoldUnlocked,
+            int SilverUnlocked,
+            int BronzeUnlocked,
+            int PlatinumTotal,
+            int GoldTotal,
+            int SilverTotal,
+            int BronzeTotal) BuildTrophySummary(IEnumerable<AchievementDisplayItem> achievements)
+        {
+            int platinumUnlocked = 0;
+            int goldUnlocked = 0;
+            int silverUnlocked = 0;
+            int bronzeUnlocked = 0;
+            int platinumTotal = 0;
+            int goldTotal = 0;
+            int silverTotal = 0;
+            int bronzeTotal = 0;
+
+            if (achievements == null)
+            {
+                return (0, 0, 0, 0, 0, 0, 0, 0);
+            }
+
+            foreach (var achievement in achievements)
+            {
+                if (achievement == null)
+                {
+                    continue;
+                }
+
+                AchievementProjectionService.AccumulateTrophy(
+                    achievement.TrophyType,
+                    ref platinumTotal,
+                    ref goldTotal,
+                    ref silverTotal,
+                    ref bronzeTotal);
+
+                if (!achievement.Unlocked)
+                {
+                    continue;
+                }
+
+                AchievementProjectionService.AccumulateTrophy(
+                    achievement.TrophyType,
+                    ref platinumUnlocked,
+                    ref goldUnlocked,
+                    ref silverUnlocked,
+                    ref bronzeUnlocked);
+            }
+
+            return (
+                platinumUnlocked,
+                goldUnlocked,
+                silverUnlocked,
+                bronzeUnlocked,
+                platinumTotal,
+                goldTotal,
+                silverTotal,
+                bronzeTotal);
+        }
+
+        private void UpdateSelectedGameAchievementFilterOptions(IEnumerable<AchievementDisplayItem> source)
+        {
+            var typeValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var categoryValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (source != null)
+            {
+                foreach (var item in source)
+                {
+                    if (item == null)
+                    {
+                        continue;
+                    }
+
+                    var parsedTypes = AchievementCategoryTypeHelper.ParseValues(
+                        AchievementCategoryTypeHelper.NormalizeOrDefault(item.CategoryType));
+                    foreach (var parsedType in parsedTypes)
+                    {
+                        if (!string.IsNullOrWhiteSpace(parsedType))
+                        {
+                            typeValues.Add(parsedType);
+                        }
+                    }
+
+                    var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel);
+                    if (!string.IsNullOrWhiteSpace(normalizedCategory))
+                    {
+                        categoryValues.Add(normalizedCategory);
+                    }
+                }
+            }
+
+            var typeOptions = AchievementCategoryTypeHelper.AllowedCategoryTypes
+                .Where(typeValues.Contains)
+                .ToList();
+
+            var categoryOptions = categoryValues
+                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (SelectedGameTypeFilterOptions == null)
+            {
+                SelectedGameTypeFilterOptions = new ObservableCollection<string>(typeOptions);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(SelectedGameTypeFilterOptions, typeOptions);
+            }
+
+            if (SelectedGameCategoryFilterOptions == null)
+            {
+                SelectedGameCategoryFilterOptions = new ObservableCollection<string>(categoryOptions);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(SelectedGameCategoryFilterOptions, categoryOptions);
+            }
+
+            if (PruneFilterSelections(_selectedGameTypeFilters, SelectedGameTypeFilterOptions))
+            {
+                OnPropertyChanged(nameof(SelectedGameTypeFilterText));
+            }
+
+            if (PruneFilterSelections(_selectedGameCategoryFilters, SelectedGameCategoryFilterOptions))
+            {
+                OnPropertyChanged(nameof(SelectedGameCategoryFilterText));
+            }
+        }
+
+        private static bool IsFilterSelected(HashSet<string> selectedValues, string value)
+        {
+            if (selectedValues == null || string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            return selectedValues.Contains(value.Trim());
+        }
+
+        private static bool SetFilterSelection(HashSet<string> selectedValues, string value, bool isSelected)
+        {
+            if (selectedValues == null || string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var normalized = value.Trim();
+            return isSelected
+                ? selectedValues.Add(normalized)
+                : selectedValues.Remove(normalized);
+        }
+
+        private static bool PruneFilterSelections(HashSet<string> selectedValues, IEnumerable<string> options)
+        {
+            if (selectedValues == null)
+            {
+                return false;
+            }
+
+            var optionSet = new HashSet<string>(
+                (options ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value)),
+                StringComparer.OrdinalIgnoreCase);
+            return selectedValues.RemoveWhere(value => !optionSet.Contains(value)) > 0;
+        }
+
+        private static string GetSelectedFilterText(
+            HashSet<string> selectedValues,
+            IEnumerable<string> options,
+            string placeholder)
+        {
+            if (selectedValues == null || selectedValues.Count == 0)
+            {
+                return placeholder;
+            }
+
+            var ordered = new List<string>();
+            foreach (var option in options ?? Enumerable.Empty<string>())
+            {
+                if (!string.IsNullOrWhiteSpace(option) && selectedValues.Contains(option))
+                {
+                    ordered.Add(option);
+                }
+            }
+
+            if (ordered.Count == 0)
+            {
+                ordered.AddRange(selectedValues.OrderBy(value => value, StringComparer.OrdinalIgnoreCase));
+            }
+
+            return string.Join(", ", ordered);
+        }
+
         private void ApplyRightFilters()
         {
             // Contextually filter based on IsGameSelected
@@ -1752,6 +2364,31 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 filtered = filtered.Where(a => a.Unlocked ? ShowSelectedGameUnlocked : ShowSelectedGameLocked);
+
+                if (_selectedGameTypeFilters.Count > 0)
+                {
+                    var selectedTypeSet = new HashSet<string>(
+                        _selectedGameTypeFilters
+                            .Select(AchievementCategoryTypeHelper.NormalizeOrDefault)
+                            .Where(value => !string.IsNullOrWhiteSpace(value)),
+                        StringComparer.OrdinalIgnoreCase);
+                    filtered = filtered.Where(a =>
+                        AchievementCategoryTypeHelper.ParseValues(
+                                AchievementCategoryTypeHelper.NormalizeOrDefault(a.CategoryType))
+                            .Any(selectedTypeSet.Contains));
+                }
+
+                if (_selectedGameCategoryFilters.Count > 0)
+                {
+                    var selectedCategorySet = new HashSet<string>(
+                        _selectedGameCategoryFilters
+                            .Select(AchievementCategoryTypeHelper.NormalizeCategoryOrDefault)
+                            .Where(value => !string.IsNullOrWhiteSpace(value)),
+                        StringComparer.OrdinalIgnoreCase);
+                    filtered = filtered.Where(a =>
+                        selectedCategorySet.Contains(
+                            AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel)));
+                }
 
                 if (!string.IsNullOrEmpty(RightSearchText))
                 {
@@ -1810,6 +2447,26 @@ namespace PlayniteAchievements.ViewModels
             ShowSelectedGameUnlocked = true;
             ShowSelectedGameLocked = true;
             ShowSelectedGameHidden = true;
+            ResetSelectedGameAchievementCategoryFilters();
+        }
+
+        private void ResetSelectedGameAchievementCategoryFilters()
+        {
+            var typeChanged = _selectedGameTypeFilters.Count > 0;
+            var categoryChanged = _selectedGameCategoryFilters.Count > 0;
+
+            _selectedGameTypeFilters.Clear();
+            _selectedGameCategoryFilters.Clear();
+
+            if (typeChanged)
+            {
+                OnPropertyChanged(nameof(SelectedGameTypeFilterText));
+            }
+
+            if (categoryChanged)
+            {
+                OnPropertyChanged(nameof(SelectedGameCategoryFilterText));
+            }
         }
 
         private void ResetSelectedGameSortToDefault()
@@ -1828,6 +2485,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 _allSelectedGameAchievements = new List<AchievementDisplayItem>();
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
+                UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
                 if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
                 {
@@ -1919,22 +2577,8 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 _allSelectedGameAchievements = items;
-                _filteredSelectedGameAchievements = new List<AchievementDisplayItem>(_allSelectedGameAchievements);
-                if (!string.IsNullOrEmpty(_selectedGameSortPath))
-                {
-                    SortSelectedGameAchievements(_selectedGameSortPath, _selectedGameSortDirection);
-                }
-                else
-                {
-                    if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-                    {
-                        bulk.ReplaceAll(_filteredSelectedGameAchievements);
-                    }
-                    else
-                    {
-                        CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
-                    }
-                }
+                UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
+                ApplyRightFilters();
 
                 // Update timeline to show selected game's unlock history
                 IDictionary<DateTime, int> selectedTimelineCounts = null;
@@ -1953,6 +2597,7 @@ namespace PlayniteAchievements.ViewModels
             }
             catch (Exception ex)
             {
+                UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
                 _logger?.Warn(ex, $"Failed to load achievements for game {SelectedGame?.AppId}");
             }
@@ -2070,6 +2715,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 "Name" => (a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase),
                 "GameName" => (a, b) => string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase),
+                "CategoryType" => CompareRecentAchievementsByCategoryTypeThenUnlock,
+                "CategoryLabel" => CompareRecentAchievementsByCategoryLabelThenUnlock,
                 "UnlockTime" => CompareRecentAchievementsByUnlockColumn,
                 "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
                 "Points" => (a, b) => a.Points.CompareTo(b.Points),
@@ -2108,6 +2755,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
                 "UnlockTime" => CompareSelectedGameAchievementsByUnlockColumn,
+                "CategoryType" => CompareSelectedGameAchievementsByCategoryTypeThenUnlock,
+                "CategoryLabel" => CompareSelectedGameAchievementsByCategoryLabelThenUnlock,
                 "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
                 "Points" => (a, b) => a.Points.CompareTo(b.Points),
                 "TrophyType" => CompareSelectedGameAchievementsByTrophyType,
@@ -2210,6 +2859,58 @@ namespace PlayniteAchievements.ViewModels
             return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
         }
 
+        private static int CompareRecentAchievementsByCategoryTypeThenUnlock(RecentAchievementItem a, RecentAchievementItem b)
+        {
+            var typeComparison = string.Compare(
+                AchievementCategoryTypeHelper.ToDisplayText(a.CategoryType),
+                AchievementCategoryTypeHelper.ToDisplayText(b.CategoryType),
+                StringComparison.OrdinalIgnoreCase);
+            if (typeComparison != 0)
+            {
+                return typeComparison;
+            }
+
+            var unlockComparison = a.UnlockTime.CompareTo(b.UnlockTime);
+            if (unlockComparison != 0)
+            {
+                return unlockComparison;
+            }
+
+            var gameComparison = string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase);
+            if (gameComparison != 0)
+            {
+                return gameComparison;
+            }
+
+            return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int CompareRecentAchievementsByCategoryLabelThenUnlock(RecentAchievementItem a, RecentAchievementItem b)
+        {
+            var labelComparison = string.Compare(
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel),
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(b.CategoryLabel),
+                StringComparison.OrdinalIgnoreCase);
+            if (labelComparison != 0)
+            {
+                return labelComparison;
+            }
+
+            var unlockComparison = a.UnlockTime.CompareTo(b.UnlockTime);
+            if (unlockComparison != 0)
+            {
+                return unlockComparison;
+            }
+
+            var gameComparison = string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase);
+            if (gameComparison != 0)
+            {
+                return gameComparison;
+            }
+
+            return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+        }
+
         private static int CompareSelectedGameAchievementsByUnlockColumn(AchievementDisplayItem a, AchievementDisplayItem b)
         {
             var dateComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
@@ -2247,6 +2948,46 @@ namespace PlayniteAchievements.ViewModels
             if (rarityComparison != 0)
             {
                 return rarityComparison;
+            }
+
+            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int CompareSelectedGameAchievementsByCategoryTypeThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
+        {
+            var typeComparison = string.Compare(
+                AchievementCategoryTypeHelper.ToDisplayText(a.CategoryType),
+                AchievementCategoryTypeHelper.ToDisplayText(b.CategoryType),
+                StringComparison.OrdinalIgnoreCase);
+            if (typeComparison != 0)
+            {
+                return typeComparison;
+            }
+
+            var unlockComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
+            if (unlockComparison != 0)
+            {
+                return unlockComparison;
+            }
+
+            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int CompareSelectedGameAchievementsByCategoryLabelThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
+        {
+            var labelComparison = string.Compare(
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel),
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(b.CategoryLabel),
+                StringComparison.OrdinalIgnoreCase);
+            if (labelComparison != 0)
+            {
+                return labelComparison;
+            }
+
+            var unlockComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
+            if (unlockComparison != 0)
+            {
+                return unlockComparison;
             }
 
             return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
@@ -2309,6 +3050,12 @@ namespace PlayniteAchievements.ViewModels
         private static int CompareSelectedGameAchievementsByTrophyType(AchievementDisplayItem a, AchievementDisplayItem b)
         {
             return GetTrophyRank(a.TrophyType).CompareTo(GetTrophyRank(b.TrophyType));
+        }
+
+        private static string L(string key, string fallback)
+        {
+            var value = ResourceProvider.GetString(key);
+            return string.IsNullOrWhiteSpace(value) ? fallback : value;
         }
 
         public void Dispose()
