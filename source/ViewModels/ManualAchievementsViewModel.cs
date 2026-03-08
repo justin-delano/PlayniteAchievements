@@ -788,6 +788,10 @@ namespace PlayniteAchievements.ViewModels
 
         private void ResetToSearchStage()
         {
+            // Capture current source before any changes
+            var preservedSource = _source;
+            _logger?.Debug($"[ManualTracking] ResetToSearchStage: preserving source={preservedSource?.SourceKey}");
+
             CurrentStage = WizardStage.Search;
             ErrorMessage = string.Empty;
             CanCancelRefresh = false;
@@ -795,12 +799,13 @@ namespace PlayniteAchievements.ViewModels
             SearchResults.Clear();
             SelectedResult = null;
 
+            // Restore the preserved source (in case anything cleared it)
+            _source = preservedSource;
+            _selectedSource = preservedSource;
+
             // Ensure source name is updated
             ManualSourceName = ResolveSourceName(_source?.SourceKey);
-            _logger?.Debug($"[ManualTracking] ResetToSearchStage: _source={_source?.SourceKey}, _selectedSource={_selectedSource?.SourceKey}");
-
-            // Re-sync _selectedSource with _source
-            _selectedSource = _source;
+            _logger?.Debug($"[ManualTracking] ResetToSearchStage: after sync _source={_source?.SourceKey}, _selectedSource={_selectedSource?.SourceKey}");
 
             // Notify all source-related properties
             OnPropertyChanged(nameof(SelectedSourceKey));
@@ -818,6 +823,11 @@ namespace PlayniteAchievements.ViewModels
         {
             _logger?.Debug($"[ManualTracking] HandleRefreshFailureAsync: _source={_source?.SourceKey}");
 
+            // Capture the current source to preserve it through the reset
+            var currentSource = _source;
+            var currentSourceKey = currentSource?.SourceKey;
+            _logger?.Debug($"[ManualTracking] Captured source: {currentSourceKey}");
+
             // Show dialog FIRST, while still on Refreshing stage
             if (!string.IsNullOrWhiteSpace(dialogMessage))
             {
@@ -828,7 +838,14 @@ namespace PlayniteAchievements.ViewModels
                     MessageBoxImage.Warning);
             }
 
-            // THEN transition to search stage
+            // Restore the captured source in case anything changed it
+            if (_source != currentSource)
+            {
+                _logger?.Warn($"[ManualTracking] Source changed from {currentSourceKey} to {_source?.SourceKey}, restoring");
+                _source = currentSource;
+            }
+
+            // THEN transition to search stage (preserves _source)
             ResetToSearchStage();
 
             // Re-search with the current source to populate results
