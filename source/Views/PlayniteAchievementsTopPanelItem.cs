@@ -35,6 +35,17 @@ namespace PlayniteAchievements.Views
                 };
 
                 var window = PlayniteUiProvider.CreateExtensionWindow(Title, view, windowOptions);
+
+                // Activate the sidebar control when the window loads
+                window.Loaded += (s, e) => view.Activate();
+
+                // Deactivate and dispose when the window closes
+                window.Closed += (s, e) =>
+                {
+                    view.Deactivate();
+                    view.Dispose();
+                };
+
                 window.ShowDialog();
             };
         }
