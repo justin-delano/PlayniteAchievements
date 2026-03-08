@@ -119,7 +119,7 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Gets or sets the currently selected manual source.
-        /// Changing this updates the active source for search operations.
+        /// Changing this updates the active source for search operations and triggers a new search.
         /// </summary>
         public IManualSource SelectedSource
         {
@@ -128,15 +128,43 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (_selectedSource != value)
                 {
+                    _logger?.Debug($"[ManualTracking] SelectedSource changing from {_selectedSource?.SourceKey} to {value?.SourceKey}");
                     _selectedSource = value;
                     _source = value;
                     ManualSourceName = ResolveSourceName(_source?.SourceKey);
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(SelectedSourceKey));
                     OnPropertyChanged(nameof(ManualSourceName));
+                    OnPropertyChanged(nameof(ShowPlatformColumn));
 
-                    // Clear search results when source changes
+                    // Clear search results and trigger new search when source changes
                     SearchResults.Clear();
                     SelectedResult = null;
+
+                    // Auto-search if there's search text
+                    if (!string.IsNullOrWhiteSpace(SearchText))
+                    {
+                        _ = ExecuteSearchAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the selected source by key. Used for reliable ComboBox binding.
+        /// </summary>
+        public string SelectedSourceKey
+        {
+            get => _source?.SourceKey;
+            set
+            {
+                if (_source?.SourceKey != value)
+                {
+                    var newSource = _availableSources?.FirstOrDefault(s => s?.SourceKey == value);
+                    if (newSource != null)
+                    {
+                        SelectedSource = newSource;
+                    }
                 }
             }
         }
@@ -273,6 +301,12 @@ namespace PlayniteAchievements.ViewModels
             get => _manualSourceName;
             private set => SetValue(ref _manualSourceName, value);
         }
+
+        /// <summary>
+        /// Gets whether the platform column should be visible in search results.
+        /// Only Exophase provides platform information.
+        /// </summary>
+        public bool ShowPlatformColumn => _source?.SourceKey == "Exophase";
 
         private string _sourceGameId;
 
@@ -758,6 +792,21 @@ namespace PlayniteAchievements.ViewModels
             ErrorMessage = string.Empty;
             CanCancelRefresh = false;
             _pendingInheritedUnlocks = null;
+            SearchResults.Clear();
+            SelectedResult = null;
+
+            // Ensure source name is updated
+            ManualSourceName = ResolveSourceName(_source?.SourceKey);
+            _logger?.Debug($"[ManualTracking] ResetToSearchStage: _source={_source?.SourceKey}, _selectedSource={_selectedSource?.SourceKey}");
+
+            // Re-sync _selectedSource with _source
+            _selectedSource = _source;
+
+            // Notify all source-related properties
+            OnPropertyChanged(nameof(SelectedSourceKey));
+            OnPropertyChanged(nameof(SelectedSource));
+            OnPropertyChanged(nameof(ManualSourceName));
+            OnPropertyChanged(nameof(ShowPlatformColumn));
 
             if (string.IsNullOrWhiteSpace(SearchText))
             {
@@ -767,23 +816,26 @@ namespace PlayniteAchievements.ViewModels
 
         private async Task HandleRefreshFailureAsync(string dialogMessage = null)
         {
+            _logger?.Debug($"[ManualTracking] HandleRefreshFailureAsync: _source={_source?.SourceKey}");
+
+            // Show dialog FIRST, while still on Refreshing stage
+            if (!string.IsNullOrWhiteSpace(dialogMessage))
+            {
+                _playniteApi?.Dialogs?.ShowMessage(
+                    dialogMessage,
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+
+            // THEN transition to search stage
             ResetToSearchStage();
 
-            if (SearchResults.Count == 0 && !string.IsNullOrWhiteSpace(SearchText))
+            // Re-search with the current source to populate results
+            if (!string.IsNullOrWhiteSpace(SearchText))
             {
                 await ExecuteSearchAsync();
             }
-
-            if (string.IsNullOrWhiteSpace(dialogMessage))
-            {
-                return;
-            }
-
-            _playniteApi?.Dialogs?.ShowMessage(
-                dialogMessage,
-                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
         }
 
         private async Task<bool?> SelectedResultHasAchievementsAsync(ManualGameSearchResult selectedResult)
