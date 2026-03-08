@@ -829,19 +829,20 @@ namespace PlayniteAchievements.ViewModels
             // User explicitly clicks OK to transition back to search
             if (!string.IsNullOrWhiteSpace(dialogMessage))
             {
+                _logger?.Debug($"[ManualTracking] Showing dialog, current stage={CurrentStage}");
                 var result = _playniteApi?.Dialogs?.ShowMessage(
                     dialogMessage,
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
+                _logger?.Debug($"[ManualTracking] Dialog returned: {result}");
 
                 // Transition only happens when user explicitly dismisses the dialog
                 if (result == MessageBoxResult.OK)
                 {
-                    // Transition back to search with preserved source
+                    _logger?.Debug($"[ManualTracking] Transitioning with source={currentSource?.SourceKey}");
                     ResetToSearchStage(currentSource);
 
-                    // Re-search with the current source to populate results
                     if (!string.IsNullOrWhiteSpace(SearchText))
                     {
                         await ExecuteSearchAsync();
@@ -850,7 +851,6 @@ namespace PlayniteAchievements.ViewModels
             }
             else
             {
-                // No dialog message - just transition back with current source
                 ResetToSearchStage(currentSource);
 
                 if (!string.IsNullOrWhiteSpace(SearchText))
