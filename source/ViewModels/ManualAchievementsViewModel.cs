@@ -828,30 +828,45 @@ namespace PlayniteAchievements.ViewModels
             var currentSourceKey = currentSource?.SourceKey;
             _logger?.Debug($"[ManualTracking] Captured source: {currentSourceKey}");
 
-            // Show dialog FIRST, while still on Refreshing stage
+            // Show dialog while still on Refreshing stage
+            // User explicitly clicks OK to transition back to search
             if (!string.IsNullOrWhiteSpace(dialogMessage))
             {
-                _playniteApi?.Dialogs?.ShowMessage(
+                var result = _playniteApi?.Dialogs?.ShowMessage(
                     dialogMessage,
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);
+
+                // Transition only happens when user explicitly dismisses the dialog
+                if (result == MessageBoxResult.OK)
+                {
+                    // Restore the captured source to ensure correct source is selected
+                    if (_source != currentSource)
+                    {
+                        _logger?.Warn($"[ManualTracking] Source changed from {currentSourceKey} to {_source?.SourceKey}, restoring");
+                        _source = currentSource;
+                    }
+
+                    // Transition back to search with preserved source
+                    ResetToSearchStage();
+
+                    // Re-search with the current source to populate results
+                    if (!string.IsNullOrWhiteSpace(SearchText))
+                    {
+                        await ExecuteSearchAsync();
+                    }
+                }
             }
-
-            // Restore the captured source in case anything changed it
-            if (_source != currentSource)
+            else
             {
-                _logger?.Warn($"[ManualTracking] Source changed from {currentSourceKey} to {_source?.SourceKey}, restoring");
-                _source = currentSource;
-            }
+                // No dialog message - just transition back
+                ResetToSearchStage();
 
-            // THEN transition to search stage (preserves _source)
-            ResetToSearchStage();
-
-            // Re-search with the current source to populate results
-            if (!string.IsNullOrWhiteSpace(SearchText))
-            {
-                await ExecuteSearchAsync();
+                if (!string.IsNullOrWhiteSpace(SearchText))
+                {
+                    await ExecuteSearchAsync();
+                }
             }
         }
 
