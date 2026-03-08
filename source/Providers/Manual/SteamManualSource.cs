@@ -309,13 +309,23 @@ namespace PlayniteAchievements.Providers.Manual
                             }
 
                             var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            var details = Serialization.FromJson<Dictionary<string, AppDetailsEnvelope>>(json);
 
-                            if (details?.TryGetValue(appId.ToString(), out var envelope) == true &&
-                                envelope?.Success == true &&
-                                string.Equals(envelope.Data?.Type, "game", StringComparison.OrdinalIgnoreCase))
+                            try
                             {
-                                validIds.Add(appId);
+                                var details = Serialization.FromJson<Dictionary<string, AppDetailsEnvelope>>(json);
+
+                                if (details?.TryGetValue(appId.ToString(), out var envelope) == true &&
+                                    envelope?.Success == true &&
+                                    string.Equals(envelope.Data?.Type, "game", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    validIds.Add(appId);
+                                }
+                            }
+                            catch (Exception ex) when (ex is not OperationCanceledException)
+                            {
+                                // Some apps return unexpected formats (e.g., data as array instead of object)
+                                // Log and continue to next app rather than failing the entire operation
+                                _logger?.Debug($"AppDetails JSON parse error for appId={appId}: {ex.Message}");
                             }
                         }
                     }
