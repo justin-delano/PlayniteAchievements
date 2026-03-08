@@ -1493,11 +1493,13 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(ShowGamesWithNoUnlocks));
                 ApplyLeftFilters();
+                UpdateAggregatePieCharts();
             }
             else if (e.PropertyName == "Persisted.ShowUnplayedGames")
             {
                 OnPropertyChanged(nameof(ShowUnplayedGames));
                 ApplyLeftFilters();
+                UpdateAggregatePieCharts();
             }
         }
 
@@ -1519,11 +1521,13 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(ShowGamesWithNoUnlocks));
                 ApplyLeftFilters();
+                UpdateAggregatePieCharts();
             }
             else if (e.PropertyName == nameof(PersistedSettings.ShowUnplayedGames))
             {
                 OnPropertyChanged(nameof(ShowUnplayedGames));
                 ApplyLeftFilters();
+                UpdateAggregatePieCharts();
             }
         }
 
@@ -2020,6 +2024,106 @@ namespace PlayniteAchievements.ViewModels
         {
             ProviderPieChart?.SetSelectedLabels(_selectedProviderFilters);
             GamesPieChart?.SetSelectedLabels(_selectedCompletenessFilters);
+        }
+
+        private void UpdateAggregatePieCharts()
+        {
+            // Filter games based only on ShowGamesWithNoUnlocks and ShowUnplayedGames settings
+            var filteredGames = _allGamesOverview.AsEnumerable();
+            if (!ShowGamesWithNoUnlocks)
+            {
+                filteredGames = filteredGames.Where(g => g.UnlockedAchievements > 0);
+            }
+            if (!ShowUnplayedGames)
+            {
+                filteredGames = filteredGames.Where(g => g.LastPlayed.HasValue || g.UnlockedAchievements > 0);
+            }
+            var gamesList = filteredGames.ToList();
+
+            if (gamesList.Count == 0)
+            {
+                GamesPieChart?.SetGameData(0, 0, string.Empty, string.Empty);
+                ProviderPieChart?.SetProviderData(new Dictionary<string, int>(), new Dictionary<string, int>(), 0, string.Empty, null, null);
+                RarityPieChart?.SetRarityData(0, 0, 0, 0, 0, 0, 0, 0, 0, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+                TrophyPieChart?.SetTrophyData(0, 0, 0, 0, 0, 0, 0, 0, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+                return;
+            }
+
+            var completedLabel = ResourceProvider.GetString("LOCPlayAch_Filter_Complete");
+            var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Incomplete");
+            var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Locked");
+            var commonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Common");
+            var uncommonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Uncommon");
+            var rareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Rare");
+            var ultraRareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_UltraRare");
+            var trophyPlatinumLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Platinum");
+            var trophyGoldLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Gold");
+            var trophySilverLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Silver");
+            var trophyBronzeLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Bronze");
+
+            // Games pie chart
+            var totalGames = gamesList.Count;
+            var completedGames = gamesList.Count(g => g.IsCompleted);
+            GamesPieChart?.SetGameData(totalGames, completedGames, completedLabel, incompleteLabel);
+
+            // Provider pie chart
+            var unlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var totalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var game in gamesList)
+            {
+                var provider = string.IsNullOrWhiteSpace(game.Provider) ? "Unknown" : game.Provider;
+                if (!unlockedByProvider.ContainsKey(provider))
+                {
+                    unlockedByProvider[provider] = 0;
+                    totalByProvider[provider] = 0;
+                }
+                unlockedByProvider[provider] += game.UnlockedAchievements;
+                totalByProvider[provider] += game.TotalAchievements;
+            }
+            var totalLocked = gamesList.Sum(g => g.TotalAchievements) - gamesList.Sum(g => g.UnlockedAchievements);
+            var providerLookup = BuildProviderLookup();
+            ProviderPieChart?.SetProviderData(unlockedByProvider, totalByProvider, totalLocked, lockedLabel, providerLookup, null);
+
+            // Rarity pie chart
+            var totalCommon = gamesList.Sum(g => g.CommonCount);
+            var totalUncommon = gamesList.Sum(g => g.UncommonCount);
+            var totalRare = gamesList.Sum(g => g.RareCount);
+            var totalUltraRare = gamesList.Sum(g => g.UltraRareCount);
+            var totalCommonPossible = gamesList.Sum(g => g.TotalCommonPossible);
+            var totalUncommonPossible = gamesList.Sum(g => g.TotalUncommonPossible);
+            var totalRarePossible = gamesList.Sum(g => g.TotalRarePossible);
+            var totalUltraRarePossible = gamesList.Sum(g => g.TotalUltraRarePossible);
+            RarityPieChart?.SetRarityData(
+                totalCommon, totalUncommon, totalRare, totalUltraRare, totalLocked,
+                totalCommonPossible, totalUncommonPossible, totalRarePossible, totalUltraRarePossible,
+                commonLabel, uncommonLabel, rareLabel, ultraRareLabel, lockedLabel);
+
+            // Trophy pie chart - filter achievements by games in filtered list
+            var filteredGameIds = new HashSet<Guid>(gamesList.Where(g => g.PlayniteGameId.HasValue).Select(g => g.PlayniteGameId.Value));
+            var filteredAchievements = (_allAchievements ?? new List<AchievementDisplayItem>())
+                .Where(a => a != null && a.PlayniteGameId.HasValue && filteredGameIds.Contains(a.PlayniteGameId.Value));
+            var trophySummary = BuildTrophySummary(filteredAchievements);
+            TrophyPieChart?.SetTrophyData(
+                trophySummary.PlatinumUnlocked, trophySummary.GoldUnlocked, trophySummary.SilverUnlocked, trophySummary.BronzeUnlocked,
+                trophySummary.PlatinumTotal, trophySummary.GoldTotal, trophySummary.SilverTotal, trophySummary.BronzeTotal,
+                trophyPlatinumLabel, trophyGoldLabel, trophySilverLabel, trophyBronzeLabel, lockedLabel);
+
+            // Reset contextual pie chart titles to base titles (no game name suffix)
+            RarityPieChartTitle = null;
+            TrophyPieChartTitle = null;
+
+            // Update pie chart selection states
+            UpdateOverviewPieChartSelectionStates();
+        }
+
+        private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup()
+        {
+            var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
+            foreach (var provider in _achievementService.GetProviders())
+            {
+                providerLookup[provider.ProviderKey] = (provider.ProviderIconKey, provider.ProviderColorHex);
+            }
+            return providerLookup;
         }
 
         private void UpdateContextualPieCharts(
