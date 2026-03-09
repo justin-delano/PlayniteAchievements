@@ -39,6 +39,11 @@ namespace PlayniteAchievements.Views.ParityTests
             set => SetValue(GameProperty, value);
         }
 
+        /// <summary>
+        /// Raised when a control is created, allowing external configuration.
+        /// </summary>
+        public event Action<Control> ControlCreated;
+
         public GameViewControlHost()
         {
             InitializeComponent();
@@ -126,6 +131,9 @@ namespace PlayniteAchievements.Views.ParityTests
                 _createdControl = control;
                 PART_Empty.Visibility = Visibility.Collapsed;
                 PART_Content.Content = control;
+
+                // Raise event for external configuration
+                ControlCreated?.Invoke(control);
             }
             catch (Exception ex)
             {
