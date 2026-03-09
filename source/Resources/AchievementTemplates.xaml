@@ -398,7 +398,7 @@
 
     <!-- Achievement Icon Template - Image with conditional glow -->
     <DataTemplate x:Key="AchievementIconTemplate">
-        <Grid Width="56" Height="72" VerticalAlignment="Center" HorizontalAlignment="Center" ClipToBounds="False">
+        <Grid Width="60" Height="72" VerticalAlignment="Center" HorizontalAlignment="Center" ClipToBounds="False">
             <Image Width="52" Height="52"
                    Stretch="UniformToFill"
                    RenderOptions.BitmapScalingMode="HighQuality"

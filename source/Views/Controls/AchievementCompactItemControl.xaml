@@ -96,7 +96,6 @@
         </Grid.ToolTip>
 
         <!-- Achievement icon with glow effect - Image with conditional glow -->
-        <!-- Border provides rounded corners via opacity mask, Image has glow effect -->
         <Image Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"
                Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
