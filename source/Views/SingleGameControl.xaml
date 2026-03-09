@@ -501,7 +501,7 @@
 
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow" BasedOn="{StaticResource AchievementRowStyle}">
-                    <Setter Property="MinHeight" Value="76"/>
+                    <Setter Property="MinHeight" Value="88"/>
                     <EventSetter Event="PreviewMouseLeftButtonDown" Handler="AchievementRow_PreviewMouseLeftButtonDown"/>
                 </Style>
             </DataGrid.RowStyle>
