@@ -483,65 +483,46 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 };
 
                 _achievementService.RebuildProgress += progressHandler;
-                _ = Task.Run(async () =>
+
+                try
                 {
-                    try
+                    var request = new RefreshRequest
                     {
-                        var request = new RefreshRequest
-                        {
-                            Mode = mode,
-                            SingleGameId = mode == RefreshModeType.Single ? gameIdForThemeUpdate : null
-                        };
+                        Mode = mode,
+                        SingleGameId = mode == RefreshModeType.Single ? gameIdForThemeUpdate : null
+                    };
 
-                        await _refreshCoordinator.ExecuteAsync(
-                            request,
-                            new RefreshExecutionPolicy
-                            {
-                                ValidateAuthentication = false,
-                                SwallowExceptions = false,
-                                ErrorLogMessage = errorLogMessage,
-                                OnRefreshCompleted = (success) =>
-                                {
-                                    if (success)
-                                    {
-                                        if (gameIdForThemeUpdate.HasValue)
-                                        {
-                                            try { _requestSingleGameThemeUpdate(gameIdForThemeUpdate.Value); } catch { }
-                                        }
-                                        try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
-                                    }
-                                }
-                            }).ConfigureAwait(false);
+                    var refreshTask = _refreshCoordinator.ExecuteAsync(
+                        request,
+                        new RefreshExecutionPolicy
+                        {
+                            ValidateAuthentication = false,
+                            SwallowExceptions = false,
+                            ErrorLogMessage = errorLogMessage
+                        });
 
-                        try
-                        {
-                            progress.CurrentProgressValue = 100;
-                            progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
-                        }
-                        catch { }
-                    }
-                    catch (OperationCanceledException)
+                    refreshTask.Wait(progress.CancelToken);
+                    progress.CurrentProgressValue = 100;
+                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
+                }
+                catch (OperationCanceledException)
+                {
+                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, errorLogMessage);
+                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
+                }
+                finally
+                {
+                    _achievementService.RebuildProgress -= progressHandler;
+                    if (gameIdForThemeUpdate.HasValue)
                     {
-                        try
-                        {
-                            progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
-                        }
-                        catch { }
+                        try { _requestSingleGameThemeUpdate(gameIdForThemeUpdate.Value); } catch { }
                     }
-                    catch (Exception ex)
-                    {
-                        _logger?.Error(ex, errorLogMessage);
-                        try
-                        {
-                            progress.Text = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
-                        }
-                        catch { }
-                    }
-                    finally
-                    {
-                        _achievementService.RebuildProgress -= progressHandler;
-                    }
-                });
+                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+                }
             }, progressOptions);
         }
 
