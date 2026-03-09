@@ -73,6 +73,11 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        /// <summary>
+        /// Recent achievements are always unlocked by definition.
+        /// </summary>
+        public bool Unlocked => true;
+
         private DateTime _unlockTime;
         public DateTime UnlockTime 
         { 
