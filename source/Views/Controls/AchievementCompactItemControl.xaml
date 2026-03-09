@@ -97,13 +97,12 @@
         </Grid.ToolTip>
 
         <!-- Achievement icon with glow effect -->
-        <!-- Border is sized to icon with negative margin to extend glow beyond bounds -->
         <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality"
                 Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                Margin="-6">
+                Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}">
             <Border.Style>
                 <Style TargetType="Border">
+                    <Setter Property="Effect" Value="{x:Null}"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding Unlocked}" Value="True">
                             <Setter Property="Effect" Value="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlowConverter}}"/>
