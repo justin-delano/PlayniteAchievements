@@ -184,6 +184,16 @@
                                   IsCheckable="True"
                                   StaysOpenOnClick="True"
                                   IsChecked="{Binding TypeFilterMultiplayerSelected, Mode=TwoWay}" />
+                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Collectable}"
+                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
+                                  IsCheckable="True"
+                                  StaysOpenOnClick="True"
+                                  IsChecked="{Binding TypeFilterCollectableSelected, Mode=TwoWay}" />
+                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Missable}"
+                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
+                                  IsCheckable="True"
+                                  StaysOpenOnClick="True"
+                                  IsChecked="{Binding TypeFilterMissableSelected, Mode=TwoWay}" />
                     </ContextMenu>
                 </Button.ContextMenu>
             </Button>
@@ -401,6 +411,16 @@
                                           IsCheckable="True"
                                           StaysOpenOnClick="True"
                                           IsChecked="{Binding TypeMultiplayerSelected, Mode=TwoWay}" />
+                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Collectable}"
+                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
+                                          IsCheckable="True"
+                                          StaysOpenOnClick="True"
+                                          IsChecked="{Binding TypeCollectableSelected, Mode=TwoWay}" />
+                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Missable}"
+                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
+                                          IsCheckable="True"
+                                          StaysOpenOnClick="True"
+                                          IsChecked="{Binding TypeMissableSelected, Mode=TwoWay}" />
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>

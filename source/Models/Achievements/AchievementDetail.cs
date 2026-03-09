@@ -32,7 +32,7 @@ namespace PlayniteAchievements.Models.Achievements
 
         /// <summary>
         /// Optional structured category classification.
-        /// Allowed canonical values: Default, Base, DLC, Singleplayer, Multiplayer.
+        /// Allowed canonical values: Default, Base, DLC, Singleplayer, Multiplayer, Collectable, Missable.
         /// </summary>
         public string CategoryType { get; set; }
 

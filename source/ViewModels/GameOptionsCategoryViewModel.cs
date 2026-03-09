@@ -33,10 +33,14 @@ namespace PlayniteAchievements.ViewModels
         private bool _typeDlcSelected;
         private bool _typeSingleplayerSelected;
         private bool _typeMultiplayerSelected;
+        private bool _typeCollectableSelected;
+        private bool _typeMissableSelected;
         private bool _typeFilterBaseSelected;
         private bool _typeFilterDlcSelected;
         private bool _typeFilterSingleplayerSelected;
         private bool _typeFilterMultiplayerSelected;
+        private bool _typeFilterCollectableSelected;
+        private bool _typeFilterMissableSelected;
 
         public GameOptionsCategoryViewModel(
             Guid gameId,
@@ -164,6 +168,30 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public bool TypeCollectableSelected
+        {
+            get => _typeCollectableSelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeCollectableSelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedTypeSelectionText));
+                }
+            }
+        }
+
+        public bool TypeMissableSelected
+        {
+            get => _typeMissableSelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeMissableSelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedTypeSelectionText));
+                }
+            }
+        }
+
         public string SelectedTypeSelectionText
         {
             get
@@ -220,6 +248,32 @@ namespace PlayniteAchievements.ViewModels
             set
             {
                 if (SetValueAndReturn(ref _typeFilterMultiplayerSelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
+                    ApplyFilter();
+                }
+            }
+        }
+
+        public bool TypeFilterCollectableSelected
+        {
+            get => _typeFilterCollectableSelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeFilterCollectableSelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
+                    ApplyFilter();
+                }
+            }
+        }
+
+        public bool TypeFilterMissableSelected
+        {
+            get => _typeFilterMissableSelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeFilterMissableSelected, value))
                 {
                     OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
                     ApplyFilter();
@@ -729,6 +783,8 @@ namespace PlayniteAchievements.ViewModels
             TypeDlcSelected = false;
             TypeSingleplayerSelected = false;
             TypeMultiplayerSelected = false;
+            TypeCollectableSelected = false;
+            TypeMissableSelected = false;
         }
 
         public void ClearAllSelections()
@@ -908,6 +964,16 @@ namespace PlayniteAchievements.ViewModels
                 selected.Add("Multiplayer");
             }
 
+            if (TypeFilterCollectableSelected)
+            {
+                selected.Add("Collectable");
+            }
+
+            if (TypeFilterMissableSelected)
+            {
+                selected.Add("Missable");
+            }
+
             return selected;
         }
 
@@ -932,6 +998,16 @@ namespace PlayniteAchievements.ViewModels
             if (TypeMultiplayerSelected)
             {
                 selected.Add("Multiplayer");
+            }
+
+            if (TypeCollectableSelected)
+            {
+                selected.Add("Collectable");
+            }
+
+            if (TypeMissableSelected)
+            {
+                selected.Add("Missable");
             }
 
             return AchievementCategoryTypeHelper.Combine(selected);
