@@ -1,0 +1,379 @@
+using System;
+using System.Linq;
+using System.Windows;
+using System.Windows.Threading;
+using Playnite.SDK.Models;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services;
+using PlayniteAchievements.Views.ThemeIntegration.Base;
+
+namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
+{
+    /// <summary>
+    /// Desktop view item control for theme integration.
+    /// Displays achievement summary per game in grid/list views.
+    /// </summary>
+    public partial class AchievementViewItemControl : ThemeControlBase
+    {
+        private static readonly string[] DataContextGamePropertyCandidates =
+        {
+            "Game",
+            "Source",
+            "Item",
+            "SourceItem",
+            "Value"
+        };
+        private bool _isCacheEventSubscribed;
+        private bool _cacheRefreshQueued;
+
+        #region ShowProgressBar Property
+
+        public static readonly DependencyProperty ShowProgressBarProperty =
+            DependencyProperty.Register(
+                nameof(ShowProgressBar),
+                typeof(bool),
+                typeof(AchievementViewItemControl),
+                new PropertyMetadata(false, OnShowProgressBarChanged));
+
+        public bool ShowProgressBar
+        {
+            get => (bool)GetValue(ShowProgressBarProperty);
+            set => SetValue(ShowProgressBarProperty, value);
+        }
+
+        private static void OnShowProgressBarChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementViewItemControl control)
+            {
+                control.UpdateModeVisibility();
+            }
+        }
+
+        #endregion
+
+        #region UnlockedCount Property
+
+        public static readonly DependencyProperty UnlockedCountProperty =
+            DependencyProperty.Register(
+                nameof(UnlockedCount),
+                typeof(int),
+                typeof(AchievementViewItemControl),
+                new PropertyMetadata(0));
+
+        public int UnlockedCount
+        {
+            get => (int)GetValue(UnlockedCountProperty);
+            set => SetValue(UnlockedCountProperty, value);
+        }
+
+        #endregion
+
+        #region AchievementCount Property
+
+        public static readonly DependencyProperty AchievementCountProperty =
+            DependencyProperty.Register(
+                nameof(AchievementCount),
+                typeof(int),
+                typeof(AchievementViewItemControl),
+                new PropertyMetadata(0));
+
+        public int AchievementCount
+        {
+            get => (int)GetValue(AchievementCountProperty);
+            set => SetValue(AchievementCountProperty, value);
+        }
+
+        #endregion
+
+        public AchievementViewItemControl()
+        {
+            InitializeComponent();
+            DataContextChanged += OnDataContextChanged;
+            Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            SubscribeToCacheEvents();
+            TryUpdateFromDataContext();
+            UpdateModeVisibility();
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            UnsubscribeFromCacheEvents();
+            _cacheRefreshQueued = false;
+        }
+
+        private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            TryUpdateFromDataContext();
+        }
+
+        private void UpdateModeVisibility()
+        {
+            if (LabelMode != null && ProgressBarMode != null)
+            {
+                LabelMode.Visibility = ShowProgressBar ? Visibility.Collapsed : Visibility.Visible;
+                ProgressBarMode.Visibility = ShowProgressBar ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        private void SubscribeToCacheEvents()
+        {
+            if (_isCacheEventSubscribed)
+            {
+                return;
+            }
+
+            var service = Plugin?.AchievementService;
+            if (service == null)
+            {
+                return;
+            }
+
+            service.CacheInvalidated -= AchievementService_CacheInvalidated;
+            service.CacheInvalidated += AchievementService_CacheInvalidated;
+            service.GameCacheUpdated -= AchievementService_GameCacheUpdated;
+            service.GameCacheUpdated += AchievementService_GameCacheUpdated;
+            _isCacheEventSubscribed = true;
+        }
+
+        private void UnsubscribeFromCacheEvents()
+        {
+            if (!_isCacheEventSubscribed)
+            {
+                return;
+            }
+
+            try
+            {
+                Plugin?.AchievementService.CacheInvalidated -= AchievementService_CacheInvalidated;
+                Plugin?.AchievementService.GameCacheUpdated -= AchievementService_GameCacheUpdated;
+            }
+            catch
+            {
+            }
+
+            _isCacheEventSubscribed = false;
+        }
+
+        private void AchievementService_CacheInvalidated(object sender, EventArgs e)
+        {
+            QueueRefresh();
+        }
+
+        private void AchievementService_GameCacheUpdated(object sender, GameCacheUpdatedEventArgs e)
+        {
+            var updatedGameId = ParseUpdatedGameId(e);
+            if (!updatedGameId.HasValue)
+            {
+                return;
+            }
+
+            if (!IsLoaded)
+            {
+                return;
+            }
+
+            var dispatcher = Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                QueueRefreshIfMatches(updatedGameId.Value);
+                return;
+            }
+
+            dispatcher.BeginInvoke(
+                new Action(() => QueueRefreshIfMatches(updatedGameId.Value)),
+                DispatcherPriority.Background);
+        }
+
+        private Guid? GetCurrentGameIdFromDataContext()
+        {
+            var game = GetGameFromDataContext(DataContext);
+            if (game == null || game.Id == Guid.Empty)
+            {
+                return null;
+            }
+
+            return game.Id;
+        }
+
+        private static Guid? ParseUpdatedGameId(GameCacheUpdatedEventArgs args)
+        {
+            if (args == null || string.IsNullOrWhiteSpace(args.GameId))
+            {
+                return null;
+            }
+
+            if (Guid.TryParse(args.GameId, out var gameId) && gameId != Guid.Empty)
+            {
+                return gameId;
+            }
+
+            return null;
+        }
+
+        private void QueueRefreshIfMatches(Guid updatedGameId)
+        {
+            var currentGameId = GetCurrentGameIdFromDataContext();
+            if (!currentGameId.HasValue || currentGameId.Value != updatedGameId)
+            {
+                return;
+            }
+
+            QueueRefresh();
+        }
+
+        private void QueueRefresh()
+        {
+            if (!IsLoaded || _cacheRefreshQueued)
+            {
+                return;
+            }
+
+            _cacheRefreshQueued = true;
+            var dispatcher = Dispatcher;
+            if (dispatcher == null)
+            {
+                RunQueuedRefresh();
+                return;
+            }
+
+            dispatcher.BeginInvoke(
+                new Action(RunQueuedRefresh),
+                DispatcherPriority.Background);
+        }
+
+        private void RunQueuedRefresh()
+        {
+            _cacheRefreshQueued = false;
+            if (!IsLoaded)
+            {
+                return;
+            }
+
+            TryUpdateFromDataContext();
+        }
+
+        private void TryUpdateFromDataContext()
+        {
+            var game = GetGameFromDataContext(DataContext);
+            if (game != null && game.Id != Guid.Empty)
+            {
+                UpdateForGame(game.Id);
+            }
+            else
+            {
+                ClearData();
+            }
+        }
+
+        /// <summary>
+        /// Extracts a Game from various DataContext types that Playnite uses.
+        /// GridView items use GamesCollectionViewEntry which wraps the Game.
+        /// </summary>
+        private Game GetGameFromDataContext(object dataContext)
+        {
+            if (dataContext == null)
+            {
+                return null;
+            }
+
+            // Direct Game reference
+            if (dataContext is Game game)
+            {
+                return game;
+            }
+
+            // Try common wrapper property names used by different Playnite view templates.
+            foreach (var propertyName in DataContextGamePropertyCandidates)
+            {
+                if (TryGetGamePropertyValue(dataContext, propertyName, out var wrappedGame))
+                {
+                    return wrappedGame;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool TryGetGamePropertyValue(object source, string propertyName, out Game game)
+        {
+            game = null;
+            if (source == null || string.IsNullOrWhiteSpace(propertyName))
+            {
+                return false;
+            }
+
+            var property = source.GetType().GetProperty(propertyName);
+            if (property == null || property.GetIndexParameters().Length != 0)
+            {
+                return false;
+            }
+
+            object propertyValue;
+            try
+            {
+                propertyValue = property.GetValue(source);
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (propertyValue is Game directGame)
+            {
+                game = directGame;
+                return true;
+            }
+
+            if (propertyValue == null || ReferenceEquals(propertyValue, source))
+            {
+                return false;
+            }
+
+            var nestedGameProperty = propertyValue.GetType().GetProperty("Game");
+            if (nestedGameProperty == null || nestedGameProperty.GetIndexParameters().Length != 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                game = nestedGameProperty.GetValue(propertyValue) as Game;
+            }
+            catch
+            {
+                game = null;
+            }
+
+            return game != null;
+        }
+
+        private void UpdateForGame(Guid gameId)
+        {
+            var gameData = Plugin?.AchievementService?.GetGameAchievementData(gameId);
+
+            if (gameData == null || !gameData.HasAchievements || (gameData.Achievements?.Count ?? 0) == 0)
+            {
+                ClearData();
+                return;
+            }
+
+            var achievements = gameData.Achievements;
+            UnlockedCount = achievements.Count(a => a.Unlocked);
+            AchievementCount = achievements.Count;
+            Visibility = Visibility.Visible;
+        }
+
+        private void ClearData()
+        {
+            UnlockedCount = 0;
+            AchievementCount = 0;
+            Visibility = Visibility.Collapsed;
+        }
+    }
+}

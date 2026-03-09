@@ -1,0 +1,61 @@
+<base:ThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Desktop.AchievementViewItemControl"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:base="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
+                   mc:Ignorable="d"
+                   d:DesignHeight="24" d:DesignWidth="200">
+    <!--
+        Desktop view item control for theme integration.
+        Displays achievement summary per game in grid/list views.
+        DataContext is inherited from parent (the Game for this row).
+    -->
+    <Grid x:Name="PART_GridContainer">
+        <!-- Simple label format (when ShowProgressBar=False) -->
+        <TextBlock x:Name="LabelMode"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextBrush}"
+                   FontSize="{DynamicResource FontSize}">
+            <TextBlock.Text>
+                <MultiBinding StringFormat="{}{0}/{1}">
+                    <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="UnlockedCount" FallbackValue="0" />
+                    <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="AchievementCount" FallbackValue="0" />
+                </MultiBinding>
+            </TextBlock.Text>
+        </TextBlock>
+
+        <!-- Progress bar mode (when ShowProgressBar=True) -->
+        <Grid x:Name="ProgressBarMode" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ProgressBar Grid.Column="0"
+                         Grid.ColumnSpan="2"
+                         Value="{Binding RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, Path=UnlockedCount, Mode=OneWay, FallbackValue=0}"
+                         Maximum="{Binding RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, Path=AchievementCount, Mode=OneWay, FallbackValue=100}"
+                         MinWidth="40"
+                         Height="16"
+                         VerticalAlignment="Center"
+                         Foreground="{DynamicResource HighlightGlyphBrush}"
+                         Background="{DynamicResource ControlBackgroundBrush}"
+                         BorderBrush="{DynamicResource NormalBorderBrush}"/>
+
+            <TextBlock Grid.Column="0"
+                       Grid.ColumnSpan="2"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextBrush}"
+                       FontSize="{DynamicResource FontSizeSmall}">
+                <TextBlock.Text>
+                    <MultiBinding StringFormat="{}{0}/{1}">
+                        <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="UnlockedCount" FallbackValue="0" />
+                        <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="AchievementCount" FallbackValue="0" />
+                    </MultiBinding>
+                </TextBlock.Text>
+            </TextBlock>
+        </Grid>
+    </Grid>
+</base:ThemeControlBase>
