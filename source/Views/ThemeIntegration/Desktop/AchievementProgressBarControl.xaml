@@ -34,7 +34,7 @@
                        Margin="6,0,0,0"
                        VerticalAlignment="Center"
                        FontWeight="SemiBold"
-                       FontSize="11"
+                       FontSize="{DynamicResource FontSizeSmall}"
                        Foreground="White"/>
         </Grid>
 
