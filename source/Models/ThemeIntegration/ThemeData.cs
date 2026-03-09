@@ -3,6 +3,8 @@ using System.Collections.ObjectModel;
 using Playnite.SDK;
 using Playnite.SDK.Data;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Models.ThemeIntegration
 {
@@ -45,6 +47,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private List<AchievementDetail> _achievementsRarityAsc = new List<AchievementDetail>();
         [DontSerialize]
         private List<AchievementDetail> _achievementsRarityDesc = new List<AchievementDetail>();
+        [DontSerialize]
+        private List<AchievementDisplayItem> _allAchievementDisplayItems;
 
         #endregion
 
@@ -206,7 +210,59 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public List<AchievementDetail> AllAchievements
         {
             get => _allAchievements;
-            set => SetValue(ref _allAchievements, value);
+            set
+            {
+                if (!EqualityComparer<List<AchievementDetail>>.Default.Equals(_allAchievements, value))
+                {
+                    _allAchievements = value;
+                    OnPropertyChanged();
+                    // Invalidate cached display items when source changes
+                    _allAchievementDisplayItems = null;
+                    OnPropertyChanged(nameof(AllAchievementDisplayItems));
+                }
+            }
+        }
+
+        /// <summary>
+        /// All achievements as display items for desktop theme integration.
+        /// Lazily converts AchievementDetail to AchievementDisplayItem for template binding.
+        /// </summary>
+        [DontSerialize]
+        public List<AchievementDisplayItem> AllAchievementDisplayItems
+        {
+            get
+            {
+                if (_allAchievementDisplayItems != null)
+                {
+                    return _allAchievementDisplayItems;
+                }
+
+                if (_allAchievements == null || _allAchievements.Count == 0)
+                {
+                    _allAchievementDisplayItems = new List<AchievementDisplayItem>();
+                    return _allAchievementDisplayItems;
+                }
+
+                var settings = PlayniteAchievementsPlugin.Instance?.Settings;
+                // Settings.ShowHiddenIcon means "show actual icon for hidden achievements" (not question mark)
+                // UpdateFrom expects hideIcon meaning "should we hide the icon", so we invert
+                var hideIcon = !(settings?.Persisted?.ShowHiddenIcon ?? false);
+                var hideTitle = !(settings?.Persisted?.ShowHiddenTitle ?? false);
+                var hideDescription = !(settings?.Persisted?.ShowHiddenDescription ?? false);
+
+                var items = new List<AchievementDisplayItem>(_allAchievements.Count);
+                foreach (var achievement in _allAchievements)
+                {
+                    var item = new AchievementDisplayItem();
+                    var gameName = achievement.Game?.Name ?? "Unknown";
+                    var gameId = achievement.Game?.Id;
+                    item.UpdateFrom(achievement, gameName, gameId, hideIcon, hideTitle, hideDescription);
+                    items.Add(item);
+                }
+
+                _allAchievementDisplayItems = items;
+                return _allAchievementDisplayItems;
+            }
         }
 
         /// <summary>

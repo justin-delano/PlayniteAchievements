@@ -4,21 +4,21 @@ using PlayniteAchievements.Models.Achievements;
 namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
 {
     /// <summary>
-    /// Desktop theme integration control displaying all achievements in a horizontal scrolling row.
+    /// Desktop theme integration control displaying locked achievements in a horizontal scrolling row.
     /// Shows compact achievement icons with progress bars and rarity glow effects.
-    /// Inherits filtering and data loading from AchievementCompactListControlBase.
+    /// Filters to show only locked (not yet unlocked) achievements.
     /// </summary>
-    public partial class AchievementCompactListControl : AchievementCompactListControlBase
+    public partial class AchievementCompactLockedListControl : AchievementCompactListControlBase
     {
-        public AchievementCompactListControl()
+        public AchievementCompactLockedListControl()
         {
             InitializeComponent();
         }
 
         /// <summary>
-        /// Returns true to show all achievements (no filtering).
+        /// Returns true only for locked achievements (not unlocked).
         /// </summary>
-        protected override bool FilterAchievement(AchievementDetail achievement) => true;
+        protected override bool FilterAchievement(AchievementDetail achievement) => !achievement.Unlocked;
 
         /// <summary>
         /// Refreshes the ItemsControl ItemsSource binding.

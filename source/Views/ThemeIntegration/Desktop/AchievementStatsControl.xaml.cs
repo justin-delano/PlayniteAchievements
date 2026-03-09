@@ -1,11 +1,11 @@
-using Playnite.SDK.Controls;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
 {
     /// <summary>
     /// Desktop PlayniteAchievements stats control for theme integration.
-    /// Receives game context changes via GameContextChanged and updates achievement data.
+    /// Displays rarity statistics breakdown in a 4-row grid.
+    /// Binds directly to Plugin.Settings.Theme properties.
     /// </summary>
     public partial class AchievementStatsControl : ThemeControlBase
     {

@@ -14,21 +14,22 @@
             <converters:BooleanConverter x:Key="InvertedBooleanToVisibilityConverter" Mode="InvertedToVisibility" />
             <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
             <converters:LocalDateTimeConverter x:Key="LocalDateTimeConverter" />
-            <converters:PercentToGlowEffectConverter x:Key="PercentToGlowEffectConverter" />
+            <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlowConverter" />
             <converters:PercentToRarityBadgeConverter x:Key="PercentToRarityBadgeConverter" />
             <converters:LockedIconSelectorConverter x:Key="LockedIconSelectorConverter" />
         </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Height}"
-          Width="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Width}">
+          Width="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Width}"
+          ClipToBounds="False">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <!-- Border with clipping to handle rectangular images, centered in square container -->
-        <Border ClipToBounds="True">
+        <!-- Border for image container -->
+        <Border>
             <Image Stretch="UniformToFill" RenderOptions.BitmapScalingMode="Fant" x:Name="PART_Image"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
                    Loaded="Image_Loaded" ImageFailed="Image_ImageFailed"
@@ -45,16 +46,7 @@
                         <Style.Triggers>
                             <!-- Rarity indicator glow effect - color based on achievement rarity -->
                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=EnableRaretyIndicator}" Value="True">
-                                <Setter Property="Effect">
-                                    <Setter.Value>
-                                        <MultiBinding Converter="{StaticResource PercentToGlowEffectConverter}">
-                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Percent" />
-                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="UltraRareThreshold" />
-                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="RareThreshold" />
-                                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="UncommonThreshold" />
-                                        </MultiBinding>
-                                    </Setter.Value>
-                                </Setter>
+                                <Setter Property="Effect" Value="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Percent, Converter={StaticResource PercentToRarityGlowConverter}}" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>

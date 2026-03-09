@@ -1,0 +1,155 @@
+<UserControl x:Class="PlayniteAchievements.Views.Controls.AchievementCompactItemControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
+             mc:Ignorable="d"
+             d:DesignHeight="48" d:DesignWidth="48"
+             d:DataContext="{d:DesignInstance vm:AchievementDisplayItem}">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlowConverter"/>
+            <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility"/>
+            <converters:BooleanConverter x:Key="InvertedBooleanConverter" Mode="Inverted"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid x:Name="RootGrid"
+          Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
+          Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
+          ClipToBounds="False">
+        <Grid.ToolTip>
+            <ToolTip MaxWidth="300">
+                <ToolTip.Content>
+                    <StackPanel>
+                        <!-- Title with hidden indicator -->
+                        <TextBlock FontWeight="SemiBold"
+                                   Text="{Binding DisplayNameResolved, Mode=OneWay}"
+                                   TextWrapping="Wrap"/>
+
+                        <!-- Description -->
+                        <TextBlock Text="{Binding DescriptionResolved, Mode=OneWay}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,4,0,0"
+                                   Opacity="0.8"/>
+
+                        <!-- Game name (if available) -->
+                        <TextBlock Text="{Binding GameName, Mode=OneWay}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,4,0,0"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   Opacity="0.6"/>
+
+                        <!-- Unlock date -->
+                        <TextBlock Text="{Binding UnlockTimeText, Mode=OneWay}"
+                                   Margin="0,4,0,0"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   Opacity="0.6"
+                                   Visibility="{Binding Unlocked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                        <!-- Rarity info -->
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                                    Visibility="{Binding HasRarity, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{Binding GlobalPercentText, Mode=OneWay}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Opacity="0.7"/>
+                            <TextBlock Text=" - "
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Opacity="0.5"/>
+                            <TextBlock Text="{Binding Rarity, Mode=OneWay}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Opacity="0.7"/>
+                        </StackPanel>
+
+                        <!-- Progress info (for partial progress achievements) -->
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                                    Visibility="{Binding HasProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{Binding ProgressText, Mode=OneWay}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Opacity="0.7"/>
+                            <TextBlock Text=" ("
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Opacity="0.5"/>
+                            <TextBlock Text="{Binding ProgressPercent, Mode=OneWay, StringFormat={}{0:F0}%}"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Opacity="0.7"/>
+                            <TextBlock Text=")"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Opacity="0.5"/>
+                        </StackPanel>
+
+                        <!-- Click to reveal hint for hidden achievements -->
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Achievements_ClickToReveal}"
+                                   Margin="0,4,0,0"
+                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   FontStyle="Italic"
+                                   Opacity="0.5"
+                                   Visibility="{Binding CanReveal, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    </StackPanel>
+                </ToolTip.Content>
+            </ToolTip>
+        </Grid.ToolTip>
+
+        <!-- Achievement icon with glow effect -->
+        <!-- Border is sized to icon with negative margin to extend glow beyond bounds -->
+        <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality"
+                Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                Margin="-6"
+                Effect="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlowConverter}}">
+            <Border.Background>
+                <ImageBrush Stretch="UniformToFill"
+                            helpers:AsyncImage.Uri="{Binding DisplayIcon, Mode=OneWay}"
+                            helpers:AsyncImage.Gray="{Binding Unlocked, Converter={StaticResource InvertedBooleanConverter}}"
+                            helpers:AsyncImage.DecodePixel="64"/>
+            </Border.Background>
+        </Border>
+
+        <!-- Lock icon overlay for locked achievements (when not showing hidden icon) -->
+        <TextBlock Text="&#xf023;"
+                   FontFamily="{DynamicResource FontIcoFont}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="16"
+                   Foreground="{DynamicResource TextBrush}"
+                   Opacity="0.7">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding Unlocked}" Value="False"/>
+                                <Condition Binding="{Binding IsIconHidden}" Value="False"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <!-- Rarity bar overlay at bottom - shows global unlock percentage -->
+        <Grid VerticalAlignment="Bottom"
+              Visibility="{Binding HasRarity, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <ProgressBar Height="10"
+                         Maximum="100"
+                         Value="{Binding GlobalPercent, Mode=OneWay}"
+                         Background="#80000000"
+                         Foreground="{DynamicResource HighlightGlyphBrush}"
+                         BorderThickness="0"/>
+            <TextBlock Text="{Binding GlobalPercent, Mode=OneWay, StringFormat={}{0:F0}%}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="8"
+                       FontWeight="SemiBold"
+                       Foreground="White"/>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -18,6 +18,7 @@ using PlayniteAchievements.Providers.GOG;
 using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Providers.PSN;
 using PlayniteAchievements.Providers.Xbox;
+using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Providers.Manual;
@@ -63,6 +64,7 @@ namespace PlayniteAchievements
         private readonly EpicSessionManager _epicSessionManager;
         private readonly PsnSessionManager _psnSessionManager;
         private readonly XboxSessionManager _xboxSessionManager;
+        private readonly ExophaseSessionManager _exophaseSessionManager;
         private readonly ProviderRegistry _providerRegistry;
         private readonly ManualAchievementsProvider _manualProvider;
         private readonly LegacyManualLinkImporter _legacyManualLinkImporter;
@@ -98,7 +100,10 @@ namespace PlayniteAchievements
             { "AchievementButton", () => new Views.ThemeIntegration.Desktop.AchievementButtonControl() },
             { "AchievementProgressBar", () => new Views.ThemeIntegration.Desktop.AchievementProgressBarControl() },
             { "AchievementCompactList", () => new Views.ThemeIntegration.Desktop.AchievementCompactListControl() },
-            { "AchievementChart", () => new Views.ThemeIntegration.Desktop.AchievementChartControl() },
+            { "AchievementCompactLockedList", () => new Views.ThemeIntegration.Desktop.AchievementCompactLockedListControl() },
+            { "AchievementCompactUnlockedList", () => new Views.ThemeIntegration.Desktop.AchievementCompactUnlockedListControl() },
+            { "AchievementBarChart", () => new Views.ThemeIntegration.Desktop.AchievementBarChartControl() },
+            { "AchievementPieChart", () => new Views.ThemeIntegration.Desktop.AchievementPieChartControl() },
             { "AchievementStats", () => new Views.ThemeIntegration.Desktop.AchievementStatsControl() },
             { "AchievementList", () => new Views.ThemeIntegration.Desktop.AchievementListControl() }
         };
@@ -113,6 +118,7 @@ namespace PlayniteAchievements
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
         public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;
         public SteamSessionManager SteamSessionManager => _steamSessionManager;
+        public ExophaseSessionManager ExophaseSessionManager => _exophaseSessionManager;
         public EpicSessionManager EpicSessionManager => _epicSessionManager;
         internal RefreshCoordinator RefreshCoordinator => _refreshCoordinator;
         public static PlayniteAchievementsPlugin Instance { get; private set; }
@@ -184,12 +190,13 @@ namespace PlayniteAchievements
                     _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
                     _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger, settings.Persisted);
                     _xboxSessionManager = new XboxSessionManager(PlayniteApi, _logger, settings.Persisted);
+                    _exophaseSessionManager = new ExophaseSessionManager(PlayniteApi, _logger, settings);
                 }
 
                 List<IDataProvider> providers;
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
                 {
-                    _manualProvider = new ManualAchievementsProvider(_logger, settings, pluginUserDataPath);
+                    _manualProvider = new ManualAchievementsProvider(_logger, settings, pluginUserDataPath, PlayniteApi, _exophaseSessionManager);
                     providers = new List<IDataProvider>
                     {
                         _manualProvider,  // Manual provider first - explicit user overrides take priority
@@ -334,6 +341,8 @@ namespace PlayniteAchievements
                             "AchievementButton",
                             "AchievementProgressBar",
                             "AchievementCompactList",
+                            "AchievementCompactLockedList",
+                            "AchievementCompactUnlockedList",
                             "AchievementChart",
                             "AchievementStats",
                             "AchievementList"
@@ -361,7 +370,7 @@ namespace PlayniteAchievements
             try
             {
                 _logger.Info($"GetSettingsView called, firstRunView={firstRunView}");
-                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager, _gogSessionManager, _epicSessionManager, _psnSessionManager, _xboxSessionManager);
+                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager, _gogSessionManager, _epicSessionManager, _psnSessionManager, _xboxSessionManager, _exophaseSessionManager);
                 _logger.Info("GetSettingsView succeeded");
                 return control;
             }
@@ -567,6 +576,16 @@ namespace PlayniteAchievements
                 Action = (a) =>
                 {
                     OpenSingleGameAchievementsView(game.Id);
+                }
+            };
+
+            yield return new GameMenuItem
+            {
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_TestNativeControls"),
+                MenuSection = PluginGameMenuSection,
+                Action = (a) =>
+                {
+                    OpenNativeParityTestView(game.Id);
                 }
             };
 
@@ -1376,12 +1395,15 @@ namespace PlayniteAchievements
                     {
                         _themeUpdateService.RequestUpdate(null);
                         _themeIntegrationService?.NotifySelectionChanged(null);
+                        _themeIntegrationService?.ClearSingleGameThemeProperties();
                         _settingsViewModel.Settings.SelectedGame = null;
                         return;
                     }
 
                     _themeUpdateService.RequestUpdate(game.Id);
                     _themeIntegrationService?.NotifySelectionChanged(game.Id);
+                    // Populate ThemeData for desktop theme controls
+                    _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
                     _settingsViewModel.Settings.SelectedGame = game;
                 }
                 else
@@ -1389,6 +1411,7 @@ namespace PlayniteAchievements
                     // Clear theme data when no game or multiple games selected
                     _themeUpdateService.RequestUpdate(null);
                     _themeIntegrationService?.NotifySelectionChanged(null);
+                    _themeIntegrationService?.ClearSingleGameThemeProperties();
                     _settingsViewModel.Settings.SelectedGame = null;
                 }
             }
@@ -1612,6 +1635,60 @@ namespace PlayniteAchievements
                 _logger.Error(ex, $"Failed to open per-game achievements view for gameId={gameId}");
                 PlayniteApi?.Dialogs?.ShowErrorMessage(
                     $"Failed to open achievements view: {ex.Message}",
+                    "Playnite Achievements");
+            }
+        }
+
+        /// <summary>
+        /// Opens the native parity test view window for testing theme integration controls.
+        /// </summary>
+        public void OpenNativeParityTestView(Guid gameId)
+        {
+            try
+            {
+                var game = PlayniteApi?.Database?.Games?.Get(gameId);
+                if (game == null)
+                {
+                    PlayniteApi?.Dialogs?.ShowErrorMessage(
+                        ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame"),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+                    return;
+                }
+
+                var view = new Views.ParityTests.NativeParityTestView(game);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 900,
+                    Height = 700
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    "Native Theme Controls Test",
+                    view,
+                    windowOptions
+                );
+
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = PlayniteApi?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch { }
+
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open native parity test view for gameId={gameId}");
+                PlayniteApi?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open test view: {ex.Message}",
                     "Playnite Achievements");
             }
         }

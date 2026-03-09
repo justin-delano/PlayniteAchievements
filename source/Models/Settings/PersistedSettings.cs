@@ -18,6 +18,7 @@ namespace PlayniteAchievements.Models.Settings
 
         private string _steamUserId;
         private string _gogUserId;
+        private string _exophaseUserId;
         private string _epicAccountId;
         private string _epicAccessToken;
         private string _epicRefreshToken;
@@ -80,6 +81,7 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _sidebarAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _singleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _gamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private bool _pointsColumnAutoEnabled = false;
@@ -115,6 +117,12 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _gogUserId;
             set => SetValue(ref _gogUserId, value);
+        }
+
+        public string ExophaseUserId
+        {
+            get => _exophaseUserId;
+            set => SetValue(ref _exophaseUserId, value);
         }
 
         public string EpicAccountId
@@ -776,6 +784,34 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted widths for desktop theme integration achievement columns.
+        /// Key is a stable column identifier, value is pixel width.
+        /// </summary>
+        public Dictionary<string, double> DesktopThemeColumnWidths
+        {
+            get => _desktopThemeColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _desktopThemeColumnWidths, normalized);
+            }
+        }
+
+        /// <summary>
         /// Persisted visibility state for games overview columns in the sidebar.
         /// Key is a stable column identifier, value indicates whether the column is visible.
         /// </summary>
@@ -1059,6 +1095,9 @@ namespace PlayniteAchievements.Models.Settings
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
                 SingleGameColumnWidths = this.SingleGameColumnWidths != null
                     ? new Dictionary<string, double>(this.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                DesktopThemeColumnWidths = this.DesktopThemeColumnWidths != null
+                    ? new Dictionary<string, double>(this.DesktopThemeColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
                 GamesOverviewColumnVisibility = this.GamesOverviewColumnVisibility != null
                     ? new Dictionary<string, bool>(this.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)

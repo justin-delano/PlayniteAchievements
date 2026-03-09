@@ -1,4 +1,4 @@
-<desktop:AchievementCompactListControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Desktop.AchievementCompactListControl"
+<desktop:AchievementCompactListControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Desktop.AchievementCompactLockedListControl"
                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -9,7 +9,7 @@
                    mc:Ignorable="d"
                    d:DesignHeight="82" d:DesignWidth="600">
 
-    <!-- Horizontal scrolling row of achievement compact items -->
+    <!-- Horizontal scrolling row of locked achievement compact items -->
     <!-- Uses ScrollViewer with horizontal orientation for overflow -->
     <ItemsControl x:Name="AchievementsList"
                   ItemsSource="{Binding DisplayItems, Mode=OneWay, RelativeSource={RelativeSource AncestorType=desktop:AchievementCompactListControlBase}}"

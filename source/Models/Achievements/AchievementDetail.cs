@@ -174,5 +174,63 @@ namespace PlayniteAchievements.Models.Achievements
                 return 10;
             }
         }
+
+        // --- Theme integration compatibility (AchievementDisplayItem-compatible bindings) ---
+
+        /// <summary>
+        /// Alias for themes expecting a "DisplayNameResolved" field.
+        /// For theme integration, this simply returns DisplayName.
+        /// </summary>
+        [IgnoreDataMember]
+        public string DisplayNameResolved => DisplayName ?? ApiName ?? "Unknown Achievement";
+
+        /// <summary>
+        /// Alias for themes expecting a "DescriptionResolved" field.
+        /// For theme integration, this simply returns Description.
+        /// </summary>
+        [IgnoreDataMember]
+        public string DescriptionResolved => Description ?? "No description";
+
+        /// <summary>
+        /// For theme integration, always returns empty (no hidden suffix).
+        /// </summary>
+        [IgnoreDataMember]
+        public string HiddenTitleSuffix => string.Empty;
+
+        /// <summary>
+        /// For theme integration, always returns false (no title hiding).
+        /// </summary>
+        [IgnoreDataMember]
+        public bool IsTitleHidden => false;
+
+        /// <summary>
+        /// For theme integration, always returns false (no icon hiding).
+        /// </summary>
+        [IgnoreDataMember]
+        public bool IsIconHidden => false;
+
+        /// <summary>
+        /// Alias for themes expecting a "DisplayIcon" field.
+        /// Returns the unlocked icon, locked icon with gray prefix, or default icon.
+        /// </summary>
+        [IgnoreDataMember]
+        public string DisplayIcon
+        {
+            get
+            {
+                if (Unlocked && !string.IsNullOrWhiteSpace(UnlockedIconPath))
+                {
+                    return UnlockedIconPath;
+                }
+
+                if (!Unlocked && !string.IsNullOrWhiteSpace(UnlockedIconPath))
+                {
+                    return AchievementIconResolver.ApplyGrayPrefix(UnlockedIconPath);
+                }
+
+                return AchievementIconResolver.GetDefaultIcon();
+            }
+        }
+
     }
 }
