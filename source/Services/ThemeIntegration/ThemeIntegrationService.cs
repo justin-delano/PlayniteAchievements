@@ -424,11 +424,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             if (isFullscreen)
             {
-                RunAchievementRefreshWithProgressWindow(mode, gameIdForThemeUpdate, errorLogMessage);
+                RunAchievementRefreshWithGlobalProgress(mode, gameIdForThemeUpdate, errorLogMessage);
             }
             else
             {
-                RunAchievementRefreshWithGlobalProgress(mode, gameIdForThemeUpdate, errorLogMessage);
+                RunAchievementRefreshWithProgressWindow(mode, gameIdForThemeUpdate, errorLogMessage);
             }
         }
 
@@ -498,7 +498,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                             new RefreshExecutionPolicy
                             {
                                 ValidateAuthentication = false,
-                                UseProgressWindow = false,
                                 SwallowExceptions = false,
                                 ErrorLogMessage = errorLogMessage,
                                 OnRefreshCompleted = (success) =>
@@ -551,8 +550,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             Guid? gameIdForThemeUpdate,
             string errorLogMessage)
         {
-            _logger?.Info($"RunAchievementRefreshWithProgressWindow: Starting fullscreen refresh, mode={mode}, gameId={gameIdForThemeUpdate}");
-
             var request = new RefreshRequest
             {
                 Mode = mode,
@@ -570,7 +567,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     ErrorLogMessage = errorLogMessage,
                     OnRefreshCompleted = (success) =>
                     {
-                        _logger?.Info($"RunAchievementRefreshWithProgressWindow: Completed, success={success}, gameId={gameIdForThemeUpdate}");
                         if (success)
                         {
                             if (gameIdForThemeUpdate.HasValue)
