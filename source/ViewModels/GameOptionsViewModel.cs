@@ -495,7 +495,10 @@ namespace PlayniteAchievements.ViewModels
 
                 IsExcluded = isExcluded;
                 IsExcludedFromSummaries = _settings?.Persisted?.ExcludedFromSummariesGameIds?.Contains(_gameId) ?? false;
-                IsRaCapable = _plugin?.IsRaCapable(_gameId) ?? false;
+
+                var raProvider = _achievementService?.GetProviders()
+                    ?.FirstOrDefault(p => p.ProviderKey == "RetroAchievements");
+                IsRaCapable = raProvider?.IsCapable(game) == true;
 
                 var hasOverride = false;
                 var overrideValue = string.Empty;
@@ -588,7 +591,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            if (_plugin?.TrySetRaGameIdOverride(_gameId, newId) == true)
+            if (TrySetRaOverride(newId))
             {
                 Reload();
             }
@@ -596,10 +599,55 @@ namespace PlayniteAchievements.ViewModels
 
         private void ClearRaOverride()
         {
-            if (_plugin?.TryClearRaGameIdOverride(_gameId) == true)
+            if (TryClearRaOverride())
             {
                 Reload();
             }
+        }
+
+        private bool TrySetRaOverride(int newId)
+        {
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            if (game == null || newId <= 0)
+            {
+                return false;
+            }
+
+            _settings.Persisted.RaGameIdOverrides[_gameId] = newId;
+            _achievementService?.PersistSettingsForUi();
+
+            _logger?.Info($"Set RA game ID override for '{game.Name}' to {newId}");
+
+            TriggerRefresh();
+            return true;
+        }
+
+        private bool TryClearRaOverride()
+        {
+            if (!_settings.Persisted.RaGameIdOverrides.ContainsKey(_gameId))
+            {
+                return false;
+            }
+
+            _settings.Persisted.RaGameIdOverrides.Remove(_gameId);
+            _achievementService?.PersistSettingsForUi();
+
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            _logger?.Info($"Cleared RA game ID override for '{game?.Name ?? _gameId.ToString()}'");
+
+            TriggerRefresh();
+            return true;
+        }
+
+        private void TriggerRefresh()
+        {
+            _ = _plugin?.RefreshCoordinator?.ExecuteAsync(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.Single,
+                    SingleGameId = _gameId
+                },
+                RefreshExecutionPolicy.ProgressWindow(_gameId));
         }
 
         private void UnlinkManualTracking()
