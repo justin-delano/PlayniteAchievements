@@ -105,7 +105,8 @@ namespace PlayniteAchievements
             { "AchievementBarChart", () => new Views.ThemeIntegration.Desktop.AchievementBarChartControl() },
             { "AchievementPieChart", () => new Views.ThemeIntegration.Desktop.AchievementPieChartControl() },
             { "AchievementStats", () => new Views.ThemeIntegration.Desktop.AchievementStatsControl() },
-            { "AchievementList", () => new Views.ThemeIntegration.Desktop.AchievementListControl() }
+            { "AchievementList", () => new Views.ThemeIntegration.Desktop.AchievementListControl() },
+            { "AchievementViewItem", () => new Views.ThemeIntegration.Desktop.AchievementViewItemControl() }
         };
 
         public override Guid Id { get; } =
@@ -345,7 +346,8 @@ namespace PlayniteAchievements
                             "AchievementCompactUnlockedList",
                             "AchievementChart",
                             "AchievementStats",
-                            "AchievementList"
+                            "AchievementList",
+                            "AchievementViewItem"
                         },
                         SourceName = "PlayniteAchievements"
                     });
