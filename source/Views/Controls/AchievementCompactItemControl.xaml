@@ -96,21 +96,18 @@
             </ToolTip>
         </Grid.ToolTip>
 
-        <!-- Achievement icon with glow effect -->
-        <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality"
+        <!-- Achievement icon with glow effect - only apply glow to unlocked achievements -->
+        <Border CornerRadius="6"
+                ClipToBounds="True"
+                RenderOptions.BitmapScalingMode="HighQuality"
                 Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}">
             <Border.Style>
                 <Style TargetType="Border">
-                    <Setter Property="Opacity" Value="0.5"/>
                     <Setter Property="Effect" Value="{x:Null}"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                            <Setter Property="Opacity" Value="1"/>
                             <Setter Property="Effect" Value="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlowConverter}}"/>
-                        </DataTrigger>
-                        <DataTrigger Binding="{Binding IsIconHidden}" Value="True">
-                            <Setter Property="Opacity" Value="1"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -118,7 +115,6 @@
             <Border.Background>
                 <ImageBrush Stretch="UniformToFill"
                             helpers:AsyncImage.Uri="{Binding DisplayIcon, Mode=OneWay}"
-                            helpers:AsyncImage.Gray="{Binding Unlocked, Converter={StaticResource InvertedBooleanConverter}}"
                             helpers:AsyncImage.DecodePixel="64"/>
             </Border.Background>
         </Border>

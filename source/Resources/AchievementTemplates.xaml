@@ -396,21 +396,18 @@
                    Opacity="0.8"/>
     </DataTemplate>
 
-    <!-- Achievement Icon Template with Hidden/Locked State Styling -->
+    <!-- Achievement Icon Template - rounded corners, glow only on unlocked -->
     <DataTemplate x:Key="AchievementIconTemplate">
         <Grid Width="56" Height="56" VerticalAlignment="Center" Margin="4,14,0,14" ClipToBounds="False">
-            <Border CornerRadius="6" RenderOptions.BitmapScalingMode="HighQuality">
+            <Border CornerRadius="6"
+                    ClipToBounds="True"
+                    RenderOptions.BitmapScalingMode="HighQuality">
                 <Border.Style>
                     <Style TargetType="Border">
-                        <Setter Property="Opacity" Value="0.5"/>
                         <Setter Property="Effect" Value="{x:Null}"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                <Setter Property="Opacity" Value="1"/>
-                                <Setter Property="Effect" Value="{Binding Percent, Converter={StaticResource PercentToRarityGlow}}"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsIconHidden}" Value="True">
-                                <Setter Property="Opacity" Value="1"/>
+                                <Setter Property="Effect" Value="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlow}}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
