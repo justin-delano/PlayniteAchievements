@@ -69,7 +69,7 @@ namespace PlayniteAchievements.Services
 
                 try
                 {
-                    await kvp.Value(default).ConfigureAwait(false);
+                    await kvp.Value(default);
                 }
                 catch (Exception ex)
                 {

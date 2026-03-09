@@ -38,6 +38,42 @@ namespace PlayniteAchievements.Providers.Steam
 
         public string GetCachedSteamId64() => _selfSteamId64;
 
+        /// <summary>
+        /// Primes authentication state by hydrating SteamID64 from CEF cookies.
+        /// Safe to call at startup; failures are logged and not propagated.
+        /// </summary>
+        public async Task PrimeAuthenticationStateAsync(CancellationToken ct)
+        {
+            using (PerfScope.Start(_logger, "Steam.PrimeAuthenticationStateAsync", thresholdMs: 50))
+            {
+                try
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    // First try quick hydration from existing cookies
+                    TryHydrateSteamIdFromCurrentCefCookies();
+
+                    if (!string.IsNullOrWhiteSpace(_selfSteamId64))
+                    {
+                        _logger?.Debug("[SteamAuth] Primed SteamID64 from existing CEF cookies.");
+                        return;
+                    }
+
+                    // If no ID found, do a full refresh
+                    await RefreshCookiesHeadlessAsync(ct).ConfigureAwait(false);
+                    _logger?.Debug($"[SteamAuth] Priming completed with SteamID64={_selfSteamId64}");
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger?.Debug("[SteamAuth] Priming cancelled.");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "[SteamAuth] Priming failed.");
+                }
+            }
+        }
+
         public bool NeedsRefresh
         {
             get

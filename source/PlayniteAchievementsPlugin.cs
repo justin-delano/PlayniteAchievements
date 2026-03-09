@@ -244,6 +244,7 @@ namespace PlayniteAchievements
                     _providerRegistry.SyncFromSettings(settings.Persisted);
 
                     // Register auth primers for web-based providers
+                    _providerRegistry.RegisterAuthPrimer("Steam", _steamSessionManager.PrimeAuthenticationStateAsync);
                     _providerRegistry.RegisterAuthPrimer("GOG", _gogSessionManager.PrimeAuthenticationStateAsync);
                     _providerRegistry.RegisterAuthPrimer("Epic", _epicSessionManager.PrimeAuthenticationStateAsync);
                     _providerRegistry.RegisterAuthPrimer("PSN", _psnSessionManager.PrimeAuthenticationStateAsync);
@@ -278,10 +279,6 @@ namespace PlayniteAchievements
 
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ThemeServicesWiring", thresholdMs: 50))
                 {
-                    // Create theme integration services
-                    // Note: We need to create _themeIntegrationService before _themeUpdateService,
-                    // but _themeIntegrationService needs a callback to _themeUpdateService.
-                    // We resolve this by using a local variable for the callback.
                     ThemeIntegrationUpdateService themeUpdateService = null;
                     Action<Guid?> requestUpdate = (id) => themeUpdateService?.RequestUpdate(id);
 
@@ -311,10 +308,6 @@ namespace PlayniteAchievements
                     PlayniteApi?.Database?.Games?.ItemCollectionChanged += Games_ItemCollectionChanged;
                     PlayniteApi?.Database?.Games?.ItemUpdated += Games_ItemUpdated;
 
-                    // Theme integration - settings support
-                    // SettingsRoot = "Settings" tells Playnite to access the Settings property on the ViewModel
-                    // Theme bindings like {PluginSettings Plugin=PlayniteAchievements, Path=HasAchievements}
-                    // will resolve to ViewModel.Settings.HasAchievements
                     AddSettingsSupport(new AddSettingsSupportArgs
                     {
                         SourceName = "PlayniteAchievements",

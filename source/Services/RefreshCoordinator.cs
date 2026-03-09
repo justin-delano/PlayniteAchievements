@@ -13,6 +13,7 @@ namespace PlayniteAchievements.Services
         public bool SwallowExceptions { get; set; }
         public Guid? ProgressSingleGameId { get; set; }
         public string ErrorLogMessage { get; set; }
+        public Action<bool> OnRefreshCompleted { get; set; }
 
         public static RefreshExecutionPolicy Default() => new RefreshExecutionPolicy();
 
@@ -50,36 +51,56 @@ namespace PlayniteAchievements.Services
             _runWithProgressWindow = runWithProgressWindow;
         }
 
-        public Task ExecuteAsync(RefreshRequest request, RefreshExecutionPolicy policy = null)
+        public async Task ExecuteAsync(RefreshRequest request, RefreshExecutionPolicy policy = null)
         {
             policy ??= RefreshExecutionPolicy.Default();
             var normalizedRequest = NormalizeRequest(request);
 
-            if (policy.ValidateAuthentication)
-            {
-                _providerRegistry.PrimeEnabledProvidersAsync().GetAwaiter().GetResult();
-
-                if (!_achievementService.ValidateCanStartRefresh())
-                {
-                    return Task.CompletedTask;
-                }
-            }
-
             if (policy.UseProgressWindow && _runWithProgressWindow != null)
             {
                 var singleGameId = policy.ProgressSingleGameId ?? normalizedRequest.SingleGameId;
-                _runWithProgressWindow(() => ExecuteCoreAsync(normalizedRequest, policy), singleGameId);
-                return Task.CompletedTask;
+                _runWithProgressWindow(() => ExecuteWithPrimingAndCallbackAsync(normalizedRequest, policy), singleGameId);
+            }
+            else
+            {
+                await ExecuteWithPrimingAndCallbackAsync(normalizedRequest, policy);
+            }
+        }
+
+        private async Task ExecuteWithPrimingAndCallbackAsync(RefreshRequest request, RefreshExecutionPolicy policy)
+        {
+            bool success = false;
+            try
+            {
+                await ExecuteWithPrimingAsync(request, policy);
+                success = true;
+            }
+            finally
+            {
+                policy?.OnRefreshCompleted?.Invoke(success);
+            }
+        }
+
+        private async Task ExecuteWithPrimingAsync(RefreshRequest request, RefreshExecutionPolicy policy)
+        {
+            if (policy.ValidateAuthentication)
+            {
+                await _providerRegistry.PrimeEnabledProvidersAsync();
+
+                if (!_achievementService.ValidateCanStartRefresh())
+                {
+                    return;
+                }
             }
 
-            return ExecuteCoreAsync(normalizedRequest, policy);
+            await ExecuteCoreAsync(request, policy);
         }
 
         private async Task ExecuteCoreAsync(RefreshRequest request, RefreshExecutionPolicy policy)
         {
             try
             {
-                await _achievementService.ExecuteRefreshAsync(request).ConfigureAwait(false);
+                await _achievementService.ExecuteRefreshAsync(request);
             }
             catch (Exception ex)
             {
