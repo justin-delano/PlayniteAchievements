@@ -1495,7 +1495,15 @@ namespace PlayniteAchievements
                 // Wire up close button from UserControl
                 progressWindow.RequestClose += (s, ev) => window.Close();
 
-                window.Closed += (s, ev) => { };
+                // Cancel the refresh if window is closed while refresh is running
+                window.Closed += (s, ev) =>
+                {
+                    if (_achievementService.IsRebuilding)
+                    {
+                        _logger?.Info("Progress window closed while refresh running - cancelling refresh.");
+                        _achievementService.CancelCurrentRebuild();
+                    }
+                };
 
                 var isFullscreen = false;
                 try

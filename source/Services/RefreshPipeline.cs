@@ -68,6 +68,10 @@ namespace PlayniteAchievements.Services
 
             for (var i = 0; i < gamesToRefresh.Count; i++)
             {
+                if (cancel.IsCancellationRequested)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[RefreshPipeline] Cancellation detected at game {i}/{gamesToRefresh.Count}");
+                }
                 cancel.ThrowIfCancellationRequested();
 
                 var game = gamesToRefresh[i];
@@ -180,6 +184,10 @@ namespace PlayniteAchievements.Services
                 var sequentialResults = new List<ProviderExecutionResult>(plans.Count);
                 for (var i = 0; i < plans.Count; i++)
                 {
+                    if (cancel.IsCancellationRequested)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[RefreshPipeline] Cancellation detected in sequential provider execution at plan {i}/{plans.Count}");
+                    }
                     cancel.ThrowIfCancellationRequested();
 
                     var plan = plans[i];

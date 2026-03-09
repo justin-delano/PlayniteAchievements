@@ -11,6 +11,7 @@ namespace PlayniteAchievements.ViewModels
     public class RefreshProgressViewModel : ObservableObject
     {
         private readonly AchievementService _achievementService;
+        private readonly ILogger _logger;
         private readonly Guid? _singleGameRefreshId;
         private readonly Action<Guid> _openSingleGameAction;
 
@@ -70,6 +71,7 @@ namespace PlayniteAchievements.ViewModels
             Action<Guid> openSingleGameAction = null)
         {
             _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
+            _logger = logger;
             _singleGameRefreshId = singleGameRefreshId;
             _openSingleGameAction = openSingleGameAction;
 
@@ -131,6 +133,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void CancelRefresh()
         {
+            _logger?.Info($"CancelRefresh called, IsRebuilding={_achievementService.IsRebuilding}");
             _achievementService.CancelCurrentRebuild();
         }
 
