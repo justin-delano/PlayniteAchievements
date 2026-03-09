@@ -126,9 +126,10 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Row 3: Charts Side by Side -->
+                <!-- Row 3: Charts Side by Side (3 columns) -->
                 <Grid Margin="0,12,0,0">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
@@ -148,18 +149,33 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- AchievementPieChart -->
+                    <!-- AchievementPieChart (Rarity mode - default) -->
                     <Border Grid.Column="1"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="4,0">
+                        <StackPanel>
+                            <TextBlock Text="PieChart (Rarity)"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+                            <local:GameViewControlHost ControlName="AchievementPieChart" Height="240" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- AchievementPieChart (Trophy mode) -->
+                    <Border Grid.Column="2"
                             Background="{DynamicResource ControlBackgroundBrush}"
                             CornerRadius="6"
                             Padding="12"
                             Margin="8,0,0,0">
                         <StackPanel>
-                            <TextBlock Text="AchievementPieChart"
+                            <TextBlock Text="PieChart (Trophy)"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextBrush}"
                                        Margin="0,0,0,8"/>
-                            <local:GameViewControlHost ControlName="AchievementPieChart" Height="240" />
+                            <local:GameViewControlHost x:Name="TrophyPieHost" ControlName="AchievementPieChart" Height="240" />
                         </StackPanel>
                     </Border>
                 </Grid>
