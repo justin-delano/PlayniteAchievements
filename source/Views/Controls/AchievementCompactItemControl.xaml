@@ -14,7 +14,6 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlowConverter"/>
             <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility"/>
             <converters:BooleanConverter x:Key="InvertedBooleanConverter" Mode="Inverted"/>
         </ResourceDictionary>
@@ -96,22 +95,10 @@
             </ToolTip>
         </Grid.ToolTip>
 
-        <!-- Achievement icon with glow effect - only apply glow to unlocked achievements -->
-        <Border CornerRadius="6"
-                ClipToBounds="True"
-                RenderOptions.BitmapScalingMode="HighQuality"
+        <!-- Achievement icon with glow effect - uses shared style for conditional glow -->
+        <Border Style="{StaticResource AchievementIconBorderStyle}"
                 Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                 Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="Effect" Value="{x:Null}"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                            <Setter Property="Effect" Value="{Binding GlobalPercent, Converter={StaticResource PercentToRarityGlowConverter}}"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </Border.Style>
             <Border.Background>
                 <ImageBrush Stretch="UniformToFill"
                             helpers:AsyncImage.Uri="{Binding DisplayIcon, Mode=OneWay}"
