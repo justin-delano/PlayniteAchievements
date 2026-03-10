@@ -476,6 +476,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                         if (report.IsCanceled || progress.CancelToken.IsCancellationRequested)
                         {
+                            _logger?.Info("Progress handler detected cancellation request.");
                             return;
                         }
                     }
@@ -498,7 +499,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         {
                             ValidateAuthentication = false,
                             SwallowExceptions = false,
-                            ErrorLogMessage = errorLogMessage
+                            ErrorLogMessage = errorLogMessage,
+                            ExternalCancellationToken = progress.CancelToken
                         });
 
                     refreshTask.Wait(progress.CancelToken);
