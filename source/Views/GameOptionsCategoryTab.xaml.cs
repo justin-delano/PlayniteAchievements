@@ -270,6 +270,18 @@ namespace PlayniteAchievements.Views
             addTypeMenu.Items.Add(CreateMenuItem(
                 L("LOCPlayAch_GameOptions_Category_Type_Multiplayer", "Multiplayer"),
                 () => AddTypeFromContext(contextItem, "Multiplayer")));
+            addTypeMenu.Items.Add(CreateMenuItem(
+                L("LOCPlayAch_GameOptions_Category_Type_Collectable", "Collectable"),
+                () => AddTypeFromContext(contextItem, "Collectable")));
+            addTypeMenu.Items.Add(CreateMenuItem(
+                L("LOCPlayAch_GameOptions_Category_Type_Missable", "Missable"),
+                () => AddTypeFromContext(contextItem, "Missable")));
+            addTypeMenu.Items.Add(CreateMenuItem(
+                L("LOCPlayAch_GameOptions_Category_Type_Difficulty", "Difficulty"),
+                () => AddTypeFromContext(contextItem, "Difficulty")));
+            addTypeMenu.Items.Add(CreateMenuItem(
+                L("LOCPlayAch_GameOptions_Category_Type_Stackable", "Stackable"),
+                () => AddTypeFromContext(contextItem, "Stackable")));
             menu.Items.Add(addTypeMenu);
 
             menu.Items.Add(CreateMenuItem(
