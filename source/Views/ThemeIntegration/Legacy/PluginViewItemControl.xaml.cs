@@ -152,7 +152,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             {
                 dispatcher.BeginInvoke(
                     new Action(QueueRefresh),
-                    DispatcherPriority.Background);
+                    DispatcherPriority.Render);
             }
         }
 
@@ -178,7 +178,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
             dispatcher.BeginInvoke(
                 new Action(() => QueueRefreshIfMatches(updatedGameId.Value)),
-                DispatcherPriority.Background);
+                DispatcherPriority.Render);
         }
 
         private Guid? GetCurrentGameIdFromDataContext()
@@ -235,7 +235,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
             dispatcher.BeginInvoke(
                 new Action(RunQueuedRefresh),
-                DispatcherPriority.Background);
+                DispatcherPriority.Render);
         }
 
         private void RunQueuedRefresh()
@@ -380,6 +380,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
                 UnlockedCount = achievements.Count(a => a.Unlocked);
                 AchievementCount = achievements.Count;
                 Visibility = Visibility.Visible;
+
+                // Force visual tree update so WPF re-evaluates bindings
+                InvalidateVisual();
             }
         }
 
