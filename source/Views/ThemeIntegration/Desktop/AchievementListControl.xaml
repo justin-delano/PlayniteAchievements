@@ -4,10 +4,11 @@
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                    xmlns:base="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
+                   xmlns:desktop="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Desktop"
                    xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
                    mc:Ignorable="d"
                    d:DesignHeight="300" d:DesignWidth="600">
 
-    <controls:AchievementDataGridControl ItemsSource="{Binding Theme.AllAchievementDisplayItems, Mode=OneWay}"
+    <controls:AchievementDataGridControl ItemsSource="{Binding DisplayItems, Mode=OneWay, RelativeSource={RelativeSource AncestorType=desktop:AchievementListControl}}"
                                          ColumnSettingsKey="DesktopTheme"/>
 </base:ThemeControlBase>
