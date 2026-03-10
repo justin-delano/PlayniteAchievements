@@ -583,7 +583,13 @@ namespace PlayniteAchievements.Providers.Steam
 
         public static string GetSteamTimezoneOffsetCookieValue()
         {
-            return "-28800,0";
+            var pacificNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, SteamBaseTimeZone);
+            var isDst = SteamBaseTimeZone.IsDaylightSavingTime(pacificNow);
+
+            var offsetSeconds = isDst ? -25200 : -28800;
+            var dstFlag = isDst ? 1 : 0;
+
+            return $"{offsetSeconds},{dstFlag}";
         }
     }
 }
