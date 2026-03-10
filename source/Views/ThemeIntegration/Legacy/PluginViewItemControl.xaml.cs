@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Controls;
+using Playnite.SDK.Events;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
@@ -32,6 +33,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         };
         private PlayniteAchievementsPlugin Plugin => PlayniteAchievementsPlugin.Instance;
         private bool _isCacheEventSubscribed;
+        private bool _isDatabaseEventSubscribed;
         private bool _cacheRefreshQueued;
 
         #region IntegrationViewItemWithProgressBar Property
@@ -113,6 +115,15 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             service.GameCacheUpdated -= AchievementService_GameCacheUpdated;
             service.GameCacheUpdated += AchievementService_GameCacheUpdated;
             _isCacheEventSubscribed = true;
+
+            // Subscribe to database game updates (fires when game closes)
+            var database = Plugin?.PlayniteApi?.Database?.Games;
+            if (database != null && !_isDatabaseEventSubscribed)
+            {
+                database.ItemUpdated -= Games_ItemUpdated;
+                database.ItemUpdated += Games_ItemUpdated;
+                _isDatabaseEventSubscribed = true;
+            }
         }
 
         private void UnsubscribeFromCacheEvents()
@@ -132,11 +143,79 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             }
 
             _isCacheEventSubscribed = false;
+
+            // Unsubscribe from database game updates
+            if (_isDatabaseEventSubscribed)
+            {
+                try
+                {
+                    Plugin?.PlayniteApi?.Database?.Games.ItemUpdated -= Games_ItemUpdated;
+                }
+                catch
+                {
+                }
+
+                _isDatabaseEventSubscribed = false;
+            }
+        }
+
+        private void Games_ItemUpdated(object sender, ItemUpdatedEventArgs<Game> e)
+        {
+            var currentGameId = GetCurrentGameIdFromDataContext();
+            if (!currentGameId.HasValue)
+            {
+                return;
+            }
+
+            var matches = false;
+            foreach (var update in e.UpdatedItems)
+            {
+                if (update?.NewData?.Id == currentGameId.Value)
+                {
+                    matches = true;
+                    break;
+                }
+            }
+
+            if (!matches)
+            {
+                return;
+            }
+
+            // Marshal to UI thread before checking IsLoaded and refreshing
+            var dispatcher = Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                QueueRefresh();
+            }
+            else
+            {
+                dispatcher.BeginInvoke(
+                    new Action(QueueRefresh),
+                    DispatcherPriority.Background);
+            }
         }
 
         private void AchievementService_CacheInvalidated(object sender, EventArgs e)
         {
-            QueueRefresh();
+            // CacheInvalidated fires when any cache change occurs (throttled).
+            // Always refresh this control since we don't know which game changed.
+            if (!IsLoaded)
+            {
+                return;
+            }
+
+            var dispatcher = Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                QueueRefresh();
+            }
+            else
+            {
+                dispatcher.BeginInvoke(
+                    new Action(QueueRefresh),
+                    DispatcherPriority.Background);
+            }
         }
 
         private void AchievementService_GameCacheUpdated(object sender, GameCacheUpdatedEventArgs e)

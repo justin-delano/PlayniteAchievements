@@ -281,5 +281,17 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
                 LoadData();
             }
         }
+
+        /// <summary>
+        /// Called when a game is updated in the Playnite database.
+        /// Refreshes the control if the selected game was updated.
+        /// </summary>
+        protected override void OnGameDatabaseUpdated(Guid gameId)
+        {
+            if (_isLoaded && Plugin?.Settings?.SelectedGame?.Id == gameId)
+            {
+                LoadData();
+            }
+        }
     }
 }
