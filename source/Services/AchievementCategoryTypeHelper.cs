@@ -17,7 +17,9 @@ namespace PlayniteAchievements.Services
             "Singleplayer",
             "Multiplayer",
             "Collectable",
-            "Missable"
+            "Missable",
+            "Difficulty",
+            "Stackable"
         };
 
         private static readonly Dictionary<string, string> CanonicalByAlias =
@@ -35,7 +37,12 @@ namespace PlayniteAchievements.Services
                 ["collectable"] = "Collectable",
                 ["collectible"] = "Collectable",
                 ["missable"] = "Missable",
-                ["miss-able"] = "Missable"
+                ["miss-able"] = "Missable",
+                ["difficulty"] = "Difficulty",
+                ["diff"] = "Difficulty",
+                ["stackable"] = "Stackable",
+                ["stack"] = "Stackable",
+                ["stacking"] = "Stackable"
             };
 
         public static IReadOnlyList<string> AllowedCategoryTypes => CanonicalOrder;
