@@ -63,6 +63,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showSidebarBarCharts = true;
         private bool _showGamesWithNoUnlocks = false;
         private bool _showUnplayedGames = false;
+        private bool _showTopMenuBarButton = true;
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
@@ -558,6 +559,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showUnplayedGames;
             set => SetValue(ref _showUnplayedGames, value);
+        }
+
+        /// <summary>
+        /// When true, shows the top menu bar button for opening the achievements window.
+        /// </summary>
+        public bool ShowTopMenuBarButton
+        {
+            get => _showTopMenuBarButton;
+            set => SetValue(ref _showTopMenuBarButton, value);
         }
 
         /// <summary>
@@ -1070,6 +1080,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowSidebarBarCharts = this.ShowSidebarBarCharts,
                 ShowGamesWithNoUnlocks = this.ShowGamesWithNoUnlocks,
                 ShowUnplayedGames = this.ShowUnplayedGames,
+                ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
