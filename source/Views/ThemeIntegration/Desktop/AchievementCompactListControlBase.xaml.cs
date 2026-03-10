@@ -181,7 +181,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
             {
                 if (FilterAchievement(allAchievements[i]))
                 {
-                    displayItems.Add(allItems[i]);
+                    displayItems.Add(allItems[i].Clone());
                 }
             }
 
