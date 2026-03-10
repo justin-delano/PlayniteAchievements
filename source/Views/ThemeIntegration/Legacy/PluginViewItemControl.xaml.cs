@@ -137,21 +137,32 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         {
             // CacheInvalidated fires when any cache change occurs (throttled).
             // Always refresh this control since we don't know which game changed.
-            _logger.Debug($"CacheInvalidated event received, IsLoaded={IsLoaded}");
-            if (!IsLoaded)
+            // Must dispatch to UI thread first before accessing IsLoaded
+            var dispatcher = Dispatcher;
+            if (dispatcher == null)
             {
                 return;
             }
 
-            var dispatcher = Dispatcher;
-            if (dispatcher == null || dispatcher.CheckAccess())
+            if (dispatcher.CheckAccess())
             {
-                QueueRefresh();
+                // Already on UI thread
+                if (IsLoaded)
+                {
+                    QueueRefresh();
+                }
             }
             else
             {
+                // On background thread - dispatch to UI thread
                 dispatcher.BeginInvoke(
-                    new Action(QueueRefresh),
+                    new Action(() =>
+                    {
+                        if (IsLoaded)
+                        {
+                            QueueRefresh();
+                        }
+                    }),
                     DispatcherPriority.Render);
             }
         }
@@ -161,26 +172,40 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             var updatedGameId = ParseUpdatedGameId(e);
             if (!updatedGameId.HasValue)
             {
-                _logger.Debug($"GameCacheUpdated event received but GameId was null or invalid");
+                _logger.Debug("GameCacheUpdated event received but GameId was null or invalid");
                 return;
             }
 
-            _logger.Debug($"GameCacheUpdated event received, GameId={updatedGameId.Value}, IsLoaded={IsLoaded}");
-            if (!IsLoaded)
-            {
-                return;
-            }
+            _logger.Debug($"GameCacheUpdated event received, GameId={updatedGameId.Value}");
 
+            // Must dispatch to UI thread first before accessing IsLoaded
             var dispatcher = Dispatcher;
-            if (dispatcher == null || dispatcher.CheckAccess())
+            if (dispatcher == null)
             {
-                QueueRefreshIfMatches(updatedGameId.Value);
                 return;
             }
 
-            dispatcher.BeginInvoke(
-                new Action(() => QueueRefreshIfMatches(updatedGameId.Value)),
-                DispatcherPriority.Render);
+            if (dispatcher.CheckAccess())
+            {
+                // Already on UI thread
+                if (IsLoaded)
+                {
+                    QueueRefreshIfMatches(updatedGameId.Value);
+                }
+            }
+            else
+            {
+                // On background thread - Dispatch to UI thread
+                dispatcher.BeginInvoke(
+                    new Action(() =>
+                    {
+                        if (IsLoaded)
+                        {
+                            QueueRefreshIfMatches(updatedGameId.Value);
+                        }
+                    }),
+                    DispatcherPriority.Render);
+            }
         }
 
         private Guid? GetCurrentGameIdFromDataContext()
