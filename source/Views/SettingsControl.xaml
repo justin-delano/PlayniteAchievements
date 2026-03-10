@@ -695,6 +695,19 @@
                                     Margin="0,8,0,0"/>
                         </StackPanel>
 
+                        <!-- ================== GENERAL SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_GeneralSection}"
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,12"/>
+
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
+                                          IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
+                                          Margin="0,0,0,8"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- ================== SIDEBAR SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
