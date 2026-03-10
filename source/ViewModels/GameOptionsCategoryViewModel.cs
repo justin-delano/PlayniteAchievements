@@ -35,12 +35,16 @@ namespace PlayniteAchievements.ViewModels
         private bool _typeMultiplayerSelected;
         private bool _typeCollectableSelected;
         private bool _typeMissableSelected;
+        private bool _typeDifficultySelected;
+        private bool _typeStackableSelected;
         private bool _typeFilterBaseSelected;
         private bool _typeFilterDlcSelected;
         private bool _typeFilterSingleplayerSelected;
         private bool _typeFilterMultiplayerSelected;
         private bool _typeFilterCollectableSelected;
         private bool _typeFilterMissableSelected;
+        private bool _typeFilterDifficultySelected;
+        private bool _typeFilterStackableSelected;
 
         public GameOptionsCategoryViewModel(
             Guid gameId,
@@ -192,6 +196,30 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public bool TypeDifficultySelected
+        {
+            get => _typeDifficultySelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeDifficultySelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedTypeSelectionText));
+                }
+            }
+        }
+
+        public bool TypeStackableSelected
+        {
+            get => _typeStackableSelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeStackableSelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedTypeSelectionText));
+                }
+            }
+        }
+
         public string SelectedTypeSelectionText
         {
             get
@@ -274,6 +302,32 @@ namespace PlayniteAchievements.ViewModels
             set
             {
                 if (SetValueAndReturn(ref _typeFilterMissableSelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
+                    ApplyFilter();
+                }
+            }
+        }
+
+        public bool TypeFilterDifficultySelected
+        {
+            get => _typeFilterDifficultySelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeFilterDifficultySelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
+                    ApplyFilter();
+                }
+            }
+        }
+
+        public bool TypeFilterStackableSelected
+        {
+            get => _typeFilterStackableSelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeFilterStackableSelected, value))
                 {
                     OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
                     ApplyFilter();
@@ -785,6 +839,8 @@ namespace PlayniteAchievements.ViewModels
             TypeMultiplayerSelected = false;
             TypeCollectableSelected = false;
             TypeMissableSelected = false;
+            TypeDifficultySelected = false;
+            TypeStackableSelected = false;
         }
 
         public void ClearAllSelections()
@@ -974,6 +1030,16 @@ namespace PlayniteAchievements.ViewModels
                 selected.Add("Missable");
             }
 
+            if (TypeFilterDifficultySelected)
+            {
+                selected.Add("Difficulty");
+            }
+
+            if (TypeFilterStackableSelected)
+            {
+                selected.Add("Stackable");
+            }
+
             return selected;
         }
 
@@ -1008,6 +1074,16 @@ namespace PlayniteAchievements.ViewModels
             if (TypeMissableSelected)
             {
                 selected.Add("Missable");
+            }
+
+            if (TypeDifficultySelected)
+            {
+                selected.Add("Difficulty");
+            }
+
+            if (TypeStackableSelected)
+            {
+                selected.Add("Stackable");
             }
 
             return AchievementCategoryTypeHelper.Combine(selected);
