@@ -507,6 +507,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
                 catch (OperationCanceledException)
                 {
+                    _achievementService.CancelCurrentRebuild();
                     progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
                 }
                 catch (Exception ex)
