@@ -12,7 +12,7 @@ namespace PlayniteAchievements.Services.Sidebar
         public string ProviderName { get; set; }
 
         public List<AchievementDisplayItem> Achievements { get; set; } = new List<AchievementDisplayItem>();
-        public List<RecentAchievementItem> RecentAchievements { get; set; } = new List<RecentAchievementItem>();
+        public List<AchievementDisplayItem> RecentAchievements { get; set; } = new List<AchievementDisplayItem>();
         public GameOverviewItem GameOverview { get; set; }
         public Dictionary<DateTime, int> UnlockCountsByDate { get; set; } = new Dictionary<DateTime, int>();
 

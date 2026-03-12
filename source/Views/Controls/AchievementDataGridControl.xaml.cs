@@ -26,6 +26,7 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly IReadOnlyDictionary<string, double> DefaultColumnWidthSeeds =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
+                ["Game"] = 64,
                 ["Achievement"] = 460,
                 ["UnlockDate"] = 240,
                 ["CategoryType"] = 210,
@@ -103,6 +104,57 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>
+        /// Identifies the ShowGameColumn dependency property.
+        /// When true, displays the Game column showing the associated game's icon/cover.
+        /// </summary>
+        public static readonly DependencyProperty ShowGameColumnProperty =
+            DependencyProperty.Register(nameof(ShowGameColumn), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false, OnColumnVisibilityChanged));
+
+        /// <summary>
+        /// Gets or sets whether to show the Game column.
+        /// </summary>
+        public bool ShowGameColumn
+        {
+            get => (bool)GetValue(ShowGameColumnProperty);
+            set => SetValue(ShowGameColumnProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the HideStatusColumn dependency property.
+        /// When true, hides the Status column (checkmark/padlock).
+        /// </summary>
+        public static readonly DependencyProperty HideStatusColumnProperty =
+            DependencyProperty.Register(nameof(HideStatusColumn), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false, OnColumnVisibilityChanged));
+
+        /// <summary>
+        /// Gets or sets whether to hide the Status column.
+        /// </summary>
+        public bool HideStatusColumn
+        {
+            get => (bool)GetValue(HideStatusColumnProperty);
+            set => SetValue(HideStatusColumnProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the UseCoverImages dependency property.
+        /// When true and ShowGameColumn is true, displays cover images instead of icons in the Game column.
+        /// </summary>
+        public static readonly DependencyProperty UseCoverImagesProperty =
+            DependencyProperty.Register(nameof(UseCoverImages), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        /// <summary>
+        /// Gets or sets whether to use cover images (instead of icons) in the Game column.
+        /// </summary>
+        public bool UseCoverImages
+        {
+            get => (bool)GetValue(UseCoverImagesProperty);
+            set => SetValue(UseCoverImagesProperty, value);
+        }
+
+        /// <summary>
         /// Occurs when a column header is clicked for sorting.
         /// Subscribe to handle sorting externally when UseExternalSorting is true.
         /// </summary>
@@ -143,6 +195,36 @@ namespace PlayniteAchievements.Views.Controls
         public AchievementDataGridControl()
         {
             InitializeComponent();
+        }
+
+        private static void OnColumnVisibilityChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.UpdateColumnVisibility();
+            }
+        }
+
+        private void UpdateColumnVisibility()
+        {
+            if (AchievementsDataGrid == null)
+            {
+                return;
+            }
+
+            // Update Status column visibility
+            var statusColumn = AchievementsDataGrid.Columns?.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "StatusColumn") as DataGridTemplateColumn;
+            if (statusColumn != null)
+            {
+                statusColumn.Visibility = HideStatusColumn ? Visibility.Collapsed : Visibility.Visible;
+            }
+
+            // Update Game column visibility
+            var gameColumn = AchievementsDataGrid.Columns?.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "GameColumn") as DataGridTemplateColumn;
+            if (gameColumn != null)
+            {
+                gameColumn.Visibility = ShowGameColumn ? Visibility.Visible : Visibility.Collapsed;
+            }
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)

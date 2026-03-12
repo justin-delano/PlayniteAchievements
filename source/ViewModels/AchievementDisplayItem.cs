@@ -330,6 +330,28 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _categoryLabel, value);
         }
 
+        private string _gameIconPath;
+        /// <summary>
+        /// Path to the game's icon image.
+        /// Used by the Game column in sidebar recent achievements.
+        /// </summary>
+        public string GameIconPath
+        {
+            get => _gameIconPath;
+            set => SetValue(ref _gameIconPath, value);
+        }
+
+        private string _gameCoverPath;
+        /// <summary>
+        /// Path to the game's cover image.
+        /// Used by the Game column in sidebar recent achievements when UseCoverImages is true.
+        /// </summary>
+        public string GameCoverPath
+        {
+            get => _gameCoverPath;
+            set => SetValue(ref _gameCoverPath, value);
+        }
+
         /// <summary>
         /// True if this achievement has PlayStation trophy type data.
         /// </summary>
@@ -427,7 +449,7 @@ namespace PlayniteAchievements.ViewModels
         /// Updates this item's properties from a source Achievement object.
         /// This is used to synchronize data without recreating the entire object, preventing UI flicker.
         /// </summary>
-        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideIcon, bool hideTitle, bool hideDescription, bool hideLockedIcon, string sortingName = null)
+        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideIcon, bool hideTitle, bool hideDescription, bool hideLockedIcon, string sortingName = null, string gameIconPath = null, string gameCoverPath = null)
         {
             GameName = gameName;
             SortingName = sortingName ?? gameName;
@@ -450,6 +472,8 @@ namespace PlayniteAchievements.ViewModels
             TrophyType = source.TrophyType;
             CategoryType = source.CategoryType;
             CategoryLabel = source.Category;
+            GameIconPath = gameIconPath;
+            GameCoverPath = gameCoverPath;
         }
 
         public string UnlockTimeText =>
@@ -635,7 +659,9 @@ namespace PlayniteAchievements.ViewModels
                 ProgressDenom = _progressDenom,
                 TrophyType = _trophyType,
                 CategoryType = _categoryType,
-                CategoryLabel = _categoryLabel
+                CategoryLabel = _categoryLabel,
+                GameIconPath = _gameIconPath,
+                GameCoverPath = _gameCoverPath
             };
         }
     }

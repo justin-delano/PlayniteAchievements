@@ -61,7 +61,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly HashSet<string> _pendingDeltaKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _pendingFullResetFromDelta;
 
-        private List<RecentAchievementItem> _filteredRecentAchievements = new List<RecentAchievementItem>();
+        private List<AchievementDisplayItem> _filteredRecentAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
         private List<string> _availableProviders = new List<string>();
@@ -115,7 +115,7 @@ namespace PlayniteAchievements.ViewModels
             // Initialize collections
             AllAchievements = new BulkObservableCollection<AchievementDisplayItem>();
             GamesOverview = new BulkObservableCollection<GameOverviewItem>();
-            RecentAchievements = new BulkObservableCollection<RecentAchievementItem>();
+            RecentAchievements = new BulkObservableCollection<AchievementDisplayItem>();
             SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
             SelectedGameTypeFilterOptions = new ObservableCollection<string>();
             SelectedGameCategoryFilterOptions = new ObservableCollection<string>();
@@ -169,12 +169,12 @@ namespace PlayniteAchievements.ViewModels
 
         // Overview tab collections
         public ObservableCollection<GameOverviewItem> GamesOverview { get; }
-        public ObservableCollection<RecentAchievementItem> RecentAchievements { get; }
+        public ObservableCollection<AchievementDisplayItem> RecentAchievements { get; }
 
         private List<GameOverviewItem> _allGamesOverview = new List<GameOverviewItem>();
         private List<GameOverviewItem> _filteredGamesOverview = new List<GameOverviewItem>();
 
-        private List<RecentAchievementItem> _allRecentAchievements = new List<RecentAchievementItem>();
+        private List<AchievementDisplayItem> _allRecentAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _allSelectedGameAchievements = new List<AchievementDisplayItem>();
 
         #endregion
@@ -1094,9 +1094,6 @@ namespace PlayniteAchievements.ViewModels
                 case AchievementDisplayItem achievement when achievement.PlayniteGameId.HasValue:
                     gameId = achievement.PlayniteGameId.Value;
                     return true;
-                case RecentAchievementItem recent when recent.PlayniteGameId.HasValue:
-                    gameId = recent.PlayniteGameId.Value;
-                    return true;
                 case Guid id when id != Guid.Empty:
                     gameId = id;
                     return true;
@@ -1140,13 +1137,13 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _allGamesOverview = snapshot.GamesOverview ?? new List<GameOverviewItem>();
-            _allRecentAchievements = snapshot.RecentAchievements ?? new List<RecentAchievementItem>();
+            _filteredRecentAchievements = new List<AchievementDisplayItem>(_allRecentAchievements);
 
             UpdateProviderFilterOptions(_allGamesOverview);
             UpdateCompletenessFilterOptions();
 
             // Initialize filtered lists
-            _filteredRecentAchievements = new List<RecentAchievementItem>(_allRecentAchievements);
+            _filteredRecentAchievements = new List<AchievementDisplayItem>(_allRecentAchievements);
             _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
 
             ApplyOverviewSummaryCore(snapshot, updateProviderFilterOptions: false);
@@ -1155,7 +1152,7 @@ namespace PlayniteAchievements.ViewModels
             ApplyLeftFilters();
             UpdateAggregatePieCharts();
 
-            if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulk)
+            if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
             {
                 bulk.ReplaceAll(_filteredRecentAchievements);
             }
@@ -1220,7 +1217,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 Achievements = _allAchievements ?? new List<AchievementDisplayItem>(),
                 GamesOverview = _allGamesOverview ?? new List<GameOverviewItem>(),
-                RecentAchievements = _allRecentAchievements ?? new List<RecentAchievementItem>(),
+                RecentAchievements = _allRecentAchievements ?? new List<AchievementDisplayItem>(),
                 GlobalUnlockCountsByDate = new Dictionary<DateTime, int>(),
                 UnlockCountsByDateByGame = new Dictionary<Guid, Dictionary<DateTime, int>>(),
                 UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
@@ -2536,7 +2533,7 @@ namespace PlayniteAchievements.ViewModels
                 }
                 else
                 {
-                    if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulk)
+                    if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
                     {
                         bulk.ReplaceAll(_filteredRecentAchievements);
                     }
@@ -2803,7 +2800,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 _filteredRecentAchievements.Reverse();
                 _recentSortDirection = direction;
-                if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulkRecent)
+                if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulkRecent)
                 {
                     bulkRecent.ReplaceAll(_filteredRecentAchievements);
                 }
@@ -2817,13 +2814,13 @@ namespace PlayniteAchievements.ViewModels
             _recentSortPath = sortMemberPath;
             _recentSortDirection = direction;
 
-            Comparison<RecentAchievementItem> comparison = sortMemberPath switch
+            Comparison<AchievementDisplayItem> comparison = sortMemberPath switch
             {
-                "Name" => (a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase),
-                "GameName" => (a, b) => string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase),
+                "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
+                "SortingName" => (a, b) => string.Compare(a.SortingName ?? a.GameName, b.SortingName ?? b.GameName, StringComparison.OrdinalIgnoreCase),
                 "CategoryType" => CompareRecentAchievementsByCategoryTypeThenUnlock,
                 "CategoryLabel" => CompareRecentAchievementsByCategoryLabelThenUnlock,
-                "UnlockTime" => CompareRecentAchievementsByUnlockColumn,
+                "UnlockTimeUtc" => CompareRecentAchievementsByUnlockColumn,
                 "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
                 "Points" => (a, b) => a.Points.CompareTo(b.Points),
                 "TrophyType" => CompareRecentAchievementsByTrophyType,
@@ -2842,7 +2839,7 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            if (RecentAchievements is BulkObservableCollection<RecentAchievementItem> bulkRecent2)
+            if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulkRecent2)
             {
                 bulkRecent2.ReplaceAll(_filteredRecentAchievements);
             }
@@ -2923,7 +2920,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private static int CompareRecentAchievementsByUnlockColumn(RecentAchievementItem a, RecentAchievementItem b)
+        private static int CompareRecentAchievementsByUnlockColumn(AchievementDisplayItem a, AchievementDisplayItem b)
         {
             var dateComparison = a.UnlockTime.CompareTo(b.UnlockTime);
             if (dateComparison != 0)
@@ -2962,10 +2959,10 @@ namespace PlayniteAchievements.ViewModels
                 return gameComparison;
             }
 
-            return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static int CompareRecentAchievementsByCategoryTypeThenUnlock(RecentAchievementItem a, RecentAchievementItem b)
+        private static int CompareRecentAchievementsByCategoryTypeThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
         {
             var typeComparison = string.Compare(
                 AchievementCategoryTypeHelper.ToDisplayText(a.CategoryType),
@@ -2988,10 +2985,10 @@ namespace PlayniteAchievements.ViewModels
                 return gameComparison;
             }
 
-            return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static int CompareRecentAchievementsByCategoryLabelThenUnlock(RecentAchievementItem a, RecentAchievementItem b)
+        private static int CompareRecentAchievementsByCategoryLabelThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
         {
             var labelComparison = string.Compare(
                 AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel),
@@ -3014,7 +3011,7 @@ namespace PlayniteAchievements.ViewModels
                 return gameComparison;
             }
 
-            return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
         }
 
         private static int CompareSelectedGameAchievementsByUnlockColumn(AchievementDisplayItem a, AchievementDisplayItem b)
@@ -3148,7 +3145,7 @@ namespace PlayniteAchievements.ViewModels
                                             b.TrophyBronzeCount > 0 ? "bronze" : null));
         }
 
-        private static int CompareRecentAchievementsByTrophyType(RecentAchievementItem a, RecentAchievementItem b)
+        private static int CompareRecentAchievementsByTrophyType(AchievementDisplayItem a, AchievementDisplayItem b)
         {
             return GetTrophyRank(a.TrophyType).CompareTo(GetTrophyRank(b.TrophyType));
         }

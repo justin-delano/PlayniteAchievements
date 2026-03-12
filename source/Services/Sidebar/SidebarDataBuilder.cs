@@ -35,7 +35,7 @@ namespace PlayniteAchievements.Services.Sidebar
 
             var allAchievements = new List<AchievementDisplayItem>();
             var gamesOverview = new List<GameOverviewItem>();
-            var recentAchievements = new List<RecentAchievementItem>();
+            var recentAchievements = new List<AchievementDisplayItem>();
 
             var globalCounts = new Dictionary<DateTime, int>();
             var singleGameCounts = new Dictionary<Guid, Dictionary<DateTime, int>>();

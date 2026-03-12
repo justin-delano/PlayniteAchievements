@@ -2,7 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:models="clr-namespace:PlayniteAchievements.Models.Achievements"
                     xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
-                    xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters">
+                    xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+                    xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls">
 
     <!-- =======================
          CONVERTERS
@@ -10,6 +11,7 @@
     <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
     <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility"/>
     <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
+    <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
 
     <!-- =======================
          DATAGRID STYLES
@@ -404,6 +406,45 @@
                    FontWeight="SemiBold"
                    Foreground="{DynamicResource TextBrush}"
                    Opacity="0.8"/>
+    </DataTemplate>
+
+    <!-- Achievement Game Column Template - Icon or Cover with toggle support -->
+    <DataTemplate x:Key="AchievementGameColumnTemplate">
+        <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Border x:Name="GameImageBorder"
+                    CornerRadius="6"
+                    RenderOptions.BitmapScalingMode="HighQuality"
+                    ToolTip="{Binding GameName}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <!-- Default: Icon mode (44x44 square) -->
+                        <Setter Property="Width" Value="44"/>
+                        <Setter Property="Height" Value="44"/>
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <ImageBrush Stretch="UniformToFill"
+                                            helpers:AsyncImage.Uri="{Binding GameIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
+                                            helpers:AsyncImage.DecodePixel="96"/>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <!-- Cover mode (40x60 portrait) when UseCoverImages is true on ancestor -->
+                            <DataTrigger Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                                <Setter Property="Width" Value="40"/>
+                                <Setter Property="Height" Value="60"/>
+                                <Setter Property="Background">
+                                    <Setter.Value>
+                                        <ImageBrush Stretch="UniformToFill"
+                                                    helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
+                                                    helpers:AsyncImage.DecodePixel="128"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
+        </Grid>
     </DataTemplate>
 
     <!-- Achievement Icon Template - Image with conditional glow -->

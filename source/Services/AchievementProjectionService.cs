@@ -83,7 +83,7 @@ namespace PlayniteAchievements.Services
             return item;
         }
 
-        public static RecentAchievementItem CreateRecentItem(
+        public static AchievementDisplayItem CreateRecentItem(
             GameAchievementData gameData,
             AchievementDetail achievement,
             AchievementProjectionOptions options,
@@ -98,15 +98,16 @@ namespace PlayniteAchievements.Services
             var iconPath = !string.IsNullOrWhiteSpace(achievement.UnlockedIconPath)
                 ? achievement.UnlockedIconPath
                 : achievement.LockedIconPath;
-            return new RecentAchievementItem
+            return new AchievementDisplayItem
             {
                 ApiName = achievement.ApiName,
                 PlayniteGameId = gameData?.PlayniteGameId,
-                Name = achievement.DisplayName ?? achievement.ApiName ?? "Unknown",
+                DisplayName = achievement.DisplayName ?? achievement.ApiName ?? "Unknown",
                 Description = achievement.Description ?? string.Empty,
                 GameName = gameData?.GameName ?? "Unknown",
+                SortingName = gameData?.SortingName ?? gameData?.GameName ?? "Unknown",
                 IconPath = iconPath,
-                UnlockTime = DateTimeUtilities.AsUtcKind(achievement.UnlockTimeUtc.Value),
+                UnlockTimeUtc = achievement.UnlockTimeUtc.Value,
                 GlobalPercentUnlocked = achievement.GlobalPercentUnlocked,
                 PointsValue = ResolvePoints(achievement, options),
                 ProgressNum = achievement.ProgressNum,
@@ -114,9 +115,15 @@ namespace PlayniteAchievements.Services
                 GameIconPath = gameIconPath,
                 GameCoverPath = gameCoverPath,
                 Hidden = achievement.Hidden,
+                Unlocked = true, // Recent achievements are always unlocked by definition
                 TrophyType = achievement.TrophyType,
                 CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(achievement.CategoryType),
-                CategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category)
+                CategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category),
+                ShowHiddenIcon = options?.ShowHiddenIcon ?? false,
+                ShowHiddenTitle = options?.ShowHiddenTitle ?? false,
+                ShowHiddenDescription = options?.ShowHiddenDescription ?? false,
+                ShowLockedIcon = options?.ShowLockedIcon ?? true,
+                ShowRarityGlow = options?.ShowRarityGlow ?? true
             };
         }
 
