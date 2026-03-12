@@ -195,6 +195,20 @@ namespace PlayniteAchievements.Views.Controls
         public AchievementDataGridControl()
         {
             InitializeComponent();
+            IsVisibleChanged += OnIsVisibleChanged;
+        }
+
+        private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            // When control becomes visible, briefly delay showing to prevent flicker
+            if ((bool)e.NewValue && _isAttached)
+            {
+                AchievementsDataGrid.Opacity = 0;
+                AchievementsDataGrid.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    AchievementsDataGrid.Opacity = 1.0;
+                }), System.Windows.Threading.DispatcherPriority.ContextIdle);
+            }
         }
 
         private static void OnColumnVisibilityChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -235,8 +249,13 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             AttachColumnPersistence();
-            // Column visibility is now handled by ForcedCollapsedKeys during Attach()
             _isAttached = true;
+
+            // Slight delay before showing to let column widths settle and prevent flicker
+            AchievementsDataGrid.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                AchievementsDataGrid.Opacity = 1.0;
+            }), System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
         private void AttachColumnPersistence()
