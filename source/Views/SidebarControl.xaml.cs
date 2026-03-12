@@ -946,8 +946,7 @@ namespace PlayniteAchievements.Views
             ApplyVisibility(RecentAchievementsDataGrid, _settings?.Persisted?.DataGridColumnVisibility);
             // GameAchievementsGrid uses AchievementDataGridControl which handles its own visibility
             ApplyVisibility(GamesOverviewDataGrid, _settings?.Persisted?.GamesOverviewColumnVisibility);
-            NormalizeRecentAchievementColumns(RecentAchievementsDataGrid);
-            NormalizeGridColumns(GamesOverviewDataGrid);
+            // Don't normalize here - ApplyWidthsToGrids will handle it after applying persisted widths
         }
 
         private void ApplyVisibility(DataGrid grid, Dictionary<string, bool> map)
