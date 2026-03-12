@@ -392,6 +392,12 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>
+        /// Gets the internal DataGrid for direct access when needed.
+        /// Used for scroll reset and other operations that require direct DataGrid access.
+        /// </summary>
+        public DataGrid InternalDataGrid => AchievementsDataGrid;
+
+        /// <summary>
         /// Sets the sort indicator on a specific column, clearing others.
         /// Used for external sorting mode where the parent controls sort order.
         /// </summary>
