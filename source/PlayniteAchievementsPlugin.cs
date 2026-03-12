@@ -778,7 +778,9 @@ namespace PlayniteAchievements
         {
             var targets = GetDistinctValidGames(games);
             var gameIdsToRefresh = new List<Guid>();
+            var gamesToExclude = new List<Game>();
 
+            // First pass: categorize games
             foreach (var game in targets)
             {
                 var isExcluded = IsGameExcluded(game.Id);
@@ -789,19 +791,32 @@ namespace PlayniteAchievements
                 }
                 else
                 {
-                    var confirmText = string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_Exclude_ConfirmSingle"), game.Name);
-                    var result = PlayniteApi?.Dialogs?.ShowMessage(
-                        confirmText,
-                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Warning) ?? MessageBoxResult.None;
-                    if (result == MessageBoxResult.Yes)
+                    gamesToExclude.Add(game);
+                }
+            }
+
+            // Single batch confirmation for all exclusions
+            if (gamesToExclude.Count > 0)
+            {
+                var confirmText = gamesToExclude.Count == 1
+                    ? string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_Exclude_ConfirmSingle"), gamesToExclude[0].Name)
+                    : string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_Exclude_ConfirmSelected"), gamesToExclude.Count);
+                var result = PlayniteApi?.Dialogs?.ShowMessage(
+                    confirmText,
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    foreach (var game in gamesToExclude)
                     {
                         _achievementService.SetExcludedByUser(game.Id, true, clearCachedDataWhenExcluding: true);
                     }
                 }
             }
 
+            // Refresh un-excluded games
             if (gameIdsToRefresh.Count == 1)
             {
                 var gameId = gameIdsToRefresh[0];
