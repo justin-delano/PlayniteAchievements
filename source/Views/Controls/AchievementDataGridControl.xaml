@@ -29,7 +29,7 @@
               RowBackground="Transparent"
               BorderThickness="1"
               BorderBrush="{DynamicResource NormalBorderBrush}"
-              Background="{DynamicResource ControlBackgroundBrush}"
+              Background="Transparent"
               CanUserAddRows="False"
               CanUserDeleteRows="False"
               CanUserResizeRows="False"
