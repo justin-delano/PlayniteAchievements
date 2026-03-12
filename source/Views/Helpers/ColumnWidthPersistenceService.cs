@@ -684,12 +684,20 @@ namespace PlayniteAchievements.Views.Helpers
 
         private double ResolveSeedWidth(string key, DataGridColumn column, double fallbackMin)
         {
+            // Check pending updates first (from user resize) to avoid flicker
+            if (!string.IsNullOrWhiteSpace(key) && _pendingWidthUpdates.TryGetValue(key, out var pending) && IsValidWidth(pending))
+            {
+                return pending;
+            }
+
+            // Then check persisted settings
             var map = _getWidths?.Invoke();
             if (!string.IsNullOrWhiteSpace(key) && map != null && map.TryGetValue(key, out var preferred) && IsValidWidth(preferred))
             {
                 return preferred;
             }
 
+            // Finally use current column width
             var current = GetCurrentWidth(column);
             return IsValidWidth(current) ? current : fallbackMin;
         }
