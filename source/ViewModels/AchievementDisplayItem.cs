@@ -203,6 +203,22 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private bool _showLockedIcon;
+        public bool ShowLockedIcon
+        {
+            get => _showLockedIcon;
+            set
+            {
+                if (SetValueAndReturn(ref _showLockedIcon, value))
+                {
+                    OnPropertyChanged(nameof(CanReveal));
+                    OnPropertyChanged(nameof(IsLockedIconHidden));
+                    OnPropertyChanged(nameof(DisplayIcon));
+                    OnPropertyChanged(nameof(Icon));
+                }
+            }
+        }
+
         private bool _showRarityGlow = true;
         public bool ShowRarityGlow
         {
@@ -221,10 +237,11 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(CanReveal));
                     OnPropertyChanged(nameof(IsHidden));
                     OnPropertyChanged(nameof(IsIconHidden));
+                    OnPropertyChanged(nameof(IsLockedIconHidden));
                     OnPropertyChanged(nameof(IsTitleHidden));
                     OnPropertyChanged(nameof(IsDescriptionHidden));
-                    // Only notify icon changes if icon hiding is enabled
-                    if (!ShowHiddenIcon)
+                    // Only notify icon changes if icon hiding is enabled (hidden or locked)
+                    if (!ShowHiddenIcon || !ShowLockedIcon)
                     {
                         OnPropertyChanged(nameof(DisplayIcon));
                         OnPropertyChanged(nameof(Icon));
@@ -337,7 +354,11 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// True if the achievement can be revealed (is locked and at least one hiding setting is enabled).
         /// </summary>
-        public bool CanReveal => (!ShowHiddenIcon || !ShowHiddenTitle || !ShowHiddenDescription) && !Unlocked && Hidden;
+        /// <summary>
+        /// True if the achievement can be revealed (is locked and at least one hiding setting is enabled).
+        /// Includes both hidden achievements and locked achievements when ShowLockedIcon is false.
+        /// </summary>
+        public bool CanReveal => !Unlocked && (!ShowLockedIcon || (Hidden && (!ShowHiddenIcon || !ShowHiddenTitle || !ShowHiddenDescription)));
 
         /// <summary>
         /// True if the achievement details are currently hidden (can reveal and not yet revealed).
@@ -345,14 +366,19 @@ namespace PlayniteAchievements.ViewModels
         public bool IsHidden => CanReveal && !IsRevealed;
 
         /// <summary>
-        /// True if the icon is currently being hidden (for XAML styling triggers).
+        /// True if the icon is currently being hidden due to hidden achievement settings (for XAML styling triggers).
         /// </summary>
-        public bool IsIconHidden => IsHidden && !ShowHiddenIcon;
+        public bool IsIconHidden => IsHidden && Hidden && !ShowHiddenIcon;
+
+        /// <summary>
+        /// True if the icon is currently being hidden due to locked achievement settings (for XAML styling triggers).
+        /// </summary>
+        public bool IsLockedIconHidden => !Unlocked && !ShowLockedIcon && !IsRevealed;
 
         /// <summary>
         /// True if the title is currently being hidden (for XAML styling triggers).
         /// </summary>
-        public bool IsTitleHidden => IsHidden && !ShowHiddenTitle;
+        public bool IsTitleHidden => IsHidden && Hidden && !ShowHiddenTitle;
 
         /// <summary>
         /// True if the description is currently being hidden (for XAML styling triggers).
@@ -363,7 +389,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsHidden && !ShowHiddenTitle) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle");
+                if (IsHidden && Hidden && !ShowHiddenTitle) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle");
                 return DisplayName;
             }
         }
@@ -381,7 +407,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsHidden && !ShowHiddenDescription) return ResourceProvider.GetString("LOCPlayAch_Achievements_ClickToReveal");
+                if (IsHidden && Hidden && !ShowHiddenDescription) return ResourceProvider.GetString("LOCPlayAch_Achievements_ClickToReveal");
                 return Description;
             }
         }
@@ -401,7 +427,7 @@ namespace PlayniteAchievements.ViewModels
         /// Updates this item's properties from a source Achievement object.
         /// This is used to synchronize data without recreating the entire object, preventing UI flicker.
         /// </summary>
-        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideIcon, bool hideTitle, bool hideDescription, string sortingName = null)
+        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideIcon, bool hideTitle, bool hideDescription, bool hideLockedIcon, string sortingName = null)
         {
             GameName = gameName;
             SortingName = sortingName ?? gameName;
@@ -417,6 +443,7 @@ namespace PlayniteAchievements.ViewModels
             ShowHiddenIcon = !hideIcon;
             ShowHiddenTitle = !hideTitle;
             ShowHiddenDescription = !hideDescription;
+            ShowLockedIcon = !hideLockedIcon;
             ProgressNum = source.ProgressNum;
             ProgressDenom = source.ProgressDenom;
             PointsValue = source.Points;
@@ -453,7 +480,14 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (IsHidden && !ShowHiddenIcon)
+                // Hidden achievement icon hiding (takes precedence)
+                if (IsHidden && Hidden && !ShowHiddenIcon)
+                {
+                    return DefaultIcon;
+                }
+
+                // Locked achievement icon hiding
+                if (!Unlocked && !ShowLockedIcon && !IsRevealed)
                 {
                     return DefaultIcon;
                 }
@@ -594,6 +628,7 @@ namespace PlayniteAchievements.ViewModels
                 ShowHiddenIcon = _showHiddenIcon,
                 ShowHiddenTitle = _showHiddenTitle,
                 ShowHiddenDescription = _showHiddenDescription,
+                ShowLockedIcon = _showLockedIcon,
                 ShowRarityGlow = _showRarityGlow,
                 // IsRevealed intentionally not copied - each clone starts unrevealed
                 ProgressNum = _progressNum,
