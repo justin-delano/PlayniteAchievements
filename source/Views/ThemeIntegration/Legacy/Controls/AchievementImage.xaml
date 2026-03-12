@@ -49,6 +49,7 @@
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=EnableRaretyIndicator}" Value="True"/>
                                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsLocked}" Value="False"/>
+                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowRarityGlow}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Effect" Value="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Percent, Converter={StaticResource PercentToRarityGlowConverter}}"/>
                             </MultiDataTrigger>
