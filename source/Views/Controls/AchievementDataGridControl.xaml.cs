@@ -234,8 +234,10 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            UpdateColumnVisibility();
             AttachColumnPersistence();
+            // Must come AFTER AttachColumnPersistence so dependency property settings
+            // override the persisted visibility settings
+            UpdateColumnVisibility();
             _isAttached = true;
         }
 
@@ -256,6 +258,17 @@ namespace PlayniteAchievements.Views.Controls
                 map => settings.Persisted.DataGridColumnVisibility = map,
                 () => SavePluginSettings(settings),
                 DefaultColumnWidthSeeds);
+
+            // Exclude Game column from visibility toggle when not shown
+            // Exclude Status column from visibility toggle when hidden
+            if (!ShowGameColumn)
+            {
+                _columnPersistence.ExcludedVisibilityKeys.Add("Game");
+            }
+            if (HideStatusColumn)
+            {
+                _columnPersistence.ExcludedVisibilityKeys.Add("Status");
+            }
 
             _columnPersistence.Attach();
         }

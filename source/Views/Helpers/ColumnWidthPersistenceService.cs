@@ -38,6 +38,12 @@ namespace PlayniteAchievements.Views.Helpers
         private const double WidthNormalizationSafetyPadding = 1.0;
 
         /// <summary>
+        /// Column keys that should be excluded from the visibility toggle menu.
+        /// Set before calling Attach() to exclude specific columns from user toggle.
+        /// </summary>
+        public ISet<string> ExcludedVisibilityKeys { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Creates a new ColumnWidthPersistenceService.
         /// </summary>
         /// <param name="grid">The DataGrid to manage.</param>
@@ -951,6 +957,7 @@ namespace PlayniteAchievements.Views.Helpers
 
         /// <summary>
         /// Builds a column visibility context menu for the grid.
+        /// Columns in ExcludedVisibilityKeys are not included in the menu.
         /// </summary>
         public ContextMenu BuildColumnVisibilityMenu()
         {
@@ -963,6 +970,13 @@ namespace PlayniteAchievements.Views.Helpers
 
             foreach (var column in _grid.Columns)
             {
+                var key = GetColumnKey(column);
+                // Skip columns that are excluded from visibility toggle
+                if (!string.IsNullOrWhiteSpace(key) && ExcludedVisibilityKeys.Contains(key))
+                {
+                    continue;
+                }
+
                 var headerText = ResolveColumnDisplayName(column);
                 if (string.IsNullOrWhiteSpace(headerText))
                 {
