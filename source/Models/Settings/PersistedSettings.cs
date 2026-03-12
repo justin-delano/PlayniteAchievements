@@ -52,6 +52,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
+        private bool _showLockedIcon = true;
         private bool _showRarityGlow = true;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
@@ -438,6 +439,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showHiddenDescription;
             set => SetValue(ref _showHiddenDescription, value);
+        }
+
+        /// <summary>
+        /// When true, locked achievement icons are shown in grayscale.
+        /// When false, locked achievement icons are hidden with a placeholder until revealed.
+        /// </summary>
+        public bool ShowLockedIcon
+        {
+            get => _showLockedIcon;
+            set => SetValue(ref _showLockedIcon, value);
         }
 
         /// <summary>
