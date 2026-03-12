@@ -497,6 +497,7 @@ namespace PlayniteAchievements.ViewModels
                         ShowHiddenIcon = projected.ShowHiddenIcon,
                         ShowHiddenTitle = projected.ShowHiddenTitle,
                         ShowHiddenDescription = projected.ShowHiddenDescription,
+                        ShowRarityGlow = projected.ShowRarityGlow,
                         IsRevealed = revealedStateByApiName.TryGetValue(apiName, out var isRevealed)
                             ? isRevealed
                             : projected.IsRevealed,
