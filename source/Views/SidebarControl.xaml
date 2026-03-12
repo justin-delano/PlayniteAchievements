@@ -1309,137 +1309,15 @@
                             </Grid.RowDefinitions>
 
                             <!-- Game Achievements List -->
-                            <DataGrid x:Name="GameAchievementsDataGrid"
-                                      Grid.Row="0"
-                                      ClipToBounds="True"
-                                      ItemsSource="{Binding SelectedGameAchievements}"
-                                      Sorting="DataGrid_Sorting"
-                                      AutoGenerateColumns="False"
-                                      IsReadOnly="True"
-                                      SelectionMode="Single"
-                                      SelectionUnit="FullRow"
-                                      HeadersVisibility="Column"
-                                      GridLinesVisibility="None"
-                                      RowBackground="Transparent"
-                                      BorderThickness="1"
-                                      BorderBrush="{DynamicResource NormalBorderBrush}"
-                                      Background="Transparent"
-                                      CanUserAddRows="False"
-                                      CanUserResizeColumns="True"
-                                      CanUserResizeRows="False"
-                                      CanUserReorderColumns="False"
-                                      CanUserSortColumns="True"
-                                      EnableRowVirtualization="True"
-                                      VirtualizingStackPanel.VirtualizationMode="Recycling"
-                                      VirtualizingStackPanel.ScrollUnit="Pixel"
-                                      ScrollViewer.CanContentScroll="True"
-                                      ScrollViewer.VerticalScrollBarVisibility="Visible"
-                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                      ScrollViewer.IsDeferredScrollingEnabled="False"
-                                      Padding="0"
-                                      ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
-                                      PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
-
-                                <DataGrid.CellStyle>
-                                    <Style TargetType="DataGridCell">
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="BorderThickness" Value="0"/>
-                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                                        <Setter Property="Focusable" Value="False"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
-                                                <Setter Property="Background" Value="#30FFFFFF"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
-                                                <Setter Property="Background" Value="#30FFFFFF"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
-                                                <Setter Property="Background" Value="#40FFFFFF"/>
-                                            </DataTrigger>
-                                            <MultiDataTrigger>
-                                                <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
-                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
-                                                </MultiDataTrigger.Conditions>
-                                                <Setter Property="Background" Value="#50FFFFFF"/>
-                                            </MultiDataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </DataGrid.CellStyle>
-
-                                <DataGrid.RowStyle>
-                                    <Style TargetType="DataGridRow">
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
-                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                                        <Setter Property="Cursor" Value="Hand"/>
-                                        <Setter Property="MinHeight" Value="88"/>
-                                        <EventSetter Event="PreviewMouseLeftButtonDown" Handler="AchievementRow_PreviewMouseLeftButtonDown"/>
-                                        <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
-                                        <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
-                                    </Style>
-                                </DataGrid.RowStyle>
-
-                                <DataGrid.Columns>
-                                    <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
-                                    <DataGridTemplateColumn Width="36" MinWidth="36" MaxWidth="36" CanUserSort="False" CanUserResize="False"
-                                                            Header=" "
-                                                            helpers:ColumnVisibilityHelper.ColumnKey="Status"
-                                                            CellTemplate="{StaticResource AchievementStatusTemplate}"/>
-
-                                    <!-- Achievement Icon -->
-                                    <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False"
-                                                            CellTemplate="{StaticResource AchievementIconTemplate}"/>
-
-                                    <!-- Achievement Info -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName" helpers:ColumnVisibilityHelper.ColumnKey="Achievement"
-                                                            CellTemplate="{StaticResource AchievementInfoTemplate}"/>
-
-                                    <!-- Date / Progress -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_UnlockDate}" SortMemberPath="UnlockTime" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate"
-                                                            CellTemplate="{StaticResource AchievementUnlockDateTemplate}"/>
-
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Type}" SortMemberPath="CategoryType" helpers:ColumnVisibilityHelper.ColumnKey="CategoryType">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding CategoryTypeDisplay}"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center"
-                                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                                           Foreground="{DynamicResource TextBrush}"
-                                                           Opacity="0.7"
-                                                           TextTrimming="CharacterEllipsis"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Category}" SortMemberPath="CategoryLabel" helpers:ColumnVisibilityHelper.ColumnKey="CategoryLabel">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding CategoryLabel}"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center"
-                                                           Style="{DynamicResource BaseTextBlockStyle}"
-                                                           Foreground="{DynamicResource TextBrush}"
-                                                           Opacity="0.7"
-                                                           TextTrimming="CharacterEllipsis"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-
-                                    <!-- Trophy -->
-                                    <DataGridTemplateColumn Width="100" MinWidth="90" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="False" SortMemberPath="TrophyType"
-                                                            CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
-
-                                    <!-- Rarity -->
-                                    <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="GlobalPercent" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
-                                                            CellTemplate="{StaticResource AchievementRarityTemplate}"/>
-
-                                    <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points" helpers:ColumnVisibilityHelper.ColumnKey="Points"
-                                                            CellTemplate="{StaticResource AchievementPointsTemplate}"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
+                            <controls:AchievementDataGridControl x:Name="GameAchievementsGrid"
+                                                                 Grid.Row="0"
+                                                                 ItemsSource="{Binding SelectedGameAchievements}"
+                                                                 ColumnSettingsKey="Sidebar"
+                                                                 RevealCommand="{Binding DataContext.RevealAchievementCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                 UseExternalSorting="True"
+                                                                 Sorting="GameAchievementsGrid_Sorting"
+                                                                 RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
+                                                                 RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
                         </Grid>
                         </Grid>
                     </Grid>
