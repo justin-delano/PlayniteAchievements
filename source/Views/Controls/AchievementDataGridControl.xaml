@@ -44,8 +44,7 @@
               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
               Padding="0"
               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
-              PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp"
-              Opacity="0">
+              PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
         <DataGrid.CellStyle>
             <Style TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}"/>
