@@ -241,7 +241,7 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             var isVisibilityActivation = e.PreviousSize.Width <= 1;
-            var shouldRescaleAll = !isVisibilityActivation;
+            var shouldRescaleAll = _shouldRescaleAllOnInitialLoad || !isVisibilityActivation;
 
             _grid.Dispatcher.BeginInvoke(
                 new Action(() =>
@@ -249,6 +249,10 @@ namespace PlayniteAchievements.Views.Helpers
                     if (_grid.IsLoaded && !_isResizeInProgress)
                     {
                         NormalizeColumnsToContainer(shouldRescaleAll);
+                        if (shouldRescaleAll && _shouldRescaleAllOnInitialLoad && IsValidWidth(GetGridAvailableWidth()))
+                        {
+                            _shouldRescaleAllOnInitialLoad = false;
+                        }
                     }
                 }),
                 DispatcherPriority.Render);
