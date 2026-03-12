@@ -249,6 +249,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 var hideIcon = !(settings?.Persisted?.ShowHiddenIcon ?? false);
                 var hideTitle = !(settings?.Persisted?.ShowHiddenTitle ?? false);
                 var hideDescription = !(settings?.Persisted?.ShowHiddenDescription ?? false);
+                var hideLockedIcon = !(settings?.Persisted?.ShowLockedIcon ?? true);
 
                 var items = new List<AchievementDisplayItem>(_allAchievements.Count);
                 foreach (var achievement in _allAchievements)
@@ -256,7 +257,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                     var item = new AchievementDisplayItem();
                     var gameName = achievement.Game?.Name ?? "Unknown";
                     var gameId = achievement.Game?.Id;
-                    item.UpdateFrom(achievement, gameName, gameId, hideIcon, hideTitle, hideDescription);
+                    item.UpdateFrom(achievement, gameName, gameId, hideIcon, hideTitle, hideDescription, hideLockedIcon);
                     items.Add(item);
                 }
 
