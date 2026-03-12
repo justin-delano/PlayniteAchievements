@@ -76,6 +76,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy.Controls
             set => SetValue(EnableRaretyIndicatorProperty, value);
         }
 
+        public static readonly DependencyProperty ShowRarityGlowProperty = DependencyProperty.Register(
+            nameof(ShowRarityGlow),
+            typeof(bool),
+            typeof(AchievementImage),
+            new FrameworkPropertyMetadata(true)
+        );
+        public bool ShowRarityGlow
+        {
+            get => (bool)GetValue(ShowRarityGlowProperty);
+            set => SetValue(ShowRarityGlowProperty, value);
+        }
+
         public static readonly DependencyProperty DisplayRaretyValueProperty = DependencyProperty.Register(
             nameof(DisplayRaretyValue),
             typeof(bool),
