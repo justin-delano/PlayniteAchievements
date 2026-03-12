@@ -195,17 +195,6 @@ namespace PlayniteAchievements.Views.Controls
         public AchievementDataGridControl()
         {
             InitializeComponent();
-            IsVisibleChanged += OnIsVisibleChanged;
-        }
-
-        private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            // When control becomes visible, ensure column visibility is correct
-            // This handles the case where persisted visibility was applied while control was hidden
-            if ((bool)e.NewValue && _isAttached)
-            {
-                UpdateColumnVisibility();
-            }
         }
 
         private static void OnColumnVisibilityChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -246,9 +235,7 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             AttachColumnPersistence();
-            // Must come AFTER AttachColumnPersistence so dependency property settings
-            // override the persisted visibility settings
-            UpdateColumnVisibility();
+            // Column visibility is now handled by ForcedCollapsedKeys during Attach()
             _isAttached = true;
         }
 
@@ -270,14 +257,18 @@ namespace PlayniteAchievements.Views.Controls
                 () => SavePluginSettings(settings),
                 DefaultColumnWidthSeeds);
 
-            // Exclude Game column from visibility toggle when not shown
-            // Exclude Status column from visibility toggle when hidden
+            // Force collapse Game column when not shown (prevents flicker by applying during persistence)
+            // Also exclude from visibility toggle menu
             if (!ShowGameColumn)
             {
+                _columnPersistence.ForcedCollapsedKeys.Add("Game");
                 _columnPersistence.ExcludedVisibilityKeys.Add("Game");
             }
+            // Force collapse Status column when hidden (prevents flicker by applying during persistence)
+            // Also exclude from visibility toggle menu
             if (HideStatusColumn)
             {
+                _columnPersistence.ForcedCollapsedKeys.Add("Status");
                 _columnPersistence.ExcludedVisibilityKeys.Add("Status");
             }
 

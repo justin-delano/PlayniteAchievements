@@ -44,6 +44,12 @@ namespace PlayniteAchievements.Views.Helpers
         public ISet<string> ExcludedVisibilityKeys { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
+        /// Column keys that should be forced to collapsed visibility.
+        /// These columns will be collapsed during ApplyPersistedVisibility to prevent flicker.
+        /// </summary>
+        public ISet<string> ForcedCollapsedKeys { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Creates a new ColumnWidthPersistenceService.
         /// </summary>
         /// <param name="grid">The DataGrid to manage.</param>
@@ -427,6 +433,13 @@ namespace PlayniteAchievements.Views.Helpers
                 var key = GetColumnKey(column);
                 if (string.IsNullOrWhiteSpace(key))
                 {
+                    continue;
+                }
+
+                // Force collapse columns that should never be visible in this context
+                if (ForcedCollapsedKeys.Contains(key))
+                {
+                    column.Visibility = Visibility.Collapsed;
                     continue;
                 }
 
