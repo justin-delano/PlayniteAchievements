@@ -52,6 +52,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
+        private bool _showRarityGlow = true;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
         private bool _showSidebarPieCharts = true;
@@ -437,6 +438,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showHiddenDescription;
             set => SetValue(ref _showHiddenDescription, value);
+        }
+
+        /// <summary>
+        /// When true, unlocked achievement icons display rarity-based glow effects.
+        /// </summary>
+        public bool ShowRarityGlow
+        {
+            get => _showRarityGlow;
+            set => SetValue(ref _showRarityGlow, value);
         }
 
         /// <summary>
@@ -1070,6 +1080,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenIcon = this.ShowHiddenIcon,
                 ShowHiddenTitle = this.ShowHiddenTitle,
                 ShowHiddenDescription = this.ShowHiddenDescription,
+                ShowRarityGlow = this.ShowRarityGlow,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowSidebarPieCharts = this.ShowSidebarPieCharts,
