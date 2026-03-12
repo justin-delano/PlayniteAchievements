@@ -80,6 +80,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         /// Gets the source collection to display. Derived classes implement this to provide
         /// either the filtered locked achievements or the unlocked achievements.
         /// </summary>
+
+        /// <summary>
+        /// Gets the source collection to display. Derived classes implement this to provide
+        /// either the filtered locked achievements or the unlocked achievements.
+        /// </summary>
         protected abstract List<AchievementDetail> GetSourceAchievements();
 
         /// <summary>
@@ -123,8 +128,17 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             return false;
         }
 
+        protected override bool ShouldHandleSettingsDataChange(string propertyName)
+        {
+            // Watch for ShowRarityGlow setting changes
+            return propertyName == "Persisted.ShowRarityGlow";
+        }
+
         protected override void OnThemeDataUpdated()
         {
+            // Update ShowRarityGlow from settings in case it changed
+            ShowRarityGlow = Plugin?.Settings?.Persisted?.ShowRarityGlow ?? true;
+
             UpdateFilteredAchievements();
         }
 
@@ -161,6 +175,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         protected CompactAchievementControlBase()
         {
             IconHeight = 48.0;
+
+            // Initialize ShowRarityGlow from settings
+            ShowRarityGlow = Plugin?.Settings?.Persisted?.ShowRarityGlow ?? true;
 
             SizeChanged += OnSizeChanged;
         }
