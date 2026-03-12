@@ -320,6 +320,7 @@ namespace PlayniteAchievements.Views.Controls
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnWidths,
                 "SingleGame" => settings.Persisted.SingleGameColumnWidths,
                 "Sidebar" => settings.Persisted.SidebarAchievementColumnWidths,
+                "SidebarGame" => settings.Persisted.SidebarGameColumnWidths,
                 _ => settings.Persisted.SingleGameColumnWidths
             };
         }
@@ -341,6 +342,9 @@ namespace PlayniteAchievements.Views.Controls
                     break;
                 case "Sidebar":
                     settings.Persisted.SidebarAchievementColumnWidths = map;
+                    break;
+                case "SidebarGame":
+                    settings.Persisted.SidebarGameColumnWidths = map;
                     break;
                 default:
                     settings.Persisted.SingleGameColumnWidths = map;

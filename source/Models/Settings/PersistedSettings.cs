@@ -83,6 +83,7 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _sidebarAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _sidebarGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _singleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -787,6 +788,34 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted widths for the sidebar selected game achievement columns.
+        /// Key is a stable column identifier, value is pixel width.
+        /// </summary>
+        public Dictionary<string, double> SidebarGameColumnWidths
+        {
+            get => _sidebarGameColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _sidebarGameColumnWidths, normalized);
+            }
+        }
+
+        /// <summary>
         /// Persisted widths for the single-game achievement columns.
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
@@ -1125,6 +1154,9 @@ namespace PlayniteAchievements.Models.Settings
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
                 SidebarAchievementColumnWidths = this.SidebarAchievementColumnWidths != null
                     ? new Dictionary<string, double>(this.SidebarAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SidebarGameColumnWidths = this.SidebarGameColumnWidths != null
+                    ? new Dictionary<string, double>(this.SidebarGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
                 SingleGameColumnWidths = this.SingleGameColumnWidths != null
                     ? new Dictionary<string, double>(this.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)

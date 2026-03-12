@@ -1121,7 +1121,7 @@
                             <controls:AchievementDataGridControl x:Name="GameAchievementsGrid"
                                                                  Grid.Row="0"
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
-                                                                 ColumnSettingsKey="Sidebar"
+                                                                 ColumnSettingsKey="SidebarGame"
                                                                  RevealCommand="{Binding DataContext.RevealAchievementCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                  UseExternalSorting="True"
                                                                  Sorting="GameAchievementsGrid_Sorting"
