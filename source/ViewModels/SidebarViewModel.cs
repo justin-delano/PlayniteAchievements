@@ -1485,9 +1485,10 @@ namespace PlayniteAchievements.ViewModels
             }
             else if (e.PropertyName == "Persisted.ShowHiddenIcon"
                 || e.PropertyName == "Persisted.ShowHiddenTitle"
-                || e.PropertyName == "Persisted.ShowHiddenDescription")
+                || e.PropertyName == "Persisted.ShowHiddenDescription"
+                || e.PropertyName == "Persisted.ShowRarityGlow")
             {
-                // Refresh view when any hide setting changes
+                // Refresh view when any hide or display setting changes
                 _ = RefreshViewAsync();
             }
             else if (e.PropertyName == "Persisted.ShowGamesWithNoUnlocks")
