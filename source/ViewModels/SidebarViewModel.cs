@@ -580,11 +580,10 @@ namespace PlayniteAchievements.ViewModels
                     }
 
                     ResetSelectedGameAchievementVisibilityFilters();
-                    OnPropertyChanged(nameof(IsGameSelected));
-                    OnPropertyChanged(nameof(TimelineSectionTitle));
-                    UpdateContextualPieCharts(_latestSnapshot);
                     (RefreshCommand as AsyncCommand)?.RaiseCanExecuteChanged();
-                    LoadSelectedGameAchievements();
+
+                    // Defer visibility/data notifications until after data loads to prevent flash
+                    _ = LoadSelectedGameAchievementsAndNotifyAsync();
                 }
             }
         }
@@ -2580,7 +2579,21 @@ namespace PlayniteAchievements.ViewModels
             SelectedGameHasCustomAchievementOrder = false;
         }
 
-        private async void LoadSelectedGameAchievements()
+        /// <summary>
+        /// Loads game achievements and fires visibility notifications after data is ready.
+        /// This prevents flash by ensuring data is loaded before the grid becomes visible.
+        /// </summary>
+        private async Task LoadSelectedGameAchievementsAndNotifyAsync()
+        {
+            await LoadSelectedGameAchievementsAsync().ConfigureAwait(true);
+
+            // Fire notifications after data is ready
+            OnPropertyChanged(nameof(IsGameSelected));
+            OnPropertyChanged(nameof(TimelineSectionTitle));
+            UpdateContextualPieCharts(_latestSnapshot);
+        }
+
+        private async Task LoadSelectedGameAchievementsAsync()
         {
             // Reset right search when selecting a game
             RightSearchText = string.Empty;
