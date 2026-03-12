@@ -96,7 +96,7 @@
         </Grid.ToolTip>
 
         <!-- Achievement icon with glow effect - Image with conditional glow -->
-        <Image Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"
+        <Image Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
                Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                helpers:AsyncImage.Uri="{Binding DisplayIcon, Mode=OneWay}"

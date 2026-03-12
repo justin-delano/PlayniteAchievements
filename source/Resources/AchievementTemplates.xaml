@@ -123,6 +123,20 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Icon Column Cell Style - centered horizontally for circular achievement icons -->
+    <Style x:Key="AchievementIconCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- DataGrid Row Style -->
     <Style x:Key="AchievementRowStyle" TargetType="DataGridRow">
         <Setter Property="Background" Value="Transparent"/>
@@ -452,7 +466,8 @@
     <DataTemplate x:Key="AchievementIconTemplate">
         <Grid Width="56" Height="72" VerticalAlignment="Center" HorizontalAlignment="Center" ClipToBounds="False">
             <Image Width="52" Height="52"
-                   Stretch="UniformToFill"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Stretch="Uniform"
                    RenderOptions.BitmapScalingMode="HighQuality"
                    helpers:AsyncImage.Uri="{Binding DisplayIcon}"
                    helpers:AsyncImage.DecodePixel="64">

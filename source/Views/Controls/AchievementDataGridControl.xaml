@@ -69,6 +69,7 @@
 
             <!-- Achievement Icon -->
             <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False"
+                                    CellStyle="{StaticResource AchievementIconCellStyle}"
                                     CellTemplate="{StaticResource AchievementIconTemplate}"/>
 
             <!-- Achievement Info -->
