@@ -33,6 +33,7 @@ using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services.ThemeIntegration;
 using PlayniteAchievements.Services.ThemeMigration;
+using PlayniteAchievements.Services.Tagging;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows.Shell;
@@ -81,6 +82,9 @@ namespace PlayniteAchievements
         private readonly FullscreenWindowService _fullscreenWindowService;
         private readonly ThemeIntegrationService _themeIntegrationService;
 
+        // Tagging
+        private TagSyncService _tagSyncService;
+
         // Control factories for theme integration
         private static readonly Dictionary<string, Func<Control>> LegacyControlFactories = new Dictionary<string, Func<Control>>(StringComparer.OrdinalIgnoreCase)
         {
@@ -121,6 +125,7 @@ namespace PlayniteAchievements
         public SteamSessionManager SteamSessionManager => _steamSessionManager;
         public ExophaseSessionManager ExophaseSessionManager => _exophaseSessionManager;
         public EpicSessionManager EpicSessionManager => _epicSessionManager;
+        public TagSyncService TagSyncService => _tagSyncService;
         internal RefreshCoordinator RefreshCoordinator => _refreshCoordinator;
         public static PlayniteAchievementsPlugin Instance { get; private set; }
 
@@ -272,6 +277,16 @@ namespace PlayniteAchievements
                         gameId => PlayniteApi?.Database?.Games?.Get(gameId) != null,
                         gameId => _achievementService.GetRawGameAchievementData(gameId) != null,
                         _logger);
+
+                    // Initialize tagging settings with default values if needed
+                    InitializeTaggingSettings(settings?.Persisted);
+
+                    // Create tag sync service
+                    _tagSyncService = new TagSyncService(
+                        PlayniteApi,
+                        _logger,
+                        settings.Persisted,
+                        _achievementService);
 
                     try
                     {
@@ -1243,6 +1258,83 @@ namespace PlayniteAchievements
                 e.PropertyName == nameof(PersistedSettings.PeriodicUpdateHours))
             {
                 RestartBackgroundUpdater();
+            }
+            else if (e.PropertyName == nameof(PersistedSettings.TaggingSettings))
+            {
+                // Tagging settings changed - handled by settings view model
+                _logger?.Debug("TaggingSettings property changed");
+            }
+        }
+
+        /// <summary>
+        /// Initializes tagging settings with default values if not already configured.
+        /// </summary>
+        private void InitializeTaggingSettings(PersistedSettings persisted)
+        {
+            if (persisted?.TaggingSettings == null)
+            {
+                persisted.TaggingSettings = new TaggingSettings();
+            }
+
+            persisted.TaggingSettings.InitializeDefaults(tagType =>
+            {
+                // Return localized default name for each tag type
+                return tagType switch
+                {
+                    TagType.HasAchievements => ResourceProvider.GetString("LOCPlayAch_Tag_HasAchievements"),
+                    TagType.InProgress => ResourceProvider.GetString("LOCPlayAch_Tag_InProgress"),
+                    TagType.Completed => ResourceProvider.GetString("LOCPlayAch_Tag_Completed"),
+                    TagType.NoAchievements => ResourceProvider.GetString("LOCPlayAch_Tag_NoAchievements"),
+                    TagType.Excluded => ResourceProvider.GetString("LOCPlayAch_Tag_Excluded"),
+                    TagType.ExcludedFromSummaries => ResourceProvider.GetString("LOCPlayAch_Tag_ExcludedFromSummaries"),
+                    _ => TaggingSettings.GetDefaultDisplayName(tagType)
+                };
+            });
+
+            // Subscribe to tagging settings changes
+            if (persisted.TaggingSettings != null)
+            {
+                persisted.TaggingSettings.PropertyChanged -= TaggingSettings_PropertyChanged;
+                persisted.TaggingSettings.PropertyChanged += TaggingSettings_PropertyChanged;
+            }
+        }
+
+        private void TaggingSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e == null || _tagSyncService == null) return;
+
+            try
+            {
+                var taggingSettings = _settingsViewModel?.Settings?.Persisted?.TaggingSettings;
+                if (taggingSettings == null) return;
+
+                // Handle EnableTagging changes
+                if (e.PropertyName == nameof(TaggingSettings.EnableTagging))
+                {
+                    if (taggingSettings.EnableTagging)
+                    {
+                        // Sync all tags when enabled
+                        _tagSyncService.SyncAllTags();
+                    }
+                    else
+                    {
+                        // Remove all tags when disabled
+                        _tagSyncService.RemoveAllTags();
+                    }
+                }
+                // Handle completion status settings changes
+                else if (e.PropertyName == nameof(TaggingSettings.SetCompletionStatus) ||
+                         e.PropertyName == nameof(TaggingSettings.CompletionStatusId))
+                {
+                    if (taggingSettings.SetCompletionStatus && taggingSettings.EnableTagging)
+                    {
+                        _tagSyncService.SyncCompletionStatus();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Error handling tagging settings change");
             }
         }
 
