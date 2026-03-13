@@ -106,6 +106,7 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<Guid, ManualAchievementLink> _manualAchievementLinks = new Dictionary<Guid, ManualAchievementLink>();
         private Dictionary<string, ThemeMigrationCacheEntry> _themeMigrationVersionCache =
             new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase);
+        private TaggingSettings _taggingSettings;
 
         #endregion
 
@@ -1074,6 +1075,20 @@ namespace PlayniteAchievements.Models.Settings
 
         #endregion
 
+        #region Tagging Settings
+
+        /// <summary>
+        /// Settings for Playnite tag integration, allowing games to be tagged
+        /// based on their achievement status for filtering and organization.
+        /// </summary>
+        public TaggingSettings TaggingSettings
+        {
+            get => _taggingSettings;
+            set => SetValue(ref _taggingSettings, value ?? new TaggingSettings());
+        }
+
+        #endregion
+
         #region Clone Method
 
         /// <summary>
@@ -1225,7 +1240,8 @@ namespace PlayniteAchievements.Models.Settings
                         kvp => kvp.Key,
                         kvp => kvp.Value?.Clone())
                     : new Dictionary<Guid, ManualAchievementLink>(),
-                ManualEnabled = this.ManualEnabled
+                ManualEnabled = this.ManualEnabled,
+                TaggingSettings = this.TaggingSettings?.Clone() ?? new TaggingSettings()
             };
         }
 
