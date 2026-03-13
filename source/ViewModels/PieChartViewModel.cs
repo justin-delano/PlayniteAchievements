@@ -52,10 +52,16 @@ namespace PlayniteAchievements.ViewModels
 
         public void SetSelectedLabels(IEnumerable<string> labels)
         {
+            // Get the set of labels that actually exist in the current pie chart
+            var existingLabels = new HashSet<string>(
+                LegendItems.Select(li => li.Label),
+                StringComparer.OrdinalIgnoreCase);
+
             var normalizedLabels = new HashSet<string>(
                 (labels ?? Enumerable.Empty<string>())
                     .Where(label => !string.IsNullOrWhiteSpace(label))
-                    .Select(label => label.Trim()),
+                    .Select(label => label.Trim())
+                    .Where(label => existingLabels.Contains(label)), // Only include labels that exist in the pie chart
                 StringComparer.OrdinalIgnoreCase);
 
             HighlightedLabels = new ObservableCollection<string>(
@@ -263,9 +269,9 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            // Filter out locked slices with zero count
+            // Filter out all slices with zero count (including providers with no achievements)
             dataPoints = dataPoints
-                .Where(d => !d.IsLocked || d.Count > 0)
+                .Where(d => d.Count > 0)
                 .ToList();
 
             if (dataPoints.Count == 0)
