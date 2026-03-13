@@ -831,4 +831,34 @@
     <sys:String x:Key="LOCPlayAch_Button_Save">Enregistrer</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Retry">Réessayer</sys:String>
 
+    <!-- ================================================================= -->
+    <!-- TAGGING                                                            -->
+    <!-- ================================================================= -->
+
+    <!-- Tagging Settings -->
+    <sys:String x:Key="LOCPlayAch_Settings_TaggingHeader">Étiquetage</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Activer la synchronisation des étiquettes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Étiqueter automatiquement les jeux en fonction de leur statut de succès. Les étiquettes peuvent être utilisées pour filtrer et organiser votre bibliothèque.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TaggingSection">Configuration des étiquettes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">Définir le statut d'achèvement pour les jeux complétés</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompletionStatusLabel">Statut d'achèvement :</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SyncAllTags">Synchroniser toutes les étiquettes maintenant</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Supprimer toutes les étiquettes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TagEnabled">Activé</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TagName">Nom de l'étiquette</sys:String>
+
+    <!-- Default Tag Names -->
+    <sys:String x:Key="LOCPlayAch_Tag_HasAchievements">[PA] A des succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_InProgress">[PA] En cours</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_Completed">[PA] Complété</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_NoAchievements">[PA] Pas de succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_Excluded">[PA] Exclu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_ExcludedFromSummaries">[PA] Exclu des résumés</sys:String>
+
+    <!-- Tagging Progress Messages -->
+    <sys:String x:Key="LOCPlayAch_Tagging_SyncingProgress">Synchronisation des étiquettes...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_SyncComplete">Synchronisation des étiquettes terminée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemovingProgress">Suppression des étiquettes...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemoveComplete">Étiquettes supprimées</sys:String>
+
 </ResourceDictionary>

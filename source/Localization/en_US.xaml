@@ -832,4 +832,34 @@
     <sys:String x:Key="LOCPlayAch_Button_Save">Save</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Retry">Retry</sys:String>
 
+    <!-- ================================================================= -->
+    <!-- TAGGING                                                            -->
+    <!-- ================================================================= -->
+
+    <!-- Tagging Settings -->
+    <sys:String x:Key="LOCPlayAch_Settings_TaggingHeader">Tagging</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Enable Tag Sync</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Automatically tag games based on their achievement status. Tags can be used to filter and organize your library.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TaggingSection">Tag Configuration</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">Set Completion Status for Completed Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompletionStatusLabel">Completion Status:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SyncAllTags">Sync All Tags Now</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Remove All Tags</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TagEnabled">Enabled</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TagName">Tag Name</sys:String>
+
+    <!-- Default Tag Names -->
+    <sys:String x:Key="LOCPlayAch_Tag_HasAchievements">[PA] Has Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_InProgress">[PA] In Progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_Completed">[PA] Completed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_NoAchievements">[PA] No Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_Excluded">[PA] Excluded</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_ExcludedFromSummaries">[PA] Excluded from Summaries</sys:String>
+
+    <!-- Tagging Progress Messages -->
+    <sys:String x:Key="LOCPlayAch_Tagging_SyncingProgress">Syncing tags...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_SyncComplete">Tag sync complete</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemovingProgress">Removing tags...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemoveComplete">Tags removed</sys:String>
+
 </ResourceDictionary>
