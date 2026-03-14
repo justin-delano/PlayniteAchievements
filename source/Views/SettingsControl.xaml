@@ -2077,7 +2077,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <!-- ================== TAB: EXOPHASE SETTINGS ================== -->
+            <!-- ================== TAB: EXOPHASE PROVIDER ================== -->
             <TabItem x:Name="ExophaseTab" Header="{DynamicResource LOCPlayAch_Provider_Exophase}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
@@ -2089,7 +2089,8 @@
                                    Margin="0,0,0,16"
                                    TextWrapping="Wrap"/>
 
-                        <Border Style="{StaticResource SectionBorderStyle}">
+                        <!-- Authentication Section -->
+                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,16">
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ExophaseConnection}"
                                            Style="{StaticResource SectionHeaderStyle}"/>
@@ -2204,16 +2205,6 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
-
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <!-- ================== TAB: EXOPHASE PROVIDER ================== -->
-            <TabItem x:Name="ExophaseProviderTab" Header="{DynamicResource LOCPlayAch_Provider_Exophase}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="20">
 
                         <!-- Provider Enable Toggle -->
                         <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,16">

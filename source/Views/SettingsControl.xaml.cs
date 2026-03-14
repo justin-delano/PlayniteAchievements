@@ -3038,10 +3038,6 @@ namespace PlayniteAchievements.Views
                 LoadThemes();
                 _logger?.Info("Loaded themes for Theme Migration tab.");
             }
-            else if (string.Equals(name, "ExophaseProviderTab", StringComparison.OrdinalIgnoreCase))
-            {
-                _logger?.Info("Exophase provider tab selected - checkboxes will self-initialize.");
-            }
         }
 
         private void ExophasePlatform_CheckboxLoaded(object sender, RoutedEventArgs e)
