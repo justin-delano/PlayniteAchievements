@@ -2880,10 +2880,38 @@ namespace PlayniteAchievements.Views
         // Tagging Methods
         // -----------------------------
 
-        private void SyncAllTags_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Commits pending tag name changes from text boxes to the source.
+        /// </summary>
+        private void CommitTagNameBindings()
+        {
+            var textBoxes = new TextBox[]
+            {
+                HasAchievementsTagTextBox,
+                InProgressTagTextBox,
+                CompletedTagTextBox,
+                NoAchievementsTagTextBox,
+                ExcludedTagTextBox,
+                ExcludedFromSummariesTagTextBox
+            };
+
+            foreach (var textBox in textBoxes)
+            {
+                var binding = textBox?.GetBindingExpression(TextBox.TextProperty);
+                if (binding != null)
+                {
+                    binding.UpdateSource();
+                }
+            }
+        }
+
+        private void ApplyAndSync_Click(object sender, RoutedEventArgs e)
         {
             try
             {
+                // Commit any pending text box changes
+                CommitTagNameBindings();
+
                 var tagSyncService = _plugin.TagSyncService;
                 if (tagSyncService == null)
                 {
@@ -2891,13 +2919,14 @@ namespace PlayniteAchievements.Views
                     return;
                 }
 
+                // Sync all tags (handles orphan cleanup and re-tagging with new names)
                 tagSyncService.SyncAllTags();
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to sync tags.");
+                _logger.Error(ex, "Failed to apply and sync tags.");
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
-                    LF("LOCPlayAch_Tagging_SyncFailed", "Failed to sync tags: {0}", ex.Message),
+                    LF("LOCPlayAch_Tagging_SyncFailed", "Failed to apply and sync tags: {0}", ex.Message),
                     L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
