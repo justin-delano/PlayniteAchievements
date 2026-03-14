@@ -288,6 +288,15 @@ namespace PlayniteAchievements
                         settings.Persisted,
                         _achievementService);
 
+                    // Subscribe to refresh completion for auto tag syncing
+                    _refreshCoordinator.RefreshCompleted += (gameIds) =>
+                    {
+                        if (gameIds != null && gameIds.Count > 0)
+                        {
+                            _tagSyncService?.SyncTagsForGames(gameIds);
+                        }
+                    };
+
                     try
                     {
                         if (settings?.Persisted != null)

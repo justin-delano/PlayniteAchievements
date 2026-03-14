@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,6 +48,13 @@ namespace PlayniteAchievements.Services
         private readonly Action<Func<Task>, Guid?> _runWithProgressWindow;
         private readonly ProviderRegistry _providerRegistry;
 
+        /// <summary>
+        /// Event raised when a refresh completes successfully.
+        /// Argument is the list of game IDs that were specifically targeted in the refresh.
+        /// For mode-based refreshes (Recent, Full, etc.), this list may be empty.
+        /// </summary>
+        public event Action<List<Guid>> RefreshCompleted;
+
         public RefreshCoordinator(
             AchievementService achievementService,
             ILogger logger,
@@ -86,7 +94,37 @@ namespace PlayniteAchievements.Services
             finally
             {
                 policy?.OnRefreshCompleted?.Invoke(success);
+
+                // Raise RefreshCompleted event for subscribers (e.g., tag syncing)
+                if (success)
+                {
+                    try
+                    {
+                        var gameIds = GetRefreshedGameIds(request);
+                        RefreshCompleted?.Invoke(gameIds);
+                    }
+                    catch { }
+                }
             }
+        }
+
+        private List<Guid> GetRefreshedGameIds(RefreshRequest request)
+        {
+            var ids = new List<Guid>();
+
+            // Single game refresh
+            if (request.SingleGameId.HasValue && request.SingleGameId.Value != Guid.Empty)
+            {
+                ids.Add(request.SingleGameId.Value);
+            }
+
+            // Specific game IDs
+            if (request.GameIds != null)
+            {
+                ids.AddRange(request.GameIds.Where(id => id != Guid.Empty));
+            }
+
+            return ids;
         }
 
         private async Task ExecuteWithPrimingAsync(RefreshRequest request, RefreshExecutionPolicy policy)

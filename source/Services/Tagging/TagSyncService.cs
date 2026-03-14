@@ -63,7 +63,10 @@ namespace PlayniteAchievements.Services.Tagging
 
             _api.Dialogs.ActivateGlobalProgress((progress) =>
             {
-                // Step 1: Clean up orphan PA tags from the database
+                // Step 1: Ensure all configured tags exist in the database
+                EnsureAllTagsExist();
+
+                // Step 2: Clean up orphan PA tags from the database
                 CleanupOrphanTags();
 
                 var games = _api.Database.Games.ToList();
@@ -114,6 +117,80 @@ namespace PlayniteAchievements.Services.Tagging
 
                 _logger.Info($"Tag sync complete: {updatedCount} games updated");
             }, progressOptions);
+        }
+
+        /// <summary>
+        /// Syncs tags for specific games (called after refreshes).
+        /// Does not show a progress dialog - runs silently in background.
+        /// </summary>
+        public void SyncTagsForGames(List<Guid> gameIds)
+        {
+            if (!_settings.TaggingSettings?.EnableTagging ?? true || gameIds == null || gameIds.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var tagConfigs = _settings.TaggingSettings.TagConfigs;
+
+                foreach (var gameId in gameIds)
+                {
+                    var game = _api.Database.Games.Get(gameId);
+                    if (game == null) continue;
+
+                    try
+                    {
+                        SyncGameTags(game, tagConfigs);
+
+                        // Also update completion status if enabled
+                        if (_settings.TaggingSettings?.SetCompletionStatus ?? false)
+                        {
+                            var targetStatusId = GetCompletionStatusId();
+                            if (targetStatusId.HasValue)
+                            {
+                                var tagType = DetermineTagType(game);
+                                if (tagType == TagType.Completed && game.CompletionStatusId != targetStatusId.Value)
+                                {
+                                    game.CompletionStatusId = targetStatusId.Value;
+                                    _api.Database.Games.Update(game);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex, $"Failed to sync tags for game {game.Name}");
+                    }
+                }
+
+                _logger.Debug($"Auto-synced tags for {gameIds.Count} games");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to sync tags for games");
+            }
+        }
+
+        /// <summary>
+        /// Ensures all configured tags exist in the database.
+        /// Called during sync to create tags even if no games currently have them.
+        /// </summary>
+        private void EnsureAllTagsExist()
+        {
+            if (_settings.TaggingSettings?.TagConfigs == null) return;
+
+            foreach (var kvp in _settings.TaggingSettings.TagConfigs)
+            {
+                if (kvp.Value != null && !string.IsNullOrWhiteSpace(kvp.Value.DisplayName))
+                {
+                    var tagId = GetOrCreateTag(kvp.Value.DisplayName);
+                    if (tagId.HasValue)
+                    {
+                        _tagIdCache[kvp.Key] = tagId.Value;
+                    }
+                }
+            }
         }
 
         /// <summary>
