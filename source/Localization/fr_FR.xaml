@@ -843,6 +843,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">Définir le statut d'achèvement pour les jeux complétés</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompletionStatusLabel">Statut d'achèvement :</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SyncAllTags">Synchroniser toutes les étiquettes maintenant</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">Appliquer et synchroniser</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Supprimer toutes les étiquettes</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TagEnabled">Activé</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TagName">Nom de l'étiquette</sys:String>

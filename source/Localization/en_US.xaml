@@ -844,6 +844,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">Set Completion Status for Completed Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompletionStatusLabel">Completion Status:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SyncAllTags">Sync All Tags Now</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">Apply &amp; Sync</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Remove All Tags</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TagEnabled">Enabled</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TagName">Tag Name</sys:String>
