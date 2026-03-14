@@ -27,7 +27,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         {
             if (AchievementsList != null)
             {
-                AchievementsList.ItemsSource = null;
+                // Direct reassignment without null first - WPF detects collection changes
+                // and only updates what's needed rather than rebuilding entire visual tree
                 AchievementsList.ItemsSource = DisplayItems;
             }
         }

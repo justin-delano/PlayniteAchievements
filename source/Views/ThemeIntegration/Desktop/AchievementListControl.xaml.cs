@@ -14,6 +14,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
     /// </summary>
     public partial class AchievementListControl : ThemeControlBase
     {
+        // Cache the source reference to avoid unnecessary cloning when data hasn't changed
+        private List<AchievementDisplayItem> _lastSourceItems;
+
         /// <summary>
         /// Identifies the DisplayItems dependency property.
         /// </summary>
@@ -51,10 +54,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
             var sourceItems = Plugin?.Settings?.Theme?.AllAchievementDisplayItems;
             if (sourceItems == null)
             {
+                _lastSourceItems = null;
                 DisplayItems = new List<AchievementDisplayItem>();
                 return;
             }
 
+            // Skip cloning if the source reference hasn't changed
+            if (ReferenceEquals(sourceItems, _lastSourceItems))
+            {
+                return;
+            }
+
+            _lastSourceItems = sourceItems;
             DisplayItems = sourceItems.Select(item => item.Clone()).ToList();
         }
 

@@ -74,6 +74,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
 
         #region Display Properties
 
+        // Cache source references to avoid unnecessary cloning when data hasn't changed
+        private List<AchievementDisplayItem> _lastAllItems;
+        private List<AchievementDetail> _lastAllAchievements;
+
         private List<AchievementDisplayItem> _displayItems = new List<AchievementDisplayItem>();
         /// <summary>
         /// Gets or sets the display items for the list.
@@ -167,12 +171,23 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
             var theme = Plugin?.Settings?.Theme;
             if (theme == null || !theme.HasAchievements)
             {
+                _lastAllItems = null;
+                _lastAllAchievements = null;
                 ClearItems();
                 return;
             }
 
             var allItems = theme.AllAchievementDisplayItems ?? new List<AchievementDisplayItem>();
             var allAchievements = theme.AllAchievements ?? new List<AchievementDetail>();
+
+            // Skip work if source references haven't changed
+            if (ReferenceEquals(allItems, _lastAllItems) && ReferenceEquals(allAchievements, _lastAllAchievements))
+            {
+                return;
+            }
+
+            _lastAllItems = allItems;
+            _lastAllAchievements = allAchievements;
 
             // Build filtered display items
             var displayItems = new List<AchievementDisplayItem>();
@@ -208,6 +223,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// </summary>
         protected void ClearItems()
         {
+            _lastAllItems = null;
+            _lastAllAchievements = null;
             DisplayItems = new List<AchievementDisplayItem>();
             OverflowCount = 0;
             HasOverflow = false;
