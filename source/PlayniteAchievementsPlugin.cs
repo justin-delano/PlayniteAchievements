@@ -1242,6 +1242,29 @@ namespace PlayniteAchievements
                             _logger,
                             dispatcher);
                         _logger.Debug("ThemeIntegrationUpdateService created in OnApplicationStarted");
+
+                        // Populate initial theme data for the currently selected game.
+                        // Themes may load before OnGameSelected fires, leaving HasData=false.
+                        try
+                        {
+                            var selectedGames = PlayniteApi?.MainView?.SelectedGames?
+                                .Where(g => g != null)
+                                .Take(2)
+                                .ToList();
+
+                            if (selectedGames?.Count == 1)
+                            {
+                                var game = selectedGames[0];
+                                _logger.Debug($"Populating initial theme data for selected game: {game.Name}");
+                                _settingsViewModel.Settings.SelectedGame = game;
+                                _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
+                                _themeUpdateService.RequestUpdate(game.Id);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Debug(ex, "Failed to populate initial theme data.");
+                        }
                     }
                     else
                     {
