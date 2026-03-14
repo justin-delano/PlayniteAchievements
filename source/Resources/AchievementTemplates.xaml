@@ -4,6 +4,9 @@
                     xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
                     xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
                     xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
 
     <!-- =======================
          CONVERTERS
