@@ -2209,6 +2209,120 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- ================== TAB: EXOPHASE PROVIDER ================== -->
+            <TabItem x:Name="ExophaseProviderTab" Header="{DynamicResource LOCPlayAch_Provider_Exophase}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="20">
+
+                        <!-- Provider Enable Toggle -->
+                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_EnableProvider}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_EnableProvider_Help}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,12"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ProviderEnabled}"
+                                          IsChecked="{Binding Persisted.ExophaseEnabled}"
+                                          FontWeight="SemiBold"
+                                          FontSize="{DynamicResource FontSize}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Provider Disabled Message -->
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledMessage}"
+                                   Margin="0,0,0,16">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Persisted.ExophaseEnabled}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <!-- Managed Platforms -->
+                        <Border Style="{StaticResource SectionBorderStyle}"
+                                Margin="0,0,0,16"
+                                IsEnabled="{Binding Persisted.ExophaseEnabled}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_ManagedPlatforms}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,0,0,12"/>
+
+                                <!-- Platform Checkboxes in a wrap panel -->
+                                <WrapPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Steam}"
+                                              Loaded="ExophasePlatform_CheckboxLoaded"
+                                              Click="ExophasePlatform_CheckChanged"
+                                              Tag="steam"
+                                              Margin="0,0,16,8"
+                                              FontSize="{DynamicResource FontSize}"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_PSN}"
+                                              Loaded="ExophasePlatform_CheckboxLoaded"
+                                              Click="ExophasePlatform_CheckChanged"
+                                              Tag="psn"
+                                              Margin="0,0,16,8"
+                                              FontSize="{DynamicResource FontSize}"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Xbox}"
+                                              Loaded="ExophasePlatform_CheckboxLoaded"
+                                              Click="ExophasePlatform_CheckChanged"
+                                              Tag="xbox"
+                                              Margin="0,0,16,8"
+                                              FontSize="{DynamicResource FontSize}"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_GOG}"
+                                              Loaded="ExophasePlatform_CheckboxLoaded"
+                                              Click="ExophasePlatform_CheckChanged"
+                                              Tag="gog"
+                                              Margin="0,0,16,8"
+                                              FontSize="{DynamicResource FontSize}"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Epic}"
+                                              Loaded="ExophasePlatform_CheckboxLoaded"
+                                              Click="ExophasePlatform_CheckChanged"
+                                              Tag="epic"
+                                              Margin="0,0,16,8"
+                                              FontSize="{DynamicResource FontSize}"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_EA}"
+                                              Loaded="ExophasePlatform_CheckboxLoaded"
+                                              Click="ExophasePlatform_CheckChanged"
+                                              Tag="ea"
+                                              Margin="0,0,16,8"
+                                              FontSize="{DynamicResource FontSize}"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Blizzard}"
+                                              Loaded="ExophasePlatform_CheckboxLoaded"
+                                              Click="ExophasePlatform_CheckChanged"
+                                              Tag="blizzard"
+                                              Margin="0,0,16,8"
+                                              FontSize="{DynamicResource FontSize}"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Nintendo}"
+                                              Loaded="ExophasePlatform_CheckboxLoaded"
+                                              Click="ExophasePlatform_CheckChanged"
+                                              Tag="nintendo"
+                                              Margin="0,0,16,8"
+                                              FontSize="{DynamicResource FontSize}"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Retro}"
+                                              Loaded="ExophasePlatform_CheckboxLoaded"
+                                              Click="ExophasePlatform_CheckChanged"
+                                              Tag="retro"
+                                              Margin="0,0,16,8"
+                                              FontSize="{DynamicResource FontSize}"/>
+                                </WrapPanel>
+
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_Note}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="0,12,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- ================== TAB: SHADPS4 ================== -->
             <TabItem x:Name="ShadPS4Tab" Header="{DynamicResource LOCPlayAch_Provider_ShadPS4}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto"

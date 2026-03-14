@@ -3038,6 +3038,52 @@ namespace PlayniteAchievements.Views
                 LoadThemes();
                 _logger?.Info("Loaded themes for Theme Migration tab.");
             }
+            else if (string.Equals(name, "ExophaseProviderTab", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger?.Info("Exophase provider tab selected - checkboxes will self-initialize.");
+            }
+        }
+
+        private void ExophasePlatform_CheckboxLoaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkbox)
+            {
+                var platform = checkbox.Tag as string;
+                if (string.IsNullOrWhiteSpace(platform)) return;
+
+                var settings = _settingsViewModel.Settings?.Persisted;
+                if (settings == null) return;
+
+                checkbox.IsChecked = settings.ExophaseManagedPlatforms.Contains(platform);
+            }
+        }
+
+        private void ExophasePlatform_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkbox)
+            {
+                var platform = checkbox.Tag as string;
+                if (string.IsNullOrWhiteSpace(platform)) return;
+
+                var settings = _settingsViewModel.Settings?.Persisted;
+                if (settings == null) return;
+
+                if (checkbox.IsChecked == true)
+                {
+                    if (!settings.ExophaseManagedPlatforms.Contains(platform))
+                    {
+                        settings.ExophaseManagedPlatforms.Add(platform);
+                        _logger?.Info($"Added platform '{platform}' to Exophase managed platforms");
+                    }
+                }
+                else
+                {
+                    if (settings.ExophaseManagedPlatforms.Remove(platform))
+                    {
+                        _logger?.Info($"Removed platform '{platform}' from Exophase managed platforms");
+                    }
+                }
+            }
         }
 
         // -----------------------------
