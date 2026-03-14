@@ -9,6 +9,7 @@ namespace PlayniteAchievements.Models.Settings
     {
         private string _displayName;
         private bool _isEnabled = true;
+        private string _previousDisplayName;
 
         /// <summary>
         /// The display name shown in Playnite's library.
@@ -17,7 +18,25 @@ namespace PlayniteAchievements.Models.Settings
         public string DisplayName
         {
             get => _displayName;
-            set => SetValue(ref _displayName, value);
+            set
+            {
+                // Track the old value before changing
+                if (_displayName != value)
+                {
+                    _previousDisplayName = _displayName;
+                    SetValue(ref _displayName, value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// The previous display name before the last change.
+        /// Used for tag migration when renaming tags.
+        /// </summary>
+        public string PreviousDisplayName
+        {
+            get => _previousDisplayName;
+            set => _previousDisplayName = value;
         }
 
         /// <summary>
@@ -31,6 +50,15 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Clears the previous display name tracking.
+        /// Call this after migration is complete.
+        /// </summary>
+        public void ClearPreviousName()
+        {
+            _previousDisplayName = null;
+        }
+
+        /// <summary>
         /// Creates a deep copy of this TagConfig.
         /// </summary>
         public TagConfig Clone()
@@ -38,7 +66,8 @@ namespace PlayniteAchievements.Models.Settings
             return new TagConfig
             {
                 DisplayName = DisplayName,
-                IsEnabled = IsEnabled
+                IsEnabled = IsEnabled,
+                _previousDisplayName = null // Don't copy previous name tracking
             };
         }
     }
