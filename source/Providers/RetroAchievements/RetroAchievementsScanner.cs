@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private readonly RetroAchievementsApiClient _api;
         private readonly RetroAchievementsHashIndexStore _hashIndexStore;
         private readonly RetroAchievementsPathResolver _pathResolver;
+        private readonly RetroAchievementsHashCacheStore _hashCache;
         private readonly Dictionary<int, List<Models.RaGameListWithTitle>> _gameListCache = new();
 
         public RetroAchievementsScanner(
@@ -30,13 +31,91 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             PlayniteAchievementsSettings settings,
             RetroAchievementsApiClient api,
             RetroAchievementsHashIndexStore hashIndexStore,
-            RetroAchievementsPathResolver pathResolver)
+            RetroAchievementsPathResolver pathResolver,
+            RetroAchievementsHashCacheStore hashCache)
         {
             _logger = logger;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _hashIndexStore = hashIndexStore ?? throw new ArgumentNullException(nameof(hashIndexStore));
             _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
+            _hashCache = hashCache ?? throw new ArgumentNullException(nameof(hashCache));
+        }
+
+        /// <summary>
+        /// Attempts to validate a cached RA game ID by checking file metadata.
+        /// Returns true if cache is valid and hashing can be skipped.
+        /// </summary>
+        private bool TryValidateCache(
+            Game game,
+            IReadOnlyList<string> candidates,
+            out int raGameId)
+        {
+            raGameId = 0;
+
+            if (!_hashCache.TryGet(game.Id, out var entry))
+            {
+                return false;
+            }
+
+            // Check if the previously matched path is still a candidate
+            var matchedPath = candidates.FirstOrDefault(c =>
+                string.Equals(c, entry.MatchedRomPath, StringComparison.OrdinalIgnoreCase));
+
+            if (matchedPath == null)
+            {
+                return false;
+            }
+
+            // Validate file stats
+            try
+            {
+                var fileInfo = new FileInfo(matchedPath);
+                if (!fileInfo.Exists)
+                {
+                    return false;
+                }
+
+                if (fileInfo.Length != entry.FileSize)
+                {
+                    return false;
+                }
+
+                if (fileInfo.LastWriteTimeUtc.Ticks != entry.LastWriteTicksUtc)
+                {
+                    return false;
+                }
+
+                raGameId = entry.RaGameId;
+                _logger?.Info($"[RA] Cache hit for '{game.Name}': skipping hash");
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Stores a cache entry after a successful hash match.
+        /// </summary>
+        private void StoreHashCacheEntry(Game game, string matchedPath, int raGameId)
+        {
+            try
+            {
+                var fi = new FileInfo(matchedPath);
+                _hashCache.Set(game.Id, new RaHashCacheEntry
+                {
+                    MatchedRomPath = matchedPath,
+                    FileSize = fi.Length,
+                    LastWriteTicksUtc = fi.LastWriteTimeUtc.Ticks,
+                    RaGameId = raGameId
+                });
+            }
+            catch
+            {
+                // Ignore cache storage failures
+            }
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -61,7 +140,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 _settings.Persisted.ScanDelayMs,
                 _settings.Persisted.MaxRetryAttempts);
 
-            return await RefreshPipeline.RunProviderGamesAsync(
+            var result = await RefreshPipeline.RunProviderGamesAsync(
                 gamesToRefresh,
                 onGameStarting,
                 async (game, token) =>
@@ -101,6 +180,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 delayBetweenGamesAsync: null,
                 delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
                 cancel).ConfigureAwait(false);
+
+            _hashCache.Save();
+            return result;
         }
 
         /// <summary>
@@ -147,6 +229,20 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             var candidates = _pathResolver.ResolveCandidateFilePaths(game).ToList();
             _logger?.Info($"[RA] Scanning '{game?.Name}' consoleId={consoleId} hasher={hasher.Name} candidates={candidates.Count}.");
 
+            // Try to skip hashing if file unchanged
+            if (TryValidateCache(game, candidates, out var cachedRaGameId))
+            {
+                // Still verify with RA API
+                var cachedResult = await FetchGameInfoAsync(game, cachedRaGameId, cancel).ConfigureAwait(false);
+                if (cachedResult != null && cachedResult.HasAchievements)
+                {
+                    return cachedResult;
+                }
+                // Cache invalid (game removed from RA?), fall through to re-hash
+                _logger?.Info($"[RA] Cache verification failed for '{game.Name}', re-hashing");
+                _hashCache.Remove(game.Id);
+            }
+
             try
             {
                 var index = await _hashIndexStore.GetHashIndexAsync(consoleId, cancel).ConfigureAwait(false);
@@ -176,6 +272,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                                 if (match)
                                 {
+                                    StoreHashCacheEntry(game, candidate, gameId);
                                     return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
                                 }
                             }
@@ -206,6 +303,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                                 if (match)
                                 {
+                                    StoreHashCacheEntry(game, candidate, gameId);
                                     return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
                                 }
                             }
@@ -228,6 +326,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                             _logger?.Info($"[RA] Archive '{candidate}' hashes={FormatHashesForLog(hashes)} matched={match} gameId={gameId}");
                             if (match)
                             {
+                                StoreHashCacheEntry(game, candidate, gameId);
                                 return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
                             }
 
@@ -247,6 +346,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                                 if (match)
                                 {
+                                    StoreHashCacheEntry(game, candidate, gameId);
                                     return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
                                 }
                             }
@@ -265,6 +365,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                         if (match)
                         {
+                            StoreHashCacheEntry(game, candidate, gameId);
                             return await FetchGameInfoAsync(game, gameId, cancel).ConfigureAwait(false);
                         }
                     }

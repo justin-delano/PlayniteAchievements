@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private readonly object _initLock = new object();
         private RetroAchievementsApiClient _apiClient;
         private RetroAchievementsHashIndexStore _hashIndexStore;
+        private RetroAchievementsHashCacheStore _hashCacheStore;
         private RetroAchievementsScanner _scanner;
 
         private string _clientUsername;
@@ -103,7 +104,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 _apiClient?.Dispose();
                 _apiClient = new RetroAchievementsApiClient(_logger, username, apiKey, language);
                 _hashIndexStore = new RetroAchievementsHashIndexStore(_logger, _settings, _apiClient, _pluginUserDataPath);
-                _scanner = new RetroAchievementsScanner(_logger, _settings, _apiClient, _hashIndexStore, _pathResolver);
+                _hashCacheStore = new RetroAchievementsHashCacheStore(_logger, _pluginUserDataPath);
+                _scanner = new RetroAchievementsScanner(_logger, _settings, _apiClient, _hashIndexStore, _pathResolver, _hashCacheStore);
 
                 _clientUsername = username;
                 _clientApiKey = apiKey;
