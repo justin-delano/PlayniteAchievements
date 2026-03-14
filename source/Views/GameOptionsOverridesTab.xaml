@@ -110,6 +110,35 @@
                     </Grid>
                 </StackPanel>
             </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}"
+                    Visibility="{Binding ShowExophaseToggle, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Provider_Exophase}"
+                               Style="{StaticResource SectionHeaderStyle}" />
+                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_ExophaseHint}"
+                               Foreground="{DynamicResource TextBrush}"
+                               Opacity="0.75"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0" />
+                    <CheckBox Content="{DynamicResource LOCPlayAch_GameOptions_UseExophase}"
+                              IsChecked="{Binding UseExophaseForGame}"
+                              FontWeight="SemiBold"
+                              Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}"
+                    Visibility="{Binding IsExophaseManagedByPlatform, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Provider_Exophase}"
+                               Style="{StaticResource SectionHeaderStyle}" />
+                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_ExophaseManagedByPlatform}"
+                               Foreground="{DynamicResource TextBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
