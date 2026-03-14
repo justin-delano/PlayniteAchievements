@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -30,6 +31,12 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
             "SourceItem",
             "Value"
         };
+
+        /// <summary>
+        /// Cache for reflected property accessors to avoid repeated reflection on each row.
+        /// Key is the Type.FullName, value is the property name that yields a Game (or null if none).
+        /// </summary>
+        private static readonly ConcurrentDictionary<string, string> _gamePropertyCache = new ConcurrentDictionary<string, string>();
         private bool _isCacheEventSubscribed;
         private bool _cacheRefreshQueued;
 
@@ -335,6 +342,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// <summary>
         /// Extracts a Game from various DataContext types that Playnite uses.
         /// GridView items use GamesCollectionViewEntry which wraps the Game.
+        /// Uses cached property names for performance.
         /// </summary>
         private Game GetGameFromDataContext(object dataContext)
         {
@@ -349,15 +357,36 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
                 return game;
             }
 
+            var type = dataContext.GetType();
+            var typeKey = type.FullName;
+
+            // Check cache for known property name
+            if (_gamePropertyCache.TryGetValue(typeKey, out var cachedPropertyName))
+            {
+                if (cachedPropertyName == null)
+                {
+                    // Previously determined this type has no Game property
+                    return null;
+                }
+                if (TryGetGamePropertyValue(dataContext, cachedPropertyName, out var cachedGame))
+                {
+                    return cachedGame;
+                }
+            }
+
             // Try common wrapper property names used by different Playnite view templates.
             foreach (var propertyName in DataContextGamePropertyCandidates)
             {
                 if (TryGetGamePropertyValue(dataContext, propertyName, out var wrappedGame))
                 {
+                    // Cache the successful property name for this type
+                    _gamePropertyCache.TryAdd(typeKey, propertyName);
                     return wrappedGame;
                 }
             }
 
+            // Cache that this type has no Game property
+            _gamePropertyCache.TryAdd(typeKey, null);
             return null;
         }
 
@@ -425,12 +454,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
             }
 
             var achievements = gameData.Achievements;
-            UnlockedCount = achievements.Count(a => a.Unlocked);
-            AchievementCount = achievements.Count;
+            // Use pre-computed counts from GameAchievementData instead of counting with LINQ
+            UnlockedCount = gameData.UnlockedCount;
+            AchievementCount = gameData.AchievementCount;
             Visibility = Visibility.Visible;
-
-            // Force visual tree update so WPF re-evaluates bindings
-            InvalidateVisual();
         }
 
         private void ClearData()

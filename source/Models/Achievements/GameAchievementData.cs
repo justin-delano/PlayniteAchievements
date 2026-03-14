@@ -94,5 +94,17 @@ namespace PlayniteAchievements.Models.Achievements
         public List<string> AchievementOrder { get; set; }
 
         public List<AchievementDetail> Achievements { get; set; } = new List<AchievementDetail>();
+
+        /// <summary>
+        /// Total count of achievements. Computed property for performance.
+        /// </summary>
+        [IgnoreDataMember]
+        public int AchievementCount => Achievements?.Count ?? 0;
+
+        /// <summary>
+        /// Count of unlocked achievements. Computed property for performance.
+        /// </summary>
+        [IgnoreDataMember]
+        public int UnlockedCount => Achievements?.Count(a => a.Unlocked) ?? 0;
     }
 }
