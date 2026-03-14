@@ -44,6 +44,7 @@ namespace PlayniteAchievements.Services.Tagging
         /// <summary>
         /// Synchronizes tags for all games in the library based on their achievement status.
         /// Shows a progress dialog during the operation.
+        /// Also cleans up orphan PA tags (tags that no longer match current config names).
         /// </summary>
         public void SyncAllTags()
         {
@@ -62,6 +63,9 @@ namespace PlayniteAchievements.Services.Tagging
 
             _api.Dialogs.ActivateGlobalProgress((progress) =>
             {
+                // Step 1: Clean up orphan PA tags from the database
+                CleanupOrphanTags();
+
                 var games = _api.Database.Games.ToList();
                 progress.ProgressMaxValue = games.Count;
                 progress.CurrentProgressValue = 0;
@@ -110,6 +114,50 @@ namespace PlayniteAchievements.Services.Tagging
 
                 _logger.Info($"Tag sync complete: {updatedCount} games updated");
             }, progressOptions);
+        }
+
+        /// <summary>
+        /// Removes orphan PA tags from the database.
+        /// These are tags that start with [PA] but don't match any current TagConfig display names.
+        /// </summary>
+        private void CleanupOrphanTags()
+        {
+            if (_settings.TaggingSettings?.TagConfigs == null) return;
+
+            // Get all current tag display names (case-insensitive lookup)
+            var currentTagNames = new HashSet<string>(
+                _settings.TaggingSettings.TagConfigs.Values
+                    .Where(c => c != null && !string.IsNullOrWhiteSpace(c.DisplayName))
+                    .Select(c => c.DisplayName),
+                StringComparer.OrdinalIgnoreCase);
+
+            // Find all PA tags in the database
+            var paTags = _api.Database.Tags
+                .Where(t => t.Name?.StartsWith(TagPrefix, StringComparison.OrdinalIgnoreCase) ?? false)
+                .ToList();
+
+            var orphanTags = paTags.Where(t => !currentTagNames.Contains(t.Name)).ToList();
+
+            foreach (var orphanTag in orphanTags)
+            {
+                try
+                {
+                    _logger.Debug($"Deleting orphan PA tag: {orphanTag.Name}");
+                    _api.Database.Tags.Remove(orphanTag);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Failed to delete orphan tag: {orphanTag.Name}");
+                }
+            }
+
+            // Clear the cache since tags may have been deleted
+            _tagIdCache.Clear();
+
+            if (orphanTags.Any())
+            {
+                _logger.Info($"Cleaned up {orphanTags.Count} orphan PA tags");
+            }
         }
 
         /// <summary>

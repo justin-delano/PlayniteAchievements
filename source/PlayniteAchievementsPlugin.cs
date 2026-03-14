@@ -1296,56 +1296,6 @@ namespace PlayniteAchievements
             {
                 persisted.TaggingSettings.PropertyChanged -= TaggingSettings_PropertyChanged;
                 persisted.TaggingSettings.PropertyChanged += TaggingSettings_PropertyChanged;
-
-                // Subscribe to individual tag config changes
-                SubscribeToTagConfigChanges(persisted.TaggingSettings);
-            }
-        }
-
-        /// <summary>
-        /// Subscribes to property changes on all TagConfig objects in the settings.
-        /// </summary>
-        private void SubscribeToTagConfigChanges(TaggingSettings taggingSettings)
-        {
-            if (taggingSettings?.TagConfigs == null) return;
-
-            foreach (var kvp in taggingSettings.TagConfigs)
-            {
-                if (kvp.Value != null)
-                {
-                    kvp.Value.PropertyChanged -= TagConfig_PropertyChanged;
-                    kvp.Value.PropertyChanged += TagConfig_PropertyChanged;
-                }
-            }
-        }
-
-        private void TagConfig_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e?.PropertyName != nameof(TagConfig.DisplayName) || _tagSyncService == null) return;
-
-            try
-            {
-                var tagConfig = sender as TagConfig;
-                if (tagConfig == null) return;
-
-                var oldName = tagConfig.PreviousDisplayName;
-                var newName = tagConfig.DisplayName;
-
-                // Only migrate if we have both names and they're different
-                if (!string.IsNullOrWhiteSpace(oldName) &&
-                    !string.IsNullOrWhiteSpace(newName) &&
-                    oldName != newName)
-                {
-                    _logger?.Info($"Tag renamed from '{oldName}' to '{newName}', migrating...");
-                    _tagSyncService.MigrateTagName(oldName, newName);
-                }
-
-                // Clear the previous name after handling
-                tagConfig.ClearPreviousName();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Error handling tag config change");
             }
         }
 
