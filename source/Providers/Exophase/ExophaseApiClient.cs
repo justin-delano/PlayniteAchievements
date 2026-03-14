@@ -95,6 +95,17 @@ namespace PlayniteAchievements.Providers.Exophase
         /// </summary>
         public async Task<List<ExophaseGame>> SearchGamesAsync(string query, CancellationToken ct)
         {
+            return await SearchGamesAsync(query, null, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Searches for games on Exophase with optional platform filter.
+        /// </summary>
+        /// <param name="query">Game name to search for.</param>
+        /// <param name="platformSlug">Optional platform slug to filter by (e.g., "steam", "psn", "xbox").</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task<List<ExophaseGame>> SearchGamesAsync(string query, string platformSlug, CancellationToken ct)
+        {
             if (string.IsNullOrWhiteSpace(query))
             {
                 return new List<ExophaseGame>();
@@ -103,6 +114,10 @@ namespace PlayniteAchievements.Providers.Exophase
             try
             {
                 var url = $"{SearchUrl}?q={Uri.EscapeDataString(query)}&sort=added";
+                if (!string.IsNullOrWhiteSpace(platformSlug))
+                {
+                    url += $"&platform={Uri.EscapeDataString(platformSlug)}";
+                }
 
                 // Use WebView to bypass Cloudflare protection
                 var json = await FetchJsonViaWebViewAsync(url, ct).ConfigureAwait(false);
@@ -346,6 +361,10 @@ namespace PlayniteAchievements.Providers.Exophase
                 globalPercent = percent;
             }
 
+            // Extract data-earned for unlock status (0 = locked, 1 = unlocked)
+            var dataEarned = node.GetAttributeValue("data-earned", "0");
+            var isUnlocked = dataEarned == "1";
+
             // Extract icon URL from img/@src
             var imgNode = node.SelectSingleNode(".//img");
             var iconUrl = imgNode?.GetAttributeValue("src", "") ?? "";
@@ -362,6 +381,21 @@ namespace PlayniteAchievements.Providers.Exophase
 
             // Check for hidden/secret class
             var isHidden = node.GetAttributeValue("class", "").Contains("secret");
+
+            // Extract unlock timestamp from award-earned div if unlocked
+            DateTime? unlockTimeUtc = null;
+            if (isUnlocked)
+            {
+                var earnedNode = node.SelectSingleNode(".//div[contains(@class,'award-earned')]");
+                if (earnedNode != null)
+                {
+                    var earnedText = WebUtility.HtmlDecode(earnedNode.InnerText?.Trim() ?? "");
+                    if (!string.IsNullOrWhiteSpace(earnedText))
+                    {
+                        unlockTimeUtc = ParseExophaseTimestamp(earnedText);
+                    }
+                }
+            }
 
             // Generate a stable API name from the display name
             var apiName = GenerateApiName(displayName);
@@ -380,9 +414,57 @@ namespace PlayniteAchievements.Providers.Exophase
                 UnlockedIconPath = iconUrl,
                 Hidden = isHidden,
                 GlobalPercentUnlocked = globalPercent,
-                Unlocked = false,
-                UnlockTimeUtc = null
+                Unlocked = isUnlocked,
+                UnlockTimeUtc = unlockTimeUtc
             };
+        }
+
+        /// <summary>
+        /// Parses an Exophase timestamp string into UTC DateTime.
+        /// Examples: "Jan 15, 2024, 8:30 PM", "January 15, 2024, 8:30 PM"
+        /// </summary>
+        private DateTime? ParseExophaseTimestamp(string timestamp)
+        {
+            if (string.IsNullOrWhiteSpace(timestamp))
+            {
+                return null;
+            }
+
+            // Try common Exophase formats
+            var formats = new[]
+            {
+                "MMM d, yyyy, h:mm tt",      // Jan 15, 2024, 8:30 PM
+                "MMM d, yyyy, h:mm:ss tt",   // Jan 15, 2024, 8:30:00 PM
+                "MMMM d, yyyy, h:mm tt",     // January 15, 2024, 8:30 PM
+                "MMMM d, yyyy, h:mm:ss tt",  // January 15, 2024, 8:30:00 PM
+                "MMM d, yyyy",               // Jan 15, 2024
+                "MMMM d, yyyy",              // January 15, 2024
+                "d MMM yyyy, h:mm tt",       // 15 Jan 2024, 8:30 PM
+                "d MMMM yyyy, h:mm tt",      // 15 January 2024, 8:30 PM
+            };
+
+            foreach (var format in formats)
+            {
+                if (DateTime.TryParseExact(timestamp, format,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.AssumeLocal,
+                    out var parsed))
+                {
+                    // Convert to UTC
+                    return parsed.ToUniversalTime();
+                }
+            }
+
+            // Fallback to generic parsing
+            if (DateTime.TryParse(timestamp, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.AssumeLocal,
+                out var fallbackParsed))
+            {
+                return fallbackParsed.ToUniversalTime();
+            }
+
+            _logger?.Debug($"[Exophase] Failed to parse timestamp: {timestamp}");
+            return null;
         }
 
         /// <summary>
