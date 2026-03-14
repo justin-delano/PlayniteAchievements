@@ -53,8 +53,9 @@ namespace PlayniteAchievements.Services.ThemeMigration
         /// Migrates a theme from SuccessStory to PlayniteAchievements.
         /// </summary>
         /// <param name="themePath">Full path to the theme directory.</param>
+        /// <param name="mode">The migration mode to use (Limited for text-only, Full for complete modernization).</param>
         /// <returns>Migration result with status and details.</returns>
-        public async Task<MigrationResult> MigrateThemeAsync(string themePath)
+        public async Task<MigrationResult> MigrateThemeAsync(string themePath, MigrationMode mode = MigrationMode.Limited)
         {
             if (string.IsNullOrWhiteSpace(themePath))
             {
@@ -92,7 +93,7 @@ namespace PlayniteAchievements.Services.ThemeMigration
 
                 var result = await Task.Run(() =>
                 {
-                    return PerformMigration(themePath, backupPath);
+                    return PerformMigration(themePath, backupPath, mode);
                 });
 
                 // If no files needed changes, report success but note no backup was created
@@ -107,6 +108,7 @@ namespace PlayniteAchievements.Services.ThemeMigration
                     {
                         Success = true,
                         Message = "Theme already compatible - no SuccessStory references found. No backup created.",
+                        Mode = mode,
                         FilesProcessed = 0,
                         ReplacementsMade = 0,
                         FilesBackedUp = 0
@@ -121,10 +123,13 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 return new MigrationResult
                 {
                     Success = true,
-                    Message = $"Theme migrated successfully. {result.FilesBackedUp} files backed up, {result.FilesProcessed} files modified.",
+                    Message = BuildSuccessMessage(result, mode),
+                    Mode = mode,
                     BackupPath = backupPath,
                     FilesProcessed = result.FilesProcessed,
                     ReplacementsMade = result.ReplacementsMade,
+                    ControlReplacementsMade = result.ControlReplacementsMade,
+                    BindingReplacementsMade = result.BindingReplacementsMade,
                     FilesBackedUp = result.FilesBackedUp
                 };
             }
@@ -200,11 +205,13 @@ namespace PlayniteAchievements.Services.ThemeMigration
         /// <summary>
         /// Performs the migration: backs up modified files and applies replacements.
         /// </summary>
-        private MigrationResult PerformMigration(string themePath, string backupPath)
+        private MigrationResult PerformMigration(string themePath, string backupPath, MigrationMode mode)
         {
             var backedUpFiles = new List<string>();
             int filesProcessed = 0;
             int replacementsMade = 0;
+            int controlReplacementsMade = 0;
+            int bindingReplacementsMade = 0;
             int filesSkipped = 0;
 
             var themeDir = new DirectoryInfo(themePath);
@@ -225,7 +232,7 @@ namespace PlayniteAchievements.Services.ThemeMigration
                     continue;
                 }
 
-                var (needsReplacement, replacementCount) = CheckIfNeedsReplacement(file);
+                var (needsReplacement, replacementCount) = CheckIfNeedsReplacement(file, mode);
                 if (!needsReplacement)
                 {
                     filesSkipped++;
@@ -235,34 +242,38 @@ namespace PlayniteAchievements.Services.ThemeMigration
 
                 // Back up the file
                 BackupFile(file, themePath, backupPath, backedUpFiles);
-                _logger.Info($"Backing up file with {replacementCount} SuccessStory references: {GetRelativePath(file.FullName, themePath)}");
+                _logger.Info($"Backing up file with {replacementCount} references: {GetRelativePath(file.FullName, themePath)}");
 
                 // Apply replacements
-                var (processed, count) = ProcessFile(file);
+                var (processed, textCount, ctrlCount, bindCount) = ProcessFile(file, mode);
                 if (processed)
                 {
                     filesProcessed++;
-                    replacementsMade += count;
+                    replacementsMade += textCount;
+                    controlReplacementsMade += ctrlCount;
+                    bindingReplacementsMade += bindCount;
                 }
             }
 
             // Only create backup folder and manifest if we actually backed up files
             if (backedUpFiles.Count > 0)
             {
-                WriteManifest(backupPath, backedUpFiles);
+                WriteManifest(backupPath, backedUpFiles, mode);
             }
             else
             {
-                _logger.Info("No files contained SuccessStory references - no backup created");
+                _logger.Info("No files contained references requiring migration - no backup created");
             }
 
-            _logger.Info($"Migration complete: {filesProcessed} files modified, {filesSkipped} files skipped, {replacementsMade} replacements made");
+            _logger.Info($"Migration complete: {filesProcessed} files modified, {filesSkipped} files skipped, {replacementsMade} text replacements, {controlReplacementsMade} control replacements, {bindingReplacementsMade} binding replacements");
 
             return new MigrationResult
             {
                 FilesBackedUp = backedUpFiles.Count,
                 FilesProcessed = filesProcessed,
-                ReplacementsMade = replacementsMade
+                ReplacementsMade = replacementsMade,
+                ControlReplacementsMade = controlReplacementsMade,
+                BindingReplacementsMade = bindingReplacementsMade
             };
         }
 
@@ -279,9 +290,9 @@ namespace PlayniteAchievements.Services.ThemeMigration
         }
 
         /// <summary>
-        /// Checks if a file contains SuccessStory references.
+        /// Checks if a file contains SuccessStory references (and Legacy elements in Full mode).
         /// </summary>
-        private (bool needsReplacement, int count) CheckIfNeedsReplacement(FileInfo file)
+        private (bool needsReplacement, int count) CheckIfNeedsReplacement(FileInfo file, MigrationMode mode)
         {
             try
             {
@@ -300,6 +311,21 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 int successStoryCount = CountOccurrences(content, "SuccessStory");
                 int iconCount = CountOccurrences(content, "\uE820");  // SuccessStory trophy icon (U+E820)
                 int totalCount = fullscreenHelperCount + pluginIdCount + helperCount + successStoryCount + iconCount;
+
+                // In Full mode, also check for Legacy controls and bindings
+                if (mode == MigrationMode.Full)
+                {
+                    foreach (var controlName in ControlMappings.LegacyToNativeControlNames.Keys)
+                    {
+                        // Check for element names like x:Name="_PluginButton" or just "_PluginButton"
+                        totalCount += CountOccurrences(content, $"_{controlName}");
+                    }
+
+                    foreach (var bindingPath in ControlMappings.LegacyToNativeBindingPaths.Keys)
+                    {
+                        totalCount += CountOccurrences(content, $"LegacyData.{bindingPath}");
+                    }
+                }
 
                 return (totalCount > 0, totalCount);
             }
@@ -329,13 +355,22 @@ namespace PlayniteAchievements.Services.ThemeMigration
         }
 
         /// <summary>
-        /// Writes the backup manifest file.
+        /// Writes the backup manifest file with migration metadata.
         /// </summary>
-        private void WriteManifest(string backupPath, List<string> backedUpFiles)
+        private void WriteManifest(string backupPath, List<string> backedUpFiles, MigrationMode mode)
         {
             string manifestPath = Path.Combine(backupPath, ManifestFileName);
-            File.WriteAllLines(manifestPath, backedUpFiles);
-            _logger.Info($"Wrote manifest with {backedUpFiles.Count} entries to: {manifestPath}");
+
+            var lines = new List<string>
+            {
+                $"# Mode: {mode}",
+                $"# Date: {DateTime.UtcNow:O}",
+                string.Empty
+            };
+            lines.AddRange(backedUpFiles);
+
+            File.WriteAllLines(manifestPath, lines);
+            _logger.Info($"Wrote manifest with {backedUpFiles.Count} entries to: {manifestPath} (Mode: {mode})");
         }
 
         /// <summary>
@@ -358,7 +393,7 @@ namespace PlayniteAchievements.Services.ThemeMigration
         /// <summary>
         /// Processes a single file, performing replacements.
         /// </summary>
-        private (bool processed, int replacements) ProcessFile(FileInfo file)
+        private (bool processed, int textReplacements, int controlReplacements, int bindingReplacements) ProcessFile(FileInfo file, MigrationMode mode)
         {
             string content;
             try
@@ -368,21 +403,29 @@ namespace PlayniteAchievements.Services.ThemeMigration
             catch (Exception ex)
             {
                 _logger.Warn(ex, $"Failed to read file: {file.FullName}");
-                return (false, 0);
+                return (false, 0, 0, 0);
             }
 
             string originalContent = content;
-            int replacements = 0;
+            int textReplacements = 0;
+            int controlReplacements = 0;
+            int bindingReplacements = 0;
             bool isYamlFile = file.Extension.Equals(".yaml", StringComparison.OrdinalIgnoreCase);
 
             // For YAML files, preserve URLs to avoid breaking external references
             if (isYamlFile)
             {
-                content = ProcessYamlFile(content, originalContent, ref replacements);
+                content = ProcessYamlFile(content, originalContent, ref textReplacements);
             }
             else
             {
-                content = ProcessStandardFile(content, originalContent, ref replacements);
+                content = ProcessStandardFile(content, originalContent, ref textReplacements);
+            }
+
+            // Apply Full mode replacements if enabled
+            if (mode == MigrationMode.Full)
+            {
+                content = ApplyFullReplacements(content, originalContent, ref controlReplacements, ref bindingReplacements);
             }
 
             if (content != originalContent)
@@ -390,17 +433,17 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 try
                 {
                     File.WriteAllText(file.FullName, content, Encoding.UTF8);
-                    _logger.Debug($"Replaced {replacements} occurrences in: {file.Name}");
-                    return (true, replacements);
+                    _logger.Debug($"Replaced {textReplacements} text, {controlReplacements} control, {bindingReplacements} binding occurrences in: {file.Name}");
+                    return (true, textReplacements, controlReplacements, bindingReplacements);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error(ex, $"Failed to write file: {file.FullName}");
-                    return (false, 0);
+                    return (false, 0, 0, 0);
                 }
             }
 
-            return (false, 0);
+            return (false, 0, 0, 0);
         }
 
         /// <summary>
@@ -518,6 +561,57 @@ namespace PlayniteAchievements.Services.ThemeMigration
             replacements += CountOccurrences(originalContent, "&#xE820;");
 
             return result;
+        }
+
+        /// <summary>
+        /// Applies Full mode replacements: control element names and binding paths.
+        /// </summary>
+        private string ApplyFullReplacements(string content, string originalContent, ref int controlReplacements, ref int bindingReplacements)
+        {
+            string result = content;
+
+            // Replace Legacy control element names with Native control names
+            // These appear in XAML as x:Name="_PluginButton" or references to "_PluginButton"
+            foreach (var mapping in ControlMappings.LegacyToNativeControlNames)
+            {
+                string legacyName = $"_{mapping.Key}";
+                string nativeName = $"_{mapping.Value}";
+                if (result.Contains(legacyName))
+                {
+                    result = result.Replace(legacyName, nativeName);
+                    controlReplacements += CountOccurrences(originalContent, legacyName);
+                }
+            }
+
+            // Replace LegacyData binding paths with Theme binding paths
+            // These appear in XAML as {Binding LegacyData.HasData} etc.
+            foreach (var mapping in ControlMappings.LegacyToNativeBindingPaths)
+            {
+                string legacyBinding = $"LegacyData.{mapping.Key}";
+                string nativeBinding = $"Theme.{mapping.Value}";
+                if (result.Contains(legacyBinding))
+                {
+                    result = result.Replace(legacyBinding, nativeBinding);
+                    bindingReplacements += CountOccurrences(originalContent, legacyBinding);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Builds a success message based on the migration result and mode.
+        /// </summary>
+        private string BuildSuccessMessage(MigrationResult result, MigrationMode mode)
+        {
+            if (mode == MigrationMode.Limited)
+            {
+                return $"Theme migrated successfully (Limited). {result.FilesBackedUp} files backed up, {result.FilesProcessed} files modified.";
+            }
+            else
+            {
+                return $"Theme migrated successfully (Full). {result.FilesBackedUp} files backed up, {result.FilesProcessed} files modified, {result.ControlReplacementsMade} control replacements, {result.BindingReplacementsMade} binding replacements.";
+            }
         }
 
         /// <summary>

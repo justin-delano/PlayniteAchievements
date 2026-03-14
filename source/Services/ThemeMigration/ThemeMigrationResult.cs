@@ -18,6 +18,11 @@ namespace PlayniteAchievements.Services.ThemeMigration
         public string Message { get; set; }
 
         /// <summary>
+        /// Gets or sets the migration mode that was used.
+        /// </summary>
+        public MigrationMode Mode { get; set; }
+
+        /// <summary>
         /// Gets or sets the number of files backed up.
         /// </summary>
         public int FilesBackedUp { get; set; }
@@ -28,9 +33,19 @@ namespace PlayniteAchievements.Services.ThemeMigration
         public int FilesProcessed { get; set; }
 
         /// <summary>
-        /// Gets or sets the number of replacements made.
+        /// Gets or sets the number of text replacements made (SuccessStory to PlayniteAchievements).
         /// </summary>
         public int ReplacementsMade { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of control element name replacements made (Full mode only).
+        /// </summary>
+        public int ControlReplacementsMade { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of binding path replacements made (Full mode only).
+        /// </summary>
+        public int BindingReplacementsMade { get; set; }
 
         /// <summary>
         /// Gets or sets the path to the backup folder.

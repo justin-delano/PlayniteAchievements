@@ -715,6 +715,10 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedTitle">Theme Auto-Migrated</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedMessage">{0} has been automatically updated for PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">Please restart Playnite to apply the changes.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">Limited Migration</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationFull">Full Migration</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_LimitedTooltip">Text replacements only. Preserves existing control structures and bindings.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_FullTooltip">Complete modernization. Replaces Legacy controls with Native controls and LegacyData bindings with Theme bindings.</sys:String>
 
     <!-- ================================================================= -->
     <!-- SINGLE GAME VIEW                                                   -->

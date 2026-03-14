@@ -450,23 +450,50 @@
                                    Opacity="0.7"
                                    Margin="0,0,0,12"/>
 
-                        <!-- Theme Dropdown and Migration Button -->
+                        <!-- Theme Dropdown -->
+                        <ComboBox x:Name="MigrationThemeComboBox"
+                                  ItemsSource="{Binding AvailableThemes}"
+                                  DisplayMemberPath="BestDisplayName"
+                                  SelectedValuePath="Path"
+                                  SelectedValue="{Binding SelectedThemePath}"
+                                  Width="300"
+                                  HorizontalAlignment="Center"
+                                  Margin="0,0,0,12"
+                                  VerticalContentAlignment="Center"
+                                  IsEnabled="{Binding HasThemesToMigrate}"/>
+
+                        <!-- Migration Buttons -->
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Center">
-                            <ComboBox x:Name="MigrationThemeComboBox"
-                                      ItemsSource="{Binding AvailableThemes}"
-                                      DisplayMemberPath="BestDisplayName"
-                                      SelectedValuePath="Path"
-                                      SelectedValue="{Binding SelectedThemePath}"
-                                      Width="200"
-                                      Margin="0,0,8,0"
-                                      VerticalContentAlignment="Center"
-                                      IsEnabled="{Binding HasThemesToMigrate}"/>
-                            <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_Migration}"
-                                    Command="{Binding MigrateThemeCommand}"
+                            <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationLimited}"
+                                    Command="{Binding MigrateThemeLimitedCommand}"
                                     Padding="12,6"
                                     MinWidth="100"
-                                    IsEnabled="{Binding HasThemesToMigrate}"/>
+                                    Margin="0,0,8,0"
+                                    IsEnabled="{Binding HasThemesToMigrate}"
+                                    ToolTipService.ShowOnDisabled="True">
+                                <Button.ToolTip>
+                                    <ToolTip>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_LimitedTooltip}"
+                                                   TextWrapping="Wrap"
+                                                   MaxWidth="250"/>
+                                    </ToolTip>
+                                </Button.ToolTip>
+                            </Button>
+                            <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationFull}"
+                                    Command="{Binding MigrateThemeFullCommand}"
+                                    Padding="12,6"
+                                    MinWidth="100"
+                                    IsEnabled="{Binding HasThemesToMigrate}"
+                                    ToolTipService.ShowOnDisabled="True">
+                                <Button.ToolTip>
+                                    <ToolTip>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_FullTooltip}"
+                                                   TextWrapping="Wrap"
+                                                   MaxWidth="250"/>
+                                    </ToolTip>
+                                </Button.ToolTip>
+                            </Button>
                         </StackPanel>
 
                         <!-- No themes message -->

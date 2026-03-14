@@ -599,25 +599,52 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Command to migrate the selected theme.
+        /// Command to migrate the selected theme with Limited mode (text replacements only).
         /// </summary>
-        public ICommand MigrateThemeCommand => new RelayCommand(async () =>
+        public ICommand MigrateThemeLimitedCommand => new RelayCommand(async () =>
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(SelectedThemePath))
                 {
-                    _logger.Warn("Migrate theme command executed but no theme selected.");
+                    _logger.Warn("Migrate theme limited command executed but no theme selected.");
                     return;
                 }
 
-                _logger.Info($"User requested theme migration for: {SelectedThemePath}");
+                _logger.Info($"User requested Limited theme migration for: {SelectedThemePath}");
 
-                await ExecuteThemeMigrationAsync(SelectedThemePath);
+                await ExecuteThemeMigrationAsync(SelectedThemePath, MigrationMode.Limited);
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Failed to execute theme migration command.");
+                _api?.Notifications?.Add(new NotificationMessage(
+                    "PlayAch_MigrationError",
+                    $"Theme migration failed: {ex.Message}",
+                    NotificationType.Error));
+            }
+        });
+
+        /// <summary>
+        /// Command to migrate the selected theme with Full mode (text + control/binding replacements).
+        /// </summary>
+        public ICommand MigrateThemeFullCommand => new RelayCommand(async () =>
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(SelectedThemePath))
+                {
+                    _logger.Warn("Migrate theme full command executed but no theme selected.");
+                    return;
+                }
+
+                _logger.Info($"User requested Full theme migration for: {SelectedThemePath}");
+
+                await ExecuteThemeMigrationAsync(SelectedThemePath, MigrationMode.Full);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to execute full theme migration command.");
                 _api?.Notifications?.Add(new NotificationMessage(
                     "PlayAch_MigrationError",
                     $"Theme migration failed: {ex.Message}",
@@ -719,9 +746,9 @@ namespace PlayniteAchievements.Views
         /// <summary>
         /// Executes the theme migration.
         /// </summary>
-        private async Task ExecuteThemeMigrationAsync(string themePath)
+        private async Task ExecuteThemeMigrationAsync(string themePath, MigrationMode mode)
         {
-            var result = await _themeMigration.MigrateThemeAsync(themePath);
+            var result = await _themeMigration.MigrateThemeAsync(themePath, mode);
 
             if (result.Success)
             {

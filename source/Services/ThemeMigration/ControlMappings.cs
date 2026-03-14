@@ -1,0 +1,46 @@
+using System.Collections.Generic;
+
+namespace PlayniteAchievements.Services.ThemeMigration
+{
+    /// <summary>
+    /// Static mappings for converting Legacy theme elements to Native theme elements.
+    /// Used during Full migration mode.
+    /// </summary>
+    public static class ControlMappings
+    {
+        /// <summary>
+        /// Maps Legacy control names to Native control names.
+        /// Keys are the legacy names (without underscore prefix), values are the native names.
+        /// </summary>
+        public static readonly Dictionary<string, string> LegacyToNativeControlNames = new Dictionary<string, string>
+        {
+            { "PluginButton", "AchievementButton" },
+            { "PluginChart", "AchievementBarChart" },
+            { "PluginCompactList", "AchievementCompactList" },
+            { "PluginCompactLocked", "AchievementCompactLockedList" },
+            { "PluginCompactUnlocked", "AchievementCompactUnlockedList" },
+            { "PluginList", "AchievementList" },
+            { "PluginProgressBar", "AchievementProgressBar" },
+            { "PluginUserStats", "AchievementStats" },
+            { "PluginViewItem", "AchievementViewItem" }
+        };
+
+        /// <summary>
+        /// Maps LegacyData binding paths to Theme binding paths.
+        /// Keys are the legacy binding path suffixes, values are the native binding path suffixes.
+        /// Full bindings are in format: {Binding LegacyData.XXX} -> {Binding Theme.YYY}
+        /// </summary>
+        public static readonly Dictionary<string, string> LegacyToNativeBindingPaths = new Dictionary<string, string>
+        {
+            { "HasData", "HasAchievements" },
+            { "Total", "AchievementCount" },
+            { "Unlocked", "UnlockedCount" },
+            { "Percent", "ProgressPercentage" },
+            { "Is100Percent", "IsCompleted" },
+            { "Locked", "LockedCount" },
+            { "ListAchievements", "AllAchievements" },
+            { "ListAchUnlockDateAsc", "AchievementsOldestFirst" },
+            { "ListAchUnlockDateDesc", "AchievementsNewestFirst" }
+        };
+    }
+}
