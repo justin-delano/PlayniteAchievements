@@ -69,6 +69,14 @@ namespace PlayniteAchievements.Services.Tagging
                 var tagConfigs = _settings.TaggingSettings.TagConfigs;
                 var updatedCount = 0;
 
+                // Pre-compute completion status target if needed
+                Guid? targetCompletionStatusId = null;
+                var setCompletionStatus = _settings.TaggingSettings?.SetCompletionStatus ?? false;
+                if (setCompletionStatus)
+                {
+                    targetCompletionStatusId = GetCompletionStatusId();
+                }
+
                 foreach (var game in games)
                 {
                     if (game == null) continue;
@@ -82,6 +90,17 @@ namespace PlayniteAchievements.Services.Tagging
                         {
                             updatedCount++;
                         }
+
+                        // Also update completion status in the same pass
+                        if (targetCompletionStatusId.HasValue)
+                        {
+                            var tagType = DetermineTagType(game);
+                            if (tagType == TagType.Completed && game.CompletionStatusId != targetCompletionStatusId.Value)
+                            {
+                                game.CompletionStatusId = targetCompletionStatusId.Value;
+                                _api.Database.Games.Update(game);
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -91,12 +110,25 @@ namespace PlayniteAchievements.Services.Tagging
 
                 _logger.Info($"Tag sync complete: {updatedCount} games updated");
             }, progressOptions);
+        }
 
-            // Also sync completion statuses if enabled
-            if (_settings.TaggingSettings?.SetCompletionStatus ?? false)
+        /// <summary>
+        /// Gets the completion status ID to use for completed games.
+        /// </summary>
+        private Guid? GetCompletionStatusId()
+        {
+            var completionStatusId = _settings.TaggingSettings.CompletionStatusId;
+
+            if (completionStatusId.HasValue && completionStatusId.Value != Guid.Empty)
             {
-                SyncCompletionStatus();
+                return completionStatusId;
             }
+
+            // Find the default "Completed" status
+            var completedStatus = _api.Database.CompletionStatuses
+                .FirstOrDefault(s => s.Name?.Equals("Completed", StringComparison.OrdinalIgnoreCase) ?? false);
+
+            return completedStatus?.Id;
         }
 
         /// <summary>
