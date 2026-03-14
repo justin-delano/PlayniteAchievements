@@ -201,27 +201,32 @@ namespace PlayniteAchievements.Services.Tagging
         {
             if (game == null) return false;
 
-            var tagType = DetermineTagType(game);
             var changed = false;
 
             // First, remove all PA tags from the game
             changed |= RemoveAllPATags(game);
 
-            // Then add the appropriate tag if it's enabled
-            if (tagConfigs != null && tagConfigs.TryGetValue(tagType, out var config) && config.IsEnabled)
+            // Determine all applicable tag types (can be multiple)
+            var tagTypes = DetermineTagTypes(game);
+
+            // Add each applicable tag
+            foreach (var tagType in tagTypes)
             {
-                var tagId = GetOrCreateTag(config.DisplayName);
-                if (tagId.HasValue)
+                if (tagConfigs != null && tagConfigs.TryGetValue(tagType, out var config) && config.IsEnabled)
                 {
-                    if (game.TagIds == null)
+                    var tagId = GetOrCreateTag(config.DisplayName);
+                    if (tagId.HasValue)
                     {
-                        game.TagIds = new List<Guid> { tagId.Value };
-                        changed = true;
-                    }
-                    else if (!game.TagIds.Contains(tagId.Value))
-                    {
-                        game.TagIds.Add(tagId.Value);
-                        changed = true;
+                        if (game.TagIds == null)
+                        {
+                            game.TagIds = new List<Guid> { tagId.Value };
+                            changed = true;
+                        }
+                        else if (!game.TagIds.Contains(tagId.Value))
+                        {
+                            game.TagIds.Add(tagId.Value);
+                            changed = true;
+                        }
                     }
                 }
             }
@@ -235,63 +240,84 @@ namespace PlayniteAchievements.Services.Tagging
         }
 
         /// <summary>
-        /// Determines the appropriate tag type for a game based on its achievement status.
+        /// Determines all applicable tag types for a game.
+        /// A game can have multiple tags (e.g., HasAchievements + InProgress).
         /// </summary>
-        public TagType DetermineTagType(Game game)
+        private List<TagType> DetermineTagTypes(Game game)
         {
-            if (game == null) return TagType.NoAchievements;
+            var types = new List<TagType>();
+
+            if (game == null)
+            {
+                types.Add(TagType.NoAchievements);
+                return types;
+            }
 
             var gameId = game.Id;
 
-            // Check exclusion states first (highest priority)
+            // Check exclusion states first (highest priority - exclusive)
             if (_settings.ExcludedGameIds.Contains(gameId))
             {
-                return TagType.Excluded;
+                types.Add(TagType.Excluded);
+                return types;
             }
 
             if (_settings.ExcludedFromSummariesGameIds.Contains(gameId))
             {
-                return TagType.ExcludedFromSummaries;
+                types.Add(TagType.ExcludedFromSummaries);
+                return types;
             }
 
             // Load the cached achievement data
             var data = _achievementService.Cache?.LoadGameData(gameId.ToString());
-            if (data == null)
+            if (data == null || !data.HasAchievements)
             {
-                return TagType.NoAchievements;
-            }
-
-            // If the game was explicitly marked as having no achievements
-            if (!data.HasAchievements)
-            {
-                return TagType.NoAchievements;
+                types.Add(TagType.NoAchievements);
+                return types;
             }
 
             // If the game is excluded by user
             if (data.ExcludedByUser)
             {
-                return TagType.Excluded;
+                types.Add(TagType.Excluded);
+                return types;
             }
 
-            // Check if completed
+            // Game has achievements - add HasAchievements tag
+            types.Add(TagType.HasAchievements);
+
+            // Add status tag based on progress
             if (data.IsCompleted)
             {
-                return TagType.Completed;
+                types.Add(TagType.Completed);
             }
-
-            // Check if in progress (has some unlocks)
-            var unlockedCount = data.Achievements?.Count(a => a?.Unlocked == true) ?? 0;
-            if (unlockedCount > 0)
+            else
             {
-                return TagType.InProgress;
+                var unlockedCount = data.Achievements?.Count(a => a?.Unlocked == true) ?? 0;
+                if (unlockedCount > 0)
+                {
+                    types.Add(TagType.InProgress);
+                }
             }
 
-            // Has achievements but none unlocked
-            return TagType.HasAchievements;
+            return types;
         }
 
         /// <summary>
-        /// Removes all PA tags from all games.
+        /// Determines the primary tag type for a game based on its achievement status.
+        /// Used for completion status syncing.
+        /// </summary>
+        public TagType DetermineTagType(Game game)
+        {
+            var types = DetermineTagTypes(game);
+            // Return the most significant status tag
+            if (types.Contains(TagType.Completed)) return TagType.Completed;
+            if (types.Contains(TagType.InProgress)) return TagType.InProgress;
+            return types.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// Removes all PA tags from all games and deletes them from the database.
         /// Called when tagging is disabled.
         /// </summary>
         public void RemoveAllTags()
@@ -329,6 +355,34 @@ namespace PlayniteAchievements.Services.Tagging
                     catch (Exception ex)
                     {
                         _logger.Error(ex, $"Failed to remove tags for game {game.Name}");
+                    }
+                }
+
+                // Delete only the exact tag names from config
+                if (_settings.TaggingSettings?.TagConfigs != null)
+                {
+                    var tagNames = _settings.TaggingSettings.TagConfigs.Values
+                        .Where(c => c != null && !string.IsNullOrWhiteSpace(c.DisplayName))
+                        .Select(c => c.DisplayName)
+                        .ToList();
+
+                    foreach (var tagName in tagNames)
+                    {
+                        var tag = _api.Database.Tags
+                            .FirstOrDefault(t => t.Name?.Equals(tagName, StringComparison.OrdinalIgnoreCase) ?? false);
+
+                        if (tag != null)
+                        {
+                            try
+                            {
+                                _api.Database.Tags.Remove(tag);
+                                _logger.Debug($"Deleted tag: {tag.Name}");
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Error(ex, $"Failed to delete tag: {tag.Name}");
+                            }
+                        }
                     }
                 }
 
