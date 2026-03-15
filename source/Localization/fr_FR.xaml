@@ -63,6 +63,14 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamesWithNoUnlocks">Afficher les jeux sans succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowUnplayedGames">Afficher les jeux non joués</sys:String>
 
+    <!-- Theme Controls Preview Settings -->
+    <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeControlsSection">Aperçu des contrôles de thème</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Liste compacte</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">Afficher la barre de rareté</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementListPreview">Liste des succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementListMaxHeight">Hauteur maximale</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (vide = illimité)</sys:String>
+
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
