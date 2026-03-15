@@ -19,6 +19,7 @@
 
     <DataGrid x:Name="AchievementsDataGrid"
               ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
+              MaxHeight="{Binding MaxHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
               Sorting="DataGrid_Sorting"
               AutoGenerateColumns="False"
               IsReadOnly="True"
