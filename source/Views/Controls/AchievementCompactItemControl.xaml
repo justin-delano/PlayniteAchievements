@@ -143,8 +143,21 @@
         </TextBlock>
 
         <!-- Rarity bar overlay at bottom - shows global unlock percentage -->
-        <Grid VerticalAlignment="Bottom"
-              Visibility="{Binding HasRarity, Converter={StaticResource BooleanToVisibilityConverter}}">
+        <Grid VerticalAlignment="Bottom">
+            <Grid.Style>
+                <Style TargetType="Grid">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding HasRarity}" Value="True"/>
+                                <Condition Binding="{Binding ShowRarityBar}" Value="True"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
             <ProgressBar Height="10"
                          Maximum="100"
                          Value="{Binding GlobalPercent, Mode=OneWay}"
