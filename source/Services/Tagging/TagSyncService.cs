@@ -210,7 +210,7 @@ namespace PlayniteAchievements.Services.Tagging
                     }
                 }
 
-                _logger.Debug($"Auto-synced tags for {gameIds.Count} games");
+                // _logger.Debug($"Auto-synced tags for {gameIds.Count} games");
             }
             catch (Exception ex)
             {

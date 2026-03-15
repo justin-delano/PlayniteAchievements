@@ -355,11 +355,11 @@ namespace PlayniteAchievements.Providers.Xbox
             }
             else
             {
-                _logger.Debug($"[XboxAch] Achievement '{xboxAch.name}' has {xboxAch.mediaAssets.Count} media assets:");
-                foreach (var asset in xboxAch.mediaAssets)
-                {
-                    _logger.Debug($"  - name: '{asset.name}', type: '{asset.type}', url: '{asset.url}'");
-                }
+                // _logger.Debug($"[XboxAch] Achievement '{xboxAch.name}' has {xboxAch.mediaAssets.Count} media assets:");
+                // foreach (var asset in xboxAch.mediaAssets)
+                // {
+                //     _logger.Debug($"  - name: '{asset.name}', type: '{asset.type}', url: '{asset.url}'");
+                // }
             }
 
             // Use first media asset directly (matches reference implementation pattern)
