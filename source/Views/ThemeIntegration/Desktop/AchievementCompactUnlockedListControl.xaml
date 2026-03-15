@@ -22,7 +22,8 @@
                 <ScrollViewer CanContentScroll="True"
                               HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Disabled"
-                              Padding="0">
+                              Padding="0"
+                              ClipToBounds="False">
                     <ItemsPresenter/>
                 </ScrollViewer>
             </ControlTemplate>
@@ -33,9 +34,16 @@
                 <!-- Horizontal stack panel for single-row layout -->
                 <VirtualizingStackPanel Orientation="Horizontal"
                                         IsItemsHost="True"
-                                        VirtualizationMode="Recycling"/>
+                                        VirtualizationMode="Recycling"
+                                        ClipToBounds="False"/>
             </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
+
+        <ItemsControl.ItemContainerStyle>
+            <Style TargetType="ContentPresenter">
+                <Setter Property="ClipToBounds" Value="False"/>
+            </Style>
+        </ItemsControl.ItemContainerStyle>
 
         <ItemsControl.ItemTemplate>
             <DataTemplate>
