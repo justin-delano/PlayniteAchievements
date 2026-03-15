@@ -209,7 +209,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
         /// <summary>
         /// Resolves an Exophase game slug for a Playnite game using deterministic linking.
-        /// Searches by game name filtered by platform to get the correct variant.
+        /// Priority: Manual override -> Cache -> API search
         /// </summary>
         public async Task<string> ResolveExophaseSlugAsync(Game game, CancellationToken ct)
         {
@@ -218,7 +218,15 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
-            // Check cache first
+            // Check for manual override first
+            if (_settings.Persisted.ExophaseSlugOverrides.TryGetValue(game.Id, out var overrideSlug) &&
+                !string.IsNullOrWhiteSpace(overrideSlug))
+            {
+                _logger?.Debug($"[Exophase] Using override slug for '{game.Name}': {overrideSlug}");
+                return overrideSlug;
+            }
+
+            // Check cache
             lock (_slugCacheLock)
             {
                 if (_slugCache.TryGetValue(game.Id, out var cachedSlug))
