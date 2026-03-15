@@ -67,8 +67,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeControlsSection">Theme Controls Preview</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Compact List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">Show Rarity Bar</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AchievementListPreview">Achievement List</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AchievementListMaxHeight">Max Height</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview">Achievement DataGrid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Max Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (empty = unlimited)</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>

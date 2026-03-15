@@ -920,15 +920,15 @@
                                           IsChecked="{Binding Persisted.ShowCompactListRarityBar}"
                                           Margin="0,8,0,0"/>
 
-                                <!-- AchievementList Preview Subsection -->
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementListPreview}"
+                                <!-- AchievementDataGrid Preview Subsection -->
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridPreview}"
                                            FontWeight="SemiBold" Margin="0,16,0,8"/>
 
                                 <!-- Max Height setting -->
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementListMaxHeight}"
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridMaxHeight}"
                                                VerticalAlignment="Center"/>
-                                    <TextBox Text="{Binding Persisted.AchievementListMaxHeight, UpdateSourceTrigger=PropertyChanged}"
+                                    <TextBox Text="{Binding Persisted.AchievementDataGridMaxHeight, UpdateSourceTrigger=PropertyChanged}"
                                              Width="80" Margin="8,0,0,0"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsUnit}"
                                                VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>

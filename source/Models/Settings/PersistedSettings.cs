@@ -67,7 +67,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showUnplayedGames = false;
         private bool _showTopMenuBarButton = true;
         private bool _showCompactListRarityBar = true;
-        private double? _achievementListMaxHeight = null;
+        private double? _achievementDataGridMaxHeight = null;
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
@@ -609,12 +609,12 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Maximum height for AchievementList controls (null = unlimited).
+        /// Maximum height for AchievementDataGrid controls (null = unlimited).
         /// </summary>
-        public double? AchievementListMaxHeight
+        public double? AchievementDataGridMaxHeight
         {
-            get => _achievementListMaxHeight;
-            set => SetValue(ref _achievementListMaxHeight, value);
+            get => _achievementDataGridMaxHeight;
+            set => SetValue(ref _achievementDataGridMaxHeight, value);
         }
 
         /// <summary>
