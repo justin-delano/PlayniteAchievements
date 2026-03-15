@@ -906,11 +906,16 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactListPreview}"
                                            FontWeight="SemiBold" Margin="0,0,0,8"/>
 
-                                <!-- Mockup control with mock data -->
+                                <!-- Mockup control with mock data - horizontal layout -->
                                 <ItemsControl ItemsSource="{Binding MockCompactListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Orientation="Horizontal" ClipToBounds="False"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <controls:AchievementCompactItemControl IconSize="48" Margin="4"/>
+                                            <controls:AchievementCompactItemControl IconSize="48" Margin="4,12,4,12"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -933,6 +938,12 @@
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsUnit}"
                                                VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
                                 </StackPanel>
+
+                                <!-- Other Desktop Controls Info -->
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_OtherDesktopControls}"
+                                           FontWeight="SemiBold" Margin="0,16,0,8"/>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_OtherDesktopControls_Description}"
+                                           Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 

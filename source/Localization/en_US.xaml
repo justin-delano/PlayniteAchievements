@@ -70,6 +70,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview">Achievement DataGrid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Max Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (empty = unlimited)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OtherDesktopControls">Other Desktop Controls</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OtherDesktopControls_Description">Additional controls available for theme integration: AchievementButton, AchievementProgressBar, AchievementStats, AchievementViewItem, AchievementBarChart, AchievementPieChart, AchievementCompactLockedList, AchievementCompactUnlockedList.</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>

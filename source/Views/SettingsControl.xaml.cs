@@ -272,21 +272,38 @@ namespace PlayniteAchievements.Views
         // Mock data for settings preview
         // -----------------------------
 
-        private List<AchievementDisplayItem> _mockCompactListItems;
+        private System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> _mockCompactListItems;
 
         /// <summary>
         /// Gets mock achievement items for compact list preview in settings.
         /// </summary>
-        public List<AchievementDisplayItem> MockCompactListItems
+        public System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> MockCompactListItems
         {
             get
             {
                 if (_mockCompactListItems == null)
                 {
-                    _mockCompactListItems = MockDataHelper.CreateMockCompactListItems(5);
+                    _mockCompactListItems = new System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem>(
+                        MockDataHelper.CreateMockCompactListItems(5,
+                            _settingsViewModel?.Settings?.Persisted?.ShowCompactListRarityBar ?? true,
+                            _settingsViewModel?.Settings?.Persisted?.ShowRarityGlow ?? true));
                 }
                 return _mockCompactListItems;
             }
+        }
+
+        /// <summary>
+        /// Refreshes mock preview items to reflect current settings.
+        /// </summary>
+        public void RefreshMockPreviews()
+        {
+            if (_mockCompactListItems == null) return;
+
+            var settings = _settingsViewModel?.Settings?.Persisted;
+            if (settings == null) return;
+
+            MockDataHelper.UpdateRarityBarVisibility(_mockCompactListItems, settings.ShowCompactListRarityBar);
+            MockDataHelper.UpdateRarityGlowVisibility(_mockCompactListItems, settings.ShowRarityGlow);
         }
 
         public static readonly DependencyProperty ShadPS4AuthStatusProperty =
@@ -565,6 +582,9 @@ namespace PlayniteAchievements.Views
             // Initialize theme collections
             AvailableThemes = new System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
             RevertableThemes = new System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
+
+            // Subscribe to settings property changes to refresh mock previews
+            _settingsViewModel.Settings.Persisted.PropertyChanged += OnSettingsPropertyChanged;
 
             // Debug logging to verify DataContext and Settings values
             _logger?.Info($"SettingsControl created. DataContext type: {DataContext?.GetType().Name}");
@@ -3100,6 +3120,20 @@ namespace PlayniteAchievements.Views
                         _logger?.Info($"Removed platform '{platform}' from Exophase managed platforms");
                     }
                 }
+            }
+        }
+
+        // -----------------------------
+        // Settings property change handling for mock preview refresh
+        // -----------------------------
+
+        private void OnSettingsPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            // Refresh mock previews when relevant settings change
+            if (e.PropertyName == nameof(Models.Settings.PersistedSettings.ShowCompactListRarityBar) ||
+                e.PropertyName == nameof(Models.Settings.PersistedSettings.ShowRarityGlow))
+            {
+                RefreshMockPreviews();
             }
         }
 
