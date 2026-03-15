@@ -895,18 +895,14 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- ================== THEME CONTROLS PREVIEW SECTION ================== -->
+                        <!-- ================== COMPACT LIST PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_ThemeControlsSection}"
-                                           Style="{StaticResource SectionHeaderStyle}"
-                                           Margin="0,0,0,12"/>
-
-                                <!-- Compact List Preview Subsection -->
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactListPreview}"
-                                           FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactListPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,8,8"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
                                 <!-- Mockup control with mock data - horizontal layout -->
                                 <ItemsControl ItemsSource="{Binding MockCompactListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
@@ -922,16 +918,21 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <!-- Show Rarity Bar setting -->
+                                <!-- Settings -->
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompactListRarityBar}"
                                           IsChecked="{Binding Persisted.ShowCompactListRarityBar}"
                                           Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Border>
 
-                                <!-- AchievementDataGrid Preview Subsection -->
+                        <!-- ================== DATA GRID PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridPreview}"
-                                           FontWeight="SemiBold" Margin="0,16,0,8"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,8,8"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
                                 <!-- Mock DataGrid -->
                                 <controls:AchievementDataGridControl ItemsSource="{Binding MockDataGridItems, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -947,58 +948,159 @@
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsUnit}"
                                                VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
                                 </StackPanel>
+                            </StackPanel>
+                        </Border>
 
-                                <!-- Other Desktop Controls Info -->
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_OtherDesktopControls}"
-                                           FontWeight="SemiBold" Margin="0,16,0,8"/>
-
-                                <!-- Compact Unlocked List -->
+                        <!-- ================== COMPACT UNLOCKED LIST PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactUnlockedListPreview}"
-                                           FontWeight="Medium" Margin="0,8,0,4"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactUnlockedListPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <!-- Compact Locked List -->
+                                <ItemsControl ItemsSource="{Binding MockCompactUnlockedListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Orientation="Horizontal" ClipToBounds="False"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <controls:AchievementCompactItemControl IconSize="48" Margin="4,12,4,12"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== COMPACT LOCKED LIST PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactLockedListPreview}"
-                                           FontWeight="Medium" Margin="0,8,0,4"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactLockedListPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <!-- Progress Bar -->
+                                <ItemsControl ItemsSource="{Binding MockCompactLockedListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel Orientation="Horizontal" ClipToBounds="False"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <controls:AchievementCompactItemControl IconSize="48" Margin="4,12,4,12"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== PROGRESS BAR PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProgressBarPreview}"
-                                           FontWeight="Medium" Margin="0,8,0,4"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProgressBarPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <!-- Stats -->
+                                <controls:PreviewProgressBarControl Width="280"
+                                    ProgressPercentage="{Binding MockThemeData.ProgressPercentage, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    MockThemeData="{Binding MockThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== STATS PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_StatsPreview}"
-                                           FontWeight="Medium" Margin="0,8,0,4"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_StatsPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <!-- Button -->
+                                <controls:PreviewStatsControl Width="200"
+                                    UltraRareUnlocked="{Binding MockThemeData.UltraRare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    UltraRareTotal="{Binding MockThemeData.UltraRare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    RareUnlocked="{Binding MockThemeData.Rare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    RareTotal="{Binding MockThemeData.Rare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    UncommonUnlocked="{Binding MockThemeData.Uncommon.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    UncommonTotal="{Binding MockThemeData.Uncommon.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommonUnlocked="{Binding MockThemeData.Common.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommonTotal="{Binding MockThemeData.Common.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== BUTTON PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ButtonPreview}"
-                                           FontWeight="Medium" Margin="0,8,0,4"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ButtonPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <!-- View Item -->
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:PreviewButtonControl Width="40" DisplayDetails="False" Margin="0,0,16,0"/>
+                                    <controls:PreviewButtonControl Width="200" DisplayDetails="True"
+                                        UnlockedCount="{Binding MockThemeData.UnlockedCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        AchievementCount="{Binding MockThemeData.AchievementCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        IsCompleted="{Binding MockThemeData.IsCompleted, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== VIEW ITEM PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ViewItemPreview}"
-                                           FontWeight="Medium" Margin="0,8,0,4"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ViewItemPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <!-- Pie Chart -->
+                                <StackPanel Orientation="Horizontal">
+                                    <controls:PreviewViewItemControl Width="60" ShowProgressBar="False" Margin="0,0,16,0"
+                                        UnlockedCount="{Binding MockThemeData.UnlockedCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        AchievementCount="{Binding MockThemeData.AchievementCount, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                    <controls:PreviewViewItemControl Width="100" ShowProgressBar="True"
+                                        UnlockedCount="{Binding MockThemeData.UnlockedCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        AchievementCount="{Binding MockThemeData.AchievementCount, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== PIE CHART PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PieChartPreview}"
-                                           FontWeight="Medium" Margin="0,8,0,4"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PieChartPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <!-- Bar Chart -->
+                                <controls:PreviewPieChartControl
+                                    UltraRareTotal="{Binding MockThemeData.UltraRare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    RareTotal="{Binding MockThemeData.Rare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    UncommonTotal="{Binding MockThemeData.Uncommon.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommonTotal="{Binding MockThemeData.Common.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== BAR CHART PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BarChartPreview}"
-                                           FontWeight="Medium" Margin="0,8,0,4"/>
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BarChartPreview_Description}"
-                                           Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
+                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
+
+                                <controls:PreviewBarChartControl Width="280" Height="120"/>
                             </StackPanel>
                         </Border>
 
