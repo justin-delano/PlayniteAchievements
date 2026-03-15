@@ -251,6 +251,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 var hideDescription = !(settings?.Persisted?.ShowHiddenDescription ?? false);
                 var hideLockedIcon = !(settings?.Persisted?.ShowLockedIcon ?? true);
                 var showRarityGlow = settings?.Persisted?.ShowRarityGlow ?? true;
+                var showRarityBar = settings?.Persisted?.ShowCompactListRarityBar ?? true;
 
                 var items = new List<AchievementDisplayItem>(_allAchievements.Count);
                 foreach (var achievement in _allAchievements)
@@ -258,7 +259,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                     var item = new AchievementDisplayItem();
                     var gameName = achievement.Game?.Name ?? "Unknown";
                     var gameId = achievement.Game?.Id;
-                    item.UpdateFrom(achievement, gameName, gameId, hideIcon, hideTitle, hideDescription, hideLockedIcon, showRarityGlow);
+                    item.UpdateFrom(achievement, gameName, gameId, hideIcon, hideTitle, hideDescription, hideLockedIcon, showRarityGlow, showRarityBar);
                     items.Add(item);
                 }
 
