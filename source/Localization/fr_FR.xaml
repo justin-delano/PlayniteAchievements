@@ -66,8 +66,10 @@
     <!-- Theme Controls Preview Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeControlsSection">Aperçu des contrôles de thème</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Liste compacte</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview_Description">2 cachés, 2 verrouillés, 1 succès débloqué</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">Afficher la barre de rareté</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview">Grille de données des succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview_Description">2 débloqués (1 ultra rare, 1 or), 1 verrouillé</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Hauteur maximale</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (vide = illimité)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OtherDesktopControls">Autres contrôles de bureau</sys:String>
