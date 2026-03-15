@@ -73,7 +73,22 @@
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Hauteur maximale</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (vide = illimité)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OtherDesktopControls">Autres contrôles de bureau</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OtherDesktopControls_Description">Contrôles supplémentaires disponibles pour l'intégration de thème : AchievementButton, AchievementProgressBar, AchievementStats, AchievementViewItem, AchievementBarChart, AchievementPieChart, AchievementCompactLockedList, AchievementCompactUnlockedList.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Liste compacte débloquée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview_Description">Rangée horizontale d'éléments compacts affichant uniquement les succès débloqués.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Liste compacte verrouillée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview_Description">Rangée horizontale d'éléments compacts affichant uniquement les succès verrouillés.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Barre de progression</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview_Description">Barre de progression avec pourcentage superposé et badges de rareté en dessous.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">Statistiques</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_StatsPreview_Description">Répartition par rareté affichant les comptes Ultra Rare, Rare, Peu commun et Commun.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">Bouton</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview_Description">Bouton compact avec icône de trophée ou affichage détaillé de la progression.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">Élément de vue</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview_Description">Affichage du nombre de succès pour les vues de liste de jeux.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview">Graphique circulaire</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview_Description">Graphique circulaire de rareté ou de trophées avec icônes de badge radiales.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">Graphique à barres</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview_Description">Graphique à barres chronologique affichant les succès débloqués au fil du temps.</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>

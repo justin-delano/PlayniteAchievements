@@ -73,7 +73,22 @@
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Max Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (empty = unlimited)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OtherDesktopControls">Other Desktop Controls</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OtherDesktopControls_Description">Additional controls available for theme integration: AchievementButton, AchievementProgressBar, AchievementStats, AchievementViewItem, AchievementBarChart, AchievementPieChart, AchievementCompactLockedList, AchievementCompactUnlockedList.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Compact Unlocked List</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview_Description">Horizontal row of compact items showing only unlocked achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Compact Locked List</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview_Description">Horizontal row of compact items showing only locked achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Progress Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview_Description">Progress bar with percentage overlay and rarity badges below.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">Stats</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_StatsPreview_Description">Rarity breakdown showing Ultra Rare, Rare, Uncommon, and Common counts.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">Button</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview_Description">Compact button with trophy icon or detailed progress display.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">View Item</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview_Description">Achievement count display for use in game list views.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview">Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview_Description">Rarity or trophy pie chart with radial badge icons.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">Bar Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview_Description">Timeline bar chart showing achievement unlocks over time.</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
