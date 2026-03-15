@@ -64,126 +64,148 @@ namespace PlayniteAchievements.Providers.Exophase
                 return false;
             }
 
-            // Check master toggle
             if (!_settings.Persisted.ExophaseEnabled)
             {
                 return false;
             }
 
-            // Check explicit game inclusion (for games on non-auto-claimed platforms)
+            // Check explicit game inclusion first
             if (_settings.Persisted.ExophaseIncludedGames.Contains(game.Id))
             {
+                _logger.Debug($"Exophase IsCapable for '{game.Name}': true (explicitly included)");
                 return true;
             }
 
-            // Check platform-based auto-claim
+            // Check platform-based inclusion
             var platformSlug = GetExophasePlatformSlug(game);
             if (!string.IsNullOrWhiteSpace(platformSlug) &&
                 _settings.Persisted.ExophaseManagedPlatforms.Contains(platformSlug))
             {
+                _logger.Debug($"Exophase IsCapable for '{game.Name}': true (platform '{platformSlug}' is managed)");
                 return true;
             }
 
+            // Log why it wasn't capable for debugging
+            _logger.Debug($"Exophase IsCapable for '{game.Name}': false " +
+                $"(Slug={platformSlug ?? "null"}, " +
+                $"Source={game.Source?.Name ?? "null"}, " +
+                $"Platforms={string.Join(", ", game.Platforms?.Select(p => p.Name) ?? Array.Empty<string>())})");
             return false;
         }
 
+        #region Platform Detection
+
+        // Valid Exophase platform slugs (used in settings):
+        // steam, gog, epic, ea, blizzard, psn, xbox, nintendo, retro
+
         /// <summary>
-        /// Gets the Exophase platform slug for a game based on its Playnite platforms.
-        /// Returns the first matching platform slug.
+        /// Gets the Exophase platform slug for a game.
+        /// Priority: Source (PC stores) -> Platform.SpecificationId -> Platform.Name
         /// </summary>
         public static string GetExophasePlatformSlug(Game game)
         {
-            if (game?.Platforms == null || game.Platforms.Count == 0)
-            {
-                return null;
-            }
+            if (game == null) return null;
+
+            // PC games: Source identifies the store (Steam, GOG, Epic, etc.)
+            var sourceSlug = MapSourceToSlug(game.Source?.Name);
+            if (!string.IsNullOrWhiteSpace(sourceSlug)) return sourceSlug;
+
+            // Consoles: Check platform specification ID and name
+            if (game.Platforms == null || game.Platforms.Count == 0) return null;
 
             foreach (var platform in game.Platforms)
             {
                 if (platform == null) continue;
-                var slug = MapPlaynitePlatformToExophaseSlug(platform);
-                if (!string.IsNullOrWhiteSpace(slug))
-                {
-                    return slug;
-                }
+
+                // Try specification ID first (more precise)
+                var slug = MapSpecificationIdToSlug(platform.SpecificationId);
+                if (!string.IsNullOrWhiteSpace(slug)) return slug;
+
+                // Fall back to platform name
+                slug = MapPlatformNameToSlug(platform.Name);
+                if (!string.IsNullOrWhiteSpace(slug)) return slug;
             }
 
             return null;
         }
 
         /// <summary>
-        /// Maps a Playnite platform to an Exophase platform slug.
+        /// Maps a Playnite Source name to an Exophase slug.
         /// </summary>
-        public static string MapPlaynitePlatformToExophaseSlug(Platform platform)
+        private static string MapSourceToSlug(string sourceName)
         {
-            if (platform == null || string.IsNullOrWhiteSpace(platform.Name))
-            {
-                return null;
-            }
+            if (string.IsNullOrWhiteSpace(sourceName)) return null;
 
-            var name = platform.Name.ToLowerInvariant();
+            var name = sourceName.ToLowerInvariant();
 
-            // Steam
-            if (name.Contains("steam") || name.Contains("pc") && name.Contains("steam"))
-            {
-                return "steam";
-            }
-
-            // PlayStation
-            if (name.Contains("playstation") || name.Contains("psn") ||
-                name.Contains("ps1") || name.Contains("ps2") || name.Contains("ps3") ||
-                name.Contains("ps4") || name.Contains("ps5") || name.Contains("vita"))
-            {
-                return "psn";
-            }
-
-            // Xbox
-            if (name.Contains("xbox") || name.Contains("xbox360") ||
-                name.Contains("xbox one") || name.Contains("xbox series"))
-            {
-                return "xbox";
-            }
-
-            // GOG
-            if (name.Contains("gog") || name.Contains("good old games"))
-            {
-                return "gog";
-            }
-
-            // Epic
-            if (name.Contains("epic") || name.Contains("epic games"))
-            {
-                return "epic";
-            }
-
-            // EA / Electronic Arts
-            if (name.Contains("ea") || name.Contains("origin") || name.Contains("electronic arts"))
-            {
-                return "ea";
-            }
-
-            // Blizzard / Battle.net
-            if (name.Contains("blizzard") || name.Contains("battle.net") || name.Contains("battlenet"))
-            {
-                return "blizzard";
-            }
-
-            // Nintendo
-            if (name.Contains("nintendo") || name.Contains("switch") ||
-                name.Contains("wii") || name.Contains("gamecube") ||
-                name.Contains("3ds") || name.Contains("ds"))
-            {
-                return "nintendo";
-            }
-
-            // RetroAchievements (via Exophase)
-            if (name.Contains("retro") || name.Contains("retroachievements"))
-            {
-                return "retro";
-            }
+            if (name.Contains("steam")) return "steam";
+            if (name.Contains("gog") || name.Contains("good old games")) return "gog";
+            if (name.Contains("epic")) return "epic";
+            if (name.Contains("origin") || name.Contains("ea app") || name.Equals("ea")) return "ea";
+            if (name.Contains("blizzard") || name.Contains("battle.net") || name.Contains("battlenet")) return "blizzard";
 
             return null;
         }
+
+        /// <summary>
+        /// Maps a Playnite platform specification ID to an Exophase slug.
+        /// </summary>
+        private static string MapSpecificationIdToSlug(string specId)
+        {
+            if (string.IsNullOrWhiteSpace(specId)) return null;
+
+            var id = specId.ToLowerInvariant();
+
+            // PlayStation platforms
+            if (id.StartsWith("sony_playstation") || id == "sony_vita") return "psn";
+
+            // Xbox platforms
+            if (id.StartsWith("xbox")) return "xbox";
+
+            // Nintendo platforms
+            if (id.StartsWith("nintendo")) return "nintendo";
+
+            return null;
+        }
+
+        /// <summary>
+        /// Maps a Playnite platform name to an Exophase slug.
+        /// </summary>
+        private static string MapPlatformNameToSlug(string platformName)
+        {
+            if (string.IsNullOrWhiteSpace(platformName)) return null;
+
+            var name = platformName.ToLowerInvariant();
+
+            // PlayStation (PS1-PS5, Vita, PSN)
+            if (name.Contains("playstation") || name.Contains("psn") ||
+                name.Contains("ps1") || name.Contains("ps2") || name.Contains("ps3") ||
+                name.Contains("ps4") || name.Contains("ps5") || name.Contains("vita"))
+                return "psn";
+
+            // Xbox (360, One, Series)
+            if (name.Contains("xbox")) return "xbox";
+
+            // Nintendo (Switch, Wii, GameCube, DS, 3DS)
+            if (name.Contains("nintendo") || name.Contains("switch") ||
+                name.Contains("wii") || name.Contains("gamecube") ||
+                name.Contains("3ds") || name.Contains(" ds"))
+                return "nintendo";
+
+            // PC stores (for when Source isn't set but platform name contains store)
+            if (name.Contains("steam")) return "steam";
+            if (name.Contains("gog") || name.Contains("good old games")) return "gog";
+            if (name.Contains("epic")) return "epic";
+            if (name.Contains("origin") || name.Contains("ea app")) return "ea";
+            if (name.Contains("blizzard") || name.Contains("battle.net")) return "blizzard";
+
+            // RetroAchievements
+            if (name.Contains("retro") || name.Contains("retroachievements")) return "retro";
+
+            return null;
+        }
+
+        #endregion
 
         /// <summary>
         /// Resolves an Exophase game slug for a Playnite game using deterministic linking.
