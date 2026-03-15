@@ -226,6 +226,13 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _showRarityGlow, value);
         }
 
+        private bool _showRarityBar = true;
+        public bool ShowRarityBar
+        {
+            get => _showRarityBar;
+            set => SetValue(ref _showRarityBar, value);
+        }
+
         private bool _isRevealed;
         public bool IsRevealed
         {
@@ -449,7 +456,7 @@ namespace PlayniteAchievements.ViewModels
         /// Updates this item's properties from a source Achievement object.
         /// This is used to synchronize data without recreating the entire object, preventing UI flicker.
         /// </summary>
-        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideIcon, bool hideTitle, bool hideDescription, bool hideLockedIcon, bool showRarityGlow, string sortingName = null, string gameIconPath = null, string gameCoverPath = null)
+        public void UpdateFrom(Models.Achievements.AchievementDetail source, string gameName, Guid? playniteGameId, bool hideIcon, bool hideTitle, bool hideDescription, bool hideLockedIcon, bool showRarityGlow, bool showRarityBar = true, string sortingName = null, string gameIconPath = null, string gameCoverPath = null)
         {
             GameName = gameName;
             SortingName = sortingName ?? gameName;
@@ -467,6 +474,7 @@ namespace PlayniteAchievements.ViewModels
             ShowHiddenDescription = !hideDescription;
             ShowLockedIcon = !hideLockedIcon;
             ShowRarityGlow = showRarityGlow;
+            ShowRarityBar = showRarityBar;
             ProgressNum = source.ProgressNum;
             ProgressDenom = source.ProgressDenom;
             PointsValue = source.Points;
@@ -655,6 +663,7 @@ namespace PlayniteAchievements.ViewModels
                 ShowHiddenDescription = _showHiddenDescription,
                 ShowLockedIcon = _showLockedIcon,
                 ShowRarityGlow = _showRarityGlow,
+                ShowRarityBar = _showRarityBar,
                 // IsRevealed intentionally not copied - each clone starts unrevealed
                 ProgressNum = _progressNum,
                 ProgressDenom = _progressDenom,
