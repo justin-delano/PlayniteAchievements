@@ -381,40 +381,57 @@ namespace PlayniteAchievements.Views
 
         /// <summary>
         /// Refreshes mock preview items to reflect current settings.
+        /// Repopulates collections with new items that have updated visibility settings.
         /// </summary>
         public void RefreshMockPreviews()
         {
             var settings = _settingsViewModel?.Settings?.Persisted;
             if (settings == null) return;
 
-            // Update all mock item collections
-            MockDataHelper.UpdateVisibilitySettings(
-                _mockCompactListItems,
-                settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
-                settings.ShowHiddenIcon, settings.ShowHiddenTitle,
-                settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
+            // Repopulate compact list items
+            if (_mockCompactListItems != null)
+            {
+                _mockCompactListItems.Clear();
+                var newItems = MockDataHelper.CreateMockCompactListItems(
+                    settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
+                    settings.ShowHiddenIcon, settings.ShowHiddenTitle,
+                    settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
+                foreach (var item in newItems)
+                    _mockCompactListItems.Add(item);
+            }
 
-            MockDataHelper.UpdateVisibilitySettings(
-                _mockCompactUnlockedListItems,
-                settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
-                settings.ShowHiddenIcon, settings.ShowHiddenTitle,
-                settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
+            // Repopulate unlocked list items
+            if (_mockCompactUnlockedListItems != null)
+            {
+                _mockCompactUnlockedListItems.Clear();
+                var newItems = MockDataHelper.CreateMockUnlockedListItems(
+                    settings.ShowCompactListRarityBar, settings.ShowRarityGlow, settings.ShowLockedIcon);
+                foreach (var item in newItems)
+                    _mockCompactUnlockedListItems.Add(item);
+            }
 
-            MockDataHelper.UpdateVisibilitySettings(
-                _mockCompactLockedListItems,
-                settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
-                settings.ShowHiddenIcon, settings.ShowHiddenTitle,
-                settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
+            // Repopulate locked list items
+            if (_mockCompactLockedListItems != null)
+            {
+                _mockCompactLockedListItems.Clear();
+                var newItems = MockDataHelper.CreateMockLockedListItems(
+                    settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
+                    settings.ShowHiddenIcon, settings.ShowHiddenTitle,
+                    settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
+                foreach (var item in newItems)
+                    _mockCompactLockedListItems.Add(item);
+            }
 
-            MockDataHelper.UpdateVisibilitySettings(
-                _mockDataGridItems,
-                settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
-                settings.ShowHiddenIcon, settings.ShowHiddenTitle,
-                settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
-
-            // Update mock theme data
-            MockDataHelper.UpdateMockThemeData(
-                settings.ShowCompactListRarityBar, settings.ShowRarityGlow);
+            // Repopulate datagrid items
+            if (_mockDataGridItems != null)
+            {
+                _mockDataGridItems = MockDataHelper.CreateMockDataGridItems(
+                    settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
+                    settings.ShowHiddenIcon, settings.ShowHiddenTitle,
+                    settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
+                // For List<T>, need to raise property changed - but since binding uses ItemsSource,
+                // we'll assign a new list which triggers refresh
+            }
         }
 
         public static readonly DependencyProperty ShadPS4AuthStatusProperty =

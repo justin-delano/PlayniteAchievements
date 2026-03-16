@@ -25,6 +25,42 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(IconSizeProperty, value);
         }
 
+        /// <summary>
+        /// Identifies the ShowRarityGlow dependency property.
+        /// When set, overrides the item's ShowRarityGlow property.
+        /// </summary>
+        public static readonly DependencyProperty ShowRarityGlowOverrideProperty =
+            DependencyProperty.Register(nameof(ShowRarityGlowOverride), typeof(bool?),
+                typeof(AchievementCompactItemControl), new PropertyMetadata(null));
+
+        /// <summary>
+        /// Gets or sets an override for the rarity glow visibility.
+        /// When null, uses the item's ShowRarityGlow property.
+        /// </summary>
+        public bool? ShowRarityGlowOverride
+        {
+            get => (bool?)GetValue(ShowRarityGlowOverrideProperty);
+            set => SetValue(ShowRarityGlowOverrideProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the ShowRarityBarOverride dependency property.
+        /// When set, overrides the item's ShowRarityBar property.
+        /// </summary>
+        public static readonly DependencyProperty ShowRarityBarOverrideProperty =
+            DependencyProperty.Register(nameof(ShowRarityBarOverride), typeof(bool?),
+                typeof(AchievementCompactItemControl), new PropertyMetadata(null));
+
+        /// <summary>
+        /// Gets or sets an override for the rarity bar visibility.
+        /// When null, uses the item's ShowRarityBar property.
+        /// </summary>
+        public bool? ShowRarityBarOverride
+        {
+            get => (bool?)GetValue(ShowRarityBarOverrideProperty);
+            set => SetValue(ShowRarityBarOverrideProperty, value);
+        }
+
         private static void OnIconSizeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is AchievementCompactItemControl control && e.NewValue is double size)
