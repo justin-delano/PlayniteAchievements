@@ -287,7 +287,7 @@ namespace PlayniteAchievements.Views
                         MockDataHelper.CreateMockCompactListItems(
                             GetShowRarityBar(), GetShowRarityGlow(),
                             GetShowHiddenIcon(), GetShowHiddenTitle(),
-                            GetShowHiddenDescription(), GetShowLockedIcon()));
+                            GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon()));
                 }
                 return _mockCompactListItems;
             }
@@ -327,7 +327,7 @@ namespace PlayniteAchievements.Views
                         MockDataHelper.CreateMockLockedListItems(
                             GetShowRarityBar(), GetShowRarityGlow(),
                             GetShowHiddenIcon(), GetShowHiddenTitle(),
-                            GetShowHiddenDescription(), GetShowLockedIcon()));
+                            GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon()));
                 }
                 return _mockCompactLockedListItems;
             }
@@ -347,7 +347,7 @@ namespace PlayniteAchievements.Views
                     _mockDataGridItems = MockDataHelper.CreateMockDataGridItems(
                         GetShowRarityBar(), GetShowRarityGlow(),
                         GetShowHiddenIcon(), GetShowHiddenTitle(),
-                        GetShowHiddenDescription(), GetShowLockedIcon());
+                        GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon());
                 }
                 return _mockDataGridItems;
             }
@@ -376,6 +376,7 @@ namespace PlayniteAchievements.Views
         private bool GetShowHiddenIcon() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenIcon ?? true;
         private bool GetShowHiddenTitle() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenTitle ?? true;
         private bool GetShowHiddenDescription() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenDescription ?? true;
+        private bool GetShowHiddenSuffix() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenSuffix ?? true;
         private bool GetShowLockedIcon() => _settingsViewModel?.Settings?.Persisted?.ShowLockedIcon ?? true;
 
         /// <summary>
@@ -391,25 +392,25 @@ namespace PlayniteAchievements.Views
                 _mockCompactListItems,
                 settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle,
-                settings.ShowHiddenDescription, settings.ShowLockedIcon);
+                settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
 
             MockDataHelper.UpdateVisibilitySettings(
                 _mockCompactUnlockedListItems,
                 settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle,
-                settings.ShowHiddenDescription, settings.ShowLockedIcon);
+                settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
 
             MockDataHelper.UpdateVisibilitySettings(
                 _mockCompactLockedListItems,
                 settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle,
-                settings.ShowHiddenDescription, settings.ShowLockedIcon);
+                settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
 
             MockDataHelper.UpdateVisibilitySettings(
                 _mockDataGridItems,
                 settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle,
-                settings.ShowHiddenDescription, settings.ShowLockedIcon);
+                settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
 
             // Update mock theme data
             MockDataHelper.UpdateMockThemeData(
@@ -3247,6 +3248,7 @@ namespace PlayniteAchievements.Views
                 nameof(Models.Settings.PersistedSettings.ShowHiddenIcon),
                 nameof(Models.Settings.PersistedSettings.ShowHiddenTitle),
                 nameof(Models.Settings.PersistedSettings.ShowHiddenDescription),
+                nameof(Models.Settings.PersistedSettings.ShowHiddenSuffix),
                 nameof(Models.Settings.PersistedSettings.ShowLockedIcon)
             };
 

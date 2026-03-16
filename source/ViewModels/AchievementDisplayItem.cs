@@ -203,6 +203,19 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private bool _showHiddenSuffix = true;
+        public bool ShowHiddenSuffix
+        {
+            get => _showHiddenSuffix;
+            set
+            {
+                if (SetValueAndReturn(ref _showHiddenSuffix, value))
+                {
+                    OnPropertyChanged(nameof(HiddenTitleSuffix));
+                }
+            }
+        }
+
         private bool _showLockedIcon;
         public bool ShowLockedIcon
         {
@@ -427,7 +440,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                if (Hidden && !IsTitleHidden) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle_WithParens");
+                if (ShowHiddenSuffix && Hidden && !IsTitleHidden) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle_WithParens");
                 return string.Empty;
             }
         }

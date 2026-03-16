@@ -849,7 +849,9 @@
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenTitle}"
                                           IsChecked="{Binding Persisted.ShowHiddenTitle}" Margin="18,0,0,6"/>
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenDescription}"
-                                          IsChecked="{Binding Persisted.ShowHiddenDescription}" Margin="18,0,0,8"/>
+                                          IsChecked="{Binding Persisted.ShowHiddenDescription}" Margin="18,0,0,6"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowHiddenSuffix}"
+                                          IsChecked="{Binding Persisted.ShowHiddenSuffix}" Margin="18,0,0,8"/>
 
                                 <!-- Locked Achievement Visibility -->
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LockedAchievements}"

@@ -29,6 +29,7 @@ namespace PlayniteAchievements.Views.Helpers
             bool showHiddenIcon = true,
             bool showHiddenTitle = true,
             bool showHiddenDescription = true,
+            bool showHiddenSuffix = true,
             bool showLockedIcon = true)
         {
             // Always create fresh items to reflect current settings
@@ -38,20 +39,22 @@ namespace PlayniteAchievements.Views.Helpers
             items.Add(CreateMockAchievement(
                 unlocked: true, hidden: false, globalPercent: 2.5,
                 displayName: "Ultra Rare Victory", description: "An incredibly rare feat",
-                showRarityBar: showRarityBar, showRarityGlow: showRarityGlow));
+                showRarityBar: showRarityBar, showRarityGlow: showRarityGlow,
+                showHiddenSuffix: showHiddenSuffix));
 
             // Unlocked Rare (8.0%)
             items.Add(CreateMockAchievement(
                 unlocked: true, hidden: false, globalPercent: 8.0,
                 displayName: "Gold Medal Run", description: "Earned a prestigious gold medal",
-                showRarityBar: showRarityBar, showRarityGlow: showRarityGlow));
+                showRarityBar: showRarityBar, showRarityGlow: showRarityGlow,
+                showHiddenSuffix: showHiddenSuffix));
 
             // Locked (25.0%)
             items.Add(CreateMockAchievement(
                 unlocked: false, hidden: false, globalPercent: 25.0,
                 displayName: "Locked Challenge", description: "Complete this task to unlock",
                 showRarityBar: showRarityBar, showRarityGlow: showRarityGlow,
-                showLockedIcon: showLockedIcon));
+                showHiddenSuffix: showHiddenSuffix, showLockedIcon: showLockedIcon));
 
             // Locked Hidden (15.0%)
             items.Add(CreateMockAchievement(
@@ -59,7 +62,8 @@ namespace PlayniteAchievements.Views.Helpers
                 displayName: "Hidden Secret", description: "Discover the hidden mystery",
                 showRarityBar: showRarityBar, showRarityGlow: showRarityGlow,
                 showHiddenIcon: showHiddenIcon, showHiddenTitle: showHiddenTitle,
-                showHiddenDescription: showHiddenDescription, showLockedIcon: showLockedIcon));
+                showHiddenDescription: showHiddenDescription, showHiddenSuffix: showHiddenSuffix,
+                showLockedIcon: showLockedIcon));
 
             // Locked Hidden Common (75.0%)
             items.Add(CreateMockAchievement(
@@ -67,7 +71,8 @@ namespace PlayniteAchievements.Views.Helpers
                 displayName: "Common Secret", description: "A straightforward hidden objective",
                 showRarityBar: showRarityBar, showRarityGlow: showRarityGlow,
                 showHiddenIcon: showHiddenIcon, showHiddenTitle: showHiddenTitle,
-                showHiddenDescription: showHiddenDescription, showLockedIcon: showLockedIcon));
+                showHiddenDescription: showHiddenDescription, showHiddenSuffix: showHiddenSuffix,
+                showLockedIcon: showLockedIcon));
 
             return items;
         }
@@ -85,6 +90,7 @@ namespace PlayniteAchievements.Views.Helpers
         /// <param name="showHiddenIcon">Whether to show hidden icons.</param>
         /// <param name="showHiddenTitle">Whether to show hidden titles.</param>
         /// <param name="showHiddenDescription">Whether to show hidden descriptions.</param>
+        /// <param name="showHiddenSuffix">Whether to show hidden suffix.</param>
         /// <param name="showLockedIcon">Whether to show locked icons.</param>
         /// <returns>A mock AchievementDisplayItem.</returns>
         public static AchievementDisplayItem CreateMockAchievement(
@@ -98,6 +104,7 @@ namespace PlayniteAchievements.Views.Helpers
             bool showHiddenIcon = true,
             bool showHiddenTitle = true,
             bool showHiddenDescription = true,
+            bool showHiddenSuffix = true,
             bool showLockedIcon = true)
         {
             var item = new AchievementDisplayItem
@@ -111,6 +118,7 @@ namespace PlayniteAchievements.Views.Helpers
                 ShowHiddenIcon = showHiddenIcon,
                 ShowHiddenTitle = showHiddenTitle,
                 ShowHiddenDescription = showHiddenDescription,
+                ShowHiddenSuffix = showHiddenSuffix,
                 ShowLockedIcon = showLockedIcon,
                 ShowRarityGlow = showRarityGlow,
                 ShowRarityBar = showRarityBar,
@@ -142,11 +150,12 @@ namespace PlayniteAchievements.Views.Helpers
             bool showHiddenIcon = true,
             bool showHiddenTitle = true,
             bool showHiddenDescription = true,
+            bool showHiddenSuffix = true,
             bool showLockedIcon = true)
         {
             return GetStandardMockAchievements(
                 showRarityBar, showRarityGlow,
-                showHiddenIcon, showHiddenTitle, showHiddenDescription, showLockedIcon);
+                showHiddenIcon, showHiddenTitle, showHiddenDescription, showHiddenSuffix, showLockedIcon);
         }
 
         /// <summary>
@@ -160,11 +169,12 @@ namespace PlayniteAchievements.Views.Helpers
             bool showHiddenIcon = true,
             bool showHiddenTitle = true,
             bool showHiddenDescription = true,
+            bool showHiddenSuffix = true,
             bool showLockedIcon = true)
         {
             return GetStandardMockAchievements(
                 showRarityBar, showRarityGlow,
-                showHiddenIcon, showHiddenTitle, showHiddenDescription, showLockedIcon);
+                showHiddenIcon, showHiddenTitle, showHiddenDescription, showHiddenSuffix, showLockedIcon);
         }
 
         /// <summary>
@@ -179,7 +189,7 @@ namespace PlayniteAchievements.Views.Helpers
             bool showRarityGlow = true,
             bool showLockedIcon = true)
         {
-            var all = GetStandardMockAchievements(showRarityBar, showRarityGlow, true, true, true, showLockedIcon);
+            var all = GetStandardMockAchievements(showRarityBar, showRarityGlow, true, true, true, true, showLockedIcon);
             return all.FindAll(item => item.Unlocked);
         }
 
@@ -200,11 +210,12 @@ namespace PlayniteAchievements.Views.Helpers
             bool showHiddenIcon = true,
             bool showHiddenTitle = true,
             bool showHiddenDescription = true,
+            bool showHiddenSuffix = true,
             bool showLockedIcon = true)
         {
             var all = GetStandardMockAchievements(
                 showRarityBar, showRarityGlow,
-                showHiddenIcon, showHiddenTitle, showHiddenDescription, showLockedIcon);
+                showHiddenIcon, showHiddenTitle, showHiddenDescription, showHiddenSuffix, showLockedIcon);
             return all.FindAll(item => !item.Unlocked);
         }
 
@@ -242,6 +253,7 @@ namespace PlayniteAchievements.Views.Helpers
         /// <param name="showHiddenIcon">Whether to show hidden icons.</param>
         /// <param name="showHiddenTitle">Whether to show hidden titles.</param>
         /// <param name="showHiddenDescription">Whether to show hidden descriptions.</param>
+        /// <param name="showHiddenSuffix">Whether to show hidden suffix.</param>
         /// <param name="showLockedIcon">Whether to show locked icons.</param>
         public static void UpdateVisibilitySettings(
             IList<AchievementDisplayItem> items,
@@ -250,6 +262,7 @@ namespace PlayniteAchievements.Views.Helpers
             bool showHiddenIcon,
             bool showHiddenTitle,
             bool showHiddenDescription,
+            bool showHiddenSuffix,
             bool showLockedIcon)
         {
             if (items == null) return;
@@ -260,6 +273,7 @@ namespace PlayniteAchievements.Views.Helpers
                 item.ShowHiddenIcon = showHiddenIcon;
                 item.ShowHiddenTitle = showHiddenTitle;
                 item.ShowHiddenDescription = showHiddenDescription;
+                item.ShowHiddenSuffix = showHiddenSuffix;
                 item.ShowLockedIcon = showLockedIcon;
             }
         }

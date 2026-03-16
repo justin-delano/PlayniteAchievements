@@ -52,6 +52,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
+        private bool _showHiddenSuffix = true;
         private bool _showLockedIcon = true;
         private bool _showRarityGlow = true;
         private bool _useCoverImages = true;
@@ -447,6 +448,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showHiddenDescription;
             set => SetValue(ref _showHiddenDescription, value);
+        }
+
+        /// <summary>
+        /// When true, hidden achievements show "(Hidden Achievement)" suffix after their title.
+        /// </summary>
+        public bool ShowHiddenSuffix
+        {
+            get => _showHiddenSuffix;
+            set => SetValue(ref _showHiddenSuffix, value);
         }
 
         /// <summary>
@@ -1205,6 +1215,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenIcon = this.ShowHiddenIcon,
                 ShowHiddenTitle = this.ShowHiddenTitle,
                 ShowHiddenDescription = this.ShowHiddenDescription,
+                ShowHiddenSuffix = this.ShowHiddenSuffix,
                 ShowRarityGlow = this.ShowRarityGlow,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,

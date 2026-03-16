@@ -26,6 +26,19 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private bool _showHiddenSuffix = true;
+        public bool ShowHiddenSuffix
+        {
+            get => _showHiddenSuffix;
+            set
+            {
+                if (SetValueAndReturn(ref _showHiddenSuffix, value))
+                {
+                    OnPropertyChanged(nameof(HiddenTitleSuffix));
+                }
+            }
+        }
+
         private string _name;
         public string Name 
         { 
@@ -217,7 +230,7 @@ namespace PlayniteAchievements.ViewModels
         public RarityTier Rarity => RarityHelper.GetRarityTier(GlobalPercentUnlocked ?? 100);
 
         public System.Windows.Media.SolidColorBrush RarityBrush => Rarity.ToBrush();
-        public string HiddenTitleSuffix => Hidden ? ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle_WithParens") : string.Empty;
+        public string HiddenTitleSuffix => ShowHiddenSuffix && Hidden ? ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle_WithParens") : string.Empty;
 
         public void UpdateFrom(RecentAchievementItem other)
         {

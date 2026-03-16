@@ -69,6 +69,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowHiddenIcon = source.ShowHiddenIcon;
             target.ShowHiddenTitle = source.ShowHiddenTitle;
             target.ShowHiddenDescription = source.ShowHiddenDescription;
+            target.ShowHiddenSuffix = source.ShowHiddenSuffix;
             target.ShowLockedIcon = source.ShowLockedIcon;
             target.ShowRarityGlow = source.ShowRarityGlow;
             target.UseCoverImages = source.UseCoverImages;
@@ -192,6 +193,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenIcon = source.ShowHiddenIcon,
                 ShowHiddenTitle = source.ShowHiddenTitle,
                 ShowHiddenDescription = source.ShowHiddenDescription,
+                ShowHiddenSuffix = source.ShowHiddenSuffix,
                 ShowLockedIcon = source.ShowLockedIcon,
                 ShowRarityGlow = source.ShowRarityGlow,
                 UseCoverImages = source.UseCoverImages,
