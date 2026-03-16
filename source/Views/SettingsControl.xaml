@@ -1084,9 +1084,13 @@
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
                                 <controls:PreviewPieChartControl
+                                    UltraRareUnlocked="{Binding MockThemeData.UltraRare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     UltraRareTotal="{Binding MockThemeData.UltraRare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    RareUnlocked="{Binding MockThemeData.Rare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     RareTotal="{Binding MockThemeData.Rare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    UncommonUnlocked="{Binding MockThemeData.Uncommon.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     UncommonTotal="{Binding MockThemeData.Uncommon.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommonUnlocked="{Binding MockThemeData.Common.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommonTotal="{Binding MockThemeData.Common.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             </StackPanel>
                         </Border>
