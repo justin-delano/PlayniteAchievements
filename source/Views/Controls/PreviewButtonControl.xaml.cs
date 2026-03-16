@@ -53,15 +53,5 @@ namespace PlayniteAchievements.Views.Controls
             get => (bool)GetValue(DisplayDetailsProperty);
             set => SetValue(DisplayDetailsProperty, value);
         }
-
-        public static readonly DependencyProperty FontSizeProperty =
-            DependencyProperty.Register(nameof(FontSize), typeof(double),
-                typeof(PreviewButtonControl), new PropertyMetadata(14.0));
-
-        public double FontSize
-        {
-            get => (double)GetValue(FontSizeProperty);
-            set => SetValue(FontSizeProperty, value);
-        }
     }
 }
