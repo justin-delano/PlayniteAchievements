@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
@@ -43,6 +44,39 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
             private set => SetValue(DisplayItemsProperty, value);
         }
 
+        #region ThemeDataOverride Property
+
+        /// <summary>
+        /// Identifies the ThemeDataOverride dependency property.
+        /// When set, this override is used instead of Plugin.Settings.Theme for data binding.
+        /// Used by settings preview to inject mock data.
+        /// </summary>
+        public static readonly DependencyProperty ThemeDataOverrideProperty =
+            DependencyProperty.Register(nameof(ThemeDataOverride), typeof(ThemeData),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null, OnThemeDataOverrideChanged));
+
+        /// <summary>
+        /// Gets or sets a ThemeData override for preview purposes.
+        /// When null (default), uses Plugin.Settings.Theme.
+        /// When set, uses this instance instead (for settings preview).
+        /// </summary>
+        public ThemeData ThemeDataOverride
+        {
+            get => (ThemeData)GetValue(ThemeDataOverrideProperty);
+            set => SetValue(ThemeDataOverrideProperty, value);
+        }
+
+        private static void OnThemeDataOverrideChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control && control.IsLoaded)
+            {
+                control._lastSourceItems = null;
+                control.LoadData();
+            }
+        }
+
+        #endregion
+
         public AchievementDataGridControl()
         {
             InitializeComponent();
@@ -74,7 +108,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
 
         private void LoadData()
         {
-            var sourceItems = Plugin?.Settings?.Theme?.AllAchievementDisplayItems;
+            var theme = ThemeDataOverride ?? Plugin?.Settings?.Theme;
+            var sourceItems = theme?.AllAchievementDisplayItems;
             if (sourceItems == null)
             {
                 _lastSourceItems = null;
