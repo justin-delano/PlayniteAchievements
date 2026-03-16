@@ -7,6 +7,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:conv="clr-namespace:PlayniteAchievements.Views.Converters"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:desktop="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Desktop"
              mc:Ignorable="d"
              d:DesignHeight="600"
              d:DesignWidth="700">
@@ -906,19 +907,11 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactListPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <!-- Mockup control with mock data - horizontal layout -->
-                                <ItemsControl ItemsSource="{Binding MockCompactListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <VirtualizingStackPanel Orientation="Horizontal" ClipToBounds="False"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <controls:AchievementCompactItemControl IconSize="48" Margin="4,12,4,12"/>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <!-- Desktop control with preview theme data -->
+                                <desktop:AchievementCompactListControl
+                                    ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    IconSize="48"
+                                    Margin="0,0,0,8"/>
 
                                 <!-- Settings -->
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompactListRarityBar}"
@@ -936,10 +929,10 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <!-- Mock DataGrid -->
-                                <controls:AchievementDataGridControl ItemsSource="{Binding MockDataGridItems, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                          MaxHeight="{Binding Persisted.AchievementDataGridMaxHeight, TargetNullValue=NaN}"
-                                          Margin="0,0,0,8"/>
+                                <!-- Desktop DataGrid control with preview theme data -->
+                                <desktop:AchievementDataGridControl
+                                    ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    Margin="0,0,0,8"/>
 
                                 <!-- Max Height setting -->
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -962,18 +955,11 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactUnlockedListPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <ItemsControl ItemsSource="{Binding MockCompactUnlockedListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <VirtualizingStackPanel Orientation="Horizontal" ClipToBounds="False"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <controls:AchievementCompactItemControl IconSize="48" Margin="4,12,4,12"/>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <!-- Desktop unlocked list control with preview theme data -->
+                                <desktop:AchievementCompactUnlockedListControl
+                                    ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    IconSize="48"
+                                    Margin="0,0,0,8"/>
                             </StackPanel>
                         </Border>
 
@@ -986,18 +972,11 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactLockedListPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <ItemsControl ItemsSource="{Binding MockCompactLockedListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <VirtualizingStackPanel Orientation="Horizontal" ClipToBounds="False"/>
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <controls:AchievementCompactItemControl IconSize="48" Margin="4,12,4,12"/>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <!-- Desktop locked list control with preview theme data -->
+                                <desktop:AchievementCompactLockedListControl
+                                    ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    IconSize="48"
+                                    Margin="0,0,0,8"/>
                             </StackPanel>
                         </Border>
 
