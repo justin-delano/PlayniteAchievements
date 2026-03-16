@@ -904,6 +904,14 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactListPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
+                                <!-- Legend showing mock data composition -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="Preview contains: " Opacity="0.7"/>
+                                    <TextBlock Text="2 Unlocked" Foreground="{DynamicResource TextBrush}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="1 Locked" Opacity="0.7" Margin="0,0,8,0"/>
+                                    <TextBlock Text="2 Hidden" Opacity="0.5" Margin="0,0,8,0"/>
+                                </StackPanel>
+
                                 <!-- Mockup control with mock data - horizontal layout -->
                                 <ItemsControl ItemsSource="{Binding MockCompactListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                     <ItemsControl.ItemsPanel>
@@ -934,6 +942,14 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
+                                <!-- Legend showing mock data composition -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="Preview contains: " Opacity="0.7"/>
+                                    <TextBlock Text="2 Unlocked" Foreground="{DynamicResource TextBrush}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="1 Locked" Opacity="0.7" Margin="0,0,8,0"/>
+                                    <TextBlock Text="2 Hidden" Opacity="0.5" Margin="0,0,8,0"/>
+                                </StackPanel>
+
                                 <!-- Mock DataGrid -->
                                 <controls:AchievementDataGridControl ItemsSource="{Binding MockDataGridItems, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                           MaxHeight="200"
@@ -960,6 +976,13 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactUnlockedListPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
+                                <!-- Legend showing mock data composition for unlocked list -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="Unlocked items: " Opacity="0.7"/>
+                                    <TextBlock Text="1 Ultra Rare" Foreground="{DynamicResource TextBrush}" Margin="0,0,8,0"/>
+                                    <TextBlock Text="1 Rare" Opacity="0.85" Margin="0,0,8,0"/>
+                                </StackPanel>
+
                                 <ItemsControl ItemsSource="{Binding MockCompactUnlockedListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -983,6 +1006,13 @@
                                            Margin="0,0,0,8"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CompactLockedListPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
+
+                                <!-- Legend showing mock data composition for locked list -->
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="Locked items: " Opacity="0.7"/>
+                                    <TextBlock Text="1 Locked" Opacity="0.7" Margin="0,0,8,0"/>
+                                    <TextBlock Text="2 Hidden" Opacity="0.5" Margin="0,0,8,0"/>
+                                </StackPanel>
 
                                 <ItemsControl ItemsSource="{Binding MockCompactLockedListItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                     <ItemsControl.ItemsPanel>
