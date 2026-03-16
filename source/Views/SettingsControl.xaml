@@ -936,7 +936,7 @@
 
                                 <!-- Mock DataGrid -->
                                 <controls:AchievementDataGridControl ItemsSource="{Binding MockDataGridItems, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                          MaxHeight="{Binding Persisted.AchievementDataGridMaxHeight}"
+                                          MaxHeight="{Binding Persisted.AchievementDataGridMaxHeight, TargetNullValue=NaN}"
                                           Margin="0,0,0,8"/>
 
                                 <!-- Max Height setting -->
@@ -1084,6 +1084,7 @@
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
                                 <controls:PreviewPieChartControl
+                                    ShowLegend="False"
                                     UltraRareUnlocked="{Binding MockThemeData.UltraRare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     UltraRareTotal="{Binding MockThemeData.UltraRare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     RareUnlocked="{Binding MockThemeData.Rare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
