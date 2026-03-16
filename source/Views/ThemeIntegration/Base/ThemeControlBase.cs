@@ -6,6 +6,8 @@ using Playnite.SDK;
 using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Models.ThemeIntegration;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Base
 {
@@ -22,6 +24,70 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         /// Gets the plugin instance for this control.
         /// </summary>
         protected PlayniteAchievementsPlugin Plugin { get; }
+
+        #region ThemeDataOverride Dependency Property
+
+        /// <summary>
+        /// Identifies the ThemeDataOverride dependency property.
+        /// When set, this override is used instead of Plugin.Settings.Theme for data binding.
+        /// Used by settings preview to inject mock data.
+        /// </summary>
+        public static readonly DependencyProperty ThemeDataOverrideProperty =
+            DependencyProperty.Register(nameof(ThemeDataOverride), typeof(ThemeData),
+                typeof(ThemeControlBase), new PropertyMetadata(null, OnThemeDataOverrideChanged));
+
+        /// <summary>
+        /// Gets or sets a ThemeData override for preview purposes.
+        /// When null (default), uses Plugin.Settings.Theme.
+        /// When set, uses this instance instead (for settings preview).
+        /// </summary>
+        public ThemeData ThemeDataOverride
+        {
+            get => (ThemeData)GetValue(ThemeDataOverrideProperty);
+            set => SetValue(ThemeDataOverrideProperty, value);
+        }
+
+        private static void OnThemeDataOverrideChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is ThemeControlBase control)
+            {
+                control.UpdateDataContext();
+                control.OnThemeDataOverrideChangedInternal();
+                if (control.IsLoaded)
+                {
+                    control.OnThemeDataUpdated();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Called when ThemeDataOverride changes. Derived classes can override to perform
+        /// additional actions like clearing caches.
+        /// </summary>
+        protected virtual void OnThemeDataOverrideChangedInternal()
+        {
+        }
+
+        /// <summary>
+        /// Gets the effective ThemeData to use for binding.
+        /// Returns ThemeDataOverride if set, otherwise Plugin.Settings.Theme.
+        /// </summary>
+        protected ThemeData EffectiveTheme => ThemeDataOverride ?? Plugin?.Settings?.Theme;
+
+        private void UpdateDataContext()
+        {
+            if (ThemeDataOverride != null)
+            {
+                // Use a wrapper that returns the override for Theme property
+                DataContext = new ThemeDataOverrideContext(Plugin.Settings, ThemeDataOverride);
+            }
+            else
+            {
+                DataContext = Plugin.Settings;
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Gets a value indicating whether this control should subscribe to theme data change notifications.
@@ -230,5 +296,34 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         {
             Plugin.RequestThemeUpdate(newContext);
         }
+    }
+
+    /// <summary>
+    /// DataContext wrapper that substitutes a custom ThemeData for the Theme property.
+    /// Allows settings preview to inject mock data while preserving other Settings bindings.
+    /// </summary>
+    internal class ThemeDataOverrideContext
+    {
+        private readonly PlayniteAchievementsSettings _settings;
+        private readonly ThemeData _themeOverride;
+
+        public ThemeDataOverrideContext(PlayniteAchievementsSettings settings, ThemeData themeOverride)
+        {
+            _settings = settings;
+            _themeOverride = themeOverride;
+        }
+
+        /// <summary>
+        /// Returns the override ThemeData instead of the settings' Theme.
+        /// </summary>
+        public ThemeData Theme => _themeOverride;
+
+        /// <summary>
+        /// Returns the override ThemeData as LegacyTheme for compatibility.
+        /// </summary>
+        public ThemeData LegacyTheme => _themeOverride;
+
+        // Forward other common settings properties
+        public PersistedSettings Persisted => _settings?.Persisted;
     }
 }
