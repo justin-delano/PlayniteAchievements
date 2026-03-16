@@ -989,9 +989,8 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProgressBarPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <controls:PreviewProgressBarControl Width="280"
-                                    ProgressPercentage="{Binding MockThemeData.ProgressPercentage, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    MockThemeData="{Binding MockThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                <desktop:AchievementProgressBarControl Width="280"
+                                    ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             </StackPanel>
                         </Border>
 
@@ -1004,15 +1003,8 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_StatsPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <controls:PreviewStatsControl Width="200"
-                                    UltraRareUnlocked="{Binding MockThemeData.UltraRare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    UltraRareTotal="{Binding MockThemeData.UltraRare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    RareUnlocked="{Binding MockThemeData.Rare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    RareTotal="{Binding MockThemeData.Rare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    UncommonUnlocked="{Binding MockThemeData.Uncommon.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    UncommonTotal="{Binding MockThemeData.Uncommon.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommonUnlocked="{Binding MockThemeData.Common.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommonTotal="{Binding MockThemeData.Common.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                <desktop:AchievementStatsControl Width="200"
+                                    ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             </StackPanel>
                         </Border>
 
@@ -1026,11 +1018,10 @@
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
                                 <StackPanel Orientation="Horizontal">
-                                    <controls:PreviewButtonControl Width="40" DisplayDetails="False" Margin="0,0,16,0"/>
-                                    <controls:PreviewButtonControl Width="200" DisplayDetails="True"
-                                        UnlockedCount="{Binding MockThemeData.UnlockedCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        AchievementCount="{Binding MockThemeData.AchievementCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        IsCompleted="{Binding MockThemeData.IsCompleted, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                    <desktop:AchievementButtonControl Width="40" DisplayDetails="False" Margin="0,0,16,0"
+                                        ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                    <desktop:AchievementButtonControl Width="200" DisplayDetails="True"
+                                        ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -1045,12 +1036,10 @@
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
                                 <StackPanel Orientation="Horizontal">
-                                    <controls:PreviewViewItemControl Width="60" ShowProgressBar="False" Margin="0,0,16,0"
-                                        UnlockedCount="{Binding MockThemeData.UnlockedCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        AchievementCount="{Binding MockThemeData.AchievementCount, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                    <controls:PreviewViewItemControl Width="100" ShowProgressBar="True"
-                                        UnlockedCount="{Binding MockThemeData.UnlockedCount, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        AchievementCount="{Binding MockThemeData.AchievementCount, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                    <desktop:AchievementViewItemControl Width="60" ShowProgressBar="False" Margin="0,0,16,0"
+                                        ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                    <desktop:AchievementViewItemControl Width="100" ShowProgressBar="True"
+                                        ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -1064,16 +1053,8 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PieChartPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <controls:PreviewPieChartControl
-                                    ShowLegend="False"
-                                    UltraRareUnlocked="{Binding MockThemeData.UltraRare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    UltraRareTotal="{Binding MockThemeData.UltraRare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    RareUnlocked="{Binding MockThemeData.Rare.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    RareTotal="{Binding MockThemeData.Rare.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    UncommonUnlocked="{Binding MockThemeData.Uncommon.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    UncommonTotal="{Binding MockThemeData.Uncommon.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommonUnlocked="{Binding MockThemeData.Common.Unlocked, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommonTotal="{Binding MockThemeData.Common.Total, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                <desktop:AchievementPieChartControl
+                                    ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             </StackPanel>
                         </Border>
 
@@ -1086,7 +1067,8 @@
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BarChartPreview_Description}"
                                            Style="{StaticResource MutedTextStyle}" Margin="0,0,0,12"/>
 
-                                <controls:PreviewBarChartControl Width="280" Height="120"/>
+                                <desktop:AchievementBarChartControl Width="280" Height="120"
+                                    ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                             </StackPanel>
                         </Border>
 
