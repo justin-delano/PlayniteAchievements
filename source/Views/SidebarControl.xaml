@@ -226,6 +226,7 @@
                 <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
                 <Setter Property="Width" Value="64"/>
                 <Setter Property="Height" Value="64"/>
+                <Setter Property="Margin" Value="6,8"/>
                     <Setter Property="Background">
                         <Setter.Value>
                         <ImageBrush Stretch="Uniform"
@@ -244,6 +245,105 @@
                                             helpers:AsyncImage.DecodePixel="128"/>
                             </Setter.Value>
                         </Setter>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
+                        <Setter Property="Width" Value="52"/>
+                        <Setter Property="Height" Value="52"/>
+                        <Setter Property="Margin" Value="4,6"/>
+                    </DataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding DataContext.UseCoverImages, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True"/>
+                            <Condition Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Width" Value="52"/>
+                        <Setter Property="Height" Value="76"/>
+                        <Setter Property="Margin" Value="4,4"/>
+                    </MultiDataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="GamesOverviewDataGridCellStyle" TargetType="DataGridCell">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
+                        <Setter Property="Background" Value="#30FFFFFF"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
+                        <Setter Property="Background" Value="#30FFFFFF"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
+                        <Setter Property="Background" Value="#40FFFFFF"/>
+                    </DataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
+                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Background" Value="#50FFFFFF"/>
+                    </MultiDataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="GamesOverviewDataGridRowStyle" TargetType="DataGridRow">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
+                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Height" Value="112"/>
+                <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
+                <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
+                        <Setter Property="Height" Value="88"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="OverviewGameNameTextStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
+                        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="OverviewProviderIconStyle" TargetType="Image">
+                <Setter Property="Width" Value="32"/>
+                <Setter Property="Height" Value="32"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
+                        <Setter Property="Width" Value="24"/>
+                        <Setter Property="Height" Value="24"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="OverviewProgressContainerStyle" TargetType="StackPanel">
+                <Setter Property="Margin" Value="2,6,10,6"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
+                        <Setter Property="Margin" Value="2,4,8,4"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+
+            <Style x:Key="OverviewProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
+                <Setter Property="Height" Value="22"/>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
+                        <Setter Property="Height" Value="18"/>
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
@@ -605,45 +705,16 @@
                             ScrollViewer.IsDeferredScrollingEnabled="False"
                             PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
                             <DataGrid.CellStyle>
-                                    <Style TargetType="DataGridCell">
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="BorderThickness" Value="0"/>
-                                        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
-                                                <Setter Property="Background" Value="#30FFFFFF"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
-                                                <Setter Property="Background" Value="#30FFFFFF"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
-                                                <Setter Property="Background" Value="#40FFFFFF"/>
-                                        </DataTrigger>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
-                                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
-                                            </MultiDataTrigger.Conditions>
-                                            <Setter Property="Background" Value="#50FFFFFF"/>
-                                        </MultiDataTrigger>
-                                    </Style.Triggers>
-                                </Style>
+                                <Style TargetType="DataGridCell"
+                                       BasedOn="{StaticResource GamesOverviewDataGridCellStyle}"/>
                             </DataGrid.CellStyle>
                             <DataGrid.RowStyle>
-                                <Style TargetType="DataGridRow">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
-                                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                                    <Setter Property="Cursor" Value="Hand"/>
-                                    <Setter Property="Height" Value="112"/>
-                                    <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
-                                    <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
-                                </Style>
+                                <Style TargetType="DataGridRow"
+                                       BasedOn="{StaticResource GamesOverviewDataGridRowStyle}"/>
                             </DataGrid.RowStyle>
                            <DataGrid.Columns>
                             <!-- Completed indicator (slightly larger) -->
-                            <DataGridTemplateColumn Width="34" MinWidth="34" MaxWidth="34" CanUserResize="False" Header="" helpers:ColumnVisibilityHelper.ColumnKey="OverviewCompleted">
+                            <DataGridTemplateColumn Width="34" MinWidth="34" MaxWidth="34" CanUserResize="False" Header="{DynamicResource LOCPlayAch_Completed}" helpers:ColumnVisibilityHelper.ColumnKey="Completed">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -673,7 +744,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Game Icon/Cover (BIGGER) -->
-                            <DataGridTemplateColumn Width="92" MinWidth="92" MaxWidth="92" CanUserResize="False" helpers:ColumnVisibilityHelper.ColumnKey="OverviewImage"> <!-- was 56 -->
+                            <DataGridTemplateColumn Width="92" MinWidth="92" MaxWidth="92" CanUserResize="False" Header="{DynamicResource LOCPlayAch_Column_Cover}" helpers:ColumnVisibilityHelper.ColumnKey="Cover"> <!-- was 56 -->
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -689,7 +760,7 @@
                                                     </Style>
                                                 </Border.Style>
                                             </Border>
-                                            <Border CornerRadius="6" Margin="6,8" VerticalAlignment="Center"
+                                            <Border CornerRadius="6" VerticalAlignment="Center"
                                                     Style="{StaticResource GameImageBorderStyle}"/>
                                         </Grid>
                                     </DataTemplate>
@@ -716,15 +787,8 @@
                                             <TextBlock Text="{Binding GameName}"
                                                        HorizontalAlignment="Left"
                                                        VerticalAlignment="Center"
-                                                       TextTrimming="CharacterEllipsis">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
-                                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Style="{StaticResource OverviewGameNameTextStyle}"/>
                                         </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -756,13 +820,8 @@
                                                     </Style>
                                                 </Border.Style>
                                             </Border>
-                                            <Image Width="32"
-                                                   Height="32"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   SnapsToDevicePixels="True"
-                                                   RenderOptions.BitmapScalingMode="NearestNeighbor"
-                                                   ToolTip="{Binding Provider}">
+                                            <Image ToolTip="{Binding Provider}"
+                                                   Style="{StaticResource OverviewProviderIconStyle}">
                                                 <Image.Source>
                                                     <MultiBinding Converter="{StaticResource ProviderIconConverter}">
                                                         <Binding Path="ProviderIconKey"/>
@@ -820,13 +879,12 @@
                                                         </Style>
                                                     </Border.Style>
                                                 </Border>
-                                                <StackPanel Margin="2,6,10,6" VerticalAlignment="Center">
+                                                <StackPanel Style="{StaticResource OverviewProgressContainerStyle}">
 
                                                 <!-- Row 1: Progress bar with % text -->
                                                 <Grid>
                                                     <ProgressBar Value="{Binding Progression, Mode=OneWay}"
-                                                                Style="{StaticResource GameProgressBar}"
-                                                                Height="22"/>
+                                                                Style="{StaticResource OverviewProgressBarStyle}"/>
 
                                                     <!-- Percentage text (left) -->
                                                     <TextBlock Text="{Binding ProgressionText}"

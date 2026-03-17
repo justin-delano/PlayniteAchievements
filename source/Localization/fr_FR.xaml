@@ -51,6 +51,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Affichage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GeneralSection">Général</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Afficher le bouton de la barre de menu supérieure</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableCompactGridMode">Activer le mode compact de la grille</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_AchievementsSection">Succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Afficher la lueur de rareté sur les icônes débloquées</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">Barre latérale</sys:String>
@@ -209,6 +210,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_BulkHint">Développez pour modifier en masse les succès sélectionnés.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_TypeSelectorLabel">Type de catégorie (multi-sélection)</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_TypeSelectorPlaceholder">Type</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Default">Par défaut</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Base">Base</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_DLC">DLC</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Singleplayer">Singleplayer</sys:String>
@@ -318,6 +320,8 @@
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Dernière partie</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Cover">Couverture</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Icon">Icône</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_RightClickShowHide">Clic droit pour afficher/masquer</sys:String>
 
     <!-- ================================================================= -->
