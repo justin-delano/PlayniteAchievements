@@ -162,6 +162,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_RaHint">Enter the RetroAchievements game ID to override automatic matching for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Apply">Apply</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_RaNotCapable">RetroAchievements override is not available for this game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_XeniaNotCapable">Xenia override is not available for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Order_Header">Custom Achievement Order</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Order_Hint">Drag and drop rows to define the default order. Multi-select with Shift/Ctrl is supported. Changes are saved immediately.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Order_NoAchievements">No cached achievements are available for this game.</sys:String>
@@ -420,6 +421,11 @@
     <sys:String x:Key="LOCPlayAch_Settings_Xenia_Verified">Xenia account path verified.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Xenia_NotConfigured">Xenia account path not configured.</sys:String>
 
+    <!-- RPCS3 Validation -->
+    <sys:String x:Key="LOCPlayAch_XeniaValidation_InvalidPath">Directory does not exist</sys:String>
+    <sys:String x:Key="LOCPlayAch_XeniaValidation_NoAccount">Not a valid Xenia account path - No Account file</sys:String>
+    <sys:String x:Key="LOCPlayAch_XeniaValidation_Success">Xenia account path verified.</sys:String>
+    
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->
     <!-- ================================================================= -->

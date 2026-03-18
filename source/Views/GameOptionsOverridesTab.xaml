@@ -109,7 +109,7 @@
                                 Margin="8,0,0,0" />
                     </Grid>
                     <Grid Margin="0,10,0,0"
-      Visibility="{Binding IsXeniaCapable, Converter={StaticResource BoolToVis}}">
+                        Visibility="{Binding IsXeniaCapable, Converter={StaticResource BoolToVis}}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="220" />
                             <ColumnDefinition Width="Auto" />

@@ -3,6 +3,7 @@ using PlayniteAchievements.Providers.Xenia.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 
 namespace PlayniteAchievements.Providers.Xenia
 {
@@ -62,7 +63,7 @@ namespace PlayniteAchievements.Providers.Xenia
             List<XdbfEntry> entries = new List<XdbfEntry>();
             List<XdbfFileEntry> freeEntries = new List<XdbfFileEntry>();
 
-            gpdFile = File.ReadAllBytes($"{xeniaAccountPath}{TitleID}.gpd");
+            gpdFile = File.ReadAllBytes($"{xeniaAccountPath}\\{TitleID}.gpd");
             gpdIndex = 0;
 
             header = new XdbfHeader();
@@ -106,6 +107,8 @@ namespace PlayniteAchievements.Providers.Xenia
             }
 
             List<AchievementDetail> achievements = new List<AchievementDetail>();
+
+            Directory.CreateDirectory($"{_pluginUserDataPath}\\icon_cache\\{gameID}\\");
 
             foreach (var entry in entries)
             {
@@ -161,7 +164,7 @@ namespace PlayniteAchievements.Providers.Xenia
                         DisplayName = achievement.title,
                         Description = achievement.unlock_time == 0 ? achievement.description : achievement.unlockDescription,
                         UnlockedIconPath = $"{_pluginUserDataPath}\\icon_cache\\{gameID}\\{achievement.icon_id}.png",
-                        LockedIconPath = "https://img.icons8.com/?size=64&id=83187&format=png",
+                        LockedIconPath = $"{Assembly.GetExecutingAssembly().GetName().CodeBase}\\Resources\\HiddenAchIcon.png",
                         Points = (int?)achievement.gamerscore,
                         Unlocked = achievement.unlock_time != 0,
                         UnlockTimeUtc = DateTime.FromFileTime((Int64)achievement.unlock_time),

@@ -61,6 +61,7 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand ApplyRaOverrideCommand { get; }
         public RelayCommand ApplyXeniaOverrideCommand { get; }
         public RelayCommand ClearRaOverrideCommand { get; }
+        public RelayCommand ClearXeniaOverrideCommand { get; }
         public RelayCommand UnlinkManualTrackingCommand { get; }
         public RelayCommand RefreshStateCommand { get; }
         public AsyncCommand RefreshGameCommand { get; }
@@ -89,6 +90,7 @@ namespace PlayniteAchievements.ViewModels
             ApplyRaOverrideCommand = new RelayCommand(_ => ApplyRaOverride(), _ => HasGame && IsRaCapable);
             ApplyXeniaOverrideCommand = new RelayCommand(_ => ApplyXeniaOverride(), _ => HasGame && IsXeniaCapable);
             ClearRaOverrideCommand = new RelayCommand(_ => ClearRaOverride(), _ => HasGame && IsRaCapable && HasRaOverride);
+            ClearXeniaOverrideCommand = new RelayCommand(_ => ClearXeniaOverride(), _ => HasGame && IsXeniaCapable && HasXeniaOverride);
             UnlinkManualTrackingCommand = new RelayCommand(_ => UnlinkManualTracking(), _ => HasGame && HasManualTrackingLink);
             RefreshStateCommand = new RelayCommand(_ => Reload());
             RefreshGameCommand = new AsyncCommand(_ => RefreshGameAsync(), _ => HasGame && !IsRefreshing && !(_achievementService?.IsRebuilding ?? false));
@@ -572,7 +574,7 @@ namespace PlayniteAchievements.ViewModels
 
                 var xeniaProvider = _achievementService?.GetProviders()
                     ?.FirstOrDefault(p => p.ProviderKey == "Xenia");
-                IsRaCapable = raProvider?.IsCapable(game) == true;
+                IsXeniaCapable = xeniaProvider?.IsCapable(game) == true;
 
                 var hasOverride = false;
                 var overrideValue = string.Empty;
@@ -586,6 +588,18 @@ namespace PlayniteAchievements.ViewModels
                 HasRaOverride = hasOverride;
                 RaOverrideValue = overrideValue;
                 RaOverrideInput = hasOverride ? overrideValue : string.Empty;
+
+                var hasXeniaOverride = false;
+                var xeniaOverrideValue = string.Empty;
+                if (_settings?.Persisted?.XeniaGameIdOverrides != null &&
+                    _settings.Persisted.XeniaGameIdOverrides.TryGetValue(_gameId, out var titleID))
+                {
+                    hasOverride = true;
+                    overrideValue = titleID;
+                }
+                HasXeniaOverride = hasXeniaOverride;
+                XeniaOverrideValue = xeniaOverrideValue;
+                XeniaOverrideInput = hasXeniaOverride ? xeniaOverrideValue : string.Empty;
 
                 ManualAchievementLink link = null;
                 var hasManualLink = _settings?.Persisted?.ManualAchievementLinks != null &&
@@ -751,6 +765,29 @@ namespace PlayniteAchievements.ViewModels
 
             TriggerRefresh();
             return true;
+        }
+        private bool TryClearXeniaOverride()
+        {
+            if (!_settings.Persisted.XeniaGameIdOverrides.ContainsKey(_gameId))
+            {
+                return false;
+            }
+
+            _settings.Persisted.XeniaGameIdOverrides.Remove(_gameId);
+            _achievementService?.PersistSettingsForUi();
+
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            _logger?.Info($"Cleared Xenia TitleID override for '{game?.Name ?? _gameId.ToString()}'");
+
+            TriggerRefresh();
+            return true;
+        }
+        private void ClearXeniaOverride()
+        {
+            if (TryClearXeniaOverride())
+            {
+                Reload();
+            }
         }
 
         private void TriggerRefresh()

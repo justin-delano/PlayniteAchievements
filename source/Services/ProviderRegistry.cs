@@ -88,6 +88,7 @@ namespace PlayniteAchievements.Services
             { "Xbox", true },
             { "ShadPS4", true },
             { "RPCS3", true },
+            { "Xenia", true },
             { "Manual", true }
         };
 
@@ -152,6 +153,7 @@ namespace PlayniteAchievements.Services
             _enabledState["Xbox"] = settings.XboxEnabled;
             _enabledState["ShadPS4"] = settings.ShadPS4Enabled;
             _enabledState["RPCS3"] = settings.Rpcs3Enabled;
+            _enabledState["Xenia"] = settings.XeniaEnabled;
             _enabledState["Manual"] = settings.ManualEnabled;
         }
 

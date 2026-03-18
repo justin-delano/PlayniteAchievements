@@ -22,7 +22,7 @@ namespace PlayniteAchievements.Providers.Xenia
         private readonly string _pluginUserDataPath;
         private readonly string _accountFolderPath;
 
-        List<KeyValuePair<Guid, string>> _titleIDCache = null;
+        List<KeyValuePair<Guid, string>> _titleIDCache = new List<KeyValuePair<Guid, string>>();
         List<string> KnownPublishers = new List<string>() { "5444", "464F", "4143", "4156", "4158", "4142", "4144", "4150", "4151", "4157", "414B", "4148", "4153", "4159", "4154", "424D", "4241", "4257", "4253", "4242", "4248", "4246", "4245", "4247", "4254", "4244", "4252", "4256", "4255", "4343", "434D", "4356", "4354", "4458", "4445", "4443", "4546", "4553", "4541", "454D", "4543", "454C", "4556", "464C", "4649", "4653", "4746", "4745", "4756", "4857", "4850", "4845", "4855", "4946", "494F", "494D", "4947", "494C", "4950", "4958", "4A41", "4A57", "4B59", "4B4F", "4B4E", "4B41", "4B54", "4C41", "4D4A", "4D45", "4D44", "4D53", "4D57", "4D4D", "4E4D", "4E4B", "4E4C", "4F47", "4F58", "5058", "504C", "5043", "5241", "5341", "5343", "5345", "5353", "534E", "5350", "5351", "5354", "5355", "5357", "5441", "5454", "544B", "544D", "5443", "5451", "5453", "5553", "5647", "5656", "5643", "5655", "5745", "5752", "584B", "584C", "5841", "5849", "5850", "5942", "5A44" };
 
         public XeniaScanner(
@@ -34,6 +34,10 @@ namespace PlayniteAchievements.Providers.Xenia
             _logger = logger;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _accountFolderPath = accountFolderPath ?? throw new ArgumentNullException(nameof(accountFolderPath));
+            if(_accountFolderPath.EndsWith("\\"))
+            {
+                _accountFolderPath = _accountFolderPath.Remove(_accountFolderPath.Length - 1);
+            }
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
 
             if(File.Exists($"{_pluginUserDataPath}\\xenia\\titleID_cache.json"))
@@ -72,7 +76,7 @@ namespace PlayniteAchievements.Providers.Xenia
                 onGameStarting,
                 async (game, token) =>
                 {
-                    var data = await GetAchievementDataAsync(game).ConfigureAwait(false);
+                    var data = GetAchievementDataAsync(game);//.ConfigureAwait(false);
                     return new RefreshPipeline.ProviderGameResult
                     {
                         Data = data
@@ -93,24 +97,26 @@ namespace PlayniteAchievements.Providers.Xenia
             return result;
         }
 
-        private Task<GameAchievementData> GetAchievementDataAsync(Game game)
+        private GameAchievementData GetAchievementDataAsync(Game game)
         {
             if (!game.IsInstalled)
             {
                 _logger.Warn("[Xenia] Game isn't installed unable to resolve titleID!");
-                return Task.FromResult<GameAchievementData>(null);
+                return null;
             }
 
             if (!ResolveTitleID(game, out var titleID))
             {
-                return Task.FromResult<GameAchievementData>(null);
+                return null;
             }
 
             GameAchievementData data = null;
 
-            if (!File.Exists($"{_accountFolderPath}{titleID}.gpd"))
+
+            if (!File.Exists($"{_accountFolderPath}\\{titleID}.gpd"))
             {
-                data= new GameAchievementData
+                _logger.Warn($"[Xenia] {titleID}.gpd file not found for {game.Name}! Has the game been launched?");
+                data = new GameAchievementData
                 {
                     AppId = int.Parse(titleID, System.Globalization.NumberStyles.HexNumber),
                     GameName = game?.Name,
@@ -139,23 +145,26 @@ namespace PlayniteAchievements.Providers.Xenia
             }
 
             var jsondata = JsonConvert.SerializeObject(_titleIDCache);
+            if (!Directory.Exists($"{_pluginUserDataPath}\\xenia\\"))
+                Directory.CreateDirectory($"{_pluginUserDataPath}\\xenia\\");
             File.WriteAllText($"{_pluginUserDataPath}\\xenia\\titleID_cache.json", jsondata);
 
-            return Task.FromResult(data);
+            return data;
         }
 
         bool ResolveTitleID(Game game, out string titleID)
         {
-            // Skip titleID search if it has been cached
-            if(_titleIDCache.Any(x => x.Key == game.Id))
-            {
-                titleID = _titleIDCache.Find(x => x.Key == game.Id).Value;
-                return true;
-            }
-
+            // Return overridden TitleID
             if (_settings.Persisted.XeniaGameIdOverrides.ContainsKey(game.Id))
             {
                 titleID = _settings.Persisted.XeniaGameIdOverrides[game.Id];
+                return true;
+            }
+
+            // Skip titleID search if it has been cached
+            if (_titleIDCache.Any(x => x.Key == game.Id))
+            {
+                titleID = _titleIDCache.Find(x => x.Key == game.Id).Value;
                 return true;
             }
 
@@ -163,67 +172,91 @@ namespace PlayniteAchievements.Providers.Xenia
             foreach (var rom in game.Roms)
             {
                 var path = rom.Path;
+                path = Playnite.SDK.API.Instance.ExpandGameVariables(game, path);
+                path = path.Replace("\\\\", "\\");
 
                 if (path.EndsWith(".iso") || path.EndsWith(".xex"))
                 {
                     using var mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Open);
-                    using var accessor = mmf.CreateViewStream(0, new FileInfo(path).Length, MemoryMappedFileAccess.Read);
 
-                    var chunksize = 8 * 1024; // 8 KB buffer
-                    var buffer = new byte[chunksize];
-                    ReadOnlySpan<byte> spanbuffer;
-                    ReadOnlySpan<byte> previousspanbuffer = new ReadOnlySpan<byte>();
-                    var position = 0;
+                    Int64 accessoroffset = 0;
+                    var filesize = new FileInfo(path).Length;
+                    bool filecomplete = false;
 
-                    var bytesRead = 0;
-                    byte[] combinedbuffer = new byte[chunksize * 2];
-                    byte[] exeChunk = new byte[exeAreaSize];
-
-                    while (accessor.Position < accessor.Length)
+                    // Accessor needs to be split into sub 2GB chunks due to virtual address max size on 32bit
+                    // This didn't need chunking in my testing on .NET8 but we are on .NET4
+                    do
                     {
-                        bytesRead = accessor.Read(buffer, 0, buffer.Length);
-                        if (bytesRead == 0) break;
-
-                        spanbuffer = new ReadOnlySpan<byte>(buffer);
-                        var foundexe = spanbuffer.IndexOf(Encoding.UTF8.GetBytes(".exe").AsSpan());
-                        var foundpe = spanbuffer.IndexOf(Encoding.UTF8.GetBytes(".pe").AsSpan());
-
-                        if (foundexe != -1)
+                        Int64 filechunk = 1500000000;
+                        if(filechunk + accessoroffset > filesize)
                         {
-                            previousspanbuffer.CopyTo(combinedbuffer);
-                            spanbuffer.CopyTo(combinedbuffer.AsSpan(chunksize));
-
-                            // Pull the previous 300 characters and convert to char array (300 is arbitry just to account for possible lots of data between titleID and .exe entry)
-                            Array.Copy(combinedbuffer, (foundexe + chunksize) - exeAreaSize, exeChunk, 0, exeAreaSize);
-
-                            var temptitleID = CheckChunk(ref exeChunk);
-                            if (!string.IsNullOrEmpty(temptitleID))
-                            {
-                                titleID = temptitleID;
-                                _titleIDCache.Add(new KeyValuePair<Guid, string>(game.Id, temptitleID));
-                                return true;
-
-                            }
-                        }
-                        if (foundpe != -1)
-                        {
-                            previousspanbuffer.CopyTo(combinedbuffer);
-                            spanbuffer.CopyTo(combinedbuffer.AsSpan(chunksize));
-
-                            Array.Copy(combinedbuffer, (foundpe + chunksize) - exeAreaSize, exeChunk, 0, exeAreaSize);
-
-                            var temptitleID = CheckChunk(ref exeChunk);
-                            if (!string.IsNullOrEmpty(temptitleID))
-                            {
-                                titleID = temptitleID;
-                                _titleIDCache.Add(new KeyValuePair<Guid, string>(game.Id, temptitleID));
-                                return true;
-                            }
+                            filechunk = filesize - accessoroffset;
+                            filecomplete = true;
                         }
 
-                        position += bytesRead;
-                        previousspanbuffer = spanbuffer;
-                    }
+                        using var accessor = mmf.CreateViewStream(accessoroffset, filechunk, MemoryMappedFileAccess.Read);
+                        accessoroffset += filechunk;
+                        var chunksize = 8 * 1024; // 8 KB buffer
+                        var buffer = new byte[chunksize];
+                        ReadOnlySpan<byte> spanbuffer;
+                        ReadOnlySpan<byte> previousspanbuffer = new ReadOnlySpan<byte>();
+                        var position = 0;
+
+                        var bytesRead = 0;
+                        byte[] combinedbuffer = new byte[chunksize * 2];
+                        byte[] exeChunk = new byte[exeAreaSize];
+
+                        while (accessor.Position < accessor.Length)
+                        {
+                            bytesRead = accessor.Read(buffer, 0, buffer.Length);
+                            if (bytesRead == 0) break;
+
+                            spanbuffer = new ReadOnlySpan<byte>(buffer);
+                            var foundexe = spanbuffer.IndexOf(Encoding.UTF8.GetBytes(".exe").AsSpan());
+                            var foundpe = spanbuffer.IndexOf(Encoding.UTF8.GetBytes(".pe").AsSpan());
+
+                            if (foundexe != -1)
+                            {
+                                previousspanbuffer.CopyTo(combinedbuffer);
+                                spanbuffer.CopyTo(combinedbuffer.AsSpan(chunksize));
+
+                                // Pull the previous 300 characters and convert to char array (300 is arbitry just to account for possible lots of data between titleID and .exe entry)
+                                Array.Copy(combinedbuffer, (foundexe + chunksize) - exeAreaSize, exeChunk, 0, exeAreaSize);
+
+                                var temptitleID = CheckChunk(ref exeChunk);
+                                if (!string.IsNullOrEmpty(temptitleID))
+                                {
+                                    titleID = temptitleID;
+                                    _titleIDCache.Add(new KeyValuePair<Guid, string>(game.Id, temptitleID));
+                                    return true;
+
+                                }
+                            }
+                            if (foundpe != -1)
+                            {
+                                previousspanbuffer.CopyTo(combinedbuffer);
+                                spanbuffer.CopyTo(combinedbuffer.AsSpan(chunksize));
+
+                                Array.Copy(combinedbuffer, (foundpe + chunksize) - exeAreaSize, exeChunk, 0, exeAreaSize);
+
+                                var temptitleID = CheckChunk(ref exeChunk);
+                                if (!string.IsNullOrEmpty(temptitleID))
+                                {
+                                    titleID = temptitleID;
+                                    _titleIDCache.Add(new KeyValuePair<Guid, string>(game.Id, temptitleID));
+                                    return true;
+                                }
+                            }
+
+                            position += bytesRead;
+                            previousspanbuffer = spanbuffer;
+                        }
+
+
+
+                    } while (!filecomplete);
+                    
+
                 }
                 else
                 {

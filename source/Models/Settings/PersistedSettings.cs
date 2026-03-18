@@ -293,7 +293,7 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Enable or disable RPCS3 trophy tracking.
+        /// Enable or disable Xenia trophy tracking.
         /// </summary>
         public bool XeniaEnabled
         {
@@ -302,7 +302,7 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Enable or disable RPCS3 trophy tracking.
+        /// Xenia Account Path.
         /// </summary>
         public string XeniaAccountPath
         {
@@ -1188,6 +1188,9 @@ namespace PlayniteAchievements.Models.Settings
                 RaGameIdOverrides = this.RaGameIdOverrides != null
                     ? new Dictionary<Guid, int>(this.RaGameIdOverrides)
                     : new Dictionary<Guid, int>(),
+                XeniaGameIdOverrides = this.XeniaGameIdOverrides != null
+                    ? new Dictionary<Guid, string>(this.XeniaGameIdOverrides)
+                    : new Dictionary<Guid, string>(),
                 DataGridColumnVisibility = this.DataGridColumnVisibility != null
                     ? new Dictionary<string, bool>(this.DataGridColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),

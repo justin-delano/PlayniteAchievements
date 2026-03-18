@@ -22,6 +22,7 @@ using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -41,7 +42,6 @@ using System.Windows.Threading;
 using LiveCharts;
 using LiveCharts.Configurations;
 using LiveCharts.Wpf;
-using PlayniteAchievements.Providers.Xenia;
 
 namespace PlayniteAchievements
 {

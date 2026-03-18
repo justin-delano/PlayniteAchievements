@@ -14,6 +14,7 @@ namespace PlayniteAchievements.Providers.Xenia
     internal sealed class XeniaDataProvider : IDataProvider
     {
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _planiteAPI;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly string _pluginUserDataPath;
 
@@ -23,6 +24,7 @@ namespace PlayniteAchievements.Providers.Xenia
         public XeniaDataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _planiteAPI = playniteApi;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
             _clientXeniaAccountPath = _settings.Persisted.XeniaAccountPath?.Trim() ?? string.Empty;
@@ -35,14 +37,14 @@ namespace PlayniteAchievements.Providers.Xenia
         public bool IsAuthenticated 
         { 
             get 
-            { 
+            {
                 return File.Exists($"{_clientXeniaAccountPath}\\Account");
             } 
         }
 
         public bool IsCapable(Game game)
         {
-            if (game == null || !IsAuthenticated) 
+            if (game == null) 
                 return false;
 
             var src = game.Source?.Name ?? string.Empty;
@@ -52,13 +54,21 @@ namespace PlayniteAchievements.Providers.Xenia
                     return true;
             }
 
+            foreach (var action in game.GameActions)
+            {
+                var xeniaID = _planiteAPI.Database.Emulators.FirstOrDefault(x => x.Name == "Xenia");
+                if (action.EmulatorId == xeniaID.Id)
+                {
+                    return true;
+                }
+            }
 
             return false;
         }
 
         public Task<RebuildPayload> RefreshAsync(IReadOnlyList<Game> gamesToRefresh, Action<Game> onGameStarting,
                                                 Func<Game, GameAchievementData, Task> onGameCompleted, CancellationToken cancel)
-        {    
+        {
             _scanner = new XeniaScanner(_logger, _settings, _pluginUserDataPath, _clientXeniaAccountPath);
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
         }
