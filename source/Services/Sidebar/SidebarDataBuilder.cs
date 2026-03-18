@@ -5,6 +5,7 @@ using System.Threading;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using Playnite.SDK;
 
@@ -128,9 +129,9 @@ namespace PlayniteAchievements.Services.Sidebar
                 .OrderByDescending(g => g.LastPlayed ?? DateTime.MinValue)
                 .ToList();
 
-            recentAchievements = recentAchievements
-                .OrderByDescending(a => a.UnlockTime)
-                .ToList();
+            recentAchievements = AchievementGridSortHelper.CreateDefaultSortedList(
+                recentAchievements,
+                AchievementGridSortScope.RecentAchievements);
 
             snapshot.Achievements = allAchievements;
             snapshot.GamesOverview = gamesOverview;

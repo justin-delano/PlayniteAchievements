@@ -386,24 +386,176 @@
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">
 
-                        <!-- Plugin Header -->
-                        <StackPanel Margin="0,0,0,24">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,6" />
+                        <!-- Settings Header -->
+                        <Border Style="{StaticResource SectionBorderStyle}"
+                                Background="{DynamicResource PanelBackgroundBrush}"
+                                BorderBrush="{DynamicResource NormalBorderBrush}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Description}"
-                                       Style="{DynamicResource MutedTextStyle}"
-                                       Margin="0,0,0,8"/>
-                            <!-- Decorative accent line -->
-                            <Border Height="2"
-                                    Width="60"
-                                    HorizontalAlignment="Left"
-                                    Background="#4CC9F0"
-                                    CornerRadius="1"
-                                    Margin="0,8,0,0"/>
-                        </StackPanel>
+                                       Style="{StaticResource SectionHeaderStyle}"
+                                       Margin="0"/>
+                        </Border>
+
+                        <!-- ================== LANGUAGE ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Language}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GlobalLanguage}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,2"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GlobalLanguageHint}"
+                                                   Style="{StaticResource MutedTextStyle}"/>
+                                    </StackPanel>
+
+                                    <ComboBox Grid.Column="1"
+                                              Width="200"
+                                              SelectedValuePath="Tag"
+                                              SelectedValue="{Binding Persisted.GlobalLanguage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                        <ComboBoxItem Content="English" Tag="english"/>
+                                        <ComboBoxItem Content="German (Deutsch)" Tag="german"/>
+                                        <ComboBoxItem Content="French (Français)" Tag="french"/>
+                                        <ComboBoxItem Content="Spanish (Español)" Tag="spanish"/>
+                                        <ComboBoxItem Content="Italian (Italiano)" Tag="italian"/>
+                                        <ComboBoxItem Content="Portuguese" Tag="portuguese"/>
+                                        <ComboBoxItem Content="Brazilian Portuguese" Tag="brazilian"/>
+                                        <ComboBoxItem Content="Russian (Русский)" Tag="russian"/>
+                                        <ComboBoxItem Content="Polish (Polski)" Tag="polish"/>
+                                        <ComboBoxItem Content="Dutch (Nederlands)" Tag="dutch"/>
+                                        <ComboBoxItem Content="Swedish (Svenska)" Tag="swedish"/>
+                                        <ComboBoxItem Content="Finnish (Suomi)" Tag="finnish"/>
+                                        <ComboBoxItem Content="Danish (Dansk)" Tag="danish"/>
+                                        <ComboBoxItem Content="Norwegian (Norsk)" Tag="norwegian"/>
+                                        <ComboBoxItem Content="Hungarian (Magyar)" Tag="hungarian"/>
+                                        <ComboBoxItem Content="Czech (Čeština)" Tag="czech"/>
+                                        <ComboBoxItem Content="Romanian (Română)" Tag="romanian"/>
+                                        <ComboBoxItem Content="Turkish (Türkçe)" Tag="turkish"/>
+                                        <ComboBoxItem Content="Greek (Ελληνικά)" Tag="greek"/>
+                                        <ComboBoxItem Content="Bulgarian (Български)" Tag="bulgarian"/>
+                                        <ComboBoxItem Content="Ukrainian (Українська)" Tag="ukrainian"/>
+                                        <ComboBoxItem Content="Thai (ไทย)" Tag="thai"/>
+                                        <ComboBoxItem Content="Vietnamese (Tiếng Việt)" Tag="vietnamese"/>
+                                        <ComboBoxItem Content="Japanese (日本語)" Tag="japanese"/>
+                                        <ComboBoxItem Content="Korean (한국어)" Tag="koreana"/>
+                                        <ComboBoxItem Content="Simplified Chinese (简体中文)" Tag="schinese"/>
+                                        <ComboBoxItem Content="Traditional Chinese (繁體中文)" Tag="tchinese"/>
+                                        <ComboBoxItem Content="Arabic (العربية)" Tag="arabic"/>
+                                    </ComboBox>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- ================== SYNC & UPDATES ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Section_SyncUpdates}"
+                                           Style="{StaticResource SectionHeaderStyle}"/>
+
+                                <!-- Periodic Updates -->
+                                <Grid Style="{StaticResource SettingRowStyle}" Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnablePeriodicUpdates}"
+                                                          IsChecked="{Binding Persisted.EnablePeriodicUpdates}"
+                                                  VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HoursBetweenUpdates}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0"/>
+                                            <TextBox Text="{Binding Persisted.PeriodicUpdateHours, UpdateSourceTrigger=PropertyChanged}"
+                                                 Width="50"
+                                                     IsEnabled="{Binding Persisted.EnablePeriodicUpdates}"
+                                                 TextAlignment="Right"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <StackPanel Margin="0,0,0,16">
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_AutoExcludeHiddenGames}"
+                                              IsChecked="{Binding Persisted.AutoExcludeHiddenGames}"
+                                              Margin="0,0,0,4"/>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AutoExcludeHiddenGames_Description}"
+                                               Style="{StaticResource MutedTextStyle}"
+                                               Margin="18,0,0,0"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <!-- Recent Refresh -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_Title}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,2"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_Description}"
+                                                   Style="{StaticResource MutedTextStyle}"/>
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_RecentGames}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,8,0"/>
+                                            <TextBox Text="{Binding Persisted.RecentRefreshGamesCount, UpdateSourceTrigger=PropertyChanged}"
+                                                 Width="50"
+                                                 TextAlignment="Right"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Include Unplayed Games -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                            <CheckBox Content="{DynamicResource LOCPlayAch_IncludeUnplayedGames}"
+                                                          IsChecked="{Binding Persisted.IncludeUnplayedGames}"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_IncludeUnplayedGames_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="20,4,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Provider Execution Mode -->
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0">
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh}"
+                                                  IsChecked="{Binding Persisted.EnableParallelProviderRefresh}"
+                                                  VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="20,4,0,0"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
 
                         <!-- ================== RARITY THRESHOLDS ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
@@ -584,110 +736,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- ================== SYNC & UPDATES ================== -->
-                        <Border Style="{StaticResource SectionBorderStyle}">
-                            <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Section_SyncUpdates}"
-                                           Style="{StaticResource SectionHeaderStyle}"/>
-
-                                <!-- Periodic Updates -->
-                                <Grid Style="{StaticResource SettingRowStyle}" Margin="0,0,0,16">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0">
-                                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnablePeriodicUpdates}"
-                                                          IsChecked="{Binding Persisted.EnablePeriodicUpdates}"
-                                                  VerticalAlignment="Center"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HoursBetweenUpdates}"
-                                                   Foreground="{DynamicResource TextBrush}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,8,0"/>
-                                            <TextBox Text="{Binding Persisted.PeriodicUpdateHours, UpdateSourceTrigger=PropertyChanged}"
-                                                 Width="50"
-                                                     IsEnabled="{Binding Persisted.EnablePeriodicUpdates}"
-                                                 TextAlignment="Right"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <StackPanel Margin="0,0,0,16">
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_AutoExcludeHiddenGames}"
-                                              IsChecked="{Binding Persisted.AutoExcludeHiddenGames}"
-                                              Margin="0,0,0,4"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AutoExcludeHiddenGames_Description}"
-                                               Style="{StaticResource MutedTextStyle}"
-                                               Margin="18,0,0,0"
-                                               TextWrapping="Wrap"/>
-                                </StackPanel>
-
-                                <!-- Recent Refresh -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_Title}"
-                                                   Foreground="{DynamicResource TextBrush}"
-                                                   FontWeight="SemiBold"
-                                                   Margin="0,0,0,2"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_Description}"
-                                                   Style="{StaticResource MutedTextStyle}"/>
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_RecentGames}"
-                                                   Foreground="{DynamicResource TextBrush}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="0,0,8,0"/>
-                                            <TextBox Text="{Binding Persisted.RecentRefreshGamesCount, UpdateSourceTrigger=PropertyChanged}"
-                                                 Width="50"
-                                                 TextAlignment="Right"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <!-- Include Unplayed Games -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0">
-                                            <CheckBox Content="{DynamicResource LOCPlayAch_IncludeUnplayedGames}"
-                                                          IsChecked="{Binding Persisted.IncludeUnplayedGames}"
-                                                  VerticalAlignment="Center"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_IncludeUnplayedGames_Help}"
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   Margin="20,4,0,0"/>
-                                    </StackPanel>
-                                </Grid>
-
-                                <!-- Provider Execution Mode -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0">
-                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh}"
-                                                  IsChecked="{Binding Persisted.EnableParallelProviderRefresh}"
-                                                  VerticalAlignment="Center"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_EnableParallelProviderRefresh_Help}"
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   Margin="20,4,0,0"/>
-                                    </StackPanel>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
                         <!-- ================== NOTIFICATIONS ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
@@ -854,64 +902,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- ================== LANGUAGE ================== -->
-                        <Border Style="{StaticResource SectionBorderStyle}">
-                            <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Language}"
-                                           Style="{StaticResource SectionHeaderStyle}"/>
-
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GlobalLanguage}"
-                                                   Foreground="{DynamicResource TextBrush}"
-                                                   FontWeight="SemiBold"
-                                                   Margin="0,0,0,2"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GlobalLanguageHint}"
-                                                   Style="{StaticResource MutedTextStyle}"/>
-                                    </StackPanel>
-
-                                    <ComboBox Grid.Column="1"
-                                               Width="200"
-                                               SelectedValuePath="Tag"
-                                               SelectedValue="{Binding Persisted.GlobalLanguage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                                        <ComboBoxItem Content="English" Tag="english"/>
-                                        <ComboBoxItem Content="German (Deutsch)" Tag="german"/>
-                                        <ComboBoxItem Content="French (Français)" Tag="french"/>
-                                        <ComboBoxItem Content="Spanish (Español)" Tag="spanish"/>
-                                        <ComboBoxItem Content="Italian (Italiano)" Tag="italian"/>
-                                        <ComboBoxItem Content="Portuguese" Tag="portuguese"/>
-                                        <ComboBoxItem Content="Brazilian Portuguese" Tag="brazilian"/>
-                                        <ComboBoxItem Content="Russian (Русский)" Tag="russian"/>
-                                        <ComboBoxItem Content="Polish (Polski)" Tag="polish"/>
-                                        <ComboBoxItem Content="Dutch (Nederlands)" Tag="dutch"/>
-                                        <ComboBoxItem Content="Swedish (Svenska)" Tag="swedish"/>
-                                        <ComboBoxItem Content="Finnish (Suomi)" Tag="finnish"/>
-                                        <ComboBoxItem Content="Danish (Dansk)" Tag="danish"/>
-                                        <ComboBoxItem Content="Norwegian (Norsk)" Tag="norwegian"/>
-                                        <ComboBoxItem Content="Hungarian (Magyar)" Tag="hungarian"/>
-                                        <ComboBoxItem Content="Czech (Čeština)" Tag="czech"/>
-                                        <ComboBoxItem Content="Romanian (Română)" Tag="romanian"/>
-                                        <ComboBoxItem Content="Turkish (Türkçe)" Tag="turkish"/>
-                                        <ComboBoxItem Content="Greek (Ελληνικά)" Tag="greek"/>
-                                        <ComboBoxItem Content="Bulgarian (Български)" Tag="bulgarian"/>
-                                        <ComboBoxItem Content="Ukrainian (Українська)" Tag="ukrainian"/>
-                                        <ComboBoxItem Content="Thai (ไทย)" Tag="thai"/>
-                                        <ComboBoxItem Content="Vietnamese (Tiếng Việt)" Tag="vietnamese"/>
-                                        <ComboBoxItem Content="Japanese (日本語)" Tag="japanese"/>
-                                        <ComboBoxItem Content="Korean (한국어)" Tag="koreana"/>
-                                        <ComboBoxItem Content="Simplified Chinese (简体中文)" Tag="schinese"/>
-                                        <ComboBoxItem Content="Traditional Chinese (繁體中文)" Tag="tchinese"/>
-                                        <ComboBoxItem Content="Arabic (العربية)" Tag="arabic"/>
-                                    </ComboBox>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
                         <!-- ================== THEME INTEGRATION ================== -->
                         <!-- <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
@@ -1035,14 +1025,17 @@
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">
 
+                        <Border Style="{StaticResource SectionBorderStyle}"
+                                Background="{DynamicResource PanelBackgroundBrush}"
+                                BorderBrush="{DynamicResource NormalBorderBrush}">
+                            <TextBlock Text="Display Options"
+                                       Style="{StaticResource SectionHeaderStyle}"
+                                       Margin="0"/>
+                        </Border>
+
                         <!-- ================== DISPLAY OPTIONS SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="Display Options"
-                                           Style="{StaticResource SectionHeaderStyle}"
-                                           Margin="0,0,0,12"/>
-                                <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-
                                 <Border Style="{StaticResource SettingGroupCardStyle}">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_GeneralSection}"
@@ -1119,6 +1112,29 @@
                                     </StackPanel>
                                 </Border>
 
+                                <!-- Locked Achievement Visibility -->
+                                <Border Style="{StaticResource SettingGroupCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LockedAchievements}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LockedAchievements_Description}"
+                                                   Style="{StaticResource MutedTextStyle}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="PREVIEW"
+                                                   Style="{StaticResource ContextLabelStyle}"/>
+                                        <desktop:AchievementDataGridControl
+                                            Style="{StaticResource PreviewThemeControlStyle}"
+                                            ThemeDataOverride="{Binding LockedPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            PreviewMaxHeightOverride="122"
+                                            Margin="0,0,0,12"/>
+                                        <TextBlock Text="SETTINGS"
+                                                   Style="{StaticResource ContextLabelStyle}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealLockedIcon}"
+                                                  IsChecked="{Binding Persisted.ShowLockedIcon}"
+                                                  VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
                                 <!-- Hidden Achievement Visibility -->
                                 <Border Style="{StaticResource SettingGroupCardStyle}">
                                     <StackPanel>
@@ -1146,29 +1162,6 @@
                                             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowHiddenSuffix}"
                                                       IsChecked="{Binding Persisted.ShowHiddenSuffix}"/>
                                         </StackPanel>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Locked Achievement Visibility -->
-                                <Border Style="{StaticResource SettingGroupCardStyle}">
-                                    <StackPanel>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LockedAchievements}"
-                                                   Style="{StaticResource SubSectionHeaderStyle}"
-                                                   Margin="0,0,0,4"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LockedAchievements_Description}"
-                                                   Style="{StaticResource MutedTextStyle}" Margin="0,0,0,8"/>
-                                        <TextBlock Text="PREVIEW"
-                                                   Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementDataGridControl
-                                            Style="{StaticResource PreviewThemeControlStyle}"
-                                            ThemeDataOverride="{Binding LockedPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            PreviewMaxHeightOverride="122"
-                                            Margin="0,0,0,12"/>
-                                        <TextBlock Text="SETTINGS"
-                                                   Style="{StaticResource ContextLabelStyle}"/>
-                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealLockedIcon}"
-                                                  IsChecked="{Binding Persisted.ShowLockedIcon}"
-                                                  VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -2589,21 +2582,50 @@
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">
 
-                        <!-- Description -->
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ExophaseAuth_Description}"
-                                   Style="{StaticResource MutedTextStyle}"
-                                   Margin="0,0,0,16"
-                                   TextWrapping="Wrap"/>
+                        <!-- Provider Enable Toggle -->
+                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,12">
+                            <StackPanel>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ProviderEnabled}"
+                                          IsChecked="{Binding Persisted.ExophaseEnabled}"
+                                          FontWeight="SemiBold"
+                                          FontSize="{DynamicResource FontSize}"/>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_EnableProvider_Help}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="24,4,0,0"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Provider Disabled Message -->
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledMessage}"
+                                   Margin="0,0,0,16">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Persisted.ExophaseEnabled}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
 
                         <!-- Authentication Section -->
-                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,16">
+                        <Border Style="{StaticResource SectionBorderStyle}"
+                                Margin="0,0,0,16"
+                                IsEnabled="{Binding Persisted.ExophaseEnabled}">
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ExophaseConnection}"
                                            Style="{StaticResource SectionHeaderStyle}"/>
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,16"
-                                           Text="{DynamicResource LOCPlayAch_Settings_Exophase_Help}"/>
+                                           TextWrapping="Wrap">
+                                    <Run Text="{DynamicResource LOCPlayAch_Settings_ExophaseAuth_Description}"/>
+                                    <LineBreak/>
+                                    <Run Text="{DynamicResource LOCPlayAch_Settings_Exophase_Help}"/>
+                                </TextBlock>
 
                                 <Grid Style="{StaticResource SettingRowStyle}">
                                     <Grid.ColumnDefinitions>
@@ -2712,36 +2734,6 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Provider Enable Toggle -->
-                        <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,16">
-                            <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_EnableProvider}"
-                                           Style="{StaticResource SectionHeaderStyle}"/>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_EnableProvider_Help}"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           Margin="0,0,0,12"/>
-                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ProviderEnabled}"
-                                          IsChecked="{Binding Persisted.ExophaseEnabled}"
-                                          FontWeight="SemiBold"
-                                          FontSize="{DynamicResource FontSize}"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Provider Disabled Message -->
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledMessage}"
-                                   Margin="0,0,0,16">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Persisted.ExophaseEnabled}" Value="False">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-
                         <!-- Managed Platforms -->
                         <Border Style="{StaticResource SectionBorderStyle}"
                                 Margin="0,0,0,16"
@@ -2753,67 +2745,74 @@
                                            Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,12"/>
 
-                                <!-- Platform Checkboxes in a wrap panel -->
-                                <WrapPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Steam}"
-                                              Loaded="ExophasePlatform_CheckboxLoaded"
-                                              Click="ExophasePlatform_CheckChanged"
-                                              Tag="steam"
-                                              Margin="0,0,16,8"
-                                              FontSize="{DynamicResource FontSize}"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_PSN}"
-                                              Loaded="ExophasePlatform_CheckboxLoaded"
-                                              Click="ExophasePlatform_CheckChanged"
-                                              Tag="psn"
-                                              Margin="0,0,16,8"
-                                              FontSize="{DynamicResource FontSize}"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Xbox}"
-                                              Loaded="ExophasePlatform_CheckboxLoaded"
-                                              Click="ExophasePlatform_CheckChanged"
-                                              Tag="xbox"
-                                              Margin="0,0,16,8"
-                                              FontSize="{DynamicResource FontSize}"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_GOG}"
-                                              Loaded="ExophasePlatform_CheckboxLoaded"
-                                              Click="ExophasePlatform_CheckChanged"
-                                              Tag="gog"
-                                              Margin="0,0,16,8"
-                                              FontSize="{DynamicResource FontSize}"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Epic}"
-                                              Loaded="ExophasePlatform_CheckboxLoaded"
-                                              Click="ExophasePlatform_CheckChanged"
-                                              Tag="epic"
-                                              Margin="0,0,16,8"
-                                              FontSize="{DynamicResource FontSize}"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_EA}"
-                                              Loaded="ExophasePlatform_CheckboxLoaded"
-                                              Click="ExophasePlatform_CheckChanged"
-                                              Tag="ea"
-                                              Margin="0,0,16,8"
-                                              FontSize="{DynamicResource FontSize}"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Blizzard}"
-                                              Loaded="ExophasePlatform_CheckboxLoaded"
-                                              Click="ExophasePlatform_CheckChanged"
-                                              Tag="blizzard"
-                                              Margin="0,0,16,8"
-                                              FontSize="{DynamicResource FontSize}"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Nintendo}"
-                                              Loaded="ExophasePlatform_CheckboxLoaded"
-                                              Click="ExophasePlatform_CheckChanged"
-                                              Tag="nintendo"
-                                              Margin="0,0,16,8"
-                                              FontSize="{DynamicResource FontSize}"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Retro}"
-                                              Loaded="ExophasePlatform_CheckboxLoaded"
-                                              Click="ExophasePlatform_CheckChanged"
-                                              Tag="retro"
-                                              Margin="0,0,16,8"
-                                              FontSize="{DynamicResource FontSize}"/>
-                                </WrapPanel>
+                                <Border Background="#10000000"
+                                        CornerRadius="6"
+                                        Padding="12"
+                                        Margin="0,4,0,0">
+                                    <WrapPanel Orientation="Horizontal"
+                                               ItemWidth="150"
+                                               Margin="0,2,0,0">
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Steam}"
+                                                  Loaded="ExophasePlatform_CheckboxLoaded"
+                                                  Click="ExophasePlatform_CheckChanged"
+                                                  Tag="steam"
+                                                  Margin="0,0,12,10"
+                                                  FontSize="{DynamicResource FontSize}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_PSN}"
+                                                  Loaded="ExophasePlatform_CheckboxLoaded"
+                                                  Click="ExophasePlatform_CheckChanged"
+                                                  Tag="psn"
+                                                  Margin="0,0,12,10"
+                                                  FontSize="{DynamicResource FontSize}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Xbox}"
+                                                  Loaded="ExophasePlatform_CheckboxLoaded"
+                                                  Click="ExophasePlatform_CheckChanged"
+                                                  Tag="xbox"
+                                                  Margin="0,0,12,10"
+                                                  FontSize="{DynamicResource FontSize}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_GOG}"
+                                                  Loaded="ExophasePlatform_CheckboxLoaded"
+                                                  Click="ExophasePlatform_CheckChanged"
+                                                  Tag="gog"
+                                                  Margin="0,0,12,10"
+                                                  FontSize="{DynamicResource FontSize}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Epic}"
+                                                  Loaded="ExophasePlatform_CheckboxLoaded"
+                                                  Click="ExophasePlatform_CheckChanged"
+                                                  Tag="epic"
+                                                  Margin="0,0,12,10"
+                                                  FontSize="{DynamicResource FontSize}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_EA}"
+                                                  Loaded="ExophasePlatform_CheckboxLoaded"
+                                                  Click="ExophasePlatform_CheckChanged"
+                                                  Tag="ea"
+                                                  Margin="0,0,12,10"
+                                                  FontSize="{DynamicResource FontSize}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Blizzard}"
+                                                  Loaded="ExophasePlatform_CheckboxLoaded"
+                                                  Click="ExophasePlatform_CheckChanged"
+                                                  Tag="blizzard"
+                                                  Margin="0,0,12,10"
+                                                  FontSize="{DynamicResource FontSize}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Nintendo}"
+                                                  Loaded="ExophasePlatform_CheckboxLoaded"
+                                                  Click="ExophasePlatform_CheckChanged"
+                                                  Tag="nintendo"
+                                                  Margin="0,0,12,10"
+                                                  FontSize="{DynamicResource FontSize}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Retro}"
+                                                  Loaded="ExophasePlatform_CheckboxLoaded"
+                                                  Click="ExophasePlatform_CheckChanged"
+                                                  Tag="retro"
+                                                  Margin="0,0,12,10"
+                                                  FontSize="{DynamicResource FontSize}"/>
+                                    </WrapPanel>
+                                </Border>
 
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Exophase_Note}"
                                            Style="{StaticResource MutedTextStyle}"
-                                           Margin="0,12,0,0"/>
+                                           Margin="0,12,0,0"
+                                           TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -3206,29 +3205,10 @@
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="20">
 
-                        <!-- Plugin Header -->
-                        <StackPanel Margin="0,0,0,24">
-                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Title}"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,6" />
-                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Description}"
-                                       Style="{DynamicResource MutedTextStyle}"
-                                       Margin="0,0,0,8"/>
-                            <!-- Decorative accent line -->
-                            <Border Height="2"
-                                    Width="60"
-                                    HorizontalAlignment="Left"
-                                    Background="#4CC9F0"
-                                    CornerRadius="1"
-                                    Margin="0,8,0,0"/>
-                        </StackPanel>
-
                         <!-- ================== MIGRATION SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Migration}"
+                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Title}"
                                            Style="{StaticResource SectionHeaderStyle}"
                                            Margin="0,0,0,12"/>
 

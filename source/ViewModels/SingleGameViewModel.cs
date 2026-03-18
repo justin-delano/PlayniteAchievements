@@ -8,6 +8,7 @@ using System.Windows.Input;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using Playnite.SDK;
 
@@ -103,6 +104,10 @@ namespace PlayniteAchievements.ViewModels
             if (_settings != null)
             {
                 _settings.PropertyChanged += OnSettingsChanged;
+                if (_settings.Persisted != null)
+                {
+                    _settings.Persisted.PropertyChanged += OnPersistedSettingsChanged;
+                }
             }
             _achievementService.GameCacheUpdated += OnGameCacheUpdated;
             _achievementService.CacheDeltaUpdated += OnCacheDeltaUpdated;
@@ -624,12 +629,9 @@ namespace PlayniteAchievements.ViewModels
                 }
                 else
                 {
-                    // Default order: unlocked first by date desc, then locked by rarity.
-                    _allAchievements = displayItems
-                        .OrderByDescending(a => a.Unlocked)
-                        .ThenByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue)
-                        .ThenBy(a => a.GlobalPercentUnlocked ?? 100)
-                        .ToList();
+                    _allAchievements = AchievementGridSortHelper.CreateDefaultSortedList(
+                        displayItems,
+                        AchievementGridSortScope.GameAchievements);
                 }
 
                 UpdateAchievementFilterOptions(_allAchievements);
@@ -724,28 +726,58 @@ namespace PlayniteAchievements.ViewModels
 
         private void OnSettingsChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "Persisted.ShowHiddenIcon"
-                || e.PropertyName == "Persisted.ShowHiddenTitle"
-                || e.PropertyName == "Persisted.ShowHiddenDescription"
-                || e.PropertyName == "Persisted.ShowRarityGlow"
-                || e.PropertyName == "Persisted")
+            if (e.PropertyName == nameof(PlayniteAchievementsSettings.Persisted))
             {
-                var showIcon = _settings.Persisted.ShowHiddenIcon;
-                var showTitle = _settings.Persisted.ShowHiddenTitle;
-                var showDescription = _settings.Persisted.ShowHiddenDescription;
-                var showRarityGlow = _settings.Persisted.ShowRarityGlow;
-
-                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                if (_settings?.Persisted != null)
                 {
-                    foreach (var item in Achievements)
-                    {
-                        item.ShowHiddenIcon = showIcon;
-                        item.ShowHiddenTitle = showTitle;
-                        item.ShowHiddenDescription = showDescription;
-                        item.ShowRarityGlow = showRarityGlow;
-                    }
-                });
+                    _settings.Persisted.PropertyChanged -= OnPersistedSettingsChanged;
+                    _settings.Persisted.PropertyChanged += OnPersistedSettingsChanged;
+                }
+
+                ApplyAppearanceSettingsToAchievements();
             }
+        }
+
+        private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (AchievementProjectionService.IsAppearanceSettingPropertyName(e?.PropertyName))
+            {
+                ApplyAppearanceSettingsToAchievements();
+            }
+        }
+
+        private void ApplyAppearanceSettingsToAchievements()
+        {
+            if (_settings?.Persisted == null)
+            {
+                return;
+            }
+
+            var options = AchievementProjectionService.CreateOptions(_settings, null);
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                var items = new HashSet<AchievementDisplayItem>();
+                foreach (var item in _allAchievements)
+                {
+                    if (item != null)
+                    {
+                        items.Add(item);
+                    }
+                }
+
+                foreach (var item in Achievements)
+                {
+                    if (item != null)
+                    {
+                        items.Add(item);
+                    }
+                }
+
+                foreach (var item in items)
+                {
+                    AchievementProjectionService.ApplyAppearanceSettings(item, options);
+                }
+            });
         }
 
         #endregion
@@ -764,169 +796,25 @@ namespace PlayniteAchievements.ViewModels
 
         public void SortDataGrid(string sortMemberPath, ListSortDirection direction)
         {
-            // Quick reverse if same column
-            if (_currentSortPath == sortMemberPath && _currentSortDirection == ListSortDirection.Ascending &&
-                direction == ListSortDirection.Descending)
+            var items = Achievements.ToList();
+            var currentSortDirection = (ListSortDirection?)_currentSortDirection;
+            if (!AchievementGridSortHelper.TrySortItems(
+                    items,
+                    sortMemberPath,
+                    direction,
+                    AchievementGridSortScope.GameAchievements,
+                    ref _currentSortPath,
+                    ref currentSortDirection))
             {
-                var items = Achievements.ToList();
-                items.Reverse();
-                _currentSortDirection = direction;
-                CollectionHelper.SynchronizeCollection(Achievements, items);
                 return;
             }
 
-            _currentSortPath = sortMemberPath;
-            _currentSortDirection = direction;
-
-            Comparison<AchievementDisplayItem> comparison = sortMemberPath switch
+            if (currentSortDirection.HasValue)
             {
-                "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
-                "UnlockTime" => CompareAchievementsByUnlockColumn,
-                "CategoryType" => CompareAchievementsByCategoryTypeThenUnlock,
-                "CategoryLabel" => CompareAchievementsByCategoryLabelThenUnlock,
-                "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
-                "Points" => (a, b) => a.Points.CompareTo(b.Points),
-                "TrophyType" => CompareAchievementsByTrophyType,
-                _ => null
-            };
-
-            if (comparison != null)
-            {
-                var items = Achievements.ToList();
-                if (direction == ListSortDirection.Descending)
-                {
-                    items.Sort((a, b) => comparison(b, a));
-                }
-                else
-                {
-                    items.Sort(comparison);
-                }
-                CollectionHelper.SynchronizeCollection(Achievements, items);
-            }
-        }
-
-        private static int CompareAchievementsByUnlockColumn(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            var dateComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
-            if (dateComparison != 0)
-            {
-                return dateComparison;
+                _currentSortDirection = currentSortDirection.Value;
             }
 
-            // Platinum > Gold > Silver > Bronze when unlock times are equal
-            var trophyComparison = GetTrophyRank(b.TrophyType).CompareTo(GetTrophyRank(a.TrophyType));
-            if (trophyComparison != 0)
-            {
-                return trophyComparison;
-            }
-
-            var progressComparison = CompareProgressFraction(a.ProgressNum, a.ProgressDenom, b.ProgressNum, b.ProgressDenom);
-            if (progressComparison != 0)
-            {
-                return progressComparison;
-            }
-
-            var unlockedComparison = a.Unlocked.CompareTo(b.Unlocked);
-            if (unlockedComparison != 0)
-            {
-                return unlockedComparison;
-            }
-
-            var pointsComparison = a.Points.CompareTo(b.Points);
-            if (pointsComparison != 0)
-            {
-                return pointsComparison;
-            }
-
-            var rarityComparison = a.GlobalPercent.CompareTo(b.GlobalPercent);
-            if (rarityComparison != 0)
-            {
-                return rarityComparison;
-            }
-
-            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareAchievementsByCategoryTypeThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            var typeComparison = string.Compare(
-                AchievementCategoryTypeHelper.ToDisplayText(a.CategoryType),
-                AchievementCategoryTypeHelper.ToDisplayText(b.CategoryType),
-                StringComparison.OrdinalIgnoreCase);
-            if (typeComparison != 0)
-            {
-                return typeComparison;
-            }
-
-            var unlockComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
-            if (unlockComparison != 0)
-            {
-                return unlockComparison;
-            }
-
-            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareAchievementsByCategoryLabelThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            var labelComparison = string.Compare(
-                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel),
-                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(b.CategoryLabel),
-                StringComparison.OrdinalIgnoreCase);
-            if (labelComparison != 0)
-            {
-                return labelComparison;
-            }
-
-            var unlockComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
-            if (unlockComparison != 0)
-            {
-                return unlockComparison;
-            }
-
-            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareProgressFraction(int? aNum, int? aDenom, int? bNum, int? bDenom)
-        {
-            var aHasProgress = aNum.HasValue && aDenom.HasValue && aDenom.Value > 0;
-            var bHasProgress = bNum.HasValue && bDenom.HasValue && bDenom.Value > 0;
-
-            if (aHasProgress && bHasProgress)
-            {
-                var aFraction = (double)aNum.Value / aDenom.Value;
-                var bFraction = (double)bNum.Value / bDenom.Value;
-                var fractionComparison = aFraction.CompareTo(bFraction);
-                if (fractionComparison != 0)
-                {
-                    return fractionComparison;
-                }
-            }
-
-            if (aHasProgress != bHasProgress)
-            {
-                return aHasProgress ? 1 : -1;
-            }
-
-            return 0;
-        }
-
-        private static int GetTrophyRank(string trophyType)
-        {
-            if (string.IsNullOrWhiteSpace(trophyType)) return 0;
-            return trophyType.ToLowerInvariant() switch
-            {
-                "platinum" => 4,
-                "gold" => 3,
-                "silver" => 2,
-                "bronze" => 1,
-                _ => 0
-            };
-        }
-
-        private static int CompareAchievementsByTrophyType(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            return GetTrophyRank(a.TrophyType).CompareTo(GetTrophyRank(b.TrophyType));
+            CollectionHelper.SynchronizeCollection(Achievements, items);
         }
 
         private void ApplySearchFilter()
@@ -990,6 +878,10 @@ namespace PlayniteAchievements.ViewModels
             if (_settings != null)
             {
                 _settings.PropertyChanged -= OnSettingsChanged;
+                if (_settings.Persisted != null)
+                {
+                    _settings.Persisted.PropertyChanged -= OnPersistedSettingsChanged;
+                }
             }
             _achievementService.GameCacheUpdated -= OnGameCacheUpdated;
             _achievementService.CacheDeltaUpdated -= OnCacheDeltaUpdated;

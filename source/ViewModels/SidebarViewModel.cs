@@ -1474,7 +1474,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == "Persisted")
+            if (e.PropertyName == nameof(PlayniteAchievementsSettings.Persisted))
             {
                 if (_settings?.Persisted != null)
                 {
@@ -1482,83 +1482,71 @@ namespace PlayniteAchievements.ViewModels
                     _settings.Persisted.PropertyChanged += OnPersistedSettingsChanged;
                 }
 
-                OnPropertyChanged(nameof(EnableCompactGridMode));
-            }
-            else if (e.PropertyName == "Persisted.UseCoverImages")
-            {
-                OnPropertyChanged(nameof(UseCoverImages));
-            }
-            else if (e.PropertyName == "Persisted.EnableCompactGridMode")
-            {
-                OnPropertyChanged(nameof(EnableCompactGridMode));
-            }
-            else if (e.PropertyName == "Persisted.IncludeUnplayedGames")
-            {
-                OnPropertyChanged(nameof(IncludeUnplayedGames));
-            }
-            else if (e.PropertyName == "Persisted.ShowSidebarPieCharts"
-                || e.PropertyName == "Persisted.ShowSidebarGamesPieChart"
-                || e.PropertyName == "Persisted.ShowSidebarProviderPieChart"
-                || e.PropertyName == "Persisted.ShowSidebarRarityPieChart"
-                || e.PropertyName == "Persisted.ShowSidebarTrophyPieChart")
-            {
-                RaiseSidebarPieChartVisibilityChanged();
-            }
-            else if (e.PropertyName == "Persisted.ShowSidebarBarCharts")
-            {
-                OnPropertyChanged(nameof(ShowSidebarBarCharts));
-            }
-            else if (e.PropertyName == "Persisted.ShowHiddenIcon"
-                || e.PropertyName == "Persisted.ShowHiddenTitle"
-                || e.PropertyName == "Persisted.ShowHiddenDescription"
-                || e.PropertyName == "Persisted.ShowRarityGlow")
-            {
-                // Refresh view when any hide or display setting changes
-                _ = RefreshViewAsync();
-            }
-            else if (e.PropertyName == "Persisted.ShowGamesWithNoUnlocks")
-            {
-                OnPropertyChanged(nameof(ShowGamesWithNoUnlocks));
-                ApplyLeftFilters();
-                UpdateAggregatePieCharts();
-            }
-            else if (e.PropertyName == "Persisted.ShowUnplayedGames")
-            {
-                OnPropertyChanged(nameof(ShowUnplayedGames));
-                ApplyLeftFilters();
-                UpdateAggregatePieCharts();
+                HandlePersistedSettingsChanged(propertyName: null);
             }
         }
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(PersistedSettings.ShowSidebarPieCharts)
-                || e.PropertyName == nameof(PersistedSettings.ShowSidebarGamesPieChart)
-                || e.PropertyName == nameof(PersistedSettings.ShowSidebarProviderPieChart)
-                || e.PropertyName == nameof(PersistedSettings.ShowSidebarRarityPieChart)
-                || e.PropertyName == nameof(PersistedSettings.ShowSidebarTrophyPieChart))
+            HandlePersistedSettingsChanged(e?.PropertyName);
+        }
+
+        private void HandlePersistedSettingsChanged(string propertyName)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName))
+            {
+                OnPropertyChanged(nameof(UseCoverImages));
+                OnPropertyChanged(nameof(EnableCompactGridMode));
+                OnPropertyChanged(nameof(IncludeUnplayedGames));
+                RaiseSidebarPieChartVisibilityChanged();
+                OnPropertyChanged(nameof(ShowSidebarBarCharts));
+                OnPropertyChanged(nameof(ShowGamesWithNoUnlocks));
+                OnPropertyChanged(nameof(ShowUnplayedGames));
+                _ = RefreshViewAsync();
+                ApplyLeftFilters();
+                UpdateAggregatePieCharts();
+                return;
+            }
+
+            if (propertyName == nameof(PersistedSettings.UseCoverImages))
+            {
+                OnPropertyChanged(nameof(UseCoverImages));
+            }
+            else if (propertyName == nameof(PersistedSettings.EnableCompactGridMode))
+            {
+                OnPropertyChanged(nameof(EnableCompactGridMode));
+            }
+            else if (propertyName == nameof(PersistedSettings.IncludeUnplayedGames))
+            {
+                OnPropertyChanged(nameof(IncludeUnplayedGames));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowSidebarPieCharts)
+                || propertyName == nameof(PersistedSettings.ShowSidebarGamesPieChart)
+                || propertyName == nameof(PersistedSettings.ShowSidebarProviderPieChart)
+                || propertyName == nameof(PersistedSettings.ShowSidebarRarityPieChart)
+                || propertyName == nameof(PersistedSettings.ShowSidebarTrophyPieChart))
             {
                 RaiseSidebarPieChartVisibilityChanged();
             }
-            else if (e.PropertyName == nameof(PersistedSettings.ShowSidebarBarCharts))
+            else if (propertyName == nameof(PersistedSettings.ShowSidebarBarCharts))
             {
                 OnPropertyChanged(nameof(ShowSidebarBarCharts));
             }
-            else if (e.PropertyName == nameof(PersistedSettings.ShowGamesWithNoUnlocks))
+            else if (AchievementProjectionService.IsAppearanceSettingPropertyName(propertyName))
+            {
+                _ = RefreshViewAsync();
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowGamesWithNoUnlocks))
             {
                 OnPropertyChanged(nameof(ShowGamesWithNoUnlocks));
                 ApplyLeftFilters();
                 UpdateAggregatePieCharts();
             }
-            else if (e.PropertyName == nameof(PersistedSettings.ShowUnplayedGames))
+            else if (propertyName == nameof(PersistedSettings.ShowUnplayedGames))
             {
                 OnPropertyChanged(nameof(ShowUnplayedGames));
                 ApplyLeftFilters();
                 UpdateAggregatePieCharts();
-            }
-            else if (e.PropertyName == nameof(PersistedSettings.EnableCompactGridMode))
-            {
-                OnPropertyChanged(nameof(EnableCompactGridMode));
             }
         }
 
@@ -1764,9 +1752,9 @@ namespace PlayniteAchievements.ViewModels
 
             if (string.IsNullOrEmpty(_recentSortPath))
             {
-                _allRecentAchievements = _allRecentAchievements
-                    .OrderByDescending(r => r.UnlockTime)
-                    .ToList();
+                _allRecentAchievements = AchievementGridSortHelper.CreateDefaultSortedList(
+                    _allRecentAchievements,
+                    AchievementGridSortScope.RecentAchievements);
             }
 
             var snapshot = BuildSnapshotFromSourceLists();
@@ -2707,11 +2695,9 @@ namespace PlayniteAchievements.ViewModels
                     }
 
                     return Tuple.Create(
-                        achievements
-                            .OrderByDescending(a => a.Unlocked)
-                            .ThenByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue)
-                            .ThenBy(a => a.GlobalPercentUnlocked ?? 100)
-                            .ToList(),
+                        AchievementGridSortHelper.CreateDefaultSortedList(
+                            achievements,
+                            AchievementGridSortScope.GameAchievements),
                         false);
                 }).ConfigureAwait(true);
 
@@ -2845,49 +2831,21 @@ namespace PlayniteAchievements.ViewModels
 
         private void SortRecentAchievements(string sortMemberPath, ListSortDirection direction)
         {
-            // Quick reverse if same column
-            if (_recentSortPath == sortMemberPath && _recentSortDirection == ListSortDirection.Ascending &&
-                direction == ListSortDirection.Descending)
+            var recentSortDirection = (ListSortDirection?)_recentSortDirection;
+            if (!AchievementGridSortHelper.TrySortItems(
+                    _filteredRecentAchievements,
+                    sortMemberPath,
+                    direction,
+                    AchievementGridSortScope.RecentAchievements,
+                    ref _recentSortPath,
+                    ref recentSortDirection))
             {
-                _filteredRecentAchievements.Reverse();
-                _recentSortDirection = direction;
-                if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulkRecent)
-                {
-                    bulkRecent.ReplaceAll(_filteredRecentAchievements);
-                }
-                else
-                {
-                    CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
-                }
                 return;
             }
 
-            _recentSortPath = sortMemberPath;
-            _recentSortDirection = direction;
-
-            Comparison<AchievementDisplayItem> comparison = sortMemberPath switch
+            if (recentSortDirection.HasValue)
             {
-                "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
-                "SortingName" => (a, b) => string.Compare(a.SortingName ?? a.GameName, b.SortingName ?? b.GameName, StringComparison.OrdinalIgnoreCase),
-                "CategoryType" => CompareRecentAchievementsByCategoryTypeThenUnlock,
-                "CategoryLabel" => CompareRecentAchievementsByCategoryLabelThenUnlock,
-                "UnlockTime" => CompareRecentAchievementsByUnlockColumn,
-                "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
-                "Points" => (a, b) => a.Points.CompareTo(b.Points),
-                "TrophyType" => CompareRecentAchievementsByTrophyType,
-                _ => null
-            };
-
-            if (comparison != null)
-            {
-                if (direction == ListSortDirection.Descending)
-                {
-                    _filteredRecentAchievements.Sort((a, b) => comparison(b, a));
-                }
-                else
-                {
-                    _filteredRecentAchievements.Sort(comparison);
-                }
+                _recentSortDirection = recentSortDirection.Value;
             }
 
             if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulkRecent2)
@@ -2902,64 +2860,41 @@ namespace PlayniteAchievements.ViewModels
 
         private void SortSelectedGameAchievements(string sortMemberPath, ListSortDirection direction)
         {
-            _selectedGameSortPath = sortMemberPath;
-            _selectedGameSortDirection = direction;
+            var existingAllOrder = _allSelectedGameAchievements
+                .Select((item, index) => new { item, index })
+                .ToDictionary(x => x.item, x => x.index);
 
-            Comparison<AchievementDisplayItem> comparison = sortMemberPath switch
+            var selectedSortDirection = (ListSortDirection?)_selectedGameSortDirection;
+            if (!AchievementGridSortHelper.TrySortItems(
+                    _allSelectedGameAchievements,
+                    sortMemberPath,
+                    direction,
+                    AchievementGridSortScope.GameAchievements,
+                    ref _selectedGameSortPath,
+                    ref selectedSortDirection,
+                    existingAllOrder))
             {
-                "DisplayName" => (a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase),
-                "UnlockTime" => CompareSelectedGameAchievementsByUnlockColumn,
-                "CategoryType" => CompareSelectedGameAchievementsByCategoryTypeThenUnlock,
-                "CategoryLabel" => CompareSelectedGameAchievementsByCategoryLabelThenUnlock,
-                "GlobalPercent" => (a, b) => (a.GlobalPercentUnlocked ?? 100).CompareTo(b.GlobalPercentUnlocked ?? 100),
-                "Points" => (a, b) => a.Points.CompareTo(b.Points),
-                "TrophyType" => CompareSelectedGameAchievementsByTrophyType,
-                _ => null
-            };
-
-            if (comparison != null)
-            {
-                // Keep tie ordering stable so refiltering doesn't appear to "lose" sort.
-                var existingAllOrder = _allSelectedGameAchievements
-                    .Select((item, index) => new { item, index })
-                    .ToDictionary(x => x.item, x => x.index);
-
-                _allSelectedGameAchievements.Sort((a, b) =>
-                {
-                    var result = direction == ListSortDirection.Descending ? comparison(b, a) : comparison(a, b);
-                    if (result != 0)
-                    {
-                        return result;
-                    }
-
-                    if (existingAllOrder.TryGetValue(a, out var aIndex) && existingAllOrder.TryGetValue(b, out var bIndex))
-                    {
-                        return aIndex.CompareTo(bIndex);
-                    }
-
-                    return 0;
-                });
-
-                var sortedAllOrder = _allSelectedGameAchievements
-                    .Select((item, index) => new { item, index })
-                    .ToDictionary(x => x.item, x => x.index);
-
-                _filteredSelectedGameAchievements.Sort((a, b) =>
-                {
-                    var result = direction == ListSortDirection.Descending ? comparison(b, a) : comparison(a, b);
-                    if (result != 0)
-                    {
-                        return result;
-                    }
-
-                    if (sortedAllOrder.TryGetValue(a, out var aIndex) && sortedAllOrder.TryGetValue(b, out var bIndex))
-                    {
-                        return aIndex.CompareTo(bIndex);
-                    }
-
-                    return 0;
-                });
+                return;
             }
+
+            if (selectedSortDirection.HasValue)
+            {
+                _selectedGameSortDirection = selectedSortDirection.Value;
+            }
+
+            var sortedAllOrder = _allSelectedGameAchievements
+                .Select((item, index) => new { item, index })
+                .ToDictionary(x => x.item, x => x.index);
+
+            selectedSortDirection = _selectedGameSortDirection;
+            AchievementGridSortHelper.TrySortItems(
+                _filteredSelectedGameAchievements,
+                sortMemberPath,
+                direction,
+                AchievementGridSortScope.GameAchievements,
+                ref _selectedGameSortPath,
+                ref selectedSortDirection,
+                sortedAllOrder);
 
             if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulkSelected2)
             {
@@ -2971,217 +2906,9 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private static int CompareRecentAchievementsByUnlockColumn(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            var dateComparison = a.UnlockTime.CompareTo(b.UnlockTime);
-            if (dateComparison != 0)
-            {
-                return dateComparison;
-            }
-
-            // Platinum > Gold > Silver > Bronze when unlock times are equal
-            var trophyComparison = GetTrophyRank(b.TrophyType).CompareTo(GetTrophyRank(a.TrophyType));
-            if (trophyComparison != 0)
-            {
-                return trophyComparison;
-            }
-
-            var progressComparison = CompareProgressFraction(a.ProgressNum, a.ProgressDenom, b.ProgressNum, b.ProgressDenom);
-            if (progressComparison != 0)
-            {
-                return progressComparison;
-            }
-
-            var pointsComparison = a.Points.CompareTo(b.Points);
-            if (pointsComparison != 0)
-            {
-                return pointsComparison;
-            }
-
-            var rarityComparison = a.GlobalPercent.CompareTo(b.GlobalPercent);
-            if (rarityComparison != 0)
-            {
-                return rarityComparison;
-            }
-
-            var gameComparison = string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase);
-            if (gameComparison != 0)
-            {
-                return gameComparison;
-            }
-
-            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareRecentAchievementsByCategoryTypeThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            var typeComparison = string.Compare(
-                AchievementCategoryTypeHelper.ToDisplayText(a.CategoryType),
-                AchievementCategoryTypeHelper.ToDisplayText(b.CategoryType),
-                StringComparison.OrdinalIgnoreCase);
-            if (typeComparison != 0)
-            {
-                return typeComparison;
-            }
-
-            var unlockComparison = a.UnlockTime.CompareTo(b.UnlockTime);
-            if (unlockComparison != 0)
-            {
-                return unlockComparison;
-            }
-
-            var gameComparison = string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase);
-            if (gameComparison != 0)
-            {
-                return gameComparison;
-            }
-
-            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareRecentAchievementsByCategoryLabelThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            var labelComparison = string.Compare(
-                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel),
-                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(b.CategoryLabel),
-                StringComparison.OrdinalIgnoreCase);
-            if (labelComparison != 0)
-            {
-                return labelComparison;
-            }
-
-            var unlockComparison = a.UnlockTime.CompareTo(b.UnlockTime);
-            if (unlockComparison != 0)
-            {
-                return unlockComparison;
-            }
-
-            var gameComparison = string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase);
-            if (gameComparison != 0)
-            {
-                return gameComparison;
-            }
-
-            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareSelectedGameAchievementsByUnlockColumn(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            var dateComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
-            if (dateComparison != 0)
-            {
-                return dateComparison;
-            }
-
-            // Platinum > Gold > Silver > Bronze when unlock times are equal
-            var trophyComparison = GetTrophyRank(b.TrophyType).CompareTo(GetTrophyRank(a.TrophyType));
-            if (trophyComparison != 0)
-            {
-                return trophyComparison;
-            }
-
-            var progressComparison = CompareProgressFraction(a.ProgressNum, a.ProgressDenom, b.ProgressNum, b.ProgressDenom);
-            if (progressComparison != 0)
-            {
-                return progressComparison;
-            }
-
-            var unlockedComparison = a.Unlocked.CompareTo(b.Unlocked);
-            if (unlockedComparison != 0)
-            {
-                return unlockedComparison;
-            }
-
-            var pointsComparison = a.Points.CompareTo(b.Points);
-            if (pointsComparison != 0)
-            {
-                return pointsComparison;
-            }
-
-            var rarityComparison = a.GlobalPercent.CompareTo(b.GlobalPercent);
-            if (rarityComparison != 0)
-            {
-                return rarityComparison;
-            }
-
-            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareSelectedGameAchievementsByCategoryTypeThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            var typeComparison = string.Compare(
-                AchievementCategoryTypeHelper.ToDisplayText(a.CategoryType),
-                AchievementCategoryTypeHelper.ToDisplayText(b.CategoryType),
-                StringComparison.OrdinalIgnoreCase);
-            if (typeComparison != 0)
-            {
-                return typeComparison;
-            }
-
-            var unlockComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
-            if (unlockComparison != 0)
-            {
-                return unlockComparison;
-            }
-
-            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareSelectedGameAchievementsByCategoryLabelThenUnlock(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            var labelComparison = string.Compare(
-                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel),
-                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(b.CategoryLabel),
-                StringComparison.OrdinalIgnoreCase);
-            if (labelComparison != 0)
-            {
-                return labelComparison;
-            }
-
-            var unlockComparison = (a.UnlockTimeUtc ?? DateTime.MinValue).CompareTo(b.UnlockTimeUtc ?? DateTime.MinValue);
-            if (unlockComparison != 0)
-            {
-                return unlockComparison;
-            }
-
-            return string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareProgressFraction(int? aNum, int? aDenom, int? bNum, int? bDenom)
-        {
-            var aHasProgress = aNum.HasValue && aDenom.HasValue && aDenom.Value > 0;
-            var bHasProgress = bNum.HasValue && bDenom.HasValue && bDenom.Value > 0;
-
-            if (aHasProgress && bHasProgress)
-            {
-                var aFraction = (double)aNum.Value / aDenom.Value;
-                var bFraction = (double)bNum.Value / bDenom.Value;
-                var fractionComparison = aFraction.CompareTo(bFraction);
-                if (fractionComparison != 0)
-                {
-                    return fractionComparison;
-                }
-            }
-
-            if (aHasProgress != bHasProgress)
-            {
-                return aHasProgress ? 1 : -1;
-            }
-
-            return 0;
-        }
-
         private static int GetTrophyRank(string trophyType)
         {
-            if (string.IsNullOrWhiteSpace(trophyType)) return 0;
-            return trophyType.ToLowerInvariant() switch
-            {
-                "platinum" => 4,
-                "gold" => 3,
-                "silver" => 2,
-                "bronze" => 1,
-                _ => 0
-            };
+            return AchievementGridSortHelper.GetTrophyRank(trophyType);
         }
 
         private static int CompareGameOverviewByTrophyType(GameOverviewItem a, GameOverviewItem b)
@@ -3194,16 +2921,6 @@ namespace PlayniteAchievements.ViewModels
                                             b.TrophyGoldCount > 0 ? "gold" :
                                             b.TrophySilverCount > 0 ? "silver" :
                                             b.TrophyBronzeCount > 0 ? "bronze" : null));
-        }
-
-        private static int CompareRecentAchievementsByTrophyType(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            return GetTrophyRank(a.TrophyType).CompareTo(GetTrophyRank(b.TrophyType));
-        }
-
-        private static int CompareSelectedGameAchievementsByTrophyType(AchievementDisplayItem a, AchievementDisplayItem b)
-        {
-            return GetTrophyRank(a.TrophyType).CompareTo(GetTrophyRank(b.TrophyType));
         }
 
         private static string L(string key, string fallback)

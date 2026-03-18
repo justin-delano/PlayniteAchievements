@@ -9,6 +9,7 @@ using System.Windows.Input;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
@@ -599,32 +600,20 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            var sortPath = e.Column.SortMemberPath;
-            var sorted = sortDirection.Value == ListSortDirection.Ascending
-                ? items.OrderBy(x => GetSortValue(x, sortPath))
-                : items.OrderByDescending(x => GetSortValue(x, sortPath));
-
-            ItemsSource = sorted.ToList();
-        }
-
-        private static object GetSortValue(AchievementDisplayItem item, string sortPath)
-        {
-            if (item == null || string.IsNullOrWhiteSpace(sortPath))
+            var currentSortPath = string.Empty;
+            ListSortDirection? currentSortDirection = null;
+            if (!AchievementGridSortHelper.TrySortItems(
+                    items,
+                    e.Column.SortMemberPath,
+                    sortDirection.Value,
+                    AchievementGridSortScope.GameAchievements,
+                    ref currentSortPath,
+                    ref currentSortDirection))
             {
-                return null;
+                return;
             }
 
-            return sortPath switch
-            {
-                "DisplayName" => item.DisplayName ?? string.Empty,
-                "UnlockTime" => item.UnlockTime,
-                "GlobalPercent" => item.GlobalPercent,
-                "CategoryType" => item.CategoryType ?? string.Empty,
-                "CategoryLabel" => item.CategoryLabel ?? string.Empty,
-                "TrophyType" => item.TrophyType ?? string.Empty,
-                "Points" => item.Points,
-                _ => null
-            };
+            ItemsSource = items.ToList();
         }
 
         private void AchievementRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

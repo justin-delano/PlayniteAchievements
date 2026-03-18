@@ -10,6 +10,7 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
@@ -184,10 +185,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
             // Reapply current sort if active
             if (!string.IsNullOrWhiteSpace(_currentSortPath) && _currentSortDirection.HasValue)
             {
-                AchievementDisplayItemSorter.SortItems(
+                AchievementGridSortHelper.TrySortItems(
                     clonedItems,
                     _currentSortPath,
                     _currentSortDirection.Value,
+                    AchievementGridSortScope.GameAchievements,
                     ref _currentSortPath,
                     ref _currentSortDirection);
             }
@@ -258,10 +260,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
 
             // Sort to a new list
             var items = DisplayItems.ToList();
-            AchievementDisplayItemSorter.SortItems(
+            AchievementGridSortHelper.TrySortItems(
                 items,
                 sortMemberPath,
                 direction,
+                AchievementGridSortScope.GameAchievements,
                 ref _currentSortPath,
                 ref _currentSortDirection);
 

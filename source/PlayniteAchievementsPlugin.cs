@@ -196,7 +196,7 @@ namespace PlayniteAchievements
                     _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
                     _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger, settings.Persisted);
                     _xboxSessionManager = new XboxSessionManager(PlayniteApi, _logger, settings.Persisted);
-                    _exophaseSessionManager = new ExophaseSessionManager(PlayniteApi, _logger, settings);
+                    _exophaseSessionManager = new ExophaseSessionManager(PlayniteApi, _logger, settings, pluginUserDataPath);
                 }
 
                 List<IDataProvider> providers;

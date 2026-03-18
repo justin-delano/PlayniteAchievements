@@ -11,6 +11,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -660,6 +661,60 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         internal PlayniteAchievementsPlugin _plugin;
 
+        private void AttachPersistedHandlers()
+        {
+            if (Persisted == null)
+            {
+                return;
+            }
+
+            Persisted.PropertyChanged -= Persisted_PropertyChanged;
+            Persisted.PropertyChanged += Persisted_PropertyChanged;
+        }
+
+        private void DetachPersistedHandlers(PersistedSettings persisted = null)
+        {
+            var target = persisted ?? Persisted;
+            if (target == null)
+            {
+                return;
+            }
+
+            target.PropertyChanged -= Persisted_PropertyChanged;
+        }
+
+        private void Persisted_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var propertyName = e?.PropertyName;
+            if (AchievementProjectionService.IsAppearanceSettingPropertyName(propertyName))
+            {
+                RefreshThemeDisplayItemsFromPersisted();
+            }
+
+            if (!string.IsNullOrWhiteSpace(propertyName))
+            {
+                OnPropertyChanged($"Persisted.{propertyName}");
+            }
+        }
+
+        private void RefreshThemeDisplayItemsFromPersisted()
+        {
+            var persisted = Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            Theme.RefreshDisplayItems(
+                persisted.ShowHiddenIcon,
+                persisted.ShowHiddenTitle,
+                persisted.ShowHiddenDescription,
+                persisted.ShowHiddenSuffix,
+                persisted.ShowLockedIcon,
+                persisted.ShowRarityGlow,
+                persisted.ShowCompactListRarityBar);
+        }
+
         /// <summary>
         /// Copies persisted settings from another settings instance.
         /// Used by the ViewModel when applying settings changes.
@@ -672,7 +727,10 @@ namespace PlayniteAchievements.Models
             }
 
             // Copy the entire PersistedSettings object
+            DetachPersistedHandlers();
             Persisted = other.Persisted?.Clone() ?? new PersistedSettings();
+            AttachPersistedHandlers();
+            RefreshThemeDisplayItemsFromPersisted();
             OnPropertyChanged(nameof(Persisted));
         }
 
@@ -691,6 +749,9 @@ namespace PlayniteAchievements.Models
             {
                 LegacyTheme = new LegacyThemeData();
             }
+
+            AttachPersistedHandlers();
+            RefreshThemeDisplayItemsFromPersisted();
         }
 
         #endregion
@@ -706,6 +767,8 @@ namespace PlayniteAchievements.Models
             Persisted = new PersistedSettings();
             Theme = new ThemeData();
             LegacyTheme = new LegacyThemeData();
+            AttachPersistedHandlers();
+            RefreshThemeDisplayItemsFromPersisted();
         }
 
         /// <summary>

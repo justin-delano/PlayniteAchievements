@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Services
@@ -12,6 +13,7 @@ namespace PlayniteAchievements.Services
         public bool ShowHiddenIcon { get; set; }
         public bool ShowHiddenTitle { get; set; }
         public bool ShowHiddenDescription { get; set; }
+        public bool ShowHiddenSuffix { get; set; } = true;
         public bool ShowLockedIcon { get; set; } = true;
         public bool ShowRarityGlow { get; set; } = true;
         public bool UseScaledPoints { get; set; }
@@ -30,6 +32,7 @@ namespace PlayniteAchievements.Services
                 ShowHiddenIcon = settings?.Persisted?.ShowHiddenIcon ?? false,
                 ShowHiddenTitle = settings?.Persisted?.ShowHiddenTitle ?? false,
                 ShowHiddenDescription = settings?.Persisted?.ShowHiddenDescription ?? false,
+                ShowHiddenSuffix = settings?.Persisted?.ShowHiddenSuffix ?? true,
                 ShowLockedIcon = settings?.Persisted?.ShowLockedIcon ?? true,
                 ShowRarityGlow = settings?.Persisted?.ShowRarityGlow ?? true,
                 UseScaledPoints = (settings?.Persisted?.RaPointsMode == "scaled") &&
@@ -66,11 +69,6 @@ namespace PlayniteAchievements.Services
                 Unlocked = achievement.Unlocked,
                 Hidden = achievement.Hidden,
                 ApiName = achievement.ApiName,
-                ShowHiddenIcon = options?.ShowHiddenIcon ?? false,
-                ShowHiddenTitle = options?.ShowHiddenTitle ?? false,
-                ShowHiddenDescription = options?.ShowHiddenDescription ?? false,
-                ShowLockedIcon = options?.ShowLockedIcon ?? true,
-                ShowRarityGlow = options?.ShowRarityGlow ?? true,
                 ProgressNum = achievement.ProgressNum,
                 ProgressDenom = achievement.ProgressDenom,
                 PointsValue = ResolvePoints(achievement, options),
@@ -80,6 +78,7 @@ namespace PlayniteAchievements.Services
                 IsRevealed = IsRevealed(gameData, achievement, options, gameId)
             };
 
+            ApplyAppearanceSettings(item, options);
             return item;
         }
 
@@ -98,7 +97,7 @@ namespace PlayniteAchievements.Services
             var iconPath = !string.IsNullOrWhiteSpace(achievement.UnlockedIconPath)
                 ? achievement.UnlockedIconPath
                 : achievement.LockedIconPath;
-            return new AchievementDisplayItem
+            var item = new AchievementDisplayItem
             {
                 ApiName = achievement.ApiName,
                 PlayniteGameId = gameData?.PlayniteGameId,
@@ -118,13 +117,42 @@ namespace PlayniteAchievements.Services
                 Unlocked = true, // Recent achievements are always unlocked by definition
                 TrophyType = achievement.TrophyType,
                 CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(achievement.CategoryType),
-                CategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category),
-                ShowHiddenIcon = options?.ShowHiddenIcon ?? false,
-                ShowHiddenTitle = options?.ShowHiddenTitle ?? false,
-                ShowHiddenDescription = options?.ShowHiddenDescription ?? false,
-                ShowLockedIcon = options?.ShowLockedIcon ?? true,
-                ShowRarityGlow = options?.ShowRarityGlow ?? true
+                CategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category)
             };
+
+            ApplyAppearanceSettings(item, options);
+            return item;
+        }
+
+        public static void ApplyAppearanceSettings(AchievementDisplayItem item, AchievementProjectionOptions options)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            item.ShowHiddenIcon = options?.ShowHiddenIcon ?? false;
+            item.ShowHiddenTitle = options?.ShowHiddenTitle ?? false;
+            item.ShowHiddenDescription = options?.ShowHiddenDescription ?? false;
+            item.ShowHiddenSuffix = options?.ShowHiddenSuffix ?? true;
+            item.ShowLockedIcon = options?.ShowLockedIcon ?? true;
+            item.ShowRarityGlow = options?.ShowRarityGlow ?? true;
+        }
+
+        public static bool IsAppearanceSettingPropertyName(string propertyName)
+        {
+            switch (NormalizePersistedPropertyName(propertyName))
+            {
+                case nameof(PersistedSettings.ShowHiddenIcon):
+                case nameof(PersistedSettings.ShowHiddenTitle):
+                case nameof(PersistedSettings.ShowHiddenDescription):
+                case nameof(PersistedSettings.ShowHiddenSuffix):
+                case nameof(PersistedSettings.ShowLockedIcon):
+                case nameof(PersistedSettings.ShowRarityGlow):
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public static void AccumulateRarity(AchievementDetail achievement, ref int common, ref int uncommon, ref int rare, ref int ultraRare)
@@ -223,6 +251,19 @@ namespace PlayniteAchievements.Services
 
             var key = MakeRevealKey(gameId, achievement.ApiName, gameData?.GameName);
             return options.RevealedKeys.Contains(key);
+        }
+
+        private static string NormalizePersistedPropertyName(string propertyName)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName))
+            {
+                return string.Empty;
+            }
+
+            const string persistedPrefix = "Persisted.";
+            return propertyName.StartsWith(persistedPrefix, StringComparison.Ordinal)
+                ? propertyName.Substring(persistedPrefix.Length)
+                : propertyName;
         }
     }
 }
