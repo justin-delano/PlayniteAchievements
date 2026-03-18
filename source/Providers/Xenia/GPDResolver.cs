@@ -53,7 +53,7 @@ namespace PlayniteAchievements.Providers.Xenia
             return ReverseEndianness(BitConverter.ToUInt64(gpdFile, gpdIndex - 8));
         }
 
-        public List<AchievementDetail> LoadGPD(string xeniaAccountPath, string TitleID)
+        public List<AchievementDetail> LoadGPD(Guid gameID, string xeniaAccountPath, string TitleID)
         {
             Int32 freeIndex;
             UInt32 dataIndex;
@@ -111,7 +111,7 @@ namespace PlayniteAchievements.Providers.Xenia
             {
                 if (entry.section == 2)
                 {
-                    using (var fs = new FileStream($"{_pluginUserDataPath}\\xenia\\{TitleID}\\{entry.id}.png", FileMode.Create, FileAccess.Write))
+                    using (var fs = new FileStream($"{_pluginUserDataPath}\\icon_cache\\{gameID}\\{entry.id}.png", FileMode.Create, FileAccess.Write))
                     {
                         fs.Write(entry.data, 0, (Int32)entry.size);
                     }
@@ -160,7 +160,7 @@ namespace PlayniteAchievements.Providers.Xenia
                         ApiName = achievement.id.ToString(),
                         DisplayName = achievement.title,
                         Description = achievement.unlock_time == 0 ? achievement.description : achievement.unlockDescription,
-                        UnlockedIconPath = $"{_pluginUserDataPath}\\xenia\\{TitleID}\\{entry.id}.png",
+                        UnlockedIconPath = $"{_pluginUserDataPath}\\icon_cache\\{gameID}\\{achievement.icon_id}.png",
                         LockedIconPath = "https://img.icons8.com/?size=64&id=83187&format=png",
                         Points = (int?)achievement.gamerscore,
                         Unlocked = achievement.unlock_time != 0,

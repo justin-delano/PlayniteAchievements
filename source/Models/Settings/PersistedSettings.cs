@@ -82,6 +82,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableDiscHashing = true;
         private bool _enableRaNameFallback = true;
         private Dictionary<Guid, int> _raGameIdOverrides = new Dictionary<Guid, int>();
+        private Dictionary<Guid, string> _xeniaGameIdOverrides = new Dictionary<Guid, string>();
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _sidebarAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -734,6 +735,12 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _raGameIdOverrides;
             set => SetValue(ref _raGameIdOverrides, value ?? new Dictionary<Guid, int>());
+        }
+
+        public Dictionary<Guid, string> XeniaGameIdOverrides
+        {
+            get => _xeniaGameIdOverrides;
+            set => SetValue(ref _xeniaGameIdOverrides, value ?? new Dictionary<Guid, string>());
         }
 
         /// <summary>

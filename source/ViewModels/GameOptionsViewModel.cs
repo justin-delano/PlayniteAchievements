@@ -41,6 +41,10 @@ namespace PlayniteAchievements.ViewModels
         private bool _hasRaOverride;
         private string _raOverrideValue;
         private string _raOverrideInput;
+        private bool _isXeniaCapable;
+        private bool _hasXeniaOverride;
+        private string _xeniaOverrideValue;
+        private string _xeniaOverrideInput;
         private bool _hasManualTrackingLink;
         private string _manualTrackingSummary;
         private bool _hasCapstoneData;
@@ -55,6 +59,7 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand ToggleExclusionCommand { get; }
         public RelayCommand ToggleSummaryExclusionCommand { get; }
         public RelayCommand ApplyRaOverrideCommand { get; }
+        public RelayCommand ApplyXeniaOverrideCommand { get; }
         public RelayCommand ClearRaOverrideCommand { get; }
         public RelayCommand UnlinkManualTrackingCommand { get; }
         public RelayCommand RefreshStateCommand { get; }
@@ -82,6 +87,7 @@ namespace PlayniteAchievements.ViewModels
             ToggleExclusionCommand = new RelayCommand(_ => ToggleExclusion(), _ => HasGame);
             ToggleSummaryExclusionCommand = new RelayCommand(_ => ToggleSummaryExclusion(), _ => HasGame);
             ApplyRaOverrideCommand = new RelayCommand(_ => ApplyRaOverride(), _ => HasGame && IsRaCapable);
+            ApplyXeniaOverrideCommand = new RelayCommand(_ => ApplyXeniaOverride(), _ => HasGame && IsXeniaCapable);
             ClearRaOverrideCommand = new RelayCommand(_ => ClearRaOverride(), _ => HasGame && IsRaCapable && HasRaOverride);
             UnlinkManualTrackingCommand = new RelayCommand(_ => UnlinkManualTracking(), _ => HasGame && HasManualTrackingLink);
             RefreshStateCommand = new RelayCommand(_ => Reload());
@@ -379,6 +385,70 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public bool IsXeniaCapable
+        {
+            get => _isXeniaCapable;
+            private set
+            {
+                if (SetValueAndReturn(ref _isXeniaCapable, value))
+                {
+                    OnPropertyChanged(nameof(XeniaStatusText));
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public bool HasXeniaOverride
+        {
+            get => _hasXeniaOverride;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasXeniaOverride, value))
+                {
+                    OnPropertyChanged(nameof(XeniaStatusText));
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public string XeniaOverrideValue
+        {
+            get => _xeniaOverrideValue;
+            private set => SetValue(ref _xeniaOverrideValue, value);
+        }
+
+        public string XeniaOverrideInput
+        {
+            get => _xeniaOverrideInput;
+            set
+            {
+                if (SetValueAndReturn(ref _xeniaOverrideInput, value ?? string.Empty))
+                {
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public string XeniaStatusText
+        {
+            get
+            {
+                if (!IsXeniaCapable)
+                {
+                    return L("LOCPlayAch_GameOptions_Overrides_XeniaNotCapable", "Xenia override is not available for this game.");
+                }
+
+                if (!HasXeniaOverride)
+                {
+                    return L("LOCPlayAch_GameOptions_Status_XeniaOverrideNone", "No override set");
+                }
+
+                return string.Format(
+                    L("LOCPlayAch_GameOptions_Status_XeniaOverrideValue", "Override set: {0}"),
+                    XeniaOverrideValue);
+            }
+        }
+
         public bool HasManualTrackingLink
         {
             get => _hasManualTrackingLink;
@@ -498,6 +568,10 @@ namespace PlayniteAchievements.ViewModels
 
                 var raProvider = _achievementService?.GetProviders()
                     ?.FirstOrDefault(p => p.ProviderKey == "RetroAchievements");
+                IsRaCapable = raProvider?.IsCapable(game) == true;
+
+                var xeniaProvider = _achievementService?.GetProviders()
+                    ?.FirstOrDefault(p => p.ProviderKey == "Xenia");
                 IsRaCapable = raProvider?.IsCapable(game) == true;
 
                 var hasOverride = false;
@@ -639,6 +713,46 @@ namespace PlayniteAchievements.ViewModels
             return true;
         }
 
+        private void ApplyXeniaOverride()
+        {
+            if (!IsXeniaCapable)
+            {
+                return;
+            }
+
+            var text = (XeniaOverrideInput ?? string.Empty).Trim();
+            if (text.Length > 8 || text.Any(x => !char.IsLetterOrDigit(x)))
+            {
+                _playniteApi?.Dialogs?.ShowMessage(
+                    L("LOCPlayAch_Menu_XeniaTitleId_InvalidId", "Please enter a valid 8 character alphanumeric ID."),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
+            if (TrySetXeniaOverride(text))
+            {
+                Reload();
+            }
+        }
+        private bool TrySetXeniaOverride(string newTitleId)
+        {
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            if (game == null)
+            {
+                return false;
+            }
+
+            _settings.Persisted.XeniaGameIdOverrides[_gameId] = newTitleId;
+            _achievementService?.PersistSettingsForUi();
+
+            _logger?.Info($"Set Xenia TitleID override for '{game.Name}' to {newTitleId}");
+
+            TriggerRefresh();
+            return true;
+        }
+
         private void TriggerRefresh()
         {
             _ = _plugin?.RefreshCoordinator?.ExecuteAsync(
@@ -755,6 +869,7 @@ namespace PlayniteAchievements.ViewModels
             ToggleExclusionCommand?.RaiseCanExecuteChanged();
             ToggleSummaryExclusionCommand?.RaiseCanExecuteChanged();
             ApplyRaOverrideCommand?.RaiseCanExecuteChanged();
+            ApplyXeniaOverrideCommand?.RaiseCanExecuteChanged();
             ClearRaOverrideCommand?.RaiseCanExecuteChanged();
             UnlinkManualTrackingCommand?.RaiseCanExecuteChanged();
             RefreshStateCommand?.RaiseCanExecuteChanged();

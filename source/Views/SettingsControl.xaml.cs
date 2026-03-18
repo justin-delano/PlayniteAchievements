@@ -320,6 +320,19 @@ namespace PlayniteAchievements.Views
             set => SetValue(Rpcs3AuthenticatedProperty, value);
         }
 
+        public static readonly DependencyProperty XeniaAuthenticatedProperty =
+            DependencyProperty.Register(
+                nameof(XeniaAuthenticated),
+                typeof(bool),
+                typeof(SettingsControl),
+                new PropertyMetadata(false));
+
+        public bool XeniaAuthenticated
+        {
+            get => (bool)GetValue(XeniaAuthenticatedProperty);
+            set => SetValue(XeniaAuthenticatedProperty, value);
+        }
+
         public static readonly DependencyProperty SteamAuthenticatedProperty =
             DependencyProperty.Register(
                 nameof(SteamAuthenticated),
@@ -896,6 +909,23 @@ namespace PlayniteAchievements.Views
         {
             (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
             CheckShadPS4Auth();
+        }
+
+        private void XeniaAccountPath_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                CheckXeniaAuth();
+                MoveFocusFrom((TextBox)sender);
+            }
+        }
+
+        private void XeniaAccountPath_LostFocus(object sender, RoutedEventArgs e)
+        {
+            (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+            CheckXeniaAuth();
         }
 
         private void MoveFocusFrom(TextBox textBox)
@@ -2648,6 +2678,41 @@ namespace PlayniteAchievements.Views
             else
             {
                 Dispatcher.BeginInvoke(new Action(() => Rpcs3Authenticated = authenticated));
+            }
+        }
+
+        // -----------------------------
+        // Xenia actions
+        // -----------------------------
+        private void Xenia_Browse_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFolder();
+            if (!string.IsNullOrWhiteSpace(selectedPath))
+            {
+                _settingsViewModel.Settings.Persisted.XeniaAccountPath = selectedPath;
+
+                // Check if the selected file is valid
+                CheckXeniaAuth();
+            }
+        }
+
+        private void CheckXeniaAuth()
+        {
+            if (File.Exists($"{_settingsViewModel.Settings.Persisted.XeniaAccountPath}\\Account"))
+            {
+                SetXeniaAuthenticated(true);
+            }
+            SetXeniaAuthenticated(false);
+        }
+        private void SetXeniaAuthenticated(bool authenticated)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                XeniaAuthenticated = authenticated;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => XeniaAuthenticated = authenticated));
             }
         }
 
