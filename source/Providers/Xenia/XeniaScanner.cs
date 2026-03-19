@@ -278,8 +278,7 @@ namespace PlayniteAchievements.Providers.Xenia
                 publisherCheck[3] = chunk[i + 3];
                 bool passedcheck = KnownPublishers.Any(x => x == System.Text.Encoding.UTF8.GetString(publisherCheck, 0, 4));
                 if (!passedcheck)
-                    _logger.Debug($"[Xenia] Publisher code check failed for chunk at offset {i} with code '{System.Text.Encoding.UTF8.GetString(publisherCheck, 0, 4)}'");
-                    continue;
+                    continue;       
 
                 passedcheck &= char.IsDigit((char)chunk[i + 4]) || char.IsUpper((char)chunk[i + 4]);
                 passedcheck &= char.IsDigit((char)chunk[i + 5]) || char.IsUpper((char)chunk[i + 5]);

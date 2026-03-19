@@ -29,7 +29,7 @@ namespace PlayniteAchievements.Providers.Xenia
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Xenia");
         public string ProviderKey => "Xenia";
         public string ProviderIconKey => "ProviderIconXenia";
-        public string ProviderColorHex => "#2596BE";
+        public string ProviderColorHex => "#92C83E";
 
         public bool IsAuthenticated
         {
