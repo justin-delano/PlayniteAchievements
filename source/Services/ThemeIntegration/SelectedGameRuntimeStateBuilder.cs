@@ -66,7 +66,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             var locked = total - unlocked;
-            var percent = total > 0 ? Math.Round(unlocked * 100.0 / total, 2) : 0;
+            var percent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(unlocked, total);
             var all = achievements.ToList();
             var oldestFirst = all
                 .OrderBy(a => a?.UnlockTimeUtc)

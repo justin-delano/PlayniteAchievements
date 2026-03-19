@@ -148,6 +148,87 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void ThemeRuntimeBuilders_RoundCompletionPercentToNearestInteger()
+        {
+            PercentRarityHelper.Configure(5, 10, 50);
+
+            var gameId = Guid.NewGuid();
+            var game = new Game { Id = gameId, Name = "Rounding Game" };
+            var data = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = game,
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail>
+                {
+                    Achievement("Unlocked 1", 8.0, unlocked: true),
+                    Achievement("Unlocked 2", 25.0, unlocked: true),
+                    Achievement("Locked 1", 75.0, unlocked: false),
+                    Achievement("Locked 2", 90.0, unlocked: false),
+                    Achievement("Locked 3", 60.0, unlocked: false),
+                    Achievement("Locked 4", 50.0, unlocked: false),
+                    Achievement("Locked 5", 35.0, unlocked: false),
+                    Achievement("Locked 6", 15.0, unlocked: false)
+                }
+            };
+
+            var selected = SelectedGameRuntimeStateBuilder.Build(
+                gameId,
+                data,
+                ultraRareThreshold: 5,
+                rareThreshold: 10,
+                uncommonThreshold: 50);
+            var library = LibraryRuntimeStateBuilder.Build(
+                new List<GameAchievementData> { data },
+                api: null,
+                token: default,
+                includeHeavyAchievementLists: false);
+
+            var summary = FindSummary(library.AllGamesWithAchievements, gameId);
+            Assert.AreEqual(25d, selected.ProgressPercentage, "Selected-game path should round 2/8 to 25%.");
+            Assert.AreEqual(25, summary.Progress, "Library path should round 2/8 to 25%.");
+        }
+
+        [TestMethod]
+        public void ThemeRuntimeBuilders_RoundMidpointUpAtHalfPercent()
+        {
+            PercentRarityHelper.Configure(5, 10, 50);
+
+            var gameId = Guid.NewGuid();
+            var game = new Game { Id = gameId, Name = "Half Percent Game" };
+            var achievements = new List<AchievementDetail>();
+            achievements.Add(Achievement("Unlocked", 8.0, unlocked: true));
+            for (var i = 0; i < 199; i++)
+            {
+                achievements.Add(Achievement("Locked " + i, 75.0, unlocked: false));
+            }
+
+            var data = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = game,
+                HasAchievements = true,
+                Achievements = achievements
+            };
+
+            var selected = SelectedGameRuntimeStateBuilder.Build(
+                gameId,
+                data,
+                ultraRareThreshold: 5,
+                rareThreshold: 10,
+                uncommonThreshold: 50);
+            var library = LibraryRuntimeStateBuilder.Build(
+                new List<GameAchievementData> { data },
+                api: null,
+                token: default,
+                includeHeavyAchievementLists: false);
+
+            var summary = FindSummary(library.AllGamesWithAchievements, gameId);
+            Assert.AreEqual(1d, selected.ProgressPercentage, "Selected-game path should round 0.5% to 1%.");
+            Assert.AreEqual(1, summary.Progress, "Library path should round 0.5% to 1%.");
+        }
+
+        [TestMethod]
         public void ClearSingleGameThemeProperties_ResetsAndPublishesRareAndUltraRare()
         {
             var settings = new PlayniteAchievementsSettings();
@@ -210,7 +291,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.AreEqual(locked, stats.Locked);
         }
 
-        private static GameSummaryRuntimeItem FindSummary(IEnumerable<GameSummaryRuntimeItem> items, Guid gameId)
+        private static GameAchievementSummary FindSummary(IEnumerable<GameAchievementSummary> items, Guid gameId)
         {
             foreach (var item in items)
             {

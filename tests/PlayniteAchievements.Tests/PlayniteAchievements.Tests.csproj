@@ -57,8 +57,9 @@
     <Compile Include="..\..\source\Models\Settings\ThemeMigrationCacheEntry.cs" Link="Source\Models\Settings\ThemeMigrationCacheEntry.cs" />
     <Compile Include="..\..\source\Models\Settings\ManualAchievementLink.cs" Link="Source\Models\Settings\ManualAchievementLink.cs" />
     <Compile Include="..\..\source\Models\Achievements\AchievementRarityStats.cs" Link="Source\Models\Achievements\AchievementRarityStats.cs" />
+    <Compile Include="..\..\source\Models\Achievements\AchievementRarityStatsCombiner.cs" Link="Source\Models\Achievements\AchievementRarityStatsCombiner.cs" />
+    <Compile Include="..\..\source\Models\Achievements\AchievementCompletionPercentCalculator.cs" Link="Source\Models\Achievements\AchievementCompletionPercentCalculator.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\GameAchievementSummary.cs" Link="Source\Models\ThemeIntegration\GameAchievementSummary.cs" />
-    <Compile Include="..\..\source\Models\ThemeIntegration\GameSummaryRuntimeItem.cs" Link="Source\Models\ThemeIntegration\GameSummaryRuntimeItem.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\LegacyThemeBindings.cs" Link="Source\Models\ThemeIntegration\LegacyThemeBindings.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\LibraryRuntimeState.cs" Link="Source\Models\ThemeIntegration\LibraryRuntimeState.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\NativeThemeBindings.cs" Link="Source\Models\ThemeIntegration\NativeThemeBindings.cs" />

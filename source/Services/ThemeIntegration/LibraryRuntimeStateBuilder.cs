@@ -91,7 +91,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     data.Game?.Name ?? data.GameName ?? string.Empty,
                     data.Game?.Source?.Name ?? "Unknown",
                     ResolveCoverImagePath(data.Game, api),
-                    unlocked == total ? 100 : (int)Math.Floor(100.0 * unlocked / total),
+                    AchievementCompletionPercentCalculator.ComputeRoundedPercent(unlocked, total),
                     gold,
                     silver,
                     bronze,
