@@ -1,9 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.ViewModels;
@@ -17,8 +13,6 @@ namespace PlayniteAchievements.Views.Helpers
     {
         // Use the same icon for all achievements - grayscale is applied by AchievementDisplayItem.DisplayIcon
         private const string UnlockedIconPath = "pack://application:,,,/PlayniteAchievements;component/Resources/UnlockedAchIcon.png";
-
-        private static MockThemeData _mockThemeData;
 
         /// <summary>
         /// Gets standard mock achievements used across all previews.
@@ -221,53 +215,40 @@ namespace PlayniteAchievements.Views.Helpers
         }
 
         /// <summary>
-        /// Creates mock theme data for previewing controls that bind to ThemeData.
-        /// </summary>
-        /// <returns>A MockThemeData object with standard preview values.</returns>
-        public static MockThemeData GetMockThemeData()
-        {
-            if (_mockThemeData == null)
-            {
-                _mockThemeData = new MockThemeData();
-            }
-            return _mockThemeData;
-        }
-
-        /// <summary>
-        /// Gets a ThemeData populated with mock achievements for settings preview.
+        /// Gets native theme bindings populated with mock achievements for settings preview.
         /// Used by desktop controls via ThemeDataOverride.
         /// </summary>
-        /// <returns>A ThemeData with mock achievement data.</returns>
-        public static ThemeData GetPreviewThemeData()
+        /// <returns>Native theme bindings with mock achievement data.</returns>
+        public static NativeThemeBindings GetPreviewThemeData()
         {
             return CreatePreviewThemeData();
         }
 
         /// <summary>
-        /// Gets a ThemeData with a single unlocked achievement for preview.
+        /// Gets native theme bindings with a single unlocked achievement for preview.
         /// </summary>
-        public static ThemeData GetUnlockedPreviewThemeData()
+        public static NativeThemeBindings GetUnlockedPreviewThemeData()
         {
             return CreateSingleAchievementThemeData(unlocked: true, hidden: false);
         }
 
         /// <summary>
-        /// Gets a ThemeData with a single locked+hidden achievement for preview.
+        /// Gets native theme bindings with a single locked+hidden achievement for preview.
         /// </summary>
-        public static ThemeData GetHiddenPreviewThemeData()
+        public static NativeThemeBindings GetHiddenPreviewThemeData()
         {
             return CreateSingleAchievementThemeData(unlocked: false, hidden: true);
         }
 
         /// <summary>
-        /// Gets a ThemeData with a single locked (non-hidden) achievement for preview.
+        /// Gets native theme bindings with a single locked (non-hidden) achievement for preview.
         /// </summary>
-        public static ThemeData GetLockedPreviewThemeData()
+        public static NativeThemeBindings GetLockedPreviewThemeData()
         {
             return CreateSingleAchievementThemeData(unlocked: false, hidden: false);
         }
 
-        private static ThemeData CreateSingleAchievementThemeData(bool unlocked, bool hidden)
+        private static NativeThemeBindings CreateSingleAchievementThemeData(bool unlocked, bool hidden)
         {
             var achievement = new AchievementDetail
             {
@@ -282,7 +263,7 @@ namespace PlayniteAchievements.Views.Helpers
                 UnlockTimeUtc = unlocked ? DateTime.UtcNow.AddDays(-1) : (DateTime?)null
             };
 
-            var themeData = new ThemeData
+            var themeData = new NativeThemeBindings
             {
                 HasAchievements = true,
                 IsCompleted = unlocked,
@@ -296,9 +277,9 @@ namespace PlayniteAchievements.Views.Helpers
             return themeData;
         }
 
-        private static ThemeData CreatePreviewThemeData()
+        private static NativeThemeBindings CreatePreviewThemeData()
         {
-            var themeData = new ThemeData
+            var themeData = new NativeThemeBindings
             {
                 HasAchievements = true,
                 IsCompleted = false,
@@ -397,103 +378,4 @@ namespace PlayniteAchievements.Views.Helpers
         }
     }
 
-    /// <summary>
-    /// Mock theme data for settings preview controls.
-    /// Mimics the structure of ThemeData for preview purposes.
-    /// </summary>
-    public class MockThemeData : ObservableObject
-    {
-        private int _unlockedCount = 2;
-        private int _achievementCount = 5;
-        private double _progressPercentage = 40.0;
-        private bool _isCompleted = false;
-        private bool _showRarityBar = true;
-        private bool _showRarityGlow = true;
-
-        private RarityStats _ultraRare = new RarityStats { Unlocked = 1, Total = 1 };
-        private RarityStats _rare = new RarityStats { Unlocked = 1, Total = 1 };
-        private RarityStats _uncommon = new RarityStats { Unlocked = 0, Total = 1 };
-        private RarityStats _common = new RarityStats { Unlocked = 0, Total = 2 };
-
-        public int UnlockedCount
-        {
-            get => _unlockedCount;
-            set => SetValue(ref _unlockedCount, value);
-        }
-
-        public int AchievementCount
-        {
-            get => _achievementCount;
-            set => SetValue(ref _achievementCount, value);
-        }
-
-        public double ProgressPercentage
-        {
-            get => _progressPercentage;
-            set => SetValue(ref _progressPercentage, value);
-        }
-
-        public bool IsCompleted
-        {
-            get => _isCompleted;
-            set => SetValue(ref _isCompleted, value);
-        }
-
-        public bool ShowRarityBar
-        {
-            get => _showRarityBar;
-            set => SetValue(ref _showRarityBar, value);
-        }
-
-        public bool ShowRarityGlow
-        {
-            get => _showRarityGlow;
-            set => SetValue(ref _showRarityGlow, value);
-        }
-
-        public RarityStats UltraRare
-        {
-            get => _ultraRare;
-            set => SetValue(ref _ultraRare, value);
-        }
-
-        public RarityStats Rare
-        {
-            get => _rare;
-            set => SetValue(ref _rare, value);
-        }
-
-        public RarityStats Uncommon
-        {
-            get => _uncommon;
-            set => SetValue(ref _uncommon, value);
-        }
-
-        public RarityStats Common
-        {
-            get => _common;
-            set => SetValue(ref _common, value);
-        }
-    }
-
-    /// <summary>
-    /// Rarity statistics for mock theme data.
-    /// </summary>
-    public class RarityStats : ObservableObject
-    {
-        private int _unlocked;
-        private int _total;
-
-        public int Unlocked
-        {
-            get => _unlocked;
-            set => SetValue(ref _unlocked, value);
-        }
-
-        public int Total
-        {
-            get => _total;
-            set => SetValue(ref _total, value);
-        }
-    }
 }

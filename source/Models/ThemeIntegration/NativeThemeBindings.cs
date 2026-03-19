@@ -1,22 +1,19 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Playnite.SDK;
 using Playnite.SDK.Data;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
-using PlayniteAchievements.Services;
+using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.Models.ThemeIntegration
 {
     /// <summary>
-    /// Unified theme integration data for PlayniteAchievements.
-    /// Contains both per-game achievement data and all-games overview data.
-    /// All properties are runtime-only and should not be serialized.
+    /// Native PlayniteAchievements binding surface.
+    /// Runtime-only and populated from a shared theme runtime state.
     /// </summary>
-    public class ThemeData : ObservableObject
+    public class NativeThemeBindings : ObservableObject
     {
-        #region Backing Fields - Per-Game Data
-
         [DontSerialize]
         private bool _hasAchievements;
         [DontSerialize]
@@ -50,18 +47,14 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private List<AchievementDisplayItem> _allAchievementDisplayItems;
 
-        #endregion
-
-        #region Backing Fields - All-Games Overview Data
-
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _completedGamesAsc = new ObservableCollection<GameAchievementSummary>();
+        private readonly BulkObservableCollection<GameAchievementSummary> _completedGamesAsc = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _completedGamesDesc = new ObservableCollection<GameAchievementSummary>();
+        private readonly BulkObservableCollection<GameAchievementSummary> _completedGamesDesc = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _gameSummariesAsc = new ObservableCollection<GameAchievementSummary>();
+        private readonly BulkObservableCollection<GameAchievementSummary> _gameSummariesAsc = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _gameSummariesDesc = new ObservableCollection<GameAchievementSummary>();
+        private readonly BulkObservableCollection<GameAchievementSummary> _gameSummariesDesc = new BulkObservableCollection<GameAchievementSummary>();
 
         [DontSerialize]
         private List<AchievementDetail> _allAchievementsUnlockAsc = new List<AchievementDetail>();
@@ -98,13 +91,25 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private int _totalUltraRareUnlockCount;
 
-        #endregion
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _steamGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _gogGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _epicGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _xboxGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _psnGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _retroAchievementsGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _rpcs3Games = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _shadPS4Games = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _manualGames = new BulkObservableCollection<GameAchievementSummary>();
 
-        #region Per-Game Achievement Properties
-
-        /// <summary>
-        /// Whether achievement data is available for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public bool HasAchievements
         {
@@ -112,10 +117,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _hasAchievements, value);
         }
 
-        /// <summary>
-        /// Whether the currently selected game is completed.
-        /// Provider-aware: true when provider marks complete (e.g., PSN platinum) or all achievements unlocked.
-        /// </summary>
         [DontSerialize]
         public bool IsCompleted
         {
@@ -123,9 +124,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _isCompleted, value);
         }
 
-        /// <summary>
-        /// Total number of achievements for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public int AchievementCount
         {
@@ -133,9 +131,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _achievementCount, value);
         }
 
-        /// <summary>
-        /// Number of unlocked achievements for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public int UnlockedCount
         {
@@ -143,9 +138,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _unlockedCount, value);
         }
 
-        /// <summary>
-        /// Number of locked achievements for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public int LockedCount
         {
@@ -153,9 +145,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _lockedCount, value);
         }
 
-        /// <summary>
-        /// Percentage of achievements unlocked for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public double ProgressPercentage
         {
@@ -163,9 +152,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _progressPercentage, value);
         }
 
-        /// <summary>
-        /// Common achievement statistics for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public AchievementRarityStats Common
         {
@@ -173,9 +159,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _common, value);
         }
 
-        /// <summary>
-        /// Uncommon achievement statistics for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public AchievementRarityStats Uncommon
         {
@@ -183,9 +166,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _uncommon, value);
         }
 
-        /// <summary>
-        /// Rare achievement statistics for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public AchievementRarityStats Rare
         {
@@ -193,9 +173,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _rare, value);
         }
 
-        /// <summary>
-        /// Ultra Rare achievement statistics for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public AchievementRarityStats UltraRare
         {
@@ -203,30 +180,24 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _ultraRare, value);
         }
 
-        /// <summary>
-        /// All achievements for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> AllAchievements
         {
             get => _allAchievements;
             set
             {
-                if (!EqualityComparer<List<AchievementDetail>>.Default.Equals(_allAchievements, value))
+                if (EqualityComparer<List<AchievementDetail>>.Default.Equals(_allAchievements, value))
                 {
-                    _allAchievements = value;
-                    OnPropertyChanged();
-                    // Invalidate cached display items when source changes
-                    _allAchievementDisplayItems = null;
-                    OnPropertyChanged(nameof(AllAchievementDisplayItems));
+                    return;
                 }
+
+                _allAchievements = value;
+                OnPropertyChanged();
+                _allAchievementDisplayItems = null;
+                OnPropertyChanged(nameof(AllAchievementDisplayItems));
             }
         }
 
-        /// <summary>
-        /// All achievements as display items for desktop theme integration.
-        /// Lazily converts AchievementDetail to AchievementDisplayItem for template binding.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDisplayItem> AllAchievementDisplayItems
         {
@@ -244,8 +215,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 }
 
                 var settings = PlayniteAchievementsPlugin.Instance?.Settings;
-                // Settings.ShowHiddenIcon means "show actual icon for hidden achievements" (not question mark)
-                // UpdateFrom expects hideIcon meaning "should we hide the icon", so we invert
                 var hideIcon = !(settings?.Persisted?.ShowHiddenIcon ?? false);
                 var hideTitle = !(settings?.Persisted?.ShowHiddenTitle ?? false);
                 var hideDescription = !(settings?.Persisted?.ShowHiddenDescription ?? false);
@@ -270,17 +239,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             }
         }
 
-        /// <summary>
-        /// Refreshes the cached display items using custom visibility settings.
-        /// Used by settings preview to update display items when settings change.
-        /// </summary>
-        /// <param name="showHiddenIcon">Whether to show hidden achievement icons.</param>
-        /// <param name="showHiddenTitle">Whether to show hidden achievement titles.</param>
-        /// <param name="showHiddenDescription">Whether to show hidden achievement descriptions.</param>
-        /// <param name="showHiddenSuffix">Whether to show the hidden achievement suffix.</param>
-        /// <param name="showLockedIcon">Whether to show locked achievement icons.</param>
-        /// <param name="showRarityGlow">Whether to show rarity glow effects.</param>
-        /// <param name="showRarityBar">Whether to show rarity bars.</param>
         public void RefreshDisplayItems(
             bool showHiddenIcon,
             bool showHiddenTitle,
@@ -293,6 +251,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             if (_allAchievements == null || _allAchievements.Count == 0)
             {
                 _allAchievementDisplayItems = new List<AchievementDisplayItem>();
+                OnPropertyChanged(nameof(AllAchievementDisplayItems));
                 return;
             }
 
@@ -316,9 +275,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             OnPropertyChanged(nameof(AllAchievementDisplayItems));
         }
 
-        /// <summary>
-        /// Achievements sorted by unlock date descending (newest first) for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> AchievementsNewestFirst
         {
@@ -326,9 +282,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _achievementsNewestFirst, value);
         }
 
-        /// <summary>
-        /// Achievements sorted by unlock date ascending (oldest first) for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> AchievementsOldestFirst
         {
@@ -336,9 +289,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _achievementsOldestFirst, value);
         }
 
-        /// <summary>
-        /// Achievements sorted by rarity ascending (rarest first) for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> AchievementsRarityAsc
         {
@@ -346,9 +296,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _achievementsRarityAsc, value);
         }
 
-        /// <summary>
-        /// Achievements sorted by rarity descending (common first) for the currently selected game.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> AchievementsRarityDesc
         {
@@ -356,55 +303,34 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _achievementsRarityDesc, value);
         }
 
-        #endregion
-
-        #region All-Games Overview Properties
-
-        /// <summary>
-        /// Completed games sorted by last unlock date ascending (oldest first).
-        /// Completion is provider-aware or all achievements unlocked.
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> CompletedGamesAsc
         {
             get => _completedGamesAsc;
-            set => SetValue(ref _completedGamesAsc, value);
+            set => ReplaceCollection(_completedGamesAsc, value, nameof(CompletedGamesAsc));
         }
 
-        /// <summary>
-        /// Completed games sorted by last unlock date descending (newest first).
-        /// Completion is provider-aware or all achievements unlocked.
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> CompletedGamesDesc
         {
             get => _completedGamesDesc;
-            set => SetValue(ref _completedGamesDesc, value);
+            set => ReplaceCollection(_completedGamesDesc, value, nameof(CompletedGamesDesc));
         }
 
-        /// <summary>
-        /// All game summaries sorted by last unlock date ascending (oldest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> GameSummariesAsc
         {
             get => _gameSummariesAsc;
-            set => SetValue(ref _gameSummariesAsc, value);
+            set => ReplaceCollection(_gameSummariesAsc, value, nameof(GameSummariesAsc));
         }
 
-        /// <summary>
-        /// All game summaries sorted by last unlock date descending (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> GameSummariesDesc
         {
             get => _gameSummariesDesc;
-            set => SetValue(ref _gameSummariesDesc, value);
+            set => ReplaceCollection(_gameSummariesDesc, value, nameof(GameSummariesDesc));
         }
 
-        /// <summary>
-        /// Total number of achievements unlocked across all games.
-        /// </summary>
         [DontSerialize]
         public int TotalUnlockCount
         {
@@ -412,9 +338,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _totalUnlockCount, value);
         }
 
-        /// <summary>
-        /// Total number of common achievements unlocked across all games.
-        /// </summary>
         [DontSerialize]
         public int TotalCommonUnlockCount
         {
@@ -422,9 +345,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _totalCommonUnlockCount, value);
         }
 
-        /// <summary>
-        /// Total number of uncommon achievements unlocked across all games.
-        /// </summary>
         [DontSerialize]
         public int TotalUncommonUnlockCount
         {
@@ -432,9 +352,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _totalUncommonUnlockCount, value);
         }
 
-        /// <summary>
-        /// Total number of rare achievements unlocked across all games.
-        /// </summary>
         [DontSerialize]
         public int TotalRareUnlockCount
         {
@@ -442,9 +359,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _totalRareUnlockCount, value);
         }
 
-        /// <summary>
-        /// Total number of ultra-rare achievements unlocked across all games.
-        /// </summary>
         [DontSerialize]
         public int TotalUltraRareUnlockCount
         {
@@ -452,9 +366,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _totalUltraRareUnlockCount, value);
         }
 
-        /// <summary>
-        /// All achievements from all games, sorted by unlock date ascending (oldest first).
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> AllAchievementsUnlockAsc
         {
@@ -462,9 +373,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _allAchievementsUnlockAsc, value);
         }
 
-        /// <summary>
-        /// All achievements from all games, sorted by unlock date descending (newest first).
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> AllAchievementsUnlockDesc
         {
@@ -472,9 +380,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _allAchievementsUnlockDesc, value);
         }
 
-        /// <summary>
-        /// All achievements from all games, sorted by rarity ascending (rarest first).
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> AllAchievementsRarityAsc
         {
@@ -482,9 +387,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _allAchievementsRarityAsc, value);
         }
 
-        /// <summary>
-        /// All achievements from all games, sorted by rarity descending (common first).
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> AllAchievementsRarityDesc
         {
@@ -492,9 +394,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _allAchievementsRarityDesc, value);
         }
 
-        /// <summary>
-        /// Unlocked achievements across all games, sorted by unlock date descending (newest first).
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> MostRecentUnlocks
         {
@@ -502,10 +401,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _mostRecentUnlocks, value);
         }
 
-        /// <summary>
-        /// Unlocked achievements across all games, sorted by rarity ascending (rarest first),
-        /// with recency used as a tie-breaker.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> RarestRecentUnlocks
         {
@@ -513,9 +408,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _rarestRecentUnlocks, value);
         }
 
-        /// <summary>
-        /// Top 3 unlocked achievements across all games, newest first.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> MostRecentUnlocksTop3
         {
@@ -523,9 +415,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _mostRecentUnlocksTop3, value);
         }
 
-        /// <summary>
-        /// Top 5 unlocked achievements across all games, newest first.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> MostRecentUnlocksTop5
         {
@@ -533,9 +422,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _mostRecentUnlocksTop5, value);
         }
 
-        /// <summary>
-        /// Top 10 unlocked achievements across all games, newest first.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> MostRecentUnlocksTop10
         {
@@ -543,9 +429,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _mostRecentUnlocksTop10, value);
         }
 
-        /// <summary>
-        /// Top 3 rare unlocked achievements across all games, filtered to the recent-window threshold.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> RarestRecentUnlocksTop3
         {
@@ -553,9 +436,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _rarestRecentUnlocksTop3, value);
         }
 
-        /// <summary>
-        /// Top 5 rare unlocked achievements across all games, filtered to the recent-window threshold.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> RarestRecentUnlocksTop5
         {
@@ -563,9 +443,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _rarestRecentUnlocksTop5, value);
         }
 
-        /// <summary>
-        /// Top 10 rare unlocked achievements across all games, filtered to the recent-window threshold.
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> RarestRecentUnlocksTop10
         {
@@ -573,119 +450,73 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _rarestRecentUnlocksTop10, value);
         }
 
-        #endregion
-
-        #region Per-Provider Game Lists
-
-        [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _steamGames = new ObservableCollection<GameAchievementSummary>();
-        [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _gogGames = new ObservableCollection<GameAchievementSummary>();
-        [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _epicGames = new ObservableCollection<GameAchievementSummary>();
-        [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _xboxGames = new ObservableCollection<GameAchievementSummary>();
-        [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _psnGames = new ObservableCollection<GameAchievementSummary>();
-        [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _retroAchievementsGames = new ObservableCollection<GameAchievementSummary>();
-        [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _rpcs3Games = new ObservableCollection<GameAchievementSummary>();
-        [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _shadPS4Games = new ObservableCollection<GameAchievementSummary>();
-        [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _manualGames = new ObservableCollection<GameAchievementSummary>();
-
-        /// <summary>
-        /// Steam games sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> SteamGames
         {
             get => _steamGames;
-            set => SetValue(ref _steamGames, value);
+            set => ReplaceCollection(_steamGames, value, nameof(SteamGames));
         }
 
-        /// <summary>
-        /// GOG games sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> GOGGames
         {
             get => _gogGames;
-            set => SetValue(ref _gogGames, value);
+            set => ReplaceCollection(_gogGames, value, nameof(GOGGames));
         }
 
-        /// <summary>
-        /// Epic games sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> EpicGames
         {
             get => _epicGames;
-            set => SetValue(ref _epicGames, value);
+            set => ReplaceCollection(_epicGames, value, nameof(EpicGames));
         }
 
-        /// <summary>
-        /// Xbox games sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> XboxGames
         {
             get => _xboxGames;
-            set => SetValue(ref _xboxGames, value);
+            set => ReplaceCollection(_xboxGames, value, nameof(XboxGames));
         }
 
-        /// <summary>
-        /// PSN games sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> PSNGames
         {
             get => _psnGames;
-            set => SetValue(ref _psnGames, value);
+            set => ReplaceCollection(_psnGames, value, nameof(PSNGames));
         }
 
-        /// <summary>
-        /// RetroAchievements games sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> RetroAchievementsGames
         {
             get => _retroAchievementsGames;
-            set => SetValue(ref _retroAchievementsGames, value);
+            set => ReplaceCollection(_retroAchievementsGames, value, nameof(RetroAchievementsGames));
         }
 
-        /// <summary>
-        /// RPCS3 games sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> RPCS3Games
         {
             get => _rpcs3Games;
-            set => SetValue(ref _rpcs3Games, value);
+            set => ReplaceCollection(_rpcs3Games, value, nameof(RPCS3Games));
         }
 
-        /// <summary>
-        /// ShadPS4 games sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> ShadPS4Games
         {
             get => _shadPS4Games;
-            set => SetValue(ref _shadPS4Games, value);
+            set => ReplaceCollection(_shadPS4Games, value, nameof(ShadPS4Games));
         }
 
-        /// <summary>
-        /// Manual achievement games sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> ManualGames
         {
             get => _manualGames;
-            set => SetValue(ref _manualGames, value);
+            set => ReplaceCollection(_manualGames, value, nameof(ManualGames));
         }
 
-        #endregion
+        private void ReplaceCollection<T>(BulkObservableCollection<T> target, IEnumerable<T> value, string propertyName)
+        {
+            target.ReplaceAll(value ?? new List<T>());
+            OnPropertyChanged(propertyName);
+        }
     }
 }

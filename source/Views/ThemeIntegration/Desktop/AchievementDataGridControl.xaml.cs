@@ -101,6 +101,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// Gets a value indicating whether this control should subscribe to theme data change notifications.
         /// </summary>
         protected override bool EnableAutomaticThemeDataUpdates => true;
+        protected override bool UsesThemeBindings => true;
 
         /// <summary>
         /// Called when ThemeDataOverride changes. Clears cache to force data refresh.
@@ -206,11 +207,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         }
 
         /// <summary>
-        /// Determines whether a change raised from ThemeData should trigger a refresh.
+        /// Determines whether a change raised from native theme bindings should trigger a refresh.
         /// </summary>
         protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
-            return propertyName == nameof(Models.ThemeIntegration.ThemeData.AllAchievementDisplayItems);
+            return propertyName == nameof(NativeThemeBindings.AllAchievementDisplayItems);
         }
 
         /// <summary>

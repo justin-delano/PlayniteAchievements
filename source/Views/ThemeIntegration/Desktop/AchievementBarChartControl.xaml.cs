@@ -16,6 +16,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// Gets a value indicating whether this control should subscribe to theme data change notifications.
         /// </summary>
         protected override bool EnableAutomaticThemeDataUpdates => true;
+        protected override bool UsesThemeBindings => true;
 
         /// <summary>
         /// Gets the timeline view model that manages chart data and state.
@@ -29,11 +30,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         }
 
         /// <summary>
-        /// Determines whether a change raised from ThemeData should trigger a refresh.
+        /// Determines whether a change raised from native theme bindings should trigger a refresh.
         /// </summary>
         protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
-            return propertyName == nameof(Models.ThemeIntegration.ThemeData.AllAchievements);
+            return propertyName == nameof(Models.ThemeIntegration.NativeThemeBindings.AllAchievements);
         }
 
         /// <summary>

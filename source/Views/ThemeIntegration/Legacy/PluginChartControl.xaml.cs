@@ -15,10 +15,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         private readonly ChartViewModel _viewModel = new ChartViewModel();
 
         protected override bool EnableAutomaticThemeDataUpdates => true;
+        protected override bool UsesLegacyThemeBindings => true;
 
         protected override bool ShouldHandleLegacyThemeDataChange(string propertyName)
         {
-            return propertyName == nameof(LegacyThemeData.ListAchUnlockDateAsc);
+            return propertyName == nameof(LegacyThemeBindings.ListAchUnlockDateAsc);
         }
 
         protected override void OnThemeDataUpdated()

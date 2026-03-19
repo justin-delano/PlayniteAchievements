@@ -22,6 +22,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         private List<AchievementDetail> _visibleAchievements = EmptyAchievements;
 
         protected override bool EnableAutomaticThemeDataUpdates => true;
+        protected override bool UsesLegacyThemeBindings => true;
 
         public event PropertyChangedEventHandler PropertyChanged;
 

@@ -13,7 +13,7 @@ using PlayniteAchievements.Views.ThemeIntegration.Base;
 namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
 {
     /// <summary>
-    /// Base class for compact list controls that get data from ThemeData.
+    /// Base class for compact list controls that get data from native theme bindings.
     /// Provides filtering by unlock state and overflow limiting.
     /// </summary>
     public abstract class AchievementCompactListControlBase : ThemeControlBase
@@ -22,6 +22,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// Gets a value indicating whether this control should subscribe to theme data change notifications.
         /// </summary>
         protected override bool EnableAutomaticThemeDataUpdates => true;
+        protected override bool UsesThemeBindings => true;
 
         #region Dependency Properties
 
@@ -175,7 +176,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         protected virtual bool FilterAchievement(AchievementDetail achievement) => true;
 
         /// <summary>
-        /// Loads data from ThemeData and applies filtering.
+        /// Loads data from native theme bindings and applies filtering.
         /// </summary>
         protected virtual void LoadData()
         {
@@ -327,13 +328,13 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         }
 
         /// <summary>
-        /// Determines whether a change raised from ThemeData should trigger a refresh.
+        /// Determines whether a change raised from native theme bindings should trigger a refresh.
         /// </summary>
         protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
             // Refresh when achievement data changes
-            return propertyName == nameof(Models.ThemeIntegration.ThemeData.AllAchievementDisplayItems) ||
-                   propertyName == nameof(Models.ThemeIntegration.ThemeData.AllAchievements);
+            return propertyName == nameof(NativeThemeBindings.AllAchievementDisplayItems) ||
+                   propertyName == nameof(NativeThemeBindings.AllAchievements);
         }
 
         /// <summary>
@@ -349,7 +350,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// </summary>
         public override void GameContextChanged(Game oldContext, Game newContext)
         {
-            // ThemeData is already populated by OnGameSelected in the plugin
+            // Native theme bindings are already populated by OnGameSelected in the plugin
             if (_isLoaded)
             {
                 LoadData();

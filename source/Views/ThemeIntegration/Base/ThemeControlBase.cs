@@ -70,17 +70,17 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         /// Used by settings preview to inject mock data.
         /// </summary>
         public static readonly DependencyProperty ThemeDataOverrideProperty =
-            DependencyProperty.Register(nameof(ThemeDataOverride), typeof(ThemeData),
+            DependencyProperty.Register(nameof(ThemeDataOverride), typeof(NativeThemeBindings),
                 typeof(ThemeControlBase), new PropertyMetadata(null, OnThemeDataOverrideChanged));
 
         /// <summary>
-        /// Gets or sets a ThemeData override for preview purposes.
+        /// Gets or sets a native theme binding override for preview purposes.
         /// When null (default), uses Plugin.Settings.Theme.
         /// When set, uses this instance instead (for settings preview).
         /// </summary>
-        public ThemeData ThemeDataOverride
+        public NativeThemeBindings ThemeDataOverride
         {
-            get => (ThemeData)GetValue(ThemeDataOverrideProperty);
+            get => (NativeThemeBindings)GetValue(ThemeDataOverrideProperty);
             set => SetValue(ThemeDataOverrideProperty, value);
         }
 
@@ -92,6 +92,39 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 control.OnThemeDataOverrideChangedInternal();
 
                 // Re-subscribe to theme data updates if auto-update is enabled
+                if (control._isAutoUpdateSubscribed)
+                {
+                    control.UnsubscribeFromThemeDataUpdates();
+                    control.SubscribeToThemeDataUpdates();
+                }
+
+                if (control.IsLoaded)
+                {
+                    control.OnThemeDataUpdated();
+                }
+            }
+        }
+
+        public static readonly DependencyProperty LegacyThemeOverrideProperty =
+            DependencyProperty.Register(nameof(LegacyThemeOverride), typeof(LegacyThemeBindings),
+                typeof(ThemeControlBase), new PropertyMetadata(null, OnLegacyThemeOverrideChanged));
+
+        /// <summary>
+        /// Gets or sets a legacy theme binding override for preview purposes.
+        /// When null (default), uses Plugin.Settings.LegacyTheme.
+        /// </summary>
+        public LegacyThemeBindings LegacyThemeOverride
+        {
+            get => (LegacyThemeBindings)GetValue(LegacyThemeOverrideProperty);
+            set => SetValue(LegacyThemeOverrideProperty, value);
+        }
+
+        private static void OnLegacyThemeOverrideChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is ThemeControlBase control)
+            {
+                control.UpdateDataContext();
+
                 if (control._isAutoUpdateSubscribed)
                 {
                     control.UnsubscribeFromThemeDataUpdates();
@@ -120,18 +153,26 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         protected PlayniteAchievementsSettings EffectiveSettings => SettingsOverride ?? Plugin?.Settings;
 
         /// <summary>
-        /// Gets the effective ThemeData to use for binding.
+        /// Gets the effective native theme bindings to use for binding.
         /// Returns ThemeDataOverride if set, otherwise Plugin.Settings.Theme.
         /// </summary>
-        protected ThemeData EffectiveTheme => ThemeDataOverride ?? EffectiveSettings?.Theme;
+        protected NativeThemeBindings EffectiveTheme => ThemeDataOverride ?? EffectiveSettings?.Theme;
+
+        /// <summary>
+        /// Gets the effective legacy theme bindings to use for binding.
+        /// Returns LegacyThemeOverride if set, otherwise Plugin.Settings.LegacyTheme.
+        /// </summary>
+        protected LegacyThemeBindings EffectiveLegacyTheme => LegacyThemeOverride ?? EffectiveSettings?.LegacyTheme;
 
         private void UpdateDataContext()
         {
             var settings = EffectiveSettings;
-            if (ThemeDataOverride != null)
+            if (ThemeDataOverride != null || LegacyThemeOverride != null)
             {
-                // Use a wrapper that returns the override for Theme property
-                DataContext = new ThemeDataOverrideContext(settings, ThemeDataOverride);
+                DataContext = new ThemePreviewContext(
+                    settings,
+                    ThemeDataOverride ?? settings?.Theme,
+                    LegacyThemeOverride ?? settings?.LegacyTheme);
             }
             else
             {
@@ -147,17 +188,27 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         protected virtual bool EnableAutomaticThemeDataUpdates => false;
 
         /// <summary>
+        /// Gets a value indicating whether this control consumes native theme bindings.
+        /// </summary>
+        protected virtual bool UsesThemeBindings => false;
+
+        /// <summary>
+        /// Gets a value indicating whether this control consumes legacy theme bindings.
+        /// </summary>
+        protected virtual bool UsesLegacyThemeBindings => false;
+
+        /// <summary>
         /// Determines whether a change raised from <see cref="PlayniteAchievementsSettings"/> should trigger a refresh.
         /// </summary>
         protected virtual bool ShouldHandleSettingsDataChange(string propertyName) => false;
 
         /// <summary>
-        /// Determines whether a change raised from <see cref="Models.ThemeIntegration.ThemeData"/> should trigger a refresh.
+        /// Determines whether a change raised from <see cref="Models.ThemeIntegration.NativeThemeBindings"/> should trigger a refresh.
         /// </summary>
         protected virtual bool ShouldHandleThemeDataChange(string propertyName) => false;
 
         /// <summary>
-        /// Determines whether a change raised from <see cref="Models.ThemeIntegration.LegacyThemeData"/> should trigger a refresh.
+        /// Determines whether a change raised from <see cref="Models.ThemeIntegration.LegacyThemeBindings"/> should trigger a refresh.
         /// </summary>
         protected virtual bool ShouldHandleLegacyThemeDataChange(string propertyName) => false;
 
@@ -228,18 +279,24 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 settings.Persisted.PropertyChanged += Persisted_PropertyChanged;
             }
 
-            // Subscribe to ThemeDataOverride if set, otherwise subscribe to settings.Theme
-            var effectiveTheme = ThemeDataOverride ?? settings.Theme;
-            if (effectiveTheme != null)
+            if (UsesThemeBindings)
             {
-                effectiveTheme.PropertyChanged -= Theme_PropertyChanged;
-                effectiveTheme.PropertyChanged += Theme_PropertyChanged;
+                var effectiveTheme = EffectiveTheme;
+                if (effectiveTheme != null)
+                {
+                    effectiveTheme.PropertyChanged -= Theme_PropertyChanged;
+                    effectiveTheme.PropertyChanged += Theme_PropertyChanged;
+                }
             }
 
-            if (settings.LegacyTheme != null)
+            if (UsesLegacyThemeBindings)
             {
-                settings.LegacyTheme.PropertyChanged -= LegacyTheme_PropertyChanged;
-                settings.LegacyTheme.PropertyChanged += LegacyTheme_PropertyChanged;
+                var effectiveLegacyTheme = EffectiveLegacyTheme;
+                if (effectiveLegacyTheme != null)
+                {
+                    effectiveLegacyTheme.PropertyChanged -= LegacyTheme_PropertyChanged;
+                    effectiveLegacyTheme.PropertyChanged += LegacyTheme_PropertyChanged;
+                }
             }
 
             _isAutoUpdateSubscribed = true;
@@ -262,16 +319,22 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                     settings.Persisted.PropertyChanged -= Persisted_PropertyChanged;
                 }
 
-                // Unsubscribe from the effective theme (override or settings)
-                var effectiveTheme = ThemeDataOverride ?? settings.Theme;
-                if (effectiveTheme != null)
+                if (UsesThemeBindings)
                 {
-                    effectiveTheme.PropertyChanged -= Theme_PropertyChanged;
+                    var effectiveTheme = EffectiveTheme;
+                    if (effectiveTheme != null)
+                    {
+                        effectiveTheme.PropertyChanged -= Theme_PropertyChanged;
+                    }
                 }
 
-                if (settings.LegacyTheme != null)
+                if (UsesLegacyThemeBindings)
                 {
-                    settings.LegacyTheme.PropertyChanged -= LegacyTheme_PropertyChanged;
+                    var effectiveLegacyTheme = EffectiveLegacyTheme;
+                    if (effectiveLegacyTheme != null)
+                    {
+                        effectiveLegacyTheme.PropertyChanged -= LegacyTheme_PropertyChanged;
+                    }
                 }
             }
 
@@ -348,7 +411,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 return;
             }
 
-            var priority = ThemeDataOverride != null
+            var priority = ThemeDataOverride != null || LegacyThemeOverride != null
                 ? DispatcherPriority.DataBind
                 : DispatcherPriority.Background;
 
@@ -381,29 +444,33 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
     }
 
     /// <summary>
-    /// DataContext wrapper that substitutes a custom ThemeData for the Theme property.
-    /// Allows settings preview to inject mock data while preserving other Settings bindings.
+    /// DataContext wrapper that substitutes custom native and legacy theme bindings for preview.
     /// </summary>
-    internal class ThemeDataOverrideContext
+    internal class ThemePreviewContext
     {
         private readonly PlayniteAchievementsSettings _settings;
-        private readonly ThemeData _themeOverride;
+        private readonly NativeThemeBindings _themeOverride;
+        private readonly LegacyThemeBindings _legacyThemeOverride;
 
-        public ThemeDataOverrideContext(PlayniteAchievementsSettings settings, ThemeData themeOverride)
+        public ThemePreviewContext(
+            PlayniteAchievementsSettings settings,
+            NativeThemeBindings themeOverride,
+            LegacyThemeBindings legacyThemeOverride)
         {
             _settings = settings;
             _themeOverride = themeOverride;
+            _legacyThemeOverride = legacyThemeOverride;
         }
 
         /// <summary>
-        /// Returns the override ThemeData instead of the settings' Theme.
+        /// Returns the override native theme bindings instead of the settings' Theme.
         /// </summary>
-        public ThemeData Theme => _themeOverride;
+        public NativeThemeBindings Theme => _themeOverride;
 
         /// <summary>
-        /// Returns the override ThemeData as LegacyTheme for compatibility.
+        /// Returns the override legacy theme bindings instead of the settings' LegacyTheme.
         /// </summary>
-        public ThemeData LegacyTheme => _themeOverride;
+        public LegacyThemeBindings LegacyTheme => _legacyThemeOverride;
 
         /// <summary>
         /// Returns the effective settings object backing this preview context.

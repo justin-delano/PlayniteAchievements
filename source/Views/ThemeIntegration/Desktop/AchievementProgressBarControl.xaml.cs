@@ -1,4 +1,5 @@
 using PlayniteAchievements.Views.ThemeIntegration.Base;
+using PlayniteAchievements.Models.ThemeIntegration;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
 {
@@ -13,6 +14,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         /// Gets a value indicating whether this control should subscribe to theme data change notifications.
         /// </summary>
         protected override bool EnableAutomaticThemeDataUpdates => true;
+        protected override bool UsesThemeBindings => true;
 
         public AchievementProgressBarControl()
         {
@@ -20,14 +22,14 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         }
 
         /// <summary>
-        /// Determines whether a change raised from ThemeData should trigger a refresh.
+        /// Determines whether a change raised from native theme bindings should trigger a refresh.
         /// </summary>
         protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
-            return propertyName == nameof(Models.ThemeIntegration.ThemeData.UltraRare) ||
-                   propertyName == nameof(Models.ThemeIntegration.ThemeData.Rare) ||
-                   propertyName == nameof(Models.ThemeIntegration.ThemeData.Uncommon) ||
-                   propertyName == nameof(Models.ThemeIntegration.ThemeData.Common);
+            return propertyName == nameof(NativeThemeBindings.UltraRare) ||
+                   propertyName == nameof(NativeThemeBindings.Rare) ||
+                   propertyName == nameof(NativeThemeBindings.Uncommon) ||
+                   propertyName == nameof(NativeThemeBindings.Common);
         }
 
         /// <summary>

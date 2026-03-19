@@ -355,33 +355,16 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private MockThemeData _mockThemeData;
+        private NativeThemeBindings _previewThemeData;
+        private NativeThemeBindings _unlockedPreviewThemeData;
+        private NativeThemeBindings _hiddenPreviewThemeData;
+        private NativeThemeBindings _lockedPreviewThemeData;
 
         /// <summary>
-        /// Gets mock theme data for controls that bind to ThemeData properties.
-        /// </summary>
-        public MockThemeData MockThemeData
-        {
-            get
-            {
-                if (_mockThemeData == null)
-                {
-                    _mockThemeData = MockDataHelper.GetMockThemeData();
-                }
-                return _mockThemeData;
-            }
-        }
-
-        private ThemeData _previewThemeData;
-        private ThemeData _unlockedPreviewThemeData;
-        private ThemeData _hiddenPreviewThemeData;
-        private ThemeData _lockedPreviewThemeData;
-
-        /// <summary>
-        /// Gets a ThemeData populated with mock achievements for desktop control previews.
+        /// Gets native theme bindings populated with mock achievements for desktop control previews.
         /// Used by desktop controls via ThemeDataOverride binding.
         /// </summary>
-        public ThemeData PreviewThemeData
+        public NativeThemeBindings PreviewThemeData
         {
             get
             {
@@ -394,9 +377,9 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Gets a ThemeData with a single unlocked achievement for visibility preview.
+        /// Gets native theme bindings with a single unlocked achievement for visibility preview.
         /// </summary>
-        public ThemeData UnlockedPreviewThemeData
+        public NativeThemeBindings UnlockedPreviewThemeData
         {
             get
             {
@@ -409,9 +392,9 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Gets a ThemeData with a single hidden achievement for visibility preview.
+        /// Gets native theme bindings with a single hidden achievement for visibility preview.
         /// </summary>
-        public ThemeData HiddenPreviewThemeData
+        public NativeThemeBindings HiddenPreviewThemeData
         {
             get
             {
@@ -424,9 +407,9 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Gets a ThemeData with a single locked achievement for visibility preview.
+        /// Gets native theme bindings with a single locked achievement for visibility preview.
         /// </summary>
-        public ThemeData LockedPreviewThemeData
+        public NativeThemeBindings LockedPreviewThemeData
         {
             get
             {
@@ -501,7 +484,7 @@ namespace PlayniteAchievements.Views
                 // we'll assign a new list which triggers refresh
             }
 
-            // Refresh the preview ThemeData used by desktop controls
+            // Refresh the preview native theme bindings used by desktop controls
             _previewThemeData?.RefreshDisplayItems(
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
                 settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.ShowRarityGlow, settings.ShowCompactListRarityBar);

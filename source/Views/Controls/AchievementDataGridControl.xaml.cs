@@ -379,7 +379,7 @@ namespace PlayniteAchievements.Views.Controls
                 return settings;
             }
 
-            if (DataContext is ThemeDataOverrideContext previewContext)
+            if (DataContext is ThemePreviewContext previewContext)
             {
                 return previewContext.Settings;
             }

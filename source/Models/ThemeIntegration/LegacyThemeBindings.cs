@@ -1,22 +1,18 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Windows.Input;
-using Playnite.SDK;
 using Playnite.SDK.Data;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
+using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.Models.ThemeIntegration
 {
     /// <summary>
-    /// Legacy theme compatibility data for backward compatibility.
-    /// Contains SuccessStory compatibility, Aniki ReMake compatibility, and old inline properties.
-    /// New themes should prefer the unified ThemeData class.
-    /// All properties are runtime-only and should not be serialized.
+    /// Legacy SuccessStory/Aniki-compatible binding surface.
+    /// Runtime-only and populated from a shared theme runtime state.
     /// </summary>
-    public class LegacyThemeData : ObservableObject
+    public class LegacyThemeBindings : ObservableObject
     {
-        #region Backing Fields - Old Inline Properties
-
         [DontSerialize]
         private bool _hasData;
         [DontSerialize]
@@ -25,10 +21,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private int _unlocked;
         [DontSerialize]
         private double _percent;
-
-        #endregion
-
-        #region Backing Fields - SuccessStory Compatibility
 
         [DontSerialize]
         private bool _is100Percent;
@@ -45,18 +37,14 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private List<AchievementDetail> _listAchUnlockDateDesc = new List<AchievementDetail>();
 
-        #endregion
-
-        #region Backing Fields - Aniki ReMake Compatibility
-
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _allGamesWithAchievements = new ObservableCollection<GameAchievementSummary>();
+        private readonly BulkObservableCollection<GameAchievementSummary> _allGamesWithAchievements = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _gamesWithAchievements = new ObservableCollection<GameAchievementSummary>();
+        private readonly BulkObservableCollection<GameAchievementSummary> _gamesWithAchievements = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _platinumGames = new ObservableCollection<GameAchievementSummary>();
+        private readonly BulkObservableCollection<GameAchievementSummary> _platinumGames = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
-        private ObservableCollection<GameAchievementSummary> _platinumGamesAscending = new ObservableCollection<GameAchievementSummary>();
+        private readonly BulkObservableCollection<GameAchievementSummary> _platinumGamesAscending = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
         private bool _hasDataAllGames;
         [DontSerialize]
@@ -90,17 +78,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private string _gsLevel = "0";
         [DontSerialize]
-        private double _gsLevelProgress = 0;
+        private double _gsLevelProgress;
         [DontSerialize]
         private string _gsRank = "Bronze1";
 
-        #endregion
-
-        #region Old Inline Properties
-
-        /// <summary>
-        /// Whether achievement data is available (legacy inline property).
-        /// </summary>
         [DontSerialize]
         public bool HasData
         {
@@ -108,9 +89,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _hasData, value);
         }
 
-        /// <summary>
-        /// Total achievement count (legacy inline property).
-        /// </summary>
         [DontSerialize]
         public int Total
         {
@@ -118,9 +96,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _total, value);
         }
 
-        /// <summary>
-        /// Unlocked achievement count (legacy inline property).
-        /// </summary>
         [DontSerialize]
         public int Unlocked
         {
@@ -128,9 +103,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _unlocked, value);
         }
 
-        /// <summary>
-        /// Achievement progress percentage (legacy inline property).
-        /// </summary>
         [DontSerialize]
         public double Percent
         {
@@ -138,13 +110,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _percent, value);
         }
 
-        #endregion
-
-        #region SuccessStory Compatibility Properties
-
-        /// <summary>
-        /// Whether all achievements are unlocked (SuccessStory compatible).
-        /// </summary>
         [DontSerialize]
         public bool Is100Percent
         {
@@ -152,9 +117,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _is100Percent, value);
         }
 
-        /// <summary>
-        /// Number of locked achievements (SuccessStory compatible).
-        /// </summary>
         [DontSerialize]
         public int Locked
         {
@@ -162,9 +124,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _locked, value);
         }
 
-        /// <summary>
-        /// Total gamerscore for Xbox achievements (SuccessStory compatible).
-        /// </summary>
         [DontSerialize]
         public int TotalGamerScore
         {
@@ -172,9 +131,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _totalGamerScore, value);
         }
 
-        /// <summary>
-        /// Estimated time to unlock all achievements (SuccessStory compatible).
-        /// </summary>
         [DontSerialize]
         public string EstimateTimeToUnlock
         {
@@ -182,9 +138,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _estimateTimeToUnlock, value);
         }
 
-        /// <summary>
-        /// All achievements (SuccessStory compatible).
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> ListAchievements
         {
@@ -192,9 +145,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _listAchievements, value);
         }
 
-        /// <summary>
-        /// Achievements sorted by unlock date ascending (SuccessStory compatible).
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> ListAchUnlockDateAsc
         {
@@ -202,9 +152,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _listAchUnlockDateAsc, value);
         }
 
-        /// <summary>
-        /// Achievements sorted by unlock date descending (SuccessStory compatible).
-        /// </summary>
         [DontSerialize]
         public List<AchievementDetail> ListAchUnlockDateDesc
         {
@@ -212,23 +159,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _listAchUnlockDateDesc, value);
         }
 
-        #endregion
-
-        #region Aniki ReMake Compatibility Properties
-
-        /// <summary>
-        /// All games with achievements (Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> AllGamesWithAchievements
         {
             get => _allGamesWithAchievements;
-            set => SetValue(ref _allGamesWithAchievements, value);
+            set => ReplaceCollection(_allGamesWithAchievements, value, nameof(AllGamesWithAchievements));
         }
 
-        /// <summary>
-        /// Whether all-games achievement overview data is available.
-        /// </summary>
         [DontSerialize]
         public bool HasDataAllGames
         {
@@ -236,29 +173,20 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _hasDataAllGames, value);
         }
 
-        /// <summary>
-        /// All games with achievements, sorted by last unlock date.
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> GamesWithAchievements
         {
             get => _gamesWithAchievements;
-            set => SetValue(ref _gamesWithAchievements, value);
+            set => ReplaceCollection(_gamesWithAchievements, value, nameof(GamesWithAchievements));
         }
 
-        /// <summary>
-        /// Provider-completed games (for example, PSN platinum earned), sorted by last unlock date (newest first).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> PlatinumGames
         {
             get => _platinumGames;
-            set => SetValue(ref _platinumGames, value);
+            set => ReplaceCollection(_platinumGames, value, nameof(PlatinumGames));
         }
 
-        /// <summary>
-        /// Total trophy count across all games.
-        /// </summary>
         [DontSerialize]
         public int TotalTrophies
         {
@@ -266,9 +194,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _totalTrophies, value < 0 ? 0 : value);
         }
 
-        /// <summary>
-        /// Number of provider-completed games in the platinum list.
-        /// </summary>
         [DontSerialize]
         public int PlatinumTrophies
         {
@@ -276,9 +201,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _platinumTrophies, value < 0 ? 0 : value);
         }
 
-        /// <summary>
-        /// Gold trophy count (ultra-rare achievements).
-        /// </summary>
         [DontSerialize]
         public int GoldTrophies
         {
@@ -286,9 +208,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _goldTrophies, value < 0 ? 0 : value);
         }
 
-        /// <summary>
-        /// Silver trophy count (uncommon achievements).
-        /// </summary>
         [DontSerialize]
         public int SilverTrophies
         {
@@ -296,9 +215,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _silverTrophies, value < 0 ? 0 : value);
         }
 
-        /// <summary>
-        /// Bronze trophy count (common achievements).
-        /// </summary>
         [DontSerialize]
         public int BronzeTrophies
         {
@@ -306,9 +222,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _bronzeTrophies, value < 0 ? 0 : value);
         }
 
-        /// <summary>
-        /// Player level calculated from total score.
-        /// </summary>
         [DontSerialize]
         public int Level
         {
@@ -316,9 +229,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _level, value < 0 ? 0 : value);
         }
 
-        /// <summary>
-        /// Progress toward next level (0-100).
-        /// </summary>
         [DontSerialize]
         public double LevelProgress
         {
@@ -326,9 +236,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _levelProgress, value);
         }
 
-        /// <summary>
-        /// Player rank based on level (Bronze1 through Plat).
-        /// </summary>
         [DontSerialize]
         public string Rank
         {
@@ -336,19 +243,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _rank, value ?? "Bronze1");
         }
 
-        /// <summary>
-        /// Provider-completed games sorted ascending (Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public ObservableCollection<GameAchievementSummary> PlatinumGamesAscending
         {
             get => _platinumGamesAscending;
-            set => SetValue(ref _platinumGamesAscending, value);
+            set => ReplaceCollection(_platinumGamesAscending, value, nameof(PlatinumGamesAscending));
         }
 
-        /// <summary>
-        /// Total trophy count (string format for Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public string GSTotal
         {
@@ -356,9 +257,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _gsTotal, value ?? "0");
         }
 
-        /// <summary>
-        /// Platinum trophy count (string format for Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public string GSPlat
         {
@@ -366,9 +264,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _gsPlat, value ?? "0");
         }
 
-        /// <summary>
-        /// Gold trophy count (string format for Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public string GS90
         {
@@ -376,9 +271,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _gs90, value ?? "0");
         }
 
-        /// <summary>
-        /// Silver trophy count (string format for Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public string GS30
         {
@@ -386,9 +278,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _gs30, value ?? "0");
         }
 
-        /// <summary>
-        /// Bronze trophy count (string format for Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public string GS15
         {
@@ -396,9 +285,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _gs15, value ?? "0");
         }
 
-        /// <summary>
-        /// Total gamer score (for Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public string GSScore
         {
@@ -406,9 +292,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _gsScore, value ?? "0");
         }
 
-        /// <summary>
-        /// Player level (string format for Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public string GSLevel
         {
@@ -416,9 +299,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _gsLevel, value ?? "0");
         }
 
-        /// <summary>
-        /// Progress toward next level (for Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public double GSLevelProgress
         {
@@ -426,9 +306,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _gsLevelProgress, value);
         }
 
-        /// <summary>
-        /// Player rank (for Aniki ReMake compatibility).
-        /// </summary>
         [DontSerialize]
         public string GSRank
         {
@@ -436,6 +313,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             set => SetValue(ref _gsRank, value ?? "Bronze1");
         }
 
-        #endregion
+        private void ReplaceCollection<T>(BulkObservableCollection<T> target, IEnumerable<T> value, string propertyName)
+        {
+            target.ReplaceAll(value ?? new List<T>());
+            OnPropertyChanged(propertyName);
+        }
     }
 }

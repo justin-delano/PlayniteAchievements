@@ -128,7 +128,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly RefreshCoordinator _refreshCoordinator;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly FullscreenWindowService _windowService;
-        private readonly Action<Guid?> _requestSingleGameThemeUpdate;
+        private readonly ThemeRuntimeState _runtimeState = new ThemeRuntimeState();
 
         private readonly ICommand _openOverviewCmd;
         private readonly ICommand _openSelectedGameCmd;
@@ -143,6 +143,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private DateTime _lastRefreshRequestUtc = DateTime.MinValue;
         private static readonly TimeSpan StartupRefreshCoalesceWindow = TimeSpan.FromMilliseconds(350);
 
+        private readonly object _updateGate = new object();
+        private Task _updateRunner;
+        private int _requestVersion;
+        private int _processedVersion;
+        private Guid? _requestedGameId;
+        private CancellationTokenSource _activeUpdateCts;
+        private Guid? _appliedGameId;
+        private DateTime _appliedLastUpdatedUtc;
+        private int _appliedSettingsRevision;
+        private double _ultraRareThreshold;
+        private double _rareThreshold;
+        private double _uncommonThreshold;
+        private int _settingsRevision;
+
         private bool _fullscreenInitialized;
 
         public ThemeIntegrationService(
@@ -151,7 +165,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             RefreshCoordinator refreshCoordinator,
             PlayniteAchievementsSettings settings,
             FullscreenWindowService windowService,
-            Action<Guid?> requestSingleGameThemeUpdate,
             ILogger logger)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
@@ -159,7 +172,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _refreshCoordinator = refreshCoordinator ?? throw new ArgumentNullException(nameof(refreshCoordinator));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
-            _requestSingleGameThemeUpdate = requestSingleGameThemeUpdate ?? throw new ArgumentNullException(nameof(requestSingleGameThemeUpdate));
             _logger = logger;
 
             _openOverviewCmd = new RelayCommand(_ => OpenOverviewWindow());
@@ -182,6 +194,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             _settings.PropertyChanged += Settings_PropertyChanged;
             _achievementService.CacheInvalidated += AchievementService_CacheInvalidated;
+            RefreshCachedThresholds();
         }
 
         public void Dispose()
@@ -195,19 +208,45 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 try { _refreshCts?.Dispose(); } catch { }
                 _refreshCts = null;
             }
+
+            lock (_updateGate)
+            {
+                try { _activeUpdateCts?.Cancel(); } catch { }
+                try { _activeUpdateCts?.Dispose(); } catch { }
+                _activeUpdateCts = null;
+            }
         }
 
         public void NotifySelectionChanged(Guid? selectedGameId)
         {
-            // Raise PropertyChanged for SelectedGame so themes get notified of selection changes
-            _settings.OnPropertyChanged(nameof(PlayniteAchievementsSettings.SelectedGame));
-
             if (!selectedGameId.HasValue)
             {
                 return;
             }
 
             EnsureFullscreenInitialized();
+        }
+
+        public void RequestUpdate(Guid? gameId)
+        {
+            lock (_updateGate)
+            {
+                _requestVersion++;
+                _requestedGameId = gameId;
+                if (_updateRunner == null || _updateRunner.IsCompleted)
+                {
+                    _updateRunner = RunUpdateLoopAsync();
+                }
+            }
+
+            if (gameId.HasValue && (!_appliedGameId.HasValue || _appliedGameId.Value != gameId.Value))
+            {
+                var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+                _ = dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    try { ClearSingleGameThemeProperties(); } catch { }
+                }), DispatcherPriority.Background);
+            }
         }
 
         private bool IsFullscreen()
@@ -235,33 +274,22 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void Settings_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e == null)
+            if (!IsThresholdProperty(e?.PropertyName))
             {
                 return;
             }
 
-            if (e.PropertyName == $"{nameof(PlayniteAchievementsSettings.Persisted)}.{nameof(PersistedSettings.UltraRareThreshold)}" ||
-                e.PropertyName == nameof(PersistedSettings.UltraRareThreshold) ||
-                e.PropertyName == $"{nameof(PlayniteAchievementsSettings.Persisted)}.{nameof(PersistedSettings.RareThreshold)}" ||
-                e.PropertyName == nameof(PersistedSettings.RareThreshold) ||
-                e.PropertyName == $"{nameof(PlayniteAchievementsSettings.Persisted)}.{nameof(PersistedSettings.UncommonThreshold)}" ||
-                e.PropertyName == nameof(PersistedSettings.UncommonThreshold))
-            {
-                try
-                {
-                    RarityHelper.Configure(
-                        _settings.Persisted.UltraRareThreshold,
-                        _settings.Persisted.RareThreshold,
-                        _settings.Persisted.UncommonThreshold);
-                }
-                catch
-                {
-                }
+            RefreshCachedThresholds();
+            Interlocked.Increment(ref _settingsRevision);
 
-                if (IsFullscreen() && _fullscreenInitialized)
-                {
-                    RequestRefresh();
-                }
+            if (_appliedGameId.HasValue)
+            {
+                RequestUpdate(_appliedGameId);
+            }
+
+            if (IsFullscreen() && _fullscreenInitialized)
+            {
+                RequestRefresh();
             }
         }
 
@@ -277,8 +305,42 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 var id = ResolveSelectedGameIdForThemeUpdate();
                 if (id.HasValue)
                 {
-                    _requestSingleGameThemeUpdate(id);
+                    RequestUpdate(id);
                 }
+            }
+            catch
+            {
+            }
+        }
+
+        private bool IsThresholdProperty(string propertyName)
+        {
+            return propertyName == $"{nameof(PlayniteAchievementsSettings.Persisted)}.{nameof(PersistedSettings.UltraRareThreshold)}" ||
+                   propertyName == nameof(PersistedSettings.UltraRareThreshold) ||
+                   propertyName == $"{nameof(PlayniteAchievementsSettings.Persisted)}.{nameof(PersistedSettings.RareThreshold)}" ||
+                   propertyName == nameof(PersistedSettings.RareThreshold) ||
+                   propertyName == $"{nameof(PlayniteAchievementsSettings.Persisted)}.{nameof(PersistedSettings.UncommonThreshold)}" ||
+                   propertyName == nameof(PersistedSettings.UncommonThreshold);
+        }
+
+        private void RefreshCachedThresholds()
+        {
+            try
+            {
+                _ultraRareThreshold = _settings.Persisted.UltraRareThreshold;
+                _rareThreshold = _settings.Persisted.RareThreshold;
+                _uncommonThreshold = _settings.Persisted.UncommonThreshold;
+            }
+            catch
+            {
+                _ultraRareThreshold = 5;
+                _rareThreshold = 10;
+                _uncommonThreshold = 50;
+            }
+
+            try
+            {
+                RarityHelper.Configure(_ultraRareThreshold, _rareThreshold, _uncommonThreshold);
             }
             catch
             {
@@ -336,6 +398,152 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             return selected[0].Id;
+        }
+
+        private async Task RunUpdateLoopAsync()
+        {
+            while (true)
+            {
+                int version;
+                Guid? gameId;
+                int settingsRevision;
+                CancellationToken token;
+
+                lock (_updateGate)
+                {
+                    if (_processedVersion == _requestVersion)
+                    {
+                        return;
+                    }
+
+                    version = _requestVersion;
+                    gameId = _requestedGameId;
+                    settingsRevision = Volatile.Read(ref _settingsRevision);
+                    _processedVersion = version;
+
+                    try { _activeUpdateCts?.Cancel(); } catch { }
+                    try { _activeUpdateCts?.Dispose(); } catch { }
+                    _activeUpdateCts = new CancellationTokenSource();
+                    token = _activeUpdateCts.Token;
+                }
+
+                if (!gameId.HasValue)
+                {
+                    await ApplyClearAsync(version).ConfigureAwait(false);
+                    continue;
+                }
+
+                GameAchievementData gameData = null;
+                try
+                {
+                    gameData = await Task.Run(() => _achievementService.GetGameAchievementData(gameId.Value), token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "Theme integration update failed to fetch game data.");
+                }
+
+                if (token.IsCancellationRequested)
+                {
+                    continue;
+                }
+
+                if (gameData == null || !gameData.HasAchievements)
+                {
+                    await ApplyClearAsync(version).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (_appliedGameId.HasValue &&
+                    _appliedGameId.Value == gameId.Value &&
+                    _appliedLastUpdatedUtc == gameData.LastUpdatedUtc &&
+                    _appliedSettingsRevision == settingsRevision)
+                {
+                    continue;
+                }
+
+                SelectedGameRuntimeState state = null;
+                try
+                {
+                    var ultra = _ultraRareThreshold;
+                    var rare = _rareThreshold;
+                    var uncommon = _uncommonThreshold;
+
+                    state = await Task.Run(
+                        () => SelectedGameRuntimeStateBuilder.Build(gameId.Value, gameData, ultra, rare, uncommon),
+                        token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "Theme integration update failed while building selected-game state.");
+                }
+
+                if (token.IsCancellationRequested)
+                {
+                    continue;
+                }
+
+                var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+                if (dispatcher == null)
+                {
+                    continue;
+                }
+
+                await dispatcher.InvokeAsync(() =>
+                {
+                    if (!IsLatest(version))
+                    {
+                        return;
+                    }
+
+                    if (state == null || !state.HasAchievements)
+                    {
+                        ClearSingleGameThemeProperties();
+                        return;
+                    }
+
+                    ApplySelectedGameState(state);
+                    _appliedGameId = gameId;
+                    _appliedLastUpdatedUtc = gameData.LastUpdatedUtc;
+                    _appliedSettingsRevision = settingsRevision;
+                }, DispatcherPriority.Background).Task.ConfigureAwait(false);
+            }
+        }
+
+        private Task ApplyClearAsync(int version)
+        {
+            var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+            if (dispatcher == null)
+            {
+                ClearSingleGameThemeProperties();
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(() =>
+            {
+                if (!IsLatest(version))
+                {
+                    return;
+                }
+
+                ClearSingleGameThemeProperties();
+            }, DispatcherPriority.Background).Task;
+        }
+
+        private bool IsLatest(int version)
+        {
+            lock (_updateGate)
+            {
+                return version == _requestVersion;
+            }
         }
 
         #region Window Operations (delegated to FullscreenWindowService)
@@ -522,7 +730,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     _achievementService.RebuildProgress -= progressHandler;
                     if (gameIdForThemeUpdate.HasValue)
                     {
-                        try { _requestSingleGameThemeUpdate(gameIdForThemeUpdate.Value); } catch { }
+                        try { RequestUpdate(gameIdForThemeUpdate.Value); } catch { }
                     }
                     try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
                 }
@@ -558,7 +766,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         {
                             if (gameIdForThemeUpdate.HasValue)
                             {
-                                try { _requestSingleGameThemeUpdate(gameIdForThemeUpdate.Value); } catch { }
+                                try { RequestUpdate(gameIdForThemeUpdate.Value); } catch { }
                             }
                             try { if (IsFullscreen()) RequestRefresh(); } catch { }
                         }
@@ -580,16 +788,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 allData = FilterExcludedFromSummaries(allData);
                 _logger?.Info($"PopulateAllGamesDataSync: Found {allData.Count} total game data entries.");
 
-                var snapshot = AllGamesSnapshotService.BuildSnapshot(
+                var state = LibraryRuntimeStateBuilder.Build(
                     allData,
                     _api,
-                    OpenGameWindow,
                     CancellationToken.None,
                     includeHeavyAchievementLists);
 
-                _logger?.Info($"PopulateAllGamesDataSync: Snapshot created - TotalCount={snapshot.TotalCount}, PlatCount={snapshot.PlatCount}, GoldCount={snapshot.GoldCount}, Rank={snapshot.Rank}");
+                _logger?.Info($"PopulateAllGamesDataSync: State created - TotalTrophies={state.TotalTrophies}, PlatinumTrophies={state.PlatinumTrophies}, GoldTrophies={state.GoldTrophies}, Rank={state.Rank}");
 
-                ApplySnapshot(snapshot);
+                ApplyLibraryState(state);
 
                 _logger?.Info($"PopulateAllGamesDataSync: Applied snapshot. AllGamesWithAchievements count={_settings.LegacyTheme.AllGamesWithAchievements?.Count ?? 0}");
             }
@@ -617,7 +824,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         /// <summary>
         /// Synchronously populates single-game achievement data for the specified game.
         /// Uses existing cached data without triggering a refresh.
-        /// Called on desktop game selection changes to populate ThemeData for theme controls.
+        /// Called on desktop game selection changes to populate native theme bindings for theme controls.
         /// </summary>
         /// <param name="gameId">The ID of the game to populate data for.</param>
         internal void PopulateSingleGameDataSync(Guid gameId)
@@ -625,22 +832,19 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             try
             {
                 var gameData = _achievementService.GetGameAchievementData(gameId);
-                if (gameData == null || !gameData.HasAchievements)
-                {
-                    ClearSingleGameThemeProperties();
-                    return;
-                }
-
-                var snapshot = SingleGameSnapshotService.BuildSnapshot(
+                var state = SelectedGameRuntimeStateBuilder.Build(
                     gameId,
                     gameData,
-                    _settings.Persisted.UltraRareThreshold,
-                    _settings.Persisted.RareThreshold,
-                    _settings.Persisted.UncommonThreshold);
+                    _ultraRareThreshold,
+                    _rareThreshold,
+                    _uncommonThreshold);
 
-                if (snapshot != null)
+                if (state != null && state.HasAchievements)
                 {
-                    ApplySnapshot(snapshot);
+                    ApplySelectedGameState(state);
+                    _appliedGameId = gameId;
+                    _appliedLastUpdatedUtc = gameData?.LastUpdatedUtc ?? default;
+                    _appliedSettingsRevision = Volatile.Read(ref _settingsRevision);
                 }
                 else
                 {
@@ -690,15 +894,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                     token.ThrowIfCancellationRequested();
 
-                    var snapshot = AllGamesSnapshotService.BuildSnapshot(
+                    var state = LibraryRuntimeStateBuilder.Build(
                         allData,
                         _api,
-                        OpenGameWindow,
                         token,
                         shouldBuildHeavyAchievementLists);
 
                     var uiDispatcher = _api.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
-                    uiDispatcher?.InvokeIfNeeded(() => ApplySnapshot(snapshot), DispatcherPriority.Background);
+                    uiDispatcher?.InvokeIfNeeded(() => ApplyLibraryState(state), DispatcherPriority.Background);
                 }
                 catch (OperationCanceledException)
                 {
@@ -710,12 +913,197 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }, token);
         }
 
-        private void ApplySnapshot(AllGamesSnapshot snapshot)
+        private void ApplyLibraryState(LibraryRuntimeState state)
         {
-            snapshot ??= new AllGamesSnapshot();
+            _runtimeState.Library = state ?? new LibraryRuntimeState();
+            var library = _runtimeState.Library;
 
-            ApplyNativeSurface(snapshot);
-            ApplyCompatibilitySurface(snapshot);
+            _settings.Theme.CompletedGamesAsc = ProjectGameSummaries(library.CompletedGamesAsc);
+            _settings.Theme.CompletedGamesDesc = ProjectGameSummaries(library.CompletedGamesDesc);
+            _settings.Theme.GameSummariesAsc = ProjectGameSummaries(library.GameSummariesAsc);
+            _settings.Theme.GameSummariesDesc = ProjectGameSummaries(library.GameSummariesDesc);
+            _settings.Theme.TotalUnlockCount = library.TotalUnlockCount;
+            _settings.Theme.TotalCommonUnlockCount = library.TotalCommonUnlockCount;
+            _settings.Theme.TotalUncommonUnlockCount = library.TotalUncommonUnlockCount;
+            _settings.Theme.TotalRareUnlockCount = library.TotalRareUnlockCount;
+            _settings.Theme.TotalUltraRareUnlockCount = library.TotalUltraRareUnlockCount;
+            _settings.Theme.SteamGames = ProjectGameSummaries(library.SteamGames);
+            _settings.Theme.GOGGames = ProjectGameSummaries(library.GOGGames);
+            _settings.Theme.EpicGames = ProjectGameSummaries(library.EpicGames);
+            _settings.Theme.XboxGames = ProjectGameSummaries(library.XboxGames);
+            _settings.Theme.PSNGames = ProjectGameSummaries(library.PSNGames);
+            _settings.Theme.RetroAchievementsGames = ProjectGameSummaries(library.RetroAchievementsGames);
+            _settings.Theme.RPCS3Games = ProjectGameSummaries(library.RPCS3Games);
+            _settings.Theme.ShadPS4Games = ProjectGameSummaries(library.ShadPS4Games);
+            _settings.Theme.ManualGames = ProjectGameSummaries(library.ManualGames);
+            _settings.Theme.MostRecentUnlocksTop3 = library.MostRecentUnlocksTop3;
+            _settings.Theme.MostRecentUnlocksTop5 = library.MostRecentUnlocksTop5;
+            _settings.Theme.MostRecentUnlocksTop10 = library.MostRecentUnlocksTop10;
+            _settings.Theme.RarestRecentUnlocksTop3 = library.RarestRecentUnlocksTop3;
+            _settings.Theme.RarestRecentUnlocksTop5 = library.RarestRecentUnlocksTop5;
+            _settings.Theme.RarestRecentUnlocksTop10 = library.RarestRecentUnlocksTop10;
+
+            _settings.LegacyTheme.HasDataAllGames = library.HasData;
+            _settings.LegacyTheme.GamesWithAchievements = ProjectGameSummaries(library.GameSummariesDesc);
+            _settings.LegacyTheme.TotalTrophies = library.TotalTrophies;
+            _settings.LegacyTheme.PlatinumTrophies = library.PlatinumTrophies;
+            _settings.LegacyTheme.GoldTrophies = library.GoldTrophies;
+            _settings.LegacyTheme.SilverTrophies = library.SilverTrophies;
+            _settings.LegacyTheme.BronzeTrophies = library.BronzeTrophies;
+            _settings.LegacyTheme.Level = library.Level;
+            _settings.LegacyTheme.LevelProgress = library.LevelProgress;
+            _settings.LegacyTheme.Rank = !string.IsNullOrWhiteSpace(library.Rank) ? library.Rank : "Bronze1";
+
+            _settings.LegacyTheme.AllGamesWithAchievements = ProjectGameSummaries(library.AllGamesWithAchievements);
+            _settings.PlatinumGames = ProjectGameSummaries(library.PlatinumGames);
+            _settings.LegacyTheme.PlatinumGamesAscending = ProjectGameSummaries(library.PlatinumGamesAscending);
+            _settings.LegacyTheme.GSTotal = library.TotalTrophies > 0 ? library.TotalTrophies.ToString() : "0";
+            _settings.LegacyTheme.GSPlat = library.TotalTrophies > 0 ? library.PlatinumTrophies.ToString() : "0";
+            _settings.LegacyTheme.GS90 = library.TotalTrophies > 0 ? library.GoldTrophies.ToString() : "0";
+            _settings.LegacyTheme.GS30 = library.TotalTrophies > 0 ? library.SilverTrophies.ToString() : "0";
+            _settings.LegacyTheme.GS15 = library.TotalTrophies > 0 ? library.BronzeTrophies.ToString() : "0";
+            _settings.LegacyTheme.GSScore = library.TotalTrophies > 0 ? library.Score.ToString("N0") : "0";
+            _settings.LegacyTheme.GSLevel = library.TotalTrophies > 0 ? library.Level.ToString() : "0";
+            _settings.LegacyTheme.GSLevelProgress = library.TotalTrophies > 0 ? library.LevelProgress : 0;
+            _settings.LegacyTheme.GSRank = library.TotalTrophies > 0 && !string.IsNullOrWhiteSpace(library.Rank) ? library.Rank : "Bronze1";
+
+            var shouldUpdateHeavyLists = library.HeavyListsBuilt || !library.HasData;
+            if (shouldUpdateHeavyLists)
+            {
+                _settings.Theme.AllAchievementsUnlockAsc = library.AllAchievementsUnlockAsc;
+                _settings.Theme.AllAchievementsUnlockDesc = library.AllAchievementsUnlockDesc;
+                _settings.Theme.AllAchievementsRarityAsc = library.AllAchievementsRarityAsc;
+                _settings.Theme.AllAchievementsRarityDesc = library.AllAchievementsRarityDesc;
+                _settings.Theme.MostRecentUnlocks = library.MostRecentUnlocks;
+                _settings.Theme.RarestRecentUnlocks = library.RarestRecentUnlocks;
+            }
+
+            NotifySettingProperties(CompatibilityAllGamesDelegatedProperties);
+            NotifySettingProperties(NativeAllGamesCoreDelegatedProperties);
+            if (shouldUpdateHeavyLists)
+            {
+                NotifySettingProperties(NativeAllGamesHeavyDelegatedProperties);
+            }
+        }
+
+        #endregion
+
+        #region Per-Game Theme Integration
+
+        /// <summary>
+        /// Apply a single-game snapshot to theme-exposed settings properties.
+        /// Intended to be executed on the UI thread.
+        /// </summary>
+        private void ApplySelectedGameState(SelectedGameRuntimeState state)
+        {
+            if (state == null || !state.HasAchievements)
+            {
+                ClearSingleGameThemeProperties();
+                return;
+            }
+
+            _runtimeState.SelectedGame = state;
+            _settings.Theme.HasAchievements = true;
+            _settings.Theme.IsCompleted = state.IsCompleted;
+            _settings.Theme.AchievementCount = state.AchievementCount;
+            _settings.Theme.UnlockedCount = state.UnlockedCount;
+            _settings.Theme.LockedCount = state.LockedCount;
+            _settings.Theme.ProgressPercentage = state.ProgressPercentage;
+            _settings.Theme.Common = state.Common;
+            _settings.Theme.Uncommon = state.Uncommon;
+            _settings.Theme.Rare = state.Rare;
+            _settings.Theme.UltraRare = state.UltraRare;
+            _settings.Theme.AllAchievements = state.AllAchievements;
+            _settings.Theme.AchievementsNewestFirst = state.AchievementsNewestFirst;
+            _settings.Theme.AchievementsOldestFirst = state.AchievementsOldestFirst;
+            _settings.Theme.AchievementsRarityAsc = state.AchievementsRarityAsc;
+            _settings.Theme.AchievementsRarityDesc = state.AchievementsRarityDesc;
+
+            _settings.LegacyTheme.HasData = true;
+            _settings.LegacyTheme.Total = state.AchievementCount;
+            _settings.LegacyTheme.Unlocked = state.UnlockedCount;
+            _settings.LegacyTheme.Percent = state.ProgressPercentage;
+            _settings.LegacyTheme.Is100Percent = state.UnlockedCount == state.AchievementCount && state.AchievementCount > 0;
+            _settings.LegacyTheme.Locked = state.LockedCount;
+            _settings.LegacyTheme.TotalGamerScore = 0;
+            _settings.LegacyTheme.EstimateTimeToUnlock = string.Empty;
+            _settings.LegacyTheme.ListAchievements = state.AllAchievements;
+            _settings.LegacyTheme.ListAchUnlockDateAsc = state.AchievementsOldestFirst;
+            _settings.LegacyTheme.ListAchUnlockDateDesc = state.AchievementsNewestFirst;
+
+            NotifySettingProperties(SingleGameThemeDelegatedProperties);
+            NotifySettingProperties(SingleGameLegacyDelegatedProperties);
+        }
+
+        /// <summary>
+        /// Clear per-game theme properties when no game is selected or game has no achievements.
+        /// </summary>
+        public void ClearSingleGameThemeProperties()
+        {
+            _runtimeState.SelectedGame = SelectedGameRuntimeState.Empty;
+            _settings.Theme.HasAchievements = false;
+            _settings.Theme.IsCompleted = false;
+            _settings.Theme.AchievementCount = 0;
+            _settings.Theme.UnlockedCount = 0;
+            _settings.Theme.LockedCount = 0;
+            _settings.Theme.ProgressPercentage = 0;
+
+            _settings.Theme.AllAchievements = EmptyAchievementList;
+            _settings.Theme.AchievementsNewestFirst = EmptyAchievementList;
+            _settings.Theme.AchievementsOldestFirst = EmptyAchievementList;
+            _settings.Theme.AchievementsRarityAsc = EmptyAchievementList;
+            _settings.Theme.AchievementsRarityDesc = EmptyAchievementList;
+
+            _settings.Theme.Common = EmptyRarityStats;
+            _settings.Theme.Uncommon = EmptyRarityStats;
+            _settings.Theme.Rare = EmptyRarityStats;
+            _settings.Theme.UltraRare = EmptyRarityStats;
+            _settings.LegacyTheme.HasData = false;
+            _settings.LegacyTheme.Total = 0;
+            _settings.LegacyTheme.Unlocked = 0;
+            _settings.LegacyTheme.Percent = 0;
+
+            _settings.LegacyTheme.Is100Percent = false;
+            _settings.LegacyTheme.Locked = 0;
+            _settings.LegacyTheme.TotalGamerScore = 0;
+            _settings.LegacyTheme.EstimateTimeToUnlock = string.Empty;
+
+            _settings.LegacyTheme.ListAchievements = EmptyAchievementList;
+            _settings.LegacyTheme.ListAchUnlockDateAsc = EmptyAchievementList;
+            _settings.LegacyTheme.ListAchUnlockDateDesc = EmptyAchievementList;
+
+            _appliedGameId = null;
+            _appliedLastUpdatedUtc = default;
+            _appliedSettingsRevision = Volatile.Read(ref _settingsRevision);
+
+            NotifySettingProperties(SingleGameThemeDelegatedProperties);
+            NotifySettingProperties(SingleGameLegacyDelegatedProperties);
+        }
+
+        #endregion
+
+        private ObservableCollection<GameAchievementSummary> ProjectGameSummaries(IEnumerable<GameSummaryRuntimeItem> items)
+        {
+            var projected = (items ?? Enumerable.Empty<GameSummaryRuntimeItem>())
+                .Select(item => new GameAchievementSummary(
+                    item.GameId,
+                    item.Name,
+                    item.Platform,
+                    item.CoverImagePath,
+                    item.Progress,
+                    item.GoldCount,
+                    item.SilverCount,
+                    item.BronzeCount,
+                    item.IsCompleted,
+                    item.LastUnlockDate,
+                    new RelayCommand(_ => OpenGameWindow(item.GameId)),
+                    item.CommonUnlockCount,
+                    item.UncommonUnlockCount,
+                    item.RareUnlockCount,
+                    item.UltraRareUnlockCount))
+                .ToList();
+
+            return new ObservableCollection<GameAchievementSummary>(projected);
         }
 
         private void NotifySettingProperties(params string[] propertyNames)
@@ -734,210 +1122,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
             }
         }
-
-        private void ApplyCompatibilitySurface(AllGamesSnapshot snapshot)
-        {
-            _settings.LegacyTheme.AllGamesWithAchievements = snapshot.CreateAllGamesObservable();
-            _settings.PlatinumGames = snapshot.CreatePlatinumObservable();
-            _settings.LegacyTheme.PlatinumGamesAscending = snapshot.CreatePlatinumAscendingObservable();
-
-            _settings.LegacyTheme.GSTotal = snapshot.TotalCount > 0 ? snapshot.TotalCount.ToString() : "0";
-            _settings.LegacyTheme.GSPlat = snapshot.TotalCount > 0 ? snapshot.PlatCount.ToString() : "0";
-            _settings.LegacyTheme.GS90 = snapshot.TotalCount > 0 ? snapshot.GoldCount.ToString() : "0";
-            _settings.LegacyTheme.GS30 = snapshot.TotalCount > 0 ? snapshot.SilverCount.ToString() : "0";
-            _settings.LegacyTheme.GS15 = snapshot.TotalCount > 0 ? snapshot.BronzeCount.ToString() : "0";
-            _settings.LegacyTheme.GSScore = snapshot.TotalCount > 0 ? snapshot.Score.ToString("N0") : "0";
-
-            _settings.LegacyTheme.GSLevel = snapshot.TotalCount > 0 ? snapshot.Level.ToString() : "0";
-            _settings.LegacyTheme.GSLevelProgress = snapshot.TotalCount > 0 ? snapshot.LevelProgress : 0;
-            _settings.LegacyTheme.GSRank = snapshot.TotalCount > 0 && !string.IsNullOrWhiteSpace(snapshot.Rank) ? snapshot.Rank : "Bronze1";
-
-            // Raise PropertyChanged for delegated properties so bindings update
-            NotifySettingProperties(CompatibilityAllGamesDelegatedProperties);
-        }
-
-        private void ApplyNativeSurface(AllGamesSnapshot snapshot)
-        {
-            _settings.Theme.CompletedGamesAsc = snapshot.CreateCompletedGamesAscObservable();
-            _settings.Theme.CompletedGamesDesc = snapshot.CreateCompletedGamesDescObservable();
-            _settings.Theme.GameSummariesAsc = snapshot.CreateGameSummariesAscObservable();
-            _settings.Theme.GameSummariesDesc = snapshot.CreateGameSummariesDescObservable();
-
-            _settings.LegacyTheme.HasDataAllGames = snapshot.TotalCount > 0;
-            _settings.LegacyTheme.GamesWithAchievements = snapshot.CreateGameSummariesDescObservable();
-
-            _settings.LegacyTheme.TotalTrophies = snapshot.TotalCount;
-            _settings.LegacyTheme.PlatinumTrophies = snapshot.PlatCount;
-            _settings.LegacyTheme.GoldTrophies = snapshot.GoldCount;
-            _settings.LegacyTheme.SilverTrophies = snapshot.SilverCount;
-            _settings.LegacyTheme.BronzeTrophies = snapshot.BronzeCount;
-
-            _settings.Theme.TotalUnlockCount = snapshot.TotalUnlockCount;
-            _settings.Theme.TotalCommonUnlockCount = snapshot.TotalCommonUnlockCount;
-            _settings.Theme.TotalUncommonUnlockCount = snapshot.TotalUncommonUnlockCount;
-            _settings.Theme.TotalRareUnlockCount = snapshot.TotalRareUnlockCount;
-            _settings.Theme.TotalUltraRareUnlockCount = snapshot.TotalUltraRareUnlockCount;
-
-            // Per-provider game lists
-            _settings.Theme.SteamGames = snapshot.CreateSteamGamesObservable();
-            _settings.Theme.GOGGames = snapshot.CreateGOGGamesObservable();
-            _settings.Theme.EpicGames = snapshot.CreateEpicGamesObservable();
-            _settings.Theme.XboxGames = snapshot.CreateXboxGamesObservable();
-            _settings.Theme.PSNGames = snapshot.CreatePSNGamesObservable();
-            _settings.Theme.RetroAchievementsGames = snapshot.CreateRetroAchievementsGamesObservable();
-            _settings.Theme.RPCS3Games = snapshot.CreateRPCS3GamesObservable();
-            _settings.Theme.ShadPS4Games = snapshot.CreateShadPS4GamesObservable();
-            _settings.Theme.ManualGames = snapshot.CreateManualGamesObservable();
-
-            _settings.LegacyTheme.Level = snapshot.Level;
-            _settings.LegacyTheme.LevelProgress = snapshot.LevelProgress;
-            _settings.LegacyTheme.Rank = !string.IsNullOrWhiteSpace(snapshot.Rank) ? snapshot.Rank : "Bronze1";
-
-            // Lightweight all-games lists (always updated)
-            _settings.Theme.MostRecentUnlocksTop3 = snapshot.MostRecentUnlocksTop3;
-            _settings.Theme.MostRecentUnlocksTop5 = snapshot.MostRecentUnlocksTop5;
-            _settings.Theme.MostRecentUnlocksTop10 = snapshot.MostRecentUnlocksTop10;
-            _settings.Theme.RarestRecentUnlocksTop3 = snapshot.RarestRecentUnlocksTop3;
-            _settings.Theme.RarestRecentUnlocksTop5 = snapshot.RarestRecentUnlocksTop5;
-            _settings.Theme.RarestRecentUnlocksTop10 = snapshot.RarestRecentUnlocksTop10;
-
-            var shouldUpdateHeavyLists = snapshot.HeavyListsBuilt || snapshot.TotalCount <= 0;
-            if (shouldUpdateHeavyLists)
-            {
-                _settings.Theme.AllAchievementsUnlockAsc = snapshot.AllAchievementsUnlockAsc;
-                _settings.Theme.AllAchievementsUnlockDesc = snapshot.AllAchievementsUnlockDesc;
-                _settings.Theme.AllAchievementsRarityAsc = snapshot.AllAchievementsRarityAsc;
-                _settings.Theme.AllAchievementsRarityDesc = snapshot.AllAchievementsRarityDesc;
-                _settings.Theme.MostRecentUnlocks = snapshot.MostRecentUnlocks;
-                _settings.Theme.RarestRecentUnlocks = snapshot.RarestRecentUnlocks;
-            }
-
-            // Raise PropertyChanged for delegated properties so bindings update.
-            NotifySettingProperties(NativeAllGamesCoreDelegatedProperties);
-            if (shouldUpdateHeavyLists)
-            {
-                NotifySettingProperties(NativeAllGamesHeavyDelegatedProperties);
-            }
-        }
-
-        #endregion
-
-        #region Per-Game Theme Integration
-
-        /// <summary>
-        /// Apply a single-game snapshot to theme-exposed settings properties.
-        /// Intended to be executed on the UI thread.
-        /// </summary>
-        public void ApplySnapshot(SingleGameSnapshot snapshot)
-        {
-            if (snapshot == null || snapshot.Total <= 0)
-            {
-                ClearSingleGameThemeProperties();
-                return;
-            }
-
-            ApplySingleGameToTheme(snapshot);
-            ApplySingleGameToLegacyTheme(snapshot);
-        }
-
-        private void ApplySingleGameToTheme(SingleGameSnapshot snapshot)
-        {
-            _settings.Theme.HasAchievements = true;
-            _settings.Theme.IsCompleted = snapshot.IsCompleted;
-            _settings.Theme.AchievementCount = snapshot.Total;
-            _settings.Theme.UnlockedCount = snapshot.Unlocked;
-            _settings.Theme.LockedCount = snapshot.Locked;
-            _settings.Theme.ProgressPercentage = snapshot.Percent;
-
-            _settings.Theme.Common = snapshot.Common;
-            _settings.Theme.Uncommon = snapshot.Uncommon;
-            _settings.Theme.Rare = snapshot.Rare;
-            _settings.Theme.UltraRare = snapshot.UltraRare;
-
-            _settings.Theme.AllAchievements = snapshot.AllAchievements;
-            _settings.Theme.AchievementsNewestFirst = snapshot.UnlockDateDesc;
-            _settings.Theme.AchievementsOldestFirst = snapshot.UnlockDateAsc;
-            _settings.Theme.AchievementsRarityAsc = snapshot.RarityAsc;
-            _settings.Theme.AchievementsRarityDesc = snapshot.RarityDesc;
-
-            // Raise PropertyChanged for computed properties that delegate to Theme
-            NotifySettingProperties(SingleGameThemeDelegatedProperties);
-        }
-
-        private void ApplySingleGameToLegacyTheme(SingleGameSnapshot snapshot)
-        {
-            _settings.LegacyTheme.HasData = true;
-            _settings.LegacyTheme.Total = snapshot.Total;
-            _settings.LegacyTheme.Unlocked = snapshot.Unlocked;
-            _settings.LegacyTheme.Percent = snapshot.Percent;
-
-            _settings.LegacyTheme.Is100Percent = snapshot.Unlocked == snapshot.Total && snapshot.Total > 0;
-            _settings.LegacyTheme.Locked = snapshot.Locked;
-            _settings.LegacyTheme.TotalGamerScore = 0;
-            _settings.LegacyTheme.EstimateTimeToUnlock = string.Empty;
-
-            _settings.LegacyTheme.ListAchievements = snapshot.AllAchievements;
-            _settings.LegacyTheme.ListAchUnlockDateAsc = snapshot.UnlockDateAsc;
-            _settings.LegacyTheme.ListAchUnlockDateDesc = snapshot.UnlockDateDesc;
-
-            // Raise PropertyChanged for computed properties that delegate to LegacyTheme
-            NotifySettingProperties(SingleGameLegacyDelegatedProperties);
-        }
-
-        /// <summary>
-        /// Clear per-game theme properties when no game is selected or game has no achievements.
-        /// </summary>
-        public void ClearSingleGameThemeProperties()
-        {
-            ClearSingleGameTheme();
-            ClearSingleGameLegacyTheme();
-        }
-
-        private void ClearSingleGameTheme()
-        {
-            _settings.Theme.HasAchievements = false;
-            _settings.Theme.IsCompleted = false;
-            _settings.Theme.AchievementCount = 0;
-            _settings.Theme.UnlockedCount = 0;
-            _settings.Theme.LockedCount = 0;
-            _settings.Theme.ProgressPercentage = 0;
-
-            _settings.Theme.AllAchievements = EmptyAchievementList;
-            _settings.Theme.AchievementsNewestFirst = EmptyAchievementList;
-            _settings.Theme.AchievementsOldestFirst = EmptyAchievementList;
-            _settings.Theme.AchievementsRarityAsc = EmptyAchievementList;
-            _settings.Theme.AchievementsRarityDesc = EmptyAchievementList;
-
-            _settings.Theme.Common = EmptyRarityStats;
-            _settings.Theme.Uncommon = EmptyRarityStats;
-            _settings.Theme.Rare = EmptyRarityStats;
-            _settings.Theme.UltraRare = EmptyRarityStats;
-
-            // Raise PropertyChanged for computed properties that delegate to Theme
-            NotifySettingProperties(SingleGameThemeDelegatedProperties);
-        }
-
-        private void ClearSingleGameLegacyTheme()
-        {
-            _settings.LegacyTheme.HasData = false;
-            _settings.LegacyTheme.Total = 0;
-            _settings.LegacyTheme.Unlocked = 0;
-            _settings.LegacyTheme.Percent = 0;
-
-            _settings.LegacyTheme.Is100Percent = false;
-            _settings.LegacyTheme.Locked = 0;
-            _settings.LegacyTheme.TotalGamerScore = 0;
-            _settings.LegacyTheme.EstimateTimeToUnlock = string.Empty;
-
-            _settings.LegacyTheme.ListAchievements = EmptyAchievementList;
-            _settings.LegacyTheme.ListAchUnlockDateAsc = EmptyAchievementList;
-            _settings.LegacyTheme.ListAchUnlockDateDesc = EmptyAchievementList;
-
-            // Raise PropertyChanged for computed properties that delegate to LegacyTheme
-            NotifySettingProperties(SingleGameLegacyDelegatedProperties);
-        }
-
-        #endregion
     }
 }
 

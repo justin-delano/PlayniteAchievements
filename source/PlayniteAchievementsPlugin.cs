@@ -78,7 +78,6 @@ namespace PlayniteAchievements
         private PlayniteAchievementsTopPanelItem _topPanelItem;
 
         // Theme integration
-        private ThemeIntegrationUpdateService _themeUpdateService;
         private readonly FullscreenWindowService _fullscreenWindowService;
         private readonly ThemeIntegrationService _themeIntegrationService;
 
@@ -121,7 +120,7 @@ namespace PlayniteAchievements
         public AchievementService AchievementService => _achievementService;
         public MemoryImageService ImageService => _imageService;
         public ThemeIntegrationService ThemeIntegrationService => _themeIntegrationService;
-        public ThemeIntegrationUpdateService ThemeUpdateService => _themeUpdateService;
+        public ThemeIntegrationService ThemeUpdateService => _themeIntegrationService;
         public SteamSessionManager SteamSessionManager => _steamSessionManager;
         public ExophaseSessionManager ExophaseSessionManager => _exophaseSessionManager;
         public EpicSessionManager EpicSessionManager => _epicSessionManager;
@@ -326,10 +325,7 @@ namespace PlayniteAchievements
 
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ThemeServicesWiring", thresholdMs: 50))
                 {
-                    // Defer ThemeIntegrationUpdateService creation to OnApplicationStarted
-                    // to avoid crash when Application.Current is null during early plugin loading
-                    _themeUpdateService = null;
-                    Action<Guid?> requestUpdate = (id) => _themeUpdateService?.RequestUpdate(id);
+                    Action<Guid?> requestUpdate = (id) => _themeIntegrationService?.RequestUpdate(id);
 
                     _fullscreenWindowService = new FullscreenWindowService(
                         PlayniteApi,
@@ -342,7 +338,6 @@ namespace PlayniteAchievements
                         _refreshCoordinator,
                         _settingsViewModel.Settings,
                         _fullscreenWindowService,
-                        requestUpdate,
                         _logger);
 
                     // Listen for game database changes to auto-refresh new entries and react to hide/unhide edits.
@@ -1232,49 +1227,35 @@ namespace PlayniteAchievements
             {
                 _applicationStarted = true;
 
-                // Create ThemeIntegrationUpdateService now that UI dispatcher is guaranteed to be available
-                if (_themeUpdateService == null)
+                var dispatcher = PlayniteApi?.MainView?.UIDispatcher
+                    ?? System.Windows.Application.Current?.Dispatcher;
+
+                if (dispatcher != null)
                 {
-                    var dispatcher = PlayniteApi?.MainView?.UIDispatcher
-                        ?? System.Windows.Application.Current?.Dispatcher;
-
-                    if (dispatcher != null)
+                    try
                     {
-                        _themeUpdateService = new ThemeIntegrationUpdateService(
-                            _themeIntegrationService,
-                            _achievementService,
-                            _settingsViewModel.Settings,
-                            _logger,
-                            dispatcher);
-                        _logger.Debug("ThemeIntegrationUpdateService created in OnApplicationStarted");
+                        var selectedGames = PlayniteApi?.MainView?.SelectedGames?
+                            .Where(g => g != null)
+                            .Take(2)
+                            .ToList();
 
-                        // Populate initial theme data for the currently selected game.
-                        // Themes may load before OnGameSelected fires, leaving HasData=false.
-                        try
+                        if (selectedGames?.Count == 1)
                         {
-                            var selectedGames = PlayniteApi?.MainView?.SelectedGames?
-                                .Where(g => g != null)
-                                .Take(2)
-                                .ToList();
-
-                            if (selectedGames?.Count == 1)
-                            {
-                                var game = selectedGames[0];
-                                _logger.Debug($"Populating initial theme data for selected game: {game.Name}");
-                                _settingsViewModel.Settings.SelectedGame = game;
-                                _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
-                                _themeUpdateService.RequestUpdate(game.Id);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Debug(ex, "Failed to populate initial theme data.");
+                            var game = selectedGames[0];
+                            _logger.Debug($"Populating initial theme data for selected game: {game.Name}");
+                            _settingsViewModel.Settings.SetSelectedGame(game);
+                            _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
+                            _themeIntegrationService?.RequestUpdate(game.Id);
                         }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        _logger.Warn("Could not obtain UI dispatcher; theme integration updates disabled");
+                        _logger.Debug(ex, "Failed to populate initial theme data.");
                     }
+                }
+                else
+                {
+                    _logger.Warn("Could not obtain UI dispatcher; theme integration updates disabled");
                 }
 
                 try
@@ -1549,7 +1530,6 @@ namespace PlayniteAchievements
 
             try { _imageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose imageService"); }
             try { _diskImageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose diskImageService"); }
-            try { _themeUpdateService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeUpdateService"); }
             try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
             try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
 
@@ -1568,26 +1548,26 @@ namespace PlayniteAchievements
                     var game = args.NewValue[0];
                     if (game == null)
                     {
-                        _themeUpdateService.RequestUpdate(null);
+                        _themeIntegrationService?.RequestUpdate(null);
                         _themeIntegrationService?.NotifySelectionChanged(null);
                         _themeIntegrationService?.ClearSingleGameThemeProperties();
-                        _settingsViewModel.Settings.SelectedGame = null;
+                        _settingsViewModel.Settings.SetSelectedGame(null);
                         return;
                     }
 
-                    _themeUpdateService.RequestUpdate(game.Id);
+                    _settingsViewModel.Settings.SetSelectedGame(game);
                     _themeIntegrationService?.NotifySelectionChanged(game.Id);
-                    // Populate ThemeData for desktop theme controls
+                    // Populate cached single-game data immediately, then let the async pass reconcile if needed.
                     _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
-                    _settingsViewModel.Settings.SelectedGame = game;
+                    _themeIntegrationService?.RequestUpdate(game.Id);
                 }
                 else
                 {
                     // Clear theme data when no game or multiple games selected
-                    _themeUpdateService.RequestUpdate(null);
+                    _themeIntegrationService?.RequestUpdate(null);
                     _themeIntegrationService?.NotifySelectionChanged(null);
                     _themeIntegrationService?.ClearSingleGameThemeProperties();
-                    _settingsViewModel.Settings.SelectedGame = null;
+                    _settingsViewModel.Settings.SetSelectedGame(null);
                 }
             }
             catch (Exception ex)
@@ -1615,7 +1595,7 @@ namespace PlayniteAchievements
 
         internal void RequestThemeUpdate(Game gameContext)
         {
-            _themeUpdateService?.RequestUpdate(gameContext?.Id);
+            _themeIntegrationService?.RequestUpdate(gameContext?.Id);
         }
 
         private void ShowRefreshProgressControlAndRun(Func<Task> refreshTask, Guid? singleGameRefreshId = null)

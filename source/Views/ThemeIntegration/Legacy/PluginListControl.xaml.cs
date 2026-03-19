@@ -218,7 +218,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
             await Dispatcher.InvokeAsync(() =>
             {
-                var source = Plugin?.Settings?.LegacyTheme?.ListAchievements;
+                var source = Plugin?.Settings?.ListAchievements;
                 if (source == null)
                 {
                     snapshot = null;

@@ -94,7 +94,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop.Shared
         /// <summary>
         /// Updates badge items with rarity statistics from the parent control's data context.
         /// </summary>
-        public void UpdateFromThemeData(Models.ThemeIntegration.ThemeData theme)
+        public void UpdateFromThemeData(Models.ThemeIntegration.NativeThemeBindings theme)
         {
             if (theme == null)
             {
