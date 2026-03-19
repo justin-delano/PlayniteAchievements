@@ -3,7 +3,6 @@ using PlayniteAchievements.Providers.Xenia.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 
 namespace PlayniteAchievements.Providers.Xenia
 {
@@ -107,14 +106,15 @@ namespace PlayniteAchievements.Providers.Xenia
             }
 
             List<AchievementDetail> achievements = new List<AchievementDetail>();
+            var iconDirectory = $"{_pluginUserDataPath}\\icon_cache\\{gameID}\\";
 
-            Directory.CreateDirectory($"{_pluginUserDataPath}\\icon_cache\\{gameID}\\");
+            Directory.CreateDirectory(iconDirectory);
 
             foreach (var entry in entries)
             {
                 if (entry.section == 2)
                 {
-                    using (var fs = new FileStream($"{_pluginUserDataPath}\\icon_cache\\{gameID}\\{entry.id}.png", FileMode.Create, FileAccess.Write))
+                    using (var fs = new FileStream($"{iconDirectory}{entry.id}.png", FileMode.Create, FileAccess.Write))
                     {
                         fs.Write(entry.data, 0, (Int32)entry.size);
                     }
@@ -158,16 +158,24 @@ namespace PlayniteAchievements.Providers.Xenia
                         cheevoindex += 2;
                     }
 
+                    var iconPath = $"{iconDirectory}{achievement.icon_id}.png";
+                    if (!File.Exists(iconPath))
+                    {
+                        iconPath = null;
+                    }
+
                     achievements.Add(new AchievementDetail
                     {
                         ApiName = achievement.id.ToString(),
                         DisplayName = achievement.title,
                         Description = achievement.unlock_time == 0 ? achievement.description : achievement.unlockDescription,
-                        UnlockedIconPath = $"{_pluginUserDataPath}\\icon_cache\\{gameID}\\{achievement.icon_id}.png",
-                        LockedIconPath = $"{Assembly.GetExecutingAssembly().GetName().CodeBase}\\Resources\\HiddenAchIcon.png",
+                        UnlockedIconPath = iconPath,
+                        LockedIconPath = iconPath,
                         Points = (int?)achievement.gamerscore,
                         Unlocked = achievement.unlock_time != 0,
-                        UnlockTimeUtc = DateTime.FromFileTime((Int64)achievement.unlock_time),
+                        UnlockTimeUtc = achievement.unlock_time != 0
+                            ? DateTime.FromFileTimeUtc((Int64)achievement.unlock_time)
+                            : (DateTime?)null,
                     });
                 }
             }

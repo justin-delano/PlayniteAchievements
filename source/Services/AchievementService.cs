@@ -1424,6 +1424,11 @@ namespace PlayniteAchievements.Services
                     foreach (var achievement in grouped)
                     {
                         achievement.UnlockedIconPath = kvp.Value;
+                        if (!string.IsNullOrWhiteSpace(achievement.LockedIconPath) &&
+                            AchievementIconResolver.AreSameIcon(achievement.LockedIconPath, kvp.Key))
+                        {
+                            achievement.LockedIconPath = kvp.Value;
+                        }
                     }
                 }
             }
@@ -1470,6 +1475,11 @@ namespace PlayniteAchievements.Services
                 foreach (var achievement in grouped)
                 {
                     achievement.UnlockedIconPath = resolved.LocalPath;
+                    if (!string.IsNullOrWhiteSpace(achievement.LockedIconPath) &&
+                        AchievementIconResolver.AreSameIcon(achievement.LockedIconPath, resolved.OriginalPath))
+                    {
+                        achievement.LockedIconPath = resolved.LocalPath;
+                    }
                 }
             }
         }

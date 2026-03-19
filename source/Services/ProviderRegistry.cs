@@ -177,6 +177,7 @@ namespace PlayniteAchievements.Services
             settings.XboxEnabled = IsProviderEnabled("Xbox");
             settings.ShadPS4Enabled = IsProviderEnabled("ShadPS4");
             settings.Rpcs3Enabled = IsProviderEnabled("RPCS3");
+            settings.XeniaEnabled = IsProviderEnabled("Xenia");
             settings.ManualEnabled = IsProviderEnabled("Manual");
         }
     }

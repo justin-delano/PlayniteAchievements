@@ -71,17 +71,14 @@ namespace PlayniteAchievements.Providers.Xenia
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            var result = await RefreshPipeline.RunProviderGamesAsync(
+            return await RefreshPipeline.RunProviderGamesAsync(
                 gamesToRefresh,
                 onGameStarting,
-                async (game, token) =>
-                {
-                    var data = GetAchievementDataAsync(game);//.ConfigureAwait(false);
-                    return new RefreshPipeline.ProviderGameResult
+                (game, token) => Task.FromResult(
+                    new RefreshPipeline.ProviderGameResult
                     {
-                        Data = data
-                    };
-                },
+                        Data = GetAchievementDataAsync(game)
+                    }),
                 onGameCompleted,
                 isAuthRequiredException: _ => false,
                 onGameError: (game, ex, consecutiveErrors) =>
@@ -91,10 +88,6 @@ namespace PlayniteAchievements.Providers.Xenia
                 delayBetweenGamesAsync: null,
                 delayAfterErrorAsync: null,
                 cancel).ConfigureAwait(false);
-
-            
-
-            return result;
         }
 
         private GameAchievementData GetAchievementDataAsync(Game game)
@@ -111,7 +104,6 @@ namespace PlayniteAchievements.Providers.Xenia
             }
 
             GameAchievementData data = null;
-
 
             if (!File.Exists($"{_accountFolderPath}\\{titleID}.gpd"))
             {
@@ -154,12 +146,13 @@ namespace PlayniteAchievements.Providers.Xenia
 
         bool ResolveTitleID(Game game, out string titleID)
         {
-            // Return overridden TitleID
+#if false
             if (_settings.Persisted.XeniaGameIdOverrides.ContainsKey(game.Id))
             {
                 titleID = _settings.Persisted.XeniaGameIdOverrides[game.Id];
                 return true;
             }
+#endif
 
             // Skip titleID search if it has been cached
             if (_titleIDCache.Any(x => x.Key == game.Id))
@@ -173,9 +166,9 @@ namespace PlayniteAchievements.Providers.Xenia
             {
                 var path = rom.Path;
                 path = Playnite.SDK.API.Instance.ExpandGameVariables(game, path);
-                path = path.Replace("\\\\", "\\");
+                path = path.Replace("\\\\", "\\").Trim('"');
 
-                if (path.EndsWith(".iso") || path.EndsWith(".xex"))
+                if (path.EndsWith(".iso") || path.EndsWith(".xex") || string.IsNullOrEmpty(Path.GetExtension(path)))
                 {
                     using var mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Open);
 
@@ -198,8 +191,7 @@ namespace PlayniteAchievements.Providers.Xenia
                         accessoroffset += filechunk;
                         var chunksize = 8 * 1024; // 8 KB buffer
                         var buffer = new byte[chunksize];
-                        ReadOnlySpan<byte> spanbuffer;
-                        ReadOnlySpan<byte> previousspanbuffer = new ReadOnlySpan<byte>();
+                        var previousbuffer = new byte[chunksize];
                         var position = 0;
 
                         var bytesRead = 0;
@@ -211,14 +203,13 @@ namespace PlayniteAchievements.Providers.Xenia
                             bytesRead = accessor.Read(buffer, 0, buffer.Length);
                             if (bytesRead == 0) break;
 
-                            spanbuffer = new ReadOnlySpan<byte>(buffer);
-                            var foundexe = spanbuffer.IndexOf(Encoding.UTF8.GetBytes(".exe").AsSpan());
-                            var foundpe = spanbuffer.IndexOf(Encoding.UTF8.GetBytes(".pe").AsSpan());
+                            var foundexe = IndexOf(buffer, bytesRead, Encoding.UTF8.GetBytes(".exe"));
+                            var foundpe = IndexOf(buffer, bytesRead, Encoding.UTF8.GetBytes(".pe"));
 
                             if (foundexe != -1)
                             {
-                                previousspanbuffer.CopyTo(combinedbuffer);
-                                spanbuffer.CopyTo(combinedbuffer.AsSpan(chunksize));
+                                Array.Copy(previousbuffer, combinedbuffer, previousbuffer.Length);
+                                Array.Copy(buffer, 0, combinedbuffer, chunksize, buffer.Length);
 
                                 // Pull the previous 300 characters and convert to char array (300 is arbitry just to account for possible lots of data between titleID and .exe entry)
                                 Array.Copy(combinedbuffer, (foundexe + chunksize) - exeAreaSize, exeChunk, 0, exeAreaSize);
@@ -234,8 +225,8 @@ namespace PlayniteAchievements.Providers.Xenia
                             }
                             if (foundpe != -1)
                             {
-                                previousspanbuffer.CopyTo(combinedbuffer);
-                                spanbuffer.CopyTo(combinedbuffer.AsSpan(chunksize));
+                                Array.Copy(previousbuffer, combinedbuffer, previousbuffer.Length);
+                                Array.Copy(buffer, 0, combinedbuffer, chunksize, buffer.Length);
 
                                 Array.Copy(combinedbuffer, (foundpe + chunksize) - exeAreaSize, exeChunk, 0, exeAreaSize);
 
@@ -249,7 +240,7 @@ namespace PlayniteAchievements.Providers.Xenia
                             }
 
                             position += bytesRead;
-                            previousspanbuffer = spanbuffer;
+                            Array.Copy(buffer, previousbuffer, buffer.Length);
                         }
 
 
@@ -260,7 +251,7 @@ namespace PlayniteAchievements.Providers.Xenia
                 }
                 else
                 {
-                    _logger.Error("[Xenia] Unsupported ROM only .xex or .iso are supported!");
+                    _logger.Error("[Xenia] Unsupported ROM only .xex, .iso, or extensionless package files are supported!");
                 }
             }
 
@@ -287,6 +278,7 @@ namespace PlayniteAchievements.Providers.Xenia
                 publisherCheck[3] = chunk[i + 3];
                 bool passedcheck = KnownPublishers.Any(x => x == System.Text.Encoding.UTF8.GetString(publisherCheck, 0, 4));
                 if (!passedcheck)
+                    _logger.Debug($"[Xenia] Publisher code check failed for chunk at offset {i} with code '{System.Text.Encoding.UTF8.GetString(publisherCheck, 0, 4)}'");
                     continue;
 
                 passedcheck &= char.IsDigit((char)chunk[i + 4]) || char.IsUpper((char)chunk[i + 4]);
@@ -305,6 +297,34 @@ namespace PlayniteAchievements.Providers.Xenia
             }
 
             return "";
+        }
+
+        private static int IndexOf(byte[] buffer, int bytesRead, byte[] pattern)
+        {
+            if (buffer == null || pattern == null || pattern.Length == 0 || bytesRead < pattern.Length)
+            {
+                return -1;
+            }
+
+            for (var i = 0; i <= bytesRead - pattern.Length; i++)
+            {
+                var match = true;
+                for (var j = 0; j < pattern.Length; j++)
+                {
+                    if (buffer[i + j] != pattern[j])
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
     }
 }

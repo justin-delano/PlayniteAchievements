@@ -2701,7 +2701,7 @@ namespace PlayniteAchievements.Views
         private void Xenia_Browse_Click(object sender, RoutedEventArgs e)
         {
             var selectedPath = _plugin.PlayniteApi.Dialogs.SelectFolder();
-            _logger.Info($"Recevied {selectedPath}");
+            _logger.Info($"Received {selectedPath}");
             if (!string.IsNullOrWhiteSpace(selectedPath))
             {
                 _settingsViewModel.Settings.Persisted.XeniaAccountPath = selectedPath;
@@ -2713,9 +2713,14 @@ namespace PlayniteAchievements.Views
 
         private void CheckXeniaAuth()
         {
-            var accountpath = _settingsViewModel.Settings.Persisted.XeniaAccountPath;
+            var accountpath = (_settingsViewModel.Settings.Persisted.XeniaAccountPath ?? string.Empty).Trim();
 
-            if(Directory.Exists(accountpath))
+            if (string.IsNullOrWhiteSpace(accountpath))
+            {
+                SetXeniaAuthenticated(false);
+                SetXeniaAuthStatus("LOCPlayAch_Settings_Xenia_NotConfigured");
+            }
+            else if (Directory.Exists(accountpath))
             {
                 if (File.Exists($"{accountpath}\\Account"))
                 {
@@ -2789,6 +2794,7 @@ namespace PlayniteAchievements.Views
         {
             try
             {
+                _plugin.ImageService?.Clear();
                 _plugin.ImageService?.ClearDiskCache();
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
                     ResourceProvider.GetString("LOCPlayAch_Settings_ImageCache_Cleared"),

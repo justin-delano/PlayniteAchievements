@@ -82,7 +82,6 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableDiscHashing = true;
         private bool _enableRaNameFallback = true;
         private Dictionary<Guid, int> _raGameIdOverrides = new Dictionary<Guid, int>();
-        private Dictionary<Guid, string> _xeniaGameIdOverrides = new Dictionary<Guid, string>();
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _sidebarAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -307,7 +306,7 @@ namespace PlayniteAchievements.Models.Settings
         public string XeniaAccountPath
         {
             get => _xeniaAccountPath;
-            set => SetValue(ref _xeniaAccountPath, value);
+            set => SetValue(ref _xeniaAccountPath, value ?? string.Empty);
         }
 
         /// <summary>
@@ -737,12 +736,6 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _raGameIdOverrides, value ?? new Dictionary<Guid, int>());
         }
 
-        public Dictionary<Guid, string> XeniaGameIdOverrides
-        {
-            get => _xeniaGameIdOverrides;
-            set => SetValue(ref _xeniaGameIdOverrides, value ?? new Dictionary<Guid, string>());
-        }
-
         /// <summary>
         /// Persisted visibility state for shared achievement DataGrid columns.
         /// Key is a stable column identifier, value indicates whether the column is visible.
@@ -1147,6 +1140,8 @@ namespace PlayniteAchievements.Models.Settings
                 ShadPS4GameDataPath = this.ShadPS4GameDataPath,
                 Rpcs3Enabled = this.Rpcs3Enabled,
                 Rpcs3ExecutablePath = this.Rpcs3ExecutablePath,
+                XeniaEnabled = this.XeniaEnabled,
+                XeniaAccountPath = this.XeniaAccountPath,
                 LegacyManualImportPath = this.LegacyManualImportPath,
                 ManualTrackingOverrideEnabled = this.ManualTrackingOverrideEnabled,
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
@@ -1188,9 +1183,6 @@ namespace PlayniteAchievements.Models.Settings
                 RaGameIdOverrides = this.RaGameIdOverrides != null
                     ? new Dictionary<Guid, int>(this.RaGameIdOverrides)
                     : new Dictionary<Guid, int>(),
-                XeniaGameIdOverrides = this.XeniaGameIdOverrides != null
-                    ? new Dictionary<Guid, string>(this.XeniaGameIdOverrides)
-                    : new Dictionary<Guid, string>(),
                 DataGridColumnVisibility = this.DataGridColumnVisibility != null
                     ? new Dictionary<string, bool>(this.DataGridColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
