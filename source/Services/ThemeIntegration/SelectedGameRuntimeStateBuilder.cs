@@ -44,6 +44,17 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             var total = achievements.Count;
+            var game = data.Game;
+            for (int i = 0; i < achievements.Count; i++)
+            {
+                if (achievements[i] != null)
+                {
+                    // Native compact lists resolve tooltip game name from AchievementDetail.Game.
+                    // Ensure selected-game snapshots always carry this context.
+                    achievements[i].Game = game;
+                }
+            }
+
             var unlocked = 0;
             for (int i = 0; i < achievements.Count; i++)
             {
