@@ -120,7 +120,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
             }
 
-            var rareAndUltra = CombineRarityStats(rare, ultra);
+            var rareAndUltra = AchievementRarityStatsCombiner.Combine(rare, ultra);
 
             return new SelectedGameRuntimeState(
                 gameId,
@@ -143,16 +143,5 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 rareAndUltra);
         }
 
-        private static AchievementRarityStats CombineRarityStats(
-            AchievementRarityStats first,
-            AchievementRarityStats second)
-        {
-            return new AchievementRarityStats
-            {
-                Total = (first?.Total ?? 0) + (second?.Total ?? 0),
-                Unlocked = (first?.Unlocked ?? 0) + (second?.Unlocked ?? 0),
-                Locked = (first?.Locked ?? 0) + (second?.Locked ?? 0)
-            };
-        }
     }
 }

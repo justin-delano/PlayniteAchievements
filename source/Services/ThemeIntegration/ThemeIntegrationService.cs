@@ -1086,9 +1086,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         #endregion
 
-        private ObservableCollection<GameAchievementSummary> ProjectGameSummaries(IEnumerable<GameSummaryRuntimeItem> items)
+        private ObservableCollection<GameAchievementSummary> ProjectGameSummaries(IEnumerable<GameAchievementSummary> items)
         {
-            var projected = (items ?? Enumerable.Empty<GameSummaryRuntimeItem>())
+            var projected = (items ?? Enumerable.Empty<GameAchievementSummary>())
                 .Select(item => new GameAchievementSummary(
                     item.GameId,
                     item.Name,

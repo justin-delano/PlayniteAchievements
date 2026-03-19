@@ -67,6 +67,16 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public string CoverImagePath { get; }
 
         /// <summary>
+        /// Legacy alias for CoverImagePath used by older fullscreen themes.
+        /// </summary>
+        public string CoverImageObject => CoverImagePath;
+
+        /// <summary>
+        /// Legacy alias for CoverImagePath used by older cached-cover bindings.
+        /// </summary>
+        public string CoverImageObjectCached => CoverImagePath;
+
+        /// <summary>
         /// Achievement completion percentage (0-100).
         /// Writable by design: some fullscreen themes rely on default TwoWay
         /// binding behavior for ProgressBar.Value.
@@ -182,32 +192,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             Uncommon = uncommon ?? new AchievementRarityStats();
             Rare = rare ?? new AchievementRarityStats();
             UltraRare = ultraRare ?? new AchievementRarityStats();
-            RareAndUltraRare = rareAndUltraRare ?? CombineRarityStats(Rare, UltraRare);
-            Overall = overall ?? CombineRarityStats(Common, Uncommon, Rare, UltraRare);
-        }
-
-        private static AchievementRarityStats CombineRarityStats(params AchievementRarityStats[] stats)
-        {
-            var combined = new AchievementRarityStats();
-            if (stats == null)
-            {
-                return combined;
-            }
-
-            for (int i = 0; i < stats.Length; i++)
-            {
-                var item = stats[i];
-                if (item == null)
-                {
-                    continue;
-                }
-
-                combined.Total += item.Total;
-                combined.Unlocked += item.Unlocked;
-                combined.Locked += item.Locked;
-            }
-
-            return combined;
+            RareAndUltraRare = rareAndUltraRare ?? AchievementRarityStatsCombiner.Combine(Rare, UltraRare);
+            Overall = overall ?? AchievementRarityStatsCombiner.Combine(Common, Uncommon, Rare, UltraRare);
         }
     }
 }

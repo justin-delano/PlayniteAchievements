@@ -24,8 +24,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 HeavyListsBuilt = includeHeavyAchievementLists
             };
 
-            var summariesById = new Dictionary<Guid, GameSummaryRuntimeItem>();
-            var allGames = new List<GameSummaryRuntimeItem>();
+            var summariesById = new Dictionary<Guid, GameAchievementSummary>();
+            var allGames = new List<GameAchievementSummary>();
 
             foreach (var data in allData)
             {
@@ -80,31 +80,30 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 AddRarityStats(state.TotalRare, rare);
                 AddRarityStats(state.TotalUltraRare, ultraRare);
 
-                var rareAndUltraRare = CombineRarityStats(rare, ultraRare);
-                var overall = CombineRarityStats(common, uncommon, rare, ultraRare);
+                var rareAndUltraRare = AchievementRarityStatsCombiner.Combine(rare, ultraRare);
+                var overall = AchievementRarityStatsCombiner.Combine(common, uncommon, rare, ultraRare);
                 var gold = rare.Unlocked + ultraRare.Unlocked;
                 var silver = uncommon.Unlocked;
                 var bronze = common.Unlocked;
 
-                var summary = new GameSummaryRuntimeItem
-                {
-                    GameId = data.PlayniteGameId.Value,
-                    Name = data.Game?.Name ?? data.GameName ?? string.Empty,
-                    Platform = data.Game?.Source?.Name ?? "Unknown",
-                    CoverImagePath = ResolveCoverImagePath(data.Game, api),
-                    Progress = unlocked == total ? 100 : (int)Math.Floor(100.0 * unlocked / total),
-                    GoldCount = gold,
-                    SilverCount = silver,
-                    BronzeCount = bronze,
-                    IsCompleted = data.IsCompleted,
-                    LastUnlockDate = latestUnlockUtc == DateTime.MinValue ? DateTime.MinValue : latestUnlockUtc.ToLocalTime(),
-                    Common = common,
-                    Uncommon = uncommon,
-                    Rare = rare,
-                    UltraRare = ultraRare,
-                    RareAndUltraRare = rareAndUltraRare,
-                    Overall = overall
-                };
+                var summary = new GameAchievementSummary(
+                    data.PlayniteGameId.Value,
+                    data.Game?.Name ?? data.GameName ?? string.Empty,
+                    data.Game?.Source?.Name ?? "Unknown",
+                    ResolveCoverImagePath(data.Game, api),
+                    unlocked == total ? 100 : (int)Math.Floor(100.0 * unlocked / total),
+                    gold,
+                    silver,
+                    bronze,
+                    data.IsCompleted,
+                    latestUnlockUtc == DateTime.MinValue ? DateTime.MinValue : latestUnlockUtc.ToLocalTime(),
+                    null,
+                    common,
+                    uncommon,
+                    rare,
+                    ultraRare,
+                    rareAndUltraRare,
+                    overall);
 
                 allGames.Add(summary);
                 summariesById[summary.GameId] = summary;
@@ -135,8 +134,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             state.GoldTrophies = allGames.Sum(item => item.GoldCount);
             state.SilverTrophies = allGames.Sum(item => item.SilverCount);
             state.BronzeTrophies = allGames.Sum(item => item.BronzeCount);
-            state.TotalRareAndUltraRare = CombineRarityStats(state.TotalRare, state.TotalUltraRare);
-            state.TotalOverall = CombineRarityStats(
+            state.TotalRareAndUltraRare = AchievementRarityStatsCombiner.Combine(state.TotalRare, state.TotalUltraRare);
+            state.TotalOverall = AchievementRarityStatsCombiner.Combine(
                 state.TotalCommon,
                 state.TotalUncommon,
                 state.TotalRare,
@@ -168,17 +167,17 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private static void PopulateProviderLists(
             LibraryRuntimeState state,
             IEnumerable<GameAchievementData> allData,
-            IReadOnlyDictionary<Guid, GameSummaryRuntimeItem> summariesById)
+            IReadOnlyDictionary<Guid, GameAchievementSummary> summariesById)
         {
-            var steamGames = new List<GameSummaryRuntimeItem>();
-            var gogGames = new List<GameSummaryRuntimeItem>();
-            var epicGames = new List<GameSummaryRuntimeItem>();
-            var xboxGames = new List<GameSummaryRuntimeItem>();
-            var psnGames = new List<GameSummaryRuntimeItem>();
-            var retroAchievementsGames = new List<GameSummaryRuntimeItem>();
-            var rpcs3Games = new List<GameSummaryRuntimeItem>();
-            var shadPS4Games = new List<GameSummaryRuntimeItem>();
-            var manualGames = new List<GameSummaryRuntimeItem>();
+            var steamGames = new List<GameAchievementSummary>();
+            var gogGames = new List<GameAchievementSummary>();
+            var epicGames = new List<GameAchievementSummary>();
+            var xboxGames = new List<GameAchievementSummary>();
+            var psnGames = new List<GameAchievementSummary>();
+            var retroAchievementsGames = new List<GameAchievementSummary>();
+            var rpcs3Games = new List<GameAchievementSummary>();
+            var shadPS4Games = new List<GameAchievementSummary>();
+            var manualGames = new List<GameAchievementSummary>();
 
             foreach (var data in allData)
             {
@@ -452,30 +451,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 default:
                     return common;
             }
-        }
-
-        private static AchievementRarityStats CombineRarityStats(params AchievementRarityStats[] stats)
-        {
-            var combined = new AchievementRarityStats();
-            if (stats == null)
-            {
-                return combined;
-            }
-
-            for (int i = 0; i < stats.Length; i++)
-            {
-                var item = stats[i];
-                if (item == null)
-                {
-                    continue;
-                }
-
-                combined.Total += item.Total;
-                combined.Unlocked += item.Unlocked;
-                combined.Locked += item.Locked;
-            }
-
-            return combined;
         }
 
         private static DateTime NormalizeUtc(DateTime timestamp)

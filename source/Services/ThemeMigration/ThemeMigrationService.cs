@@ -561,6 +561,11 @@ namespace PlayniteAchievements.Services.ThemeMigration
             result = result.Replace("{Binding SelectedGame.CoverImageObjectCached}", "{PluginSettings Plugin=PlayniteAchievements, Path=SelectedGameCoverPath}");
             replacements += CountOccurrences(originalContent, "{Binding SelectedGame.CoverImageObjectCached}");
 
+            // This path targets Playnite's Game type, which we cannot extend with a
+            // DisplayBackgroundImageObject property.
+            result = result.Replace("{Binding Game.DisplayBackgroundImageObject}", "{PluginSettings Plugin=PlayniteAchievements, Path=SelectedGameBackgroundPath}");
+            replacements += CountOccurrences(originalContent, "{Binding Game.DisplayBackgroundImageObject}");
+
             // Convert SuccessStory trophy icon (U+E820) to PlayniteAchievements trophy icon (U+EDD7)
             // Note: The actual character in theme files is U+E820 (UTF-8: EE A0 A0), not U+F820
             var trophySource = "\uE820";

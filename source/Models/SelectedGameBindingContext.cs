@@ -38,6 +38,9 @@ namespace PlayniteAchievements.Models
 
         public string CoverImageObjectCached => _coverImagePathProvider?.Invoke();
 
+        // Legacy alias used by several fullscreen themes.
+        public string CoverImageObject => _coverImagePathProvider?.Invoke();
+
         public string DisplayBackgroundImageObject => _backgroundImagePathProvider?.Invoke();
     }
 }
