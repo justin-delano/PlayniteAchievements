@@ -176,6 +176,12 @@ namespace PlayniteAchievements.Providers.Xenia
                     var filesize = new FileInfo(path).Length;
                     bool filecomplete = false;
 
+                    // Place this outside of loop to combat potential edge-case where .exe/.pe is found at the start of
+                    // the 1.5gb chunk but titleID is in the previous 1.5GB chunk that has been wiped
+                    var chunksize = 8 * 1024; // 8 KB buffer
+                    var buffer = new byte[chunksize];
+                    var previousbuffer = new byte[chunksize];
+
                     // Accessor needs to be split into sub 2GB chunks due to virtual address max size on 32bit
                     // This didn't need chunking in my testing on .NET8 but we are on .NET4
                     do
@@ -189,11 +195,7 @@ namespace PlayniteAchievements.Providers.Xenia
 
                         using var accessor = mmf.CreateViewStream(accessoroffset, filechunk, MemoryMappedFileAccess.Read);
                         accessoroffset += filechunk;
-                        var chunksize = 8 * 1024; // 8 KB buffer
-                        var buffer = new byte[chunksize];
-                        var previousbuffer = new byte[chunksize];
                         var position = 0;
-
                         var bytesRead = 0;
                         byte[] combinedbuffer = new byte[chunksize * 2];
                         byte[] exeChunk = new byte[exeAreaSize];
