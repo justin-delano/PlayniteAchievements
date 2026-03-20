@@ -99,7 +99,7 @@ namespace PlayniteAchievements
             { "PluginViewItem", () => new Views.ThemeIntegration.Legacy.PluginViewItemControl() }
         };
 
-        private static readonly Dictionary<string, Func<Control>> DesktopControlFactories = new Dictionary<string, Func<Control>>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, Func<Control>> ModernControlFactories = new Dictionary<string, Func<Control>>(StringComparer.OrdinalIgnoreCase)
         {
             { "AchievementButton", () => new Views.ThemeIntegration.Modern.AchievementButtonControl() },
             { "AchievementProgressBar", () => new Views.ThemeIntegration.Modern.AchievementProgressBarControl() },
@@ -1708,10 +1708,10 @@ namespace PlayniteAchievements
                 return successStoryFactory();
             }
 
-            // Desktop PlayniteAchievements controls (always available)
-            if (DesktopControlFactories.TryGetValue(args.Name, out var desktopFactory))
+            // Modern PlayniteAchievements controls (always available)
+            if (ModernControlFactories.TryGetValue(args.Name, out var modernFactory))
             {
-                return desktopFactory();
+                return modernFactory();
             }
 
             return null;

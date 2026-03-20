@@ -216,7 +216,7 @@ namespace PlayniteAchievements.Views.Helpers
 
         /// <summary>
         /// Gets modern theme bindings populated with mock achievements for settings preview.
-        /// Used by desktop controls via ThemeDataOverride.
+        /// Used by modern controls via ThemeDataOverride.
         /// </summary>
         /// <returns>Modern theme bindings with mock achievement data.</returns>
         public static ModernThemeBindings GetPreviewThemeData()

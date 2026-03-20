@@ -361,8 +361,8 @@ namespace PlayniteAchievements.Views
         private ModernThemeBindings _lockedPreviewThemeData;
 
         /// <summary>
-        /// Gets modern theme bindings populated with mock achievements for desktop control previews.
-        /// Used by desktop controls via ThemeDataOverride binding.
+        /// Gets modern theme bindings populated with mock achievements for modern control previews.
+        /// Used by modern controls via ThemeDataOverride binding.
         /// </summary>
         public ModernThemeBindings PreviewThemeData
         {
@@ -484,7 +484,7 @@ namespace PlayniteAchievements.Views
                 // we'll assign a new list which triggers refresh
             }
 
-            // Refresh the preview modern theme bindings used by desktop controls
+            // Refresh the preview modern theme bindings used by modern controls
             _previewThemeData?.RefreshDisplayItems(
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
                 settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.ShowRarityGlow, settings.ShowCompactListRarityBar);

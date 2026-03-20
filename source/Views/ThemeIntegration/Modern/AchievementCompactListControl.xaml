@@ -1,17 +1,17 @@
-<desktop:AchievementCompactListControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Modern.AchievementCompactListControl"
+<modern:AchievementCompactListControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Modern.AchievementCompactListControl"
                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                    xmlns:local="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
-                   xmlns:desktop="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
+                   xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
                    xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
                    mc:Ignorable="d"
                    d:DesignHeight="82" d:DesignWidth="600">
 
     <!-- Virtualized horizontal compact list -->
     <ItemsControl x:Name="AchievementsList"
-                  ItemsSource="{Binding DisplayItems, Mode=OneWay, RelativeSource={RelativeSource AncestorType=desktop:AchievementCompactListControlBase}}"
+                  ItemsSource="{Binding DisplayItems, Mode=OneWay, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}"
                   VirtualizingPanel.IsVirtualizing="True"
                   VirtualizingPanel.VirtualizationMode="Recycling"
                   VirtualizingPanel.ScrollUnit="Pixel">
@@ -46,10 +46,11 @@
             <DataTemplate>
                 <!-- Use shared compact item control -->
                 <controls:AchievementCompactItemControl
-                    IconSize="{Binding IconSize, RelativeSource={RelativeSource AncestorType=desktop:AchievementCompactListControlBase}}"
+                    IconSize="{Binding IconSize, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}"
                     Margin="4"/>
             </DataTemplate>
         </ItemsControl.ItemTemplate>
     </ItemsControl>
-</desktop:AchievementCompactListControlBase>
+</modern:AchievementCompactListControlBase>
+
 

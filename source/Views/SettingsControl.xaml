@@ -8,7 +8,7 @@
              xmlns:conv="clr-namespace:PlayniteAchievements.Views.Converters"
              xmlns:base="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
-             xmlns:desktop="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
+             xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
              mc:Ignorable="d"
              d:DesignHeight="600"
              d:DesignWidth="700">
@@ -920,7 +920,7 @@
                                                    Margin="0,0,0,8"/>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementDataGridControl
+                                        <modern:AchievementDataGridControl
                                             Style="{StaticResource PreviewThemeControlStyle}"
                                             ThemeDataOverride="{Binding UnlockedPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             PreviewMaxHeightOverride="122"
@@ -943,7 +943,7 @@
                                                    Style="{StaticResource MutedTextStyle}" Margin="0,0,0,8"/>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementDataGridControl
+                                        <modern:AchievementDataGridControl
                                             Style="{StaticResource PreviewThemeControlStyle}"
                                             ThemeDataOverride="{Binding LockedPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             PreviewMaxHeightOverride="122"
@@ -966,7 +966,7 @@
                                                    Style="{StaticResource MutedTextStyle}" Margin="0,0,0,8"/>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementDataGridControl
+                                        <modern:AchievementDataGridControl
                                             Style="{StaticResource PreviewThemeControlStyle}"
                                             ThemeDataOverride="{Binding HiddenPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             PreviewMaxHeightOverride="122"
@@ -999,7 +999,7 @@
                                     <StackPanel>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementCompactListControl
+                                        <modern:AchievementCompactListControl
                                             Style="{StaticResource PreviewThemeControlStyle}"
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             IconSize="48"
@@ -1024,7 +1024,7 @@
                                     <StackPanel>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementDataGridControl
+                                        <modern:AchievementDataGridControl
                                             Style="{StaticResource PreviewThemeControlStyle}"
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             PreviewMinimumMaxHeight="220"
@@ -1056,7 +1056,7 @@
                                     <StackPanel>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementCompactUnlockedListControl
+                                        <modern:AchievementCompactUnlockedListControl
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             IconSize="48"/>
                                     </StackPanel>
@@ -1077,7 +1077,7 @@
                                     <StackPanel>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementCompactLockedListControl
+                                        <modern:AchievementCompactLockedListControl
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             IconSize="48"/>
                                     </StackPanel>
@@ -1097,7 +1097,7 @@
                                     <StackPanel>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementProgressBarControl Width="280"
+                                        <modern:AchievementProgressBarControl Width="280"
                                             Style="{StaticResource PreviewThemeControlStyle}"
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                     </StackPanel>
@@ -1116,7 +1116,7 @@
                                     <StackPanel>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementStatsControl Width="200"
+                                        <modern:AchievementStatsControl Width="200"
                                             Style="{StaticResource PreviewThemeControlStyle}"
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                     </StackPanel>
@@ -1136,10 +1136,10 @@
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
                                         <StackPanel Orientation="Horizontal">
-                                            <desktop:AchievementButtonControl Width="40" DisplayDetails="False" Margin="0,0,16,0"
+                                            <modern:AchievementButtonControl Width="40" DisplayDetails="False" Margin="0,0,16,0"
                                                 Style="{StaticResource PreviewThemeControlStyle}"
                                                 ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                            <desktop:AchievementButtonControl Width="200" DisplayDetails="True"
+                                            <modern:AchievementButtonControl Width="200" DisplayDetails="True"
                                                 Style="{StaticResource PreviewThemeControlStyle}"
                                                 ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                         </StackPanel>
@@ -1161,10 +1161,10 @@
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
                                         <StackPanel Orientation="Horizontal">
-                                            <desktop:AchievementViewItemControl Width="60" ShowProgressBar="False" Margin="0,0,16,0"
+                                            <modern:AchievementViewItemControl Width="60" ShowProgressBar="False" Margin="0,0,16,0"
                                                 Style="{StaticResource PreviewThemeControlStyle}"
                                                 ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                                            <desktop:AchievementViewItemControl Width="100" ShowProgressBar="True"
+                                            <modern:AchievementViewItemControl Width="100" ShowProgressBar="True"
                                                 Style="{StaticResource PreviewThemeControlStyle}"
                                                 ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                         </StackPanel>
@@ -1185,7 +1185,7 @@
                                     <StackPanel>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementPieChartControl
+                                        <modern:AchievementPieChartControl
                                             Width="260"
                                             Height="260"
                                             Style="{StaticResource PreviewThemeControlStyle}"
@@ -1206,7 +1206,7 @@
                                     <StackPanel>
                                         <TextBlock Text="PREVIEW"
                                                    Style="{StaticResource ContextLabelStyle}"/>
-                                        <desktop:AchievementBarChartControl Width="280" Height="120"
+                                        <modern:AchievementBarChartControl Width="280" Height="120"
                                             Style="{StaticResource PreviewThemeControlStyle}"
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                     </StackPanel>
@@ -3241,5 +3241,6 @@
         </TabControl>
     </Grid>
 </UserControl>
+
 
 

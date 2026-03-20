@@ -6,7 +6,7 @@ using PlayniteAchievements.Views.ThemeIntegration.Base;
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
-    /// Desktop PlayniteAchievements bar chart control for theme integration.
+    /// Modern PlayniteAchievements bar chart control for theme integration.
     /// Displays unlock timeline using LiveCharts with the same TimelineViewModel as the sidebar.
     /// Uses the effective theme source so settings previews can inject mock data.
     /// </summary>

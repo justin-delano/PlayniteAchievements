@@ -73,7 +73,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview_Description">2 unlocked (1 ultra rare, 1 gold), 1 locked achievement mockups</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Max Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (empty = unlimited)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OtherDesktopControls">Other Desktop Controls</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OtherModernControls">Other Modern Controls</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Compact Unlocked List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview_Description">Horizontal row of compact items showing only unlocked achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Compact Locked List</sys:String>

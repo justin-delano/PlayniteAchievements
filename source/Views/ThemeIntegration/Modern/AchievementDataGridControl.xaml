@@ -4,15 +4,16 @@
                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                    xmlns:base="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
-                   xmlns:desktop="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
+                   xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
                    xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
                    mc:Ignorable="d"
                    d:DesignHeight="300" d:DesignWidth="600">
 
     <controls:AchievementDataGridControl x:Name="AchievementsGrid"
-                                         ItemsSource="{Binding DisplayItems, Mode=OneWay, RelativeSource={RelativeSource AncestorType=desktop:AchievementDataGridControl}}"
+                                         ItemsSource="{Binding DisplayItems, Mode=OneWay, RelativeSource={RelativeSource AncestorType=modern:AchievementDataGridControl}}"
                                          ColumnSettingsKey="DesktopTheme"
                                          UseExternalSorting="True"
                                          Sorting="AchievementsGrid_Sorting"/>
 </base:ThemeControlBase>
+
 

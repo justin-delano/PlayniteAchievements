@@ -73,7 +73,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview_Description">2 débloqués (1 ultra rare, 1 or), 1 verrouillé</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Hauteur maximale</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (vide = illimité)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OtherDesktopControls">Autres contrôles de bureau</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OtherModernControls">Autres contrôles modernes</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Liste compacte débloquée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview_Description">Rangée horizontale d'éléments compacts affichant uniquement les succès débloqués.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Liste compacte verrouillée</sys:String>

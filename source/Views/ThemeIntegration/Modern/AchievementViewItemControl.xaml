@@ -7,7 +7,7 @@
                    mc:Ignorable="d"
                    d:DesignHeight="24" d:DesignWidth="200">
     <!--
-        Desktop view item control for theme integration.
+        Modern view item control for theme integration.
         Displays achievement summary per game in grid/list views.
         DataContext is inherited from parent (the Game for this row).
     -->

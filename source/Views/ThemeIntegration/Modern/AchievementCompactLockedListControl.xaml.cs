@@ -4,7 +4,7 @@ using PlayniteAchievements.Models.Achievements;
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
-    /// Desktop theme integration control displaying locked achievements in a horizontal scrolling row.
+    /// Modern theme integration control displaying locked achievements in a horizontal scrolling row.
     /// Shows compact achievement icons with progress bars and rarity glow effects.
     /// Filters to show only locked (not yet unlocked) achievements.
     /// </summary>

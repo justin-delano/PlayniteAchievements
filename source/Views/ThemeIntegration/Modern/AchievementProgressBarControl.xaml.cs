@@ -4,7 +4,7 @@ using PlayniteAchievements.Models.ThemeIntegration;
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
-    /// Desktop PlayniteAchievements progress bar control for theme integration.
+    /// Modern PlayniteAchievements progress bar control for theme integration.
     /// Displays progress bar with percentage overlay and rarity badges.
     /// Uses the effective theme source so settings previews can inject mock data.
     /// </summary>

@@ -9,7 +9,7 @@ using PlayniteAchievements.Views.ThemeIntegration.Base;
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
-    /// Desktop PlayniteAchievements pie chart control for theme integration.
+    /// Modern PlayniteAchievements pie chart control for theme integration.
     /// Displays rarity distribution as a pie chart with radial badge icons.
     /// Uses the effective theme source so settings previews can inject mock data.
     /// </summary>

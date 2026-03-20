@@ -4,7 +4,7 @@ using PlayniteAchievements.Views.ThemeIntegration.Base;
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
-    /// Desktop PlayniteAchievements button control for theme integration.
+    /// Modern PlayniteAchievements button control for theme integration.
     /// Displays progress information with detailed and non-detailed display modes.
     /// Supports ThemeDataOverride through inherited bindings for settings previews.
     /// </summary>

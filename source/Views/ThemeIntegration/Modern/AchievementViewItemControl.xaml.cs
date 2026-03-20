@@ -17,7 +17,7 @@ using PlayniteAchievements.Views.ThemeIntegration.Base;
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
-    /// Desktop view item control for theme integration.
+    /// Modern view item control for theme integration.
     /// Displays achievement summary per game in grid/list views.
     /// </summary>
     public partial class AchievementViewItemControl : ThemeControlBase

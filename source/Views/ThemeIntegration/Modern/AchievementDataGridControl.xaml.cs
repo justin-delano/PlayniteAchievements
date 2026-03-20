@@ -18,7 +18,7 @@ using PlayniteAchievements.Views.ThemeIntegration.Base;
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
-    /// Desktop PlayniteAchievements list control for theme integration.
+    /// Modern PlayniteAchievements list control for theme integration.
     /// Displays achievements in a DataGrid with sorting and virtualization.
     /// Clones items to maintain independent reveal state per control instance.
     /// </summary>
