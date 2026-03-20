@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
@@ -18,6 +19,7 @@ namespace PlayniteAchievements.Providers.Xenia
     internal class XeniaScanner
     {
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _playniteApi;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly string _pluginUserDataPath;
         private readonly string _accountFolderPath;
@@ -27,11 +29,13 @@ namespace PlayniteAchievements.Providers.Xenia
 
         public XeniaScanner(
             ILogger logger,
+            IPlayniteAPI playniteApi,
             PlayniteAchievementsSettings settings,
             string pluginUserDataPath,
             string accountFolderPath)
         {
             _logger = logger;
+            _playniteApi = playniteApi;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _accountFolderPath = accountFolderPath ?? throw new ArgumentNullException(nameof(accountFolderPath));
             if(_accountFolderPath.EndsWith("\\"))
@@ -164,8 +168,12 @@ namespace PlayniteAchievements.Providers.Xenia
             int exeAreaSize = 300;
             foreach (var rom in game.Roms)
             {
-                var path = rom.Path;
-                path = Playnite.SDK.API.Instance.ExpandGameVariables(game, path);
+                var path = PathExpansion.ExpandGamePath(_playniteApi, game, rom?.Path);
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    continue;
+                }
+
                 path = path.Replace("\\\\", "\\").Trim('"');
 
                 if (path.EndsWith(".iso") || path.EndsWith(".xex") || string.IsNullOrEmpty(Path.GetExtension(path)))
@@ -205,16 +213,17 @@ namespace PlayniteAchievements.Providers.Xenia
                             bytesRead = accessor.Read(buffer, 0, buffer.Length);
                             if (bytesRead == 0) break;
 
-                            var foundexe = IndexOf(buffer, bytesRead, Encoding.UTF8.GetBytes(".exe"));
-                            var foundpe = IndexOf(buffer, bytesRead, Encoding.UTF8.GetBytes(".pe"));
+                            Array.Copy(previousbuffer, combinedbuffer, previousbuffer.Length);
+                            Array.Copy(buffer, 0, combinedbuffer, chunksize, bytesRead);
 
-                            if (foundexe != -1)
+                            var combinedLength = previousbuffer.Length + bytesRead;
+                            var foundexe = IndexOf(combinedbuffer, combinedLength, Encoding.UTF8.GetBytes(".exe"));
+                            var foundpe = IndexOf(combinedbuffer, combinedLength, Encoding.UTF8.GetBytes(".pe"));
+
+                            if (foundexe >= exeAreaSize)
                             {
-                                Array.Copy(previousbuffer, combinedbuffer, previousbuffer.Length);
-                                Array.Copy(buffer, 0, combinedbuffer, chunksize, buffer.Length);
-
                                 // Pull the previous 300 characters and convert to char array (300 is arbitry just to account for possible lots of data between titleID and .exe entry)
-                                Array.Copy(combinedbuffer, (foundexe + chunksize) - exeAreaSize, exeChunk, 0, exeAreaSize);
+                                Array.Copy(combinedbuffer, foundexe - exeAreaSize, exeChunk, 0, exeAreaSize);
 
                                 var temptitleID = CheckChunk(ref exeChunk);
                                 if (!string.IsNullOrEmpty(temptitleID))
@@ -225,12 +234,9 @@ namespace PlayniteAchievements.Providers.Xenia
 
                                 }
                             }
-                            if (foundpe != -1)
+                            if (foundpe >= exeAreaSize)
                             {
-                                Array.Copy(previousbuffer, combinedbuffer, previousbuffer.Length);
-                                Array.Copy(buffer, 0, combinedbuffer, chunksize, buffer.Length);
-
-                                Array.Copy(combinedbuffer, (foundpe + chunksize) - exeAreaSize, exeChunk, 0, exeAreaSize);
+                                Array.Copy(combinedbuffer, foundpe - exeAreaSize, exeChunk, 0, exeAreaSize);
 
                                 var temptitleID = CheckChunk(ref exeChunk);
                                 if (!string.IsNullOrEmpty(temptitleID))
@@ -242,7 +248,9 @@ namespace PlayniteAchievements.Providers.Xenia
                             }
 
                             position += bytesRead;
-                            Array.Copy(buffer, previousbuffer, buffer.Length);
+                            Array.Clear(previousbuffer, 0, previousbuffer.Length);
+                            var tailCount = Math.Min(previousbuffer.Length, bytesRead);
+                            Array.Copy(buffer, bytesRead - tailCount, previousbuffer, previousbuffer.Length - tailCount, tailCount);
                         }
 
 
