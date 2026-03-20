@@ -162,36 +162,33 @@ namespace PlayniteAchievements.Providers.Xenia
                     xdbfAchievements.Add(achievement);
 
                 }
-
-                // Moved achievement creation outside of xbdf achievement processing so user doesn't have to scan twice to get 
-                // icon images to appear as the png data is usually after the achievement data in the gpd file so the icon is
-                // always set to null on the first scan
-                foreach (var achievement in xdbfAchievements)
-                {
-                    var iconPath = $"{iconDirectory}{achievement.icon_id}.png";
-                    if (!File.Exists(iconPath))
-                    {
-                        iconPath = null;
-                    }
-
-                    achievements.Add(new AchievementDetail
-                    {
-                        ApiName = achievement.id.ToString(),
-                        DisplayName = achievement.title,
-                        Description = achievement.unlock_time == 0 ? achievement.description : achievement.unlockDescription,
-                        UnlockedIconPath = iconPath,
-                        LockedIconPath = iconPath,
-                        Points = (int?)achievement.gamerscore,
-                        Unlocked = achievement.unlock_time != 0,
-                        UnlockTimeUtc = achievement.unlock_time != 0
-                            ? DateTime.FromFileTimeUtc((Int64)achievement.unlock_time)
-                            : (DateTime?)null,
-                    });
-                }
-
-
             }
 
+            // Moved achievement creation outside of xbdf achievement processing so user doesn't have to scan twice to get 
+            // icon images to appear as the png data is usually after the achievement data in the gpd file so the icon is
+            // always set to null on the first scan
+            foreach (var achievement in xdbfAchievements)
+            {
+                var iconPath = $"{iconDirectory}{achievement.icon_id}.png";
+                if (!File.Exists(iconPath))
+                {
+                    iconPath = null;
+                }
+
+                achievements.Add(new AchievementDetail
+                {
+                    ApiName = achievement.id.ToString(),
+                    DisplayName = achievement.title,
+                    Description = achievement.unlock_time == 0 ? achievement.description : achievement.unlockDescription,
+                    UnlockedIconPath = iconPath,
+                    LockedIconPath = iconPath,
+                    Points = (int?)achievement.gamerscore,
+                    Unlocked = achievement.unlock_time != 0,
+                    UnlockTimeUtc = achievement.unlock_time != 0
+                        ? DateTime.FromFileTimeUtc((Int64)achievement.unlock_time)
+                        : (DateTime?)null,
+                });
+            }
 
             return achievements;
         }
