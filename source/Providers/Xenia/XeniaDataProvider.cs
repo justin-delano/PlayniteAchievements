@@ -48,13 +48,18 @@ namespace PlayniteAchievements.Providers.Xenia
                 return false;
             }
 
-            var src = game.Source?.Name ?? string.Empty;
-            if (src.IndexOf("xenia", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (UsesXeniaEmulator(game))
             {
                 return true;
             }
 
-            if (game.GameActions == null)
+            var src = game.Source?.Name ?? string.Empty;
+            return src.IndexOf("xenia", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private bool UsesXeniaEmulator(Game game)
+        {
+            if (game?.GameActions == null)
             {
                 return false;
             }
