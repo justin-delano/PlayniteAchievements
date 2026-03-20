@@ -851,10 +851,43 @@ namespace PlayniteAchievements.ViewModels
 
         private void UnlinkManualTracking()
         {
-            if (_plugin?.UnlinkManualAchievementsForGame(_gameId) == true)
+            if (TryUnlinkManualTracking())
             {
                 Reload();
             }
+        }
+
+        private bool TryUnlinkManualTracking()
+        {
+            if (!HasGame)
+            {
+                return false;
+            }
+
+            var result = _playniteApi?.Dialogs?.ShowMessage(
+                string.Format(L("LOCPlayAch_Menu_UnlinkAchievements_Confirm", "Remove the manual achievement link for \"{0}\"?"), GameName),
+                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return false;
+            }
+
+            _settings.Persisted.ManualAchievementLinks.Remove(_gameId);
+            _plugin?.SavePluginSettings(_settings);
+            PlayniteAchievementsPlugin.NotifySettingsSaved();
+
+            _logger?.Info($"Unlinked manual achievements for '{GameName}'");
+
+            _playniteApi?.Dialogs?.ShowMessage(
+                string.Format(L("LOCPlayAch_Menu_UnlinkAchievements_Success", "Manual achievement link removed for \"{0}\"."), GameName),
+                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return true;
         }
 
         private async Task RefreshGameAsync()

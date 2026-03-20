@@ -28,100 +28,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     {
         private static readonly List<AchievementDetail> EmptyAchievementList = new List<AchievementDetail>();
         private static readonly AchievementRarityStats EmptyRarityStats = new AchievementRarityStats();
-        private static readonly string[] CompatibilityAllGamesDelegatedProperties =
-        {
-            nameof(PlayniteAchievementsSettings.AllGamesWithAchievements),
-            nameof(PlayniteAchievementsSettings.PlatinumGames),
-            nameof(PlayniteAchievementsSettings.PlatinumGamesAscending),
-            nameof(PlayniteAchievementsSettings.GSTotal),
-            nameof(PlayniteAchievementsSettings.GSPlat),
-            nameof(PlayniteAchievementsSettings.GS90),
-            nameof(PlayniteAchievementsSettings.GS30),
-            nameof(PlayniteAchievementsSettings.GS15),
-            nameof(PlayniteAchievementsSettings.GSScore),
-            nameof(PlayniteAchievementsSettings.GSLevel),
-            nameof(PlayniteAchievementsSettings.GSLevelProgress),
-            nameof(PlayniteAchievementsSettings.GSRank)
-        };
-
-        // NOTE: PlatinumGames is notified via compatibility surface only to avoid duplicate notifications.
-        private static readonly string[] ModernAllGamesCoreDelegatedProperties =
-        {
-            nameof(PlayniteAchievementsSettings.HasDataAllGames),
-            nameof(PlayniteAchievementsSettings.CompletedGamesAsc),
-            nameof(PlayniteAchievementsSettings.CompletedGamesDesc),
-            nameof(PlayniteAchievementsSettings.GameSummariesAsc),
-            nameof(PlayniteAchievementsSettings.GameSummariesDesc),
-            nameof(PlayniteAchievementsSettings.GamesWithAchievements),
-            nameof(PlayniteAchievementsSettings.TotalTrophies),
-            nameof(PlayniteAchievementsSettings.PlatinumTrophies),
-            nameof(PlayniteAchievementsSettings.GoldTrophies),
-            nameof(PlayniteAchievementsSettings.SilverTrophies),
-            nameof(PlayniteAchievementsSettings.BronzeTrophies),
-            nameof(PlayniteAchievementsSettings.TotalCommon),
-            nameof(PlayniteAchievementsSettings.TotalUncommon),
-            nameof(PlayniteAchievementsSettings.TotalRare),
-            nameof(PlayniteAchievementsSettings.TotalUltraRare),
-            nameof(PlayniteAchievementsSettings.TotalRareAndUltraRare),
-            nameof(PlayniteAchievementsSettings.TotalOverall),
-            nameof(PlayniteAchievementsSettings.Level),
-            nameof(PlayniteAchievementsSettings.LevelProgress),
-            nameof(PlayniteAchievementsSettings.Rank),
-            nameof(PlayniteAchievementsSettings.MostRecentUnlocksTop3),
-            nameof(PlayniteAchievementsSettings.MostRecentUnlocksTop5),
-            nameof(PlayniteAchievementsSettings.MostRecentUnlocksTop10),
-            nameof(PlayniteAchievementsSettings.RarestRecentUnlocksTop3),
-            nameof(PlayniteAchievementsSettings.RarestRecentUnlocksTop5),
-            nameof(PlayniteAchievementsSettings.RarestRecentUnlocksTop10),
-            nameof(PlayniteAchievementsSettings.SteamGames),
-            nameof(PlayniteAchievementsSettings.GOGGames),
-            nameof(PlayniteAchievementsSettings.EpicGames),
-            nameof(PlayniteAchievementsSettings.XboxGames),
-            nameof(PlayniteAchievementsSettings.PSNGames),
-            nameof(PlayniteAchievementsSettings.RetroAchievementsGames),
-            nameof(PlayniteAchievementsSettings.RPCS3Games),
-            nameof(PlayniteAchievementsSettings.ShadPS4Games),
-            nameof(PlayniteAchievementsSettings.ManualGames)
-        };
-
-        private static readonly string[] ModernAllGamesHeavyDelegatedProperties =
-        {
-            nameof(PlayniteAchievementsSettings.AllAchievementsUnlockAsc),
-            nameof(PlayniteAchievementsSettings.AllAchievementsUnlockDesc),
-            nameof(PlayniteAchievementsSettings.AllAchievementsRarityAsc),
-            nameof(PlayniteAchievementsSettings.AllAchievementsRarityDesc),
-            nameof(PlayniteAchievementsSettings.MostRecentUnlocks),
-            nameof(PlayniteAchievementsSettings.RarestRecentUnlocks)
-        };
-
-        private static readonly string[] SingleGameThemeDelegatedProperties =
-        {
-            nameof(PlayniteAchievementsSettings.HasData),
-            nameof(PlayniteAchievementsSettings.HasAchievements),
-            nameof(PlayniteAchievementsSettings.AchievementCount),
-            nameof(PlayniteAchievementsSettings.UnlockedCount),
-            nameof(PlayniteAchievementsSettings.LockedCount),
-            nameof(PlayniteAchievementsSettings.ProgressPercentage),
-            nameof(PlayniteAchievementsSettings.IsCompleted)
-        };
-
-        private static readonly string[] SingleGameLegacyDelegatedProperties =
-        {
-            nameof(PlayniteAchievementsSettings.HasDataLegacy),
-            nameof(PlayniteAchievementsSettings.Total),
-            nameof(PlayniteAchievementsSettings.Unlocked),
-            nameof(PlayniteAchievementsSettings.Percent),
-            nameof(PlayniteAchievementsSettings.Is100Percent),
-            nameof(PlayniteAchievementsSettings.Locked),
-            nameof(PlayniteAchievementsSettings.Common),
-            nameof(PlayniteAchievementsSettings.Uncommon),
-            nameof(PlayniteAchievementsSettings.Rare),
-            nameof(PlayniteAchievementsSettings.UltraRare),
-            nameof(PlayniteAchievementsSettings.RareAndUltraRare),
-            nameof(PlayniteAchievementsSettings.ListAchievements),
-            nameof(PlayniteAchievementsSettings.ListAchUnlockDateAsc),
-            nameof(PlayniteAchievementsSettings.ListAchUnlockDateDesc)
-        };
 
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _api;
@@ -905,11 +811,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 _settings.Theme.RarestRecentUnlocks = library.RarestRecentUnlocks;
             }
 
-            NotifySettingProperties(CompatibilityAllGamesDelegatedProperties);
-            NotifySettingProperties(ModernAllGamesCoreDelegatedProperties);
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.CompatibilityAllGames);
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.ModernAllGamesCore);
             if (shouldUpdateHeavyLists)
             {
-                NotifySettingProperties(ModernAllGamesHeavyDelegatedProperties);
+                NotifySettingProperties(ThemeDelegatedPropertyCatalog.ModernAllGamesHeavy);
             }
         }
 
@@ -959,8 +865,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.ListAchUnlockDateAsc = state.AchievementsOldestFirst;
             _settings.LegacyTheme.ListAchUnlockDateDesc = state.AchievementsNewestFirst;
 
-            NotifySettingProperties(SingleGameThemeDelegatedProperties);
-            NotifySettingProperties(SingleGameLegacyDelegatedProperties);
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.SingleGameTheme);
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.SingleGameLegacy);
         }
 
         /// <summary>
@@ -1004,8 +910,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _appliedGameId = null;
             _appliedLastUpdatedUtc = default;
 
-            NotifySettingProperties(SingleGameThemeDelegatedProperties);
-            NotifySettingProperties(SingleGameLegacyDelegatedProperties);
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.SingleGameTheme);
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.SingleGameLegacy);
         }
 
         #endregion

@@ -2665,7 +2665,7 @@ namespace PlayniteAchievements.Views
             LegacyManualImportResult importResult;
             try
             {
-                importResult = _plugin.ImportLegacyManualLinks(importPath);
+                importResult = ImportLegacyManualLinks(importPath);
             }
             catch (Exception ex)
             {
@@ -2730,6 +2730,29 @@ namespace PlayniteAchievements.Views
                 autoRefreshSkipped);
 
             SetLegacyManualImportStatus(summary);
+        }
+
+        private LegacyManualImportResult ImportLegacyManualLinks(string folderPath)
+        {
+            var importer = new LegacyManualLinkImporter(
+                () => _settingsViewModel?.Settings?.Persisted,
+                gameId => _plugin.PlayniteApi?.Database?.Games?.Get(gameId) != null,
+                gameId => _plugin.AchievementService.GetRawGameAchievementData(gameId) != null,
+                _logger);
+
+            var result = importer.Import(folderPath) ?? new LegacyManualImportResult();
+
+            if (result.Imported > 0 && !_settingsViewModel.Settings.Persisted.ManualEnabled)
+            {
+                _settingsViewModel.Settings.Persisted.ManualEnabled = true;
+                result.ManualProviderAutoEnabled = true;
+            }
+
+            _plugin.SavePluginSettings(_settingsViewModel.Settings);
+            _plugin.ProviderRegistry?.SyncFromSettings(_settingsViewModel.Settings.Persisted);
+            PlayniteAchievementsPlugin.NotifySettingsSaved();
+
+            return result;
         }
 
         private string BuildLegacyManualImportSummary(
