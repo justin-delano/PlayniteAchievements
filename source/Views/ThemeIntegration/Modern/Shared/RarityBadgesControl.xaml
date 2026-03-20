@@ -1,4 +1,4 @@
-<UserControl x:Class="PlayniteAchievements.Views.ThemeIntegration.Desktop.Shared.RarityBadgesControl"
+<UserControl x:Class="PlayniteAchievements.Views.ThemeIntegration.Modern.Shared.RarityBadgesControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -53,3 +53,4 @@
         </ItemsControl.ItemTemplate>
     </ItemsControl>
 </UserControl>
+

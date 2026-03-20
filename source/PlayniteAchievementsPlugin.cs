@@ -101,16 +101,16 @@ namespace PlayniteAchievements
 
         private static readonly Dictionary<string, Func<Control>> DesktopControlFactories = new Dictionary<string, Func<Control>>(StringComparer.OrdinalIgnoreCase)
         {
-            { "AchievementButton", () => new Views.ThemeIntegration.Desktop.AchievementButtonControl() },
-            { "AchievementProgressBar", () => new Views.ThemeIntegration.Desktop.AchievementProgressBarControl() },
-            { "AchievementCompactList", () => new Views.ThemeIntegration.Desktop.AchievementCompactListControl() },
-            { "AchievementCompactLockedList", () => new Views.ThemeIntegration.Desktop.AchievementCompactLockedListControl() },
-            { "AchievementCompactUnlockedList", () => new Views.ThemeIntegration.Desktop.AchievementCompactUnlockedListControl() },
-            { "AchievementBarChart", () => new Views.ThemeIntegration.Desktop.AchievementBarChartControl() },
-            { "AchievementPieChart", () => new Views.ThemeIntegration.Desktop.AchievementPieChartControl() },
-            { "AchievementStats", () => new Views.ThemeIntegration.Desktop.AchievementStatsControl() },
-            { "AchievementDataGrid", () => new Views.ThemeIntegration.Desktop.AchievementDataGridControl() },
-            { "AchievementViewItem", () => new Views.ThemeIntegration.Desktop.AchievementViewItemControl() }
+            { "AchievementButton", () => new Views.ThemeIntegration.Modern.AchievementButtonControl() },
+            { "AchievementProgressBar", () => new Views.ThemeIntegration.Modern.AchievementProgressBarControl() },
+            { "AchievementCompactList", () => new Views.ThemeIntegration.Modern.AchievementCompactListControl() },
+            { "AchievementCompactLockedList", () => new Views.ThemeIntegration.Modern.AchievementCompactLockedListControl() },
+            { "AchievementCompactUnlockedList", () => new Views.ThemeIntegration.Modern.AchievementCompactUnlockedListControl() },
+            { "AchievementBarChart", () => new Views.ThemeIntegration.Modern.AchievementBarChartControl() },
+            { "AchievementPieChart", () => new Views.ThemeIntegration.Modern.AchievementPieChartControl() },
+            { "AchievementStats", () => new Views.ThemeIntegration.Modern.AchievementStatsControl() },
+            { "AchievementDataGrid", () => new Views.ThemeIntegration.Modern.AchievementDataGridControl() },
+            { "AchievementViewItem", () => new Views.ThemeIntegration.Modern.AchievementViewItemControl() }
         };
 
         public override Guid Id { get; } =
@@ -2162,6 +2162,7 @@ namespace PlayniteAchievements
         }
     }
 }
+
 
 
 

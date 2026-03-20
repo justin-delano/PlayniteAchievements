@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using PlayniteAchievements.Models.Achievements;
 
-namespace PlayniteAchievements.Views.ThemeIntegration.Desktop.Shared
+namespace PlayniteAchievements.Views.ThemeIntegration.Modern.Shared
 {
     /// <summary>
     /// Badge item for display in the RarityBadgesControl.
@@ -159,4 +159,5 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop.Shared
         Total
     }
 }
+
 

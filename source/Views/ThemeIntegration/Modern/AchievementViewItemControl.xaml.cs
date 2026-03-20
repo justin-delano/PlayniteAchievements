@@ -14,7 +14,7 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
-namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
+namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
     /// Desktop view item control for theme integration.
@@ -468,3 +468,4 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         }
     }
 }
+

@@ -1,7 +1,7 @@
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 using PlayniteAchievements.Models.ThemeIntegration;
 
-namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
+namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
     /// Desktop PlayniteAchievements progress bar control for theme integration.
@@ -45,4 +45,5 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         }
     }
 }
+
 

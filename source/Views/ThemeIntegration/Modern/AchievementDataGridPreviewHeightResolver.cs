@@ -1,6 +1,6 @@
 using System;
 
-namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
+namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     internal static class AchievementDataGridPreviewHeightResolver
     {
@@ -27,3 +27,4 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         }
     }
 }
+

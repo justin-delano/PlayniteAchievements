@@ -10,7 +10,7 @@ using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
-namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
+namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
     /// Base class for compact list controls that get data from modern theme bindings.
@@ -358,4 +358,5 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         }
     }
 }
+
 

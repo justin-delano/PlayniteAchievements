@@ -1,7 +1,7 @@
 using System.Windows.Controls;
 using PlayniteAchievements.Models.Achievements;
 
-namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
+namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
     /// <summary>
     /// Desktop theme integration control displaying all achievements in a horizontal scrolling row.
@@ -34,3 +34,4 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Desktop
         }
     }
 }
+
