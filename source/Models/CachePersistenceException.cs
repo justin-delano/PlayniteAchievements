@@ -1,6 +1,6 @@
 using System;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Models
 {
     public sealed class CachePersistenceException : Exception
     {
