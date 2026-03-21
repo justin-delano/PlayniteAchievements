@@ -37,13 +37,15 @@ namespace PlayniteAchievements.Providers.RPCS3
     internal sealed class Rpcs3Scanner
     {
         private readonly ILogger _logger;
+        private readonly PlayniteAchievementsSettings _settings;
         private readonly Rpcs3Settings _providerSettings;
         private readonly Rpcs3DataProvider _provider;
         private readonly IPlayniteAPI _playniteApi;
 
-        public Rpcs3Scanner(ILogger logger, Rpcs3Settings providerSettings, Rpcs3DataProvider provider = null, IPlayniteAPI playniteApi = null)
+        public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings, Rpcs3Settings providerSettings, Rpcs3DataProvider provider = null, IPlayniteAPI playniteApi = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _providerSettings = providerSettings ?? throw new ArgumentNullException(nameof(providerSettings));
             _provider = provider;
             _playniteApi = playniteApi;

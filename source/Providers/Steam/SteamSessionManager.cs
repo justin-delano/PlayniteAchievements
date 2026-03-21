@@ -1,6 +1,7 @@
 using PlayniteAchievements.Providers.Steam.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Data;
