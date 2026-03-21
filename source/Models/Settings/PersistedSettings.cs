@@ -119,6 +119,21 @@ namespace PlayniteAchievements.Models.Settings
         private HashSet<string> _exophaseManagedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private HashSet<Guid> _exophaseIncludedGames = new HashSet<Guid>();
         private Dictionary<Guid, string> _exophaseSlugOverrides = new Dictionary<Guid, string>();
+        private Dictionary<string, string> _providerSettings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        #endregion
+
+        #region Provider Settings Dictionary
+
+        /// <summary>
+        /// Dictionary of provider settings serialized as JSON strings.
+        /// Key is the provider key (e.g., "Steam", "Epic"), value is JSON-serialized settings.
+        /// </summary>
+        public Dictionary<string, string> ProviderSettings
+        {
+            get => _providerSettings;
+            set => SetValue(ref _providerSettings, value ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+        }
 
         #endregion
 
