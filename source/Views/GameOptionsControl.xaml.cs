@@ -252,7 +252,7 @@ namespace PlayniteAchievements.Views
             var availableSources = _manualProvider.GetAllSources();
 
             // Load manual settings to check for existing link
-            var manualSettings = ProviderSettingsHelper.Load<ManualSettings>(_settings.Persisted, "Manual");
+            var manualSettings = _settings.ProviderSettings<ManualSettings>();
 
             // Determine the initial source based on existing link or default to Steam
             IManualSource initialSource;

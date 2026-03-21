@@ -66,7 +66,7 @@ namespace PlayniteAchievements.Providers.Exophase
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _apiClient = new ExophaseApiClient(playniteApi, logger);
 
-            _providerSettings = ProviderSettingsHelper.Load<ExophaseSettings>(settings.Persisted, "Exophase");
+            _providerSettings = settings.ProviderSettings<ExophaseSettings>();
         }
 
         #endregion
@@ -694,7 +694,7 @@ namespace PlayniteAchievements.Providers.Exophase
             if (settings is ExophaseSettings exophaseSettings)
             {
                 _providerSettings = exophaseSettings;
-                ProviderSettingsHelper.Save(_settings.Persisted, exophaseSettings);
+                _settings.SaveProviderSettings(exophaseSettings);
             }
         }
 

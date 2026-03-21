@@ -53,12 +53,12 @@ namespace PlayniteAchievements.Providers.Exophase
 
         private ExophaseSettings GetProviderSettings()
         {
-            return ProviderSettingsHelper.Load<ExophaseSettings>(_settings.Persisted, "Exophase");
+            return _settings.ProviderSettings<ExophaseSettings>();
         }
 
         private void SaveProviderSettings(ExophaseSettings providerSettings)
         {
-            ProviderSettingsHelper.Save(_settings.Persisted, providerSettings);
+            _settings.SaveProviderSettings(providerSettings);
         }
 
         /// <summary>

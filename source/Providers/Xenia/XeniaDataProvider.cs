@@ -26,7 +26,7 @@ namespace PlayniteAchievements.Providers.Xenia
             _playniteApi = playniteApi;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
-            _providerSettings = ProviderSettingsHelper.Load<XeniaSettings>(settings.Persisted, "Xenia");
+            _providerSettings = settings.ProviderSettings<XeniaSettings>();
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Xenia");
@@ -156,7 +156,7 @@ namespace PlayniteAchievements.Providers.Xenia
             if (settings is XeniaSettings xeniaSettings)
             {
                 _providerSettings = xeniaSettings;
-                ProviderSettingsHelper.Save(_settings.Persisted, xeniaSettings);
+                _settings.SaveProviderSettings(xeniaSettings);
             }
         }
     }

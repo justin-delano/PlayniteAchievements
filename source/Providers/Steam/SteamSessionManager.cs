@@ -39,12 +39,12 @@ namespace PlayniteAchievements.Providers.Steam
 
         private SteamSettings GetProviderSettings()
         {
-            return ProviderSettingsHelper.Load<SteamSettings>(_settings.Persisted, "Steam");
+            return _settings.ProviderSettings<SteamSettings>();
         }
 
         private void SaveProviderSettings(SteamSettings providerSettings)
         {
-            ProviderSettingsHelper.Save(_settings.Persisted, providerSettings);
+            _settings.SaveProviderSettings(providerSettings);
         }
 
         private void UpdateSteamUserId(string steamUserId)

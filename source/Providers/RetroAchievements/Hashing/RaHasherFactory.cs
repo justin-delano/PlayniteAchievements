@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Hashing
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
 
-            var raSettings = ProviderSettingsHelper.Load<RetroAchievementsSettings>(settings.Persisted, "RetroAchievements");
+            var raSettings = settings.ProviderSettings<RetroAchievementsSettings>();
             var spec = RaConsoleHashingSpec.Get(consoleId);
 
             switch (spec.Kind)

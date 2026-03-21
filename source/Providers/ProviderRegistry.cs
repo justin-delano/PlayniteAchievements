@@ -24,14 +24,22 @@ using PlayniteAchievements.Services;
 namespace PlayniteAchievements.Providers
 {
     /// <summary>
-    /// Central registry for provider enabled state at runtime.
-    /// Decouples the "enabled" concept from provider authentication checks,
-    /// allowing IsAuthenticated to only validate credentials.
-    /// Also manages provider settings view registration for dynamic UI building.
+    /// Central registry for provider management at runtime.
+    /// Manages provider enabled state, settings access/caching, and settings view registration.
     /// </summary>
     public class ProviderRegistry
     {
+        private static ProviderRegistry _instance;
+
+        /// <summary>
+        /// Gets the current registry instance.
+        /// Set during plugin initialization.
+        /// </summary>
+        public static ProviderRegistry Instance => _instance;
+
         private readonly ILogger _logger;
+        private readonly PlayniteAchievementsSettings _settings;
+        private readonly Dictionary<string, ProviderSettingsBase> _settingsCache = new Dictionary<string, ProviderSettingsBase>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Func<CancellationToken, Task>> _authPrimers = new Dictionary<string, Func<CancellationToken, Task>>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Func<IProviderSettingsView>> _settingsViewFactories = new Dictionary<string, Func<IProviderSettingsView>>(StringComparer.OrdinalIgnoreCase);
 
@@ -53,9 +61,58 @@ namespace PlayniteAchievements.Providers
             "Manual"
         };
 
-        public ProviderRegistry(ILogger logger = null)
+        public ProviderRegistry(PlayniteAchievementsSettings settings, ILogger logger = null)
         {
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
+            _instance = this;
+        }
+
+        // ===================== SETTINGS ACCESS =====================
+
+        /// <summary>
+        /// Gets provider settings of the specified type, loading and caching on first access.
+        /// The provider key is determined by the settings type's ProviderKey property.
+        /// </summary>
+        /// <typeparam name="T">The provider settings type.</typeparam>
+        /// <returns>The cached provider settings instance.</returns>
+        public T Settings<T>() where T : ProviderSettingsBase, new()
+        {
+            var key = new T().ProviderKey;
+
+            if (_settingsCache.TryGetValue(key, out var cached))
+            {
+                return (T)cached;
+            }
+
+            var loaded = ProviderSettingsHelper.Load<T>(_settings.Persisted, key);
+            _settingsCache[key] = loaded;
+            return loaded;
+        }
+
+        /// <summary>
+        /// Saves provider settings back to persisted storage and updates the cache.
+        /// </summary>
+        /// <typeparam name="T">The provider settings type.</typeparam>
+        /// <param name="settings">The settings instance to save.</param>
+        public void Save<T>(T settings) where T : ProviderSettingsBase
+        {
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
+
+            _settingsCache[settings.ProviderKey] = settings;
+            ProviderSettingsHelper.Save(_settings.Persisted, settings);
+        }
+
+        /// <summary>
+        /// Clears the settings cache, forcing reload on next access.
+        /// Call this when persisted settings are reloaded from disk.
+        /// </summary>
+        public void ClearSettingsCache()
+        {
+            _settingsCache.Clear();
         }
 
         /// <summary>

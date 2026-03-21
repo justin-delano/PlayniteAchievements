@@ -125,7 +125,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            var providerSettings = ProviderSettingsHelper.Load<RetroAchievementsSettings>(_settings.Persisted, "RetroAchievements");
+            var providerSettings = _settings.ProviderSettings<RetroAchievementsSettings>();
             if (string.IsNullOrWhiteSpace(providerSettings.RaUsername) || string.IsNullOrWhiteSpace(providerSettings.RaWebApiKey))
             {
                 _logger?.Warn("[RA] Missing RetroAchievements credentials - cannot scan achievements.");
@@ -216,7 +216,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
         private async Task<GameAchievementData> ScanGameAsync(Game game, int consoleId, IRaHasher hasher, CancellationToken cancel)
         {
-            var raSettings = ProviderSettingsHelper.Load<RetroAchievementsSettings>(_settings.Persisted, "RetroAchievements");
+            var raSettings = _settings.ProviderSettings<RetroAchievementsSettings>();
 
             // Check for manual override first (survives cache clears)
             if (raSettings.RaGameIdOverrides.TryGetValue(game.Id, out var overriddenId))
@@ -399,7 +399,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         {
             try
             {
-                var raSettings = ProviderSettingsHelper.Load<RetroAchievementsSettings>(_settings.Persisted, "RetroAchievements");
+                var raSettings = _settings.ProviderSettings<RetroAchievementsSettings>();
                 var gameInfo = await _api.GetGameInfoAndUserProgressAsync(gameId, cancel).ConfigureAwait(false);
                 var achievements = ParseAchievements(gameInfo, raSettings.RaRarityStats);
 

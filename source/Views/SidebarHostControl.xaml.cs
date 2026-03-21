@@ -175,7 +175,7 @@ namespace PlayniteAchievements.Views
                     var seenThemeMigration = settings?.Persisted?.SeenThemeMigration ?? false;
                     var cachedIds = _cacheManager.GetCachedGameIds();
                     var hasCachedData = cachedIds != null && cachedIds.Count > 0;
-                    _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeMigration={seenThemeMigration}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(ProviderSettingsHelper.Load<SteamSettings>(settings?.Persisted, "Steam").SteamUserId)}, HasEpicAuth={!string.IsNullOrEmpty(ProviderSettingsHelper.Load<EpicSettings>(settings?.Persisted, "Epic").AccountId)}, HasRaAuth={!string.IsNullOrEmpty(ProviderSettingsHelper.Load<RetroAchievementsSettings>(settings?.Persisted, "RetroAchievements").RaUsername)}");
+                    _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeMigration={seenThemeMigration}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(settings?.ProviderSettings<SteamSettings>().SteamUserId)}, HasEpicAuth={!string.IsNullOrEmpty(settings?.ProviderSettings<EpicSettings>().AccountId)}, HasRaAuth={!string.IsNullOrEmpty(settings?.ProviderSettings<RetroAchievementsSettings>().RaUsername)}");
 
                     // Show landing page if:
                     // 1. Haven't seen the theme migration page yet (!seenThemeMigration)

@@ -223,11 +223,11 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         public void ClearSingleGameThemeProperties_ResetsAndPublishesRareAndUltraRare()
         {
             var settings = new PlayniteAchievementsSettings();
-            settings.Theme.Common = new AchievementRarityStats { Total = 3, Unlocked = 1, Locked = 2 };
-            settings.Theme.Uncommon = new AchievementRarityStats { Total = 2, Unlocked = 1, Locked = 1 };
-            settings.Theme.Rare = new AchievementRarityStats { Total = 4, Unlocked = 2, Locked = 2 };
-            settings.Theme.UltraRare = new AchievementRarityStats { Total = 1, Unlocked = 1, Locked = 0 };
-            settings.Theme.RareAndUltraRare = new AchievementRarityStats { Total = 5, Unlocked = 3, Locked = 2 };
+            settings.ModernTheme.Common = new AchievementRarityStats { Total = 3, Unlocked = 1, Locked = 2 };
+            settings.ModernTheme.Uncommon = new AchievementRarityStats { Total = 2, Unlocked = 1, Locked = 1 };
+            settings.ModernTheme.Rare = new AchievementRarityStats { Total = 4, Unlocked = 2, Locked = 2 };
+            settings.ModernTheme.UltraRare = new AchievementRarityStats { Total = 1, Unlocked = 1, Locked = 0 };
+            settings.ModernTheme.RareAndUltraRare = new AchievementRarityStats { Total = 5, Unlocked = 3, Locked = 2 };
 
             var api = new FakePlayniteApi();
             var refreshRuntime = new RefreshRuntime();
@@ -248,11 +248,11 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
 
             service.ClearSingleGameThemeProperties();
 
-            AssertStat(settings.Common, total: 0, unlocked: 0, locked: 0);
-            AssertStat(settings.Uncommon, total: 0, unlocked: 0, locked: 0);
-            AssertStat(settings.Rare, total: 0, unlocked: 0, locked: 0);
-            AssertStat(settings.UltraRare, total: 0, unlocked: 0, locked: 0);
-            AssertStat(settings.RareAndUltraRare, total: 0, unlocked: 0, locked: 0);
+            AssertStat(settings.ModernTheme.Common, total: 0, unlocked: 0, locked: 0);
+            AssertStat(settings.ModernTheme.Uncommon, total: 0, unlocked: 0, locked: 0);
+            AssertStat(settings.ModernTheme.Rare, total: 0, unlocked: 0, locked: 0);
+            AssertStat(settings.ModernTheme.UltraRare, total: 0, unlocked: 0, locked: 0);
+            AssertStat(settings.ModernTheme.RareAndUltraRare, total: 0, unlocked: 0, locked: 0);
 
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.Common)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.Uncommon)));

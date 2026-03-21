@@ -1404,12 +1404,12 @@ namespace PlayniteAchievements.Services.Database
                 externalId = _plugin?.SteamSessionManager?.GetCachedSteamId64();
                 if (string.IsNullOrWhiteSpace(externalId))
                 {
-                    externalId = ProviderSettingsHelper.Load<SteamSettings>(settings, "Steam").SteamUserId;
+                    externalId = settings.ProviderSettings<SteamSettings>().SteamUserId;
                 }
             }
             else if (string.Equals(providerKey, "RetroAchievements", StringComparison.OrdinalIgnoreCase))
             {
-                externalId = ProviderSettingsHelper.Load<RetroAchievementsSettings>(settings, "RetroAchievements").RaUsername;
+                externalId = settings.ProviderSettings<RetroAchievementsSettings>().RaUsername;
             }
 
             if (string.IsNullOrWhiteSpace(externalId))

@@ -194,7 +194,7 @@ namespace PlayniteAchievements
                 }
 
                 // Create provider registry early so it can create providers and register everything in one place
-                _providerRegistry = new ProviderRegistry(_logger);
+                _providerRegistry = new ProviderRegistry(settings, _logger);
                 _providerRegistry.SyncFromSettings(settings.Persisted);
 
                 List<IDataProvider> providers;

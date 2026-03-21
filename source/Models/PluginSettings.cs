@@ -404,8 +404,8 @@ namespace PlayniteAchievements.Models
         {
             // Legacy themes (including migrated SuccessStory themes) use HasData as a
             // selected-game flag, so keep this bound to per-game achievement state.
-            get => Theme.HasAchievements;
-            set => Theme.HasAchievements = value;
+            get => ModernTheme.HasAchievements;
+            set => ModernTheme.HasAchievements = value;
         }
 
         [DontSerialize]
@@ -467,43 +467,43 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         public AchievementRarityStats TotalCommon
         {
-            get => Theme.TotalCommon ?? EmptyRarityStats;
-            set => Theme.TotalCommon = value;
+            get => ModernTheme.TotalCommon ?? EmptyRarityStats;
+            set => ModernTheme.TotalCommon = value;
         }
 
         [DontSerialize]
         public AchievementRarityStats TotalUncommon
         {
-            get => Theme.TotalUncommon ?? EmptyRarityStats;
-            set => Theme.TotalUncommon = value;
+            get => ModernTheme.TotalUncommon ?? EmptyRarityStats;
+            set => ModernTheme.TotalUncommon = value;
         }
 
         [DontSerialize]
         public AchievementRarityStats TotalRare
         {
-            get => Theme.TotalRare ?? EmptyRarityStats;
-            set => Theme.TotalRare = value;
+            get => ModernTheme.TotalRare ?? EmptyRarityStats;
+            set => ModernTheme.TotalRare = value;
         }
 
         [DontSerialize]
         public AchievementRarityStats TotalUltraRare
         {
-            get => Theme.TotalUltraRare ?? EmptyRarityStats;
-            set => Theme.TotalUltraRare = value;
+            get => ModernTheme.TotalUltraRare ?? EmptyRarityStats;
+            set => ModernTheme.TotalUltraRare = value;
         }
 
         [DontSerialize]
         public AchievementRarityStats TotalRareAndUltraRare
         {
-            get => Theme.TotalRareAndUltraRare ?? EmptyRarityStats;
-            set => Theme.TotalRareAndUltraRare = value;
+            get => ModernTheme.TotalRareAndUltraRare ?? EmptyRarityStats;
+            set => ModernTheme.TotalRareAndUltraRare = value;
         }
 
         [DontSerialize]
         public AchievementRarityStats TotalOverall
         {
-            get => Theme.TotalOverall ?? EmptyRarityStats;
-            set => Theme.TotalOverall = value;
+            get => ModernTheme.TotalOverall ?? EmptyRarityStats;
+            set => ModernTheme.TotalOverall = value;
         }
 
         [DontSerialize]
@@ -726,7 +726,7 @@ namespace PlayniteAchievements.Models
                 return;
             }
 
-            Theme.RefreshDisplayItems(
+            ModernTheme.RefreshDisplayItems(
                 persisted.ShowHiddenIcon,
                 persisted.ShowHiddenTitle,
                 persisted.ShowHiddenDescription,
@@ -762,9 +762,9 @@ namespace PlayniteAchievements.Models
         /// </summary>
         internal void InitializeThemeProperties()
         {
-            if (Theme == null)
+            if (ModernTheme == null)
             {
-                Theme = new ModernThemeBindings();
+                ModernTheme = new ModernThemeBindings();
             }
             if (LegacyTheme == null)
             {
@@ -786,7 +786,7 @@ namespace PlayniteAchievements.Models
         public PlayniteAchievementsSettings()
         {
             Persisted = new PersistedSettings();
-            Theme = new ModernThemeBindings();
+            ModernTheme = new ModernThemeBindings();
             LegacyTheme = new LegacyThemeBindings();
             AttachPersistedHandlers();
             RefreshThemeDisplayItemsFromPersisted();
