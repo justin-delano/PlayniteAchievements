@@ -392,12 +392,19 @@ namespace PlayniteAchievements.Models.Settings
                 };
                 settings.ProviderSettings["Xbox"] = xbox.SerializeToJson();
 
-                // RetroAchievements
+                // RetroAchievements - include all RA-specific settings
                 var retro = new RetroAchievementsSettings
                 {
                     IsEnabled = settings.RetroAchievementsEnabled,
                     RaUsername = settings.RaUsername,
-                    RaWebApiKey = settings.RaWebApiKey
+                    RaWebApiKey = settings.RaWebApiKey,
+                    RaRarityStats = settings.RaRarityStats,
+                    RaPointsMode = settings.RaPointsMode,
+                    HashIndexMaxAgeDays = settings.HashIndexMaxAgeDays,
+                    EnableArchiveScanning = settings.EnableArchiveScanning,
+                    EnableDiscHashing = settings.EnableDiscHashing,
+                    EnableRaNameFallback = settings.EnableRaNameFallback,
+                    RaGameIdOverrides = settings.RaGameIdOverrides ?? new Dictionary<Guid, int>()
                 };
                 settings.ProviderSettings["RetroAchievements"] = retro.SerializeToJson();
 
@@ -443,6 +450,40 @@ namespace PlayniteAchievements.Models.Settings
                     AchievementLinks = settings.ManualAchievementLinks ?? new Dictionary<Guid, ManualAchievementLink>()
                 };
                 settings.ProviderSettings["Manual"] = manual.SerializeToJson();
+
+                // Clear flat provider properties after successful migration
+                // This ensures the JSON file is clean going forward
+                settings.SteamUserId = null;
+                settings.SteamApiKey = null;
+                settings.SteamEnabled = true;
+                settings.EpicEnabled = true;
+                settings.GogEnabled = true;
+                settings.PsnEnabled = true;
+                settings.XboxEnabled = true;
+                settings.XboxLowResIcons = false;
+                settings.RetroAchievementsEnabled = true;
+                settings.RaUsername = null;
+                settings.RaWebApiKey = null;
+                settings.RaRarityStats = "casual";
+                settings.RaPointsMode = "points";
+                settings.HashIndexMaxAgeDays = 30;
+                settings.EnableArchiveScanning = true;
+                settings.EnableDiscHashing = true;
+                settings.EnableRaNameFallback = true;
+                settings.RaGameIdOverrides = new Dictionary<Guid, int>();
+                settings.ShadPS4Enabled = true;
+                settings.ShadPS4GameDataPath = string.Empty;
+                settings.Rpcs3Enabled = true;
+                settings.Rpcs3ExecutablePath = string.Empty;
+                settings.XeniaEnabled = true;
+                settings.XeniaAccountPath = string.Empty;
+                settings.ManualEnabled = true;
+                settings.ManualTrackingOverrideEnabled = false;
+                settings.ManualAchievementLinks = new Dictionary<Guid, ManualAchievementLink>();
+                settings.ExophaseEnabled = false;
+                settings.ExophaseManagedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                settings.ExophaseIncludedGames = new HashSet<Guid>();
+                settings.ExophaseSlugOverrides = new Dictionary<Guid, string>();
             }
 
             return settings;
