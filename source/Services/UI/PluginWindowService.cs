@@ -1,0 +1,502 @@
+using System;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Threading;
+using Playnite.SDK;
+using Playnite.SDK.Models;
+using Playnite.SDK.Plugins;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Services.Logging;
+using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views;
+using PlayniteAchievements.Views.Helpers;
+
+namespace PlayniteAchievements.Services.UI
+{
+    /// <summary>
+    /// Centralizes plugin-owned window orchestration to keep the plugin entrypoint thin.
+    /// </summary>
+    internal class PluginWindowService
+    {
+        private readonly IPlayniteAPI _api;
+        private readonly ILogger _logger;
+        private readonly RefreshRuntime _refreshService;
+        private readonly ICacheManager _cacheManager;
+        private readonly Action _persistSettingsForUi;
+        private readonly AchievementOverridesService _achievementOverridesService;
+        private readonly AchievementDataService _achievementDataService;
+        private readonly PlayniteAchievementsSettings _settings;
+        private readonly ManualAchievementsProvider _manualProvider;
+        private readonly Action _ensureAchievementResourcesLoaded;
+
+        public PluginWindowService(
+            IPlayniteAPI api,
+            ILogger logger,
+            RefreshRuntime refreshRuntime,
+            ICacheManager cacheManager,
+            Action persistSettingsForUi,
+            AchievementOverridesService achievementOverridesService,
+            AchievementDataService achievementDataService,
+            PlayniteAchievementsSettings settings,
+            ManualAchievementsProvider manualProvider,
+            Action ensureAchievementResourcesLoaded)
+        {
+            _api = api;
+            _logger = logger;
+            _refreshService = refreshRuntime;
+            _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
+            _persistSettingsForUi = persistSettingsForUi ?? throw new ArgumentNullException(nameof(persistSettingsForUi));
+            _achievementOverridesService = achievementOverridesService;
+            _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
+            _settings = settings;
+            _manualProvider = manualProvider;
+            _ensureAchievementResourcesLoaded = ensureAchievementResourcesLoaded;
+        }
+
+        public void ShowRefreshProgressControlAndRun(Func<Task> refreshTask, Action<Guid> openSingleGameAchievementsView, Guid? singleGameRefreshId = null)
+        {
+            ShowRefreshProgressControl(singleGameRefreshId, refreshTask, openSingleGameAchievementsView, validateCanStart: true);
+        }
+
+        public void ShowRefreshProgressControl(
+            Guid? singleGameRefreshId,
+            Func<Task> refreshTask,
+            Action<Guid> openSingleGameAchievementsView,
+            bool validateCanStart)
+        {
+            try
+            {
+                if (validateCanStart && !_refreshService.ValidateCanStartRefresh())
+                {
+                    return;
+                }
+
+                var progressWindow = new RefreshProgressControl(
+                    _refreshService,
+                    _logger,
+                    singleGameRefreshId,
+                    openSingleGameAchievementsView);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true,
+                    CanBeResizable = false,
+                    Width = 400,
+                    Height = 280
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    progressWindow.WindowTitle,
+                    progressWindow,
+                    windowOptions
+                );
+
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch
+                {
+                }
+
+                progressWindow.RequestClose += (s, ev) => window.Close();
+
+                window.Closed += (s, ev) =>
+                {
+                    if (_refreshService.IsRebuilding)
+                    {
+                        _logger?.Info("Progress window closed while refresh running - cancelling refresh.");
+                        _refreshService.CancelCurrentRebuild();
+                    }
+                };
+
+                var isFullscreen = false;
+                try
+                {
+                    isFullscreen = _api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed to check fullscreen mode");
+                }
+
+                if (refreshTask != null)
+                {
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await refreshTask().ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, "Refresh task failed");
+                        }
+                    });
+                }
+
+                if (isFullscreen)
+                {
+                    window.Show();
+                    try
+                    {
+                        window.Topmost = true;
+                        window.Activate();
+                        window.Topmost = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "Failed to activate window in fullscreen");
+                    }
+                }
+                else
+                {
+                    window.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to show refresh progress window");
+            }
+        }
+
+        public void OpenSingleGameAchievementsView(Guid gameId)
+        {
+            try
+            {
+                var view = new SingleGameControl(
+                    gameId,
+                    _refreshService,
+                    _achievementDataService,
+                    _api,
+                    _logger,
+                    _settings);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = true,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 800,
+                    Height = 700
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    view.WindowTitle,
+                    view,
+                    windowOptions
+                );
+
+                window.MinWidth = 450;
+                window.MinHeight = 500;
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch
+                {
+                }
+
+                window.Closed += (s, ev) => view.Cleanup();
+
+                var isFullscreen = false;
+                try
+                {
+                    isFullscreen = _api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed to check fullscreen mode");
+                }
+
+                if (isFullscreen)
+                {
+                    window.Show();
+                    try
+                    {
+                        window.Topmost = true;
+                        window.Activate();
+                        window.Topmost = false;
+                    }
+                    catch
+                    {
+                    }
+                }
+                else
+                {
+                    window.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open per-game achievements view for gameId={gameId}");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open achievements view: {ex.Message}",
+                    "Playnite Achievements");
+            }
+        }
+
+        public void OpenModernParityTestView(Guid gameId)
+        {
+            try
+            {
+                var game = _api?.Database?.Games?.Get(gameId);
+                if (game == null)
+                {
+                    _api?.Dialogs?.ShowErrorMessage(
+                        ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame"),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+                    return;
+                }
+
+                var view = new Views.ParityTests.ModernParityTestView(game);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 900,
+                    Height = 700
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    "Modern Theme Controls Test",
+                    view,
+                    windowOptions
+                );
+
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch
+                {
+                }
+
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open modern parity test view for gameId={gameId}");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open test view: {ex.Message}",
+                    "Playnite Achievements");
+            }
+        }
+
+        public void OpenGameOptionsView(Guid gameId, GameOptionsTab initialTab)
+        {
+            try
+            {
+                var game = _api?.Database?.Games?.Get(gameId);
+                if (game == null)
+                {
+                    _api?.Dialogs?.ShowErrorMessage(
+                        ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame"),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+                    return;
+                }
+
+                _ensureAchievementResourcesLoaded?.Invoke();
+
+                var view = new GameOptionsControl(
+                    gameId,
+                    initialTab,
+                    _refreshService,
+                    _cacheManager,
+                    _persistSettingsForUi,
+                    _achievementOverridesService,
+                    _achievementDataService,
+                    _api,
+                    _logger,
+                    _settings,
+                    _manualProvider);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = true,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 1080,
+                    Height = 760
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    view.WindowTitle,
+                    view,
+                    windowOptions);
+
+                window.MinWidth = 860;
+                window.MinHeight = 620;
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch
+                {
+                }
+
+                window.Closed += (s, e) => view.Cleanup();
+
+                var isFullscreen = false;
+                try
+                {
+                    isFullscreen = _api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed to check fullscreen mode");
+                }
+
+                if (isFullscreen)
+                {
+                    window.Show();
+                    try
+                    {
+                        window.Topmost = true;
+                        window.Activate();
+                        window.Topmost = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "Failed to activate Game Options window in fullscreen");
+                    }
+                }
+                else
+                {
+                    window.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open Game Options view for gameId={gameId}");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open game options view: {ex.Message}",
+                    "Playnite Achievements");
+            }
+        }
+
+        public void OpenCapstoneView(Guid gameId)
+        {
+            OpenGameOptionsView(gameId, GameOptionsTab.Capstones);
+        }
+
+        public void OpenParityTestView(Guid gameId, bool modern)
+        {
+            try
+            {
+                var game = _api?.Database?.Games?.Get(gameId);
+                if (game == null)
+                {
+                    _api?.Dialogs?.ShowErrorMessage(
+                        ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame"),
+                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+                    return;
+                }
+
+                UserControl view;
+                string title;
+
+                if (modern)
+                {
+                    view = new Views.ParityTests.ModernParityTestView(game);
+                    title = "PlayniteAchievements UI Parity Test (Modern)";
+                }
+                else
+                {
+                    view = new Views.ParityTests.CompatibilityParityTestView(game);
+                    title = "PlayniteAchievements UI Parity Test (Compatibility)";
+                }
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = true,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 980,
+                    Height = 780
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(title, view, windowOptions);
+                window.MinWidth = 700;
+                window.MinHeight = 500;
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open parity test view for gameId={gameId}, modern={modern}");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open parity test view: {ex.Message}",
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+            }
+        }
+
+        public void EnsureAchievementResourcesLoaded()
+        {
+            try
+            {
+                var app = Application.Current;
+                if (app == null)
+                {
+                    return;
+                }
+
+                void LoadResources()
+                {
+                    if (app.Resources.Contains("BadgeShadow"))
+                    {
+                        return;
+                    }
+
+                    var badgesUri = new Uri("/PlayniteAchievements;component/Resources/RarityBadges.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = badgesUri });
+
+                    var trophyUri = new Uri("/PlayniteAchievements;component/Resources/TrophyBadges.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = trophyUri });
+
+                    var templatesUri = new Uri("/PlayniteAchievements;component/Resources/AchievementTemplates.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = templatesUri });
+
+                    var providerUri = new Uri("/PlayniteAchievements;component/Resources/ProviderIcons.xaml", UriKind.Relative);
+                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = providerUri });
+                }
+
+                if (app.Dispatcher.CheckAccess())
+                {
+                    LoadResources();
+                }
+                else
+                {
+                    app.Dispatcher.BeginInvoke((Action)LoadResources, DispatcherPriority.Background);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, "Failed to load achievement resources at application level.");
+            }
+        }
+    }
+}
+

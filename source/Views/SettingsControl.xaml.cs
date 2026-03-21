@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Common;
@@ -268,6 +270,235 @@ namespace PlayniteAchievements.Views
             set => SetValue(ExophaseAuthenticatedProperty, value);
         }
 
+        // -----------------------------
+        // Mock data for settings preview
+        // -----------------------------
+
+        private System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> _mockCompactListItems;
+
+        /// <summary>
+        /// Gets mock achievement items for compact list preview in settings.
+        /// </summary>
+        public System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> MockCompactListItems
+        {
+            get
+            {
+                if (_mockCompactListItems == null)
+                {
+                    _mockCompactListItems = new System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem>(
+                        MockDataHelper.CreateMockCompactListItems(
+                            GetShowRarityBar(), GetShowRarityGlow(),
+                            GetShowHiddenIcon(), GetShowHiddenTitle(),
+                            GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon()));
+                }
+                return _mockCompactListItems;
+            }
+        }
+
+        private System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> _mockCompactUnlockedListItems;
+
+        /// <summary>
+        /// Gets mock unlocked achievement items for unlocked list preview.
+        /// </summary>
+        public System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> MockCompactUnlockedListItems
+        {
+            get
+            {
+                if (_mockCompactUnlockedListItems == null)
+                {
+                    _mockCompactUnlockedListItems = new System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem>(
+                        MockDataHelper.CreateMockUnlockedListItems(
+                            GetShowRarityBar(), GetShowRarityGlow(), GetShowLockedIcon()));
+                }
+                return _mockCompactUnlockedListItems;
+            }
+        }
+
+        private System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> _mockCompactLockedListItems;
+
+        /// <summary>
+        /// Gets mock locked achievement items for locked list preview.
+        /// </summary>
+        public System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> MockCompactLockedListItems
+        {
+            get
+            {
+                if (_mockCompactLockedListItems == null)
+                {
+                    _mockCompactLockedListItems = new System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem>(
+                        MockDataHelper.CreateMockLockedListItems(
+                            GetShowRarityBar(), GetShowRarityGlow(),
+                            GetShowHiddenIcon(), GetShowHiddenTitle(),
+                            GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon()));
+                }
+                return _mockCompactLockedListItems;
+            }
+        }
+
+        private List<AchievementDisplayItem> _mockDataGridItems;
+
+        /// <summary>
+        /// Gets mock achievement items for datagrid preview in settings.
+        /// </summary>
+        public List<AchievementDisplayItem> MockDataGridItems
+        {
+            get
+            {
+                if (_mockDataGridItems == null)
+                {
+                    _mockDataGridItems = MockDataHelper.CreateMockDataGridItems(
+                        GetShowRarityBar(), GetShowRarityGlow(),
+                        GetShowHiddenIcon(), GetShowHiddenTitle(),
+                        GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon());
+                }
+                return _mockDataGridItems;
+            }
+        }
+
+        private ModernThemeBindings _previewThemeData;
+        private ModernThemeBindings _unlockedPreviewThemeData;
+        private ModernThemeBindings _hiddenPreviewThemeData;
+        private ModernThemeBindings _lockedPreviewThemeData;
+
+        /// <summary>
+        /// Gets modern theme bindings populated with mock achievements for modern control previews.
+        /// Used by modern controls via ThemeDataOverride binding.
+        /// </summary>
+        public ModernThemeBindings PreviewThemeData
+        {
+            get
+            {
+                if (_previewThemeData == null)
+                {
+                    _previewThemeData = MockDataHelper.GetPreviewThemeData();
+                }
+                return _previewThemeData;
+            }
+        }
+
+        /// <summary>
+        /// Gets modern theme bindings with a single unlocked achievement for visibility preview.
+        /// </summary>
+        public ModernThemeBindings UnlockedPreviewThemeData
+        {
+            get
+            {
+                if (_unlockedPreviewThemeData == null)
+                {
+                    _unlockedPreviewThemeData = MockDataHelper.GetUnlockedPreviewThemeData();
+                }
+                return _unlockedPreviewThemeData;
+            }
+        }
+
+        /// <summary>
+        /// Gets modern theme bindings with a single hidden achievement for visibility preview.
+        /// </summary>
+        public ModernThemeBindings HiddenPreviewThemeData
+        {
+            get
+            {
+                if (_hiddenPreviewThemeData == null)
+                {
+                    _hiddenPreviewThemeData = MockDataHelper.GetHiddenPreviewThemeData();
+                }
+                return _hiddenPreviewThemeData;
+            }
+        }
+
+        /// <summary>
+        /// Gets modern theme bindings with a single locked achievement for visibility preview.
+        /// </summary>
+        public ModernThemeBindings LockedPreviewThemeData
+        {
+            get
+            {
+                if (_lockedPreviewThemeData == null)
+                {
+                    _lockedPreviewThemeData = MockDataHelper.GetLockedPreviewThemeData();
+                }
+                return _lockedPreviewThemeData;
+            }
+        }
+
+        // Helper methods to get settings values with defaults
+        private bool GetShowRarityBar() => _settingsViewModel?.Settings?.Persisted?.ShowCompactListRarityBar ?? true;
+        private bool GetShowRarityGlow() => _settingsViewModel?.Settings?.Persisted?.ShowRarityGlow ?? true;
+        private bool GetShowHiddenIcon() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenIcon ?? true;
+        private bool GetShowHiddenTitle() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenTitle ?? true;
+        private bool GetShowHiddenDescription() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenDescription ?? true;
+        private bool GetShowHiddenSuffix() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenSuffix ?? true;
+        private bool GetShowLockedIcon() => _settingsViewModel?.Settings?.Persisted?.ShowLockedIcon ?? true;
+
+        /// <summary>
+        /// Refreshes mock preview items to reflect current settings.
+        /// Repopulates collections with new items that have updated visibility settings.
+        /// </summary>
+        public void RefreshMockPreviews()
+        {
+            var settings = _settingsViewModel?.Settings?.Persisted;
+            if (settings == null) return;
+
+            // Repopulate compact list items
+            if (_mockCompactListItems != null)
+            {
+                _mockCompactListItems.Clear();
+                var newItems = MockDataHelper.CreateMockCompactListItems(
+                    settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
+                    settings.ShowHiddenIcon, settings.ShowHiddenTitle,
+                    settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
+                foreach (var item in newItems)
+                    _mockCompactListItems.Add(item);
+            }
+
+            // Repopulate unlocked list items
+            if (_mockCompactUnlockedListItems != null)
+            {
+                _mockCompactUnlockedListItems.Clear();
+                var newItems = MockDataHelper.CreateMockUnlockedListItems(
+                    settings.ShowCompactListRarityBar, settings.ShowRarityGlow, settings.ShowLockedIcon);
+                foreach (var item in newItems)
+                    _mockCompactUnlockedListItems.Add(item);
+            }
+
+            // Repopulate locked list items
+            if (_mockCompactLockedListItems != null)
+            {
+                _mockCompactLockedListItems.Clear();
+                var newItems = MockDataHelper.CreateMockLockedListItems(
+                    settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
+                    settings.ShowHiddenIcon, settings.ShowHiddenTitle,
+                    settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
+                foreach (var item in newItems)
+                    _mockCompactLockedListItems.Add(item);
+            }
+
+            // Repopulate datagrid items
+            if (_mockDataGridItems != null)
+            {
+                _mockDataGridItems = MockDataHelper.CreateMockDataGridItems(
+                    settings.ShowCompactListRarityBar, settings.ShowRarityGlow,
+                    settings.ShowHiddenIcon, settings.ShowHiddenTitle,
+                    settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
+                // For List<T>, need to raise property changed - but since binding uses ItemsSource,
+                // we'll assign a new list which triggers refresh
+            }
+
+            // Refresh the preview modern theme bindings used by modern controls
+            _previewThemeData?.RefreshDisplayItems(
+                settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
+                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.ShowRarityGlow, settings.ShowCompactListRarityBar);
+            _unlockedPreviewThemeData?.RefreshDisplayItems(
+                settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
+                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.ShowRarityGlow, settings.ShowCompactListRarityBar);
+            _hiddenPreviewThemeData?.RefreshDisplayItems(
+                settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
+                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.ShowRarityGlow, settings.ShowCompactListRarityBar);
+            _lockedPreviewThemeData?.RefreshDisplayItems(
+                settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
+                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.ShowRarityGlow, settings.ShowCompactListRarityBar);
+        }
+
         public static readonly DependencyProperty ShadPS4AuthStatusProperty =
             DependencyProperty.Register(
                 nameof(ShadPS4AuthStatus),
@@ -503,6 +734,9 @@ namespace PlayniteAchievements.Views
             set => SetValue(ShowNoRevertableThemesMessageProperty, value);
         }
 
+        public ObservableCollection<ThemeMigrationElementOption> ThemeMigrationCustomOptions { get; } =
+            new ObservableCollection<ThemeMigrationElementOption>();
+
         public static readonly DependencyProperty LegacyManualImportStatusProperty =
             DependencyProperty.Register(
                 nameof(LegacyManualImportStatus),
@@ -570,10 +804,14 @@ namespace PlayniteAchievements.Views
             // Initialize theme collections
             AvailableThemes = new System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
             RevertableThemes = new System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>();
+            InitializeThemeMigrationCustomOptions();
+
+            // Subscribe to settings property changes to refresh mock previews
+            _settingsViewModel.Settings.Persisted.PropertyChanged += OnSettingsPropertyChanged;
 
             // Debug logging to verify DataContext and Settings values
             _logger?.Info($"SettingsControl created. DataContext type: {DataContext?.GetType().Name}");
-            _logger?.Info($"Settings.Persisted.UltraRareThreshold: {_settingsViewModel.Settings.Persisted.UltraRareThreshold}, EnablePeriodicUpdates: {_settingsViewModel.Settings.Persisted.EnablePeriodicUpdates}");
+            _logger?.Info($"Settings.EnablePeriodicUpdates: {_settingsViewModel.Settings.Persisted.EnablePeriodicUpdates}");
 
             Loaded += async (s, e) =>
             {
@@ -676,7 +914,42 @@ namespace PlayniteAchievements.Views
             ShowNoRevertableThemesMessage = !hasRevertable;
         }
 
-        private async void MigrateTheme_Click(object sender, RoutedEventArgs e)
+        private async void MigrateThemeLimited_Click(object sender, RoutedEventArgs e)
+        {
+            await ExecuteThemeMigrationAsync(MigrationMode.Limited);
+        }
+
+        private async void MigrateThemeFull_Click(object sender, RoutedEventArgs e)
+        {
+            await ExecuteThemeMigrationAsync(MigrationMode.Full);
+        }
+
+        private async void MigrateThemeCustom_Click(object sender, RoutedEventArgs e)
+        {
+            await ExecuteThemeMigrationAsync(MigrationMode.Custom, BuildCustomMigrationSelection());
+        }
+
+        private void ThemeMigrationCustomExpander_Expanded(object sender, RoutedEventArgs e)
+        {
+            UpdateThemeMigrationModeButtonState();
+        }
+
+        private void ThemeMigrationCustomExpander_Collapsed(object sender, RoutedEventArgs e)
+        {
+            UpdateThemeMigrationModeButtonState();
+        }
+
+        private void ThemeMigrationSetAllLegacy_Click(object sender, RoutedEventArgs e)
+        {
+            SetAllThemeMigrationCustomOptions(false);
+        }
+
+        private void ThemeMigrationSetAllModern_Click(object sender, RoutedEventArgs e)
+        {
+            SetAllThemeMigrationCustomOptions(true);
+        }
+
+        private async Task ExecuteThemeMigrationAsync(MigrationMode mode, CustomMigrationSelection customSelection = null)
         {
             if (string.IsNullOrWhiteSpace(SelectedThemePath))
             {
@@ -684,15 +957,15 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            _logger.Info($"User requested theme migration for: {SelectedThemePath}");
+            _logger.Info($"User requested {mode} theme migration for: {SelectedThemePath}");
 
             try
             {
-                var result = await _themeMigration.MigrateThemeAsync(SelectedThemePath);
+                var result = await _themeMigration.MigrateThemeAsync(SelectedThemePath, mode, customSelection);
 
                 if (result.Success)
                 {
-                    _logger.Info($"Theme migration successful: {SelectedThemePath}");
+                    _logger.Info($"Theme migration ({mode}) successful: {SelectedThemePath}");
 
                     // Only show restart dialog if files were actually modified
                     if (result.FilesBackedUp > 0)
@@ -781,6 +1054,102 @@ namespace PlayniteAchievements.Views
                     L("LOCPlayAch_ThemeMigration_Revert", "Revert Theme"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+        }
+
+        private void InitializeThemeMigrationCustomOptions()
+        {
+            ThemeMigrationCustomOptions.Clear();
+
+            ThemeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
+                "PluginButton",
+                "LOCPlayAch_ThemeMigration_Custom_Button",
+                "Button"));
+            ThemeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
+                "PluginChart",
+                "LOCPlayAch_ThemeMigration_Custom_Chart",
+                "Bar Chart"));
+            ThemeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
+                "PluginCompactList",
+                "LOCPlayAch_ThemeMigration_Custom_CompactList",
+                "Compact List"));
+            ThemeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
+                "PluginCompactLocked",
+                "LOCPlayAch_ThemeMigration_Custom_CompactLocked",
+                "Compact Locked List"));
+            ThemeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
+                "PluginCompactUnlocked",
+                "LOCPlayAch_ThemeMigration_Custom_CompactUnlocked",
+                "Compact Unlocked List"));
+            ThemeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
+                "PluginList",
+                "LOCPlayAch_ThemeMigration_Custom_List",
+                "Achievement Grid"));
+            ThemeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
+                "PluginProgressBar",
+                "LOCPlayAch_ThemeMigration_Custom_ProgressBar",
+                "Progress Bar"));
+            ThemeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
+                "PluginUserStats",
+                "LOCPlayAch_ThemeMigration_Custom_UserStats",
+                "Stats Panel"));
+            ThemeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
+                "PluginViewItem",
+                "LOCPlayAch_ThemeMigration_Custom_ViewItem",
+                "View Item"));
+        }
+
+        private ThemeMigrationElementOption CreateThemeMigrationControlOption(
+            string key,
+            string resourceKey,
+            string fallback)
+        {
+            return new ThemeMigrationElementOption(
+                key,
+                L(resourceKey, fallback),
+                isBindingOption: false,
+                isModern: true);
+        }
+
+        private CustomMigrationSelection BuildCustomMigrationSelection()
+        {
+            var modernControlNames = ThemeMigrationCustomOptions
+                .Where(option => option.IsModern)
+                .Select(option => option.Key)
+                .ToList();
+
+            return new CustomMigrationSelection(modernControlNames, modernizeBindings: true);
+        }
+
+        private void ThemeMigrationRowSetLegacy_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { CommandParameter: ThemeMigrationElementOption option })
+            {
+                option.IsModern = false;
+            }
+        }
+
+        private void ThemeMigrationRowSetModern_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { CommandParameter: ThemeMigrationElementOption option })
+            {
+                option.IsModern = true;
+            }
+        }
+
+        private void SetAllThemeMigrationCustomOptions(bool isModern)
+        {
+            foreach (var option in ThemeMigrationCustomOptions)
+            {
+                option.IsModern = isModern;
+            }
+        }
+
+        private void UpdateThemeMigrationModeButtonState()
+        {
+            if (ThemeMigrationPresetButtons != null && ThemeMigrationCustomExpander != null)
+            {
+                ThemeMigrationPresetButtons.IsEnabled = !ThemeMigrationCustomExpander.IsExpanded;
             }
         }
 
@@ -2340,7 +2709,7 @@ namespace PlayniteAchievements.Views
             LegacyManualImportResult importResult;
             try
             {
-                importResult = _plugin.ImportLegacyManualLinks(importPath);
+                importResult = ImportLegacyManualLinks(importPath);
             }
             catch (Exception ex)
             {
@@ -2370,7 +2739,7 @@ namespace PlayniteAchievements.Views
 
             if (importResult.ImportedGameIds.Count > 0)
             {
-                if (_plugin.AchievementService.IsRebuilding)
+                if (_plugin.RefreshRuntime.IsRebuilding)
                 {
                     autoRefreshSkipped = true;
                 }
@@ -2387,7 +2756,7 @@ namespace PlayniteAchievements.Views
                             ? (Guid?)refreshGameIds[0]
                             : null;
 
-                        await _plugin.RefreshCoordinator.ExecuteAsync(
+                        await _plugin.RefreshEntryPoint.ExecuteAsync(
                             new RefreshRequest
                             {
                                 GameIds = refreshGameIds
@@ -2405,6 +2774,29 @@ namespace PlayniteAchievements.Views
                 autoRefreshSkipped);
 
             SetLegacyManualImportStatus(summary);
+        }
+
+        private LegacyManualImportResult ImportLegacyManualLinks(string folderPath)
+        {
+            var importer = new LegacyManualLinkImporter(
+                () => _settingsViewModel?.Settings?.Persisted,
+                gameId => _plugin.PlayniteApi?.Database?.Games?.Get(gameId) != null,
+                gameId => _plugin.AchievementDataService.GetRawGameAchievementData(gameId) != null,
+                _logger);
+
+            var result = importer.Import(folderPath) ?? new LegacyManualImportResult();
+
+            if (result.Imported > 0 && !_settingsViewModel.Settings.Persisted.ManualEnabled)
+            {
+                _settingsViewModel.Settings.Persisted.ManualEnabled = true;
+                result.ManualProviderAutoEnabled = true;
+            }
+
+            _plugin.SavePluginSettings(_settingsViewModel.Settings);
+            _plugin.ProviderRegistry?.SyncFromSettings(_settingsViewModel.Settings.Persisted);
+            PlayniteAchievementsPlugin.NotifySettingsSaved();
+
+            return result;
         }
 
         private string BuildLegacyManualImportSummary(
@@ -2771,8 +3163,8 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                _plugin.AchievementService.Cache.ClearCache();
-                var stillPresent = _plugin.AchievementService.Cache.CacheFileExists();
+                _plugin.RefreshRuntime.Cache.ClearCache();
+                var stillPresent = _plugin.RefreshRuntime.Cache.CacheFileExists();
                 
                 var (msg, img) = !stillPresent
                     ? (ResourceProvider.GetString("LOCPlayAch_Settings_Cache_Wiped"), MessageBoxImage.Information)
@@ -2864,7 +3256,7 @@ namespace PlayniteAchievements.Views
             try
             {
                 var exportBaseDir = _plugin.GetPluginUserDataPath();
-                var cache = _plugin.AchievementService?.Cache;
+                var cache = _plugin.RefreshRuntime?.Cache;
 
                 if (cache == null)
                 {
@@ -3148,6 +3540,72 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void ExophasePlatform_CheckboxLoaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkbox)
+            {
+                var platform = checkbox.Tag as string;
+                if (string.IsNullOrWhiteSpace(platform)) return;
+
+                var settings = _settingsViewModel.Settings?.Persisted;
+                if (settings == null) return;
+
+                checkbox.IsChecked = settings.ExophaseManagedPlatforms.Contains(platform);
+            }
+        }
+
+        private void ExophasePlatform_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkbox)
+            {
+                var platform = checkbox.Tag as string;
+                if (string.IsNullOrWhiteSpace(platform)) return;
+
+                var settings = _settingsViewModel.Settings?.Persisted;
+                if (settings == null) return;
+
+                if (checkbox.IsChecked == true)
+                {
+                    if (!settings.ExophaseManagedPlatforms.Contains(platform))
+                    {
+                        settings.ExophaseManagedPlatforms.Add(platform);
+                        _logger?.Info($"Added platform '{platform}' to Exophase managed platforms");
+                    }
+                }
+                else
+                {
+                    if (settings.ExophaseManagedPlatforms.Remove(platform))
+                    {
+                        _logger?.Info($"Removed platform '{platform}' from Exophase managed platforms");
+                    }
+                }
+            }
+        }
+
+        // -----------------------------
+        // Settings property change handling for mock preview refresh
+        // -----------------------------
+
+        private void OnSettingsPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            // Refresh mock previews when display-affecting settings change
+            var refreshProperties = new[]
+            {
+                nameof(Models.Settings.PersistedSettings.ShowCompactListRarityBar),
+                nameof(Models.Settings.PersistedSettings.ShowRarityGlow),
+                nameof(Models.Settings.PersistedSettings.ShowHiddenIcon),
+                nameof(Models.Settings.PersistedSettings.ShowHiddenTitle),
+                nameof(Models.Settings.PersistedSettings.ShowHiddenDescription),
+                nameof(Models.Settings.PersistedSettings.ShowHiddenSuffix),
+                nameof(Models.Settings.PersistedSettings.ShowLockedIcon)
+            };
+
+            if (refreshProperties.Contains(e.PropertyName))
+            {
+                RefreshMockPreviews();
+            }
+        }
+
         // -----------------------------
         // IDisposable implementation
         // -----------------------------
@@ -3173,5 +3631,40 @@ namespace PlayniteAchievements.Views
             e.Handled = true;
         }
     }
+
+    public sealed class ThemeMigrationElementOption : INotifyPropertyChanged
+    {
+        private bool _isModern;
+
+        public ThemeMigrationElementOption(string key, string displayName, bool isBindingOption, bool isModern)
+        {
+            Key = key;
+            DisplayName = displayName;
+            IsBindingOption = isBindingOption;
+            _isModern = isModern;
+        }
+
+        public string Key { get; }
+
+        public string DisplayName { get; }
+
+        public bool IsBindingOption { get; }
+
+        public bool IsModern
+        {
+            get => _isModern;
+            set
+            {
+                if (_isModern != value)
+                {
+                    _isModern = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsModern)));
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+    }
 }
+
 

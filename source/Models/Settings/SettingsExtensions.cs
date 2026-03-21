@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Models.Settings
         /// <summary>
         /// Copies all persisted settings from one PersistedSettings instance to another.
         /// This includes Steam settings, update settings, notifications, display preferences,
-        /// theme integration settings, RetroAchievements settings, and rarity thresholds.
+        /// theme integration settings and RetroAchievements settings.
         /// </summary>
         /// <param name="target">The target settings instance to copy to.</param>
         /// <param name="source">The source settings instance to copy from.</param>
@@ -77,6 +77,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowHiddenIcon = source.ShowHiddenIcon;
             target.ShowHiddenTitle = source.ShowHiddenTitle;
             target.ShowHiddenDescription = source.ShowHiddenDescription;
+            target.ShowHiddenSuffix = source.ShowHiddenSuffix;
             target.ShowLockedIcon = source.ShowLockedIcon;
             target.ShowRarityGlow = source.ShowRarityGlow;
             target.UseCoverImages = source.UseCoverImages;
@@ -114,7 +115,6 @@ namespace PlayniteAchievements.Models.Settings
             target.GamesOverviewColumnWidths = source.GamesOverviewColumnWidths != null
                 ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            target.PointsColumnAutoEnabled = source.PointsColumnAutoEnabled;
             target.ExcludedFromSummariesGameIds = source.ExcludedFromSummariesGameIds != null
                 ? new HashSet<Guid>(source.ExcludedFromSummariesGameIds)
                 : new HashSet<Guid>();
@@ -140,10 +140,6 @@ namespace PlayniteAchievements.Models.Settings
                         : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase))
                 : new Dictionary<Guid, Dictionary<string, string>>();
 
-            // Rarity Threshold Settings (order matters due to cross-property validation)
-            target.UncommonThreshold = source.UncommonThreshold;
-            target.RareThreshold = source.RareThreshold;
-            target.UltraRareThreshold = source.UltraRareThreshold;
         }
 
         /// <summary>
@@ -208,6 +204,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenIcon = source.ShowHiddenIcon,
                 ShowHiddenTitle = source.ShowHiddenTitle,
                 ShowHiddenDescription = source.ShowHiddenDescription,
+                ShowHiddenSuffix = source.ShowHiddenSuffix,
                 ShowLockedIcon = source.ShowLockedIcon,
                 ShowRarityGlow = source.ShowRarityGlow,
                 UseCoverImages = source.UseCoverImages,
@@ -218,6 +215,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowSidebarRarityPieChart = source.ShowSidebarRarityPieChart,
                 ShowSidebarTrophyPieChart = source.ShowSidebarTrophyPieChart,
                 ShowSidebarBarCharts = source.ShowSidebarBarCharts,
+                EnableCompactGridMode = source.EnableCompactGridMode,
 
                 // RetroAchievements Settings
                 RaUsername = source.RaUsername,
@@ -245,7 +243,6 @@ namespace PlayniteAchievements.Models.Settings
                 GamesOverviewColumnWidths = source.GamesOverviewColumnWidths != null
                     ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                PointsColumnAutoEnabled = source.PointsColumnAutoEnabled,
                 ExcludedFromSummariesGameIds = source.ExcludedFromSummariesGameIds != null
                     ? new HashSet<Guid>(source.ExcludedFromSummariesGameIds)
                     : new HashSet<Guid>(),
@@ -271,10 +268,6 @@ namespace PlayniteAchievements.Models.Settings
                             : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase))
                     : new Dictionary<Guid, Dictionary<string, string>>(),
 
-                // Rarity Threshold Settings (order matters due to cross-property validation)
-                UncommonThreshold = source.UncommonThreshold,
-                RareThreshold = source.RareThreshold,
-                UltraRareThreshold = source.UltraRareThreshold
             };
 
             return clone;

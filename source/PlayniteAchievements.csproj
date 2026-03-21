@@ -129,7 +129,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\HiddenAchIcon.png" />
+    <Resource Include="Resources\UnlockedAchIcon.png" />
     <Content Include="Resources\HiddenAchIcon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\UnlockedAchIcon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

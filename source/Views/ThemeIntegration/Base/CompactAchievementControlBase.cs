@@ -22,6 +22,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         private List<AchievementDetail> _visibleAchievements = EmptyAchievements;
 
         protected override bool EnableAutomaticThemeDataUpdates => true;
+        protected override bool UsesLegacyThemeBindings => true;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -133,7 +134,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 Icon = achievement.UnlockedIconDisplay,
                 IconCustom = achievement.UnlockedIconDisplay,
                 IsLocked = false,
-                Percent = achievement.GlobalPercentUnlocked ?? 0,
+                Percent = achievement.RarityPercentValue,
+                HasRarityPercent = achievement.HasRarityPercent,
+                Rarity = achievement.Rarity,
+                RarityText = achievement.RarityText,
                 EnableRaretyIndicator = true,
                 DisplayRaretyValue = true,
                 HorizontalAlignment = HorizontalAlignment.Center,

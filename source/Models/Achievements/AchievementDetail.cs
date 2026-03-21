@@ -58,6 +58,13 @@ namespace PlayniteAchievements.Models.Achievements
         [IgnoreDataMember]
         public Game Game { get; set; }
 
+        /// <summary>
+        /// Runtime provider key used for non-persisted provider-specific rarity logic.
+        /// Hydrated from the parent GameAchievementData.
+        /// </summary>
+        [IgnoreDataMember]
+        public string ProviderKey { get; set; }
+
         [IgnoreDataMember]
         public string IconDisplay => UnlockedIconPath ?? AchievementIconResolver.GetDefaultIcon();
 
@@ -83,7 +90,6 @@ namespace PlayniteAchievements.Models.Achievements
         /// <summary>
         /// Success Story-compatible properties
         /// </summary>
-
 
         public bool Unlocked
         {
@@ -112,25 +118,29 @@ namespace PlayniteAchievements.Models.Achievements
         [IgnoreDataMember]
         public double? Percent
         {
-            get
-            {
-                if (GlobalPercentUnlocked is double v)
-                {
-                    if (v > 0 && v <= 1) return v * 100.0;
-                    return v;
-                }
-
-                return null;
-            }
+            get => AchievementRarityResolver.NormalizePercent(GlobalPercentUnlocked);
         }
 
         [IgnoreDataMember]
-        public bool HasRarity => GlobalPercentUnlocked.HasValue;
+        public double RarityPercentValue => Percent ?? 0;
 
         [IgnoreDataMember]
-        public RarityTier? Rarity => GlobalPercentUnlocked.HasValue
-            ? RarityHelper.GetRarityTier(GlobalPercentUnlocked.Value)
-            : (RarityTier?)null;
+        public bool HasRarityPercent => Percent.HasValue;
+
+        [IgnoreDataMember]
+        public RarityTier? Rarity => AchievementRarityResolver.GetRarityTier(ProviderKey, GlobalPercentUnlocked, Points);
+
+        [IgnoreDataMember]
+        public bool HasRarity => Rarity.HasValue;
+
+        [IgnoreDataMember]
+        public string RarityText => AchievementRarityResolver.GetDisplayText(ProviderKey, GlobalPercentUnlocked, Points);
+
+        [IgnoreDataMember]
+        public string RarityDetailText => AchievementRarityResolver.GetDetailText(ProviderKey, GlobalPercentUnlocked, Points);
+
+        [IgnoreDataMember]
+        public double RaritySortValue => AchievementRarityResolver.GetSortValue(ProviderKey, GlobalPercentUnlocked, Points);
 
         [IgnoreDataMember]
         public DateTime? DateUnlocked
@@ -158,8 +168,11 @@ namespace PlayniteAchievements.Models.Achievements
         {
             get
             {
-                var percent = GlobalPercentUnlocked ?? 100;
-                var tier = RarityHelper.GetRarityTier(percent);
+                var tier = Rarity;
+                if (!tier.HasValue)
+                {
+                    return 10;
+                }
 
                 // Use values Aniki expects in its triggers (10/25/50/90/180).
                 // - UltraRare -> 180 (platinum-ish)
@@ -167,70 +180,12 @@ namespace PlayniteAchievements.Models.Achievements
                 // - Uncommon -> 50 (silver-ish)
                 // - Common -> 25 (bronze-ish)
                 // - Unknown/0 -> 10 (fallback)
-                if (tier == RarityTier.UltraRare) return 180;
-                if (tier == RarityTier.Rare) return 90;
-                if (tier == RarityTier.Uncommon) return 50;
-                if (tier == RarityTier.Common) return 25;
+                if (tier.Value == RarityTier.UltraRare) return 180;
+                if (tier.Value == RarityTier.Rare) return 90;
+                if (tier.Value == RarityTier.Uncommon) return 50;
+                if (tier.Value == RarityTier.Common) return 25;
                 return 10;
             }
         }
-
-        // --- Theme integration compatibility (AchievementDisplayItem-compatible bindings) ---
-
-        /// <summary>
-        /// Alias for themes expecting a "DisplayNameResolved" field.
-        /// For theme integration, this simply returns DisplayName.
-        /// </summary>
-        [IgnoreDataMember]
-        public string DisplayNameResolved => DisplayName ?? ApiName ?? "Unknown Achievement";
-
-        /// <summary>
-        /// Alias for themes expecting a "DescriptionResolved" field.
-        /// For theme integration, this simply returns Description.
-        /// </summary>
-        [IgnoreDataMember]
-        public string DescriptionResolved => Description ?? "No description";
-
-        /// <summary>
-        /// For theme integration, always returns empty (no hidden suffix).
-        /// </summary>
-        [IgnoreDataMember]
-        public string HiddenTitleSuffix => string.Empty;
-
-        /// <summary>
-        /// For theme integration, always returns false (no title hiding).
-        /// </summary>
-        [IgnoreDataMember]
-        public bool IsTitleHidden => false;
-
-        /// <summary>
-        /// For theme integration, always returns false (no icon hiding).
-        /// </summary>
-        [IgnoreDataMember]
-        public bool IsIconHidden => false;
-
-        /// <summary>
-        /// Alias for themes expecting a "DisplayIcon" field.
-        /// Returns the unlocked icon, locked icon with gray prefix, or default icon.
-        /// </summary>
-        [IgnoreDataMember]
-        public string DisplayIcon
-        {
-            get
-            {
-                if (Unlocked && !string.IsNullOrWhiteSpace(UnlockedIconPath))
-                {
-                    return UnlockedIconPath;
-                }
-
-                if (!Unlocked && !string.IsNullOrWhiteSpace(UnlockedIconPath))
-                {
-                    return AchievementIconResolver.ApplyGrayPrefix(UnlockedIconPath);
-                }
-
-                return AchievementIconResolver.GetDefaultIcon();
-            }
-        }
-
     }
 }

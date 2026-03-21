@@ -23,7 +23,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
         protected override List<AchievementDetail> GetSourceAchievements()
         {
-            var source = Plugin?.Settings?.LegacyTheme?.ListAchUnlockDateDesc;
+            var source = EffectiveLegacyTheme?.ListAchUnlockDateDesc;
             if (source == null || source.Count == 0)
             {
                 return new List<AchievementDetail>();
@@ -54,7 +54,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         {
             // Use the Unlocked property which has the correct count of unlocked achievements.
             // ListAchUnlockDateDesc contains all achievements (locked + unlocked), so its count is incorrect.
-            return Plugin?.Settings?.LegacyTheme?.Unlocked ?? 0;
+            return EffectiveLegacyTheme?.Unlocked ?? 0;
         }
 
         protected override string GetHasAchievementPropertyName()
@@ -71,9 +71,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         {
             return new[]
             {
-                nameof(LegacyThemeData.ListAchUnlockDateDesc),
-                nameof(LegacyThemeData.ListAchievements),
-                nameof(LegacyThemeData.Unlocked)
+                nameof(LegacyThemeBindings.ListAchUnlockDateDesc),
+                nameof(LegacyThemeBindings.ListAchievements),
+                nameof(LegacyThemeBindings.Unlocked)
             };
         }
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Models.Tagging;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services.Logging;
 
@@ -21,7 +23,8 @@ namespace PlayniteAchievements.Services.Tagging
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly PersistedSettings _settings;
-        private readonly AchievementService _achievementService;
+        private readonly ICacheManager _cacheManager;
+        private TaggingSettings _subscribedTaggingSettings;
 
         // Cache of tag IDs by tag type to avoid repeated database lookups
         private readonly Dictionary<TagType, Guid> _tagIdCache = new Dictionary<TagType, Guid>();
@@ -30,12 +33,130 @@ namespace PlayniteAchievements.Services.Tagging
             IPlayniteAPI api,
             ILogger logger,
             PersistedSettings settings,
-            AchievementService achievementService)
+            ICacheManager cacheManager)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
+            _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
+        }
+
+        /// <summary>
+        /// Ensures tagging settings are initialized with defaults and subscribes
+        /// to tagging property changes.
+        /// </summary>
+        public void InitializeAndSubscribeTaggingSettings()
+        {
+            EnsureTaggingSettingsInitialized();
+            SubscribeToTaggingSettingsChanges(_settings.TaggingSettings);
+        }
+
+        /// <summary>
+        /// Handles persisted settings changes that affect tagging wiring.
+        /// </summary>
+        public void HandlePersistedSettingsPropertyChanged(PropertyChangedEventArgs e)
+        {
+            if (e == null)
+            {
+                return;
+            }
+
+            if (e.PropertyName == nameof(PersistedSettings.TaggingSettings))
+            {
+                _logger.Debug("TaggingSettings property changed; reinitializing tagging bindings.");
+                EnsureTaggingSettingsInitialized();
+                SubscribeToTaggingSettingsChanges(_settings.TaggingSettings);
+            }
+        }
+
+        /// <summary>
+        /// Removes internal settings subscriptions.
+        /// </summary>
+        public void DetachTaggingSettingsSubscription()
+        {
+            if (_subscribedTaggingSettings != null)
+            {
+                _subscribedTaggingSettings.PropertyChanged -= TaggingSettings_PropertyChanged;
+                _subscribedTaggingSettings = null;
+            }
+        }
+
+        private void EnsureTaggingSettingsInitialized()
+        {
+            if (_settings.TaggingSettings == null)
+            {
+                _settings.TaggingSettings = new TaggingSettings();
+            }
+
+            _settings.TaggingSettings.InitializeDefaults(tagType =>
+            {
+                return tagType switch
+                {
+                    TagType.HasAchievements => ResourceProvider.GetString("LOCPlayAch_Tag_HasAchievements"),
+                    TagType.InProgress => ResourceProvider.GetString("LOCPlayAch_Tag_InProgress"),
+                    TagType.Completed => ResourceProvider.GetString("LOCPlayAch_Tag_Completed"),
+                    TagType.NoAchievements => ResourceProvider.GetString("LOCPlayAch_Tag_NoAchievements"),
+                    TagType.Excluded => ResourceProvider.GetString("LOCPlayAch_Tag_Excluded"),
+                    TagType.ExcludedFromSummaries => ResourceProvider.GetString("LOCPlayAch_Tag_ExcludedFromSummaries"),
+                    _ => TaggingSettings.GetDefaultDisplayName(tagType)
+                };
+            });
+        }
+
+        private void SubscribeToTaggingSettingsChanges(TaggingSettings taggingSettings)
+        {
+            if (_subscribedTaggingSettings != null)
+            {
+                _subscribedTaggingSettings.PropertyChanged -= TaggingSettings_PropertyChanged;
+            }
+
+            _subscribedTaggingSettings = taggingSettings;
+
+            if (_subscribedTaggingSettings != null)
+            {
+                _subscribedTaggingSettings.PropertyChanged += TaggingSettings_PropertyChanged;
+            }
+        }
+
+        private void TaggingSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var taggingSettings = _settings.TaggingSettings;
+                if (taggingSettings == null)
+                {
+                    return;
+                }
+
+                if (e.PropertyName == nameof(TaggingSettings.EnableTagging))
+                {
+                    if (taggingSettings.EnableTagging)
+                    {
+                        SyncAllTags();
+                    }
+                    else
+                    {
+                        RemoveAllTags();
+                    }
+                }
+                else if (e.PropertyName == nameof(TaggingSettings.SetCompletionStatus) ||
+                         e.PropertyName == nameof(TaggingSettings.CompletionStatusId))
+                {
+                    if (taggingSettings.SetCompletionStatus && taggingSettings.EnableTagging)
+                    {
+                        SyncCompletionStatus();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error handling tagging settings change");
+            }
         }
 
         /// <summary>
@@ -210,7 +331,7 @@ namespace PlayniteAchievements.Services.Tagging
                     }
                 }
 
-                _logger.Debug($"Auto-synced tags for {gameIds.Count} games");
+                // _logger.Debug($"Auto-synced tags for {gameIds.Count} games");
             }
             catch (Exception ex)
             {
@@ -407,7 +528,7 @@ namespace PlayniteAchievements.Services.Tagging
             }
 
             // Load the cached achievement data
-            var data = _achievementService.Cache?.LoadGameData(gameId.ToString());
+            var data = _cacheManager?.LoadGameData(gameId.ToString());
             if (data == null || !data.HasAchievements)
             {
                 types.Add(TagType.NoAchievements);

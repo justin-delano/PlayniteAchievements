@@ -1,0 +1,83 @@
+<base:ThemeControlBase x:Class="PlayniteAchievements.Views.ThemeIntegration.Modern.AchievementProgressBarControl"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:base="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
+                   xmlns:shared="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern.Shared"
+                   mc:Ignorable="d"
+                   d:DesignHeight="50" d:DesignWidth="300">
+
+    <base:ThemeControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </base:ThemeControlBase.Resources>
+
+        <Grid ClipToBounds="False"
+          MinHeight="50">
+        <Grid.Resources>
+            <Style x:Key="DesktopProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
+                <Setter Property="Height" Value="20"/>
+            </Style>
+
+            <Style x:Key="DesktopProgressPercentTextStyle" TargetType="TextBlock">
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="TextAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Style>
+
+            <Style x:Key="ProgressFooterStyle" TargetType="Grid">
+                <Setter Property="VerticalAlignment" Value="Bottom"/>
+                <Setter Property="Margin" Value="0,0,0,0"/>
+            </Style>
+
+            <Style x:Key="ProgressFooterCompletedIconStyle" TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                <Setter Property="Width" Value="14"/>
+                <Setter Property="Height" Value="14"/>
+                <Setter Property="Effect" Value="{StaticResource BadgeShadow}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Setter Property="Margin" Value="2,0,0,0"/>
+            </Style>
+        </Grid.Resources>
+
+        <!-- Progress bar with percentage overlay -->
+        <Grid VerticalAlignment="Center">
+            <ProgressBar Value="{Binding Theme.ProgressPercentage, Mode=OneWay}"
+                         Maximum="100"
+                         Style="{StaticResource DesktopProgressBarStyle}"/>
+            <TextBlock Text="{Binding Theme.ProgressPercentage, Mode=OneWay, StringFormat={}{0:F0}%}"
+                       Style="{StaticResource DesktopProgressPercentTextStyle}"/>
+        </Grid>
+
+        <!-- Footer mirrors the sidebar progress entry layout -->
+        <Grid Style="{StaticResource ProgressFooterStyle}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Image Grid.Column="0"
+                   Source="{StaticResource BadgeCompletedGame}"
+                   Style="{StaticResource ProgressFooterCompletedIconStyle}"
+                   ToolTip="{DynamicResource LOCPlayAch_Completed}"
+                   Visibility="{Binding Theme.IsCompleted, Converter={StaticResource BoolToVis}}"/>
+
+            <shared:RarityBadgesControl x:Name="Badges"
+                                        Grid.Column="1"
+                                        BadgeSize="14"
+                                        Margin="8,0,0,0"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"/>
+        </Grid>
+    </Grid>
+</base:ThemeControlBase>
+

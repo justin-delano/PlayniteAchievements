@@ -5,6 +5,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services.Database;
+using PlayniteAchievements.Services.Images;
 using Playnite.SDK;
 using System.Windows;
 
@@ -25,6 +26,7 @@ namespace PlayniteAchievements.Services
         private readonly CacheStorage _storage;
         private readonly SqlNadoCacheStore _store;
         private readonly LegacyJsonCacheImporter _importer;
+        private readonly DiskImageService _diskImageService;
 
         private readonly object _sync = new object();
 
@@ -43,13 +45,14 @@ namespace PlayniteAchievements.Services
         public event EventHandler<CacheDeltaEventArgs> CacheDeltaUpdated;
         public event EventHandler CacheInvalidated;
 
-        public CacheManager(IPlayniteAPI api, ILogger logger, PlayniteAchievementsPlugin plugin)
+        public CacheManager(IPlayniteAPI api, ILogger logger, PlayniteAchievementsPlugin plugin, DiskImageService diskImageService)
         {
             _api = api;
             _logger = logger;
             _storage = new CacheStorage(plugin, logger);
             _store = new SqlNadoCacheStore(plugin, logger, _storage.BaseDir);
             _importer = new LegacyJsonCacheImporter(_storage, _store, logger);
+            _diskImageService = diskImageService ?? throw new ArgumentNullException(nameof(diskImageService));
 
             InitializeCacheStartup();
         }
@@ -662,6 +665,25 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        public void RemoveGameCache(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return;
+            }
+
+            RemoveGameData(playniteGameId);
+
+            try
+            {
+                _diskImageService.ClearGameCache(playniteGameId.ToString());
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to remove icon cache for game '{playniteGameId}'.");
+            }
+        }
+
         public void NotifyCacheInvalidated()
         {
             RaiseCacheInvalidatedEvent();
@@ -751,6 +773,7 @@ namespace PlayniteAchievements.Services
                     TrophyType = achievement.TrophyType,
                     Hidden = achievement.Hidden,
                     IsCapstone = achievement.IsCapstone,
+                    ProviderKey = achievement.ProviderKey,
                     UnlockTimeUtc = achievement.UnlockTimeUtc.HasValue
                         ? DateTimeUtilities.AsUtcKind(achievement.UnlockTimeUtc.Value)
                         : (DateTime?)null,

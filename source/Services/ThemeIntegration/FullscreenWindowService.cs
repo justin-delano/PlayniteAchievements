@@ -26,6 +26,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private Window _achievementsWindow;
         private Guid? _originalSelectedGameId;
         private bool _isTransitioning;
+        public bool IsOverlayWindowOpen => _achievementsWindow?.IsVisible == true;
 
         public FullscreenWindowService(
             IPlayniteAPI api,
@@ -48,7 +49,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         public void OpenOverviewWindow()
         {
             _originalSelectedGameId = GetSingleSelectedGameId();
-            ShowAchievementsWindow(styleKey: "AchievementsWindow", selectGameId: null);
+            ShowAchievementsWindow(styleKey: "AchievementsWindow");
         }
 
         /// <summary>
@@ -62,26 +63,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
+            if (_achievementsWindow == null || !_achievementsWindow.IsVisible)
+            {
+                _originalSelectedGameId = GetSingleSelectedGameId();
+            }
+
             // Change Playnite's selection so theme bindings ({PluginSettings}, {Binding SelectedGame...})
             // resolve to this game's data. This is the SuccessStoryFullscreenHelper pattern.
             SelectGame(gameId);
-            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", selectGameId: null);
-        }
-
-        /// <summary>
-        /// Opens the achievement window for the currently selected game.
-        /// </summary>
-        public void OpenSelectedGameWindow()
-        {
-            var id = GetSingleSelectedGameId();
-            if (!id.HasValue)
-            {
-                return;
-            }
-
-            _originalSelectedGameId = id.Value;
-            SelectGame(id.Value);
-            ShowAchievementsWindow(styleKey: "GameAchievementsWindow", selectGameId: null);
+            ShowAchievementsWindow(styleKey: "GameAchievementsWindow");
         }
 
         /// <summary>
@@ -118,6 +108,19 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void SelectGame(Guid gameId)
         {
+            try
+            {
+                var selectedGame = _api?.Database?.Games?.Get(gameId);
+                if (selectedGame != null)
+                {
+                    _settings.SetSelectedGame(selectedGame);
+                }
+            }
+            catch
+            {
+                // Ignore failures and let the normal selection flow populate SelectedGame.
+            }
+
             // Change Playnite's main selection - this triggers OnGameSelected which
             // updates SelectedGame and theme data for the new selection
             try { _api?.MainView?.SelectGame(gameId); } catch { }
@@ -147,7 +150,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
-        private void ShowAchievementsWindow(string styleKey, Guid? selectGameId)
+        private void ShowAchievementsWindow(string styleKey)
         {
             if (string.IsNullOrWhiteSpace(styleKey))
             {
@@ -164,11 +167,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                 if (dispatcher.CheckAccess())
                 {
-                    OpenOverlayWindowOnUiThread(styleKey, selectGameId);
+                    OpenOverlayWindowOnUiThread(styleKey);
                 }
                 else
                 {
-                    dispatcher.BeginInvoke(new Action(() => OpenOverlayWindowOnUiThread(styleKey, selectGameId)), DispatcherPriority.Background);
+                    dispatcher.BeginInvoke(new Action(() => OpenOverlayWindowOnUiThread(styleKey)), DispatcherPriority.Background);
                 }
             }
             catch
@@ -177,13 +180,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
-        private void OpenOverlayWindowOnUiThread(string styleKey, Guid? selectGameId)
+        private void OpenOverlayWindowOnUiThread(string styleKey)
         {
-            if (selectGameId.HasValue)
-            {
-                SelectGame(selectGameId.Value);
-            }
-
             try
             {
                 if (_achievementsWindow != null && _achievementsWindow.IsVisible)

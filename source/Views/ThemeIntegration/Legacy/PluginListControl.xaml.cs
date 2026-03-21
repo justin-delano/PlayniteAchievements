@@ -19,7 +19,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 {
     /// <summary>
     /// SuccessStory-compatible list control for theme integration.
-    /// Uses native PlayniteAchievements properties (AllAchievements, AchievementCount, etc.).
+    /// Uses modern PlayniteAchievements properties (AllAchievements, AchievementCount, etc.).
     /// Matches the original SuccessStory plugin styling and functionality.
     /// </summary>
     public partial class PluginListControl : ThemeControlBase
@@ -218,7 +218,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
             await Dispatcher.InvokeAsync(() =>
             {
-                var source = Plugin?.Settings?.LegacyTheme?.ListAchievements;
+                var source = Plugin?.Settings?.ListAchievements;
                 if (source == null)
                 {
                     snapshot = null;
@@ -294,7 +294,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
             {
                 SortType.Name => ascending ? source.OrderBy(a => a.DisplayName) : source.OrderByDescending(a => a.DisplayName),
                 SortType.Date => ascending ? source.OrderBy(a => a.UnlockTimeUtc ?? DateTime.MinValue) : source.OrderByDescending(a => a.UnlockTimeUtc ?? DateTime.MinValue),
-                SortType.Rarity => ascending ? source.OrderBy(a => a.GlobalPercentUnlocked ?? 100) : source.OrderByDescending(a => a.GlobalPercentUnlocked ?? 100),
+                SortType.Rarity => ascending
+                    ? source.OrderBy(a => a.RaritySortValue).ThenByDescending(a => a.Points ?? 0)
+                    : source.OrderByDescending(a => a.RaritySortValue).ThenByDescending(a => a.Points ?? 0),
                 _ => source.OrderBy(a => 0)
             };
         }
@@ -418,3 +420,4 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
     }
 }
 // --END SUCCESSSTORY--
+

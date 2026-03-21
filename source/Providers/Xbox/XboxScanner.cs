@@ -84,7 +84,7 @@ namespace PlayniteAchievements.Providers.Xbox
                     _settings.Persisted.ScanDelayMs,
                     _settings.Persisted.MaxRetryAttempts);
 
-                return await RefreshPipeline.RunProviderGamesAsync(
+                return await ProviderRefreshExecutor.RunProviderGamesAsync(
                     gamesToRefresh,
                     onGameStarting,
                     async (game, token) =>
@@ -94,7 +94,7 @@ namespace PlayniteAchievements.Providers.Xbox
                             IsTransientError,
                             token).ConfigureAwait(false);
 
-                        return new RefreshPipeline.ProviderGameResult
+                        return new ProviderRefreshExecutor.ProviderGameResult
                         {
                             Data = data
                         };
@@ -355,11 +355,11 @@ namespace PlayniteAchievements.Providers.Xbox
             }
             else
             {
-                _logger.Debug($"[XboxAch] Achievement '{xboxAch.name}' has {xboxAch.mediaAssets.Count} media assets:");
-                foreach (var asset in xboxAch.mediaAssets)
-                {
-                    _logger.Debug($"  - name: '{asset.name}', type: '{asset.type}', url: '{asset.url}'");
-                }
+                // _logger.Debug($"[XboxAch] Achievement '{xboxAch.name}' has {xboxAch.mediaAssets.Count} media assets:");
+                // foreach (var asset in xboxAch.mediaAssets)
+                // {
+                //     _logger.Debug($"  - name: '{asset.name}', type: '{asset.type}', url: '{asset.url}'");
+                // }
             }
 
             // Use first media asset directly (matches reference implementation pattern)

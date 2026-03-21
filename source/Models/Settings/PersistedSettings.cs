@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Tagging;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -14,6 +16,10 @@ namespace PlayniteAchievements.Models.Settings
     /// </summary>
     public class PersistedSettings : ObservableObject
     {
+        public PersistedSettings()
+        {
+        }
+
         #region Backing Fields
 
         private string _steamUserId;
@@ -54,6 +60,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
+        private bool _showHiddenSuffix = true;
         private bool _showLockedIcon = true;
         private bool _showRarityGlow = true;
         private bool _useCoverImages = true;
@@ -68,6 +75,9 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showGamesWithNoUnlocks = false;
         private bool _showUnplayedGames = false;
         private bool _showTopMenuBarButton = true;
+        private bool _showCompactListRarityBar = true;
+        private bool _enableCompactGridMode = false;
+        private double? _achievementDataGridMaxHeight = null;
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
@@ -90,11 +100,7 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _gamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private bool _pointsColumnAutoEnabled = false;
 
-        private double _ultraRareThreshold = 5;
-        private double _rareThreshold = 10;
-        private double _uncommonThreshold = 50;
         private bool _firstTimeSetupCompleted = false;
         private bool _seenThemeMigration = false;
         private HashSet<Guid> _excludedGameIds = new HashSet<Guid>();
@@ -109,6 +115,10 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, ThemeMigrationCacheEntry> _themeMigrationVersionCache =
             new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase);
         private TaggingSettings _taggingSettings;
+        private bool _exophaseEnabled = false;
+        private HashSet<string> _exophaseManagedPlatforms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private HashSet<Guid> _exophaseIncludedGames = new HashSet<Guid>();
+        private Dictionary<Guid, string> _exophaseSlugOverrides = new Dictionary<Guid, string>();
 
         #endregion
 
@@ -464,6 +474,15 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// When true, hidden achievements show "(Hidden Achievement)" suffix after their title.
+        /// </summary>
+        public bool ShowHiddenSuffix
+        {
+            get => _showHiddenSuffix;
+            set => SetValue(ref _showHiddenSuffix, value);
+        }
+
+        /// <summary>
         /// When true, locked achievement icons are shown in grayscale.
         /// When false, locked achievement icons are hidden with a placeholder until revealed.
         /// </summary>
@@ -611,6 +630,33 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showTopMenuBarButton;
             set => SetValue(ref _showTopMenuBarButton, value);
+        }
+
+        /// <summary>
+        /// When true, shows the rarity bar at the bottom of compact list achievement items.
+        /// </summary>
+        public bool ShowCompactListRarityBar
+        {
+            get => _showCompactListRarityBar;
+            set => SetValue(ref _showCompactListRarityBar, value);
+        }
+
+        /// <summary>
+        /// When true, shared achievement DataGrid rows use a tighter compact layout.
+        /// </summary>
+        public bool EnableCompactGridMode
+        {
+            get => _enableCompactGridMode;
+            set => SetValue(ref _enableCompactGridMode, value);
+        }
+
+        /// <summary>
+        /// Maximum height for AchievementDataGrid controls (null = unlimited).
+        /// </summary>
+        public double? AchievementDataGridMaxHeight
+        {
+            get => _achievementDataGridMaxHeight;
+            set => SetValue(ref _achievementDataGridMaxHeight, value);
         }
 
         /// <summary>
@@ -936,47 +982,9 @@ namespace PlayniteAchievements.Models.Settings
             }
         }
 
-        /// <summary>
-        /// Tracks whether the Points column was auto-enabled once due to Epic achievement data.
-        /// Prevents future refreshes from repeatedly overriding user visibility preferences.
-        /// </summary>
-        public bool PointsColumnAutoEnabled
-        {
-            get => _pointsColumnAutoEnabled;
-            set => SetValue(ref _pointsColumnAutoEnabled, value);
-        }
-
         #endregion
 
-        #region Rarity Threshold Settings
-
-        /// <summary>
-        /// Percentage threshold for ultra-rare achievements (≤ this value = ultra-rare).
-        /// </summary>
-        public double UltraRareThreshold
-        {
-            get => _ultraRareThreshold;
-            set => SetValue(ref _ultraRareThreshold, Math.Max(0.1, Math.Min(value, RareThreshold - 0.1)));
-        }
-
-        /// <summary>
-        /// Percentage threshold for rare achievements (≤ this value and > ultra-rare = rare).
-        /// </summary>
-        public double RareThreshold
-        {
-            get => _rareThreshold;
-            set => SetValue(ref _rareThreshold, Math.Max(UltraRareThreshold + 0.1, Math.Min(value, UncommonThreshold - 0.1)));
-        }
-
-        /// <summary>
-        /// Percentage threshold for uncommon achievements (≤ this value and > rare = uncommon).
-        /// Anything above this is common.
-        /// </summary>
-        public double UncommonThreshold
-        {
-            get => _uncommonThreshold;
-            set => SetValue(ref _uncommonThreshold, Math.Max(RareThreshold + 0.1, Math.Min(value, 99.9)));
-        }
+        #region General Settings
 
         /// <summary>
         /// Indicates whether the user has completed the first-time setup flow.
@@ -1109,6 +1117,52 @@ namespace PlayniteAchievements.Models.Settings
 
         #endregion
 
+        #region Exophase Provider Settings
+
+        /// <summary>
+        /// Master toggle for the Exophase achievement provider.
+        /// When false, ExophaseDataProvider will not claim any games.
+        /// </summary>
+        public bool ExophaseEnabled
+        {
+            get => _exophaseEnabled;
+            set => SetValue(ref _exophaseEnabled, value);
+        }
+
+        /// <summary>
+        /// Platform slugs that Exophase should automatically claim.
+        /// Games on these platforms will use Exophase instead of modern providers.
+        /// Valid values: "steam", "psn", "xbox", "gog", "epic", "ea", "blizzard", "nintendo", "retro"
+        /// </summary>
+        public HashSet<string> ExophaseManagedPlatforms
+        {
+            get => _exophaseManagedPlatforms;
+            set => SetValue(ref _exophaseManagedPlatforms, value ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Individual game IDs that should use Exophase even if their platform is not in ManagedPlatforms.
+        /// Allows per-game override for platforms not globally enabled.
+        /// </summary>
+        public HashSet<Guid> ExophaseIncludedGames
+        {
+            get => _exophaseIncludedGames;
+            set => SetValue(ref _exophaseIncludedGames, value ?? new HashSet<Guid>());
+        }
+
+        /// <summary>
+        /// Per-game Exophase slug overrides.
+        /// Key is Playnite Game ID, value is the Exophase game slug (e.g., "game-name-gog").
+        /// When set, this slug is used directly instead of auto-detection.
+        /// </summary>
+        public Dictionary<Guid, string> ExophaseSlugOverrides
+        {
+            get => _exophaseSlugOverrides;
+            set => SetValue(ref _exophaseSlugOverrides, value ?? new Dictionary<Guid, string>());
+        }
+
+        #endregion
+
         #region Clone Method
 
         /// <summary>
@@ -1157,6 +1211,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenIcon = this.ShowHiddenIcon,
                 ShowHiddenTitle = this.ShowHiddenTitle,
                 ShowHiddenDescription = this.ShowHiddenDescription,
+                ShowHiddenSuffix = this.ShowHiddenSuffix,
                 ShowRarityGlow = this.ShowRarityGlow,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
@@ -1169,6 +1224,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowGamesWithNoUnlocks = this.ShowGamesWithNoUnlocks,
                 ShowUnplayedGames = this.ShowUnplayedGames,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
+                EnableCompactGridMode = this.EnableCompactGridMode,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
@@ -1207,10 +1263,6 @@ namespace PlayniteAchievements.Models.Settings
                 GamesOverviewColumnWidths = this.GamesOverviewColumnWidths != null
                     ? new Dictionary<string, double>(this.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                PointsColumnAutoEnabled = this.PointsColumnAutoEnabled,
-                UltraRareThreshold = this.UltraRareThreshold,
-                RareThreshold = this.RareThreshold,
-                UncommonThreshold = this.UncommonThreshold,
                 FirstTimeSetupCompleted = this.FirstTimeSetupCompleted,
                 SeenThemeMigration = this.SeenThemeMigration,
                 ThemeMigrationVersionCache = this.ThemeMigrationVersionCache != null
@@ -1263,7 +1315,17 @@ namespace PlayniteAchievements.Models.Settings
                         kvp => kvp.Value?.Clone())
                     : new Dictionary<Guid, ManualAchievementLink>(),
                 ManualEnabled = this.ManualEnabled,
-                TaggingSettings = this.TaggingSettings?.Clone() ?? new TaggingSettings()
+                TaggingSettings = this.TaggingSettings?.Clone() ?? new TaggingSettings(),
+                ExophaseEnabled = this.ExophaseEnabled,
+                ExophaseManagedPlatforms = this.ExophaseManagedPlatforms != null
+                    ? new HashSet<string>(this.ExophaseManagedPlatforms, StringComparer.OrdinalIgnoreCase)
+                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                ExophaseIncludedGames = this.ExophaseIncludedGames != null
+                    ? new HashSet<Guid>(this.ExophaseIncludedGames)
+                    : new HashSet<Guid>(),
+                ExophaseSlugOverrides = this.ExophaseSlugOverrides != null
+                    ? new Dictionary<Guid, string>(this.ExophaseSlugOverrides)
+                    : new Dictionary<Guid, string>()
             };
         }
 
@@ -1368,3 +1430,4 @@ namespace PlayniteAchievements.Models.Settings
         #endregion
     }
 }
+

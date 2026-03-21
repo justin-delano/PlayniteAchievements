@@ -13,8 +13,15 @@ namespace PlayniteAchievements.Services.ThemeMigration
 
         /// <summary>
         /// Full migration performs text replacements plus replaces Legacy control elements
-        /// with Native Desktop elements and LegacyData bindings with Theme bindings.
+        /// with Modern Desktop elements and LegacyData bindings with Theme bindings.
         /// </summary>
-        Full
+        Full,
+
+        /// <summary>
+        /// Custom migration performs text replacements plus only the selected control
+        /// and binding modernizations.
+        /// </summary>
+        Custom
     }
 }
+

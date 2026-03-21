@@ -11,6 +11,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -47,11 +48,11 @@ namespace PlayniteAchievements.Models
         /// Contains both per-game achievement data and all-games overview data.
         /// </summary>
         [DontSerialize]
-        private ThemeData _theme;
+        private ModernThemeBindings _theme;
 
-        public ThemeData Theme
+        public ModernThemeBindings Theme
         {
-            get => _theme ?? (_theme = new ThemeData());
+            get => _theme ?? (_theme = new ModernThemeBindings());
             private set => _theme = value;
         }
 
@@ -60,11 +61,11 @@ namespace PlayniteAchievements.Models
         /// Contains SuccessStory compatibility, Aniki ReMake compatibility, and old inline properties.
         /// </summary>
         [DontSerialize]
-        private LegacyThemeData _legacyTheme;
+        private LegacyThemeBindings _legacyTheme;
 
-        public LegacyThemeData LegacyTheme
+        public LegacyThemeBindings LegacyTheme
         {
-            get => _legacyTheme ?? (_legacyTheme = new LegacyThemeData());
+            get => _legacyTheme ?? (_legacyTheme = new LegacyThemeBindings());
             private set => _legacyTheme = value;
         }
 
@@ -197,6 +198,9 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         public AchievementRarityStats UltraRare => Theme.UltraRare ?? EmptyRarityStats;
+
+        [DontSerialize]
+        public AchievementRarityStats RareAndUltraRare => Theme.RareAndUltraRare ?? EmptyRarityStats;
 
         // === All-Games Overview Data ===
 
@@ -384,6 +388,10 @@ namespace PlayniteAchievements.Models
 
         // === SuccessStory Compatibility ===
 
+
+        [DontSerialize]
+        public AchievementRarityStats NoCommon => Uncommon;
+
         [DontSerialize]
         public bool HasData
         {
@@ -450,38 +458,45 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
-        public int TotalUnlockCount
+        public AchievementRarityStats TotalCommon
         {
-            get => Theme.TotalUnlockCount;
-            set => Theme.TotalUnlockCount = value;
+            get => Theme.TotalCommon ?? EmptyRarityStats;
+            set => Theme.TotalCommon = value;
         }
 
         [DontSerialize]
-        public int TotalCommonUnlockCount
+        public AchievementRarityStats TotalUncommon
         {
-            get => Theme.TotalCommonUnlockCount;
-            set => Theme.TotalCommonUnlockCount = value;
+            get => Theme.TotalUncommon ?? EmptyRarityStats;
+            set => Theme.TotalUncommon = value;
         }
 
         [DontSerialize]
-        public int TotalUncommonUnlockCount
+        public AchievementRarityStats TotalRare
         {
-            get => Theme.TotalUncommonUnlockCount;
-            set => Theme.TotalUncommonUnlockCount = value;
+            get => Theme.TotalRare ?? EmptyRarityStats;
+            set => Theme.TotalRare = value;
         }
 
         [DontSerialize]
-        public int TotalRareUnlockCount
+        public AchievementRarityStats TotalUltraRare
         {
-            get => Theme.TotalRareUnlockCount;
-            set => Theme.TotalRareUnlockCount = value;
+            get => Theme.TotalUltraRare ?? EmptyRarityStats;
+            set => Theme.TotalUltraRare = value;
         }
 
         [DontSerialize]
-        public int TotalUltraRareUnlockCount
+        public AchievementRarityStats TotalRareAndUltraRare
         {
-            get => Theme.TotalUltraRareUnlockCount;
-            set => Theme.TotalUltraRareUnlockCount = value;
+            get => Theme.TotalRareAndUltraRare ?? EmptyRarityStats;
+            set => Theme.TotalRareAndUltraRare = value;
+        }
+
+        [DontSerialize]
+        public AchievementRarityStats TotalOverall
+        {
+            get => Theme.TotalOverall ?? EmptyRarityStats;
+            set => Theme.TotalOverall = value;
         }
 
         [DontSerialize]
@@ -660,6 +675,60 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         internal PlayniteAchievementsPlugin _plugin;
 
+        private void AttachPersistedHandlers()
+        {
+            if (Persisted == null)
+            {
+                return;
+            }
+
+            Persisted.PropertyChanged -= Persisted_PropertyChanged;
+            Persisted.PropertyChanged += Persisted_PropertyChanged;
+        }
+
+        private void DetachPersistedHandlers(PersistedSettings persisted = null)
+        {
+            var target = persisted ?? Persisted;
+            if (target == null)
+            {
+                return;
+            }
+
+            target.PropertyChanged -= Persisted_PropertyChanged;
+        }
+
+        private void Persisted_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var propertyName = e?.PropertyName;
+            if (AchievementProjectionService.IsAppearanceSettingPropertyName(propertyName))
+            {
+                RefreshThemeDisplayItemsFromPersisted();
+            }
+
+            if (!string.IsNullOrWhiteSpace(propertyName))
+            {
+                OnPropertyChanged($"Persisted.{propertyName}");
+            }
+        }
+
+        private void RefreshThemeDisplayItemsFromPersisted()
+        {
+            var persisted = Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            Theme.RefreshDisplayItems(
+                persisted.ShowHiddenIcon,
+                persisted.ShowHiddenTitle,
+                persisted.ShowHiddenDescription,
+                persisted.ShowHiddenSuffix,
+                persisted.ShowLockedIcon,
+                persisted.ShowRarityGlow,
+                persisted.ShowCompactListRarityBar);
+        }
+
         /// <summary>
         /// Copies persisted settings from another settings instance.
         /// Used by the ViewModel when applying settings changes.
@@ -672,7 +741,11 @@ namespace PlayniteAchievements.Models
             }
 
             // Copy the entire PersistedSettings object
+            DetachPersistedHandlers();
             Persisted = other.Persisted?.Clone() ?? new PersistedSettings();
+            AttachPersistedHandlers();
+            RefreshThemeDisplayItemsFromPersisted();
+            OnPropertyChanged(nameof(Persisted));
         }
 
         /// <summary>
@@ -684,12 +757,15 @@ namespace PlayniteAchievements.Models
         {
             if (Theme == null)
             {
-                Theme = new ThemeData();
+                Theme = new ModernThemeBindings();
             }
             if (LegacyTheme == null)
             {
-                LegacyTheme = new LegacyThemeData();
+                LegacyTheme = new LegacyThemeBindings();
             }
+
+            AttachPersistedHandlers();
+            RefreshThemeDisplayItemsFromPersisted();
         }
 
         #endregion
@@ -703,8 +779,10 @@ namespace PlayniteAchievements.Models
         public PlayniteAchievementsSettings()
         {
             Persisted = new PersistedSettings();
-            Theme = new ThemeData();
-            LegacyTheme = new LegacyThemeData();
+            Theme = new ModernThemeBindings();
+            LegacyTheme = new LegacyThemeBindings();
+            AttachPersistedHandlers();
+            RefreshThemeDisplayItemsFromPersisted();
         }
 
         /// <summary>
@@ -721,7 +799,7 @@ namespace PlayniteAchievements.Models
         #region Game Context
 
         [DontSerialize]
-        private Game _selectedGame;
+        private SelectedGameBindingContext _selectedGame;
 
         /// <summary>
         /// The currently selected game in Playnite's main view.
@@ -734,19 +812,52 @@ namespace PlayniteAchievements.Models
         /// may not be synchronized with the game context passed to GameContextChanged.
         /// </summary>
         [DontSerialize]
-        public Game SelectedGame
+        public SelectedGameBindingContext SelectedGame
         {
             get => _selectedGame;
             set
             {
-                if (value != _selectedGame)
+                if (AreSameSelectedGame(value, _selectedGame))
                 {
-                    _selectedGame = value;
-                    OnPropertyChanged(nameof(SelectedGame));
-                    OnPropertyChanged(nameof(SelectedGameCoverPath));
-                    OnPropertyChanged(nameof(SelectedGameBackgroundPath));
+                    return;
                 }
+
+                _selectedGame = value;
+                OnPropertyChanged(nameof(SelectedGame));
+                OnPropertyChanged(nameof(SelectedGameCoverPath));
+                OnPropertyChanged(nameof(SelectedGameBackgroundPath));
             }
+        }
+
+        private bool AreSameSelectedGame(SelectedGameBindingContext left, SelectedGameBindingContext right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return left.Id == right.Id &&
+                   string.Equals(left.CoverImage, right.CoverImage, StringComparison.Ordinal) &&
+                   string.Equals(left.BackgroundImage, right.BackgroundImage, StringComparison.Ordinal);
+        }
+
+        public void SetSelectedGame(Game game)
+        {
+            if (game == null)
+            {
+                SelectedGame = null;
+                return;
+            }
+
+            SelectedGame = new SelectedGameBindingContext(
+                game,
+                () => SelectedGameCoverPath,
+                () => SelectedGameBackgroundPath);
         }
 
         /// <summary>
@@ -754,15 +865,16 @@ namespace PlayniteAchievements.Models
         /// Themes can bind to this property to get the cover image path.
         /// </summary>
         [DontSerialize]
-        public string SelectedGameCoverPath => _selectedGame != null && !string.IsNullOrWhiteSpace(_selectedGame.CoverImage)
-            ? _plugin?.PlayniteApi?.Database?.GetFullFilePath(_selectedGame.CoverImage)
+        public string SelectedGameCoverPath => _selectedGame?.Game != null && !string.IsNullOrWhiteSpace(_selectedGame.Game.CoverImage)
+            ? _plugin?.PlayniteApi?.Database?.GetFullFilePath(_selectedGame.Game.CoverImage)
             : null;
 
         [DontSerialize]
-        public string SelectedGameBackgroundPath => _selectedGame != null && !string.IsNullOrWhiteSpace(_selectedGame.BackgroundImage)
-            ? _plugin?.PlayniteApi?.Database?.GetFullFilePath(_selectedGame.BackgroundImage)
+        public string SelectedGameBackgroundPath => _selectedGame?.Game != null && !string.IsNullOrWhiteSpace(_selectedGame.Game.BackgroundImage)
+            ? _plugin?.PlayniteApi?.Database?.GetFullFilePath(_selectedGame.Game.BackgroundImage)
             : null;
 
         #endregion
     }
 }
+

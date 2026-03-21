@@ -16,7 +16,8 @@ namespace PlayniteAchievements.ViewModels
     public sealed class GameOptionsCategoryViewModel : ObservableObject
     {
         private readonly Guid _gameId;
-        private readonly AchievementService _achievementService;
+        private readonly AchievementOverridesService _achievementOverridesService;
+        private readonly AchievementDataService _achievementDataService;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
 
@@ -29,6 +30,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly HashSet<string> _selectedCategoryLabelFilters =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _hasCustomOverrides;
+        private bool _typeDefaultSelected;
         private bool _typeBaseSelected;
         private bool _typeDlcSelected;
         private bool _typeSingleplayerSelected;
@@ -37,6 +39,7 @@ namespace PlayniteAchievements.ViewModels
         private bool _typeMissableSelected;
         private bool _typeDifficultySelected;
         private bool _typeStackableSelected;
+        private bool _typeFilterDefaultSelected;
         private bool _typeFilterBaseSelected;
         private bool _typeFilterDlcSelected;
         private bool _typeFilterSingleplayerSelected;
@@ -48,12 +51,14 @@ namespace PlayniteAchievements.ViewModels
 
         public GameOptionsCategoryViewModel(
             Guid gameId,
-            AchievementService achievementService,
+            AchievementOverridesService achievementOverridesService,
+            AchievementDataService achievementDataService,
             PlayniteAchievementsSettings settings,
             ILogger logger)
         {
             _gameId = gameId;
-            _achievementService = achievementService ?? throw new ArgumentNullException(nameof(achievementService));
+            _achievementOverridesService = achievementOverridesService ?? throw new ArgumentNullException(nameof(achievementOverridesService));
+            _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
 
@@ -120,6 +125,18 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _showHidden, value))
                 {
                     ApplyFilter();
+                }
+            }
+        }
+
+        public bool TypeDefaultSelected
+        {
+            get => _typeDefaultSelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeDefaultSelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedTypeSelectionText));
                 }
             }
         }
@@ -228,6 +245,19 @@ namespace PlayniteAchievements.ViewModels
                 return selected.Count == 0
                     ? L("LOCPlayAch_GameOptions_Category_TypeSelectorPlaceholder", "Type")
                     : string.Join(", ", selected);
+            }
+        }
+
+        public bool TypeFilterDefaultSelected
+        {
+            get => _typeFilterDefaultSelected;
+            set
+            {
+                if (SetValueAndReturn(ref _typeFilterDefaultSelected, value))
+                {
+                    OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
+                    ApplyFilter();
+                }
             }
         }
 
@@ -421,8 +451,8 @@ namespace PlayniteAchievements.ViewModels
                     .GroupBy(row => row.ApiName.Trim(), StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(group => group.Key, group => group.First().IsRevealed, StringComparer.OrdinalIgnoreCase);
 
-                var hydratedGameData = _achievementService.GetGameAchievementData(_gameId);
-                var rawGameData = _achievementService.GetRawGameAchievementData(_gameId);
+                var hydratedGameData = _achievementDataService.GetGameAchievementData(_gameId);
+                var rawGameData = _achievementDataService.GetRawGameAchievementData(_gameId);
                 var rawAchievements = rawGameData?.Achievements?
                     .Where(a => a != null && !string.IsNullOrWhiteSpace(a.ApiName))
                     .ToList() ?? new List<AchievementDetail>();
@@ -479,6 +509,7 @@ namespace PlayniteAchievements.ViewModels
 
                     return new GameOptionsCategoryItem
                     {
+                        ProviderKey = projected.ProviderKey,
                         GameName = projected.GameName,
                         SortingName = projected.SortingName,
                         PlayniteGameId = projected.PlayniteGameId,
@@ -536,10 +567,10 @@ namespace PlayniteAchievements.ViewModels
                 return false;
             }
 
-            _achievementService.SetAchievementCategoryOverrides(
+            _achievementOverridesService.SetAchievementCategoryOverrides(
                 _gameId,
                 new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
-            _achievementService.SetAchievementCategoryTypeOverrides(
+            _achievementOverridesService.SetAchievementCategoryTypeOverrides(
                 _gameId,
                 new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
 
@@ -610,12 +641,12 @@ namespace PlayniteAchievements.ViewModels
 
             if (categoryChanged)
             {
-                _achievementService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
+                _achievementOverridesService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
             }
 
             if (categoryTypeChanged)
             {
-                _achievementService.SetAchievementCategoryTypeOverrides(_gameId, categoryTypeOverrideMap);
+                _achievementOverridesService.SetAchievementCategoryTypeOverrides(_gameId, categoryTypeOverrideMap);
             }
 
             if (categoryChanged || categoryTypeChanged)
@@ -674,7 +705,7 @@ namespace PlayniteAchievements.ViewModels
                 return false;
             }
 
-            _achievementService.SetAchievementCategoryTypeOverrides(_gameId, categoryTypeOverrideMap);
+            _achievementOverridesService.SetAchievementCategoryTypeOverrides(_gameId, categoryTypeOverrideMap);
             ReloadData();
             return true;
         }
@@ -718,7 +749,7 @@ namespace PlayniteAchievements.ViewModels
                 return false;
             }
 
-            _achievementService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
+            _achievementOverridesService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
             ReloadData();
             return true;
         }
@@ -761,12 +792,12 @@ namespace PlayniteAchievements.ViewModels
 
             if (categoryChanged)
             {
-                _achievementService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
+                _achievementOverridesService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
             }
 
             if (categoryTypeChanged)
             {
-                _achievementService.SetAchievementCategoryTypeOverrides(_gameId, categoryTypeOverrideMap);
+                _achievementOverridesService.SetAchievementCategoryTypeOverrides(_gameId, categoryTypeOverrideMap);
             }
 
             ReloadData();
@@ -827,13 +858,14 @@ namespace PlayniteAchievements.ViewModels
                 return false;
             }
 
-            _achievementService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
+            _achievementOverridesService.SetAchievementCategoryOverrides(_gameId, categoryOverrideMap);
             ReloadData();
             return true;
         }
 
         public void ResetBulkEditorInputs()
         {
+            TypeDefaultSelected = false;
             TypeBaseSelected = false;
             TypeDlcSelected = false;
             TypeSingleplayerSelected = false;
@@ -1008,6 +1040,11 @@ namespace PlayniteAchievements.ViewModels
         private List<string> GetSelectedCategoryTypeFilterValues()
         {
             var selected = new List<string>();
+            if (TypeFilterDefaultSelected)
+            {
+                selected.Add("Default");
+            }
+
             if (TypeFilterBaseSelected)
             {
                 selected.Add("Base");
@@ -1054,6 +1091,11 @@ namespace PlayniteAchievements.ViewModels
         private string GetSelectedCategoryTypeValue()
         {
             var selected = new List<string>();
+            if (TypeDefaultSelected)
+            {
+                selected.Add("Default");
+            }
+
             if (TypeBaseSelected)
             {
                 selected.Add("Base");

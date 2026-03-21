@@ -1,0 +1,239 @@
+<UserControl x:Class="PlayniteAchievements.Views.ParityTests.ModernParityTestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:PlayniteAchievements.Views.ParityTests"
+             mc:Ignorable="d"
+             d:DesignHeight="700"
+             d:DesignWidth="1000">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header Section -->
+        <Border Grid.Row="0"
+                Padding="16"
+                CornerRadius="8"
+                Background="{DynamicResource ControlBackgroundBrush}">
+            <StackPanel>
+                <TextBlock FontSize="20"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextBrush}"
+                           Text="PlayniteAchievements — Modern Theme Controls" />
+                <TextBlock Margin="0,8,0,0"
+                           Foreground="{DynamicResource TextBrush}"
+                           Opacity="0.85">
+                    <Run Text="Game: " />
+                    <Run Text="{Binding GameName, Mode=OneWay}" FontWeight="SemiBold" />
+                    <Run Text="  (" />
+                    <Run Text="{Binding GameId, Mode=OneWay}" />
+                    <Run Text=")" />
+                </TextBlock>
+                <TextBlock Margin="0,4,0,0"
+                           Foreground="{DynamicResource TextBrush}"
+                           Opacity="0.75">
+                    <Run Text="Achievements: " />
+                    <Run Text="{Binding Settings.UnlockedCount, Mode=OneWay}" FontWeight="SemiBold" />
+                    <Run Text="/" />
+                    <Run Text="{Binding Settings.AchievementCount, Mode=OneWay}" FontWeight="SemiBold" />
+                    <Run Text="  (" />
+                    <Run Text="{Binding Settings.ProgressPercentage, Mode=OneWay, StringFormat={}{0:0.#}}" />
+                    <Run Text="%)" />
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Controls Grid -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Margin="0,12,0,0">
+            <StackPanel>
+
+                <!-- Row 1: Small Controls Side by Side -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- AchievementViewItem -->
+                    <Border Grid.Column="0"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock Text="AchievementViewItem"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="Shows X/Y count in game list views"
+                                       Foreground="{DynamicResource TextBrush}" Opacity="0.6"
+                                       FontSize="{DynamicResource FontSizeSmall}"
+                                       Margin="0,0,0,8"/>
+                            <local:GameViewControlHost ControlName="AchievementViewItem" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- AchievementButton -->
+                    <Border Grid.Column="1"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="4,0">
+                        <StackPanel>
+                            <TextBlock Text="AchievementButton"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+                            <local:GameViewControlHost ControlName="AchievementButton" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- AchievementProgressBar -->
+                    <Border Grid.Column="2"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="8,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="AchievementProgressBar"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+                            <local:GameViewControlHost ControlName="AchievementProgressBar" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Row 2: Stats -->
+                <Border Background="{DynamicResource ControlBackgroundBrush}"
+                        CornerRadius="6"
+                        Padding="12"
+                        Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="AchievementStats"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,8"/>
+                        <local:GameViewControlHost ControlName="AchievementStats" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Row 3: Charts Side by Side -->
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- AchievementBarChart -->
+                    <Border Grid.Column="0"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock Text="AchievementBarChart"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+                            <local:GameViewControlHost ControlName="AchievementBarChart" Height="240" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- AchievementPieChart -->
+                    <Border Grid.Column="1"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="8,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="AchievementPieChart"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+                            <local:GameViewControlHost ControlName="AchievementPieChart" Height="240" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Row 4: Compact Lists Side by Side -->
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- AchievementCompactList -->
+                    <Border Grid.Column="0"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock Text="AchievementCompactList"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+                            <local:GameViewControlHost ControlName="AchievementCompactList" Height="220" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- AchievementCompactLockedList -->
+                    <Border Grid.Column="1"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="4,0">
+                        <StackPanel>
+                            <TextBlock Text="CompactLocked"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+                            <local:GameViewControlHost ControlName="AchievementCompactLockedList" Height="220" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- AchievementCompactUnlockedList -->
+                    <Border Grid.Column="2"
+                            Background="{DynamicResource ControlBackgroundBrush}"
+                            CornerRadius="6"
+                            Padding="12"
+                            Margin="8,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="CompactUnlocked"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Margin="0,0,0,8"/>
+                            <local:GameViewControlHost ControlName="AchievementCompactUnlockedList" Height="220" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Row 5: Full Achievement List -->
+                <Border Background="{DynamicResource ControlBackgroundBrush}"
+                        CornerRadius="6"
+                        Padding="12"
+                        Margin="0,12,0,0">
+                    <StackPanel>
+                        <TextBlock Text="AchievementDataGrid"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,8"/>
+                        <local:GameViewControlHost ControlName="AchievementDataGrid" Height="400" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
+

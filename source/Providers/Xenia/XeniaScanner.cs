@@ -75,11 +75,11 @@ namespace PlayniteAchievements.Providers.Xenia
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            return await RefreshPipeline.RunProviderGamesAsync(
+            return await ProviderRefreshExecutor.RunProviderGamesAsync(
                 gamesToRefresh,
                 onGameStarting,
                 (game, token) => Task.FromResult(
-                    new RefreshPipeline.ProviderGameResult
+                    new ProviderRefreshExecutor.ProviderGameResult
                     {
                         Data = GetAchievementDataAsync(game)
                     }),

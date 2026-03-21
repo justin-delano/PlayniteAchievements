@@ -28,7 +28,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
         protected override List<AchievementDetail> GetSourceAchievements()
         {
-            var all = Plugin?.Settings?.LegacyTheme?.ListAchievements;
+            var all = EffectiveLegacyTheme?.ListAchievements;
             if (all == null || all.Count == 0)
             {
                 return new List<AchievementDetail>();
@@ -49,7 +49,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
         protected override int GetTotalCount()
         {
-            return Plugin?.Settings?.LegacyTheme?.Locked ?? 0;
+            return EffectiveLegacyTheme?.Locked ?? 0;
         }
 
         protected override string GetHasAchievementPropertyName()
@@ -66,8 +66,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         {
             return new[]
             {
-                nameof(LegacyThemeData.ListAchievements),
-                nameof(LegacyThemeData.Locked)
+                nameof(LegacyThemeBindings.ListAchievements),
+                nameof(LegacyThemeBindings.Locked)
             };
         }
 
@@ -94,7 +94,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
                 Icon = displayIcon,
                 IconCustom = displayIcon,
                 IsLocked = true,
-                Percent = achievement.GlobalPercentUnlocked ?? 0,
+                Percent = achievement.RarityPercentValue,
+                HasRarityPercent = achievement.HasRarityPercent,
+                Rarity = achievement.Rarity,
+                RarityText = achievement.RarityText,
                 EnableRaretyIndicator = true,
                 DisplayRaretyValue = true,
                 HorizontalAlignment = HorizontalAlignment.Center,

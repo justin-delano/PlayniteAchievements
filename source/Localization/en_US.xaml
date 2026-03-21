@@ -51,6 +51,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Display</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GeneralSection">General</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Show Top Menu Bar Button</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableCompactGridMode">Enable Compact Grid Mode</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_AchievementsSection">Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Show Rarity Glow on Unlocked Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">Sidebar</sys:String>
@@ -62,6 +63,33 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Show Sidebar Bar Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamesWithNoUnlocks">Show Games With No Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowUnplayedGames">Show Unplayed Games</sys:String>
+
+    <!-- Theme Controls Preview Settings -->
+    <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeControlsSection">Theme Controls Preview</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Compact List</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview_Description">2 hidden, 2 locked, 1 unlocked achievement mockups</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">Show Rarity Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview">Achievement DataGrid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview_Description">2 unlocked (1 ultra rare, 1 gold), 1 locked achievement mockups</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Max Height</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (empty = unlimited)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OtherModernControls">Other Modern Controls</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Compact Unlocked List</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview_Description">Horizontal row of compact items showing only unlocked achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Compact Locked List</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview_Description">Horizontal row of compact items showing only locked achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Progress Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview_Description">Progress bar with percentage overlay and rarity badges below.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">Stats</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_StatsPreview_Description">Rarity breakdown showing Ultra Rare, Rare, Uncommon, and Common counts.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">Button</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview_Description">Compact button with trophy icon or detailed progress display.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">View Item</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview_Description">Achievement count display for use in game list views.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview">Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview_Description">Rarity or trophy pie chart with radial badge icons.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">Bar Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview_Description">Timeline bar chart showing achievement unlocks over time.</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Provider_Steam">Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
@@ -78,7 +106,7 @@
     <!-- CONTEXT MENU                                                       -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_TestNativeControls">Test Native Theme Controls</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_TestModernControls">Test Modern Theme Controls</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Game Options</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Single Game</sys:String>
@@ -179,6 +207,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_BulkHint">Expand to bulk edit selected achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_TypeSelectorLabel">Category Type</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_TypeSelectorPlaceholder">Type</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Default">Default</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Base">Base</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_DLC">DLC</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Singleplayer">Singleplayer</sys:String>
@@ -288,6 +317,8 @@
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Last Played</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Icon">Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_RightClickShowHide">Right Click to Show/Hide</sys:String>
 
     <!-- ================================================================= -->
@@ -382,6 +413,30 @@
     <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_Checking">Checking Exophase authentication...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_WindowNotOpened">Failed to open login window</sys:String>
 
+    <!-- Exophase Provider Settings -->
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider">Enable Exophase Provider</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">When enabled, Exophase can automatically track achievements for games on managed platforms.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Managed Platforms</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Games on these platforms will use Exophase instead of modern providers. Check platforms you want Exophase to manage.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Steam">Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_PSN">PlayStation</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Xbox">Xbox</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_GOG">GOG</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Epic">Epic Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_EA">EA App</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Blizzard">Battle.net</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Nintendo">Nintendo</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Retro">RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note: For games on unchecked platforms, use Game Options to include individually.</sys:String>
+
+    <!-- Game Options - Exophase -->
+    <sys:String x:Key="LOCPlayAch_GameOptions_UseExophase">Use Exophase for this game</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseHint">Check to force Exophase for this game. Unchecked games use Exophase if their platform is in Managed Platforms.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseManagedByPlatform">Managed by Exophase (via platform setting)</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugLabel">Game Slug Override</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugHint">Override the auto-detected slug to link to a specific Exophase game. Leave empty to use auto-detection.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">Please enter an Exophase game slug.</sys:String>
+
     <!-- ShadPS4 Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Connection">ShadPS4 Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Description">Configure ShadPS4 emulator integration to track trophies from PlayStation 4 games played in the emulator.</sys:String>
@@ -437,8 +492,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_ProviderDisabledMessage">This platform is disabled. Enable it to track achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Sync &amp; Updates</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_Notifications">Notifications</sys:String>
-    <sys:String x:Key="LOCPlayAch_Section_RarityThresholds">Achievement Rarity Thresholds</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RarityThresholds_Description">Configure the global unlock percentage cutoffs that determine achievement rarity tiers. Achievements are categorized based on what percentage of players have unlocked them.</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Username">Username</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Username_Help">Your RetroAchievements username.</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_WebApiKey">Web API Key</sys:String>
@@ -514,11 +567,13 @@
     <!-- ================================================================= -->
     <!-- APPEARANCE                                                         -->
     <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Settings_UnlockedAchievements">Unlocked Achievement Visibility</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Hidden Achievement Visibility</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Control which elements of hidden achievements are obscured before you reveal them.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">Reveal hidden icon</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenTitle">Reveal hidden title</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Reveal hidden description</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Show (Hidden Achievement) suffix</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LockedAchievements">Locked Achievement Visibility</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LockedAchievements_Description">Control how locked achievement icons are displayed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealLockedIcon">Reveal locked icon</sys:String>
@@ -552,6 +607,7 @@
     <sys:String x:Key="LOCPlayAch_Rarity_Uncommon">Uncommon</sys:String>
     <sys:String x:Key="LOCPlayAch_Rarity_Rare">Rare</sys:String>
     <sys:String x:Key="LOCPlayAch_Rarity_UltraRare">Ultra Rare</sys:String>
+    <sys:String x:Key="LOCPlayAch_RarityThreshold_GTEPoints">&#8805; minimum points</sys:String>
     <sys:String x:Key="LOCPlayAch_RarityThreshold_LTE">&#8804; threshold %</sys:String>
     <sys:String x:Key="LOCPlayAch_RarityThreshold_GT">&#62; uncommon threshold</sys:String>
 
@@ -702,7 +758,7 @@
     <!-- SETTINGS - THEME INTEGRATION                                      -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_ThemeIntegration_Title">Theme Integration</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ThemeIntegration_Description">Native PlayniteAchievements theme integration</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ThemeIntegration_Description">Modern PlayniteAchievements theme integration</sys:String>
 
     <!-- ================================================================= -->
     <!-- Refresh PROGRESS WINDOW                                               -->
@@ -734,8 +790,25 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">Please restart Playnite to apply the changes.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">Limited Migration</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationFull">Full Migration</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationCustom">Custom Migration</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_LimitedTooltip">Text replacements only. Preserves existing control structures and bindings.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_FullTooltip">Complete modernization. Replaces Legacy controls with Native controls and LegacyData bindings with Theme bindings.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_FullTooltip">Complete modernization. Replaces Legacy controls with Modern controls and LegacyData bindings with Theme bindings.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom">Custom</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_CustomDescription">Select which theme elements stay Legacy and which are modernized during migration.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_AllLegacy">All Legacy</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_AllModern">All Modern</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeLegacy">Legacy</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeModern">Modern</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_Button">Button</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_Chart">Bar Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_CompactList">Compact List</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_CompactLocked">Compact Locked List</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_CompactUnlocked">Compact Unlocked List</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_List">Achievement Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_ProgressBar">Progress Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_UserStats">Stats Panel</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_ViewItem">View Item</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom_Bindings">Theme Bindings</sys:String>
 
     <!-- ================================================================= -->
     <!-- SINGLE GAME VIEW                                                   -->
@@ -893,3 +966,4 @@
     <sys:String x:Key="LOCPlayAch_Tagging_RemoveComplete">Tags removed</sys:String>
 
 </ResourceDictionary>
+

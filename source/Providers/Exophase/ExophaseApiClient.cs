@@ -21,6 +21,8 @@ namespace PlayniteAchievements.Providers.Exophase
     {
         private const string SearchUrl = "https://api.exophase.com/public/archive/games";
         private const string AchievementPageBaseUrl = "https://www.exophase.com/game/{0}/achievements/";
+        private const int AchievementDomReadyPollDelayMs = 250;
+        private const int AchievementDomReadyPollAttempts = 8;
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
@@ -95,6 +97,17 @@ namespace PlayniteAchievements.Providers.Exophase
         /// </summary>
         public async Task<List<ExophaseGame>> SearchGamesAsync(string query, CancellationToken ct)
         {
+            return await SearchGamesAsync(query, null, ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Searches for games on Exophase with optional platform filter.
+        /// </summary>
+        /// <param name="query">Game name to search for.</param>
+        /// <param name="platformSlug">Optional platform slug to filter by (e.g., "steam", "psn", "xbox").</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task<List<ExophaseGame>> SearchGamesAsync(string query, string platformSlug, CancellationToken ct)
+        {
             if (string.IsNullOrWhiteSpace(query))
             {
                 return new List<ExophaseGame>();
@@ -103,6 +116,10 @@ namespace PlayniteAchievements.Providers.Exophase
             try
             {
                 var url = $"{SearchUrl}?q={Uri.EscapeDataString(query)}&sort=added";
+                if (!string.IsNullOrWhiteSpace(platformSlug))
+                {
+                    url += $"&platform={Uri.EscapeDataString(platformSlug)}";
+                }
 
                 // Use WebView to bypass Cloudflare protection
                 var json = await FetchJsonViaWebViewAsync(url, ct).ConfigureAwait(false);
@@ -245,6 +262,22 @@ namespace PlayniteAchievements.Providers.Exophase
 
                         var html = await view.GetPageSourceAsync();
 
+                        // Exophase can populate rows after initial load; briefly poll for achievement markers.
+                        if (!ContainsAchievementMarkup(html))
+                        {
+                            for (var attempt = 0; attempt < AchievementDomReadyPollAttempts; attempt++)
+                            {
+                                ct.ThrowIfCancellationRequested();
+                                await Task.Delay(AchievementDomReadyPollDelayMs, ct).ConfigureAwait(false);
+
+                                html = await view.GetPageSourceAsync();
+                                if (ContainsAchievementMarkup(html))
+                                {
+                                    break;
+                                }
+                            }
+                        }
+
                         if (string.IsNullOrWhiteSpace(html))
                         {
                             _logger?.Debug("[Exophase] WebView returned empty HTML");
@@ -277,6 +310,20 @@ namespace PlayniteAchievements.Providers.Exophase
 
             var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
             return await responseTask.ConfigureAwait(false);
+        }
+
+        private static bool ContainsAchievementMarkup(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return false;
+            }
+
+            return html.IndexOf("award-title", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   html.IndexOf("award-average", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   html.IndexOf("award-earned", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   html.IndexOf("data-earned", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   html.IndexOf("data-average", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         /// <summary>
@@ -346,6 +393,51 @@ namespace PlayniteAchievements.Providers.Exophase
                 globalPercent = percent;
             }
 
+            // Fallback for JS-rendered markup where percentage is text like "95.49% (37.00)".
+            if (!globalPercent.HasValue)
+            {
+                var averageNode = node.SelectSingleNode(".//div[contains(@class,'award-average')]//span") ??
+                                 node.SelectSingleNode(".//div[contains(@class,'award-average')]");
+                var averageText = WebUtility.HtmlDecode(averageNode?.InnerText?.Trim() ?? "");
+                if (!string.IsNullOrWhiteSpace(averageText))
+                {
+                    var percentMatch = System.Text.RegularExpressions.Regex.Match(
+                        averageText,
+                        @"([0-9]+(?:\.[0-9]+)?)\s*%",
+                        System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+                    if (percentMatch.Success &&
+                        double.TryParse(percentMatch.Groups[1].Value,
+                            System.Globalization.NumberStyles.Any,
+                            System.Globalization.CultureInfo.InvariantCulture,
+                            out var parsedPercent))
+                    {
+                        globalPercent = parsedPercent;
+                    }
+                }
+            }
+
+            // Extract data-earned for unlock status (0 = locked, 1 = unlocked)
+            var dataEarned = node.GetAttributeValue("data-earned", "0");
+            var isUnlocked = dataEarned == "1";
+
+            // JS-rendered pages may provide unlock state in award-earned text instead of data-earned.
+            var earnedNode = node.SelectSingleNode(".//div[contains(@class,'award-earned')]");
+            var earnedText = WebUtility.HtmlDecode(earnedNode?.InnerText?.Trim() ?? "");
+
+            DateTime? unlockTimeUtc = null;
+            if (!string.IsNullOrWhiteSpace(earnedText))
+            {
+                unlockTimeUtc = ParseExophaseTimestamp(earnedText);
+
+                if (!isUnlocked)
+                {
+                    isUnlocked = unlockTimeUtc.HasValue ||
+                                 earnedText.IndexOf("earned offline", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                 earnedText.IndexOf("earned online", StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+            }
+
             // Extract icon URL from img/@src
             var imgNode = node.SelectSingleNode(".//img");
             var iconUrl = imgNode?.GetAttributeValue("src", "") ?? "";
@@ -363,6 +455,12 @@ namespace PlayniteAchievements.Providers.Exophase
             // Check for hidden/secret class
             var isHidden = node.GetAttributeValue("class", "").Contains("secret");
 
+            // Extract platform-specific points/type from award-points section.
+            var awardPointsNode = node.SelectSingleNode(".//div[contains(@class,'award-points')]");
+            var parsedPoints = ParseAwardPointsValue(awardPointsNode);
+            var trophyType = ParseTrophyType(awardPointsNode);
+            var isCapstone = string.Equals(trophyType, "platinum", StringComparison.OrdinalIgnoreCase);
+
             // Generate a stable API name from the display name
             var apiName = GenerateApiName(displayName);
 
@@ -378,11 +476,132 @@ namespace PlayniteAchievements.Providers.Exophase
                 Description = description,
                 LockedIconPath = iconUrl,
                 UnlockedIconPath = iconUrl,
+                Points = parsedPoints,
+                TrophyType = trophyType,
+                IsCapstone = isCapstone,
                 Hidden = isHidden,
                 GlobalPercentUnlocked = globalPercent,
-                Unlocked = false,
-                UnlockTimeUtc = null
+                Unlocked = isUnlocked,
+                UnlockTimeUtc = unlockTimeUtc
             };
+        }
+
+        private static int? ParseAwardPointsValue(HtmlNode awardPointsNode)
+        {
+            if (awardPointsNode == null)
+            {
+                return null;
+            }
+
+            var valueNode = awardPointsNode.SelectSingleNode(".//span") ?? awardPointsNode;
+            var text = WebUtility.HtmlDecode(valueNode?.InnerText?.Trim() ?? string.Empty);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+
+            var match = System.Text.RegularExpressions.Regex.Match(text, @"(\d+)");
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            return int.TryParse(match.Groups[1].Value, out var points)
+                ? (int?)points
+                : null;
+        }
+
+        private static string ParseTrophyType(HtmlNode awardPointsNode)
+        {
+            if (awardPointsNode == null)
+            {
+                return null;
+            }
+
+            var iconNode = awardPointsNode.SelectSingleNode(".//i");
+            var classNames = iconNode?.GetAttributeValue("class", string.Empty) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(classNames))
+            {
+                return null;
+            }
+
+            if (classNames.IndexOf("exo-icon-trophy-platinum", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "platinum";
+            }
+
+            if (classNames.IndexOf("exo-icon-trophy-gold", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "gold";
+            }
+
+            if (classNames.IndexOf("exo-icon-trophy-silver", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "silver";
+            }
+
+            if (classNames.IndexOf("exo-icon-trophy-bronze", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return "bronze";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Parses an Exophase timestamp string into UTC DateTime.
+        /// Examples: "Jan 15, 2024, 8:30 PM", "January 15, 2024, 8:30 PM"
+        /// </summary>
+        private DateTime? ParseExophaseTimestamp(string timestamp)
+        {
+            if (string.IsNullOrWhiteSpace(timestamp))
+            {
+                return null;
+            }
+
+            // Exophase often appends timezone label in parentheses (e.g., "(UTC+0)").
+            var normalizedTimestamp = timestamp.Trim();
+            var timezoneSuffixIndex = normalizedTimestamp.IndexOf(" (UTC", StringComparison.OrdinalIgnoreCase);
+            if (timezoneSuffixIndex > 0)
+            {
+                normalizedTimestamp = normalizedTimestamp.Substring(0, timezoneSuffixIndex).Trim();
+            }
+
+            // Try common Exophase formats
+            var formats = new[]
+            {
+                "MMM d, yyyy, h:mm tt",      // Jan 15, 2024, 8:30 PM
+                "MMM d, yyyy, h:mm:ss tt",   // Jan 15, 2024, 8:30:00 PM
+                "MMMM d, yyyy, h:mm tt",     // January 15, 2024, 8:30 PM
+                "MMMM d, yyyy, h:mm:ss tt",  // January 15, 2024, 8:30:00 PM
+                "MMM d, yyyy",               // Jan 15, 2024
+                "MMMM d, yyyy",              // January 15, 2024
+                "d MMM yyyy, h:mm tt",       // 15 Jan 2024, 8:30 PM
+                "d MMMM yyyy, h:mm tt",      // 15 January 2024, 8:30 PM
+            };
+
+            foreach (var format in formats)
+            {
+                if (DateTime.TryParseExact(normalizedTimestamp, format,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.AssumeLocal,
+                    out var parsed))
+                {
+                    // Convert to UTC
+                    return parsed.ToUniversalTime();
+                }
+            }
+
+            // Fallback to generic parsing
+            if (DateTime.TryParse(normalizedTimestamp, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AllowWhiteSpaces | System.Globalization.DateTimeStyles.AssumeLocal,
+                out var fallbackParsed))
+            {
+                return fallbackParsed.ToUniversalTime();
+            }
+
+            _logger?.Debug($"[Exophase] Failed to parse timestamp: {timestamp}");
+            return null;
         }
 
         /// <summary>

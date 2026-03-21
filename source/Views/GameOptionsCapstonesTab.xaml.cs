@@ -20,12 +20,13 @@ namespace PlayniteAchievements.Views
 
         public GameOptionsCapstonesTab(
             Guid gameId,
-            AchievementService achievementService,
+            AchievementOverridesService achievementOverridesService,
+            AchievementDataService achievementDataService,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)
         {
-            _viewModel = new CapstoneViewModel(gameId, achievementService, playniteApi, logger, settings);
+            _viewModel = new CapstoneViewModel(gameId, achievementOverridesService, achievementDataService, playniteApi, logger, settings);
             DataContext = _viewModel;
             InitializeComponent();
             _viewModel.CapstoneChanged += ViewModel_CapstoneChanged;
@@ -113,8 +114,11 @@ namespace PlayniteAchievements.Views
             items.Sort((a, b) => column.SortMemberPath switch
             {
                 "GlobalPercent" => sortDirection.Value == ListSortDirection.Ascending
-                    ? a.GlobalPercent.CompareTo(b.GlobalPercent)
-                    : b.GlobalPercent.CompareTo(a.GlobalPercent),
+                    ? a.RaritySortValue.CompareTo(b.RaritySortValue)
+                    : b.RaritySortValue.CompareTo(a.RaritySortValue),
+                "RaritySortValue" => sortDirection.Value == ListSortDirection.Ascending
+                    ? a.RaritySortValue.CompareTo(b.RaritySortValue)
+                    : b.RaritySortValue.CompareTo(a.RaritySortValue),
                 "Points" => sortDirection.Value == ListSortDirection.Ascending
                     ? a.Points.CompareTo(b.Points)
                     : b.Points.CompareTo(a.Points),
