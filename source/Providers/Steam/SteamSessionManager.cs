@@ -36,6 +36,23 @@ namespace PlayniteAchievements.Providers.Steam
             // No longer loading from disk
         }
 
+        private SteamSettings GetProviderSettings()
+        {
+            return ProviderSettingsHelper.Load<SteamSettings>(_settings.Persisted, "Steam");
+        }
+
+        private void SaveProviderSettings(SteamSettings providerSettings)
+        {
+            ProviderSettingsHelper.Save(_settings.Persisted, providerSettings);
+        }
+
+        private void UpdateSteamUserId(string steamUserId)
+        {
+            var settings = GetProviderSettings();
+            settings.SteamUserId = steamUserId;
+            SaveProviderSettings(settings);
+        }
+
         public string GetCachedSteamId64() => _selfSteamId64;
 
         /// <summary>
@@ -142,7 +159,7 @@ namespace PlayniteAchievements.Providers.Steam
                     _selfSteamId64 = extractedId;
                     if (_settings?.Persisted != null)
                     {
-                        _settings.Persisted.SteamUserId = extractedId;
+                        UpdateSteamUserId(extractedId);
                     }
                 }
             }
@@ -235,7 +252,7 @@ namespace PlayniteAchievements.Providers.Steam
                 if (!string.IsNullOrEmpty(extractedId))
                 {
                     _selfSteamId64 = extractedId;
-                    _settings.Persisted.SteamUserId = extractedId;
+                    UpdateSteamUserId(extractedId);
                 }
 
                 _logger?.Info("Session refreshed successfully.");
@@ -314,7 +331,7 @@ namespace PlayniteAchievements.Providers.Steam
                 {
                     _selfSteamId64 = extractedId;
                     _lastCookieRefreshUtc = DateTime.UtcNow;
-                    _settings.Persisted.SteamUserId = extractedId;
+                    UpdateSteamUserId(extractedId);
                     return (true, "Steam authentication saved.");
                 }
 
@@ -361,7 +378,7 @@ namespace PlayniteAchievements.Providers.Steam
 
                 _selfSteamId64 = extractedId;
                 _lastCookieRefreshUtc = DateTime.UtcNow;
-                _settings.Persisted.SteamUserId = extractedId;
+                UpdateSteamUserId(extractedId);
 
                 return (true, "Steam authentication saved.");
             }
@@ -582,7 +599,7 @@ namespace PlayniteAchievements.Providers.Steam
                             _selfSteamId64 = id;
                             if (_settings?.Persisted != null)
                             {
-                                _settings.Persisted.SteamUserId = id;
+                                UpdateSteamUserId(id);
                             }
                         }
                     }
