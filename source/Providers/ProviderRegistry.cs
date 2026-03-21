@@ -220,18 +220,26 @@ namespace PlayniteAchievements.Providers
             var keysToUpdate = _enabledState.Keys.ToList();
             foreach (var key in keysToUpdate)
             {
+                var isEnabled = _enabledState[key];
+
                 if (settings.ProviderSettings.TryGetValue(key, out var json) && !string.IsNullOrEmpty(json))
                 {
                     try
                     {
                         var obj = JObject.Parse(json);
-                        obj["IsEnabled"] = _enabledState[key];
+                        obj["IsEnabled"] = isEnabled;
                         settings.ProviderSettings[key] = obj.ToString(Newtonsoft.Json.Formatting.None);
                     }
                     catch
                     {
-                        // If parsing fails, skip this provider
+                        // If parsing fails, create a minimal entry
+                        settings.ProviderSettings[key] = $"{{\"IsEnabled\":{isEnabled.ToString().ToLower()}}}";
                     }
+                }
+                else
+                {
+                    // Create a minimal entry if it doesn't exist
+                    settings.ProviderSettings[key] = $"{{\"IsEnabled\":{isEnabled.ToString().ToLower()}}}";
                 }
             }
         }
