@@ -1,6 +1,7 @@
 using System;
 using Playnite.SDK;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services.Logging;
 
 namespace PlayniteAchievements.Providers.RetroAchievements
 {
