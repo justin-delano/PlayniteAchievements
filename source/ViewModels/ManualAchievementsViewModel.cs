@@ -416,7 +416,8 @@ namespace PlayniteAchievements.ViewModels
 
             if (startAtEditingStage)
             {
-                if (!settings.Persisted.ManualAchievementLinks.TryGetValue(playniteGame.Id, out _existingLink) || _existingLink == null)
+                var manualSettings = ProviderSettingsHelper.Load<ManualSettings>(settings.Persisted, "Manual");
+                if (!manualSettings.AchievementLinks.TryGetValue(playniteGame.Id, out _existingLink) || _existingLink == null)
                 {
                     throw new ArgumentException("Cannot start at editing stage: no existing link found for game.");
                 }

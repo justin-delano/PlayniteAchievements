@@ -51,15 +51,22 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         /// Requires RaUsername and RaWebApiKey to be present.
         /// Does NOT check RetroAchievementsEnabled - that is handled by ProviderRegistry.
         /// </summary>
-        public bool IsAuthenticated =>
-            !string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername) &&
-            !string.IsNullOrWhiteSpace(_settings.Persisted.RaWebApiKey);
+        public bool IsAuthenticated
+        {
+            get
+            {
+                var providerSettings = ProviderSettingsHelper.Load<RetroAchievementsSettings>(_settings.Persisted, "RetroAchievements");
+                return !string.IsNullOrWhiteSpace(providerSettings.RaUsername) &&
+                       !string.IsNullOrWhiteSpace(providerSettings.RaWebApiKey);
+            }
+        }
 
         public bool IsCapable(Game game)
         {
             if (game == null) return false;
 
-            if (string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername) || string.IsNullOrWhiteSpace(_settings.Persisted.RaWebApiKey))
+            var providerSettings = ProviderSettingsHelper.Load<RetroAchievementsSettings>(_settings.Persisted, "RetroAchievements");
+            if (string.IsNullOrWhiteSpace(providerSettings.RaUsername) || string.IsNullOrWhiteSpace(providerSettings.RaWebApiKey))
             {
                 return false;
             }
@@ -92,8 +99,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
         private void EnsureInitialized()
         {
-            var username = _settings.Persisted.RaUsername?.Trim() ?? string.Empty;
-            var apiKey = _settings.Persisted.RaWebApiKey?.Trim() ?? string.Empty;
+            var providerSettings = ProviderSettingsHelper.Load<RetroAchievementsSettings>(_settings.Persisted, "RetroAchievements");
+            var username = providerSettings.RaUsername?.Trim() ?? string.Empty;
+            var apiKey = providerSettings.RaWebApiKey?.Trim() ?? string.Empty;
             var language = _settings.Persisted.GlobalLanguage?.Trim() ?? string.Empty;
 
             lock (_initLock)

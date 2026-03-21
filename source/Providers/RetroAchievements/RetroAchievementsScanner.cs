@@ -2,6 +2,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
+using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -124,7 +125,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            if (string.IsNullOrWhiteSpace(_settings.Persisted.RaUsername) || string.IsNullOrWhiteSpace(_settings.Persisted.RaWebApiKey))
+            var providerSettings = ProviderSettingsHelper.Load<RetroAchievementsSettings>(_settings.Persisted, "RetroAchievements");
+            if (string.IsNullOrWhiteSpace(providerSettings.RaUsername) || string.IsNullOrWhiteSpace(providerSettings.RaWebApiKey))
             {
                 _logger?.Warn("[RA] Missing RetroAchievements credentials - cannot scan achievements.");
                 return new RebuildPayload { Summary = new RebuildSummary() };
