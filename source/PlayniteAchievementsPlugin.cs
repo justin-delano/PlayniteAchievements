@@ -325,13 +325,7 @@ namespace PlayniteAchievements
                     _settingsViewModel,
                     _logger,
                     this,
-                    _providerRegistry,
-                    _steamSessionManager,
-                    _gogSessionManager,
-                    _epicSessionManager,
-                    _psnSessionManager,
-                    _xboxSessionManager,
-                    _exophaseSessionManager);
+                    _providerRegistry);
                 _logger.Info("GetSettingsView succeeded");
                 return control;
             }

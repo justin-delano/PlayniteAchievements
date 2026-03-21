@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using PlayniteAchievements.Models;
+#if !TEST
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Providers.GOG;
@@ -13,6 +14,7 @@ using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Providers.Xbox;
+#endif
 
 namespace PlayniteAchievements.Models.Settings
 {
@@ -239,6 +241,7 @@ namespace PlayniteAchievements.Models.Settings
         /// <param name="settings">The settings instance to migrate.</param>
         /// <param name="oldVersion">The old settings version (if applicable).</param>
         /// <returns>The same settings instance with migrated values, for method chaining.</returns>
+#if !TEST
         public static PersistedSettings Migrate(
             this PersistedSettings settings,
             int? oldVersion = null)
@@ -341,5 +344,6 @@ namespace PlayniteAchievements.Models.Settings
 
             return settings;
         }
+#endif
     }
 }

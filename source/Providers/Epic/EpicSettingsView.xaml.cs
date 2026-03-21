@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Playnite.SDK;
@@ -88,7 +89,7 @@ namespace PlayniteAchievements.Providers.Epic
             try
             {
                 SetAuthBusy(true);
-                await _sessionManager.LoginAsync();
+                await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
                 RefreshAuthStatus();
             }
             catch (Exception ex)
@@ -106,8 +107,9 @@ namespace PlayniteAchievements.Providers.Epic
             try
             {
                 SetAuthBusy(true);
-                await _sessionManager.LogoutAsync();
+                _sessionManager.ClearSession();
                 RefreshAuthStatus();
+                await Task.CompletedTask;
             }
             catch (Exception ex)
             {

@@ -1,9 +1,11 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Playnite.SDK;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Logging;
 
 namespace PlayniteAchievements.Providers.GOG
 {
@@ -108,7 +110,7 @@ namespace PlayniteAchievements.Providers.GOG
             try
             {
                 SetAuthBusy(true);
-                await _sessionManager.LoginAsync();
+                await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
                 RefreshAuthStatus();
             }
             catch (Exception ex)
@@ -126,8 +128,9 @@ namespace PlayniteAchievements.Providers.GOG
             try
             {
                 SetAuthBusy(true);
-                await _sessionManager.LogoutAsync();
+                _sessionManager.ClearSession();
                 RefreshAuthStatus();
+                await Task.CompletedTask;
             }
             catch (Exception ex)
             {

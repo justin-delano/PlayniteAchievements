@@ -106,10 +106,10 @@ namespace PlayniteAchievements.Providers.Xenia
 
             GameAchievementData data = null;
 
-            if (!File.Exists($"{_accountFolderPath}\\{titleID}.gpd"))
+            if (!File.Exists($"{_providerSettings.AccountPath}\\{titleID}.gpd"))
             {
                 _playniteApi.Notifications.Add(new NotificationMessage("PA_Xenia", $"[Xenia] {titleID}.gpd file not found for {game.Name}! Has the game been launched?", NotificationType.Info));
-                _logger.Warn($"[Xenia] {titleID}.gpd file in {_accountFolderPath} not found for {game.Name}!");
+                _logger.Warn($"[Xenia] {titleID}.gpd file in {_providerSettings.AccountPath} not found for {game.Name}!");
                 data = new GameAchievementData
                 {
                     AppId = int.Parse(titleID, System.Globalization.NumberStyles.HexNumber),
@@ -124,7 +124,7 @@ namespace PlayniteAchievements.Providers.Xenia
             else
             {
                 GPDResolver resolver = new GPDResolver();
-                var gpdpath = $"{_accountFolderPath}\\{titleID}.gpd";
+                var gpdpath = $"{_providerSettings.AccountPath}\\{titleID}.gpd";
                 var gpdFile = resolver.LoadGPD(gpdpath);
 
                 // Write icon data to icon cache
@@ -211,7 +211,7 @@ namespace PlayniteAchievements.Providers.Xenia
 
                 path = path.Replace("\\\\", "\\").Trim('"');
 
-                var xeniapath = _accountFolderPath + "\\..\\..\\..\\..\\..\\";
+                var xeniapath = _providerSettings.AccountPath + "\\..\\..\\..\\..\\..\\";
                 if (File.Exists($"{xeniapath}recent.toml"))
                 {
                     bool foundROM = false;
@@ -251,7 +251,7 @@ namespace PlayniteAchievements.Providers.Xenia
                     if (foundROM)
                     {
                         // Read all gpd files
-                        foreach (var gpdFilePath in Directory.EnumerateFiles(_accountFolderPath, "*.gpd"))
+                        foreach (var gpdFilePath in Directory.EnumerateFiles(_providerSettings.AccountPath, "*.gpd"))
                         {
                             // Skip base account data
                             if (gpdFilePath.EndsWith("FFFE07D1.gpd"))

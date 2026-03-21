@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Playnite.SDK;
@@ -62,14 +63,14 @@ namespace PlayniteAchievements.Providers.Exophase
 
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)
         {
-            try { SetAuthBusy(true); await _sessionManager.LoginAsync(); RefreshAuthStatus(); }
+            try { SetAuthBusy(true); await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None); RefreshAuthStatus(); }
             catch (Exception ex) { Logger.Error(ex, "Exophase login failed"); }
             finally { SetAuthBusy(false); }
         }
 
         private async void Logout_Click(object sender, RoutedEventArgs e)
         {
-            try { SetAuthBusy(true); await _sessionManager.LogoutAsync(); RefreshAuthStatus(); }
+            try { SetAuthBusy(true); _sessionManager.ClearSession(); RefreshAuthStatus(); await Task.CompletedTask; }
             catch (Exception ex) { Logger.Error(ex, "Exophase logout failed"); }
             finally { SetAuthBusy(false); }
         }

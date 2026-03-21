@@ -4,6 +4,7 @@
     <IsPackable>false</IsPackable>
     <LangVersion>preview</LangVersion>
     <Nullable>disable</Nullable>
+    <DefineConstants>$(DefineConstants);TEST</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
