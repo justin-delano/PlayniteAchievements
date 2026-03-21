@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using System;
@@ -48,12 +49,24 @@ namespace PlayniteAchievements.Providers.Epic
             _logger = logger;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-            _accountId = settings.Persisted.EpicAccountId?.Trim();
-            _accessToken = settings.Persisted.EpicAccessToken;
-            _refreshToken = settings.Persisted.EpicRefreshToken;
-            _tokenType = string.IsNullOrWhiteSpace(settings.Persisted.EpicTokenType) ? "bearer" : settings.Persisted.EpicTokenType.Trim();
-            _tokenExpiryUtc = settings.Persisted.EpicTokenExpiryUtc ?? DateTime.MinValue;
-            _refreshTokenExpiryUtc = settings.Persisted.EpicRefreshTokenExpiryUtc ?? DateTime.MinValue;
+            // Load token state from provider settings
+            var epicSettings = GetProviderSettings();
+            _accountId = epicSettings.AccountId?.Trim();
+            _accessToken = epicSettings.AccessToken;
+            _refreshToken = epicSettings.RefreshToken;
+            _tokenType = string.IsNullOrWhiteSpace(epicSettings.TokenType) ? "bearer" : epicSettings.TokenType.Trim();
+            _tokenExpiryUtc = epicSettings.TokenExpiryUtc;
+            _refreshTokenExpiryUtc = epicSettings.RefreshTokenExpiryUtc;
+        }
+
+        private EpicSettings GetProviderSettings()
+        {
+            return ProviderSettingsHelper.Load<EpicSettings>(_settings.Persisted, "Epic");
+        }
+
+        private void SaveProviderSettings(EpicSettings providerSettings)
+        {
+            ProviderSettingsHelper.Save(_settings.Persisted, providerSettings);
         }
 
         public bool IsAuthenticated => HasValidAccessToken();
@@ -906,12 +919,14 @@ namespace PlayniteAchievements.Providers.Epic
 
         private void SavePersistedTokenState()
         {
-            _settings.Persisted.EpicAccountId = _accountId;
-            _settings.Persisted.EpicAccessToken = _accessToken;
-            _settings.Persisted.EpicRefreshToken = _refreshToken;
-            _settings.Persisted.EpicTokenType = _tokenType;
-            _settings.Persisted.EpicTokenExpiryUtc = _tokenExpiryUtc == DateTime.MinValue ? (DateTime?)null : _tokenExpiryUtc;
-            _settings.Persisted.EpicRefreshTokenExpiryUtc = _refreshTokenExpiryUtc == DateTime.MinValue ? (DateTime?)null : _refreshTokenExpiryUtc;
+            var epicSettings = GetProviderSettings();
+            epicSettings.AccountId = _accountId;
+            epicSettings.AccessToken = _accessToken;
+            epicSettings.RefreshToken = _refreshToken;
+            epicSettings.TokenType = _tokenType;
+            epicSettings.TokenExpiryUtc = _tokenExpiryUtc;
+            epicSettings.RefreshTokenExpiryUtc = _refreshTokenExpiryUtc;
+            SaveProviderSettings(epicSettings);
 
             // Persist to disk so tokens survive restart
             _settings._plugin?.SavePluginSettings(_settings);
