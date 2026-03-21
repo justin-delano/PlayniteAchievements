@@ -1,9 +1,24 @@
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.Epic;
+using PlayniteAchievements.Providers.Exophase;
+using PlayniteAchievements.Providers.GOG;
+using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Providers.PSN;
+using PlayniteAchievements.Providers.RetroAchievements;
+using PlayniteAchievements.Providers.RPCS3;
+using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Providers.ShadPS4;
+using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Providers.Xenia;
+using PlayniteAchievements.Providers.Xbox;
+using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Providers
 {
@@ -11,11 +26,31 @@ namespace PlayniteAchievements.Providers
     /// Central registry for provider enabled state at runtime.
     /// Decouples the "enabled" concept from provider authentication checks,
     /// allowing IsAuthenticated to only validate credentials.
+    /// Also manages provider settings view registration for dynamic UI building.
     /// </summary>
     public class ProviderRegistry
     {
         private readonly ILogger _logger;
         private readonly Dictionary<string, Func<CancellationToken, Task>> _authPrimers = new Dictionary<string, Func<CancellationToken, Task>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Func<IProviderSettingsView>> _settingsViewFactories = new Dictionary<string, Func<IProviderSettingsView>>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Preferred display order for provider tabs.
+        /// </summary>
+        private static readonly string[] PreferredOrder =
+        {
+            "Steam",
+            "RetroAchievements",
+            "GOG",
+            "Epic",
+            "PSN",
+            "Xbox",
+            "Exophase",
+            "ShadPS4",
+            "RPCS3",
+            "Xenia",
+            "Manual"
+        };
 
         public ProviderRegistry(ILogger logger = null)
         {
@@ -182,6 +217,121 @@ namespace PlayniteAchievements.Providers
             settings.XeniaEnabled = IsProviderEnabled("Xenia");
             settings.ManualEnabled = IsProviderEnabled("Manual");
             settings.ExophaseEnabled = IsProviderEnabled("Exophase");
+        }
+
+        // ===================== SETTINGS VIEW REGISTRATION =====================
+
+        /// <summary>
+        /// Registers a settings view factory for a provider.
+        /// </summary>
+        /// <param name="providerKey">The provider's unique key.</param>
+        /// <param name="viewFactory">Factory function that creates the settings view.</param>
+        public void RegisterSettingsView(string providerKey, Func<IProviderSettingsView> viewFactory)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                throw new ArgumentNullException(nameof(providerKey));
+            }
+
+            _settingsViewFactories[providerKey] = viewFactory ?? throw new ArgumentNullException(nameof(viewFactory));
+        }
+
+        /// <summary>
+        /// Gets all registered provider keys that have settings views, in display order.
+        /// </summary>
+        public IEnumerable<string> GetSettingsViewProviderKeys()
+        {
+            return PreferredOrder
+                .Where(k => _settingsViewFactories.ContainsKey(k))
+                .Concat(_settingsViewFactories.Keys.Except(PreferredOrder, StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Creates the settings view for a provider.
+        /// </summary>
+        /// <param name="providerKey">The provider's unique key.</param>
+        /// <returns>The settings view, or null if not registered.</returns>
+        public IProviderSettingsView CreateSettingsView(string providerKey)
+        {
+            return _settingsViewFactories.TryGetValue(providerKey, out var factory)
+                ? factory()
+                : null;
+        }
+
+        /// <summary>
+        /// Checks if a provider has a registered settings view.
+        /// </summary>
+        public bool HasSettingsView(string providerKey)
+        {
+            return _settingsViewFactories.ContainsKey(providerKey);
+        }
+
+        // ===================== PROVIDER CREATION =====================
+
+        /// <summary>
+        /// Creates all data providers and registers their auth primers and settings views.
+        /// This is the single entry point for provider initialization.
+        /// </summary>
+        public List<IDataProvider> CreateProviders(
+            PlayniteAchievementsSettings settings,
+            IPlayniteAPI playniteApi,
+            string pluginUserDataPath,
+            SteamSessionManager steamSessionManager,
+            GogSessionManager gogSessionManager,
+            EpicSessionManager epicSessionManager,
+            PsnSessionManager psnSessionManager,
+            XboxSessionManager xboxSessionManager,
+            ExophaseSessionManager exophaseSessionManager,
+            out ManualAchievementsProvider manualProvider)
+        {
+            manualProvider = new ManualAchievementsProvider(
+                _logger,
+                settings,
+                pluginUserDataPath,
+                playniteApi,
+                exophaseSessionManager);
+
+            var providers = new List<IDataProvider>
+            {
+                manualProvider,
+                new ExophaseDataProvider(_logger, settings, playniteApi, exophaseSessionManager),
+                new SteamDataProvider(_logger, settings, playniteApi, steamSessionManager, pluginUserDataPath),
+                new GogDataProvider(_logger, settings, playniteApi, pluginUserDataPath, gogSessionManager),
+                new EpicDataProvider(_logger, settings, playniteApi, epicSessionManager),
+                new PsnDataProvider(_logger, settings, psnSessionManager),
+                new XboxDataProvider(_logger, settings, xboxSessionManager),
+                new RetroAchievementsDataProvider(_logger, settings, playniteApi, pluginUserDataPath),
+                new ShadPS4DataProvider(_logger, settings, playniteApi),
+                new Rpcs3DataProvider(_logger, settings, playniteApi),
+                new XeniaDataProvider(_logger, settings, playniteApi, pluginUserDataPath)
+            };
+
+            // Register auth primers
+            RegisterAuthPrimer("Steam", steamSessionManager.PrimeAuthenticationStateAsync);
+            RegisterAuthPrimer("GOG", gogSessionManager.PrimeAuthenticationStateAsync);
+            RegisterAuthPrimer("Epic", epicSessionManager.PrimeAuthenticationStateAsync);
+            RegisterAuthPrimer("PSN", psnSessionManager.PrimeAuthenticationStateAsync);
+            RegisterAuthPrimer("Xbox", xboxSessionManager.PrimeAuthenticationStateAsync);
+            RegisterAuthPrimer("Exophase", exophaseSessionManager.PrimeAuthenticationStateAsync);
+
+            // Register settings views
+            RegisterSettingsViews(steamSessionManager);
+
+            return providers;
+        }
+
+        /// <summary>
+        /// Registers settings views for providers that have been migrated to the modular system.
+        /// </summary>
+        private void RegisterSettingsViews(SteamSessionManager steamSessionManager)
+        {
+            // Steam settings view (migrated)
+            RegisterSettingsView("Steam", () => new SteamSettingsView(steamSessionManager));
+
+            // TODO: Register other providers as they are migrated
+            // RegisterSettingsView("Epic", () => new EpicSettingsView(epicSessionManager));
+            // RegisterSettingsView("GOG", () => new GogSettingsView(gogSessionManager));
+            // etc.
         }
     }
 

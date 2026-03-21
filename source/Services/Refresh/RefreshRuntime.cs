@@ -98,6 +98,11 @@ namespace PlayniteAchievements.Services
         public IReadOnlyList<IDataProvider> GetProviders() => _providers;
 
         /// <summary>
+        /// Gets the list of available data providers.
+        /// </summary>
+        public IReadOnlyList<IDataProvider> Providers => _providers;
+
+        /// <summary>
         /// Gets the list of available refresh modes with localized display names.
         /// </summary>
         public IReadOnlyList<RefreshMode> GetRefreshModes()

@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
@@ -29,5 +30,20 @@ namespace PlayniteAchievements.Providers
             Action<Game> onGameStarting,
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel);
+
+        /// <summary>
+        /// Gets the provider-specific settings object.
+        /// </summary>
+        IProviderSettings GetSettings();
+
+        /// <summary>
+        /// Creates a default settings instance for this provider.
+        /// </summary>
+        IProviderSettings CreateDefaultSettings();
+
+        /// <summary>
+        /// Called after settings are loaded to apply them to the provider.
+        /// </summary>
+        void ApplySettings(IProviderSettings settings);
     }
 }

@@ -22,6 +22,7 @@ using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Providers.PSN;
 using PlayniteAchievements.Providers.Xbox;
 using PlayniteAchievements.Providers.Exophase;
+using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services.ThemeMigration;
 using Playnite.SDK;
 using System.Diagnostics;
@@ -774,14 +775,27 @@ namespace PlayniteAchievements.Views
         private readonly PsnSessionManager _psnSessionManager;
         private readonly XboxSessionManager _xboxSessionManager;
         private readonly ExophaseSessionManager _exophaseSessionManager;
+        private readonly ProviderRegistry _providerRegistry;
+        private readonly List<IProviderSettingsView> _providerViews = new List<IProviderSettingsView>();
         private const string SuccessStoryExtensionId = "cebe6d32-8c46-4459-b993-5a5189d60788";
         private const string SuccessStoryFolderName = "SuccessStory";
 
-        public SettingsControl(PlayniteAchievementsSettingsViewModel settingsViewModel, ILogger logger, PlayniteAchievementsPlugin plugin, SteamSessionManager steamSessionManager, GogSessionManager gogSessionManager, EpicSessionManager epicSessionManager, PsnSessionManager psnSessionManager, XboxSessionManager xboxSessionManager, ExophaseSessionManager exophaseSessionManager)
+        public SettingsControl(
+            PlayniteAchievementsSettingsViewModel settingsViewModel,
+            ILogger logger,
+            PlayniteAchievementsPlugin plugin,
+            ProviderRegistry providerRegistry,
+            SteamSessionManager steamSessionManager,
+            GogSessionManager gogSessionManager,
+            EpicSessionManager epicSessionManager,
+            PsnSessionManager psnSessionManager,
+            XboxSessionManager xboxSessionManager,
+            ExophaseSessionManager exophaseSessionManager)
         {
             _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
+            _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
             _steamSessionManager = steamSessionManager ?? throw new ArgumentNullException(nameof(steamSessionManager));
             _gogSessionManager = gogSessionManager ?? throw new ArgumentNullException(nameof(gogSessionManager));
             _epicSessionManager = epicSessionManager ?? throw new ArgumentNullException(nameof(epicSessionManager));
@@ -796,6 +810,9 @@ namespace PlayniteAchievements.Views
                 () => _plugin.SavePluginSettings(_settingsViewModel.Settings));
 
             InitializeComponent();
+
+            // Build dynamic provider tabs
+            BuildProviderTabs();
 
             // Playnite does not reliably set DataContext for settings views.
             // Bind directly to the settings model so XAML uses {Binding SomeSetting}.
@@ -3470,6 +3487,69 @@ namespace PlayniteAchievements.Views
                     L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+        }
+
+        // -----------------------------
+        // Dynamic Provider Tabs
+        // -----------------------------
+
+        /// <summary>
+        /// Builds provider settings tabs dynamically from registered providers.
+        /// Tabs are inserted after DisplayTab and before the first hardcoded provider tab.
+        /// </summary>
+        private void BuildProviderTabs()
+        {
+            // Providers that still have hardcoded tabs (skip until migrated)
+            var hardcodedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "RetroAchievements", "GOG", "Epic", "PSN", "Xbox",
+                "Exophase", "ShadPS4", "RPCS3", "Xenia", "Manual"
+            };
+
+            // Find insertion index (after DisplayTab, before SteamTab or at position 2)
+            int insertIndex = 2; // After General (0) and Display (1)
+
+            foreach (var providerKey in _providerRegistry.GetSettingsViewProviderKeys())
+            {
+                // Skip providers that still have hardcoded tabs
+                if (hardcodedProviders.Contains(providerKey))
+                {
+                    continue;
+                }
+
+                var view = _providerRegistry.CreateSettingsView(providerKey);
+                if (view == null) continue;
+
+                // Get provider settings from the provider
+                var provider = _plugin.Providers?.FirstOrDefault(p => p.ProviderKey == providerKey);
+                if (provider == null) continue;
+
+                var settings = provider.GetSettings();
+                if (settings == null) continue;
+
+                view.Initialize(settings);
+                _providerViews.Add(view);
+
+                var tabItem = new TabItem
+                {
+                    Header = view.TabHeader,
+                    Content = view,
+                    Tag = providerKey
+                };
+
+                // Hide the hardcoded Steam tab if we're using dynamic tabs
+                if (providerKey.Equals("Steam", StringComparison.OrdinalIgnoreCase))
+                {
+                    var steamTab = SettingsTabControl.Items.OfType<TabItem>()
+                        .FirstOrDefault(t => t.Name == "SteamTab");
+                    if (steamTab != null)
+                    {
+                        steamTab.Visibility = Visibility.Collapsed;
+                    }
+                }
+
+                SettingsTabControl.Items.Insert(insertIndex++, tabItem);
             }
         }
 

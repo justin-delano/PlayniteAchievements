@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
@@ -21,6 +22,7 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamApiClient _steamApiClient;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly SteamSessionManager _sessionManager;
+        private SteamSettings _providerSettings;
 
         public SteamDataProvider(
             ILogger logger,
@@ -36,6 +38,14 @@ namespace PlayniteAchievements.Providers.Steam
 
             _settings = settings;
             _sessionManager = sessionManager;
+
+            // Initialize provider settings from persisted settings
+            _providerSettings = new SteamSettings
+            {
+                IsEnabled = settings.Persisted.SteamEnabled,
+                SteamUserId = settings.Persisted.SteamUserId,
+                SteamApiKey = settings.Persisted.SteamApiKey
+            };
 
             // Create Steam-specific dependencies
             _steamClient = new SteamHttpClient(api, logger, _sessionManager, pluginUserDataPath);
@@ -55,8 +65,8 @@ namespace PlayniteAchievements.Providers.Steam
         /// Does NOT check SteamEnabled - that is handled by ProviderRegistry.
         /// </summary>
         public bool IsAuthenticated =>
-            !string.IsNullOrWhiteSpace(_settings.Persisted.SteamUserId) &&
-            !string.IsNullOrWhiteSpace(_settings.Persisted.SteamApiKey) &&
+            !string.IsNullOrWhiteSpace(_providerSettings.SteamUserId) &&
+            !string.IsNullOrWhiteSpace(_providerSettings.SteamApiKey) &&
             !string.IsNullOrWhiteSpace(_sessionManager.GetCachedSteamId64());
 
         public bool IsCapable(Game game) =>
@@ -74,6 +84,26 @@ namespace PlayniteAchievements.Providers.Steam
             CancellationToken cancel)
         {
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
+        }
+
+        /// <inheritdoc />
+        public IProviderSettings GetSettings() => _providerSettings;
+
+        /// <inheritdoc />
+        public IProviderSettings CreateDefaultSettings() => new SteamSettings();
+
+        /// <inheritdoc />
+        public void ApplySettings(IProviderSettings settings)
+        {
+            if (settings is SteamSettings steamSettings)
+            {
+                _providerSettings = steamSettings;
+
+                // Sync back to persisted settings for compatibility
+                _settings.Persisted.SteamEnabled = steamSettings.IsEnabled;
+                _settings.Persisted.SteamUserId = steamSettings.SteamUserId;
+                _settings.Persisted.SteamApiKey = steamSettings.SteamApiKey;
+            }
         }
 
         public void Dispose()

@@ -98,6 +98,7 @@ namespace PlayniteAchievements
 
         public PlayniteAchievementsSettings Settings => _settingsViewModel.Settings;
         public ProviderRegistry ProviderRegistry => _providerRegistry;
+        public IReadOnlyList<IDataProvider> Providers => _refreshService?.Providers;
         public RefreshRuntime RefreshRuntime => _refreshService;
         public AchievementOverridesService AchievementOverridesService => _achievementOverridesService;
         public AchievementDataService AchievementDataService => _achievementDataService;
@@ -192,11 +193,14 @@ namespace PlayniteAchievements
                     _exophaseSessionManager = new ExophaseSessionManager(PlayniteApi, _logger, settings, pluginUserDataPath);
                 }
 
+                // Create provider registry early so it can create providers and register everything in one place
+                _providerRegistry = new ProviderRegistry(_logger);
+                _providerRegistry.SyncFromSettings(settings.Persisted);
+
                 List<IDataProvider> providers;
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
                 {
-                    providers = ProviderInitializationStrategy.CreateProviders(
-                        _logger,
+                    providers = _providerRegistry.CreateProviders(
                         settings,
                         PlayniteApi,
                         pluginUserDataPath,
@@ -215,19 +219,6 @@ namespace PlayniteAchievements
                 {
                     _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
                     _imageService = new MemoryImageService(_logger, _diskImageService);
-
-                    // Create provider registry and sync from persisted settings
-                    _providerRegistry = new ProviderRegistry(_logger);
-                    _providerRegistry.SyncFromSettings(settings.Persisted);
-
-                    ProviderInitializationStrategy.RegisterAuthPrimers(
-                        _providerRegistry,
-                        _steamSessionManager,
-                        _gogSessionManager,
-                        _epicSessionManager,
-                        _psnSessionManager,
-                        _xboxSessionManager,
-                        _exophaseSessionManager);
 
                     _refreshService = new RefreshRuntime(api, settings, _logger, this, providers, _diskImageService, _providerRegistry);
                     _cacheManager = _refreshService.Cache;
@@ -330,7 +321,17 @@ namespace PlayniteAchievements
             try
             {
                 _logger.Info($"GetSettingsView called, firstRunView={firstRunView}");
-                var control = new SettingsControl(_settingsViewModel, _logger, this, _steamSessionManager, _gogSessionManager, _epicSessionManager, _psnSessionManager, _xboxSessionManager, _exophaseSessionManager);
+                var control = new SettingsControl(
+                    _settingsViewModel,
+                    _logger,
+                    this,
+                    _providerRegistry,
+                    _steamSessionManager,
+                    _gogSessionManager,
+                    _epicSessionManager,
+                    _psnSessionManager,
+                    _xboxSessionManager,
+                    _exophaseSessionManager);
                 _logger.Info("GetSettingsView succeeded");
                 return control;
             }
