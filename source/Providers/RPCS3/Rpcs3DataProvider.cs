@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -34,6 +35,7 @@ namespace PlayniteAchievements.Providers.RPCS3
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
+        private Rpcs3Settings _providerSettings;
 
         private Dictionary<string, string> _trophyFolderCache;
         private readonly object _cacheLock = new object();
@@ -51,6 +53,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             _playniteApi = playniteApi;
 
             _scanner = new Rpcs3Scanner(_logger, _settings, this, _playniteApi);
+
+            _providerSettings = new Rpcs3Settings
+            {
+                IsEnabled = settings.Persisted.Rpcs3Enabled
+            };
         }
 
         public string ProviderName
@@ -628,6 +635,22 @@ namespace PlayniteAchievements.Providers.RPCS3
             CancellationToken cancel)
         {
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
+        }
+
+        /// <inheritdoc />
+        public IProviderSettings GetSettings() => _providerSettings;
+
+        /// <inheritdoc />
+        public IProviderSettings CreateDefaultSettings() => new Rpcs3Settings();
+
+        /// <inheritdoc />
+        public void ApplySettings(IProviderSettings settings)
+        {
+            if (settings is Rpcs3Settings rpcs3Settings)
+            {
+                _providerSettings = rpcs3Settings;
+                _settings.Persisted.Rpcs3Enabled = rpcs3Settings.IsEnabled;
+            }
         }
     }
 }

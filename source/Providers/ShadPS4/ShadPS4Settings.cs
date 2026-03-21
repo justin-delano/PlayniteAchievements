@@ -1,0 +1,44 @@
+using PlayniteAchievements.Providers.Settings;
+
+namespace PlayniteAchievements.Providers.ShadPS4
+{
+    /// <summary>
+    /// ShadPS4 emulator provider settings.
+    /// </summary>
+    public class ShadPS4Settings : ProviderSettingsBase
+    {
+        private string _gameDataPath;
+
+        /// <inheritdoc />
+        public override string ProviderKey => "ShadPS4";
+
+        /// <summary>
+        /// Gets or sets the path to the ShadPS4 user/game_data folder.
+        /// </summary>
+        public string GameDataPath
+        {
+            get => _gameDataPath;
+            set => SetValue(ref _gameDataPath, value);
+        }
+
+        /// <inheritdoc />
+        public override IProviderSettings Clone()
+        {
+            return new ShadPS4Settings
+            {
+                IsEnabled = IsEnabled,
+                GameDataPath = GameDataPath
+            };
+        }
+
+        /// <inheritdoc />
+        public override void CopyFrom(IProviderSettings source)
+        {
+            if (source is ShadPS4Settings other)
+            {
+                IsEnabled = other.IsEnabled;
+                GameDataPath = other.GameDataPath;
+            }
+        }
+    }
+}

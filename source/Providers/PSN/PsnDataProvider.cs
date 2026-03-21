@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -15,6 +16,7 @@ namespace PlayniteAchievements.Providers.PSN
         private readonly PsnSessionManager _sessionManager;
         private readonly PsnScanner _scanner;
         private readonly PlayniteAchievementsSettings _settings;
+        private PsnSettings _providerSettings;
 
         public PsnDataProvider(
             ILogger logger,
@@ -27,6 +29,11 @@ namespace PlayniteAchievements.Providers.PSN
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
 
             _scanner = new PsnScanner(logger, _settings, _sessionManager);
+
+            _providerSettings = new PsnSettings
+            {
+                IsEnabled = settings.Persisted.PsnEnabled
+            };
         }
 
         public string ProviderName
@@ -77,6 +84,22 @@ namespace PlayniteAchievements.Providers.PSN
             CancellationToken cancel)
         {
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
+        }
+
+        /// <inheritdoc />
+        public IProviderSettings GetSettings() => _providerSettings;
+
+        /// <inheritdoc />
+        public IProviderSettings CreateDefaultSettings() => new PsnSettings();
+
+        /// <inheritdoc />
+        public void ApplySettings(IProviderSettings settings)
+        {
+            if (settings is PsnSettings psnSettings)
+            {
+                _providerSettings = psnSettings;
+                _settings.Persisted.PsnEnabled = psnSettings.IsEnabled;
+            }
         }
 
         private static bool LooksLikePsnId(string id)

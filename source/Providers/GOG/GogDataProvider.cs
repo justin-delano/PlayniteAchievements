@@ -2,6 +2,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -25,6 +26,7 @@ namespace PlayniteAchievements.Providers.GOG
         private readonly GogSessionManager _sessionManager;
         private readonly GogScanner _scanner;
         private readonly HttpClient _httpClient;
+        private GogSettings _providerSettings;
 
         public GogDataProvider(
             ILogger logger,
@@ -46,6 +48,11 @@ namespace PlayniteAchievements.Providers.GOG
 
             _sessionManager = sessionManager;
             _scanner = new GogScanner(settings, apiClient, sessionManager, logger);
+
+            _providerSettings = new GogSettings
+            {
+                IsEnabled = settings.Persisted.GogEnabled
+            };
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_GOG");
@@ -78,6 +85,22 @@ namespace PlayniteAchievements.Providers.GOG
         public void Dispose()
         {
             _httpClient?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public IProviderSettings GetSettings() => _providerSettings;
+
+        /// <inheritdoc />
+        public IProviderSettings CreateDefaultSettings() => new GogSettings();
+
+        /// <inheritdoc />
+        public void ApplySettings(IProviderSettings settings)
+        {
+            if (settings is GogSettings gogSettings)
+            {
+                _providerSettings = gogSettings;
+                _settings.Persisted.GogEnabled = gogSettings.IsEnabled;
+            }
         }
     }
 }

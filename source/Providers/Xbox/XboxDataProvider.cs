@@ -2,6 +2,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,8 @@ namespace PlayniteAchievements.Providers.Xbox
         private readonly XboxScanner _scanner;
         private readonly XboxApiClient _apiClient;
         private readonly ILogger _logger;
+        private readonly PlayniteAchievementsSettings _settings;
+        private XboxSettings _providerSettings;
 
         public XboxDataProvider(
             ILogger logger,
@@ -35,10 +38,16 @@ namespace PlayniteAchievements.Providers.Xbox
             if (sessionManager == null) throw new ArgumentNullException(nameof(sessionManager));
 
             _logger = logger;
+            _settings = settings;
             _sessionManager = sessionManager;
 
             _apiClient = new XboxApiClient(logger, settings.Persisted.GlobalLanguage);
             _scanner = new XboxScanner(settings, sessionManager, _apiClient, logger);
+
+            _providerSettings = new XboxSettings
+            {
+                IsEnabled = settings.Persisted.XboxEnabled
+            };
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Xbox");
@@ -91,6 +100,22 @@ namespace PlayniteAchievements.Providers.Xbox
         public void Dispose()
         {
             _apiClient?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public IProviderSettings GetSettings() => _providerSettings;
+
+        /// <inheritdoc />
+        public IProviderSettings CreateDefaultSettings() => new XboxSettings();
+
+        /// <inheritdoc />
+        public void ApplySettings(IProviderSettings settings)
+        {
+            if (settings is XboxSettings xboxSettings)
+            {
+                _providerSettings = xboxSettings;
+                _settings.Persisted.XboxEnabled = xboxSettings.IsEnabled;
+            }
         }
     }
 }

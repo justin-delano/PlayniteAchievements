@@ -3,6 +3,7 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,7 @@ namespace PlayniteAchievements.Providers.Exophase
             "steam", "gog", "epic", "psn", "xbox", "retro"
         };
         private readonly Dictionary<Guid, DateTime> _slugCacheTimestamps = new Dictionary<Guid, DateTime>();
+        private ExophaseSettings _providerSettings;
 
         #endregion
 
@@ -63,6 +65,11 @@ namespace PlayniteAchievements.Providers.Exophase
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _apiClient = new ExophaseApiClient(playniteApi, logger);
+
+            _providerSettings = new ExophaseSettings
+            {
+                IsEnabled = settings.Persisted.ExophaseEnabled
+            };
         }
 
         #endregion
@@ -672,6 +679,26 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             return normalized.Trim();
+        }
+
+        #endregion
+
+        #region IDataProvider Settings Members
+
+        /// <inheritdoc />
+        public IProviderSettings GetSettings() => _providerSettings;
+
+        /// <inheritdoc />
+        public IProviderSettings CreateDefaultSettings() => new ExophaseSettings();
+
+        /// <inheritdoc />
+        public void ApplySettings(IProviderSettings settings)
+        {
+            if (settings is ExophaseSettings exophaseSettings)
+            {
+                _providerSettings = exophaseSettings;
+                _settings.Persisted.ExophaseEnabled = exophaseSettings.IsEnabled;
+            }
         }
 
         #endregion

@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -19,6 +20,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
+        private ShadPS4Settings _providerSettings;
 
         private Dictionary<string, string> _titleCache;
         private readonly object _cacheLock = new object();
@@ -32,6 +34,12 @@ namespace PlayniteAchievements.Providers.ShadPS4
             _playniteApi = playniteApi;
 
             _scanner = new ShadPS4Scanner(_logger, _settings, this, _playniteApi);
+
+            _providerSettings = new ShadPS4Settings
+            {
+                IsEnabled = settings.Persisted.ShadPS4Enabled,
+                GameDataPath = settings.Persisted.ShadPS4GameDataPath
+            };
         }
 
         public string ProviderName
@@ -362,6 +370,23 @@ namespace PlayniteAchievements.Providers.ShadPS4
             CancellationToken cancel)
         {
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
+        }
+
+        /// <inheritdoc />
+        public IProviderSettings GetSettings() => _providerSettings;
+
+        /// <inheritdoc />
+        public IProviderSettings CreateDefaultSettings() => new ShadPS4Settings();
+
+        /// <inheritdoc />
+        public void ApplySettings(IProviderSettings settings)
+        {
+            if (settings is ShadPS4Settings shadps4Settings)
+            {
+                _providerSettings = shadps4Settings;
+                _settings.Persisted.ShadPS4Enabled = shadps4Settings.IsEnabled;
+                _settings.Persisted.ShadPS4GameDataPath = shadps4Settings.GameDataPath;
+            }
         }
     }
 }

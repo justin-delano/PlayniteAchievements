@@ -2,6 +2,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -18,6 +19,7 @@ namespace PlayniteAchievements.Providers.Epic
         private readonly EpicSessionManager _sessionManager;
         private readonly EpicScanner _scanner;
         private readonly HttpClient _httpClient;
+        private EpicSettings _providerSettings;
 
         private static readonly Guid EpicPluginId = ResolveEpicPluginId();
         internal static readonly Guid LegendaryPluginId = Guid.Parse("EAD65C3B-2F8F-4E37-B4E6-B3DE6BE540C6");
@@ -39,6 +41,11 @@ namespace PlayniteAchievements.Providers.Epic
 
             var apiClient = new EpicApiClient(_httpClient, logger, sessionManager, settings.Persisted);
             _scanner = new EpicScanner(settings, apiClient, sessionManager, logger);
+
+            _providerSettings = new EpicSettings
+            {
+                IsEnabled = settings.Persisted.EpicEnabled
+            };
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Epic");
@@ -70,6 +77,22 @@ namespace PlayniteAchievements.Providers.Epic
         public void Dispose()
         {
             _httpClient?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public IProviderSettings GetSettings() => _providerSettings;
+
+        /// <inheritdoc />
+        public IProviderSettings CreateDefaultSettings() => new EpicSettings();
+
+        /// <inheritdoc />
+        public void ApplySettings(IProviderSettings settings)
+        {
+            if (settings is EpicSettings epicSettings)
+            {
+                _providerSettings = epicSettings;
+                _settings.Persisted.EpicEnabled = epicSettings.IsEnabled;
+            }
         }
 
         private static Guid ResolveEpicPluginId()

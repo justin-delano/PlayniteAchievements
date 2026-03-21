@@ -2,6 +2,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
+using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -19,6 +20,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private readonly PlayniteAchievementsSettings _settings;
         private readonly string _pluginUserDataPath;
         private readonly RetroAchievementsPathResolver _pathResolver;
+        private RetroAchievementsSettings _providerSettings;
 
         private readonly object _initLock = new object();
         private RetroAchievementsApiClient _apiClient;
@@ -36,6 +38,13 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
             _pathResolver = new RetroAchievementsPathResolver(playniteApi);
+
+            _providerSettings = new RetroAchievementsSettings
+            {
+                IsEnabled = settings.Persisted.RetroAchievementsEnabled,
+                RaUsername = settings.Persisted.RaUsername,
+                RaWebApiKey = settings.Persisted.RaWebApiKey
+            };
         }
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_RetroAchievements");
         public string ProviderKey => "RetroAchievements";
@@ -119,6 +128,24 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         public void Dispose()
         {
             _apiClient?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public IProviderSettings GetSettings() => _providerSettings;
+
+        /// <inheritdoc />
+        public IProviderSettings CreateDefaultSettings() => new RetroAchievementsSettings();
+
+        /// <inheritdoc />
+        public void ApplySettings(IProviderSettings settings)
+        {
+            if (settings is RetroAchievementsSettings raSettings)
+            {
+                _providerSettings = raSettings;
+                _settings.Persisted.RetroAchievementsEnabled = raSettings.IsEnabled;
+                _settings.Persisted.RaUsername = raSettings.RaUsername;
+                _settings.Persisted.RaWebApiKey = raSettings.RaWebApiKey;
+            }
         }
     }
 }
