@@ -33,9 +33,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
             _logger = logger;
             _playniteApi = playniteApi;
 
-            _scanner = new ShadPS4Scanner(_logger, _settings, this, _playniteApi);
-
             _providerSettings = ProviderSettingsHelper.Load<ShadPS4Settings>(settings.Persisted, "ShadPS4");
+            _scanner = new ShadPS4Scanner(_logger, _settings, _providerSettings, this, _playniteApi);
         }
 
         public string ProviderName
@@ -70,8 +69,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
         /// </summary>
         public string GetGameDataPath(Game game = null)
         {
-            // Priority 1: From settings (user-configured game_data path)
-            var settingsGameDataPath = _settings?.Persisted?.ShadPS4GameDataPath;
+            // Priority 1: From provider settings (user-configured game_data path)
+            var settingsGameDataPath = _providerSettings?.GameDataPath;
             if (!string.IsNullOrWhiteSpace(settingsGameDataPath) && Directory.Exists(settingsGameDataPath))
             {
                 return settingsGameDataPath;

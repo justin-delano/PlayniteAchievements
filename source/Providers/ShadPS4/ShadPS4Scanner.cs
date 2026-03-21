@@ -17,6 +17,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
     {
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly ShadPS4Settings _providerSettings;
         private readonly ShadPS4DataProvider _provider;
         private readonly IPlayniteAPI _playniteApi;
 
@@ -26,10 +27,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
         // The consistent difference we need to subtract (ShadPS4-specific offset)
         private const int YearOffset = 2007;
 
-        public ShadPS4Scanner(ILogger logger, PlayniteAchievementsSettings settings, ShadPS4DataProvider provider = null, IPlayniteAPI playniteApi = null, string pluginUserDataPath = null)
+        public ShadPS4Scanner(ILogger logger, PlayniteAchievementsSettings settings, ShadPS4Settings providerSettings, ShadPS4DataProvider provider = null, IPlayniteAPI playniteApi = null, string pluginUserDataPath = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _providerSettings = providerSettings ?? throw new ArgumentNullException(nameof(providerSettings));
             _provider = provider;
             _playniteApi = playniteApi;
         }
@@ -94,7 +96,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         {
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            var gameDataPath = _settings?.Persisted?.ShadPS4GameDataPath;
+            var gameDataPath = _providerSettings?.GameDataPath;
 
             if (string.IsNullOrWhiteSpace(gameDataPath))
             {

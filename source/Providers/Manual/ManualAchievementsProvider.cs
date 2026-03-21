@@ -10,6 +10,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Images;
 
@@ -66,7 +67,7 @@ namespace PlayniteAchievements.Providers.Manual
             _steamManualSource = new SteamManualSource(
                 httpClient,
                 logger,
-                () => settings.Persisted.SteamApiKey);
+                () => ProviderSettingsHelper.Load<SteamSettings>(settings.Persisted, "Steam").SteamApiKey);
 
             // Create Exophase manual source (uses WebView, no HTTP client needed)
             _exophaseManualSource = new ExophaseManualSource(
