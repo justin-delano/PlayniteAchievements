@@ -479,7 +479,7 @@ namespace PlayniteAchievements.Services.UI
                     var templatesUri = new Uri("/PlayniteAchievements;component/Resources/AchievementTemplates.xaml", UriKind.Relative);
                     app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = templatesUri });
 
-                    var providerUri = new Uri("/PlayniteAchievements;component/Resources/ProviderIcons.xaml", UriKind.Relative);
+                    var providerUri = new Uri("/PlayniteAchievements;component/Providers/ProviderIcons.xaml", UriKind.Relative);
                     app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = providerUri });
                 }
 
