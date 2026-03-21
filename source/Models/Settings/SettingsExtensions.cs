@@ -2,6 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Providers.Exophase;
+using PlayniteAchievements.Providers.Epic;
+using PlayniteAchievements.Providers.GOG;
+using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Providers.PSN;
+using PlayniteAchievements.Providers.RetroAchievements;
+using PlayniteAchievements.Providers.RPCS3;
+using PlayniteAchievements.Providers.ShadPS4;
+using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Providers.Xenia;
+using PlayniteAchievements.Providers.Xbox;
 
 namespace PlayniteAchievements.Models.Settings
 {
@@ -275,8 +286,7 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// Migrates settings from an old format to a new format.
-        /// This method can be used to handle settings migration when the settings structure changes.
-        /// Currently a no-op placeholder for future migration needs.
+        /// Migrates flat provider properties to the ProviderSettings dictionary.
         /// </summary>
         /// <param name="settings">The settings instance to migrate.</param>
         /// <param name="oldVersion">The old settings version (if applicable).</param>
@@ -288,6 +298,95 @@ namespace PlayniteAchievements.Models.Settings
             if (settings == null)
             {
                 throw new ArgumentNullException(nameof(settings));
+            }
+
+            // Migrate flat provider properties to dictionary if dictionary is empty
+            // but we have evidence of existing settings (e.g., SteamUserId is populated)
+            if (settings.ProviderSettings.Count == 0 && !string.IsNullOrEmpty(settings.SteamUserId))
+            {
+                // Steam
+                var steam = new SteamSettings
+                {
+                    IsEnabled = settings.SteamEnabled,
+                    SteamUserId = settings.SteamUserId,
+                    SteamApiKey = settings.SteamApiKey
+                };
+                settings.ProviderSettings["Steam"] = steam.SerializeToJson();
+
+                // Epic
+                var epic = new EpicSettings
+                {
+                    IsEnabled = settings.EpicEnabled
+                };
+                settings.ProviderSettings["Epic"] = epic.SerializeToJson();
+
+                // GOG
+                var gog = new GogSettings
+                {
+                    IsEnabled = settings.GogEnabled
+                };
+                settings.ProviderSettings["GOG"] = gog.SerializeToJson();
+
+                // PSN
+                var psn = new PsnSettings
+                {
+                    IsEnabled = settings.PsnEnabled
+                };
+                settings.ProviderSettings["PSN"] = psn.SerializeToJson();
+
+                // Xbox
+                var xbox = new XboxSettings
+                {
+                    IsEnabled = settings.XboxEnabled
+                };
+                settings.ProviderSettings["Xbox"] = xbox.SerializeToJson();
+
+                // RetroAchievements
+                var retro = new RetroAchievementsSettings
+                {
+                    IsEnabled = settings.RetroAchievementsEnabled,
+                    RaUsername = settings.RaUsername,
+                    RaWebApiKey = settings.RaWebApiKey
+                };
+                settings.ProviderSettings["RetroAchievements"] = retro.SerializeToJson();
+
+                // Exophase
+                var exophase = new ExophaseSettings
+                {
+                    IsEnabled = settings.ExophaseEnabled
+                };
+                settings.ProviderSettings["Exophase"] = exophase.SerializeToJson();
+
+                // ShadPS4
+                var shadps4 = new ShadPS4Settings
+                {
+                    IsEnabled = settings.ShadPS4Enabled,
+                    GameDataPath = settings.ShadPS4GameDataPath
+                };
+                settings.ProviderSettings["ShadPS4"] = shadps4.SerializeToJson();
+
+                // RPCS3
+                var rpcs3 = new Rpcs3Settings
+                {
+                    IsEnabled = settings.Rpcs3Enabled
+                };
+                settings.ProviderSettings["RPCS3"] = rpcs3.SerializeToJson();
+
+                // Xenia
+                var xenia = new XeniaSettings
+                {
+                    IsEnabled = settings.XeniaEnabled,
+                    AccountPath = settings.XeniaAccountPath
+                };
+                settings.ProviderSettings["Xenia"] = xenia.SerializeToJson();
+
+                // Manual
+                var manual = new ManualSettings
+                {
+                    IsEnabled = settings.ManualEnabled,
+                    ManualTrackingOverrideEnabled = settings.ManualTrackingOverrideEnabled
+                };
+                settings.ProviderSettings["Manual"] = manual.SerializeToJson();
             }
 
             return settings;
