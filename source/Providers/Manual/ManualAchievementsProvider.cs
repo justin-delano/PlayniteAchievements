@@ -24,6 +24,7 @@ namespace PlayniteAchievements.Providers.Manual
     {
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly IPlayniteAPI _playniteApi;
         private readonly IManualSource _steamManualSource;
         private readonly IManualSource _exophaseManualSource;
         private readonly ExophaseSessionManager _exophaseSessionManager;
@@ -49,6 +50,7 @@ namespace PlayniteAchievements.Providers.Manual
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
             _diskImageService = new DiskImageService(logger, pluginUserDataPath);
             _exophaseSessionManager = exophaseSessionManager ?? throw new ArgumentNullException(nameof(exophaseSessionManager));
 
@@ -319,5 +321,8 @@ namespace PlayniteAchievements.Providers.Manual
                 manualSettings.Save();
             }
         }
+
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new ManualSettingsView(_playniteApi, _logger, _settings);
     }
 }

@@ -41,25 +41,7 @@ namespace PlayniteAchievements.Providers
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Dictionary<string, ProviderSettingsBase> _settingsCache = new Dictionary<string, ProviderSettingsBase>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Func<CancellationToken, Task>> _authPrimers = new Dictionary<string, Func<CancellationToken, Task>>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, Func<IProviderSettingsView>> _settingsViewFactories = new Dictionary<string, Func<IProviderSettingsView>>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Preferred display order for provider tabs.
-        /// </summary>
-        private static readonly string[] PreferredOrder =
-        {
-            "Steam",
-            "RetroAchievements",
-            "GOG",
-            "Epic",
-            "PSN",
-            "Xbox",
-            "Exophase",
-            "ShadPS4",
-            "RPCS3",
-            "Xenia",
-            "Manual"
-        };
+        private readonly Dictionary<string, Func<ProviderSettingsViewBase>> _settingsViewFactories = new Dictionary<string, Func<ProviderSettingsViewBase>>(StringComparer.OrdinalIgnoreCase);
 
         public ProviderRegistry(PlayniteAchievementsSettings settings, ILogger logger = null)
         {
@@ -115,10 +97,10 @@ namespace PlayniteAchievements.Providers
             var settings = new T();
 
             if (_settings.Persisted?.ProviderSettings != null &&
-                _settings.Persisted.ProviderSettings.TryGetValue(providerKey, out var json) &&
-                !string.IsNullOrEmpty(json))
+                _settings.Persisted.ProviderSettings.TryGetValue(providerKey, out var jsonObj) &&
+                jsonObj != null)
             {
-                settings.DeserializeFromJson(json);
+                settings.DeserializeFromJson(jsonObj.ToString());
             }
 
             return settings;
@@ -131,7 +113,7 @@ namespace PlayniteAchievements.Providers
                 return;
             }
 
-            _settings.Persisted.ProviderSettings[settings.ProviderKey] = settings.SerializeToJson();
+            _settings.Persisted.ProviderSettings[settings.ProviderKey] = JObject.Parse(settings.SerializeToJson());
         }
 
         /// <summary>
@@ -199,20 +181,7 @@ namespace PlayniteAchievements.Providers
             }
         }
 
-        private readonly Dictionary<string, bool> _enabledState = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "Steam", true },
-            { "Epic", true },
-            { "GOG", true },
-            { "PSN", true },
-            { "RetroAchievements", true },
-            { "Xbox", true },
-            { "ShadPS4", true },
-            { "RPCS3", true },
-            { "Xenia", true },
-            { "Manual", true },
-            { "Exophase", true }
-        };
+        private readonly Dictionary<string, bool> _enabledState = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Event raised when a provider's enabled state changes.
@@ -267,18 +236,17 @@ namespace PlayniteAchievements.Providers
                 return;
             }
 
-            // Iterate over ProviderSettings dictionary and extract IsEnabled from each JSON
+            // Iterate over ProviderSettings dictionary and extract IsEnabled from each JObject
             foreach (var kvp in settings.ProviderSettings)
             {
-                if (string.IsNullOrEmpty(kvp.Value))
+                if (kvp.Value == null)
                 {
                     continue;
                 }
 
                 try
                 {
-                    var json = JObject.Parse(kvp.Value);
-                    var isEnabled = json["IsEnabled"]?.Value<bool>() ?? true;
+                    var isEnabled = kvp.Value["IsEnabled"]?.Value<bool>() ?? true;
                     _enabledState[kvp.Key] = isEnabled;
                 }
                 catch
@@ -301,30 +269,20 @@ namespace PlayniteAchievements.Providers
                 return;
             }
 
-            // Update IsEnabled in each provider's JSON
+            // Update IsEnabled in each provider's JObject
             var keysToUpdate = _enabledState.Keys.ToList();
             foreach (var key in keysToUpdate)
             {
                 var isEnabled = _enabledState[key];
 
-                if (settings.ProviderSettings.TryGetValue(key, out var json) && !string.IsNullOrEmpty(json))
+                if (settings.ProviderSettings.TryGetValue(key, out var jsonObj) && jsonObj != null)
                 {
-                    try
-                    {
-                        var obj = JObject.Parse(json);
-                        obj["IsEnabled"] = isEnabled;
-                        settings.ProviderSettings[key] = obj.ToString(Newtonsoft.Json.Formatting.None);
-                    }
-                    catch
-                    {
-                        // If parsing fails, create a minimal entry
-                        settings.ProviderSettings[key] = $"{{\"IsEnabled\":{isEnabled.ToString().ToLower()}}}";
-                    }
+                    jsonObj["IsEnabled"] = isEnabled;
                 }
                 else
                 {
                     // Create a minimal entry if it doesn't exist
-                    settings.ProviderSettings[key] = $"{{\"IsEnabled\":{isEnabled.ToString().ToLower()}}}";
+                    settings.ProviderSettings[key] = new JObject { ["IsEnabled"] = isEnabled };
                 }
             }
         }
@@ -336,7 +294,7 @@ namespace PlayniteAchievements.Providers
         /// </summary>
         /// <param name="providerKey">The provider's unique key.</param>
         /// <param name="viewFactory">Factory function that creates the settings view.</param>
-        public void RegisterSettingsView(string providerKey, Func<IProviderSettingsView> viewFactory)
+        public void RegisterSettingsView(string providerKey, Func<ProviderSettingsViewBase> viewFactory)
         {
             if (string.IsNullOrWhiteSpace(providerKey))
             {
@@ -349,11 +307,12 @@ namespace PlayniteAchievements.Providers
         /// <summary>
         /// Gets all registered provider keys that have settings views, in display order.
         /// </summary>
+        /// <summary>
+        /// Gets all registered provider keys that have settings views, in registration order.
+        /// </summary>
         public IEnumerable<string> GetSettingsViewProviderKeys()
         {
-            return PreferredOrder
-                .Where(k => _settingsViewFactories.ContainsKey(k))
-                .Concat(_settingsViewFactories.Keys.Except(PreferredOrder, StringComparer.OrdinalIgnoreCase));
+            return _settingsViewFactories.Keys;
         }
 
         /// <summary>
@@ -361,7 +320,7 @@ namespace PlayniteAchievements.Providers
         /// </summary>
         /// <param name="providerKey">The provider's unique key.</param>
         /// <returns>The settings view, or null if not registered.</returns>
-        public IProviderSettingsView CreateSettingsView(string providerKey)
+        public ProviderSettingsViewBase CreateSettingsView(string providerKey)
         {
             return _settingsViewFactories.TryGetValue(providerKey, out var factory)
                 ? factory()
@@ -401,19 +360,21 @@ namespace PlayniteAchievements.Providers
                 playniteApi,
                 exophaseSessionManager);
 
+            // Order is determined by list position
             var providers = new List<IDataProvider>
             {
-                manualProvider,
-                new ExophaseDataProvider(_logger, settings, playniteApi, exophaseSessionManager),
                 new SteamDataProvider(_logger, settings, playniteApi, steamSessionManager, pluginUserDataPath),
+                new RetroAchievementsDataProvider(_logger, settings, playniteApi, pluginUserDataPath),
                 new GogDataProvider(_logger, settings, playniteApi, pluginUserDataPath, gogSessionManager),
                 new EpicDataProvider(_logger, settings, playniteApi, epicSessionManager),
                 new PsnDataProvider(_logger, settings, psnSessionManager),
                 new XboxDataProvider(_logger, settings, xboxSessionManager),
-                new RetroAchievementsDataProvider(_logger, settings, playniteApi, pluginUserDataPath),
+                new ExophaseDataProvider(_logger, settings, playniteApi, exophaseSessionManager),
                 new ShadPS4DataProvider(_logger, settings, playniteApi),
                 new Rpcs3DataProvider(_logger, settings, playniteApi),
-                new XeniaDataProvider(_logger, settings, playniteApi, pluginUserDataPath)
+                new XeniaDataProvider(_logger, settings, playniteApi, pluginUserDataPath),
+                manualProvider,
+                // Add new providers here in desired position
             };
 
             // Register auth primers
@@ -424,61 +385,22 @@ namespace PlayniteAchievements.Providers
             RegisterAuthPrimer("Xbox", xboxSessionManager.PrimeAuthenticationStateAsync);
             RegisterAuthPrimer("Exophase", exophaseSessionManager.PrimeAuthenticationStateAsync);
 
-            // Register settings views
-            RegisterSettingsViews(
-                steamSessionManager,
-                gogSessionManager,
-                epicSessionManager,
-                psnSessionManager,
-                xboxSessionManager,
-                exophaseSessionManager);
+            // Auto-register settings views and enabled state from providers
+            foreach (var provider in providers)
+            {
+                var key = provider.ProviderKey;
+
+                // Default to enabled if not already set from persisted settings
+                if (!_enabledState.ContainsKey(key))
+                {
+                    _enabledState[key] = true;
+                }
+
+                // Register settings view factory from provider
+                _settingsViewFactories[key] = () => provider.CreateSettingsView();
+            }
 
             return providers;
-        }
-
-        /// <summary>
-        /// Registers settings views for providers that have been migrated to the modular system.
-        /// </summary>
-        private void RegisterSettingsViews(
-            SteamSessionManager steamSessionManager,
-            GogSessionManager gogSessionManager,
-            EpicSessionManager epicSessionManager,
-            PsnSessionManager psnSessionManager,
-            XboxSessionManager xboxSessionManager,
-            ExophaseSessionManager exophaseSessionManager)
-        {
-            // Steam settings view (migrated)
-            RegisterSettingsView("Steam", () => new SteamSettingsView(steamSessionManager));
-
-            // RetroAchievements settings view (migrated)
-            RegisterSettingsView("RetroAchievements", () => new RetroAchievementsSettingsView());
-
-            // GOG settings view (migrated)
-            RegisterSettingsView("GOG", () => new GogSettingsView(gogSessionManager));
-
-            // Epic settings view (migrated)
-            RegisterSettingsView("Epic", () => new EpicSettingsView(epicSessionManager));
-
-            // PSN settings view (migrated)
-            RegisterSettingsView("PSN", () => new PsnSettingsView(psnSessionManager));
-
-            // Xbox settings view (migrated)
-            RegisterSettingsView("Xbox", () => new XboxSettingsView(xboxSessionManager));
-
-            // Exophase settings view (migrated)
-            RegisterSettingsView("Exophase", () => new ExophaseSettingsView(exophaseSessionManager));
-
-            // ShadPS4 settings view (migrated)
-            RegisterSettingsView("ShadPS4", () => new ShadPS4SettingsView());
-
-            // RPCS3 settings view (migrated)
-            RegisterSettingsView("RPCS3", () => new Rpcs3SettingsView());
-
-            // Xenia settings view (migrated)
-            RegisterSettingsView("Xenia", () => new XeniaSettingsView());
-
-            // Manual settings view (migrated)
-            RegisterSettingsView("Manual", () => new ManualSettingsView());
         }
     }
 

@@ -45,6 +45,13 @@
 
             <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_XboxConnection}"
+                               Style="{StaticResource SectionHeaderStyle}"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Xbox_Help}"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,12"
+                               TextWrapping="Wrap"/>
+
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="180"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="{DynamicResource LOCPlayAch_Label_XboxAuth}"
@@ -87,9 +94,9 @@
                                 </Grid>
 
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Content="{DynamicResource LOCPlayAch_Button_LoginWeb}" Click="LoginWeb_Click"
+                                        <Button Content="{DynamicResource LOCPlayAch_Button_Login}" Click="LoginWeb_Click"
                                             Style="{StaticResource AuthActionButtonStyle}" Margin="0,0,8,0"/>
-                                    <Button Content="{DynamicResource LOCPlayAch_Button_Logout}" Click="Logout_Click"
+                                        <Button Content="{DynamicResource LOCPlayAch_Button_Clear}" Click="Logout_Click"
                                             Style="{StaticResource AuthActionButtonStyle}"/>
                                 </StackPanel>
                             </StackPanel>
@@ -97,6 +104,25 @@
                     </Grid>
                 </StackPanel>
             </Border>
+
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_XboxLowResIcons}"
+                      IsChecked="{Binding Settings.LowResIcons, Mode=TwoWay}"
+                      IsEnabled="{Binding Settings.IsEnabled}"
+                      Margin="0,16,0,4"/>
+            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_XboxLowResIcons_Help}"
+                       Margin="24,0,0,16"
+                       TextWrapping="Wrap">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Settings.IsEnabled}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
         </StackPanel>
     </ScrollViewer>
 </settings:ProviderSettingsViewBase>

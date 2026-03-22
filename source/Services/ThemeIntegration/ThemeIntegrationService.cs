@@ -753,32 +753,32 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _runtimeState.Library = state ?? new LibraryRuntimeState();
             var library = _runtimeState.Library;
 
-            _settings.Theme.CompletedGamesAsc = ProjectGameSummaries(library.CompletedGamesAsc);
-            _settings.Theme.CompletedGamesDesc = ProjectGameSummaries(library.CompletedGamesDesc);
-            _settings.Theme.GameSummariesAsc = ProjectGameSummaries(library.GameSummariesAsc);
-            _settings.Theme.GameSummariesDesc = ProjectGameSummaries(library.GameSummariesDesc);
-            _settings.Theme.TotalCommon = library.TotalCommon;
-            _settings.Theme.TotalUncommon = library.TotalUncommon;
-            _settings.Theme.TotalRare = library.TotalRare;
-            _settings.Theme.TotalUltraRare = library.TotalUltraRare;
-            _settings.Theme.TotalRareAndUltraRare = library.TotalRareAndUltraRare;
-            _settings.Theme.TotalOverall = library.TotalOverall;
-            _settings.Theme.SteamGames = ProjectGameSummaries(library.SteamGames);
-            _settings.Theme.GOGGames = ProjectGameSummaries(library.GOGGames);
-            _settings.Theme.EpicGames = ProjectGameSummaries(library.EpicGames);
-            _settings.Theme.XboxGames = ProjectGameSummaries(library.XboxGames);
-            _settings.Theme.PSNGames = ProjectGameSummaries(library.PSNGames);
-            _settings.Theme.RetroAchievementsGames = ProjectGameSummaries(library.RetroAchievementsGames);
-            _settings.Theme.RPCS3Games = ProjectGameSummaries(library.RPCS3Games);
-            _settings.Theme.XeniaGames = ProjectGameSummaries(library.XeniaGames);
-            _settings.Theme.ShadPS4Games = ProjectGameSummaries(library.ShadPS4Games);
-            _settings.Theme.ManualGames = ProjectGameSummaries(library.ManualGames);
-            _settings.Theme.MostRecentUnlocksTop3 = library.MostRecentUnlocksTop3;
-            _settings.Theme.MostRecentUnlocksTop5 = library.MostRecentUnlocksTop5;
-            _settings.Theme.MostRecentUnlocksTop10 = library.MostRecentUnlocksTop10;
-            _settings.Theme.RarestRecentUnlocksTop3 = library.RarestRecentUnlocksTop3;
-            _settings.Theme.RarestRecentUnlocksTop5 = library.RarestRecentUnlocksTop5;
-            _settings.Theme.RarestRecentUnlocksTop10 = library.RarestRecentUnlocksTop10;
+            _settings.ModernTheme.CompletedGamesAsc = ProjectGameSummaries(library.CompletedGamesAsc);
+            _settings.ModernTheme.CompletedGamesDesc = ProjectGameSummaries(library.CompletedGamesDesc);
+            _settings.ModernTheme.GameSummariesAsc = ProjectGameSummaries(library.GameSummariesAsc);
+            _settings.ModernTheme.GameSummariesDesc = ProjectGameSummaries(library.GameSummariesDesc);
+            _settings.ModernTheme.TotalCommon = library.TotalCommon;
+            _settings.ModernTheme.TotalUncommon = library.TotalUncommon;
+            _settings.ModernTheme.TotalRare = library.TotalRare;
+            _settings.ModernTheme.TotalUltraRare = library.TotalUltraRare;
+            _settings.ModernTheme.TotalRareAndUltraRare = library.TotalRareAndUltraRare;
+            _settings.ModernTheme.TotalOverall = library.TotalOverall;
+            _settings.ModernTheme.SteamGames = ProjectGameSummaries(library.SteamGames);
+            _settings.ModernTheme.GOGGames = ProjectGameSummaries(library.GOGGames);
+            _settings.ModernTheme.EpicGames = ProjectGameSummaries(library.EpicGames);
+            _settings.ModernTheme.XboxGames = ProjectGameSummaries(library.XboxGames);
+            _settings.ModernTheme.PSNGames = ProjectGameSummaries(library.PSNGames);
+            _settings.ModernTheme.RetroAchievementsGames = ProjectGameSummaries(library.RetroAchievementsGames);
+            _settings.ModernTheme.RPCS3Games = ProjectGameSummaries(library.RPCS3Games);
+            _settings.ModernTheme.XeniaGames = ProjectGameSummaries(library.XeniaGames);
+            _settings.ModernTheme.ShadPS4Games = ProjectGameSummaries(library.ShadPS4Games);
+            _settings.ModernTheme.ManualGames = ProjectGameSummaries(library.ManualGames);
+            _settings.ModernTheme.MostRecentUnlocksTop3 = library.MostRecentUnlocksTop3;
+            _settings.ModernTheme.MostRecentUnlocksTop5 = library.MostRecentUnlocksTop5;
+            _settings.ModernTheme.MostRecentUnlocksTop10 = library.MostRecentUnlocksTop10;
+            _settings.ModernTheme.RarestRecentUnlocksTop3 = library.RarestRecentUnlocksTop3;
+            _settings.ModernTheme.RarestRecentUnlocksTop5 = library.RarestRecentUnlocksTop5;
+            _settings.ModernTheme.RarestRecentUnlocksTop10 = library.RarestRecentUnlocksTop10;
 
             _settings.LegacyTheme.HasDataAllGames = library.HasData;
             _settings.LegacyTheme.GamesWithAchievements = ProjectGameSummaries(library.GameSummariesDesc);
@@ -807,12 +807,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var shouldUpdateHeavyLists = library.HeavyListsBuilt || !library.HasData;
             if (shouldUpdateHeavyLists)
             {
-                _settings.Theme.AllAchievementsUnlockAsc = library.AllAchievementsUnlockAsc;
-                _settings.Theme.AllAchievementsUnlockDesc = library.AllAchievementsUnlockDesc;
-                _settings.Theme.AllAchievementsRarityAsc = library.AllAchievementsRarityAsc;
-                _settings.Theme.AllAchievementsRarityDesc = library.AllAchievementsRarityDesc;
-                _settings.Theme.MostRecentUnlocks = library.MostRecentUnlocks;
-                _settings.Theme.RarestRecentUnlocks = library.RarestRecentUnlocks;
+                _settings.ModernTheme.AllAchievementsUnlockAsc = library.AllAchievementsUnlockAsc;
+                _settings.ModernTheme.AllAchievementsUnlockDesc = library.AllAchievementsUnlockDesc;
+                _settings.ModernTheme.AllAchievementsRarityAsc = library.AllAchievementsRarityAsc;
+                _settings.ModernTheme.AllAchievementsRarityDesc = library.AllAchievementsRarityDesc;
+                _settings.ModernTheme.MostRecentUnlocks = library.MostRecentUnlocks;
+                _settings.ModernTheme.RarestRecentUnlocks = library.RarestRecentUnlocks;
             }
 
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.CompatibilityAllGames);
@@ -840,22 +840,22 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             _runtimeState.SelectedGame = state;
-            _settings.Theme.HasAchievements = true;
-            _settings.Theme.IsCompleted = state.IsCompleted;
-            _settings.Theme.AchievementCount = state.AchievementCount;
-            _settings.Theme.UnlockedCount = state.UnlockedCount;
-            _settings.Theme.LockedCount = state.LockedCount;
-            _settings.Theme.ProgressPercentage = state.ProgressPercentage;
-            _settings.Theme.Common = state.Common;
-            _settings.Theme.Uncommon = state.Uncommon;
-            _settings.Theme.Rare = state.Rare;
-            _settings.Theme.UltraRare = state.UltraRare;
-            _settings.Theme.RareAndUltraRare = state.RareAndUltraRare;
-            _settings.Theme.AllAchievements = state.AllAchievements;
-            _settings.Theme.AchievementsNewestFirst = state.AchievementsNewestFirst;
-            _settings.Theme.AchievementsOldestFirst = state.AchievementsOldestFirst;
-            _settings.Theme.AchievementsRarityAsc = state.AchievementsRarityAsc;
-            _settings.Theme.AchievementsRarityDesc = state.AchievementsRarityDesc;
+            _settings.ModernTheme.HasAchievements = true;
+            _settings.ModernTheme.IsCompleted = state.IsCompleted;
+            _settings.ModernTheme.AchievementCount = state.AchievementCount;
+            _settings.ModernTheme.UnlockedCount = state.UnlockedCount;
+            _settings.ModernTheme.LockedCount = state.LockedCount;
+            _settings.ModernTheme.ProgressPercentage = state.ProgressPercentage;
+            _settings.ModernTheme.Common = state.Common;
+            _settings.ModernTheme.Uncommon = state.Uncommon;
+            _settings.ModernTheme.Rare = state.Rare;
+            _settings.ModernTheme.UltraRare = state.UltraRare;
+            _settings.ModernTheme.RareAndUltraRare = state.RareAndUltraRare;
+            _settings.ModernTheme.AllAchievements = state.AllAchievements;
+            _settings.ModernTheme.AchievementsNewestFirst = state.AchievementsNewestFirst;
+            _settings.ModernTheme.AchievementsOldestFirst = state.AchievementsOldestFirst;
+            _settings.ModernTheme.AchievementsRarityAsc = state.AchievementsRarityAsc;
+            _settings.ModernTheme.AchievementsRarityDesc = state.AchievementsRarityDesc;
 
             _settings.LegacyTheme.HasData = true;
             _settings.LegacyTheme.Total = state.AchievementCount;
@@ -879,24 +879,24 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         public void ClearSingleGameThemeProperties()
         {
             _runtimeState.SelectedGame = SelectedGameRuntimeState.Empty;
-            _settings.Theme.HasAchievements = false;
-            _settings.Theme.IsCompleted = false;
-            _settings.Theme.AchievementCount = 0;
-            _settings.Theme.UnlockedCount = 0;
-            _settings.Theme.LockedCount = 0;
-            _settings.Theme.ProgressPercentage = 0;
+            _settings.ModernTheme.HasAchievements = false;
+            _settings.ModernTheme.IsCompleted = false;
+            _settings.ModernTheme.AchievementCount = 0;
+            _settings.ModernTheme.UnlockedCount = 0;
+            _settings.ModernTheme.LockedCount = 0;
+            _settings.ModernTheme.ProgressPercentage = 0;
 
-            _settings.Theme.AllAchievements = EmptyAchievementList;
-            _settings.Theme.AchievementsNewestFirst = EmptyAchievementList;
-            _settings.Theme.AchievementsOldestFirst = EmptyAchievementList;
-            _settings.Theme.AchievementsRarityAsc = EmptyAchievementList;
-            _settings.Theme.AchievementsRarityDesc = EmptyAchievementList;
+            _settings.ModernTheme.AllAchievements = EmptyAchievementList;
+            _settings.ModernTheme.AchievementsNewestFirst = EmptyAchievementList;
+            _settings.ModernTheme.AchievementsOldestFirst = EmptyAchievementList;
+            _settings.ModernTheme.AchievementsRarityAsc = EmptyAchievementList;
+            _settings.ModernTheme.AchievementsRarityDesc = EmptyAchievementList;
 
-            _settings.Theme.Common = EmptyRarityStats;
-            _settings.Theme.Uncommon = EmptyRarityStats;
-            _settings.Theme.Rare = EmptyRarityStats;
-            _settings.Theme.UltraRare = EmptyRarityStats;
-            _settings.Theme.RareAndUltraRare = EmptyRarityStats;
+            _settings.ModernTheme.Common = EmptyRarityStats;
+            _settings.ModernTheme.Uncommon = EmptyRarityStats;
+            _settings.ModernTheme.Rare = EmptyRarityStats;
+            _settings.ModernTheme.UltraRare = EmptyRarityStats;
+            _settings.ModernTheme.RareAndUltraRare = EmptyRarityStats;
             _settings.LegacyTheme.HasData = false;
             _settings.LegacyTheme.Total = 0;
             _settings.LegacyTheme.Unlocked = 0;

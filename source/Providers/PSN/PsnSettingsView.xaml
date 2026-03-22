@@ -47,6 +47,21 @@
 
             <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PsnConnection}"
+                               Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <StackPanel Margin="0,0,0,16">
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
+                            <Run Text="1. "/><Hyperlink NavigateUri="https://www.playstation.com" RequestNavigate="Hyperlink_RequestNavigate" TextDecorations="Underline" FontWeight="SemiBold"><TextBlock Foreground="#4CC9F0" Text="{DynamicResource LOCPlayAch_Settings_Psn_Step1}"/></Hyperlink><Run Text=" "/><Run Text="{DynamicResource LOCPlayAch_Settings_Psn_Step1Note}"/>
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
+                            <Run Text="2. "/><Hyperlink NavigateUri="https://ca.account.sony.com/api/v1/ssocookie" RequestNavigate="Hyperlink_RequestNavigate" TextDecorations="Underline" FontWeight="SemiBold"><TextBlock Foreground="#4CC9F0" Text="{DynamicResource LOCPlayAch_Settings_Psn_Step2}"/></Hyperlink><Run Text=" "/><Run Text="{DynamicResource LOCPlayAch_Settings_Psn_Step2Note}"/>
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}">
+                            <Run Text="3. "/><Run Text="{DynamicResource LOCPlayAch_Settings_Psn_Step3}"/>
+                        </TextBlock>
+                    </StackPanel>
+
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180"/>
@@ -93,11 +108,44 @@
                                 </Grid>
 
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Content="{DynamicResource LOCPlayAch_Button_LoginWeb}" Click="LoginWeb_Click"
-                                            Style="{StaticResource AuthActionButtonStyle}" Margin="0,0,8,0"/>
-                                    <Button Content="{DynamicResource LOCPlayAch_Button_Logout}" Click="Logout_Click"
+                                    <Button Content="{DynamicResource LOCPlayAch_Settings_Psn_Check}"
+                                            Click="PsnAuth_Check_Click"
+                                            Style="{StaticResource AuthActionButtonStyle}"
+                                            Margin="0,0,8,0"/>
+                                    <Button Content="{DynamicResource LOCPlayAch_Settings_Psn_LoginLegacy}"
+                                            Click="PsnAuth_Login_Click"
+                                            Style="{StaticResource AuthActionButtonStyle}"
+                                            Margin="0,0,8,0"/>
+                                    <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                            Click="PsnAuth_Clear_Click"
                                             Style="{StaticResource AuthActionButtonStyle}"/>
                                 </StackPanel>
+
+                                <Border BorderBrush="{DynamicResource PopupBorderBrush}"
+                                        BorderThickness="0,1,0,0"
+                                        Padding="0,12,0,0"
+                                        Margin="0,12,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PsnNpsso}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Margin="0,0,0,8"/>
+
+                                        <TextBox Text="{Binding Settings.Npsso, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 x:Name="PsnNpssoTextBox"
+                                                 Padding="8,6"
+                                                 VerticalAlignment="Top"
+                                                 MaxHeight="60"
+                                                 TextWrapping="Wrap"
+                                                 AcceptsReturn="False"
+                                                 VerticalScrollBarVisibility="Auto"
+                                                 KeyDown="PsnNpsso_KeyDown"
+                                                 LostFocus="PsnNpsso_LostFocus"/>
+
+                                        <TextBlock Style="{StaticResource MutedTextStyle}"
+                                                   Margin="0,8,0,0"
+                                                   Text="{DynamicResource LOCPlayAch_Settings_PsnNpssoHint}"/>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </Border>
                     </Grid>

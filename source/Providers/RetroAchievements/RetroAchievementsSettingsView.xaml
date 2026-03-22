@@ -47,7 +47,6 @@
             <Border Style="{StaticResource SectionBorderStyle}"
                     IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
-                    <!-- Username -->
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180"/>
@@ -55,42 +54,204 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0"
-                                   Text="{DynamicResource LOCPlayAch_Label_RaUsername}"
+                                   Text="{DynamicResource LOCPlayAch_Label_RaAuth}"
                                    Foreground="{DynamicResource TextBrush}"
                                    VerticalAlignment="Top"
                                    Margin="0,8,0,0"/>
 
-                        <StackPanel Grid.Column="1">
-                            <TextBox Text="{Binding Settings.RaUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Padding="4"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Help_RaUsername}"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       Margin="0,8,0,0"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
+                        <Border Grid.Column="1"
+                                Background="{DynamicResource PanelBackgroundBrush}"
+                                CornerRadius="8"
+                                Padding="16"
+                                BorderThickness="1">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="#F72585"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                     Value="True">
+                                            <Setter Property="BorderBrush" Value="#06FFA5"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="{DynamicResource FontSize}"
+                                               Margin="0,0,12,0"
+                                               VerticalAlignment="Center">
+                                        <TextBlock.RenderTransform>
+                                            <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                        </TextBlock.RenderTransform>
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="&#xE783;"/>
+                                                <Setter Property="Foreground" Value="#F72585"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                 Value="True">
+                                                        <Setter Property="Text" Value="&#xE73E;"/>
+                                                        <Setter Property="Foreground" Value="#06FFA5"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding AuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="Wrap"/>
+                                </Grid>
+
+                                <Border BorderBrush="{DynamicResource PopupBorderBrush}"
+                                        BorderThickness="0,1,0,0"
+                                        Padding="0,12,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Label_Username}"
+                                                   Margin="0,0,0,8"/>
+                                        <TextBox Text="{Binding Settings.RaUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Padding="4"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Label_Username_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="0,8,0,0"
+                                                   TextWrapping="Wrap"/>
+
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Label_WebApiKey}"
+                                                   Margin="0,12,0,8"/>
+                                        <TextBox Text="{Binding Settings.RaWebApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Padding="4"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Label_WebApiKey_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="0,8,0,0"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
                     </Grid>
 
-                    <!-- API Key -->
-                    <Grid>
+                    <!-- RetroAchievements Rarity Stats -->
+                    <Grid Style="{StaticResource SettingRowStyle}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0"
-                                   Text="{DynamicResource LOCPlayAch_Label_RaApiKey}"
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   Text="{DynamicResource LOCPlayAch_Settings_RaRarityStats}"
                                    Foreground="{DynamicResource TextBrush}"
-                                   VerticalAlignment="Top"
-                                   Margin="0,8,0,0"/>
+                                   VerticalAlignment="Center"/>
 
-                        <StackPanel Grid.Column="1">
-                            <TextBox Text="{Binding Settings.RaWebApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     Padding="4"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Help_RaApiKey}"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       Margin="0,8,0,0"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
+                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                  SelectedValue="{Binding Settings.RaRarityStats, Mode=TwoWay}"
+                                  SelectedValuePath="Tag"
+                                  VerticalAlignment="Center"
+                                  MinWidth="160"
+                                  HorizontalAlignment="Left">
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Casual}" Tag="casual"/>
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Hardcore}" Tag="hardcore"/>
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Combined}" Tag="combined"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                   Text="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Description}"
+                                   Margin="0,6,0,0"
+                                   Style="{StaticResource MutedTextStyle}"/>
+                    </Grid>
+
+                    <!-- RetroAchievements Points Display Mode -->
+                    <Grid Style="{StaticResource SettingRowStyle}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0"
+                                   Text="{DynamicResource LOCPlayAch_Settings_RaPointsMode}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   VerticalAlignment="Center"/>
+
+                        <ComboBox Grid.Row="0" Grid.Column="1"
+                                  SelectedValue="{Binding Settings.RaPointsMode, Mode=TwoWay}"
+                                  SelectedValuePath="Tag"
+                                  VerticalAlignment="Center"
+                                  MinWidth="160"
+                                  HorizontalAlignment="Left">
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaPointsMode_Points}" Tag="points"/>
+                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaPointsMode_Scaled}" Tag="scaled"/>
+                        </ComboBox>
+
+                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                   Text="{DynamicResource LOCPlayAch_Settings_RaPointsMode_Description}"
+                                   Margin="0,6,0,0"
+                                   Style="{StaticResource MutedTextStyle}"/>
+                    </Grid>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ScanningHashing}"
+                               Style="{StaticResource SectionHeaderStyle}"
+                               Margin="0,8,0,12"/>
+
+                    <StackPanel>
+                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableArchiveScanning}"
+                                  IsChecked="{Binding Settings.EnableArchiveScanning, Mode=TwoWay}"
+                                  Margin="0,0,0,10"/>
+                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableDiscHashing}"
+                                  IsChecked="{Binding Settings.EnableDiscHashing, Mode=TwoWay}"
+                                  Margin="0,0,0,10"/>
+                    </StackPanel>
+
+                    <Grid Style="{StaticResource SettingRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="{DynamicResource LOCPlayAch_Settings_HashIndexMaxAgeDays}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   VerticalAlignment="Center"/>
+
+                        <TextBox Grid.Column="1"
+                                 Text="{Binding Settings.HashIndexMaxAgeDays, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="60"
+                                 TextAlignment="Right"
+                                 VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <Grid Style="{StaticResource SettingRowStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="{DynamicResource LOCPlayAch_Settings_ForceHashIndexRebuild}"
+                                   Style="{StaticResource MutedTextStyle}"
+                                   VerticalAlignment="Center"/>
+
+                        <Button Grid.Column="1"
+                                Content="{DynamicResource LOCPlayAch_Settings_RebuildNow}"
+                                Click="ForceRebuildHashIndex_Click"
+                                Padding="14,6"
+                                Margin="16,0,0,0"
+                                MinWidth="90"/>
                     </Grid>
                 </StackPanel>
             </Border>

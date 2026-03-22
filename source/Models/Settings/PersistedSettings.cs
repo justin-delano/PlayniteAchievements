@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
@@ -76,20 +77,20 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, ThemeMigrationCacheEntry> _themeMigrationVersionCache =
             new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase);
         private TaggingSettings _taggingSettings;
-        private Dictionary<string, string> _providerSettings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, JObject> _providerSettings = new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
 
         #endregion
 
         #region Provider Settings Dictionary
 
         /// <summary>
-        /// Dictionary of provider settings serialized as JSON strings.
-        /// Key is the provider key (e.g., "Steam", "Epic"), value is JSON-serialized settings.
+        /// Dictionary of provider settings as JSON objects.
+        /// Key is the provider key (e.g., "Steam", "Epic"), value is the settings as a JObject.
         /// </summary>
-        public Dictionary<string, string> ProviderSettings
+        public Dictionary<string, JObject> ProviderSettings
         {
             get => _providerSettings;
-            set => SetValue(ref _providerSettings, value ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+            set => SetValue(ref _providerSettings, value ?? new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase));
         }
 
         #endregion
@@ -779,12 +780,19 @@ namespace PlayniteAchievements.Models.Settings
         /// </summary>
         public PersistedSettings Clone()
         {
+            var clonedProviderSettings = new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
+            if (this.ProviderSettings != null)
+            {
+                foreach (var kvp in this.ProviderSettings)
+                {
+                    clonedProviderSettings[kvp.Key] = kvp.Value?.DeepClone() as JObject;
+                }
+            }
+
             return new PersistedSettings
             {
                 // Provider Settings Dictionary (contains all provider-specific settings)
-                ProviderSettings = this.ProviderSettings != null
-                    ? new Dictionary<string, string>(this.ProviderSettings, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+                ProviderSettings = clonedProviderSettings,
 
                 // Global Settings
                 GlobalLanguage = this.GlobalLanguage,

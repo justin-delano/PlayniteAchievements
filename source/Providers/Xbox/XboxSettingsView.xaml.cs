@@ -27,10 +27,6 @@ namespace PlayniteAchievements.Providers.Xbox
             DependencyProperty.Register(nameof(AuthStatus), typeof(string), typeof(XboxSettingsView), new PropertyMetadata(string.Empty));
         public string AuthStatus { get => (string)GetValue(AuthStatusProperty); set => SetValue(AuthStatusProperty, value); }
 
-        public override string ProviderKey => "Xbox";
-        public override string TabHeader => ResourceProvider.GetString("LOCPlayAch_Provider_Xbox");
-        public override string IconKey => "ProviderIconXbox";
-
         public new XboxSettings Settings => _xboxSettings;
 
         public XboxSettingsView(XboxSessionManager sessionManager)
@@ -44,21 +40,31 @@ namespace PlayniteAchievements.Providers.Xbox
             _xboxSettings = settings as XboxSettings;
             base.Initialize(settings);
             RefreshAuthStatus();
+            _ = RefreshAuthStatusAsync();
         }
 
         public void RefreshAuthStatus()
         {
             var isAuthenticated = _sessionManager?.IsAuthenticated ?? false;
             IsAuthenticated = isAuthenticated;
+            var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_Xbox");
             AuthStatus = isAuthenticated
-                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_LoggedIn"), "Xbox")
-                : string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotLoggedIn"), "Xbox");
+                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName)
+                : string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName);
         }
 
-        public Task RefreshAuthStatusAsync()
+        public async Task RefreshAuthStatusAsync()
         {
+            try
+            {
+                await _sessionManager.ProbeAuthenticationAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Xbox auth probe failed during settings refresh.");
+            }
+
             RefreshAuthStatus();
-            return Task.CompletedTask;
         }
 
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)

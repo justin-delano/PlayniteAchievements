@@ -1,4 +1,5 @@
 using System;
+using System.Windows.Controls;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -27,10 +28,6 @@ namespace PlayniteAchievements.Providers.Exophase
             DependencyProperty.Register(nameof(AuthStatus), typeof(string), typeof(ExophaseSettingsView), new PropertyMetadata(string.Empty));
         public string AuthStatus { get => (string)GetValue(AuthStatusProperty); set => SetValue(AuthStatusProperty, value); }
 
-        public override string ProviderKey => "Exophase";
-        public override string TabHeader => ResourceProvider.GetString("LOCPlayAch_Provider_Exophase");
-        public override string IconKey => "ProviderIconExophase";
-
         public new ExophaseSettings Settings => _exophaseSettings;
 
         public ExophaseSettingsView(ExophaseSessionManager sessionManager)
@@ -44,21 +41,31 @@ namespace PlayniteAchievements.Providers.Exophase
             _exophaseSettings = settings as ExophaseSettings;
             base.Initialize(settings);
             RefreshAuthStatus();
+            _ = RefreshAuthStatusAsync();
         }
 
         public void RefreshAuthStatus()
         {
             var isAuthenticated = _sessionManager?.IsAuthenticated ?? false;
             IsAuthenticated = isAuthenticated;
+            var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_Exophase");
             AuthStatus = isAuthenticated
-                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_LoggedIn"), "Exophase")
-                : string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotLoggedIn"), "Exophase");
+                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName)
+                : string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName);
         }
 
-        public Task RefreshAuthStatusAsync()
+        public async Task RefreshAuthStatusAsync()
         {
+            try
+            {
+                await _sessionManager.ProbeAuthenticationAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Exophase auth probe failed during settings refresh.");
+            }
+
             RefreshAuthStatus();
-            return Task.CompletedTask;
         }
 
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)
@@ -79,6 +86,50 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             if (Dispatcher.CheckAccess()) AuthBusy = busy;
             else Dispatcher.BeginInvoke(new Action(() => AuthBusy = busy));
+        }
+
+        private void ExophasePlatform_CheckboxLoaded(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is CheckBox checkbox) || _exophaseSettings?.ManagedProviders == null)
+            {
+                return;
+            }
+
+            var token = checkbox.Tag as string;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            checkbox.IsChecked = _exophaseSettings.ManagedProviders.Contains(token);
+        }
+
+        private void ExophasePlatform_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            if (!(sender is CheckBox checkbox) || _exophaseSettings == null)
+            {
+                return;
+            }
+
+            var token = checkbox.Tag as string;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            if (_exophaseSettings.ManagedProviders == null)
+            {
+                _exophaseSettings.ManagedProviders = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (checkbox.IsChecked == true)
+            {
+                _exophaseSettings.ManagedProviders.Add(token);
+            }
+            else
+            {
+                _exophaseSettings.ManagedProviders.Remove(token);
+            }
         }
     }
 }

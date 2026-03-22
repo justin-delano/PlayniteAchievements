@@ -13,6 +13,7 @@ namespace PlayniteAchievements.Providers.Settings
         private bool _isEnabled = true;
 
         /// <inheritdoc />
+        [JsonIgnore]
         public abstract string ProviderKey { get; }
 
         /// <inheritdoc />
@@ -29,11 +30,11 @@ namespace PlayniteAchievements.Providers.Settings
         public abstract void CopyFrom(IProviderSettings source);
 
         /// <summary>
-        /// Serializes the settings to a JSON string.
+        /// Serializes the settings to a JSON string, excluding ProviderKey.
         /// </summary>
         public virtual string SerializeToJson()
         {
-            return JsonConvert.SerializeObject(this, Formatting.None);
+            return JsonConvert.SerializeObject(this);
         }
 
         /// <summary>

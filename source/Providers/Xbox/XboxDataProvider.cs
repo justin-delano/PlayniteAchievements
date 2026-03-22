@@ -113,5 +113,8 @@ namespace PlayniteAchievements.Providers.Xbox
                 xboxSettings.Save();
             }
         }
+
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new XboxSettingsView(_sessionManager);
     }
 }

@@ -148,5 +148,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 raSettings.Save();
             }
         }
+
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new RetroAchievementsSettingsView(_pluginUserDataPath);
     }
 }

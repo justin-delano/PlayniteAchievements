@@ -58,6 +58,13 @@
             <Border Style="{StaticResource SectionBorderStyle}"
                     IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GogConnection}"
+                               Style="{StaticResource SectionHeaderStyle}"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Gog_OwnAuthHelp}"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,12"
+                               TextWrapping="Wrap"/>
+
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180"/>
@@ -126,11 +133,11 @@
                                 </Grid>
 
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Content="{DynamicResource LOCPlayAch_Button_LoginWeb}"
+                                        <Button Content="{DynamicResource LOCPlayAch_Button_Login}"
                                             Click="LoginWeb_Click"
                                             Style="{StaticResource AuthActionButtonStyle}"
                                             Margin="0,0,8,0"/>
-                                    <Button Content="{DynamicResource LOCPlayAch_Button_Logout}"
+                                        <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                             Click="Logout_Click"
                                             Style="{StaticResource AuthActionButtonStyle}"/>
                                 </StackPanel>

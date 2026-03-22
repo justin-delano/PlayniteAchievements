@@ -3,6 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Navigation;
+using System.Diagnostics;
 using Playnite.SDK;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services.Logging;
@@ -75,10 +77,6 @@ namespace PlayniteAchievements.Providers.Steam
 
         #endregion
 
-        public override string ProviderKey => "Steam";
-        public override string TabHeader => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
-        public override string IconKey => "ProviderIconSteam";
-
         public new SteamSettings Settings => _steamSettings;
 
         public SteamSettingsView(SteamSessionManager sessionManager)
@@ -92,12 +90,21 @@ namespace PlayniteAchievements.Providers.Steam
             _steamSettings = settings as SteamSettings;
             base.Initialize(settings);
             RefreshAuthStatus();
+            _ = RefreshAuthStatusAsync();
         }
 
-        public Task RefreshAuthStatusAsync()
+        public async Task RefreshAuthStatusAsync()
         {
+            try
+            {
+                await _sessionManager.PrimeAuthenticationStateAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Steam auth probe failed during settings refresh.");
+            }
+
             RefreshAuthStatus();
-            return Task.CompletedTask;
         }
 
         private void RefreshAuthStatus()
@@ -113,13 +120,13 @@ namespace PlayniteAchievements.Providers.Steam
             if (hasWebAuth)
             {
                 WebAuthStatus = string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_LoggedIn"),
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"),
                     ResourceProvider.GetString("LOCPlayAch_Provider_Steam"));
             }
             else
             {
                 WebAuthStatus = string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotLoggedIn"),
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"),
                     ResourceProvider.GetString("LOCPlayAch_Provider_Steam"));
             }
         }
@@ -135,6 +142,23 @@ namespace PlayniteAchievements.Providers.Steam
             catch (Exception ex)
             {
                 Logger.Error(ex, "Steam web login failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private async void SteamAuth_Check_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                await RefreshAuthStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Steam auth check failed");
             }
             finally
             {
@@ -170,6 +194,12 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 Dispatcher.BeginInvoke(new Action(() => AuthBusy = busy));
             }
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            Process.Start(e.Uri.AbsoluteUri);
+            e.Handled = true;
         }
     }
 }

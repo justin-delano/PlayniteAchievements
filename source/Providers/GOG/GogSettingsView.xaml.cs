@@ -61,10 +61,6 @@ namespace PlayniteAchievements.Providers.GOG
 
         #endregion
 
-        public override string ProviderKey => "GOG";
-        public override string TabHeader => ResourceProvider.GetString("LOCPlayAch_Provider_GOG");
-        public override string IconKey => "ProviderIconGOG";
-
         public new GogSettings Settings => _gogSettings;
 
         public GogSettingsView(GogSessionManager sessionManager)
@@ -78,6 +74,7 @@ namespace PlayniteAchievements.Providers.GOG
             _gogSettings = settings as GogSettings;
             base.Initialize(settings);
             RefreshAuthStatus();
+            _ = RefreshAuthStatusAsync();
         }
 
         public void RefreshAuthStatus()
@@ -88,21 +85,29 @@ namespace PlayniteAchievements.Providers.GOG
             if (isAuthenticated)
             {
                 AuthStatus = string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_LoggedIn"),
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"),
                     ResourceProvider.GetString("LOCPlayAch_Provider_GOG"));
             }
             else
             {
                 AuthStatus = string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotLoggedIn"),
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"),
                     ResourceProvider.GetString("LOCPlayAch_Provider_GOG"));
             }
         }
 
-        public Task RefreshAuthStatusAsync()
+        public async Task RefreshAuthStatusAsync()
         {
+            try
+            {
+                await _sessionManager.ProbeAuthenticationAsync(CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "GOG auth probe failed during settings refresh.");
+            }
+
             RefreshAuthStatus();
-            return Task.CompletedTask;
         }
 
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)

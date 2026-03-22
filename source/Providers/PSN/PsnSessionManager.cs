@@ -95,20 +95,20 @@ namespace PlayniteAchievements.Providers.PSN
                 {
                     return PsnAuthResult.Create(
                         PsnAuthOutcome.AlreadyAuthenticated,
-                        "LOCPlayAch_Settings_PsnAuth_AlreadyAuthenticated",
+                        "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                         windowOpened: false);
                 }
 
                 return PsnAuthResult.Create(
                     PsnAuthOutcome.NotAuthenticated,
-                    "LOCPlayAch_Settings_PsnAuth_NotAuthenticated",
+                    "LOCPlayAch_Settings_Auth_NotAuthenticated",
                     windowOpened: false);
             }
             catch (OperationCanceledException)
             {
                 return PsnAuthResult.Create(
                     PsnAuthOutcome.Cancelled,
-                    "LOCPlayAch_Settings_PsnAuth_Cancelled",
+                    "LOCPlayAch_Settings_Auth_Cancelled",
                     windowOpened: false);
             }
             catch (Exception ex)
@@ -116,7 +116,7 @@ namespace PlayniteAchievements.Providers.PSN
                 _logger?.Error(ex, "[PSNAch] Probe failed with exception.");
                 return PsnAuthResult.Create(
                     PsnAuthOutcome.ProbeFailed,
-                    "LOCPlayAch_Settings_PsnAuth_ProbeFailed",
+                    "LOCPlayAch_Settings_Auth_ProbeFailed",
                     windowOpened: false);
             }
         }
@@ -141,7 +141,7 @@ namespace PlayniteAchievements.Providers.PSN
                         progress?.Report(PsnAuthProgressStep.Completed);
                         return PsnAuthResult.Create(
                             PsnAuthOutcome.AlreadyAuthenticated,
-                            "LOCPlayAch_Settings_PsnAuth_AlreadyAuthenticated",
+                            "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                             windowOpened: false);
                     }
                 }
@@ -154,7 +154,7 @@ namespace PlayniteAchievements.Providers.PSN
                     progress?.Report(PsnAuthProgressStep.Failed);
                     return PsnAuthResult.Create(
                         PsnAuthOutcome.Failed,
-                        "LOCPlayAch_Settings_PsnAuth_WindowNotOpened",
+                        "LOCPlayAch_Settings_Auth_WindowNotOpened",
                         windowOpened: false);
                 }
 
@@ -171,7 +171,7 @@ namespace PlayniteAchievements.Providers.PSN
                         progress?.Report(PsnAuthProgressStep.Completed);
                         return PsnAuthResult.Create(
                             PsnAuthOutcome.Authenticated,
-                            "LOCPlayAch_Settings_PsnAuth_Verified",
+                            "LOCPlayAch_Settings_Auth_Verified",
                             windowOpened: true);
                     }
 
@@ -181,14 +181,14 @@ namespace PlayniteAchievements.Providers.PSN
                 progress?.Report(PsnAuthProgressStep.Failed);
                 return PsnAuthResult.Create(
                     PsnAuthOutcome.TimedOut,
-                    "LOCPlayAch_Settings_PsnAuth_TimedOut",
+                    "LOCPlayAch_Settings_Auth_TimedOut",
                     windowOpened: true);
             }
             catch (OperationCanceledException)
             {
                 return PsnAuthResult.Create(
                     PsnAuthOutcome.Cancelled,
-                    "LOCPlayAch_Settings_PsnAuth_Cancelled",
+                    "LOCPlayAch_Settings_Auth_Cancelled",
                     windowOpened: windowOpened);
             }
             catch (Exception ex)
@@ -197,7 +197,7 @@ namespace PlayniteAchievements.Providers.PSN
                 progress?.Report(PsnAuthProgressStep.Failed);
                 return PsnAuthResult.Create(
                     PsnAuthOutcome.Failed,
-                    "LOCPlayAch_Settings_PsnAuth_Failed",
+                    "LOCPlayAch_Settings_Auth_Failed",
                     windowOpened: windowOpened);
             }
         }

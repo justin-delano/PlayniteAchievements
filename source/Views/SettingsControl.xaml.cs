@@ -395,7 +395,7 @@ namespace PlayniteAchievements.Views
         private readonly ThemeDiscoveryService _themeDiscovery;
         private readonly ThemeMigrationService _themeMigration;
         private readonly ProviderRegistry _providerRegistry;
-        private readonly List<IProviderSettingsView> _providerViews = new List<IProviderSettingsView>();
+        private readonly Dictionary<string, ProviderSettingsViewBase> _providerViewsByKey = new Dictionary<string, ProviderSettingsViewBase>(StringComparer.OrdinalIgnoreCase);
         private const string SuccessStoryExtensionId = "cebe6d32-8c46-4459-b993-5a5189d60788";
         private const string SuccessStoryFolderName = "SuccessStory";
 
@@ -1094,22 +1094,6 @@ namespace PlayniteAchievements.Views
             // Find insertion index (after DisplayTab)
             int insertIndex = 2; // After General (0) and Display (1)
 
-            // Map of provider keys to hardcoded tab names for hiding
-            var hardcodedTabNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "Steam", "SteamTab" },
-                { "RetroAchievements", "RetroAchievementsTab" },
-                { "GOG", "GogTab" },
-                { "Epic", "EpicTab" },
-                { "PSN", "PsnTab" },
-                { "Xbox", "XboxTab" },
-                { "Exophase", "ExophaseTab" },
-                { "ShadPS4", "ShadPS4Tab" },
-                { "RPCS3", "Rpcs3Tab" },
-                { "Xenia", "XeniaTab" },
-                { "Manual", "ManualTab" }
-            };
-
             foreach (var providerKey in _providerRegistry.GetSettingsViewProviderKeys())
             {
                 var view = _providerRegistry.CreateSettingsView(providerKey);
@@ -1123,24 +1107,23 @@ namespace PlayniteAchievements.Views
                 if (settings == null) continue;
 
                 view.Initialize(settings);
-                _providerViews.Add(view);
+                _providerViewsByKey[providerKey] = view;
 
                 var tabItem = new TabItem
                 {
-                    Header = view.TabHeader,
                     Content = view,
                     Tag = providerKey
                 };
 
-                // Hide the hardcoded tab if it exists
-                if (hardcodedTabNames.TryGetValue(providerKey, out var tabName))
+                var providerHeaderKey = GetProviderHeaderResourceKey(providerKey);
+                var localizedHeader = ResourceProvider.GetString(providerHeaderKey);
+                if (string.IsNullOrWhiteSpace(localizedHeader))
                 {
-                    var hardcodedTab = SettingsTabControl.Items.OfType<TabItem>()
-                        .FirstOrDefault(t => t.Name == tabName);
-                    if (hardcodedTab != null)
-                    {
-                        hardcodedTab.Visibility = Visibility.Collapsed;
-                    }
+                    tabItem.Header = providerKey;
+                }
+                else
+                {
+                    tabItem.SetResourceReference(HeaderedContentControl.HeaderProperty, providerHeaderKey);
                 }
 
                 SettingsTabControl.Items.Insert(insertIndex++, tabItem);
@@ -1160,7 +1143,7 @@ namespace PlayniteAchievements.Views
             var tag = selected.Tag as string ?? string.Empty;
 
             // Handle dynamic provider tabs (they have Tag set to provider key)
-            if (!string.IsNullOrEmpty(tag) && _providerViews.FirstOrDefault(v => v.ProviderKey == tag) is IProviderSettingsView providerView)
+            if (!string.IsNullOrEmpty(tag) && _providerViewsByKey.TryGetValue(tag, out var providerView))
             {
                 // Refresh auth status in the provider settings view
                 if (providerView is IAuthRefreshable authRefreshable)
@@ -1213,6 +1196,11 @@ namespace PlayniteAchievements.Views
         {
             var value = ResourceProvider.GetString(key);
             return string.IsNullOrWhiteSpace(value) ? fallback : value;
+        }
+
+        private static string GetProviderHeaderResourceKey(string providerKey)
+        {
+            return $"LOCPlayAch_Provider_{providerKey}";
         }
 
         private static string LF(string key, string fallbackFormat, params object[] args)

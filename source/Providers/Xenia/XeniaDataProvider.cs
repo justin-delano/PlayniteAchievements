@@ -159,5 +159,8 @@ namespace PlayniteAchievements.Providers.Xenia
                 xeniaSettings.Save();
             }
         }
+
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new XeniaSettingsView(_playniteApi);
     }
 }

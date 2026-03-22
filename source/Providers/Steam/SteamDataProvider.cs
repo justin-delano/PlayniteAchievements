@@ -97,6 +97,9 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new SteamSettingsView(_sessionManager);
+
         public void Dispose()
         {
             _steamClient?.Dispose();

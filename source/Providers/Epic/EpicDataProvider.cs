@@ -92,6 +92,9 @@ namespace PlayniteAchievements.Providers.Epic
             }
         }
 
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new EpicSettingsView(_sessionManager);
+
         private static Guid ResolveEpicPluginId()
         {
             try

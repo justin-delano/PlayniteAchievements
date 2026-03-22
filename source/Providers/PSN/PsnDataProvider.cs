@@ -99,6 +99,9 @@ namespace PlayniteAchievements.Providers.PSN
             }
         }
 
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new PsnSettingsView(_sessionManager);
+
         private static bool LooksLikePsnId(string id)
         {
             if (string.IsNullOrWhiteSpace(id))

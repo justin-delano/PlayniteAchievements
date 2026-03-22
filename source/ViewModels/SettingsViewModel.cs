@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
@@ -36,8 +38,8 @@ namespace PlayniteAchievements.ViewModels
         {
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
 
-            // Load saved settings or create new
-            var savedSettings = _plugin.LoadPluginSettings<PlayniteAchievementsSettings>();
+            // Load saved settings with migration support
+            var savedSettings = LoadSettingsWithMigration();
             if (savedSettings != null)
             {
                 Settings = savedSettings;
@@ -51,6 +53,44 @@ namespace PlayniteAchievements.ViewModels
             {
                 Settings = new PlayniteAchievementsSettings(_plugin);
                 _logger.Info($"No saved settings found. Created new settings with defaults. EnablePeriodicUpdates={Settings.Persisted.EnablePeriodicUpdates}");
+            }
+        }
+
+        /// <summary>
+        /// Loads settings from storage, running migration if needed.
+        /// </summary>
+        private PlayniteAchievementsSettings LoadSettingsWithMigration()
+        {
+            try
+            {
+                // Get the settings file path (Playnite uses config.json)
+                var pluginUserDataPath = _plugin.GetPluginUserDataPath();
+                var settingsFilePath = Path.Combine(pluginUserDataPath, "config.json");
+
+                if (!File.Exists(settingsFilePath))
+                {
+                    // Try loading directly as fallback
+                    return _plugin.LoadPluginSettings<PlayniteAchievementsSettings>();
+                }
+
+                // Read raw JSON and run migration
+                var rawJson = File.ReadAllText(settingsFilePath);
+                var migratedJson = ProviderSettingsMigration.MigrateFromJson(rawJson);
+
+                // If migration changed the JSON, save the migrated version
+                if (migratedJson != rawJson)
+                {
+                    _logger.Info("Provider settings migrated from flat properties to ProviderSettings dictionary.");
+                    File.WriteAllText(settingsFilePath, migratedJson);
+                }
+
+                // Deserialize the (potentially migrated) JSON
+                return Playnite.SDK.Data.Serialization.FromJson<PlayniteAchievementsSettings>(migratedJson);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to load settings with migration, falling back to direct load.");
+                return _plugin.LoadPluginSettings<PlayniteAchievementsSettings>();
             }
         }
 

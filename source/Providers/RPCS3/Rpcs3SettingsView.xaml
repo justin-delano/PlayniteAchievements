@@ -37,10 +37,112 @@
 
             <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Help_Rpcs3Info}"
-                               Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
-                </StackPanel>
-            </Border>
-        </StackPanel>
-    </ScrollViewer>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3Connection}"
+                               Style="{StaticResource SectionHeaderStyle}"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3_Description}"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,12"
+                               TextWrapping="Wrap"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="{DynamicResource LOCPlayAch_Settings_Rpcs3ExecutablePath}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   VerticalAlignment="Top"
+                                   Margin="0,8,0,0"/>
+
+                        <Border Grid.Column="1"
+                                Background="{DynamicResource PanelBackgroundBrush}"
+                                CornerRadius="8"
+                                Padding="16"
+                                BorderThickness="1">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="#F72585"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                     Value="True">
+                                            <Setter Property="BorderBrush" Value="#06FFA5"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               FontFamily="Segoe MDL2 Assets"
+                                               FontSize="{DynamicResource FontSize}"
+                                               Margin="0,0,12,0"
+                                               VerticalAlignment="Center">
+                                        <TextBlock.RenderTransform>
+                                            <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                        </TextBlock.RenderTransform>
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="&#xE783;"/>
+                                                <Setter Property="Foreground" Value="#F72585"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsAuthenticated, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                 Value="True">
+                                                        <Setter Property="Text" Value="&#xE73E;"/>
+                                                        <Setter Property="Foreground" Value="#06FFA5"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding AuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="Wrap"/>
+                                </Grid>
+
+                                <Border BorderBrush="{DynamicResource PopupBorderBrush}"
+                                        BorderThickness="0,1,0,0"
+                                        Padding="0,12,0,0">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBox Grid.Column="0"
+                                                     Text="{Binding Settings.ExecutablePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Padding="4"
+                                                     Margin="0,0,8,0"
+                                                     KeyDown="Rpcs3ExecutablePath_KeyDown"
+                                                     LostFocus="Rpcs3ExecutablePath_LostFocus"/>
+
+                                            <Button Grid.Column="1"
+                                                    Content="{DynamicResource LOCPlayAch_Settings_Rpcs3_Browse}"
+                                                    Click="Rpcs3_Browse_Click"
+                                                    Padding="10,4"/>
+                                        </Grid>
+
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Rpcs3ExecutablePathHint}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="0,8,0,0"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</ScrollViewer>
 </settings:ProviderSettingsViewBase>

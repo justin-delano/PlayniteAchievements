@@ -66,7 +66,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         /// <summary>
         /// Identifies the ThemeDataOverride dependency property.
-        /// When set, this override is used instead of Plugin.Settings.Theme for data binding.
+        /// When set, this override is used instead of Plugin.Settings.ModernTheme for data binding.
         /// Used by settings preview to inject mock data.
         /// </summary>
         public static readonly DependencyProperty ThemeDataOverrideProperty =
@@ -75,7 +75,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         /// <summary>
         /// Gets or sets a modern theme binding override for preview purposes.
-        /// When null (default), uses Plugin.Settings.Theme.
+        /// When null (default), uses Plugin.Settings.ModernTheme.
         /// When set, uses this instance instead (for settings preview).
         /// </summary>
         public ModernThemeBindings ThemeDataOverride
@@ -154,7 +154,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         /// <summary>
         /// Gets the effective modern theme bindings to use for binding.
-        /// Returns ThemeDataOverride if set, otherwise Plugin.Settings.Theme.
+        /// Returns ThemeDataOverride if set, otherwise Plugin.Settings.ModernTheme.
         /// </summary>
         protected ModernThemeBindings EffectiveTheme => ThemeDataOverride ?? EffectiveSettings?.ModernTheme;
 

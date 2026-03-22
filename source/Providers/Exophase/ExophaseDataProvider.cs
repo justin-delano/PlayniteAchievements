@@ -698,6 +698,9 @@ namespace PlayniteAchievements.Providers.Exophase
             }
         }
 
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new ExophaseSettingsView(_sessionManager);
+
         #endregion
     }
 }

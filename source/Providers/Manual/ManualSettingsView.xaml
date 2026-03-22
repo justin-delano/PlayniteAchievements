@@ -35,14 +35,64 @@
                 </TextBlock.Style>
             </TextBlock>
 
-            <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}">
+            <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}" Margin="0,0,0,16">
                 <StackPanel>
-                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ManualTrackingOverrideEnabled}"
+                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Manual_Override_Enable}"
                               IsChecked="{Binding Settings.ManualTrackingOverrideEnabled, Mode=TwoWay}"
                               Margin="0,0,0,12"/>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Help_ManualProvider}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Manual_Override_Description}"
                                Style="{StaticResource MutedTextStyle}" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Manual_Legacy_Header}"
+                               Style="{StaticResource SectionHeaderStyle}"
+                               Margin="0,0,0,12"/>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Manual_Legacy_Description}"
+                               Style="{StaticResource MutedTextStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,12"/>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Manual_Legacy_PathLabel}"
+                               Foreground="{DynamicResource TextBrush}"
+                               Margin="0,0,0,4"/>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Manual_Legacy_PathHint}"
+                               Style="{StaticResource MutedTextStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,12"/>
+
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding LegacyImportPath, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="6,4"
+                                 Margin="0,0,8,0"/>
+
+                        <Button Grid.Column="1"
+                                Content="{DynamicResource LOCPlayAch_Settings_Manual_Legacy_Browse}"
+                                Click="ManualLegacyBrowse_Click"
+                                Padding="10,4"/>
+                    </Grid>
+
+                    <Button Content="{DynamicResource LOCPlayAch_Settings_Manual_Legacy_ImportButton}"
+                            Click="ManualLegacyImport_Click"
+                            Padding="14,6"
+                            MinWidth="180"
+                            HorizontalAlignment="Left"
+                            Margin="0,0,0,10"/>
+
+                    <TextBlock Text="{Binding LegacyImportStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               TextWrapping="Wrap"
+                               Style="{StaticResource MutedTextStyle}"/>
                 </StackPanel>
             </Border>
         </StackPanel>

@@ -109,20 +109,20 @@ namespace PlayniteAchievements.Providers.Xbox
                 {
                     return XboxAuthResult.Create(
                         XboxAuthOutcome.AlreadyAuthenticated,
-                        "LOCPlayAch_Settings_XboxAuth_AlreadyAuthenticated",
+                        "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                         windowOpened: false);
                 }
 
                 return XboxAuthResult.Create(
                     XboxAuthOutcome.NotAuthenticated,
-                    "LOCPlayAch_Settings_XboxAuth_NotAuthenticated",
+                    "LOCPlayAch_Settings_Auth_NotAuthenticated",
                     windowOpened: false);
             }
             catch (OperationCanceledException)
             {
                 return XboxAuthResult.Create(
                     XboxAuthOutcome.Cancelled,
-                    "LOCPlayAch_Settings_XboxAuth_Cancelled",
+                    "LOCPlayAch_Settings_Auth_Cancelled",
                     windowOpened: false);
             }
             catch (Exception ex)
@@ -130,7 +130,7 @@ namespace PlayniteAchievements.Providers.Xbox
                 _logger?.Error(ex, "[XboxAch] Probe failed with exception.");
                 return XboxAuthResult.Create(
                     XboxAuthOutcome.ProbeFailed,
-                    "LOCPlayAch_Settings_XboxAuth_ProbeFailed",
+                    "LOCPlayAch_Settings_Auth_ProbeFailed",
                     windowOpened: false);
             }
         }
@@ -158,7 +158,7 @@ namespace PlayniteAchievements.Providers.Xbox
                         progress?.Report(XboxAuthProgressStep.Completed);
                         return XboxAuthResult.Create(
                             XboxAuthOutcome.AlreadyAuthenticated,
-                            "LOCPlayAch_Settings_XboxAuth_AlreadyAuthenticated",
+                            "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                             windowOpened: false);
                     }
                 }
@@ -171,7 +171,7 @@ namespace PlayniteAchievements.Providers.Xbox
                     progress?.Report(XboxAuthProgressStep.Failed);
                     return XboxAuthResult.Create(
                         XboxAuthOutcome.Failed,
-                        "LOCPlayAch_Settings_XboxAuth_WindowNotOpened",
+                        "LOCPlayAch_Settings_Auth_WindowNotOpened",
                         windowOpened: false);
                 }
 
@@ -188,7 +188,7 @@ namespace PlayniteAchievements.Providers.Xbox
                         progress?.Report(XboxAuthProgressStep.Completed);
                         return XboxAuthResult.Create(
                             XboxAuthOutcome.Authenticated,
-                            "LOCPlayAch_Settings_XboxAuth_Verified",
+                            "LOCPlayAch_Settings_Auth_Verified",
                             windowOpened: true);
                     }
 
@@ -198,14 +198,14 @@ namespace PlayniteAchievements.Providers.Xbox
                 progress?.Report(XboxAuthProgressStep.Failed);
                 return XboxAuthResult.Create(
                     XboxAuthOutcome.TimedOut,
-                    "LOCPlayAch_Settings_XboxAuth_TimedOut",
+                    "LOCPlayAch_Settings_Auth_TimedOut",
                     windowOpened: true);
             }
             catch (OperationCanceledException)
             {
                 return XboxAuthResult.Create(
                     XboxAuthOutcome.Cancelled,
-                    "LOCPlayAch_Settings_XboxAuth_Cancelled",
+                    "LOCPlayAch_Settings_Auth_Cancelled",
                     windowOpened: windowOpened);
             }
             catch (Exception ex)
@@ -214,7 +214,7 @@ namespace PlayniteAchievements.Providers.Xbox
                 progress?.Report(XboxAuthProgressStep.Failed);
                 return XboxAuthResult.Create(
                     XboxAuthOutcome.Failed,
-                    "LOCPlayAch_Settings_XboxAuth_Failed",
+                    "LOCPlayAch_Settings_Auth_Failed",
                     windowOpened: windowOpened);
             }
         }

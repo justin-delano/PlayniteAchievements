@@ -113,7 +113,7 @@ namespace PlayniteAchievements.Providers.GOG
                 {
                     return GogAuthResult.Create(
                         GogAuthOutcome.AlreadyAuthenticated,
-                        "LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated",
+                        "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                         _userId,
                         _tokenExpiryUtc,
                         windowOpened: false);
@@ -124,7 +124,7 @@ namespace PlayniteAchievements.Providers.GOG
                 {
                     return GogAuthResult.Create(
                         GogAuthOutcome.AlreadyAuthenticated,
-                        "LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated",
+                        "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                         extractedId,
                         _tokenExpiryUtc,
                         windowOpened: false);
@@ -134,14 +134,14 @@ namespace PlayniteAchievements.Providers.GOG
 
                 return GogAuthResult.Create(
                     GogAuthOutcome.NotAuthenticated,
-                    "LOCPlayAch_Settings_GogAuth_NotAuthenticated",
+                    "LOCPlayAch_Settings_Auth_NotAuthenticated",
                     windowOpened: false);
             }
             catch (OperationCanceledException)
             {
                 return GogAuthResult.Create(
                     GogAuthOutcome.Cancelled,
-                    "LOCPlayAch_Settings_GogAuth_Cancelled",
+                    "LOCPlayAch_Settings_Auth_Cancelled",
                     windowOpened: false);
             }
             catch (Exception ex)
@@ -149,7 +149,7 @@ namespace PlayniteAchievements.Providers.GOG
                 _logger?.Error(ex, "[GogAuth] Probe failed with exception.");
                 return GogAuthResult.Create(
                     GogAuthOutcome.ProbeFailed,
-                    "LOCPlayAch_Settings_GogAuth_ProbeFailed",
+                    "LOCPlayAch_Settings_Auth_ProbeFailed",
                     windowOpened: false);
             }
         }
@@ -182,7 +182,7 @@ namespace PlayniteAchievements.Providers.GOG
                             progress?.Report(GogAuthProgressStep.Completed);
                             return GogAuthResult.Create(
                                 GogAuthOutcome.AlreadyAuthenticated,
-                                "LOCPlayAch_Settings_GogAuth_AlreadyAuthenticated",
+                                "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                                 existingUserId,
                                 _tokenExpiryUtc,
                                 windowOpened: false);
@@ -228,7 +228,7 @@ namespace PlayniteAchievements.Providers.GOG
                     progress?.Report(GogAuthProgressStep.Failed);
                     return GogAuthResult.Create(
                         GogAuthOutcome.TimedOut,
-                        "LOCPlayAch_Settings_GogAuth_TimedOut",
+                        "LOCPlayAch_Settings_Auth_TimedOut",
                         windowOpened: windowOpened);
                 }
 
@@ -247,7 +247,7 @@ namespace PlayniteAchievements.Providers.GOG
                     progress?.Report(GogAuthProgressStep.Failed);
                     return GogAuthResult.Create(
                         GogAuthOutcome.Cancelled,
-                        "LOCPlayAch_Settings_GogAuth_Cancelled",
+                        "LOCPlayAch_Settings_Auth_Cancelled",
                         windowOpened: windowOpened);
                 }
 
@@ -256,7 +256,7 @@ namespace PlayniteAchievements.Providers.GOG
                 progress?.Report(GogAuthProgressStep.Completed);
                 return GogAuthResult.Create(
                     GogAuthOutcome.Authenticated,
-                    "LOCPlayAch_Settings_GogAuth_Verified",
+                    "LOCPlayAch_Settings_Auth_Verified",
                     extractedId,
                     _tokenExpiryUtc,
                     windowOpened: windowOpened);
@@ -267,7 +267,7 @@ namespace PlayniteAchievements.Providers.GOG
                 progress?.Report(GogAuthProgressStep.Failed);
                 return GogAuthResult.Create(
                     GogAuthOutcome.TimedOut,
-                    "LOCPlayAch_Settings_GogAuth_TimedOut",
+                    "LOCPlayAch_Settings_Auth_TimedOut",
                     windowOpened: windowOpened);
             }
             catch (Exception ex)
@@ -276,7 +276,7 @@ namespace PlayniteAchievements.Providers.GOG
                 progress?.Report(GogAuthProgressStep.Failed);
                 return GogAuthResult.Create(
                     GogAuthOutcome.Failed,
-                    "LOCPlayAch_Settings_GogAuth_Failed",
+                    "LOCPlayAch_Settings_Auth_Failed",
                     windowOpened: windowOpened);
             }
         }

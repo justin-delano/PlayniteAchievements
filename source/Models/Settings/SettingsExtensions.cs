@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Tagging;
 
@@ -31,10 +32,10 @@ namespace PlayniteAchievements.Models.Settings
                 return;
             }
 
-            // Provider Settings Dictionary (contains all provider-specific settings)
+            // Provider Settings Dictionary (contains all provider-specific settings as JObject)
             target.ProviderSettings = source.ProviderSettings != null
-                ? new Dictionary<string, string>(source.ProviderSettings, StringComparer.OrdinalIgnoreCase)
-                : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                ? new Dictionary<string, JObject>(source.ProviderSettings, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
 
             // Global Settings
             target.GlobalLanguage = source.GlobalLanguage;

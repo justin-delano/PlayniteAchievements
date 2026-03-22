@@ -99,5 +99,8 @@ namespace PlayniteAchievements.Providers.GOG
                 gogSettings.Save();
             }
         }
+
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new GogSettingsView(_sessionManager);
     }
 }

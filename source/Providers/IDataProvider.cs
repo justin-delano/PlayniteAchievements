@@ -45,5 +45,10 @@ namespace PlayniteAchievements.Providers
         /// Called after settings are loaded to apply them to the provider.
         /// </summary>
         void ApplySettings(IProviderSettings settings);
+
+        /// <summary>
+        /// Creates the settings view for this provider.
+        /// </summary>
+        ProviderSettingsViewBase CreateSettingsView();
     }
 }

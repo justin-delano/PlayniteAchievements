@@ -49,10 +49,6 @@ namespace PlayniteAchievements.Providers.Epic
 
         #endregion
 
-        public override string ProviderKey => "Epic";
-        public override string TabHeader => ResourceProvider.GetString("LOCPlayAch_Provider_Epic");
-        public override string IconKey => "ProviderIconEpic";
-
         public new EpicSettings Settings => _epicSettings;
 
         public EpicSettingsView(EpicSessionManager sessionManager)
@@ -66,22 +62,32 @@ namespace PlayniteAchievements.Providers.Epic
             _epicSettings = settings as EpicSettings;
             base.Initialize(settings);
             RefreshAuthStatus();
+            _ = RefreshAuthStatusAsync();
         }
 
         public void RefreshAuthStatus()
         {
             var isAuthenticated = _sessionManager?.IsAuthenticated ?? false;
             IsAuthenticated = isAuthenticated;
+            var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_Epic");
 
             AuthStatus = isAuthenticated
-                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_LoggedIn"), "Epic Games")
-                : string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotLoggedIn"), "Epic Games");
+                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName)
+                : string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName);
         }
 
-        public Task RefreshAuthStatusAsync()
+        public async Task RefreshAuthStatusAsync()
         {
+            try
+            {
+                await _sessionManager.ProbeAuthenticationAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Epic auth probe failed during settings refresh.");
+            }
+
             RefreshAuthStatus();
-            return Task.CompletedTask;
         }
 
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)
@@ -114,6 +120,24 @@ namespace PlayniteAchievements.Providers.Epic
             catch (Exception ex)
             {
                 Logger.Error(ex, "Epic logout failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private async void LoginAlternative_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                await _sessionManager.LoginAlternativeAsync(CancellationToken.None);
+                await RefreshAuthStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Epic alternative login failed");
             }
             finally
             {

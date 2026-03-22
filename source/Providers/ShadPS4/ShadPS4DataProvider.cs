@@ -382,5 +382,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 shadps4Settings.Save();
             }
         }
+
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new ShadPS4SettingsView(_playniteApi);
     }
 }

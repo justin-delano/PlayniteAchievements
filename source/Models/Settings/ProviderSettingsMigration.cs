@@ -42,44 +42,44 @@ namespace PlayniteAchievements.Models.Settings
             {
                 var root = JObject.Parse(json);
 
-                // Check if ProviderSettings already exists and has content
-                var providerSettings = root["ProviderSettings"] as JObject;
-                if (providerSettings != null && providerSettings.Count > 0)
+                // Get the Persisted object where settings are stored
+                var persisted = root["Persisted"] as JObject;
+                if (persisted == null)
                 {
-                    // Already migrated
+                    // No Persisted section, nothing to migrate
                     return json;
                 }
 
-                // Check if we have evidence of old settings (SteamUserId populated)
-                var steamUserId = root["SteamUserId"]?.ToString();
-                if (string.IsNullOrEmpty(steamUserId))
+                // Check if ANY old flat properties exist that need migration
+                if (!HasFlatPropertiesToMigrate(persisted))
                 {
                     // No old settings to migrate
                     return json;
                 }
 
-                // Create or clear ProviderSettings
+                // Create ProviderSettings if it doesn't exist
+                var providerSettings = persisted["ProviderSettings"] as JObject;
                 if (providerSettings == null)
                 {
                     providerSettings = new JObject();
-                    root["ProviderSettings"] = providerSettings;
+                    persisted["ProviderSettings"] = providerSettings;
                 }
 
-                // Migrate each provider
-                MigrateSteam(root, providerSettings);
-                MigrateEpic(root, providerSettings);
-                MigrateGog(root, providerSettings);
-                MigratePsn(root, providerSettings);
-                MigrateXbox(root, providerSettings);
-                MigrateRetroAchievements(root, providerSettings);
-                MigrateExophase(root, providerSettings);
-                MigrateShadPS4(root, providerSettings);
-                MigrateRpcs3(root, providerSettings);
-                MigrateXenia(root, providerSettings);
-                MigrateManual(root, providerSettings);
+                // Migrate each provider individually (skips if already in ProviderSettings)
+                MigrateSteam(persisted, providerSettings);
+                MigrateEpic(persisted, providerSettings);
+                MigrateGog(persisted, providerSettings);
+                MigratePsn(persisted, providerSettings);
+                MigrateXbox(persisted, providerSettings);
+                MigrateRetroAchievements(persisted, providerSettings);
+                MigrateExophase(persisted, providerSettings);
+                MigrateShadPS4(persisted, providerSettings);
+                MigrateRpcs3(persisted, providerSettings);
+                MigrateXenia(persisted, providerSettings);
+                MigrateManual(persisted, providerSettings);
 
                 // Remove all flat provider properties from the JSON
-                RemoveFlatProperties(root);
+                RemoveFlatProperties(persisted);
 
                 return root.ToString(Newtonsoft.Json.Formatting.None);
             }
@@ -90,66 +90,104 @@ namespace PlayniteAchievements.Models.Settings
             }
         }
 
-        private static void MigrateSteam(JObject root, JObject providerSettings)
+        /// <summary>
+        /// Checks if there are any flat properties that need to be migrated.
+        /// </summary>
+        private static bool HasFlatPropertiesToMigrate(JObject persisted)
         {
+            // Check for any of the old flat property names
+            return persisted["SteamUserId"] != null ||
+                   persisted["EpicAccountId"] != null ||
+                   persisted["GogUserId"] != null ||
+                   persisted["PsnNpsso"] != null ||
+                   persisted["XboxEnabled"] != null ||
+                   persisted["RetroAchievementsEnabled"] != null ||
+                   persisted["RaUsername"] != null ||
+                   persisted["ExophaseUserId"] != null ||
+                   persisted["ShadPS4GameDataPath"] != null ||
+                   persisted["Rpcs3ExecutablePath"] != null ||
+                   persisted["XeniaAccountPath"] != null ||
+                   persisted["ManualTrackingOverrideEnabled"] != null;
+        }
+
+        private static void MigrateSteam(JObject persisted, JObject providerSettings)
+        {
+            // Skip if already migrated
+            if (providerSettings["Steam"] != null) return;
+
             var settings = new SteamSettings
             {
-                IsEnabled = root["SteamEnabled"]?.Value<bool>() ?? true,
-                SteamUserId = root["SteamUserId"]?.ToString(),
-                SteamApiKey = root["SteamApiKey"]?.ToString()
+                IsEnabled = persisted["SteamEnabled"]?.Value<bool>() ?? true,
+                SteamUserId = persisted["SteamUserId"]?.ToString(),
+                SteamApiKey = persisted["SteamApiKey"]?.ToString()
             };
             providerSettings["Steam"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigrateEpic(JObject root, JObject providerSettings)
+        private static void MigrateEpic(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["Epic"] != null) return;
+
             var settings = new EpicSettings
             {
-                IsEnabled = root["EpicEnabled"]?.Value<bool>() ?? true,
-                AccountId = root["EpicAccountId"]?.ToString(),
-                AccessToken = root["EpicAccessToken"]?.ToString(),
-                RefreshToken = root["EpicRefreshToken"]?.ToString(),
-                TokenType = root["EpicTokenType"]?.ToString(),
-                TokenExpiryUtc = root["EpicTokenExpiryUtc"]?.Value<DateTime>() ?? default,
-                RefreshTokenExpiryUtc = root["EpicRefreshTokenExpiryUtc"]?.Value<DateTime>() ?? default
+                IsEnabled = persisted["EpicEnabled"]?.Value<bool>() ?? true,
+                AccountId = persisted["EpicAccountId"]?.ToString(),
+                AccessToken = persisted["EpicAccessToken"]?.ToString(),
+                RefreshToken = persisted["EpicRefreshToken"]?.ToString(),
+                TokenType = persisted["EpicTokenType"]?.ToString(),
+                TokenExpiryUtc = persisted["EpicTokenExpiryUtc"]?.Value<DateTime>() ?? default,
+                RefreshTokenExpiryUtc = persisted["EpicRefreshTokenExpiryUtc"]?.Value<DateTime>() ?? default
             };
             providerSettings["Epic"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigrateGog(JObject root, JObject providerSettings)
+        private static void MigrateGog(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["GOG"] != null) return;
+
             var settings = new GogSettings
             {
-                IsEnabled = root["GogEnabled"]?.Value<bool>() ?? true,
-                UserId = root["GogUserId"]?.ToString()
+                IsEnabled = persisted["GogEnabled"]?.Value<bool>() ?? true,
+                UserId = persisted["GogUserId"]?.ToString()
             };
             providerSettings["GOG"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigratePsn(JObject root, JObject providerSettings)
+        private static void MigratePsn(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["PSN"] != null) return;
+
             var settings = new PsnSettings
             {
-                IsEnabled = root["PsnEnabled"]?.Value<bool>() ?? true,
-                Npsso = root["PsnNpsso"]?.ToString() ?? string.Empty
+                IsEnabled = persisted["PsnEnabled"]?.Value<bool>() ?? true,
+                Npsso = persisted["PsnNpsso"]?.ToString() ?? string.Empty
             };
             providerSettings["PSN"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigrateXbox(JObject root, JObject providerSettings)
+        private static void MigrateXbox(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["Xbox"] != null) return;
+
             var settings = new XboxSettings
             {
-                IsEnabled = root["XboxEnabled"]?.Value<bool>() ?? true,
-                LowResIcons = root["XboxLowResIcons"]?.Value<bool>() ?? false
+                IsEnabled = persisted["XboxEnabled"]?.Value<bool>() ?? true,
+                LowResIcons = persisted["XboxLowResIcons"]?.Value<bool>() ?? false
             };
             providerSettings["Xbox"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigrateRetroAchievements(JObject root, JObject providerSettings)
+        private static void MigrateRetroAchievements(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["RetroAchievements"] != null) return;
+
             var gameIdOverrides = new Dictionary<Guid, int>();
-            var overridesObj = root["RaGameIdOverrides"] as JObject;
+            var overridesObj = persisted["RaGameIdOverrides"] as JObject;
             if (overridesObj != null)
             {
                 foreach (var kvp in overridesObj)
@@ -163,24 +201,27 @@ namespace PlayniteAchievements.Models.Settings
 
             var settings = new RetroAchievementsSettings
             {
-                IsEnabled = root["RetroAchievementsEnabled"]?.Value<bool>() ?? true,
-                RaUsername = root["RaUsername"]?.ToString(),
-                RaWebApiKey = root["RaWebApiKey"]?.ToString(),
-                RaRarityStats = root["RaRarityStats"]?.ToString() ?? "casual",
-                RaPointsMode = root["RaPointsMode"]?.ToString() ?? "points",
-                HashIndexMaxAgeDays = root["HashIndexMaxAgeDays"]?.Value<int>() ?? 30,
-                EnableArchiveScanning = root["EnableArchiveScanning"]?.Value<bool>() ?? true,
-                EnableDiscHashing = root["EnableDiscHashing"]?.Value<bool>() ?? true,
-                EnableRaNameFallback = root["EnableRaNameFallback"]?.Value<bool>() ?? true,
+                IsEnabled = persisted["RetroAchievementsEnabled"]?.Value<bool>() ?? true,
+                RaUsername = persisted["RaUsername"]?.ToString(),
+                RaWebApiKey = persisted["RaWebApiKey"]?.ToString(),
+                RaRarityStats = persisted["RaRarityStats"]?.ToString() ?? "casual",
+                RaPointsMode = persisted["RaPointsMode"]?.ToString() ?? "points",
+                HashIndexMaxAgeDays = persisted["HashIndexMaxAgeDays"]?.Value<int>() ?? 30,
+                EnableArchiveScanning = persisted["EnableArchiveScanning"]?.Value<bool>() ?? true,
+                EnableDiscHashing = persisted["EnableDiscHashing"]?.Value<bool>() ?? true,
+                EnableRaNameFallback = persisted["EnableRaNameFallback"]?.Value<bool>() ?? true,
                 RaGameIdOverrides = gameIdOverrides
             };
             providerSettings["RetroAchievements"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigrateExophase(JObject root, JObject providerSettings)
+        private static void MigrateExophase(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["Exophase"] != null) return;
+
             var managedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var managedArr = root["ExophaseManagedProviders"] as JArray;
+            var managedArr = persisted["ExophaseManagedProviders"] as JArray;
             if (managedArr != null)
             {
                 foreach (var item in managedArr)
@@ -190,7 +231,7 @@ namespace PlayniteAchievements.Models.Settings
             }
 
             var includedGames = new HashSet<Guid>();
-            var includedArr = root["ExophaseIncludedGames"] as JArray;
+            var includedArr = persisted["ExophaseIncludedGames"] as JArray;
             if (includedArr != null)
             {
                 foreach (var item in includedArr)
@@ -203,7 +244,7 @@ namespace PlayniteAchievements.Models.Settings
             }
 
             var slugOverrides = new Dictionary<Guid, string>();
-            var slugObj = root["ExophaseSlugOverrides"] as JObject;
+            var slugObj = persisted["ExophaseSlugOverrides"] as JObject;
             if (slugObj != null)
             {
                 foreach (var kvp in slugObj)
@@ -217,8 +258,8 @@ namespace PlayniteAchievements.Models.Settings
 
             var settings = new ExophaseSettings
             {
-                IsEnabled = root["ExophaseEnabled"]?.Value<bool>() ?? false,
-                UserId = root["ExophaseUserId"]?.ToString(),
+                IsEnabled = persisted["ExophaseEnabled"]?.Value<bool>() ?? false,
+                UserId = persisted["ExophaseUserId"]?.ToString(),
                 ManagedProviders = managedProviders,
                 IncludedGames = includedGames,
                 SlugOverrides = slugOverrides
@@ -226,30 +267,39 @@ namespace PlayniteAchievements.Models.Settings
             providerSettings["Exophase"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigrateShadPS4(JObject root, JObject providerSettings)
+        private static void MigrateShadPS4(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["ShadPS4"] != null) return;
+
             var settings = new ShadPS4Settings
             {
-                IsEnabled = root["ShadPS4Enabled"]?.Value<bool>() ?? true,
-                GameDataPath = root["ShadPS4GameDataPath"]?.ToString()
+                IsEnabled = persisted["ShadPS4Enabled"]?.Value<bool>() ?? true,
+                GameDataPath = persisted["ShadPS4GameDataPath"]?.ToString()
             };
             providerSettings["ShadPS4"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigrateRpcs3(JObject root, JObject providerSettings)
+        private static void MigrateRpcs3(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["RPCS3"] != null) return;
+
             var settings = new Rpcs3Settings
             {
-                IsEnabled = root["Rpcs3Enabled"]?.Value<bool>() ?? true,
-                ExecutablePath = root["Rpcs3ExecutablePath"]?.ToString()
+                IsEnabled = persisted["Rpcs3Enabled"]?.Value<bool>() ?? true,
+                ExecutablePath = persisted["Rpcs3ExecutablePath"]?.ToString()
             };
             providerSettings["RPCS3"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigrateXenia(JObject root, JObject providerSettings)
+        private static void MigrateXenia(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["Xenia"] != null) return;
+
             var gameIdOverrides = new Dictionary<Guid, string>();
-            var overridesObj = root["XeniaGameIdOverrides"] as JObject;
+            var overridesObj = persisted["XeniaGameIdOverrides"] as JObject;
             if (overridesObj != null)
             {
                 foreach (var kvp in overridesObj)
@@ -263,17 +313,20 @@ namespace PlayniteAchievements.Models.Settings
 
             var settings = new XeniaSettings
             {
-                IsEnabled = root["XeniaEnabled"]?.Value<bool>() ?? true,
-                AccountPath = root["XeniaAccountPath"]?.ToString(),
+                IsEnabled = persisted["XeniaEnabled"]?.Value<bool>() ?? true,
+                AccountPath = persisted["XeniaAccountPath"]?.ToString(),
                 GameIdOverrides = gameIdOverrides
             };
             providerSettings["Xenia"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void MigrateManual(JObject root, JObject providerSettings)
+        private static void MigrateManual(JObject persisted, JObject providerSettings)
         {
+            // Skip if already migrated
+            if (providerSettings["Manual"] != null) return;
+
             var achievementLinks = new Dictionary<Guid, ManualAchievementLink>();
-            var linksObj = root["ManualAchievementLinks"] as JObject;
+            var linksObj = persisted["ManualAchievementLinks"] as JObject;
             if (linksObj != null)
             {
                 foreach (var kvp in linksObj)
@@ -287,78 +340,78 @@ namespace PlayniteAchievements.Models.Settings
 
             var settings = new ManualSettings
             {
-                IsEnabled = root["ManualEnabled"]?.Value<bool>() ?? true,
-                ManualTrackingOverrideEnabled = root["ManualTrackingOverrideEnabled"]?.Value<bool>() ?? false,
+                IsEnabled = persisted["ManualEnabled"]?.Value<bool>() ?? true,
+                ManualTrackingOverrideEnabled = persisted["ManualTrackingOverrideEnabled"]?.Value<bool>() ?? false,
                 AchievementLinks = achievementLinks
             };
             providerSettings["Manual"] = JObject.Parse(settings.SerializeToJson());
         }
 
-        private static void RemoveFlatProperties(JObject root)
+        private static void RemoveFlatProperties(JObject persisted)
         {
             // Steam
-            root.Remove("SteamUserId");
-            root.Remove("SteamApiKey");
-            root.Remove("SteamEnabled");
+            persisted.Remove("SteamUserId");
+            persisted.Remove("SteamApiKey");
+            persisted.Remove("SteamEnabled");
 
             // Epic
-            root.Remove("EpicAccountId");
-            root.Remove("EpicAccessToken");
-            root.Remove("EpicRefreshToken");
-            root.Remove("EpicTokenType");
-            root.Remove("EpicTokenExpiryUtc");
-            root.Remove("EpicRefreshTokenExpiryUtc");
-            root.Remove("EpicEnabled");
+            persisted.Remove("EpicAccountId");
+            persisted.Remove("EpicAccessToken");
+            persisted.Remove("EpicRefreshToken");
+            persisted.Remove("EpicTokenType");
+            persisted.Remove("EpicTokenExpiryUtc");
+            persisted.Remove("EpicRefreshTokenExpiryUtc");
+            persisted.Remove("EpicEnabled");
 
             // GOG
-            root.Remove("GogUserId");
-            root.Remove("GogEnabled");
+            persisted.Remove("GogUserId");
+            persisted.Remove("GogEnabled");
 
             // PSN
-            root.Remove("PsnNpsso");
-            root.Remove("PsnEnabled");
+            persisted.Remove("PsnNpsso");
+            persisted.Remove("PsnEnabled");
 
             // Xbox
-            root.Remove("XboxEnabled");
-            root.Remove("XboxLowResIcons");
+            persisted.Remove("XboxEnabled");
+            persisted.Remove("XboxLowResIcons");
 
             // RetroAchievements
-            root.Remove("RetroAchievementsEnabled");
-            root.Remove("RaUsername");
-            root.Remove("RaWebApiKey");
-            root.Remove("RaRarityStats");
-            root.Remove("RaPointsMode");
-            root.Remove("HashIndexMaxAgeDays");
-            root.Remove("EnableArchiveScanning");
-            root.Remove("EnableDiscHashing");
-            root.Remove("EnableRaNameFallback");
-            root.Remove("RaGameIdOverrides");
+            persisted.Remove("RetroAchievementsEnabled");
+            persisted.Remove("RaUsername");
+            persisted.Remove("RaWebApiKey");
+            persisted.Remove("RaRarityStats");
+            persisted.Remove("RaPointsMode");
+            persisted.Remove("HashIndexMaxAgeDays");
+            persisted.Remove("EnableArchiveScanning");
+            persisted.Remove("EnableDiscHashing");
+            persisted.Remove("EnableRaNameFallback");
+            persisted.Remove("RaGameIdOverrides");
 
             // Exophase
-            root.Remove("ExophaseEnabled");
-            root.Remove("ExophaseUserId");
-            root.Remove("ExophaseManagedProviders");
-            root.Remove("ExophaseIncludedGames");
-            root.Remove("ExophaseSlugOverrides");
+            persisted.Remove("ExophaseEnabled");
+            persisted.Remove("ExophaseUserId");
+            persisted.Remove("ExophaseManagedProviders");
+            persisted.Remove("ExophaseIncludedGames");
+            persisted.Remove("ExophaseSlugOverrides");
 
             // ShadPS4
-            root.Remove("ShadPS4Enabled");
-            root.Remove("ShadPS4GameDataPath");
+            persisted.Remove("ShadPS4Enabled");
+            persisted.Remove("ShadPS4GameDataPath");
 
             // RPCS3
-            root.Remove("Rpcs3Enabled");
-            root.Remove("Rpcs3ExecutablePath");
+            persisted.Remove("Rpcs3Enabled");
+            persisted.Remove("Rpcs3ExecutablePath");
 
             // Xenia
-            root.Remove("XeniaEnabled");
-            root.Remove("XeniaAccountPath");
-            root.Remove("XeniaGameIdOverrides");
+            persisted.Remove("XeniaEnabled");
+            persisted.Remove("XeniaAccountPath");
+            persisted.Remove("XeniaGameIdOverrides");
 
             // Manual
-            root.Remove("ManualEnabled");
-            root.Remove("ManualTrackingOverrideEnabled");
-            root.Remove("ManualAchievementLinks");
-            root.Remove("LegacyManualImportPath");
+            persisted.Remove("ManualEnabled");
+            persisted.Remove("ManualTrackingOverrideEnabled");
+            persisted.Remove("ManualAchievementLinks");
+            persisted.Remove("LegacyManualImportPath");
         }
 #else
         // Test project stub - migration not available in tests

@@ -648,5 +648,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                 rpcs3Settings.Save();
             }
         }
+
+        /// <inheritdoc />
+        public ProviderSettingsViewBase CreateSettingsView() => new Rpcs3SettingsView(_playniteApi);
     }
 }

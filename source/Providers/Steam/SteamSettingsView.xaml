@@ -92,7 +92,7 @@
 
                             <StackPanel>
                                 <!-- Web Auth Section -->
-                                <StackPanel Margin="0,0,0,14">
+                                <StackPanel Margin="0,0,0,12">
                                     <Grid Margin="0,0,0,10">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -129,11 +129,15 @@
                                     </Grid>
 
                                     <StackPanel Orientation="Horizontal">
-                                        <Button Content="{DynamicResource LOCPlayAch_Button_LoginWeb}"
+                                        <Button Content="{DynamicResource LOCPlayAch_Settings_CheckSteamAuth}"
+                                            Click="SteamAuth_Check_Click"
+                                            Style="{StaticResource AuthActionButtonStyle}"
+                                            Margin="0,0,8,0"/>
+                                        <Button Content="{DynamicResource LOCPlayAch_Settings_ReauthSteam}"
                                                 Click="LoginWeb_Click"
                                                 Style="{StaticResource AuthActionButtonStyle}"
                                                 Margin="0,0,8,0"/>
-                                        <Button Content="{DynamicResource LOCPlayAch_Button_Logout}"
+                                        <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                 Click="Logout_Click"
                                                 Style="{StaticResource AuthActionButtonStyle}"/>
                                     </StackPanel>
@@ -142,16 +146,22 @@
                                 <!-- API Key Section -->
                                 <Border BorderBrush="{DynamicResource PopupBorderBrush}"
                                         BorderThickness="0,1,0,0"
-                                        Padding="0,14,0,0">
+                                    Padding="0,12,0,0">
                                     <StackPanel>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Label_SteamApiKey}"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SteamApiKey}"
                                                    Margin="0,0,0,8"/>
                                         <TextBox Text="{Binding Settings.SteamApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  Padding="4"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Help_SteamApiKey}"
-                                                   Style="{StaticResource MutedTextStyle}"
+                                        <TextBlock Style="{StaticResource MutedTextStyle}"
                                                    Margin="0,8,0,0"
-                                                   TextWrapping="Wrap"/>
+                                                   TextWrapping="Wrap">
+                                            <Run Text="{DynamicResource LOCPlayAch_Settings_SteamApiKeyHint}"/>
+                                            <Run Text=" "/>
+                                            <Hyperlink NavigateUri="https://steamcommunity.com/dev/apikey"
+                                                       RequestNavigate="Hyperlink_RequestNavigate">
+                                                <Run Text="steamcommunity.com/dev/apikey"/>
+                                            </Hyperlink>
+                                        </TextBlock>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -174,7 +184,7 @@
                         <StackPanel Grid.Column="1">
                             <TextBox Text="{Binding Settings.SteamUserId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      Padding="4"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Help_SteamUserId}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Label_SteamUserId_Help}"
                                        Style="{StaticResource MutedTextStyle}"
                                        Margin="0,8,0,0"
                                        TextWrapping="Wrap"/>

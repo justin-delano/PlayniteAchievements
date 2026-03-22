@@ -182,7 +182,7 @@ namespace PlayniteAchievements.Providers.Epic
                     {
                         return EpicAuthResult.Create(
                             EpicAuthOutcome.AlreadyAuthenticated,
-                            "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                            "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                             _accountId,
                             windowOpened: false);
                     }
@@ -202,7 +202,7 @@ namespace PlayniteAchievements.Providers.Epic
                         {
                             return EpicAuthResult.Create(
                                 EpicAuthOutcome.AlreadyAuthenticated,
-                                "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                                "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                                 _accountId,
                                 windowOpened: false);
                         }
@@ -217,7 +217,7 @@ namespace PlayniteAchievements.Providers.Epic
                         {
                             return EpicAuthResult.Create(
                                 EpicAuthOutcome.AlreadyAuthenticated,
-                                "LOCPlayAch_Settings_EpicAuth_AlreadyAuthenticated",
+                                "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
                                 _accountId,
                                 windowOpened: false);
                         }
@@ -225,14 +225,14 @@ namespace PlayniteAchievements.Providers.Epic
 
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.NotAuthenticated,
-                        "LOCPlayAch_Settings_EpicAuth_NotAuthenticated",
+                        "LOCPlayAch_Settings_Auth_NotAuthenticated",
                         windowOpened: false);
                 }
                 catch (OperationCanceledException)
                 {
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.Cancelled,
-                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        "LOCPlayAch_Settings_Auth_Cancelled",
                         windowOpened: false);
                 }
                 catch (Exception ex)
@@ -240,7 +240,7 @@ namespace PlayniteAchievements.Providers.Epic
                     _logger?.Error(ex, "[EpicAuth] Probe failed with exception.");
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.ProbeFailed,
-                        "LOCPlayAch_Settings_EpicAuth_ProbeFailed",
+                        "LOCPlayAch_Settings_Auth_ProbeFailed",
                         windowOpened: false);
                 }
             }
@@ -300,7 +300,7 @@ namespace PlayniteAchievements.Providers.Epic
                     progress?.Report(EpicAuthProgressStep.Failed);
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.TimedOut,
-                        "LOCPlayAch_Settings_EpicAuth_TimedOut",
+                        "LOCPlayAch_Settings_Auth_TimedOut",
                         windowOpened: windowOpened);
                 }
 
@@ -316,7 +316,7 @@ namespace PlayniteAchievements.Providers.Epic
                     progress?.Report(EpicAuthProgressStep.Failed);
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.Cancelled,
-                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        "LOCPlayAch_Settings_Auth_Cancelled",
                         windowOpened: windowOpened);
                 }
 
@@ -326,7 +326,7 @@ namespace PlayniteAchievements.Providers.Epic
                     progress?.Report(EpicAuthProgressStep.Failed);
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.Failed,
-                        "LOCPlayAch_Settings_EpicAuth_Failed",
+                        "LOCPlayAch_Settings_Auth_Failed",
                         windowOpened: windowOpened);
                 }
 
@@ -334,7 +334,7 @@ namespace PlayniteAchievements.Providers.Epic
 
                 return EpicAuthResult.Create(
                     EpicAuthOutcome.Authenticated,
-                    "LOCPlayAch_Settings_EpicAuth_Verified",
+                    "LOCPlayAch_Settings_Auth_Verified",
                     _accountId,
                     windowOpened: windowOpened);
             }
@@ -343,7 +343,7 @@ namespace PlayniteAchievements.Providers.Epic
                 progress?.Report(EpicAuthProgressStep.Failed);
                 return EpicAuthResult.Create(
                     EpicAuthOutcome.TimedOut,
-                    "LOCPlayAch_Settings_EpicAuth_TimedOut",
+                    "LOCPlayAch_Settings_Auth_TimedOut",
                     windowOpened: windowOpened);
             }
             catch (Exception ex)
@@ -352,7 +352,7 @@ namespace PlayniteAchievements.Providers.Epic
                 progress?.Report(EpicAuthProgressStep.Failed);
                 return EpicAuthResult.Create(
                     EpicAuthOutcome.Failed,
-                    "LOCPlayAch_Settings_EpicAuth_Failed",
+                    "LOCPlayAch_Settings_Auth_Failed",
                     windowOpened: windowOpened);
             }
         }
@@ -464,7 +464,7 @@ namespace PlayniteAchievements.Providers.Epic
                     UseShellExecute = true
                 });
 
-                var prompt = ResourceProvider.GetString("LOCPlayAch_Settings_EpicAuth_BrowserPrompt");
+                var prompt = ResourceProvider.GetString("LOCPlayAch_Settings_Epic_AltAuthCodePrompt");
                 var title = ResourceProvider.GetString("LOCPlayAch_Settings_EpicConnection");
 
                 if (string.IsNullOrWhiteSpace(prompt))
@@ -524,7 +524,7 @@ namespace PlayniteAchievements.Providers.Epic
                 {
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.Cancelled,
-                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        "LOCPlayAch_Settings_Auth_Cancelled",
                         windowOpened: false);
                 }
 
@@ -548,7 +548,7 @@ namespace PlayniteAchievements.Providers.Epic
                 {
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.Cancelled,
-                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        "LOCPlayAch_Settings_Auth_Cancelled",
                         windowOpened: windowOpened);
                 }
 
@@ -557,7 +557,7 @@ namespace PlayniteAchievements.Providers.Epic
                 {
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.Cancelled,
-                        "LOCPlayAch_Settings_EpicAuth_Cancelled",
+                        "LOCPlayAch_Settings_Auth_Cancelled",
                         windowOpened: windowOpened);
                 }
 
@@ -572,13 +572,13 @@ namespace PlayniteAchievements.Providers.Epic
                 {
                     return EpicAuthResult.Create(
                         EpicAuthOutcome.Failed,
-                        "LOCPlayAch_Settings_EpicAuth_Failed",
+                        "LOCPlayAch_Settings_Auth_Failed",
                         windowOpened: windowOpened);
                 }
 
                 return EpicAuthResult.Create(
                     EpicAuthOutcome.Authenticated,
-                    "LOCPlayAch_Settings_EpicAuth_Verified",
+                    "LOCPlayAch_Settings_Auth_Verified",
                     _accountId,
                     windowOpened: windowOpened);
             }
@@ -586,7 +586,7 @@ namespace PlayniteAchievements.Providers.Epic
             {
                 return EpicAuthResult.Create(
                     EpicAuthOutcome.TimedOut,
-                    "LOCPlayAch_Settings_EpicAuth_TimedOut",
+                    "LOCPlayAch_Settings_Auth_TimedOut",
                     windowOpened: windowOpened);
             }
             catch (Exception ex)
@@ -594,7 +594,7 @@ namespace PlayniteAchievements.Providers.Epic
                 _logger?.Error(ex, "[EpicAuth] Alternative login failed with exception.");
                 return EpicAuthResult.Create(
                     EpicAuthOutcome.Failed,
-                    "LOCPlayAch_Settings_EpicAuth_Failed",
+                    "LOCPlayAch_Settings_Auth_Failed",
                     windowOpened: windowOpened);
             }
         }
