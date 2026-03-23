@@ -1,5 +1,4 @@
 using PlayniteAchievements.Common;
-using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Models;
 using Playnite.SDK;
@@ -90,7 +89,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 {
                     return userId;
                 }
-                return _settings?.Persisted?.ExophaseUserId;
+                return ProviderRegistry.Settings<ExophaseSettings>().UserId;
             }
         }
 
@@ -130,7 +129,7 @@ namespace PlayniteAchievements.Providers.Exophase
                     ct.ThrowIfCancellationRequested();
 
                     // Fast path: check persisted username AND cookies exist
-                    var persistedUsername = _settings?.Persisted?.ExophaseUserId;
+                    var persistedUsername = ProviderRegistry.Settings<ExophaseSettings>().UserId;
                     var hasCookies = HasExophaseSessionCookies(_api, _logger);
 
                     if (!string.IsNullOrWhiteSpace(persistedUsername) && hasCookies)
@@ -145,18 +144,16 @@ namespace PlayniteAchievements.Providers.Exophase
                     if (!string.IsNullOrWhiteSpace(extractedUsername))
                     {
                         _probeCache.RecordProbe(ProviderKey, true, extractedUsername);
-                        if (_settings?.Persisted != null)
-                        {
-                            _settings.Persisted.ExophaseUserId = extractedUsername;
-                        }
+                        var exophaseSettings = ProviderRegistry.Settings<ExophaseSettings>();
+                        exophaseSettings.UserId = extractedUsername;
+                        ProviderRegistry.Write(exophaseSettings);
                         return AuthProbeResult.AlreadyAuthenticated(extractedUsername);
                     }
 
                     // Verification failed, clear any stale persisted state
-                    if (_settings?.Persisted != null)
-                    {
-                        _settings.Persisted.ExophaseUserId = null;
-                    }
+                    var clearSettings = ProviderRegistry.Settings<ExophaseSettings>();
+                    clearSettings.UserId = null;
+                    ProviderRegistry.Write(clearSettings);
                     _probeCache.RecordProbe(ProviderKey, false);
 
                     return AuthProbeResult.NotAuthenticated();
@@ -254,10 +251,9 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 _probeCache.RecordProbe(ProviderKey, true, extractedUsername);
-                if (_settings?.Persisted != null)
-                {
-                    _settings.Persisted.ExophaseUserId = extractedUsername;
-                }
+                var saveSettings = ProviderRegistry.Settings<ExophaseSettings>();
+                saveSettings.UserId = extractedUsername;
+                ProviderRegistry.Write(saveSettings);
 
                 _logger?.Info("[ExophaseAuth] Interactive login succeeded.");
                 progress?.Report(AuthProgressStep.Completed);
@@ -289,10 +285,9 @@ namespace PlayniteAchievements.Providers.Exophase
             _probeCache.Invalidate(ProviderKey);
 
             // Clear persisted user ID
-            if (_settings?.Persisted != null)
-            {
-                _settings.Persisted.ExophaseUserId = null;
-            }
+            var clearSettings = ProviderRegistry.Settings<ExophaseSettings>();
+            clearSettings.UserId = null;
+            ProviderRegistry.Write(clearSettings);
 
             // Clear cookies from CEF
             try

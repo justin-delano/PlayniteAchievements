@@ -1,5 +1,4 @@
 using Playnite.SDK;
-using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
@@ -54,12 +53,10 @@ namespace PlayniteAchievements.Providers.Xbox
         public XboxSessionManager(
             IPlayniteAPI api,
             ILogger logger,
-            PersistedSettings settings,
             AuthProbeCache probeCache,
             string pluginUserDataPath)
         {
             if (api == null) throw new ArgumentNullException(nameof(api));
-            if (settings == null) throw new ArgumentNullException(nameof(settings));
 
             _api = api;
             _logger = logger;
@@ -80,9 +77,8 @@ namespace PlayniteAchievements.Providers.Xbox
         public XboxSessionManager(
             IPlayniteAPI api,
             ILogger logger,
-            PersistedSettings settings,
             string pluginUserDataPath)
-            : this(api, logger, settings, new AuthProbeCache(logger), pluginUserDataPath)
+            : this(api, logger, new AuthProbeCache(logger), pluginUserDataPath)
         {
         }
 
