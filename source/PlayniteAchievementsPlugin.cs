@@ -66,12 +66,6 @@ namespace PlayniteAchievements
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly NotificationPublisher _notifications;
-        private readonly SteamSessionManager _steamSessionManager;
-        private readonly GogSessionManager _gogSessionManager;
-        private readonly EpicSessionManager _epicSessionManager;
-        private readonly PsnSessionManager _psnSessionManager;
-        private readonly XboxSessionManager _xboxSessionManager;
-        private readonly ExophaseSessionManager _exophaseSessionManager;
         private readonly ProviderRegistry _providerRegistry;
         private readonly ManualAchievementsProvider _manualProvider;
         private readonly SubscriptionCollection _eventSubscriptions = new SubscriptionCollection();
@@ -182,29 +176,9 @@ namespace PlayniteAchievements
                 var settings = _settingsViewModel.Settings;
                 var pluginUserDataPath = GetPluginUserDataPath();
 
-                // Phase 2: Create session managers and data providers.
-                using (PerfScope.StartStartup(_logger, "PluginCtor.SessionManagers", thresholdMs: 50))
-                {
-                    // Create shared Steam session manager for use by provider and settings UI
-                    _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, settings);
-                    _gogSessionManager = new GogSessionManager(PlayniteApi, _logger, settings);
-                    _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
-                    _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger, settings, pluginUserDataPath);
-                    _xboxSessionManager = new XboxSessionManager(PlayniteApi, _logger, pluginUserDataPath);
-                    _exophaseSessionManager = new ExophaseSessionManager(PlayniteApi, _logger, settings);
-                }
-
-                // Create provider registry and register session managers for discovery-based provider creation
+                // Create provider registry
                 _providerRegistry = new ProviderRegistry(settings, _logger);
                 _providerRegistry.SyncFromSettings(settings.Persisted);
-
-                // Register session managers for dependency injection during provider creation
-                _providerRegistry.RegisterSessionManager(_steamSessionManager);
-                _providerRegistry.RegisterSessionManager(_gogSessionManager);
-                _providerRegistry.RegisterSessionManager(_epicSessionManager);
-                _providerRegistry.RegisterSessionManager(_psnSessionManager);
-                _providerRegistry.RegisterSessionManager(_xboxSessionManager);
-                _providerRegistry.RegisterSessionManager(_exophaseSessionManager);
 
                 List<IDataProvider> providers;
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
