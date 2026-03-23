@@ -28,16 +28,14 @@ namespace PlayniteAchievements.Providers.Steam
             ILogger logger,
             PlayniteAchievementsSettings settings,
             IPlayniteAPI api,
-            SteamSessionManager sessionManager,
             string pluginUserDataPath)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (api == null) throw new ArgumentNullException(nameof(api));
-            if (sessionManager == null) throw new ArgumentNullException(nameof(sessionManager));
 
             _settings = settings;
-            _sessionManager = sessionManager;
+            _sessionManager = new SteamSessionManager(api, logger, settings);
 
             // Initialize provider settings from persisted settings dictionary
             _providerSettings = ProviderRegistry.Settings<SteamSettings>();

@@ -31,19 +31,21 @@ namespace PlayniteAchievements.Providers.Xbox
         public XboxDataProvider(
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            XboxSessionManager sessionManager)
+            IPlayniteAPI playniteApi,
+            string pluginUserDataPath)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
-            if (sessionManager == null) throw new ArgumentNullException(nameof(sessionManager));
+            if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
+            if (string.IsNullOrWhiteSpace(pluginUserDataPath)) throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
 
             _logger = logger;
             _settings = settings;
-            _sessionManager = sessionManager;
+            _sessionManager = new XboxSessionManager(playniteApi, logger, pluginUserDataPath);
 
             _providerSettings = ProviderRegistry.Settings<XboxSettings>();
             _apiClient = new XboxApiClient(logger, settings.Persisted.GlobalLanguage);
-            _scanner = new XboxScanner(settings, _providerSettings, sessionManager, _apiClient, logger);
+            _scanner = new XboxScanner(settings, _providerSettings, _sessionManager, _apiClient, logger);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Xbox");

@@ -33,7 +33,6 @@ namespace PlayniteAchievements.Providers
         private readonly Dictionary<string, IDataProvider> _providersByKey = new Dictionary<string, IDataProvider>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Func<CancellationToken, Task>> _authPrimers = new Dictionary<string, Func<CancellationToken, Task>>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Func<ProviderSettingsViewBase>> _settingsViewFactories = new Dictionary<string, Func<ProviderSettingsViewBase>>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<Type, object> _sessionManagers = new Dictionary<Type, object>();
         private readonly Dictionary<string, bool> _enabledState = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private ManualAchievementsProvider _manualProvider;
 
@@ -50,44 +49,6 @@ namespace PlayniteAchievements.Providers
         }
 
         public ManualAchievementsProvider ManualProvider => _manualProvider;
-
-        // ===================== SESSION MANAGERS =====================
-
-        public void RegisterSessionManager<T>(T sessionManager) where T : class
-        {
-            _sessionManagers[typeof(T)] = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
-
-            var providerKey = ExtractProviderKey(typeof(T));
-            if (providerKey == null) return;
-
-            // Prefer ISessionManager.EnsureAuthAsync for auth priming
-            if (sessionManager is ISessionManager sessionMgr)
-            {
-                _authPrimers[providerKey] = async ct =>
-                {
-                    var result = await sessionMgr.EnsureAuthAsync(ct);
-                    // Result is used for priming; any exceptions are logged by caller
-                };
-            }
-            else
-            {
-                // Fall back to legacy PrimeAuthenticationStateAsync method via reflection
-                var primeMethod = typeof(T).GetMethod("PrimeAuthenticationStateAsync");
-                if (primeMethod != null)
-                {
-                    _authPrimers[providerKey] = ct => (Task)primeMethod.Invoke(sessionManager, new object[] { ct });
-                }
-            }
-        }
-
-        private static string ExtractProviderKey(Type sessionManagerType)
-        {
-            // Convention: SteamSessionManager -> Steam, GogSessionManager -> GOG, etc.
-            var name = sessionManagerType.Name;
-            if (name.EndsWith("SessionManager"))
-                return name.Substring(0, name.Length - "SessionManager".Length);
-            return null;
-        }
 
         // ===================== SETTINGS ACCESS =====================
 
@@ -306,7 +267,6 @@ namespace PlayniteAchievements.Providers
                 else if (paramType == typeof(IPlayniteAPI)) args[i] = playniteApi;
                 else if (paramType == typeof(string) && param.Name?.ToLower().Contains("path") == true) args[i] = pluginUserDataPath;
                 else if (paramType == typeof(AuthProbeCache)) args[i] = _probeCache;
-                else if (_sessionManagers.TryGetValue(paramType, out var sessionManager)) args[i] = sessionManager;
                 else return null;
             }
 

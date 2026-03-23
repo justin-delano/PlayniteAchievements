@@ -32,22 +32,20 @@ namespace PlayniteAchievements.Providers.GOG
             ILogger logger,
             PlayniteAchievementsSettings settings,
             IPlayniteAPI playniteApi,
-            string pluginUserDataPath,
-            GogSessionManager sessionManager)
+            string pluginUserDataPath)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
             if (string.IsNullOrWhiteSpace(pluginUserDataPath)) throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
-            if (sessionManager == null) throw new ArgumentNullException(nameof(sessionManager));
 
             _settings = settings;
             _httpClient = new HttpClient();
-            var clientIdCacheStore = new GogClientIdCacheStore(pluginUserDataPath, logger);
-            var apiClient = new GogApiClient(_httpClient, logger, sessionManager, clientIdCacheStore);
+            _sessionManager = new GogSessionManager(playniteApi, logger, settings);
 
-            _sessionManager = sessionManager;
-            _scanner = new GogScanner(settings, apiClient, sessionManager, logger);
+            var clientIdCacheStore = new GogClientIdCacheStore(pluginUserDataPath, logger);
+            var apiClient = new GogApiClient(_httpClient, logger, _sessionManager, clientIdCacheStore);
+            _scanner = new GogScanner(settings, apiClient, _sessionManager, logger);
 
             _providerSettings = ProviderRegistry.Settings<GogSettings>();
         }

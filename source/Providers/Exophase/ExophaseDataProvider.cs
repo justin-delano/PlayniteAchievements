@@ -57,13 +57,12 @@ namespace PlayniteAchievements.Providers.Exophase
         public ExophaseDataProvider(
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            IPlayniteAPI playniteApi,
-            ExophaseSessionManager sessionManager)
+            IPlayniteAPI playniteApi)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
-            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+            _sessionManager = new ExophaseSessionManager(playniteApi, logger, settings);
             _apiClient = new ExophaseApiClient(playniteApi, logger);
 
             _providerSettings = ProviderRegistry.Settings<ExophaseSettings>();

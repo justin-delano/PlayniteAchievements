@@ -21,12 +21,16 @@ namespace PlayniteAchievements.Providers.PSN
         public PsnDataProvider(
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            PsnSessionManager sessionManager)
+            IPlayniteAPI playniteApi,
+            string pluginUserDataPath)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
+            if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
+            if (string.IsNullOrWhiteSpace(pluginUserDataPath)) throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
+
             _settings = settings;
-            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+            _sessionManager = new PsnSessionManager(playniteApi, logger, settings, pluginUserDataPath);
 
             _scanner = new PsnScanner(logger, _settings, _sessionManager);
 

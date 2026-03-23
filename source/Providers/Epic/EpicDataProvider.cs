@@ -27,20 +27,18 @@ namespace PlayniteAchievements.Providers.Epic
         public EpicDataProvider(
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            IPlayniteAPI playniteApi,
-            EpicSessionManager sessionManager)
+            IPlayniteAPI playniteApi)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
-            if (sessionManager == null) throw new ArgumentNullException(nameof(sessionManager));
 
             _settings = settings;
             _httpClient = new HttpClient();
-            _sessionManager = sessionManager;
+            _sessionManager = new EpicSessionManager(playniteApi, logger, settings);
 
-            var apiClient = new EpicApiClient(_httpClient, logger, sessionManager, settings.Persisted);
-            _scanner = new EpicScanner(settings, apiClient, sessionManager, logger);
+            var apiClient = new EpicApiClient(_httpClient, logger, _sessionManager, settings.Persisted);
+            _scanner = new EpicScanner(settings, apiClient, _sessionManager, logger);
 
             _providerSettings = ProviderRegistry.Settings<EpicSettings>();
         }
