@@ -25,7 +25,6 @@ namespace PlayniteAchievements.Providers.GOG
         private int _authCheckInProgress;
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
-        private readonly PlayniteAchievementsSettings _settings;
 
         public string ProviderKey => "GOG";
 
@@ -37,12 +36,10 @@ namespace PlayniteAchievements.Providers.GOG
 
         public GogSessionManager(
             IPlayniteAPI api,
-            ILogger logger,
-            PlayniteAchievementsSettings settings)
+            ILogger logger)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         /// <summary>
