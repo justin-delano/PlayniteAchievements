@@ -36,7 +36,7 @@ namespace PlayniteAchievements.Providers.Epic
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            var probeResult = await _sessionManager.ProbeAuthenticationAsync(cancel).ConfigureAwait(false);
+            var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
             if (!probeResult.IsSuccess)
             {
                 _logger?.Warn("[EpicAch] Epic not authenticated - cannot scan achievements.");

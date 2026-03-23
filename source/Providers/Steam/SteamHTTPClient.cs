@@ -89,8 +89,8 @@ namespace PlayniteAchievements.Providers.Steam
         // Session Management
         // ---------------------------------------------------------------------
 
-        public Task<string> GetRequiredSelfSteamId64Async(CancellationToken ct) =>
-            _sessionManager.GetUserSteamId64Async(ct);
+        public string GetRequiredSelfSteamId64() =>
+            _sessionManager.GetCachedSteamId64();
 
         private async Task<bool> EnsureSessionAsync(CancellationToken ct, bool forceRefresh = false)
         {
@@ -108,15 +108,15 @@ namespace PlayniteAchievements.Providers.Steam
                 }
             }
 
-            _logger?.Debug($"[SteamAch] Refreshing Steam session (Force={forceRefresh})...");
-            var refreshed = await _sessionManager.RefreshCookiesHeadlessAsync(ct, forceRefresh).ConfigureAwait(false);
+            _logger?.Debug($"[SteamAch] Probing Steam session (Force={forceRefresh})...");
+            var result = await _sessionManager.ProbeAuthStateAsync(ct).ConfigureAwait(false);
             SyncCookieJarFromCefIfNeeded(force: true);
             lock (_cookieLock)
             {
                 if (HasCookiesInJar()) return true;
             }
 
-            return refreshed;
+            return result.IsSuccess;
         }
 
         private void SyncCookieJarFromCefIfNeeded(bool force)

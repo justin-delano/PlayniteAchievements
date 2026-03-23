@@ -76,8 +76,8 @@ namespace PlayniteAchievements.Providers.Steam
                 }
 
                 _logger?.Info("[SteamAch] Probing Steam login status before scan...");
-                var (isLoggedIn, _) = await _sessionManager.ProbeLoggedInAsync(cancel).ConfigureAwait(false);
-                if (!isLoggedIn)
+                var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
+                if (!probeResult.IsSuccess)
                 {
                     _logger?.Warn("[SteamAch] Steam web auth check failed: not logged in. Aborting scan.");
                     return new RebuildPayload
@@ -931,7 +931,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             return !string.IsNullOrWhiteSpace(steamIdMaybe) && ulong.TryParse(steamIdMaybe, out _)
                 ? steamIdMaybe.Trim()
-                : (await _steamClient.GetRequiredSelfSteamId64Async(ct).ConfigureAwait(false))?.Trim();
+                : _steamClient.GetRequiredSelfSteamId64()?.Trim();
         }
     }
 }

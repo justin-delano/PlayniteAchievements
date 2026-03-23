@@ -42,12 +42,12 @@ namespace PlayniteAchievements.Providers.GOG
             CancellationToken cancel)
         {
             // Ensure auth state is loaded from current GOG web session.
-            var probeResult = await _sessionManager.ProbeAuthenticationAsync(cancel).ConfigureAwait(false);
+            var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
             if (!probeResult.IsSuccess)
             {
-                if (probeResult.Outcome == GogAuthOutcome.NotAuthenticated ||
-                    probeResult.Outcome == GogAuthOutcome.Cancelled ||
-                    probeResult.Outcome == GogAuthOutcome.TimedOut)
+                if (probeResult.Outcome == AuthOutcome.NotAuthenticated ||
+                    probeResult.Outcome == AuthOutcome.Cancelled ||
+                    probeResult.Outcome == AuthOutcome.TimedOut)
                 {
                     _logger?.Warn("[GogAch] GOG not authenticated - cannot scan achievements.");
                     return new RebuildPayload
