@@ -15,7 +15,7 @@ namespace PlayniteAchievements.Providers.Exophase
     /// Exophase does not use OAuth tokens; session is maintained via cookies.
     /// Auth state is always probed from the source of truth before any provider work.
     /// </summary>
-    public sealed class ExophaseSessionManager : ISessionManager, IExophaseTokenProvider
+    public sealed class ExophaseSessionManager : ISessionManager
     {
         private const string UrlLogin = "https://www.exophase.com/login";
         private const string UrlAccount = "https://www.exophase.com/account";

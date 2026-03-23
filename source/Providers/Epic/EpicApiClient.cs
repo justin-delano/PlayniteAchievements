@@ -97,7 +97,7 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
 
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
-        private readonly IEpicSessionProvider _sessionProvider;
+        private readonly EpicSessionManager _sessionManager;
         private readonly PersistedSettings _settings;
         private readonly SemaphoreSlim _cacheSemaphore = new SemaphoreSlim(1, 1);
 
@@ -106,11 +106,11 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
         private readonly Dictionary<string, AchievementSchemaResponse> _schemaCache =
             new Dictionary<string, AchievementSchemaResponse>(StringComparer.OrdinalIgnoreCase);
 
-        public EpicApiClient(HttpClient httpClient, ILogger logger, IEpicSessionProvider sessionProvider, PersistedSettings settings)
+        public EpicApiClient(HttpClient httpClient, ILogger logger, EpicSessionManager sessionManager, PersistedSettings settings)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger;
-            _sessionProvider = sessionProvider ?? throw new ArgumentNullException(nameof(sessionProvider));
+            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
@@ -124,7 +124,7 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
                 return new List<EpicAchievementItem>();
             }
 
-            var token = await _sessionProvider.GetAccessTokenAsync(ct).ConfigureAwait(false);
+            var token = await _sessionManager.GetAccessTokenAsync(ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(token))
             {
                 throw new EpicAuthRequiredException("Epic access token is missing.");
@@ -132,7 +132,7 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
 
             if (string.IsNullOrWhiteSpace(accountId))
             {
-                accountId = _sessionProvider.GetAccountId();
+                accountId = _sessionManager.GetAccountId();
             }
 
             if (string.IsNullOrWhiteSpace(accountId))
@@ -403,10 +403,10 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
             if (result.IsAuthError)
             {
                 _logger?.Debug("[EpicApi] GraphQL request returned auth error, attempting token refresh.");
-                var refreshed = await _sessionProvider.TryRefreshTokenAsync(ct).ConfigureAwait(false);
+                var refreshed = await _sessionManager.TryRefreshTokenAsync(ct).ConfigureAwait(false);
                 if (refreshed)
                 {
-                    var newToken = await _sessionProvider.GetAccessTokenAsync(ct).ConfigureAwait(false);
+                    var newToken = await _sessionManager.GetAccessTokenAsync(ct).ConfigureAwait(false);
                     var retryResult = await TryQueryGraphQlAsync<T>(query, variables, newToken, ct).ConfigureAwait(false);
                     if (retryResult.IsSuccess)
                     {
@@ -483,10 +483,10 @@ query playerProfileAchievementsByProductId($EpicAccountId: String!, $ProductId: 
             if (result.IsAuthError)
             {
                 _logger?.Debug("[EpicApi] API request returned auth error, attempting token refresh.");
-                var refreshed = await _sessionProvider.TryRefreshTokenAsync(ct).ConfigureAwait(false);
+                var refreshed = await _sessionManager.TryRefreshTokenAsync(ct).ConfigureAwait(false);
                 if (refreshed)
                 {
-                    var newToken = await _sessionProvider.GetAccessTokenAsync(ct).ConfigureAwait(false);
+                    var newToken = await _sessionManager.GetAccessTokenAsync(ct).ConfigureAwait(false);
                     var retryResult = await TrySendGetAsync<T>(url, newToken, ct).ConfigureAwait(false);
                     if (retryResult.IsSuccess)
                     {

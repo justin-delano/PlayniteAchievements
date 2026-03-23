@@ -57,11 +57,6 @@ namespace PlayniteAchievements.Providers.GOG
         }
     }
 
-    public interface IGogTokenProvider
-    {
-        string GetAccessToken();
-    }
-
     /// <summary>
     /// Exception thrown when authentication is required.
     /// </summary>

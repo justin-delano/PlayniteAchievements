@@ -52,9 +52,4 @@ namespace PlayniteAchievements.Providers.Exophase
             };
         }
     }
-
-    public interface IExophaseTokenProvider
-    {
-        bool IsAuthenticated { get; }
-    }
 }

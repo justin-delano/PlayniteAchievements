@@ -62,15 +62,6 @@ namespace PlayniteAchievements.Providers.Epic
         }
     }
 
-    public interface IEpicSessionProvider
-    {
-        string GetAccountId();
-
-        Task<string> GetAccessTokenAsync(CancellationToken ct);
-
-        Task<bool> TryRefreshTokenAsync(CancellationToken ct);
-    }
-
     public class EpicAuthRequiredException : Exception
     {
         public EpicAuthRequiredException(string message) : base(message) { }

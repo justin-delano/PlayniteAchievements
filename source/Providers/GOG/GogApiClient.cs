@@ -53,18 +53,18 @@ namespace PlayniteAchievements.Providers.GOG
 
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
-        private readonly IGogTokenProvider _tokenProvider;
+        private readonly GogSessionManager _sessionManager;
         private readonly GogClientIdCacheStore _clientIdCacheStore;
 
         public GogApiClient(
             HttpClient httpClient,
             ILogger logger,
-            IGogTokenProvider tokenProvider,
+            GogSessionManager sessionManager,
             GogClientIdCacheStore clientIdCacheStore)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger;
-            _tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
+            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _clientIdCacheStore = clientIdCacheStore ?? throw new ArgumentNullException(nameof(clientIdCacheStore));
         }
 
@@ -100,7 +100,7 @@ namespace PlayniteAchievements.Providers.GOG
                 return new List<GogAchievementItem>();
             }
 
-            var token = _tokenProvider.GetAccessToken();
+            var token = _sessionManager.GetAccessToken();
             var locale = MapGlobalLanguageToGogLocale(globalLanguage);
             var url = BuildAchievementsUrl(clientId, userId, locale);
 

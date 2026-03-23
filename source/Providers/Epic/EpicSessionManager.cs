@@ -17,7 +17,7 @@ namespace PlayniteAchievements.Providers.Epic
     /// Epic Games session manager that probes authentication state from EpicSettings.
     /// Auth state is always probed from the source of truth before any provider work.
     /// </summary>
-    public sealed class EpicSessionManager : ISessionManager, IEpicSessionProvider
+    public sealed class EpicSessionManager : ISessionManager
     {
         private const string UrlLogin = "https://www.epicgames.com/id/login?responseType=code";
         private const string UrlAccount = "https://www.epicgames.com/account/personal";
@@ -58,10 +58,6 @@ namespace PlayniteAchievements.Providers.Epic
         }
 
         public string GetAccountId() => GetEpicSettings().AccountId?.Trim();
-
-        // ---------------------------------------------------------------------
-        // IEpicSessionProvider
-        // ---------------------------------------------------------------------
 
         public async Task<string> GetAccessTokenAsync(CancellationToken ct)
         {

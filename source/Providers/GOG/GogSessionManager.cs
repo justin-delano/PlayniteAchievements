@@ -15,7 +15,7 @@ namespace PlayniteAchievements.Providers.GOG
     /// Uses Playnite's IWebView API for browser-based authentication.
     /// Auth state is always probed from the source of truth before any provider work.
     /// </summary>
-    public sealed class GogSessionManager : ISessionManager, IGogTokenProvider
+    public sealed class GogSessionManager : ISessionManager
     {
         private const string UrlLogin = "https://www.gog.com/account/";
         private const string UrlAccountInfo = "https://menu.gog.com/v1/account/basic";
@@ -44,10 +44,6 @@ namespace PlayniteAchievements.Providers.GOG
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
-
-        // ---------------------------------------------------------------------
-        // IGogTokenProvider
-        // ---------------------------------------------------------------------
 
         /// <summary>
         /// Gets the current access token by probing from source of truth.
