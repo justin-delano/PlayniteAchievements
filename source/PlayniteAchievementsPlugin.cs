@@ -189,9 +189,9 @@ namespace PlayniteAchievements
                     _steamSessionManager = new SteamSessionManager(PlayniteApi, _logger, settings);
                     _gogSessionManager = new GogSessionManager(PlayniteApi, _logger, settings);
                     _epicSessionManager = new EpicSessionManager(PlayniteApi, _logger, settings);
-                    _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger, settings.Persisted);
-                    _xboxSessionManager = new XboxSessionManager(PlayniteApi, _logger, settings.Persisted);
-                    _exophaseSessionManager = new ExophaseSessionManager(PlayniteApi, _logger, settings, pluginUserDataPath);
+                    _psnSessionManager = new PsnSessionManager(PlayniteApi, _logger, settings, pluginUserDataPath);
+                    _xboxSessionManager = new XboxSessionManager(PlayniteApi, _logger, pluginUserDataPath);
+                    _exophaseSessionManager = new ExophaseSessionManager(PlayniteApi, _logger, settings);
                 }
 
                 // Create provider registry and register session managers for discovery-based provider creation
