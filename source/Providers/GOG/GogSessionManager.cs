@@ -1,6 +1,7 @@
 using PlayniteAchievements.Providers.GOG.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Data;
 using Playnite.SDK.Events;
@@ -13,173 +14,186 @@ namespace PlayniteAchievements.Providers.GOG
     /// <summary>
     /// WebView-based authentication client for GOG.
     /// Uses Playnite's IWebView API for browser-based authentication.
-    /// Based on SteamSessionManager pattern and playnite-plugincommon GogApi.cs.
+    /// Auth state is never cached in memory - always probed from the source of truth.
     /// </summary>
-    public sealed class GogSessionManager : IGogTokenProvider
+    public sealed class GogSessionManager : ISessionManager, IGogTokenProvider
     {
         private const string UrlLogin = "https://www.gog.com/account/";
         private const string UrlAccountInfo = "https://menu.gog.com/v1/account/basic";
         private static readonly TimeSpan InteractiveAuthTimeout = TimeSpan.FromMinutes(3);
 
-        private string _accessToken;
-        private string _userId;
-        private DateTime _tokenExpiryUtc = DateTime.MinValue;
-        private bool _isSessionAuthenticated;
         private (bool Success, string UserId) _authResult;
         private int _authCheckInProgress;
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly AuthProbeCache _probeCache;
 
-        public GogSessionManager(IPlayniteAPI api, ILogger logger, PlayniteAchievementsSettings settings)
+        public string ProviderKey => "GOG";
+
+        public TimeSpan ProbeCacheDuration => AuthProbeCache.ProviderCacheDurations.GOG;
+
+        public GogSessionManager(
+            IPlayniteAPI api,
+            ILogger logger,
+            PlayniteAchievementsSettings settings,
+            AuthProbeCache probeCache)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-
-            var gogSettings = ProviderRegistry.Settings<GogSettings>();
-            if (!string.IsNullOrWhiteSpace(gogSettings.UserId))
-            {
-                _userId = gogSettings.UserId.Trim();
-            }
+            _probeCache = probeCache ?? throw new ArgumentNullException(nameof(probeCache));
         }
 
+        public GogSessionManager(
+            IPlayniteAPI api,
+            ILogger logger,
+            PlayniteAchievementsSettings settings)
+            : this(api, logger, settings, new AuthProbeCache(logger))
+        {
+        }
+
+        // ---------------------------------------------------------------------
+        // IGogTokenProvider
+        // ---------------------------------------------------------------------
+
         /// <summary>
-        /// Gets the current access token, throwing if expired or missing.
+        /// Gets the current access token by probing from source of truth.
+        /// Throws if not authenticated.
         /// </summary>
         public string GetAccessToken()
         {
-            if (string.IsNullOrEmpty(_accessToken) || DateTime.UtcNow >= _tokenExpiryUtc)
+            var probeTask = ProbeAuthStateAsync(CancellationToken.None);
+            probeTask.ConfigureAwait(false).GetAwaiter().GetResult();
+
+            if (probeTask.Result.IsSuccess)
             {
-                throw new AuthRequiredException("GOG authentication required. Please login.");
+                var apiResponse = CallAccountInfoApiAsync(timeoutMs: 6000)
+                    .ConfigureAwait(false).GetAwaiter().GetResult();
+
+                if (apiResponse != null && !string.IsNullOrWhiteSpace(apiResponse.ResolvedAccessToken))
+                {
+                    return apiResponse.ResolvedAccessToken;
+                }
             }
-            return _accessToken;
+
+            throw new AuthRequiredException("GOG authentication required. Please login.");
         }
 
         /// <summary>
-        /// Gets the current user ID.
+        /// Gets the current user ID from provider settings or cache.
         /// </summary>
-        public string GetUserId() => _userId;
-
-        /// <summary>
-        /// Checks if currently authenticated based on verified web session (cookie-backed),
-        /// independent of in-memory token availability.
-        /// </summary>
-        public bool IsAuthenticated => _isSessionAuthenticated;
-
-        /// <summary>
-        /// Runs a best-effort background probe to hydrate authentication state from current web session cookies.
-        /// Safe to call at startup; failures are logged and not propagated.
-        /// </summary>
-        public async Task PrimeAuthenticationStateAsync(CancellationToken ct)
+        public string GetUserId()
         {
-            using (PerfScope.Start(_logger, "GOG.PrimeAuthenticationStateAsync", thresholdMs: 50))
+            if (_probeCache.TryGetCachedUserId(ProviderKey, ProbeCacheDuration, out var userId))
+            {
+                return userId;
+            }
+            return ProviderRegistry.Settings<GogSettings>().UserId;
+        }
+
+        /// <summary>
+        /// Checks if currently authenticated based on cached probe result.
+        /// </summary>
+        public bool IsAuthenticated
+        {
+            get
+            {
+                if (_probeCache.IsCacheValid(ProviderKey, ProbeCacheDuration))
+                {
+                    return _probeCache.TryGetCachedUserId(ProviderKey, ProbeCacheDuration, out _);
+                }
+                return !string.IsNullOrWhiteSpace(ProviderRegistry.Settings<GogSettings>().UserId);
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // ISessionManager Implementation
+        // ---------------------------------------------------------------------
+
+        public async Task<AuthProbeResult> EnsureAuthAsync(CancellationToken ct)
+        {
+            if (_probeCache.IsCacheValid(ProviderKey, ProbeCacheDuration))
+            {
+                if (_probeCache.TryGetCachedUserId(ProviderKey, ProbeCacheDuration, out var cachedUserId))
+                {
+                    return AuthProbeResult.AlreadyAuthenticated(cachedUserId);
+                }
+            }
+
+            return await ProbeAuthStateAsync(ct).ConfigureAwait(false);
+        }
+
+        public async Task<AuthProbeResult> ProbeAuthStateAsync(CancellationToken ct)
+        {
+            using (PerfScope.Start(_logger, "GOG.ProbeAuthStateAsync", thresholdMs: 50))
             {
                 try
                 {
                     ct.ThrowIfCancellationRequested();
-                    var result = await ProbeAuthenticationAsync(ct).ConfigureAwait(false);
-                    _logger?.Debug($"[GogAuth] Startup auth probe completed with outcome={result?.Outcome}.");
+
+                    var response = await CallAccountInfoApiAsync(timeoutMs: 6000).ConfigureAwait(false);
+                    if (response != null && response.IsLoggedIn && !string.IsNullOrWhiteSpace(response.UserId))
+                    {
+                        var userId = response.UserId;
+                        _probeCache.RecordProbe(ProviderKey, true, userId);
+
+                        var gogSettings = ProviderRegistry.Settings<GogSettings>();
+                        if (gogSettings.UserId != userId)
+                        {
+                            gogSettings.UserId = userId;
+                            ProviderRegistry.Write(gogSettings);
+                        }
+
+                        var expiresUtc = GetTokenExpiryUtc(response);
+                        return AuthProbeResult.AlreadyAuthenticated(userId, expiresUtc);
+                    }
+
+                    var gogSettingsClear = ProviderRegistry.Settings<GogSettings>();
+                    if (!string.IsNullOrWhiteSpace(gogSettingsClear.UserId))
+                    {
+                        gogSettingsClear.UserId = null;
+                        ProviderRegistry.Write(gogSettingsClear);
+                    }
+                    _probeCache.RecordProbe(ProviderKey, false);
+
+                    return AuthProbeResult.NotAuthenticated();
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger?.Debug("[GogAuth] Startup auth probe cancelled.");
+                    return AuthProbeResult.Cancelled();
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, "[GogAuth] Startup auth probe failed.");
+                    _logger?.Error(ex, "[GogAuth] Probe failed with exception.");
+                    _probeCache.RecordProbe(ProviderKey, false);
+                    return AuthProbeResult.ProbeFailed();
                 }
             }
         }
 
-        public async Task<GogAuthResult> ProbeAuthenticationAsync(CancellationToken ct)
-        {
-            try
-            {
-                ct.ThrowIfCancellationRequested();
-
-                if (HasValidToken())
-                {
-                    return GogAuthResult.Create(
-                        GogAuthOutcome.AlreadyAuthenticated,
-                        "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
-                        _userId,
-                        _tokenExpiryUtc,
-                        windowOpened: false);
-                }
-
-                var extractedId = await QuickAuthCheckAsync(ct).ConfigureAwait(false);
-                if (!string.IsNullOrWhiteSpace(extractedId))
-                {
-                    return GogAuthResult.Create(
-                        GogAuthOutcome.AlreadyAuthenticated,
-                        "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
-                        extractedId,
-                        _tokenExpiryUtc,
-                        windowOpened: false);
-                }
-
-                    _isSessionAuthenticated = false;
-
-                return GogAuthResult.Create(
-                    GogAuthOutcome.NotAuthenticated,
-                    "LOCPlayAch_Settings_Auth_NotAuthenticated",
-                    windowOpened: false);
-            }
-            catch (OperationCanceledException)
-            {
-                return GogAuthResult.Create(
-                    GogAuthOutcome.Cancelled,
-                    "LOCPlayAch_Settings_Auth_Cancelled",
-                    windowOpened: false);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "[GogAuth] Probe failed with exception.");
-                return GogAuthResult.Create(
-                    GogAuthOutcome.ProbeFailed,
-                    "LOCPlayAch_Settings_Auth_ProbeFailed",
-                    windowOpened: false);
-            }
-        }
-
-        /// <summary>
-        /// Main authentication entry point.
-        /// </summary>
-        public async Task<GogAuthResult> AuthenticateInteractiveAsync(
+        public async Task<AuthProbeResult> AuthenticateInteractiveAsync(
             bool forceInteractive,
             CancellationToken ct,
-            IProgress<GogAuthProgressStep> progress = null)
+            IProgress<AuthProgressStep> progress = null)
         {
             var windowOpened = false;
 
             try
             {
                 ct.ThrowIfCancellationRequested();
-                progress?.Report(GogAuthProgressStep.CheckingExistingSession);
+                progress?.Report(AuthProgressStep.CheckingExistingSession);
 
                 _logger?.Info("[GogAuth] Starting interactive authentication.");
 
                 if (!forceInteractive)
                 {
-                    try
+                    var existingResult = await ProbeAuthStateAsync(ct).ConfigureAwait(false);
+                    if (existingResult.IsSuccess)
                     {
-                        var existingUserId = await QuickAuthCheckAsync(ct).ConfigureAwait(false);
-                        if (!string.IsNullOrWhiteSpace(existingUserId))
-                        {
-                            _logger?.Info("[GogAuth] Quick auth check succeeded - already authenticated.");
-                            progress?.Report(GogAuthProgressStep.Completed);
-                            return GogAuthResult.Create(
-                                GogAuthOutcome.AlreadyAuthenticated,
-                                "LOCPlayAch_Settings_Auth_AlreadyAuthenticated",
-                                existingUserId,
-                                _tokenExpiryUtc,
-                                windowOpened: false);
-                        }
-                    }
-                    catch (Exception quickCheckEx)
-                    {
-                        _logger?.Debug(quickCheckEx, "[GogAuth] Quick check failed before interactive login, proceeding.");
+                        _logger?.Info("[GogAuth] Already authenticated.");
+                        progress?.Report(AuthProgressStep.Completed);
+                        return existingResult;
                     }
                 }
                 else
@@ -188,7 +202,7 @@ namespace PlayniteAchievements.Providers.GOG
                 }
 
                 _logger?.Info("[GogAuth] Opening login dialog.");
-                progress?.Report(GogAuthProgressStep.OpeningLoginWindow);
+                progress?.Report(AuthProgressStep.OpeningLoginWindow);
 
                 var loginTcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -206,141 +220,100 @@ namespace PlayniteAchievements.Providers.GOG
                 }));
                 windowOpened = true;
 
-                progress?.Report(GogAuthProgressStep.WaitingForUserLogin);
+                progress?.Report(AuthProgressStep.WaitingForUserLogin);
                 var completed = await Task.WhenAny(
                     loginTcs.Task,
                     Task.Delay(InteractiveAuthTimeout, ct)).ConfigureAwait(false);
 
                 if (completed != loginTcs.Task)
                 {
-                    _logger?.Warn("[GogAuth] Interactive login timed out while waiting for dialog completion.");
-                    progress?.Report(GogAuthProgressStep.Failed);
-                    return GogAuthResult.Create(
-                        GogAuthOutcome.TimedOut,
-                        "LOCPlayAch_Settings_Auth_TimedOut",
-                        windowOpened: windowOpened);
+                    _logger?.Warn("[GogAuth] Interactive login timed out.");
+                    progress?.Report(AuthProgressStep.Failed);
+                    return AuthProbeResult.TimedOut(windowOpened);
                 }
 
                 var extractedId = await loginTcs.Task.ConfigureAwait(false);
 
-                progress?.Report(GogAuthProgressStep.VerifyingSession);
+                progress?.Report(AuthProgressStep.VerifyingSession);
                 if (string.IsNullOrWhiteSpace(extractedId))
                 {
-                    // Fallback: dialog may have been manually closed after successful login.
-                    extractedId = await QuickAuthCheckAsync(ct).ConfigureAwait(false);
+                    var probeResult = await ProbeAuthStateAsync(ct).ConfigureAwait(false);
+                    if (probeResult.IsSuccess)
+                    {
+                        extractedId = probeResult.UserId;
+                    }
                 }
 
                 if (string.IsNullOrWhiteSpace(extractedId))
                 {
                     _logger?.Warn("[GogAuth] Interactive login failed or was cancelled.");
-                    progress?.Report(GogAuthProgressStep.Failed);
-                    return GogAuthResult.Create(
-                        GogAuthOutcome.Cancelled,
-                        "LOCPlayAch_Settings_Auth_Cancelled",
-                        windowOpened: windowOpened);
+                    progress?.Report(AuthProgressStep.Failed);
+                    return AuthProbeResult.Cancelled(windowOpened);
                 }
 
-                _userId = extractedId;
+                _probeCache.RecordProbe(ProviderKey, true, extractedId);
+                var gogSettings = ProviderRegistry.Settings<GogSettings>();
+                gogSettings.UserId = extractedId;
+                ProviderRegistry.Write(gogSettings);
+
                 _logger?.Info("[GogAuth] Interactive login succeeded.");
-                progress?.Report(GogAuthProgressStep.Completed);
-                return GogAuthResult.Create(
-                    GogAuthOutcome.Authenticated,
-                    "LOCPlayAch_Settings_Auth_Verified",
-                    extractedId,
-                    _tokenExpiryUtc,
-                    windowOpened: windowOpened);
+                progress?.Report(AuthProgressStep.Completed);
+                return AuthProbeResult.Authenticated(extractedId, windowOpened: windowOpened);
             }
             catch (OperationCanceledException)
             {
                 _logger?.Info("[GogAuth] Authentication was cancelled or timed out.");
-                progress?.Report(GogAuthProgressStep.Failed);
-                return GogAuthResult.Create(
-                    GogAuthOutcome.TimedOut,
-                    "LOCPlayAch_Settings_Auth_TimedOut",
-                    windowOpened: windowOpened);
+                progress?.Report(AuthProgressStep.Failed);
+                return AuthProbeResult.TimedOut(windowOpened);
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "[GogAuth] Authentication failed with exception.");
-                progress?.Report(GogAuthProgressStep.Failed);
-                return GogAuthResult.Create(
-                    GogAuthOutcome.Failed,
-                    "LOCPlayAch_Settings_Auth_Failed",
-                    windowOpened: windowOpened);
+                progress?.Report(AuthProgressStep.Failed);
+                return AuthProbeResult.Failed(windowOpened);
             }
         }
 
-        /// <summary>
-        /// Quick check using offscreen view to see if already authenticated.
-        /// </summary>
-        private async Task<string> QuickAuthCheckAsync(CancellationToken ct)
+        public void ClearSession()
         {
-            using (PerfScope.Start(_logger, "GOG.QuickAuthCheckAsync", thresholdMs: 50))
+            _logger?.Info("[GogAuth] Clearing session.");
+            _authResult = (false, null);
+
+            _probeCache.Invalidate(ProviderKey);
+
+            var gogSettings = ProviderRegistry.Settings<GogSettings>();
+            if (!string.IsNullOrWhiteSpace(gogSettings.UserId))
             {
-                // Check existing token validity
-                if (HasValidToken())
-                {
-                    _logger?.Debug("[GogAuth] Existing token is still valid.");
-                    return _userId;
-                }
-
-                ct.ThrowIfCancellationRequested();
-
-                var responseTask = CallAccountInfoApiAsync(timeoutMs: 6000);
-                var completed = await Task.WhenAny(
-                    responseTask,
-                    Task.Delay(Timeout.Infinite, ct)).ConfigureAwait(false);
-                if (completed != responseTask)
-                {
-                    throw new OperationCanceledException(ct);
-                }
-
-                var response = await responseTask.ConfigureAwait(false);
-                if (TryApplyAuthResponse(response, requireToken: true))
-                {
-                    _logger?.Info("[GogAuth] Quick check validated existing session.");
-                    return _userId;
-                }
-
-                _logger?.Debug("[GogAuth] Quick check - not logged in.");
-                return null;
+                gogSettings.UserId = null;
+                ProviderRegistry.Write(gogSettings);
             }
-        }
 
-        private async Task<string> WaitForAuthenticatedUserAsync(CancellationToken ct)
-        {
-            const int attempts = 8;
-            const int delayMs = 500;
-
-            for (int attempt = 1; attempt <= attempts; attempt++)
+            try
             {
-                ct.ThrowIfCancellationRequested();
-
-                try
+                _api.MainView.UIDispatcher.Invoke(() =>
                 {
-                    var extractedId = await QuickAuthCheckAsync(ct).ConfigureAwait(false);
-                    if (!string.IsNullOrWhiteSpace(extractedId))
+                    using (var view = _api.WebViews.CreateOffscreenView())
                     {
-                        return extractedId;
+                        view.DeleteDomainCookies(".gog.com");
+                        view.DeleteDomainCookies("gog.com");
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "[GogAuth] Waiting for authenticated user failed, retrying.");
-                }
-
-                if (attempt < attempts)
-                {
-                    await Task.Delay(delayMs, ct).ConfigureAwait(false);
-                }
+                });
             }
-
-            return null;
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[GogAuth] Failed to clear GOG cookies from CEF.");
+            }
         }
 
-        /// <summary>
-        /// Calls the account info API using an offscreen WebView session.
-        /// </summary>
+        public void InvalidateProbeCache()
+        {
+            _probeCache.Invalidate(ProviderKey);
+        }
+
+        // ---------------------------------------------------------------------
+        // Private Helper Methods
+        // ---------------------------------------------------------------------
+
         private async Task<GogAccountInfoResponse> CallAccountInfoApiAsync(int timeoutMs = 15000)
         {
             using (PerfScope.Start(_logger, "GOG.CallAccountInfoApiAsync", thresholdMs: 50, context: $"timeoutMs={timeoutMs}"))
@@ -364,60 +337,6 @@ namespace PlayniteAchievements.Providers.GOG
             }
         }
 
-        private bool TryApplyAuthResponse(GogAccountInfoResponse response, bool requireToken)
-        {
-            if (response == null || !response.IsLoggedIn)
-            {
-                return false;
-            }
-
-            _userId = response.UserId;
-            _accessToken = response.ResolvedAccessToken;
-            _isSessionAuthenticated = !string.IsNullOrWhiteSpace(_userId);
-
-            if (_isSessionAuthenticated)
-            {
-                var gogSettings = ProviderRegistry.Settings<GogSettings>();
-                gogSettings.UserId = _userId;
-                ProviderRegistry.Write(gogSettings);
-            }
-
-            if (string.IsNullOrWhiteSpace(_userId))
-            {
-                _logger?.Debug("[GogAuth] Account API returned logged-in state but no userId.");
-                _isSessionAuthenticated = false;
-                return false;
-            }
-
-            if (string.IsNullOrWhiteSpace(_accessToken))
-            {
-                _tokenExpiryUtc = DateTime.MinValue;
-                if (requireToken)
-                {
-                    _logger?.Debug("[GogAuth] Account API returned logged-in state but no accessToken.");
-                    return false;
-                }
-
-                return true;
-            }
-
-            // GOG returns accessTokenExpires as an absolute Unix timestamp (seconds since epoch).
-            if (response.ResolvedAccessTokenExpires > 0)
-            {
-                _tokenExpiryUtc = DateTimeOffset.FromUnixTimeSeconds(response.ResolvedAccessTokenExpires).UtcDateTime;
-            }
-            else
-            {
-                // Fallback: assume 5-minute validity if expires value is missing or invalid.
-                _tokenExpiryUtc = DateTime.UtcNow.AddSeconds(300);
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Parses the account info response from JSON text.
-        /// </summary>
         private bool TryParseAccountInfo(string json, out GogAccountInfoResponse response)
         {
             response = null;
@@ -436,9 +355,19 @@ namespace PlayniteAchievements.Providers.GOG
             }
         }
 
-        /// <summary>
-        /// Checks if URL is a login page.
-        /// </summary>
+        private static DateTime? GetTokenExpiryUtc(GogAccountInfoResponse response)
+        {
+            if (response == null)
+                return null;
+
+            if (response.ResolvedAccessTokenExpires > 0)
+            {
+                return DateTimeOffset.FromUnixTimeSeconds(response.ResolvedAccessTokenExpires).UtcDateTime;
+            }
+
+            return null;
+        }
+
         private static bool IsLoginPageUrl(string url)
         {
             if (string.IsNullOrWhiteSpace(url))
@@ -448,44 +377,6 @@ namespace PlayniteAchievements.Providers.GOG
                    || url.IndexOf("openlogin", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        /// <summary>
-        /// Clears the session by resetting stored tokens.
-        /// </summary>
-        public void ClearSession()
-        {
-            _logger?.Info("[GogAuth] Clearing session.");
-            _accessToken = null;
-            _userId = null;
-            _tokenExpiryUtc = DateTime.MinValue;
-            _isSessionAuthenticated = false;
-            _authResult = (false, null);
-
-            var gogSettings = ProviderRegistry.Settings<GogSettings>();
-            gogSettings.UserId = null;
-            ProviderRegistry.Write(gogSettings);
-
-            // Also clear cookies from CEF
-            try
-            {
-                _api.MainView.UIDispatcher.Invoke(() =>
-                {
-                    using (var view = _api.WebViews.CreateOffscreenView())
-                    {
-                        view.DeleteDomainCookies(".gog.com");
-                        view.DeleteDomainCookies("gog.com");
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[GogAuth] Failed to clear GOG cookies from CEF.");
-            }
-        }
-
-        /// <summary>
-        /// Synchronous login method matching Steam library plugin pattern.
-        /// Blocks until CloseWhenLoggedIn closes the view.
-        /// </summary>
         private string LoginInteractively()
         {
             _authResult = (false, null);
@@ -500,7 +391,6 @@ namespace PlayniteAchievements.Providers.GOG
                 view.LoadingChanged += CloseWhenLoggedIn;
                 view.Navigate(UrlLogin);
 
-                // This blocks until CloseWhenLoggedIn calls view.Close()
                 view.OpenDialog();
 
                 return _authResult.Success ? _authResult.UserId : null;
@@ -515,9 +405,6 @@ namespace PlayniteAchievements.Providers.GOG
             }
         }
 
-        /// <summary>
-        /// Event handler that auto-closes the WebView when auth is detected.
-        /// </summary>
         private async void CloseWhenLoggedIn(object sender, WebViewLoadingChangedEventArgs e)
         {
             try
@@ -528,7 +415,6 @@ namespace PlayniteAchievements.Providers.GOG
                 var view = (IWebView)sender;
                 var address = view.GetCurrentAddress();
 
-                // Skip if still on login page
                 if (IsLoginPageUrl(address))
                 {
                     _logger?.Debug("[GogAuth] Still on login page, waiting...");
@@ -540,8 +426,6 @@ namespace PlayniteAchievements.Providers.GOG
 
                 _logger?.Debug($"[GogAuth] Navigation to: {address}");
 
-                // GOG does not reliably redirect after login and can commit cookies with a short delay.
-                // Poll auth for a short window so successful login auto-closes reliably.
                 var extractedId = await WaitForAuthenticatedUserAsync(CancellationToken.None).ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(extractedId))
                 {
@@ -574,16 +458,35 @@ namespace PlayniteAchievements.Providers.GOG
             }
         }
 
-        private bool HasValidToken()
+        private async Task<string> WaitForAuthenticatedUserAsync(CancellationToken ct)
         {
-            return !string.IsNullOrEmpty(_accessToken) && DateTime.UtcNow < _tokenExpiryUtc;
+            const int attempts = 8;
+            const int delayMs = 500;
+
+            for (int attempt = 1; attempt <= attempts; attempt++)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                try
+                {
+                    var response = await CallAccountInfoApiAsync(timeoutMs: 6000).ConfigureAwait(false);
+                    if (response != null && response.IsLoggedIn && !string.IsNullOrWhiteSpace(response.UserId))
+                    {
+                        return response.UserId;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "[GogAuth] Waiting for authenticated user failed, retrying.");
+                }
+
+                if (attempt < attempts)
+                {
+                    await Task.Delay(delayMs, ct).ConfigureAwait(false);
+                }
+            }
+
+            return null;
         }
     }
-
 }
-
-
-
-
-
-
