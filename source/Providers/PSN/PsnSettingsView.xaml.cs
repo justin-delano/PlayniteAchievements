@@ -149,7 +149,7 @@ namespace PlayniteAchievements.Providers.PSN
 
             try
             {
-                var result = await _sessionManager.ProbeAuthenticationAsync(CancellationToken.None).ConfigureAwait(false);
+                var result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None).ConfigureAwait(false);
                 var isAuthenticated = result?.IsSuccess ?? false;
 
                 SetAuthenticated(isAuthenticated);

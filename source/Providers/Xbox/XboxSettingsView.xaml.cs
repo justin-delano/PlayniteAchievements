@@ -57,7 +57,7 @@ namespace PlayniteAchievements.Providers.Xbox
         {
             try
             {
-                await _sessionManager.ProbeAuthenticationAsync(CancellationToken.None);
+                await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
             }
             catch (Exception ex)
             {
