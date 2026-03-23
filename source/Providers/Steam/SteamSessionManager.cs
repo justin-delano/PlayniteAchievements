@@ -1,7 +1,6 @@
 using PlayniteAchievements.Providers.Steam.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Common;
-using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Data;
@@ -26,69 +25,31 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
-        private readonly AuthProbeCache _probeCache;
 
         // Temporary state for interactive login dialog coordination
         private (bool Success, string SteamId) _authResult;
 
         public string ProviderKey => "Steam";
 
-        public TimeSpan ProbeCacheDuration => AuthProbeCache.ProviderCacheDurations.Steam;
-
         /// <summary>
-        /// Checks if currently authenticated based on cached probe result.
+        /// Checks if currently authenticated based on persisted SteamUserId setting.
         /// </summary>
-        public bool IsAuthenticated
-        {
-            get
-            {
-                if (_probeCache.IsCacheValid(ProviderKey, ProbeCacheDuration))
-                {
-                    return _probeCache.TryGetCachedUserId(ProviderKey, ProbeCacheDuration, out _);
-                }
-                return !string.IsNullOrWhiteSpace(ProviderRegistry.Settings<SteamSettings>().SteamUserId);
-            }
-        }
+        public bool IsAuthenticated =>
+            !string.IsNullOrWhiteSpace(ProviderRegistry.Settings<SteamSettings>().SteamUserId);
 
-        public SteamSessionManager(
-            IPlayniteAPI api,
-            ILogger logger,
-            PlayniteAchievementsSettings settings,
-            AuthProbeCache probeCache)
-        {
-            _api = api ?? throw new ArgumentNullException(nameof(api));
-            _logger = logger;
-            _settings = settings;
-            _probeCache = probeCache ?? throw new ArgumentNullException(nameof(probeCache));
-        }
-
-        /// <summary>
-        /// Backward-compatible constructor that creates a default AuthProbeCache.
-        /// </summary>
         public SteamSessionManager(
             IPlayniteAPI api,
             ILogger logger,
             PlayniteAchievementsSettings settings)
-            : this(api, logger, settings, new AuthProbeCache(logger))
         {
+            _api = api ?? throw new ArgumentNullException(nameof(api));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         // ---------------------------------------------------------------------
         // ISessionManager Implementation
         // ---------------------------------------------------------------------
-
-        public async Task<AuthProbeResult> EnsureAuthAsync(CancellationToken ct)
-        {
-            if (_probeCache.IsCacheValid(ProviderKey, ProbeCacheDuration))
-            {
-                if (_probeCache.TryGetCachedUserId(ProviderKey, ProbeCacheDuration, out var cachedUserId))
-                {
-                    return AuthProbeResult.AlreadyAuthenticated(cachedUserId);
-                }
-            }
-
-            return await ProbeAuthStateAsync(ct).ConfigureAwait(false);
-        }
 
         public async Task<AuthProbeResult> ProbeAuthStateAsync(CancellationToken ct)
         {
@@ -102,7 +63,6 @@ namespace PlayniteAchievements.Providers.Steam
                     var steamId = ProbeSteamIdFromCefCookies();
                     if (!string.IsNullOrWhiteSpace(steamId))
                     {
-                        _probeCache.RecordProbe(ProviderKey, true, steamId);
                         var steamSettings = ProviderRegistry.Settings<SteamSettings>();
                         steamSettings.SteamUserId = steamId;
                         ProviderRegistry.Write(steamSettings);
@@ -113,14 +73,12 @@ namespace PlayniteAchievements.Providers.Steam
                     steamId = await RefreshCookiesHeadlessAsync(ct).ConfigureAwait(false);
                     if (!string.IsNullOrWhiteSpace(steamId))
                     {
-                        _probeCache.RecordProbe(ProviderKey, true, steamId);
                         var steamSettings = ProviderRegistry.Settings<SteamSettings>();
                         steamSettings.SteamUserId = steamId;
                         ProviderRegistry.Write(steamSettings);
                         return AuthProbeResult.AlreadyAuthenticated(steamId);
                     }
 
-                    _probeCache.RecordProbe(ProviderKey, false);
                     return AuthProbeResult.NotAuthenticated();
                 }
                 catch (OperationCanceledException)
@@ -130,7 +88,6 @@ namespace PlayniteAchievements.Providers.Steam
                 catch (Exception ex)
                 {
                     _logger?.Error(ex, "[SteamAuth] Probe failed with exception.");
-                    _probeCache.RecordProbe(ProviderKey, false);
                     return AuthProbeResult.ProbeFailed();
                 }
             }
@@ -209,7 +166,6 @@ namespace PlayniteAchievements.Providers.Steam
                     return AuthProbeResult.Cancelled(windowOpened);
                 }
 
-                _probeCache.RecordProbe(ProviderKey, true, extractedId);
                 var steamSettings = ProviderRegistry.Settings<SteamSettings>();
                 steamSettings.SteamUserId = extractedId;
                 ProviderRegistry.Write(steamSettings);
@@ -236,28 +192,9 @@ namespace PlayniteAchievements.Providers.Steam
         public void ClearSession()
         {
             ClearSteamCookiesFromCef(_api, _logger);
-            _probeCache.Invalidate(ProviderKey);
             var steamSettings = ProviderRegistry.Settings<SteamSettings>();
             steamSettings.SteamUserId = null;
             ProviderRegistry.Write(steamSettings);
-        }
-
-        public void InvalidateProbeCache()
-        {
-            _probeCache.Invalidate(ProviderKey);
-        }
-
-        /// <summary>
-        /// Gets the cached Steam ID64 if available from cache or persisted settings.
-        /// Returns null if not authenticated.
-        /// </summary>
-        public string GetCachedSteamId64()
-        {
-            if (_probeCache.TryGetCachedUserId(ProviderKey, ProbeCacheDuration, out var cachedId))
-            {
-                return cachedId;
-            }
-            return ProviderRegistry.Settings<SteamSettings>().SteamUserId;
         }
 
         // ---------------------------------------------------------------------
@@ -534,23 +471,10 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
-        public static Uri GetAddUriForDomain(string cookieDomain)
-        {
-            var d = (cookieDomain ?? "").Trim().TrimStart('.');
-            if (string.IsNullOrWhiteSpace(d))
-                return CommunityBase;
-
-            try
-            {
-                return new Uri("https://" + d);
-            }
-            catch
-            {
-                return CommunityBase;
-            }
-        }
-
-        public void LoadCefCookiesIntoJar(IPlayniteAPI api, CookieContainer cookieJar, ILogger logger)
+        public static void LoadCefCookiesIntoJar(
+            IPlayniteAPI api,
+            ILogger logger,
+            CookieContainer cookieJar)
         {
             try
             {
@@ -558,7 +482,7 @@ namespace PlayniteAchievements.Providers.Steam
                 {
                     var cookies = view.GetCookies();
                     if (cookies == null)
-                        return;
+                    return;
 
                     var steamCookies = cookies
                         .Where(c => c != null && !string.IsNullOrWhiteSpace(c.Domain))
@@ -601,6 +525,13 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
+        private static string SanitizeCookieValue(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+            return value.Replace(",", "%2C");
+        }
+
         private static void AddSteamTimezoneCookie(CookieContainer cookieJar, ILogger logger)
         {
             try
@@ -620,11 +551,20 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
-        private static string SanitizeCookieValue(string value)
+        private static Uri GetAddUriForDomain(string cookieDomain)
         {
-            if (string.IsNullOrEmpty(value))
-                return string.Empty;
-            return value.Replace(",", "%2C");
+            var d = (cookieDomain ?? "").Trim().TrimStart('.');
+            if (string.IsNullOrWhiteSpace(d))
+                return CommunityBase;
+
+            try
+            {
+                return new Uri("https://" + d);
+            }
+            catch
+            {
+                return CommunityBase;
+            }
         }
 
         public static void ClearSteamCookiesFromCef(IPlayniteAPI api, ILogger logger)
@@ -648,14 +588,5 @@ namespace PlayniteAchievements.Providers.Steam
                 logger?.Debug(ex, "Failed to clear Steam cookies from CEF.");
             }
         }
-
-        // ---------------------------------------------------------------------
-        // Internal methods for SteamHttpClient
-        // ---------------------------------------------------------------------
-
-        /// <summary>
-        /// Gets whether a session refresh is needed.
-        /// </summary>
-        public bool NeedsRefresh => !_probeCache.IsCacheValid(ProviderKey, ProbeCacheDuration);
     }
 }
