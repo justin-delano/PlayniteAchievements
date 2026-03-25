@@ -182,7 +182,8 @@
                                    Margin="0,8,0,0"/>
 
                         <StackPanel Grid.Column="1">
-                            <TextBox Text="{Binding Settings.SteamUserId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox Text="{Binding Settings.SteamUserId, Mode=OneWay}"
+                                     IsReadOnly="True"
                                      Padding="4"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Label_SteamUserId_Help}"
                                        Style="{StaticResource MutedTextStyle}"

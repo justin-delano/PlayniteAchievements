@@ -1,6 +1,5 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
-using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
@@ -22,7 +21,6 @@ namespace PlayniteAchievements.Providers.GOG
         internal static readonly Guid GogPluginId = Guid.Parse("AEBE8B7C-6DC3-4A66-AF31-E7375C6B5E9E");
         internal static readonly Guid GogOSSPluginId = Guid.Parse("03689811-3F33-4DFB-A121-2EE168FB9A5C");
 
-        private readonly PlayniteAchievementsSettings _settings;
         private readonly GogSessionManager _sessionManager;
         private readonly GogScanner _scanner;
         private readonly HttpClient _httpClient;
@@ -39,9 +37,8 @@ namespace PlayniteAchievements.Providers.GOG
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
             if (string.IsNullOrWhiteSpace(pluginUserDataPath)) throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
 
-            _settings = settings;
             _httpClient = new HttpClient();
-            _sessionManager = new GogSessionManager(playniteApi, logger, settings);
+            _sessionManager = new GogSessionManager(playniteApi, logger);
 
             var clientIdCacheStore = new GogClientIdCacheStore(pluginUserDataPath, logger);
             var apiClient = new GogApiClient(_httpClient, logger, _sessionManager, clientIdCacheStore);
@@ -60,10 +57,12 @@ namespace PlayniteAchievements.Providers.GOG
 
         public bool IsAuthenticated => _sessionManager.IsAuthenticated;
 
+        public ISessionManager AuthSession => _sessionManager;
+
         public bool IsCapable(Game game) =>
             IsGogCapable(game);
 
-        public static bool IsGogCapable(Game game)
+        private static bool IsGogCapable(Game game)
         {
             return game != null && (game.PluginId == GogPluginId || game.PluginId == GogOSSPluginId);
         }
@@ -98,9 +97,3 @@ namespace PlayniteAchievements.Providers.GOG
         public ProviderSettingsViewBase CreateSettingsView() => new GogSettingsView(_sessionManager);
     }
 }
-
-
-
-
-
-

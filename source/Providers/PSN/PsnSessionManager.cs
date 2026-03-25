@@ -33,7 +33,6 @@ namespace PlayniteAchievements.Providers.PSN
         private readonly ILogger _logger;
         private readonly SemaphoreSlim _tokenSemaphore = new SemaphoreSlim(1, 1);
         private readonly string _tokenPath;
-        private readonly PlayniteAchievementsSettings _settings;
 
         // Temporary state for mobile token acquisition (not auth state)
         private MobileTokens _mobileToken;
@@ -50,15 +49,12 @@ namespace PlayniteAchievements.Providers.PSN
         public PsnSessionManager(
             IPlayniteAPI api,
             ILogger logger,
-            PlayniteAchievementsSettings settings,
             string pluginUserDataPath)
         {
             if (api == null) throw new ArgumentNullException(nameof(api));
-            if (settings == null) throw new ArgumentNullException(nameof(settings));
 
             _api = api;
             _logger = logger;
-            _settings = settings;
 
             // Use pluginUserDataPath for token storage (consistent with RA and other providers)
             _tokenPath = Path.Combine(pluginUserDataPath ?? string.Empty, "psn", "cookies.bin");

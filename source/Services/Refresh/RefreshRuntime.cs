@@ -66,21 +66,12 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public ProviderRegistry ProviderRegistry => _providerRegistry;
 
-        /// <summary>
-        /// Checks if at least one provider is enabled and has valid authentication credentials configured.
-        /// </summary>
-        public bool HasAnyAuthenticatedProvider() => _providers.Any(p =>
-            _providerRegistry.IsProviderEnabled(p.ProviderKey) && p.IsAuthenticated);
-
-        /// <summary>
-        /// Validates that a refresh can proceed. Returns true if authenticated, otherwise shows dialog.
-        /// Call this before showing any progress UI.
-        /// </summary>
-        public bool ValidateCanStartRefresh()
+        internal async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersOrShowDialogAsync(CancellationToken ct = default)
         {
-            if (HasAnyAuthenticatedProvider())
+            var authenticatedProviders = await GetAuthenticatedProvidersAsync(ct).ConfigureAwait(false);
+            if (authenticatedProviders.Count > 0)
             {
-                return true;
+                return authenticatedProviders;
             }
 
             _logger.Info("Refresh attempted but no platforms are authenticated.");
@@ -89,13 +80,8 @@ namespace PlayniteAchievements.Services
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
-            return false;
+            return Array.Empty<IDataProvider>();
         }
-
-        /// <summary>
-        /// Gets the list of available data providers.
-        /// </summary>
-        public IReadOnlyList<IDataProvider> GetProviders() => _providers;
 
         /// <summary>
         /// Gets the list of available data providers.
@@ -146,7 +132,8 @@ namespace PlayniteAchievements.Services
             PlayniteAchievementsPlugin plugin,
             IEnumerable<IDataProvider> providers,
             DiskImageService diskImageService,
-            ProviderRegistry providerRegistry)
+            ProviderRegistry providerRegistry,
+            IEnumerable<string> refreshOrder)
         {
             _api = api;
             _settings = settings;
@@ -158,7 +145,7 @@ namespace PlayniteAchievements.Services
             _achievementIconService = new AchievementIconService(_diskImageService, _logger);
             _progressReportingService = new ProgressReportingService(_logger, PostToUi);
             _refreshStateManager = new RefreshStateManager();
-            _targetSelectionResolver = new TargetSelectionResolver(_api, _settings, _cacheService, _logger);
+            _targetSelectionResolver = new TargetSelectionResolver(_api, _settings, _cacheService, _logger, refreshOrder);
             _refreshRequestPlanner = new RefreshRequestPlanner(
                 _api,
                 _settings,
@@ -338,17 +325,32 @@ namespace PlayniteAchievements.Services
             _refreshStateManager.EndRun();
         }
 
+        private static List<IDataProvider> MaterializeProviderScope(IEnumerable<IDataProvider> providers)
+        {
+            return providers?
+                .Where(provider => provider != null)
+                .ToList() ?? new List<IDataProvider>();
+        }
+
         private async Task RunManagedAsync(
             RefreshModeType mode,
             Guid? singleGameId,
             CancellationToken externalToken,
             Func<Guid, CancellationToken, Task<RebuildPayload>> runner,
             Func<RebuildPayload, string> finalMessage,
-            string errorLogMessage)
+            string errorLogMessage,
+            IReadOnlyList<IDataProvider> providerScope = null)
         {
             var operationId = Guid.NewGuid();
 
-            if (!HasAnyAuthenticatedProvider())
+            var effectiveProviderScope = MaterializeProviderScope(providerScope);
+            if (effectiveProviderScope.Count == 0 && providerScope == null)
+            {
+                effectiveProviderScope = MaterializeProviderScope(
+                    await GetAuthenticatedProvidersAsync(externalToken).ConfigureAwait(false));
+            }
+
+            if (effectiveProviderScope.Count == 0)
             {
                 _logger.Info("Refresh requested but no platforms are authenticated.");
                 Report(
@@ -454,18 +456,24 @@ namespace PlayniteAchievements.Services
             public IDataProvider Provider { get; set; }
         }
 
-        private IReadOnlyList<IDataProvider> GetAuthenticatedProviders()
+        public async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersAsync(CancellationToken ct = default)
         {
-            return _providers
-                .Where(p => p != null &&
-                    _providerRegistry.IsProviderEnabled(p.ProviderKey) &&
-                    p.IsAuthenticated)
-                .ToList();
-        }
+            var authenticatedProviders = new List<IDataProvider>();
 
-        private IDataProvider ResolveProviderForGame(Game game, IReadOnlyList<IDataProvider> providers)
-        {
-            return _targetSelectionResolver.ResolveProviderForGame(game, providers);
+            foreach (var provider in _providers)
+            {
+                if (provider == null || !_providerRegistry.IsProviderEnabled(provider.ProviderKey))
+                {
+                    continue;
+                }
+
+                if (await IsProviderAuthenticatedAsync(provider, ct).ConfigureAwait(false))
+                {
+                    authenticatedProviders.Add(provider);
+                }
+            }
+
+            return authenticatedProviders;
         }
 
         private List<RefreshGameTarget> GetRefreshTargets(CacheRefreshOptions options, IReadOnlyList<IDataProvider> providers)
@@ -486,9 +494,9 @@ namespace PlayniteAchievements.Services
         {
             options ??= new CacheRefreshOptions();
 
-            var authenticatedProviders = (providerScope ?? GetAuthenticatedProviders())
-                .Where(provider => provider != null)
-                .ToList();
+            var authenticatedProviders = providerScope == null
+                ? MaterializeProviderScope(await GetAuthenticatedProvidersAsync(cancel).ConfigureAwait(false))
+                : MaterializeProviderScope(providerScope);
             if (authenticatedProviders.Count == 0)
             {
                 _logger?.Warn("No authenticated platforms available for refresh.");
@@ -496,7 +504,8 @@ namespace PlayniteAchievements.Services
             }
 
             var refreshTargets = GetRefreshTargets(options, authenticatedProviders);
-            var providerOrder = authenticatedProviders
+            var orderedProviders = _targetSelectionResolver.OrderProvidersForRefresh(authenticatedProviders);
+            var providerOrder = orderedProviders
                 .Select((provider, index) => new { provider, index })
                 .ToDictionary(x => x.provider, x => x.index);
 
@@ -710,7 +719,8 @@ namespace PlayniteAchievements.Services
                     providerScope,
                     runProvidersInParallelOverride),
                 finalMessage,
-                errorLogMessage
+                errorLogMessage,
+                providerScope
             );
         }
 
@@ -783,7 +793,22 @@ namespace PlayniteAchievements.Services
 
         public Task ExecuteRefreshAsync(RefreshRequest request, CancellationToken externalToken = default)
         {
-            var resolved = _refreshRequestPlanner.Resolve(request, GetAuthenticatedProviders());
+            return ExecuteRefreshAsync(request, authenticatedProviders: null, externalToken);
+        }
+
+        internal async Task ExecuteRefreshAsync(
+            RefreshRequest request,
+            IReadOnlyList<IDataProvider> authenticatedProviders,
+            CancellationToken externalToken = default)
+        {
+            var effectiveAuthenticatedProviders = MaterializeProviderScope(authenticatedProviders);
+            if (effectiveAuthenticatedProviders.Count == 0 && authenticatedProviders == null)
+            {
+                effectiveAuthenticatedProviders = MaterializeProviderScope(
+                    await GetAuthenticatedProvidersAsync(externalToken).ConfigureAwait(false));
+            }
+
+            var resolved = _refreshRequestPlanner.Resolve(request, effectiveAuthenticatedProviders);
             if (!resolved.ShouldExecute)
             {
                 if (!string.IsNullOrWhiteSpace(resolved.EmptySelectionLogMessage))
@@ -797,10 +822,11 @@ namespace PlayniteAchievements.Services
                     ShowCustomRefreshMessage(resolved.UserMessage);
                 }
 
-                return Task.CompletedTask;
+                return;
             }
 
-            return StartManagedResolvedRequestAsync(resolved, externalToken);
+            resolved.ProviderScope ??= effectiveAuthenticatedProviders;
+            await StartManagedResolvedRequestAsync(resolved, externalToken).ConfigureAwait(false);
         }
 
         public Task ExecuteRefreshForGamesAsync(IEnumerable<Guid> gameIds, CancellationToken externalToken = default)
@@ -841,6 +867,40 @@ namespace PlayniteAchievements.Services
             _refreshStateManager.CancelCurrentRebuild();
         }
 
+        public async Task<bool> IsProviderAuthenticatedAsync(IDataProvider provider, CancellationToken ct = default)
+        {
+            var result = await ProbeProviderAuthStateAsync(provider, ct).ConfigureAwait(false);
+            return result.IsSuccess;
+        }
+
+        public async Task<AuthProbeResult> ProbeProviderAuthStateAsync(IDataProvider provider, CancellationToken ct = default)
+        {
+            if (provider == null)
+            {
+                return AuthProbeResult.NotAuthenticated();
+            }
+
+            try
+            {
+                if (provider.AuthSession != null)
+                {
+                    return await provider.AuthSession.ProbeAuthStateAsync(ct).ConfigureAwait(false);
+                }
+
+                return provider.IsAuthenticated
+                    ? AuthProbeResult.AlreadyAuthenticated()
+                    : AuthProbeResult.NotAuthenticated();
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Auth probe failed for provider '{provider.ProviderKey}'.");
+                return AuthProbeResult.ProbeFailed();
+            }
+        }
+
     }
 }
-

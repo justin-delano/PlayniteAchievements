@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Exophase;
+using PlayniteAchievements.Providers;
 
 namespace PlayniteAchievements.Providers.Manual
 {
@@ -17,10 +20,11 @@ namespace PlayniteAchievements.Providers.Manual
         private readonly ExophaseApiClient _apiClient;
         private readonly ExophaseSessionManager _sessionManager;
         private readonly ILogger _logger;
-        private readonly Func<string> _getLanguage;
 
         public string SourceKey => "Exophase";
         public string SourceName => ResourceProvider.GetString("LOCPlayAch_Provider_Exophase");
+        public bool IsAuthenticated => _sessionManager?.IsAuthenticated ?? false;
+        public ISessionManager AuthSession => _sessionManager;
 
         public ExophaseManualSource(
             IPlayniteAPI playniteApi,
@@ -31,9 +35,9 @@ namespace PlayniteAchievements.Providers.Manual
             _apiClient = new ExophaseApiClient(
                 playniteApi ?? throw new ArgumentNullException(nameof(playniteApi)),
                 logger);
-            _sessionManager = sessionManager;
+            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _logger = logger;
-            _getLanguage = getLanguage ?? throw new ArgumentNullException(nameof(getLanguage));
+            _ = getLanguage ?? throw new ArgumentNullException(nameof(getLanguage));
         }
 
         public async Task<List<ManualGameSearchResult>> SearchGamesAsync(string query, string language, CancellationToken ct)
@@ -45,6 +49,8 @@ namespace PlayniteAchievements.Providers.Manual
 
             try
             {
+                await ManualSourceAuthentication.EnsureAuthenticatedAsync(this, ct).ConfigureAwait(false);
+
                 var games = await _apiClient.SearchGamesAsync(query, ct).ConfigureAwait(false);
                 if (games == null || games.Count == 0)
                 {
@@ -113,6 +119,8 @@ namespace PlayniteAchievements.Providers.Manual
             // Build the full URL from the slug
             try
             {
+                await ManualSourceAuthentication.EnsureAuthenticatedAsync(this, ct).ConfigureAwait(false);
+
                 var achievementUrl = ExophaseApiClient.BuildUrlFromSlug(sourceGameId);
                 if (string.IsNullOrWhiteSpace(achievementUrl))
                 {
@@ -122,10 +130,15 @@ namespace PlayniteAchievements.Providers.Manual
 
                 var acceptLanguage = ExophaseApiClient.MapLanguageToAcceptLanguage(language);
 
-                var achievements = await _apiClient.FetchAchievementsAsync(
-                    achievementUrl,
-                    acceptLanguage,
-                    ct).ConfigureAwait(false);
+                List<AchievementDetail> achievements;
+                using (var httpClient = CreateAuthenticatedHttpClient())
+                {
+                    achievements = await _apiClient.FetchAchievementsViaHttpAsync(
+                        achievementUrl,
+                        acceptLanguage,
+                        httpClient,
+                        ct).ConfigureAwait(false);
+                }
 
                 if (achievements == null || achievements.Count == 0)
                 {
@@ -133,8 +146,19 @@ namespace PlayniteAchievements.Providers.Manual
                     return null;
                 }
 
-                // All achievements should have Unlocked=false and UnlockTimeUtc=null
-                // The ManualAchievementsProvider will apply stored unlock states
+                // Manual linking uses Exophase only as a schema/text source.
+                // Stored manual unlock states are applied later by ManualAchievementsProvider.
+                foreach (var achievement in achievements)
+                {
+                    if (achievement == null)
+                    {
+                        continue;
+                    }
+
+                    achievement.Unlocked = false;
+                    achievement.UnlockTimeUtc = null;
+                }
+
                 return achievements;
             }
             catch (OperationCanceledException)
@@ -146,6 +170,28 @@ namespace PlayniteAchievements.Providers.Manual
                 _logger?.Error(ex, $"Failed to fetch Exophase achievements from slug: {sourceGameId}");
                 return null;
             }
+        }
+
+        private HttpClient CreateAuthenticatedHttpClient()
+        {
+            var cookieJar = new CookieContainer();
+            _sessionManager.LoadCefCookiesIntoJar(cookieJar);
+
+            var handler = new HttpClientHandler
+            {
+                CookieContainer = cookieJar,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                AllowAutoRedirect = true,
+                UseCookies = true
+            };
+
+            var httpClient = new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(30)
+            };
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            return httpClient;
         }
     }
 }

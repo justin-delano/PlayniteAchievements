@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -110,6 +111,7 @@ namespace PlayniteAchievements.Views
         }
 
         private readonly ObservableCollection<ProviderStatus> _providers;
+        private bool _hasAnyProviderAuth;
 
         public ObservableCollection<ProviderStatus> Providers => _providers;
 
@@ -246,23 +248,46 @@ namespace PlayniteAchievements.Views
         /// </summary>
         public void RefreshProviderStatuses()
         {
+            _ = RefreshProviderStatusesAsync();
+        }
+
+        private async Task RefreshProviderStatusesAsync()
+        {
             // Sync provider registry from the latest persisted settings
             _providerRegistry.SyncFromSettings(_settings.Persisted);
 
-            var providers = _refreshService.GetProviders();
-            _providers.Clear();
+            var providers = _refreshService.Providers;
+            var refreshedStatuses = new List<ProviderStatus>();
 
             foreach (var provider in providers)
             {
+                var isEnabled = _providerRegistry.IsProviderEnabled(provider.ProviderKey);
+                var isAuthenticated = false;
+
+                if (isEnabled)
+                {
+                    isAuthenticated = await _refreshService
+                        .IsProviderAuthenticatedAsync(provider, CancellationToken.None)
+                        .ConfigureAwait(true);
+                }
+
                 var status = new ProviderStatus
                 {
                     Name = provider.ProviderName,
                     ProviderKey = provider.ProviderKey,
-                    IsEnabled = _providerRegistry.IsProviderEnabled(provider.ProviderKey),
-                    IsAuthenticated = provider.IsAuthenticated
+                    IsEnabled = isEnabled,
+                    IsAuthenticated = isAuthenticated
                 };
+                refreshedStatuses.Add(status);
+            }
+
+            _providers.Clear();
+            foreach (var status in refreshedStatuses)
+            {
                 _providers.Add(status);
             }
+
+            _hasAnyProviderAuth = refreshedStatuses.Any(status => status.IsEnabled && status.IsAuthenticated);
 
             // Raise PropertyChanged for all state-dependent properties to refresh UI
             OnPropertyChanged(nameof(GlobalLanguage));
@@ -277,7 +302,7 @@ namespace PlayniteAchievements.Views
         /// Gets whether at least one enabled provider is authenticated.
         /// Delegates the auth check to RefreshRuntime.
         /// </summary>
-        public bool HasAnyProviderAuth => _refreshService.HasAnyAuthenticatedProvider();
+        public bool HasAnyProviderAuth => _hasAnyProviderAuth;
 
         /// <summary>
         /// Gets the settings for checking if setup is complete.
@@ -450,46 +475,26 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
+            _ = ToggleProviderAsync(providerKey);
+        });
+
+        private async Task ToggleProviderAsync(string providerKey)
+        {
             try
             {
                 _logger.Info($"Toggling provider: {providerKey}");
 
-                // Toggle via the registry
                 var newState = !_providerRegistry.IsProviderEnabled(providerKey);
                 _providerRegistry.SetProviderEnabled(providerKey, newState);
-
-                // Sync the registry state back to persisted settings
                 _providerRegistry.SyncToSettings(_settings.Persisted);
-
-                // Save settings to disk
                 SaveSettings();
 
-                // Update the provider status in the UI
-                var provider = _providers.FirstOrDefault(p => p.ProviderKey == providerKey);
-                if (provider != null)
-                {
-                    provider.IsEnabled = _providerRegistry.IsProviderEnabled(providerKey);
-                    provider.IsAuthenticated = GetProviderAuthenticated(providerKey);
-                }
-
-                // Refresh the state display
-                OnPropertyChanged(nameof(HasAnyProviderAuth));
-                OnPropertyChanged(nameof(CurrentState));
-                OnPropertyChanged(nameof(ShowNoAuthPanel));
-                OnPropertyChanged(nameof(ShowNeedsRefreshPanel));
-                OnPropertyChanged(nameof(ShowHasDataPanel));
+                await RefreshProviderStatusesAsync().ConfigureAwait(true);
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, $"Failed to toggle provider: {providerKey}");
             }
-        });
-
-        private bool GetProviderAuthenticated(string providerKey)
-        {
-            var providers = _refreshService.GetProviders();
-            var provider = providers.FirstOrDefault(p => p.ProviderKey == providerKey);
-            return provider?.IsAuthenticated ?? false;
         }
 
         private void SaveSettings()

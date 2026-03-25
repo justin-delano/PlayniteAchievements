@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Playnite.SDK;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Logging;
@@ -73,41 +74,49 @@ namespace PlayniteAchievements.Providers.GOG
         {
             _gogSettings = settings as GogSettings;
             base.Initialize(settings);
-            RefreshAuthStatus();
             _ = RefreshAuthStatusAsync();
         }
 
-        public void RefreshAuthStatus()
+        private void UpdateAuthStatus(AuthProbeResult result)
         {
-            var isAuthenticated = _sessionManager?.IsAuthenticated ?? false;
+            var isAuthenticated = result?.IsSuccess ?? false;
             IsAuthenticated = isAuthenticated;
+            var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_GOG");
 
             if (isAuthenticated)
             {
                 AuthStatus = string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"),
-                    ResourceProvider.GetString("LOCPlayAch_Provider_GOG"));
+                    providerName);
             }
             else
             {
-                AuthStatus = string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"),
-                    ResourceProvider.GetString("LOCPlayAch_Provider_GOG"));
+                var localized = !string.IsNullOrWhiteSpace(result?.MessageKey)
+                    ? ResourceProvider.GetString(result.MessageKey)
+                    : null;
+
+                AuthStatus = string.IsNullOrWhiteSpace(localized)
+                    ? string.Format(
+                        ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"),
+                        providerName)
+                    : localized;
             }
         }
 
         public async Task RefreshAuthStatusAsync()
         {
+            AuthProbeResult result;
             try
             {
-                await _sessionManager.ProbeAuthStateAsync(CancellationToken.None).ConfigureAwait(false);
+                result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
             }
             catch (Exception ex)
             {
                 Logger.Debug(ex, "GOG auth probe failed during settings refresh.");
+                result = AuthProbeResult.ProbeFailed();
             }
 
-            RefreshAuthStatus();
+            UpdateAuthStatus(result);
         }
 
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)
@@ -115,8 +124,16 @@ namespace PlayniteAchievements.Providers.GOG
             try
             {
                 SetAuthBusy(true);
-                await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
-                RefreshAuthStatus();
+                var result = await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
+                if (result.IsSuccess)
+                {
+                    await RefreshAuthStatusAsync();
+                    PlayniteAchievementsPlugin.NotifySettingsSaved();
+                }
+                else
+                {
+                    UpdateAuthStatus(result);
+                }
             }
             catch (Exception ex)
             {
@@ -134,8 +151,8 @@ namespace PlayniteAchievements.Providers.GOG
             {
                 SetAuthBusy(true);
                 _sessionManager.ClearSession();
-                RefreshAuthStatus();
-                await Task.CompletedTask;
+                await RefreshAuthStatusAsync();
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
             }
             catch (Exception ex)
             {

@@ -400,9 +400,9 @@
 
     <!-- Exophase Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_ExophaseConnection">Exophase Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_Description">Login is optional. Achievement names and descriptions use your Global Language setting.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_Description">Login is required for Exophase tracking and manual linking. Achievement names and descriptions use your Global Language setting when Exophase serves that locale.</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_ExophaseAuth">Exophase Authentication</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Login to access authenticated-only features. Achievement data is public.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authenticate with Exophase to refresh tracked data and use Exophase manual links.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_NotAuthenticated">Not authenticated with Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_AlreadyAuthenticated">Authenticated with Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_Verified">Exophase authentication verified</sys:String>
@@ -903,7 +903,7 @@
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_LockAll">Lock All</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_UnlockTime">Unlock Time</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Saving">Saving...</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_NoAchievements">No achievements found for this game. The linked Steam game may not have achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_NoAchievements">No achievements found for this game. The linked source game may not have achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_SaveSuccess">Manual achievements saved.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_SaveFailed">Failed to save manual achievements: {0}</sys:String>
 
@@ -911,6 +911,8 @@
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_NoAchievements">The selected game has no achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_FetchFailed">Failed to fetch achievement data from Steam: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_ApiKeyRequired">Steam API key is required to fetch achievement data. Configure it in plugin settings.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">Exophase login is required for manual linking. Authenticate with Exophase in plugin settings, then try again.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">Unable to verify Exophase authentication for manual linking. Retry, or re-authenticate with Exophase in plugin settings.</sys:String>
 
     <!-- ================================================================= -->
     <!-- MANUAL ACHIEVEMENTS WIZARD                                        -->

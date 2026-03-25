@@ -1402,11 +1402,7 @@ namespace PlayniteAchievements.Services.Database
 
             if (string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase))
             {
-                externalId = _plugin?.SteamSessionManager?.GetCachedSteamId64();
-                if (string.IsNullOrWhiteSpace(externalId))
-                {
-                    externalId = ProviderRegistry.Settings<SteamSettings>().SteamUserId;
-                }
+                externalId = ProviderRegistry.Settings<SteamSettings>().SteamUserId;
             }
             else if (string.Equals(providerKey, "RetroAchievements", StringComparison.OrdinalIgnoreCase))
             {
@@ -1925,7 +1921,6 @@ namespace PlayniteAchievements.Services.Database
         }
     }
 }
-
 
 
 

@@ -3,10 +3,8 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Settings;
-using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,8 +22,6 @@ namespace PlayniteAchievements.Providers.Xbox
         private readonly XboxSessionManager _sessionManager;
         private readonly XboxScanner _scanner;
         private readonly XboxApiClient _apiClient;
-        private readonly ILogger _logger;
-        private readonly PlayniteAchievementsSettings _settings;
         private XboxSettings _providerSettings;
 
         public XboxDataProvider(
@@ -39,8 +35,6 @@ namespace PlayniteAchievements.Providers.Xbox
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
             if (string.IsNullOrWhiteSpace(pluginUserDataPath)) throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
 
-            _logger = logger;
-            _settings = settings;
             _sessionManager = new XboxSessionManager(playniteApi, logger, pluginUserDataPath);
 
             _providerSettings = ProviderRegistry.Settings<XboxSettings>();
@@ -57,6 +51,8 @@ namespace PlayniteAchievements.Providers.Xbox
         /// Checks if Xbox authentication is properly configured.
         /// </summary>
         public bool IsAuthenticated => _sessionManager.IsAuthenticated;
+
+        public ISessionManager AuthSession => _sessionManager;
 
         /// <summary>
         /// Determines if this provider can handle the specified game.

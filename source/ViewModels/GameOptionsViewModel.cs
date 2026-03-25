@@ -618,11 +618,11 @@ namespace PlayniteAchievements.ViewModels
                 IsExcluded = isExcluded;
                 IsExcludedFromSummaries = _settings?.Persisted?.ExcludedFromSummariesGameIds?.Contains(_gameId) ?? false;
 
-                var raProvider = _refreshService?.GetProviders()
+                var raProvider = _refreshService?.Providers
                     ?.FirstOrDefault(p => p.ProviderKey == "RetroAchievements");
                 IsRaCapable = raProvider?.IsCapable(game) == true;
 
-                var xeniaProvider = _refreshService?.GetProviders()
+                var xeniaProvider = _refreshService?.Providers
                     ?.FirstOrDefault(p => p.ProviderKey == "Xenia");
                 IsXeniaCapable = xeniaProvider?.IsCapable(game) == true;
 
@@ -1218,7 +1218,6 @@ namespace PlayniteAchievements.ViewModels
         }
     }
 }
-
 
 
 

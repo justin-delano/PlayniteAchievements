@@ -32,7 +32,11 @@ namespace PlayniteAchievements.Gog.Tests
 
                 using (var httpClient = new HttpClient(handler))
                 {
-                    var apiClient = new GogApiClient(httpClient, logger: null, tokenProvider: new StubTokenProvider(), clientIdCacheStore: cache);
+                    var apiClient = new GogApiClient(
+                        httpClient,
+                        logger: null,
+                        sessionManager: new GogSessionManager { AccessToken = "stub-token" },
+                        clientIdCacheStore: cache);
 
                     var first = await apiClient.GetClientIdAsync("1207664700", CancellationToken.None).ConfigureAwait(false);
                     var second = await apiClient.GetClientIdAsync("1207664700", CancellationToken.None).ConfigureAwait(false);
@@ -70,7 +74,11 @@ namespace PlayniteAchievements.Gog.Tests
 
                 using (var httpClient = new HttpClient(handler))
                 {
-                    var apiClient = new GogApiClient(httpClient, logger: null, tokenProvider: new StubTokenProvider(), clientIdCacheStore: cache);
+                    var apiClient = new GogApiClient(
+                        httpClient,
+                        logger: null,
+                        sessionManager: new GogSessionManager { AccessToken = "stub-token" },
+                        clientIdCacheStore: cache);
 
                     var firstError = await Assert.ThrowsExceptionAsync<GogApiHttpException>(
                         () => apiClient.GetClientIdAsync("1207664701", CancellationToken.None)).ConfigureAwait(false);
@@ -113,7 +121,11 @@ namespace PlayniteAchievements.Gog.Tests
 
                 using (var httpClient = new HttpClient(handler))
                 {
-                    var apiClient = new GogApiClient(httpClient, logger: null, tokenProvider: new StubTokenProvider(), clientIdCacheStore: cache);
+                    var apiClient = new GogApiClient(
+                        httpClient,
+                        logger: null,
+                        sessionManager: new GogSessionManager { AccessToken = "stub-token" },
+                        clientIdCacheStore: cache);
                     var items = await apiClient.GetAchievementsAsync("client-123", "user-456", "german", CancellationToken.None).ConfigureAwait(false);
 
                     Assert.AreEqual(1, items.Count);
@@ -158,14 +170,6 @@ namespace PlayniteAchievements.Gog.Tests
             catch
             {
                 // Best effort cleanup for test temp files.
-            }
-        }
-
-        private sealed class StubTokenProvider : IGogTokenProvider
-        {
-            public string GetAccessToken()
-            {
-                return "stub-token";
             }
         }
 

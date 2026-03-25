@@ -58,12 +58,16 @@ namespace PlayniteAchievements.Epic.Tests
                 GlobalLanguage = "english"
             };
 
-            var session = new StubEpicSessionProvider("stub-token", "stub-account");
+            var session = new EpicSessionManager
+            {
+                AccessToken = "stub-token",
+                AccountId = "stub-account"
+            };
             var handler = new EpicLocalizationStubHandler();
 
             using (var httpClient = new HttpClient(handler))
             {
-                var api = new EpicApiClient(httpClient, logger: null, sessionProvider: session, settings: settings);
+                var api = new EpicApiClient(httpClient, logger: null, sessionManager: session, settings: settings);
 
                 var english = await api.GetAchievementsAsync("test-game", "stub-account", CancellationToken.None).ConfigureAwait(false);
 
@@ -76,33 +80,6 @@ namespace PlayniteAchievements.Epic.Tests
                 Assert.AreEqual("Title-de-DE", german[0].Title);
                 Assert.AreEqual(2, handler.SchemaCallCount);
                 CollectionAssert.AreEqual(new List<string> { "en-US", "de-DE" }, handler.SchemaLocales);
-            }
-        }
-
-        private sealed class StubEpicSessionProvider : IEpicSessionProvider
-        {
-            private readonly string _token;
-            private readonly string _accountId;
-
-            public StubEpicSessionProvider(string token, string accountId)
-            {
-                _token = token;
-                _accountId = accountId;
-            }
-
-            public string GetAccountId()
-            {
-                return _accountId;
-            }
-
-            public Task<string> GetAccessTokenAsync(CancellationToken ct)
-            {
-                return Task.FromResult(_token);
-            }
-
-            public Task<bool> TryRefreshTokenAsync(CancellationToken ct)
-            {
-                return Task.FromResult(false);
             }
         }
 

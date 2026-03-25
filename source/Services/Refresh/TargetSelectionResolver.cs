@@ -10,6 +10,8 @@ namespace PlayniteAchievements.Services
 {
     internal sealed class TargetSelectionResolver
     {
+        private readonly Dictionary<string, int> _refreshOrderIndex;
+
         public sealed class ResolvedRefreshTarget
         {
             public Game Game { get; set; }
@@ -26,12 +28,14 @@ namespace PlayniteAchievements.Services
             IPlayniteAPI api,
             PlayniteAchievementsSettings settings,
             ICacheManager cacheService,
-            ILogger logger)
+            ILogger logger,
+            IEnumerable<string> refreshOrder)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
             _logger = logger;
+            _refreshOrderIndex = BuildOrderIndex(refreshOrder);
         }
 
         public IDataProvider ResolveProviderForGame(Game game, IReadOnlyList<IDataProvider> providers)
@@ -41,7 +45,7 @@ namespace PlayniteAchievements.Services
                 return null;
             }
 
-            foreach (var provider in providers)
+            foreach (var provider in OrderProvidersForRefresh(providers))
             {
                 try
                 {
@@ -59,6 +63,15 @@ namespace PlayniteAchievements.Services
             }
 
             return null;
+        }
+
+        public IReadOnlyList<IDataProvider> OrderProvidersForRefresh(IEnumerable<IDataProvider> providers)
+        {
+            return (providers ?? Enumerable.Empty<IDataProvider>())
+                .Where(provider => provider != null)
+                .OrderBy(provider => GetRefreshOrderIndex(provider.ProviderKey))
+                .ThenBy(provider => provider.ProviderKey, StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         public List<ResolvedRefreshTarget> GetRefreshTargets(CacheRefreshOptions options, IReadOnlyList<IDataProvider> providers)
@@ -188,6 +201,36 @@ namespace PlayniteAchievements.Services
                 "Found {0} games missing achievement data.",
                 missingGameIds.Count));
             return missingGameIds;
+        }
+
+        private int GetRefreshOrderIndex(string providerKey)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return int.MaxValue;
+            }
+
+            return _refreshOrderIndex.TryGetValue(providerKey, out var index) ? index : int.MaxValue;
+        }
+
+        private static Dictionary<string, int> BuildOrderIndex(IEnumerable<string> providerOrder)
+        {
+            var orderIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (providerOrder == null)
+            {
+                return orderIndex;
+            }
+
+            var index = 0;
+            foreach (var providerKey in providerOrder.Where(key => !string.IsNullOrWhiteSpace(key)))
+            {
+                if (!orderIndex.ContainsKey(providerKey))
+                {
+                    orderIndex[providerKey] = index++;
+                }
+            }
+
+            return orderIndex;
         }
     }
 }

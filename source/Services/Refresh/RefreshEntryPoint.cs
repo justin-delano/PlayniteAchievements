@@ -47,7 +47,6 @@ namespace PlayniteAchievements.Services
         private readonly RefreshRuntime _refreshService;
         private readonly ILogger _logger;
         private readonly Action<Func<Task>, Guid?> _runWithProgressWindow;
-        private readonly ProviderRegistry _providerRegistry;
 
         /// <summary>
         /// Event raised when a refresh completes successfully.
@@ -59,12 +58,10 @@ namespace PlayniteAchievements.Services
         public RefreshEntryPoint(
             RefreshRuntime refreshRuntime,
             ILogger logger,
-            ProviderRegistry providerRegistry,
             Action<Func<Task>, Guid?> runWithProgressWindow = null)
         {
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _logger = logger;
-            _providerRegistry = providerRegistry;
             _runWithProgressWindow = runWithProgressWindow;
         }
 
@@ -72,24 +69,39 @@ namespace PlayniteAchievements.Services
         {
             policy ??= RefreshExecutionPolicy.Default();
             var normalizedRequest = NormalizeRequest(request);
+            IReadOnlyList<IDataProvider> authenticatedProviders = null;
+
+            if (policy.ValidateAuthentication)
+            {
+                authenticatedProviders = await _refreshService
+                    .GetAuthenticatedProvidersOrShowDialogAsync(policy.ExternalCancellationToken)
+                    .ConfigureAwait(false);
+                if (authenticatedProviders.Count == 0)
+                {
+                    return;
+                }
+            }
 
             if (policy.UseProgressWindow && _runWithProgressWindow != null)
             {
                 var singleGameId = policy.ProgressSingleGameId ?? normalizedRequest.SingleGameId;
-                _runWithProgressWindow(() => ExecuteWithPrimingAndCallbackAsync(normalizedRequest, policy), singleGameId);
+                _runWithProgressWindow(() => ExecuteWithCallbackAsync(normalizedRequest, policy, authenticatedProviders), singleGameId);
             }
             else
             {
-                await ExecuteWithPrimingAndCallbackAsync(normalizedRequest, policy);
+                await ExecuteWithCallbackAsync(normalizedRequest, policy, authenticatedProviders).ConfigureAwait(false);
             }
         }
 
-        private async Task ExecuteWithPrimingAndCallbackAsync(RefreshRequest request, RefreshExecutionPolicy policy)
+        private async Task ExecuteWithCallbackAsync(
+            RefreshRequest request,
+            RefreshExecutionPolicy policy,
+            IReadOnlyList<IDataProvider> authenticatedProviders = null)
         {
             bool success = false;
             try
             {
-                await ExecuteWithPrimingAsync(request, policy);
+                await ExecuteCoreAsync(request, policy, authenticatedProviders).ConfigureAwait(false);
                 success = true;
             }
             finally
@@ -110,27 +122,16 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        private async Task ExecuteWithPrimingAsync(RefreshRequest request, RefreshExecutionPolicy policy)
-        {
-            if (policy.ValidateAuthentication)
-            {
-                await _providerRegistry.PrimeEnabledProvidersAsync();
-
-                if (!_refreshService.ValidateCanStartRefresh())
-                {
-                    return;
-                }
-            }
-
-            await ExecuteCoreAsync(request, policy);
-        }
-
-        private async Task ExecuteCoreAsync(RefreshRequest request, RefreshExecutionPolicy policy)
+        private async Task ExecuteCoreAsync(
+            RefreshRequest request,
+            RefreshExecutionPolicy policy,
+            IReadOnlyList<IDataProvider> authenticatedProviders = null)
         {
             try
             {
                 await _refreshService.ExecuteRefreshAsync(
                     request,
+                    authenticatedProviders,
                     policy?.ExternalCancellationToken ?? CancellationToken.None);
             }
             catch (Exception ex)

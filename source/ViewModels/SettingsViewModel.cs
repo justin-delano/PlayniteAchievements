@@ -103,6 +103,7 @@ namespace PlayniteAchievements.ViewModels
         {
             // Create a clone for editing
             _editingClone = Playnite.SDK.Data.Serialization.GetClone(Settings);
+            _plugin.ProviderRegistry?.BeginEditSession();
         }
 
         public void CancelEdit()
@@ -110,13 +111,25 @@ namespace PlayniteAchievements.ViewModels
             // Revert to the cloned settings
             if (_editingClone != null)
             {
+                var currentProviderSettings = Settings.Persisted?.ProviderSettings != null
+                    ? Settings.Persisted.Clone().ProviderSettings
+                    : null;
+
                 Settings.CopyPersistedFrom(_editingClone);
+
+                if (currentProviderSettings != null)
+                {
+                    Settings.Persisted.ProviderSettings = currentProviderSettings;
+                }
             }
+
+            _plugin.ProviderRegistry?.CancelEditSession();
+            _plugin.ProviderRegistry?.SyncFromSettings(Settings.Persisted);
         }
 
         public void EndEdit()
         {
-            _plugin.ProviderRegistry?.PersistAllProviderSettings(false);
+            _plugin.ProviderRegistry?.CommitEditSession(false);
 
             // Save the settings via the plugin
             _plugin.SavePluginSettings(Settings);

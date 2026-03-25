@@ -24,7 +24,6 @@ namespace PlayniteAchievements.Providers.Steam
     {
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
-        private readonly PlayniteAchievementsSettings _settings;
 
         // Temporary state for interactive login dialog coordination
         private (bool Success, string SteamId) _authResult;
@@ -32,19 +31,34 @@ namespace PlayniteAchievements.Providers.Steam
         public string ProviderKey => "Steam";
 
         /// <summary>
-        /// Checks if currently authenticated based on persisted SteamUserId setting.
+        /// Snapshot of the last successful probe.
+        /// ProbeAuthStateAsync remains the authoritative auth check.
         /// </summary>
         public bool IsAuthenticated =>
             !string.IsNullOrWhiteSpace(ProviderRegistry.Settings<SteamSettings>().SteamUserId);
 
         public SteamSessionManager(
             IPlayniteAPI api,
-            ILogger logger,
-            PlayniteAchievementsSettings settings)
+            ILogger logger)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        }
+
+        private void PersistSteamUserId(string steamId)
+        {
+            var normalizedSteamId = string.IsNullOrWhiteSpace(steamId)
+                ? null
+                : steamId.Trim();
+            var steamSettings = ProviderRegistry.Settings<SteamSettings>();
+
+            if (string.Equals(steamSettings.SteamUserId, normalizedSteamId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            steamSettings.SteamUserId = normalizedSteamId;
+            ProviderRegistry.Write(steamSettings, persistToDisk: true);
         }
 
         // ---------------------------------------------------------------------
@@ -63,9 +77,7 @@ namespace PlayniteAchievements.Providers.Steam
                     var steamId = ProbeSteamIdFromCefCookies();
                     if (!string.IsNullOrWhiteSpace(steamId))
                     {
-                        var steamSettings = ProviderRegistry.Settings<SteamSettings>();
-                        steamSettings.SteamUserId = steamId;
-                        ProviderRegistry.Write(steamSettings);
+                        PersistSteamUserId(steamId);
                         return AuthProbeResult.AlreadyAuthenticated(steamId);
                     }
 
@@ -73,12 +85,11 @@ namespace PlayniteAchievements.Providers.Steam
                     steamId = await RefreshCookiesHeadlessAsync(ct).ConfigureAwait(false);
                     if (!string.IsNullOrWhiteSpace(steamId))
                     {
-                        var steamSettings = ProviderRegistry.Settings<SteamSettings>();
-                        steamSettings.SteamUserId = steamId;
-                        ProviderRegistry.Write(steamSettings);
+                        PersistSteamUserId(steamId);
                         return AuthProbeResult.AlreadyAuthenticated(steamId);
                     }
 
+                    PersistSteamUserId(null);
                     return AuthProbeResult.NotAuthenticated();
                 }
                 catch (OperationCanceledException)
@@ -166,9 +177,7 @@ namespace PlayniteAchievements.Providers.Steam
                     return AuthProbeResult.Cancelled(windowOpened);
                 }
 
-                var steamSettings = ProviderRegistry.Settings<SteamSettings>();
-                steamSettings.SteamUserId = extractedId;
-                ProviderRegistry.Write(steamSettings);
+                PersistSteamUserId(extractedId);
                 progress?.Report(AuthProgressStep.Completed);
 
                 return AuthProbeResult.Authenticated(extractedId, windowOpened: windowOpened);
@@ -192,9 +201,7 @@ namespace PlayniteAchievements.Providers.Steam
         public void ClearSession()
         {
             ClearSteamCookiesFromCef(_api, _logger);
-            var steamSettings = ProviderRegistry.Settings<SteamSettings>();
-            steamSettings.SteamUserId = null;
-            ProviderRegistry.Write(steamSettings);
+            PersistSteamUserId(null);
         }
 
         // ---------------------------------------------------------------------

@@ -52,6 +52,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         public string ProviderColorHex => "#752bfd";
 
+        public ISessionManager AuthSession => null;
+
         public bool IsAuthenticated
         {
             get

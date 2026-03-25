@@ -98,7 +98,7 @@ namespace PlayniteAchievements.ViewModels
             _playniteApi = playniteApi;
             _logger = logger;
             _settings = settings;
-            _dataBuilder = new SidebarDataBuilder(_achievementDataService, _refreshService.GetProviders(), _playniteApi, _logger);
+            _dataBuilder = new SidebarDataBuilder(_achievementDataService, _refreshService.Providers, _playniteApi, _logger);
 
             // Initialize debounce timer
             _refreshDebounceTimer = new System.Windows.Threading.DispatcherTimer
@@ -2159,7 +2159,7 @@ namespace PlayniteAchievements.ViewModels
         private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup()
         {
             var providerLookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
-            foreach (var provider in _refreshService.GetProviders())
+            foreach (var provider in _refreshService.Providers)
             {
                 providerLookup[provider.ProviderKey] = (provider.ProviderIconKey, provider.ProviderColorHex);
             }

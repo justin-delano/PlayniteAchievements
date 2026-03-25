@@ -21,7 +21,7 @@ namespace PlayniteAchievements.Views
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
-        private readonly ManualAchievementsProvider _manualProvider;
+        private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly GameOptionsViewModel _viewModel;
 
         private GameOptionsCapstonesTab _capstoneControl;
@@ -45,7 +45,7 @@ namespace PlayniteAchievements.Views
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            ManualAchievementsProvider manualProvider)
+            ManualSourceRegistry manualSourceRegistry)
         {
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
@@ -55,7 +55,7 @@ namespace PlayniteAchievements.Views
             _playniteApi = playniteApi;
             _logger = logger;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _manualProvider = manualProvider ?? throw new ArgumentNullException(nameof(manualProvider));
+            _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
 
             _viewModel = new GameOptionsViewModel(
                 gameId,
@@ -249,7 +249,7 @@ namespace PlayniteAchievements.Views
             _manualStartAtEditing = startAtEditing;
 
             // Get all available sources
-            var availableSources = _manualProvider.GetAllSources();
+            var availableSources = _manualSourceRegistry.GetAllSources();
 
             // Load manual settings to check for existing link
             var manualSettings = ProviderRegistry.Settings<ManualSettings>();
@@ -261,17 +261,16 @@ namespace PlayniteAchievements.Views
                 existingLink != null)
             {
                 // Use the source from the existing link
-                initialSource = _manualProvider.GetSourceByKey(existingLink.SourceKey);
+                initialSource = _manualSourceRegistry.GetSourceByKey(existingLink.SourceKey);
                 if (initialSource == null)
                 {
                     _logger?.Warn($"Unknown manual source key '{existingLink.SourceKey}', falling back to Steam");
-                    initialSource = _manualProvider.GetSteamManualSource();
+                    initialSource = _manualSourceRegistry.GetDefaultSource();
                 }
             }
             else
             {
-                // Default to Steam for new manual links
-                initialSource = _manualProvider.GetSteamManualSource();
+                initialSource = _manualSourceRegistry.GetDefaultSource();
             }
 
             _manualViewModel = new ManualAchievementsViewModel(
@@ -441,7 +440,6 @@ namespace PlayniteAchievements.Views
         }
     }
 }
-
 
 
 

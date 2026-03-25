@@ -90,7 +90,6 @@ namespace PlayniteAchievements.Providers.Steam
         {
             _steamSettings = settings as SteamSettings;
             base.Initialize(settings);
-            RefreshAuthStatus();
             _ = RefreshAuthStatusAsync();
         }
 
@@ -112,6 +111,14 @@ namespace PlayniteAchievements.Providers.Steam
         {
             var hasWebAuth = result.IsSuccess;
             var hasApiKey = !string.IsNullOrWhiteSpace(_steamSettings?.SteamApiKey);
+            var probedSteamUserId = hasWebAuth && !string.IsNullOrWhiteSpace(result.UserId)
+                ? result.UserId.Trim()
+                : null;
+
+            if (_steamSettings != null && !string.Equals(_steamSettings.SteamUserId, probedSteamUserId, StringComparison.Ordinal))
+            {
+                _steamSettings.SteamUserId = probedSteamUserId;
+            }
 
             WebAuthenticated = hasWebAuth;
             FullyConfigured = hasWebAuth && hasApiKey;
@@ -128,36 +135,21 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
-        private void RefreshAuthStatus()
-        {
-            var cachedId = _sessionManager.GetCachedSteamId64();
-            var hasWebAuth = !string.IsNullOrWhiteSpace(cachedId);
-            var hasApiKey = !string.IsNullOrWhiteSpace(_steamSettings?.SteamApiKey);
-
-            WebAuthenticated = hasWebAuth;
-            FullyConfigured = hasWebAuth && hasApiKey;
-
-            if (hasWebAuth)
-            {
-                WebAuthStatus = string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"),
-                    ResourceProvider.GetString("LOCPlayAch_Provider_Steam"));
-            }
-            else
-            {
-                WebAuthStatus = string.Format(
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"),
-                    ResourceProvider.GetString("LOCPlayAch_Provider_Steam"));
-            }
-        }
-
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 SetAuthBusy(true);
                 var result = await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, ct: CancellationToken.None);
-                UpdateAuthStatusFromResult(result);
+                if (result.IsSuccess)
+                {
+                    await RefreshAuthStatusAsync();
+                    PlayniteAchievementsPlugin.NotifySettingsSaved();
+                }
+                else
+                {
+                    UpdateAuthStatusFromResult(result);
+                }
             }
             catch (Exception ex)
             {
@@ -186,13 +178,14 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
-        private void Logout_Click(object sender, RoutedEventArgs e)
+        private async void Logout_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 SetAuthBusy(true);
                 _sessionManager.ClearSession();
-                RefreshAuthStatus();
+                await RefreshAuthStatusAsync();
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
             }
             catch (Exception ex)
             {

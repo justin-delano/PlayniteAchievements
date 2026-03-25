@@ -65,6 +65,10 @@ namespace PlayniteAchievements.Models.Achievements
 
         public string Description { get; set; }
 
+        public string UnlockedIconPath { get; set; }
+
+        public string LockedIconPath { get; set; }
+
         public bool Hidden { get; set; }
 
         public bool Unlocked { get; set; }
@@ -104,6 +108,15 @@ namespace PlayniteAchievements.Models.Achievements
         public DateTime LastUpdatedUtc { get; set; }
 
         public string ProviderKey { get; set; }
+
+        public string ProviderPlatformKey { get; set; }
+
+        public string EffectiveProviderKey =>
+            !string.IsNullOrWhiteSpace(ProviderPlatformKey)
+                ? ProviderPlatformKey
+                : ProviderKey;
+
+        public string LibrarySourceName { get; set; }
 
         public bool HasAchievements { get; set; } = true;
 
@@ -147,11 +160,12 @@ namespace PlayniteAchievements.Services
 
         public static T Settings<T>() where T : Providers.Settings.ProviderSettingsBase, new()
         {
-            return new T();
+            return Providers.Settings.ProviderSettingsHelper.LoadCurrent<T>();
         }
 
-        public static void Write(Providers.Settings.ProviderSettingsBase settings)
+        public static void Write(Providers.Settings.ProviderSettingsBase settings, bool persistToDisk = false)
         {
+            Providers.Settings.ProviderSettingsHelper.SaveCurrent(settings);
         }
     }
 }

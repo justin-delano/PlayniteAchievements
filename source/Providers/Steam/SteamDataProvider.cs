@@ -2,10 +2,8 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
-using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
@@ -19,8 +17,6 @@ namespace PlayniteAchievements.Providers.Steam
 
         private readonly SteamHttpClient _steamClient;
         private readonly SteamScanner _scanner;
-        private readonly SteamApiClient _steamApiClient;
-        private readonly PlayniteAchievementsSettings _settings;
         private readonly SteamSessionManager _sessionManager;
         private SteamSettings _providerSettings;
 
@@ -34,17 +30,15 @@ namespace PlayniteAchievements.Providers.Steam
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (api == null) throw new ArgumentNullException(nameof(api));
 
-            _settings = settings;
-            _sessionManager = new SteamSessionManager(api, logger, settings);
+            _sessionManager = new SteamSessionManager(api, logger);
 
             // Initialize provider settings from persisted settings dictionary
             _providerSettings = ProviderRegistry.Settings<SteamSettings>();
 
             // Create Steam-specific dependencies
             _steamClient = new SteamHttpClient(api, logger, _sessionManager, pluginUserDataPath);
-            _steamApiClient = new SteamApiClient(_steamClient.ApiHttpClient, logger);
-
-            _scanner = new SteamScanner(settings, _providerSettings, _steamClient, _sessionManager, _steamApiClient, api, logger);
+            var steamApiClient = new SteamApiClient(_steamClient.ApiHttpClient, logger);
+            _scanner = new SteamScanner(settings, _providerSettings, _steamClient, _sessionManager, steamApiClient, api, logger);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
@@ -53,19 +47,19 @@ namespace PlayniteAchievements.Providers.Steam
         public string ProviderColorHex => "#B0B0B0";
 
         /// <summary>
-        /// Checks if Steam authentication is properly configured.
-        /// Requires SteamUserId, SteamApiKey, and web session auth (cached SteamId64).
-        /// Does NOT check SteamEnabled - that is handled by ProviderRegistry.
+        /// Snapshot of the last known persisted Steam auth state.
+        /// AuthSession is the authoritative auth check for runtime flows.
         /// </summary>
         public bool IsAuthenticated =>
             !string.IsNullOrWhiteSpace(_providerSettings.SteamUserId) &&
-            !string.IsNullOrWhiteSpace(_providerSettings.SteamApiKey) &&
-            !string.IsNullOrWhiteSpace(_sessionManager.GetCachedSteamId64());
+            !string.IsNullOrWhiteSpace(_providerSettings.SteamApiKey);
+
+        public ISessionManager AuthSession => _sessionManager;
 
         public bool IsCapable(Game game) =>
             IsSteamCapable(game);
 
-        public static bool IsSteamCapable(Game game)
+        private static bool IsSteamCapable(Game game)
         {
             return game.PluginId == SteamPluginId;
         }
@@ -100,9 +94,3 @@ namespace PlayniteAchievements.Providers.Steam
         }
     }
 }
-
-
-
-
-
-

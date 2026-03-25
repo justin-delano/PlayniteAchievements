@@ -25,6 +25,12 @@ namespace PlayniteAchievements.Providers
         /// </summary>
         bool IsAuthenticated { get; }
 
+        /// <summary>
+        /// Gets the provider-owned auth session manager when this provider supports live auth probing.
+        /// Providers with no external auth return null.
+        /// </summary>
+        ISessionManager AuthSession { get; }
+
         Task<RebuildPayload> RefreshAsync(
             IReadOnlyList<Game> gamesToRefresh,
             Action<Game> onGameStarting,

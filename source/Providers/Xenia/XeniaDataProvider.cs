@@ -16,7 +16,6 @@ namespace PlayniteAchievements.Providers.Xenia
     {
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
-        private readonly PlayniteAchievementsSettings _settings;
         private readonly string _pluginUserDataPath;
         private XeniaSettings _providerSettings;
 
@@ -24,7 +23,7 @@ namespace PlayniteAchievements.Providers.Xenia
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _playniteApi = playniteApi;
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _ = settings ?? throw new ArgumentNullException(nameof(settings));
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
             _providerSettings = ProviderRegistry.Settings<XeniaSettings>();
         }
@@ -33,6 +32,7 @@ namespace PlayniteAchievements.Providers.Xenia
         public string ProviderKey => "Xenia";
         public string ProviderIconKey => "ProviderIconXenia";
         public string ProviderColorHex => "#92C83E";
+        public ISessionManager AuthSession => null;
 
         public bool IsAuthenticated
         {

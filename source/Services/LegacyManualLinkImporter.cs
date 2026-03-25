@@ -202,7 +202,7 @@ namespace PlayniteAchievements.Services
                 }
             }
 
-            ProviderRegistry.Write(manualSettings);
+            ProviderRegistry.Write(manualSettings, persistToDisk: true);
             return result;
         }
 
@@ -477,7 +477,6 @@ namespace PlayniteAchievements.Services
         }
     }
 }
-
 
 
 

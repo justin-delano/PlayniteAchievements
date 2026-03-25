@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers;
 
 namespace PlayniteAchievements.Providers.Manual
 {
@@ -51,6 +52,19 @@ namespace PlayniteAchievements.Providers.Manual
         /// Display name for this source (localized).
         /// </summary>
         string SourceName { get; }
+
+        /// <summary>
+        /// Gets whether this manual source has valid authentication credentials configured.
+        /// Sources that only require static configuration (for example an API key) return
+        /// credential presence only. Sources with live web auth also expose AuthSession.
+        /// </summary>
+        bool IsAuthenticated { get; }
+
+        /// <summary>
+        /// Gets the source-owned auth session manager when this source supports live auth probing.
+        /// Sources with no external session auth return null.
+        /// </summary>
+        ISessionManager AuthSession { get; }
 
         /// <summary>
         /// Searches for games in the source system.

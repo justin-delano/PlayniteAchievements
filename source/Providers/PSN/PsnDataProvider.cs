@@ -15,7 +15,6 @@ namespace PlayniteAchievements.Providers.PSN
     {
         private readonly PsnSessionManager _sessionManager;
         private readonly PsnScanner _scanner;
-        private readonly PlayniteAchievementsSettings _settings;
         private PsnSettings _providerSettings;
 
         public PsnDataProvider(
@@ -29,10 +28,9 @@ namespace PlayniteAchievements.Providers.PSN
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
             if (string.IsNullOrWhiteSpace(pluginUserDataPath)) throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
 
-            _settings = settings;
-            _sessionManager = new PsnSessionManager(playniteApi, logger, settings, pluginUserDataPath);
+            _sessionManager = new PsnSessionManager(playniteApi, logger, pluginUserDataPath);
 
-            _scanner = new PsnScanner(logger, _settings, _sessionManager);
+            _scanner = new PsnScanner(logger, settings, _sessionManager);
 
             _providerSettings = ProviderRegistry.Settings<PsnSettings>();
         }
@@ -53,6 +51,8 @@ namespace PlayniteAchievements.Providers.PSN
         public string ProviderColorHex => "#0070D1";
 
         public bool IsAuthenticated => _sessionManager.IsAuthenticated;
+
+        public ISessionManager AuthSession => _sessionManager;
 
         public bool IsCapable(Game game)
         {

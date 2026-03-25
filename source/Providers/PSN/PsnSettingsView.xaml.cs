@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Diagnostics;
 using System.Windows.Navigation;
 using Playnite.SDK;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Logging;
@@ -43,39 +44,42 @@ namespace PlayniteAchievements.Providers.PSN
         {
             _psnSettings = settings as PsnSettings;
             base.Initialize(settings);
-            RefreshAuthStatus();
             _ = RefreshAuthStatusAsync();
         }
 
-        public void RefreshAuthStatus()
+        private void UpdateAuthStatus(AuthProbeResult result)
         {
-            var isAuthenticated = _sessionManager?.IsAuthenticated ?? false;
-            IsAuthenticated = isAuthenticated;
-            var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_PSN");
-            AuthStatus = isAuthenticated
-                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName)
-                : string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName);
+            var isAuthenticated = result?.IsSuccess ?? false;
+            SetAuthenticated(isAuthenticated);
+
+            if (isAuthenticated)
+            {
+                SetAuthStatusByKey("LOCPlayAch_Settings_Auth_AlreadyAuthenticated");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(result?.MessageKey))
+            {
+                SetAuthStatusByKey(result.MessageKey);
+                return;
+            }
+
+            SetAuthStatusByKey("LOCPlayAch_Settings_Auth_NotAuthenticated");
         }
 
         public async Task RefreshAuthStatusAsync()
         {
             try
             {
-                var result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None).ConfigureAwait(false);
-                SetAuthenticated(result.IsSuccess);
-
-                if (!string.IsNullOrWhiteSpace(result.MessageKey))
-                {
-                    SetAuthStatusByKey(result.MessageKey);
-                    return;
-                }
+                SyncCanonicalAuthInputs();
+                var result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
+                UpdateAuthStatus(result);
             }
             catch (Exception ex)
             {
                 Logger.Debug(ex, "PSN auth probe failed during settings refresh.");
+                UpdateAuthStatus(AuthProbeResult.ProbeFailed());
             }
-
-            RefreshAuthStatus();
         }
 
         private async void PsnNpsso_KeyDown(object sender, KeyEventArgs e)
@@ -105,12 +109,16 @@ namespace PlayniteAchievements.Providers.PSN
             try
             {
                 SetAuthBusy(true);
-                var result = await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None).ConfigureAwait(false);
-                await CheckPsnAuthAsync().ConfigureAwait(false);
-
-                if (!string.IsNullOrWhiteSpace(result?.MessageKey))
+                SyncCanonicalAuthInputs();
+                var result = await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
+                if (result.IsSuccess)
                 {
-                    SetAuthStatusByKey(result.MessageKey);
+                    await RefreshAuthStatusAsync();
+                    PlayniteAchievementsPlugin.NotifySettingsSaved();
+                }
+                else
+                {
+                    UpdateAuthStatus(result);
                 }
             }
             catch (Exception ex)
@@ -124,14 +132,14 @@ namespace PlayniteAchievements.Providers.PSN
             }
         }
 
-        private void PsnAuth_Clear_Click(object sender, RoutedEventArgs e)
+        private async void PsnAuth_Clear_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 SetAuthBusy(true);
                 _sessionManager.ClearSession();
-                RefreshAuthStatus();
-                SetAuthStatusByKey("LOCPlayAch_Settings_Auth_CookiesCleared");
+                await RefreshAuthStatusAsync();
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
             }
             catch (Exception ex)
             {
@@ -149,19 +157,7 @@ namespace PlayniteAchievements.Providers.PSN
 
             try
             {
-                var result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None).ConfigureAwait(false);
-                var isAuthenticated = result?.IsSuccess ?? false;
-
-                SetAuthenticated(isAuthenticated);
-
-                if (!string.IsNullOrWhiteSpace(result?.MessageKey))
-                {
-                    SetAuthStatusByKey(result.MessageKey);
-                }
-                else
-                {
-                    RefreshAuthStatus();
-                }
+                await RefreshAuthStatusAsync();
             }
             catch (Exception ex)
             {
@@ -173,6 +169,29 @@ namespace PlayniteAchievements.Providers.PSN
             {
                 SetAuthBusy(false);
             }
+        }
+
+        private void SyncCanonicalAuthInputs()
+        {
+            if (_psnSettings == null)
+            {
+                return;
+            }
+
+            var liveSettings = ProviderRegistry.Settings<PsnSettings>();
+            if (liveSettings == null)
+            {
+                return;
+            }
+
+            var npsso = _psnSettings.Npsso ?? string.Empty;
+            if (string.Equals(liveSettings.Npsso ?? string.Empty, npsso, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            liveSettings.Npsso = npsso;
+            ProviderRegistry.Write(liveSettings, persistToDisk: true);
         }
 
         private void SetAuthStatusByKey(string key)
@@ -196,7 +215,19 @@ namespace PlayniteAchievements.Providers.PSN
                 return;
             }
 
-            RefreshAuthStatus();
+            var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_PSN");
+            var fallback = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"),
+                providerName);
+
+            if (Dispatcher.CheckAccess())
+            {
+                AuthStatus = fallback;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => AuthStatus = fallback));
+            }
         }
 
         private void SetAuthenticated(bool authenticated)

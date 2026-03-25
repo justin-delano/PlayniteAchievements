@@ -33,7 +33,6 @@ namespace PlayniteAchievements.Providers.Epic
 
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
-        private readonly PlayniteAchievementsSettings _settings;
         private readonly SemaphoreSlim _tokenRefreshSemaphore = new SemaphoreSlim(1, 1);
 
         // Temporary state for interactive login dialog coordination only
@@ -49,12 +48,10 @@ namespace PlayniteAchievements.Providers.Epic
 
         public EpicSessionManager(
             IPlayniteAPI api,
-            ILogger logger,
-            PlayniteAchievementsSettings settings)
+            ILogger logger)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         public string GetAccountId() => GetEpicSettings().AccountId?.Trim();
@@ -327,7 +324,7 @@ namespace PlayniteAchievements.Providers.Epic
             epicSettings.TokenType = null;
             epicSettings.TokenExpiryUtc = DateTime.MinValue;
             epicSettings.RefreshTokenExpiryUtc = DateTime.MinValue;
-            ProviderRegistry.Write(epicSettings);
+            ProviderRegistry.Write(epicSettings, persistToDisk: true);
         }
 
         // ---------------------------------------------------------------------
@@ -840,7 +837,7 @@ namespace PlayniteAchievements.Providers.Epic
             epicSettings.TokenType = string.IsNullOrWhiteSpace(payload.token_type) ? "bearer" : payload.token_type.Trim();
             epicSettings.TokenExpiryUtc = NormalizeUtc(payload.expires_at, payload.expires_in);
             epicSettings.RefreshTokenExpiryUtc = NormalizeUtc(payload.refresh_expires_at, payload.refresh_expires_in);
-            ProviderRegistry.Write(epicSettings);
+            ProviderRegistry.Write(epicSettings, persistToDisk: true);
         }
 
         private static DateTime NormalizeUtc(DateTime? explicitUtc, int? expiresInSeconds)

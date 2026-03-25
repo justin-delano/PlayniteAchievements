@@ -1099,11 +1099,7 @@ namespace PlayniteAchievements.Views
                 var view = _providerRegistry.CreateSettingsView(providerKey);
                 if (view == null) continue;
 
-                // Get provider settings from the provider
-                var provider = _plugin.Providers?.FirstOrDefault(p => p.ProviderKey == providerKey);
-                if (provider == null) continue;
-
-                var settings = provider.GetSettings();
+                var settings = _providerRegistry.GetSettingsForEdit(providerKey);
                 if (settings == null) continue;
 
                 view.Initialize(settings);

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Data;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Steam.Models;
 
 namespace PlayniteAchievements.Providers.Manual
@@ -36,6 +37,8 @@ namespace PlayniteAchievements.Providers.Manual
 
         public string SourceKey => "Steam";
         public string SourceName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
+        public bool IsAuthenticated => !string.IsNullOrWhiteSpace(_getApiKey?.Invoke());
+        public ISessionManager AuthSession => null;
 
         public SteamManualSource(HttpClient httpClient, ILogger logger, Func<string> getApiKey)
         {
@@ -53,6 +56,8 @@ namespace PlayniteAchievements.Providers.Manual
 
             try
             {
+                await ManualSourceAuthentication.EnsureAuthenticatedAsync(this, ct).ConfigureAwait(false);
+
                 // Map language to Steam Store language code
                 var steamLanguage = MapLanguageToSteam(language);
                 var cc = "US";
@@ -154,6 +159,8 @@ namespace PlayniteAchievements.Providers.Manual
 
             try
             {
+                await ManualSourceAuthentication.EnsureAuthenticatedAsync(this, ct).ConfigureAwait(false);
+
                 var steamLanguage = MapLanguageToSteam(language);
                 var url = $"https://api.steampowered.com/IPlayerService/GetGameAchievements/v1/" +
                           $"?key={Uri.EscapeDataString(apiKey)}" +
@@ -264,7 +271,7 @@ namespace PlayniteAchievements.Providers.Manual
                 "thai" or "ไทย" or "th" => "thai",
                 "vietnamese" or "tiếng việt" or "vi" => "vietnamese",
                 "japanese" or "日本語" or "ja" => "japanese",
-                "korean" or "한국어" or "ko" => "korean",
+                "koreana" or "korean" or "한국어" or "ko" => "koreana",
                 "schinese" or "simplified chinese" or "简体中文" or "zh-cn" => "schinese",
                 "tchinese" or "traditional chinese" or "繁體中文" or "zh-tw" => "tchinese",
                 "arabic" or "العربية" or "ar" => "arabic",

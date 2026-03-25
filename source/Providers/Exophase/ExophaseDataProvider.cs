@@ -50,6 +50,8 @@ namespace PlayniteAchievements.Providers.Exophase
         /// </summary>
         public bool IsAuthenticated => _sessionManager?.IsAuthenticated ?? false;
 
+        public ISessionManager AuthSession => _sessionManager;
+
         #endregion
 
         #region Construction
@@ -62,7 +64,7 @@ namespace PlayniteAchievements.Providers.Exophase
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
-            _sessionManager = new ExophaseSessionManager(playniteApi, logger, settings);
+            _sessionManager = new ExophaseSessionManager(playniteApi, logger);
             _apiClient = new ExophaseApiClient(playniteApi, logger);
 
             _providerSettings = ProviderRegistry.Settings<ExophaseSettings>();

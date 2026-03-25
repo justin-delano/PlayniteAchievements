@@ -45,6 +45,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         public string ProviderKey => "RetroAchievements";
         public string ProviderIconKey => "ProviderIconRetroAchievements";
         public string ProviderColorHex => "#FFD700";
+        public ISessionManager AuthSession => null;
 
         /// <summary>
         /// Checks if RetroAchievements authentication is properly configured.

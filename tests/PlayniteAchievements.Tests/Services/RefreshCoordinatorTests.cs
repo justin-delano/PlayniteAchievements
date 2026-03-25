@@ -1,9 +1,11 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Services.Tests
@@ -119,7 +121,10 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public async Task ExecuteAsync_StopsWhenValidationFails()
         {
-            var manager = new FakeAchievementService { ValidateResult = false };
+            var manager = new FakeAchievementService
+            {
+                AuthenticatedProvidersToReturn = new List<IDataProvider>()
+            };
             var coordinator = CreateCoordinator(manager);
 
             await coordinator.ExecuteAsync(
@@ -141,7 +146,6 @@ namespace PlayniteAchievements.Services.Tests
             var coordinator = new RefreshEntryPoint(
                 manager,
                 logger: null,
-                providerRegistry: new ProviderRegistry(),
                 runWithProgressWindow: (refreshTask, gameId) =>
                 {
                     callbackCount++;
@@ -170,27 +174,46 @@ namespace PlayniteAchievements.Services.Tests
 
         private static RefreshEntryPoint CreateCoordinator(RefreshRuntime manager)
         {
-            return new RefreshEntryPoint(manager, logger: null, providerRegistry: new ProviderRegistry());
+            return new RefreshEntryPoint(manager, logger: null);
         }
 
         private sealed class FakeAchievementService : RefreshRuntime
         {
-            public bool ValidateResult { get; set; } = true;
+            public IReadOnlyList<IDataProvider> AuthenticatedProvidersToReturn { get; set; } =
+                new List<IDataProvider> { new StubDataProvider("Steam") };
 
             public int ValidateCallCount { get; private set; }
             public int ExecuteCallCount { get; private set; }
             public RefreshRequest LastRequest { get; private set; }
+            public IReadOnlyList<IDataProvider> LastAuthenticatedProviders { get; private set; }
 
-            public override bool ValidateCanStartRefresh()
+            public override Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersOrShowDialogAsync(CancellationToken externalToken = default)
             {
                 ValidateCallCount++;
-                return ValidateResult;
+                return Task.FromResult(AuthenticatedProvidersToReturn ?? (IReadOnlyList<IDataProvider>)Array.Empty<IDataProvider>());
+            }
+
+            public override Task ExecuteRefreshAsync(
+                RefreshRequest request,
+                IReadOnlyList<IDataProvider> authenticatedProviders,
+                CancellationToken externalToken = default)
+            {
+                ExecuteCallCount++;
+                LastAuthenticatedProviders = authenticatedProviders;
+                LastRequest = CloneRequest(request);
+                return Task.CompletedTask;
             }
 
             public override Task ExecuteRefreshAsync(RefreshRequest request)
             {
                 ExecuteCallCount++;
-                LastRequest = request == null
+                LastRequest = CloneRequest(request);
+                return Task.CompletedTask;
+            }
+
+            private static RefreshRequest CloneRequest(RefreshRequest request)
+            {
+                return request == null
                     ? null
                     : new RefreshRequest
                     {
@@ -200,8 +223,21 @@ namespace PlayniteAchievements.Services.Tests
                         GameIds = request.GameIds?.ToList(),
                         CustomOptions = request.CustomOptions?.Clone()
                     };
-                return Task.CompletedTask;
             }
+        }
+
+        private sealed class StubDataProvider : IDataProvider
+        {
+            public StubDataProvider(string providerKey)
+            {
+                ProviderKey = providerKey;
+            }
+
+            public string ProviderKey { get; }
+
+            public bool IsAuthenticated => true;
+
+            public ISessionManager AuthSession => null;
         }
     }
 }

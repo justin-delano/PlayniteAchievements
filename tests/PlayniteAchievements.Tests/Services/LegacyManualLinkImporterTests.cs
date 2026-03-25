@@ -254,6 +254,7 @@ namespace PlayniteAchievements.Services.Tests
                     gameIdValue => gameIdValue == gameId,
                     _ => false,
                     logger: null);
+                ProviderSettingsHelper.Bind(latestPersisted);
 
                 var result = importer.Import(tempDir);
 
@@ -564,6 +565,7 @@ namespace PlayniteAchievements.Services.Tests
             HashSet<Guid> existingGames,
             HashSet<Guid> cachedGames)
         {
+            ProviderSettingsHelper.Bind(settings);
             return new LegacyManualLinkImporter(
                 settings,
                 gameId => existingGames.Contains(gameId),

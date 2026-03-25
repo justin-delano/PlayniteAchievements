@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -250,6 +251,74 @@ namespace PlayniteAchievements.Providers.Exophase
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed to fetch Exophase achievements from {achievementUrl}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Fetches an Exophase achievement page using an authenticated HTTP client so manual
+        /// linking can send Accept-Language while reusing existing CEF session cookies.
+        /// </summary>
+        public async Task<List<AchievementDetail>> FetchAchievementsViaHttpAsync(
+            string achievementUrl,
+            string acceptLanguage,
+            HttpClient httpClient,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(achievementUrl))
+            {
+                return null;
+            }
+
+            if (httpClient == null)
+            {
+                throw new ArgumentNullException(nameof(httpClient));
+            }
+
+            try
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, achievementUrl))
+                {
+                    request.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+                    if (!string.IsNullOrWhiteSpace(acceptLanguage))
+                    {
+                        request.Headers.TryAddWithoutValidation("Accept-Language", acceptLanguage);
+                    }
+
+                    using (var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false))
+                    {
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            _logger?.Debug($"[Exophase] HTTP fetch returned {(int)response.StatusCode} for {achievementUrl}");
+                            return null;
+                        }
+
+                        var html = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(html))
+                        {
+                            _logger?.Debug($"[Exophase] HTTP fetch returned empty HTML for {achievementUrl}");
+                            return null;
+                        }
+
+                        if (html.Contains("Just a moment") ||
+                            html.Contains("Cloudflare") ||
+                            html.Contains("Verifying you are human"))
+                        {
+                            _logger?.Warn("[Exophase] Cloudflare challenge detected on authenticated HTTP achievement fetch");
+                            return null;
+                        }
+
+                        return ParseAchievementsHtml(html);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to fetch Exophase achievements via HTTP from {achievementUrl}");
                 return null;
             }
         }

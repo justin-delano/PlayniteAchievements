@@ -6,7 +6,6 @@ using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -38,9 +37,6 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
 
-        private readonly ConcurrentDictionary<string, Lazy<Task<Dictionary<int, int>>>> _ownedGamePlaytimeCache =
-            new ConcurrentDictionary<string, Lazy<Task<Dictionary<int, int>>>>(StringComparer.OrdinalIgnoreCase);
-
         public SteamScanner(
             PlayniteAchievementsSettings settings,
             SteamSettings providerSettings,
@@ -69,15 +65,17 @@ namespace PlayniteAchievements.Providers.Steam
 
             try
             {
-                if (string.IsNullOrWhiteSpace(_providerSettings.SteamUserId) || string.IsNullOrWhiteSpace(_providerSettings.SteamApiKey))
+                var apiKey = _providerSettings.SteamApiKey?.Trim();
+                if (string.IsNullOrWhiteSpace(apiKey))
                 {
-                    _logger?.Warn("[SteamAch] Missing Steam credentials - cannot scan achievements.");
+                    _logger?.Warn("[SteamAch] Missing Steam API key - cannot scan achievements.");
                     return new RebuildPayload { Summary = new RebuildSummary() };
                 }
 
                 _logger?.Info("[SteamAch] Probing Steam login status before scan...");
                 var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
-                if (!probeResult.IsSuccess)
+                var steamUserId = probeResult?.UserId?.Trim();
+                if (!probeResult.IsSuccess || string.IsNullOrWhiteSpace(steamUserId))
                 {
                     _logger?.Warn("[SteamAch] Steam web auth check failed: not logged in. Aborting scan.");
                     return new RebuildPayload
@@ -93,9 +91,6 @@ namespace PlayniteAchievements.Providers.Steam
                     _logger?.Info("[SteamAch] No games found to scan.");
                     return new RebuildPayload { Summary = new RebuildSummary() };
                 }
-
-                var playtimes = await GetPlaytimesAsync(_providerSettings.SteamUserId.Trim(), cancel).ConfigureAwait(false)
-                    ?? new Dictionary<int, int>();
 
                 // Create rate limiter with exponential backoff
                 var rateLimiter = new RateLimiter(
@@ -114,7 +109,7 @@ namespace PlayniteAchievements.Providers.Steam
                         }
 
                         var data = await rateLimiter.ExecuteWithRetryAsync(
-                            () => FetchGameDataAsync(game, playtimes, token),
+                            () => FetchGameDataAsync(game, steamUserId, token),
                             IsTransientError,
                             token).ConfigureAwait(false);
 
@@ -213,48 +208,12 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         // ---------------------------------------------------------------------
-        // Playtime cache
-        // ---------------------------------------------------------------------
-
-        private async Task<Dictionary<int, int>> GetPlaytimesAsync(string steamId, CancellationToken cancel)
-        {
-            return await GetAndCachePlaytimesAsync(steamId, cancel).ConfigureAwait(false)
-                   ?? new Dictionary<int, int>();
-        }
-
-        private async Task<Dictionary<int, int>> GetAndCachePlaytimesAsync(string steamId, CancellationToken cancel)
-        {
-            var resolved = await ResolveSteamId64Async(steamId, cancel).ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(resolved))
-                return new Dictionary<int, int>();
-
-            var apiKey = _providerSettings.SteamApiKey?.Trim();
-            if (string.IsNullOrWhiteSpace(apiKey))
-                return new Dictionary<int, int>();
-
-            var lazyTask = _ownedGamePlaytimeCache.GetOrAdd(resolved,
-                new Lazy<Task<Dictionary<int, int>>>(() => _steamApiClient.GetOwnedGamesAsync(apiKey, resolved, true)));
-
-            try
-            {
-                var dict = await lazyTask.Value.ConfigureAwait(false) ?? new Dictionary<int, int>();
-                if (dict.Count == 0) _ownedGamePlaytimeCache.TryRemove(resolved, out _);
-                return dict;
-            }
-            catch
-            {
-                _ownedGamePlaytimeCache.TryRemove(resolved, out _);
-                throw;
-            }
-        }
-
-        // ---------------------------------------------------------------------
         // Game data building
         // ---------------------------------------------------------------------
 
         private async Task<GameAchievementData> FetchGameDataAsync(
             Game game,
-            Dictionary<int, int> ownedGamesPlaytime,
+            string steamUserId,
             CancellationToken cancel)
         {
             if (!TryGetPlatformAppId(game, out var appId))
@@ -264,7 +223,7 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             var schema = await FetchSchemaAsync(appId, cancel).ConfigureAwait(false);
-            var unlocked = await FetchUnlockedAsync(appId, game?.Name, ownedGamesPlaytime, schema, cancel).ConfigureAwait(false);
+            var unlocked = await FetchUnlockedAsync(appId, game?.Name, steamUserId, schema, cancel).ConfigureAwait(false);
 
             var gameData = new GameAchievementData
             {
@@ -345,18 +304,12 @@ namespace PlayniteAchievements.Providers.Steam
         private async Task<UserUnlockedAchievements> FetchUnlockedAsync(
             int appId,
             string gameName,
-            Dictionary<int, int> ownedGamesPlaytime,
+            string steamUserId,
             SchemaAndPercentages schema,
             CancellationToken cancel)
         {
-            if (string.IsNullOrWhiteSpace(_providerSettings.SteamUserId) || string.IsNullOrWhiteSpace(_providerSettings.SteamApiKey))
+            if (string.IsNullOrWhiteSpace(steamUserId) || string.IsNullOrWhiteSpace(_providerSettings.SteamApiKey))
                 return new UserUnlockedAchievements();
-
-            var playtimeMinutes = 0;
-            if (ownedGamesPlaytime?.ContainsKey(appId) == true)
-            {
-                playtimeMinutes = ownedGamesPlaytime[appId];
-            }
 
             // If the schema confirms no achievements, skip HTML scraping entirely.
             // This avoids locale-dependent "no achievements" page handling.
@@ -376,7 +329,7 @@ namespace PlayniteAchievements.Providers.Steam
             AchievementsScrapeResponse scraped = null;
             try
             {
-                scraped = await ScrapeAchievementsAsync(_providerSettings.SteamUserId.Trim(), appId, cancel, includeLocked: true, gameName: gameName)
+                scraped = await ScrapeAchievementsAsync(steamUserId, appId, cancel, includeLocked: true, gameName: gameName)
                     .ConfigureAwait(false);
             }
             catch (OperationCanceledException) { throw; }
@@ -535,7 +488,7 @@ namespace PlayniteAchievements.Providers.Steam
         {
             var res = new AchievementsScrapeResponse();
 
-            var resolved = await ResolveSteamId64Async(steamId64, cancel).ConfigureAwait(false);
+            var resolved = ResolveSteamId64(steamId64);
             if (string.IsNullOrWhiteSpace(resolved))
             {
                 res.TransientFailure = true;
@@ -921,17 +874,14 @@ namespace PlayniteAchievements.Providers.Steam
         // Persona / helpers
         // ---------------------------------------------------------------------
 
-        private async Task<string> ResolveSteamId64Async(string steamIdMaybe, CancellationToken ct)
+        private string ResolveSteamId64(string steamIdMaybe)
         {
-            var cached = _sessionManager?.GetCachedSteamId64()?.Trim();
-            if (!string.IsNullOrWhiteSpace(cached) && ulong.TryParse(cached, out _))
+            if (!string.IsNullOrWhiteSpace(steamIdMaybe) && ulong.TryParse(steamIdMaybe.Trim(), out _))
             {
-                return cached;
+                return steamIdMaybe.Trim();
             }
 
-            return !string.IsNullOrWhiteSpace(steamIdMaybe) && ulong.TryParse(steamIdMaybe, out _)
-                ? steamIdMaybe.Trim()
-                : _steamClient.GetRequiredSelfSteamId64()?.Trim();
+            return ProviderRegistry.Settings<SteamSettings>().SteamUserId?.Trim();
         }
     }
 }

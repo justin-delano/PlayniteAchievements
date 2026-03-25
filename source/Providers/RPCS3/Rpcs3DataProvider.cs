@@ -71,6 +71,8 @@ namespace PlayniteAchievements.Providers.RPCS3
 
         public string ProviderColorHex => "#686DE0";
 
+        public ISessionManager AuthSession => null;
+
         /// <summary>
         /// Validates an RPCS3 installation path has the expected structure.
         /// Returns validation result with error message, discovered user ID, and trophy folder count.

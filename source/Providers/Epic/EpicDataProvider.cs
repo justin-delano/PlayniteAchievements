@@ -1,6 +1,5 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
-using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
@@ -15,7 +14,6 @@ namespace PlayniteAchievements.Providers.Epic
 {
     public sealed class EpicDataProvider : IDataProvider, IDisposable
     {
-        private readonly PlayniteAchievementsSettings _settings;
         private readonly EpicSessionManager _sessionManager;
         private readonly EpicScanner _scanner;
         private readonly HttpClient _httpClient;
@@ -33,9 +31,8 @@ namespace PlayniteAchievements.Providers.Epic
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
 
-            _settings = settings;
             _httpClient = new HttpClient();
-            _sessionManager = new EpicSessionManager(playniteApi, logger, settings);
+            _sessionManager = new EpicSessionManager(playniteApi, logger);
 
             var apiClient = new EpicApiClient(_httpClient, logger, _sessionManager, settings.Persisted);
             _scanner = new EpicScanner(settings, apiClient, _sessionManager, logger);
@@ -53,9 +50,11 @@ namespace PlayniteAchievements.Providers.Epic
 
         public bool IsAuthenticated => _sessionManager.IsAuthenticated;
 
+        public ISessionManager AuthSession => _sessionManager;
+
         public bool IsCapable(Game game) => IsEpicCapable(game);
 
-        public static bool IsEpicCapable(Game game)
+        private static bool IsEpicCapable(Game game)
         {
             return game != null && (game.PluginId == EpicPluginId || game.PluginId == LegendaryPluginId);
         }

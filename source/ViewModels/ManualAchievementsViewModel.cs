@@ -481,6 +481,8 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
+                await ManualSourceAuthentication.EnsureAuthenticatedAsync(_source, ct).ConfigureAwait(false);
+
                 var results = await _source.SearchGamesAsync(SearchText.Trim(), _language, ct);
 
                 if (ct.IsCancellationRequested)
@@ -515,6 +517,10 @@ namespace PlayniteAchievements.ViewModels
             catch (OperationCanceledException)
             {
                 // Search was cancelled
+            }
+            catch (ManualSourceAuthenticationException ex)
+            {
+                SearchStatusMessage = ManualSourceAuthentication.ResolveLocalizedMessage(ex);
             }
             catch (Exception ex)
             {
@@ -552,6 +558,19 @@ namespace PlayniteAchievements.ViewModels
             ProgressPercent = 0;
             CanCancelRefresh = true;
             EnsureManualProviderEnabledForLinking();
+
+            try
+            {
+                await ManualSourceAuthentication.EnsureAuthenticatedAsync(_source, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (ManualSourceAuthenticationException ex)
+            {
+                CanCancelRefresh = false;
+                await HandleRefreshFailureAsync(
+                    ManualSourceAuthentication.ResolveLocalizedMessage(ex),
+                    rerunSearch: false);
+                return;
+            }
 
             var precheckHasAchievements = await SelectedResultHasAchievementsAsync(selectedResult);
 
@@ -634,7 +653,16 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 _logger?.Error(ex, "Manual achievement refresh failed");
-                await HandleRefreshFailureAsync();
+                if (ex is ManualSourceAuthenticationException authException)
+                {
+                    await HandleRefreshFailureAsync(
+                        ManualSourceAuthentication.ResolveLocalizedMessage(authException),
+                        rerunSearch: false);
+                }
+                else
+                {
+                    await HandleRefreshFailureAsync();
+                }
             }
             finally
             {
@@ -716,6 +744,8 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
+                await ManualSourceAuthentication.EnsureAuthenticatedAsync(_source, _refreshCts.Token).ConfigureAwait(false);
+
                 _refreshService.RebuildProgress += OnRebuildProgress;
 
                 var request = new RefreshRequest
@@ -743,7 +773,16 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Manual achievement refresh failed during edit flow");
-                await HandleRefreshFailureAsync();
+                if (ex is ManualSourceAuthenticationException authException)
+                {
+                    await HandleRefreshFailureAsync(
+                        ManualSourceAuthentication.ResolveLocalizedMessage(authException),
+                        rerunSearch: false);
+                }
+                else
+                {
+                    await HandleRefreshFailureAsync();
+                }
             }
             finally
             {
@@ -848,7 +887,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private async Task HandleRefreshFailureAsync(string dialogMessage = null)
+        private async Task HandleRefreshFailureAsync(string dialogMessage = null, bool rerunSearch = true)
         {
             // Capture the current source before showing dialog
             var currentSource = _source;
@@ -873,7 +912,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     ResetToSearchStage(currentSource);
 
-                    if (!string.IsNullOrWhiteSpace(SearchText))
+                    if (rerunSearch && !string.IsNullOrWhiteSpace(SearchText))
                     {
                         await ExecuteSearchAsync();
                     }
@@ -883,7 +922,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 ResetToSearchStage(currentSource);
 
-                if (!string.IsNullOrWhiteSpace(SearchText))
+                if (rerunSearch && !string.IsNullOrWhiteSpace(SearchText))
                 {
                     await ExecuteSearchAsync();
                 }
@@ -1559,7 +1598,6 @@ namespace PlayniteAchievements.ViewModels
         #endregion
     }
 }
-
 
 
 

@@ -91,7 +91,7 @@ namespace PlayniteAchievements.Providers.GOG
                         if (gogSettings.UserId != userId)
                         {
                             gogSettings.UserId = userId;
-                            ProviderRegistry.Write(gogSettings);
+                            ProviderRegistry.Write(gogSettings, persistToDisk: true);
                         }
 
                         var expiresUtc = GetTokenExpiryUtc(response);
@@ -102,7 +102,7 @@ namespace PlayniteAchievements.Providers.GOG
                     if (!string.IsNullOrWhiteSpace(gogSettingsClear.UserId))
                     {
                         gogSettingsClear.UserId = null;
-                        ProviderRegistry.Write(gogSettingsClear);
+                        ProviderRegistry.Write(gogSettingsClear, persistToDisk: true);
                     }
 
                     return AuthProbeResult.NotAuthenticated();
@@ -200,7 +200,7 @@ namespace PlayniteAchievements.Providers.GOG
 
                 var gogSettings = ProviderRegistry.Settings<GogSettings>();
                 gogSettings.UserId = extractedId;
-                ProviderRegistry.Write(gogSettings);
+                ProviderRegistry.Write(gogSettings, persistToDisk: true);
 
                 _logger?.Info("[GogAuth] Interactive login succeeded.");
                 progress?.Report(AuthProgressStep.Completed);
@@ -229,7 +229,7 @@ namespace PlayniteAchievements.Providers.GOG
             if (!string.IsNullOrWhiteSpace(gogSettings.UserId))
             {
                 gogSettings.UserId = null;
-                ProviderRegistry.Write(gogSettings);
+                ProviderRegistry.Write(gogSettings, persistToDisk: true);
             }
 
             try

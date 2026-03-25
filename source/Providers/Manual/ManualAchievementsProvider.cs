@@ -8,11 +8,8 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Settings;
-using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Services;
-using PlayniteAchievements.Services.Images;
 
 namespace PlayniteAchievements.Providers.Manual
 {
@@ -25,10 +22,7 @@ namespace PlayniteAchievements.Providers.Manual
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly IPlayniteAPI _playniteApi;
-        private readonly IManualSource _steamManualSource;
-        private readonly IManualSource _exophaseManualSource;
-        private readonly ExophaseSessionManager _exophaseSessionManager;
-        private readonly DiskImageService _diskImageService;
+        private readonly ManualSourceRegistry _manualSourceRegistry;
         private ManualSettings _providerSettings;
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Manual");
@@ -41,43 +35,18 @@ namespace PlayniteAchievements.Providers.Manual
         /// </summary>
         public bool IsAuthenticated => true;
 
+        public ISessionManager AuthSession => null;
+
         public ManualAchievementsProvider(
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            string pluginUserDataPath,
             IPlayniteAPI playniteApi,
-            ExophaseSessionManager exophaseSessionManager)
+            ManualSourceRegistry manualSourceRegistry)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
-            _diskImageService = new DiskImageService(logger, pluginUserDataPath);
-            _exophaseSessionManager = exophaseSessionManager ?? throw new ArgumentNullException(nameof(exophaseSessionManager));
-
-            // Create Steam manual source with properly configured HTTP client
-            var handler = new System.Net.Http.HttpClientHandler
-            {
-                AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
-                AllowAutoRedirect = true
-            };
-            var httpClient = new System.Net.Http.HttpClient(handler)
-            {
-                Timeout = TimeSpan.FromSeconds(30)
-            };
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-            _steamManualSource = new SteamManualSource(
-                httpClient,
-                logger,
-                () => ProviderRegistry.Settings<SteamSettings>().SteamApiKey);
-
-            // Create Exophase manual source (uses WebView, no HTTP client needed)
-            _exophaseManualSource = new ExophaseManualSource(
-                playniteApi,
-                exophaseSessionManager,
-                logger,
-                () => settings.Persisted.GlobalLanguage);
-
+            _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
             _providerSettings = ProviderRegistry.Settings<ManualSettings>();
         }
 
@@ -104,72 +73,48 @@ namespace PlayniteAchievements.Providers.Manual
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            var summary = new RebuildSummary();
-            var payload = new RebuildPayload { Summary = summary };
-
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
-                return payload;
+                return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
             var links = _providerSettings.AchievementLinks;
-            var language = _settings.Persisted.GlobalLanguage ?? "english";
+            var linkedGames = gamesToRefresh
+                .Where(game => game != null && game.Id != Guid.Empty && links.ContainsKey(game.Id))
+                .ToList();
 
-            foreach (var game in gamesToRefresh)
+            if (linkedGames.Count == 0)
             {
-                if (cancel.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                if (game == null || game.Id == Guid.Empty)
-                {
-                    continue;
-                }
-
-                if (!links.TryGetValue(game.Id, out var link) || link == null)
-                {
-                    continue;
-                }
-
-                onGameStarting?.Invoke(game);
-
-                try
-                {
-                    var data = await BuildGameAchievementDataAsync(game, link, language, cancel);
-
-                    if (onGameCompleted != null)
-                    {
-                        await onGameCompleted(game, data);
-                    }
-
-                    summary.GamesRefreshed++;
-                    if (data != null && data.HasAchievements)
-                    {
-                        summary.GamesWithAchievements++;
-                    }
-                    else
-                    {
-                        summary.GamesWithoutAchievements++;
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Error(ex, $"Failed to refresh manual achievements for game '{game.Name}' ({game.Id})");
-                    summary.GamesWithoutAchievements++;
-
-                    if (onGameCompleted != null)
-                    {
-                        await onGameCompleted(game, null);
-                    }
-                }
+                return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            return payload;
+            var language = _settings.Persisted.GlobalLanguage ?? "english";
+
+            return await ProviderRefreshExecutor.RunProviderGamesAsync(
+                linkedGames,
+                onGameStarting,
+                async (game, token) =>
+                {
+                    if (!links.TryGetValue(game.Id, out var link) || link == null)
+                    {
+                        return ProviderRefreshExecutor.ProviderGameResult.Skipped();
+                    }
+
+                    var data = await BuildGameAchievementDataAsync(game, link, language, token).ConfigureAwait(false);
+                    return new ProviderRefreshExecutor.ProviderGameResult
+                    {
+                        Data = data
+                    };
+                },
+                onGameCompleted,
+                isAuthRequiredException: ex => ex is ManualSourceAuthenticationException,
+                onGameError: (game, ex, consecutiveErrors) =>
+                {
+                    _logger?.Error(ex, $"Failed to refresh manual achievements for game '{game?.Name}' ({game?.Id})");
+                },
+                delayBetweenGamesAsync: null,
+                delayAfterErrorAsync: null,
+                cancel).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -187,19 +132,14 @@ namespace PlayniteAchievements.Providers.Manual
                 return null;
             }
 
-            // Get the appropriate source
-            IManualSource source = link.SourceKey switch
-            {
-                "Steam" => _steamManualSource,
-                "Exophase" => _exophaseManualSource,
-                _ => null
-            };
-
+            var source = _manualSourceRegistry.GetSourceByKey(link.SourceKey);
             if (source == null)
             {
                 _logger?.Warn($"Unknown manual source key: {link.SourceKey}");
                 return null;
             }
+
+            await ManualSourceAuthentication.EnsureAuthenticatedAsync(source, cancel).ConfigureAwait(false);
 
             // Fetch achievements directly as AchievementDetail list
             var achievements = await source.GetAchievementsAsync(link.SourceGameId, language, cancel);
@@ -261,50 +201,6 @@ namespace PlayniteAchievements.Providers.Manual
                 Achievements = achievements
             };
         }
-
-        /// <summary>
-        /// Gets the Steam manual source for use in dialogs.
-        /// </summary>
-        public IManualSource GetSteamManualSource() => _steamManualSource;
-
-        /// <summary>
-        /// Gets the Exophase manual source for use in dialogs.
-        /// </summary>
-        public IManualSource GetExophaseManualSource() => _exophaseManualSource;
-
-        /// <summary>
-        /// Gets a manual source by its source key.
-        /// </summary>
-        /// <param name="sourceKey">The source key (e.g., "Steam", "Exophase").</param>
-        /// <returns>The manual source, or null if not found.</returns>
-        public IManualSource GetSourceByKey(string sourceKey)
-        {
-            if (string.IsNullOrWhiteSpace(sourceKey))
-            {
-                return null;
-            }
-
-            return sourceKey switch
-            {
-                "Steam" => _steamManualSource,
-                "Exophase" => _exophaseManualSource,
-                _ => null
-            };
-        }
-
-        /// <summary>
-        /// Gets all available manual sources.
-        /// </summary>
-        public IReadOnlyList<IManualSource> GetAllSources()
-        {
-            return new List<IManualSource> { _steamManualSource, _exophaseManualSource }
-                .AsReadOnly();
-        }
-
-        /// <summary>
-        /// Gets the Exophase session manager for settings UI.
-        /// </summary>
-        public ExophaseSessionManager GetExophaseSessionManager() => _exophaseSessionManager;
 
         /// <inheritdoc />
         public IProviderSettings GetSettings() => _providerSettings;

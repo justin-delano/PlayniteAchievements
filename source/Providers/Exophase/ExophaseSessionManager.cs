@@ -4,6 +4,7 @@ using Playnite.SDK;
 using Playnite.SDK.Events;
 using System;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +26,6 @@ namespace PlayniteAchievements.Providers.Exophase
         private int _authCheckInProgress;
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
-        private readonly PlayniteAchievementsSettings _settings;
 
         public string ProviderKey => "Exophase";
 
@@ -42,12 +42,10 @@ namespace PlayniteAchievements.Providers.Exophase
 
         public ExophaseSessionManager(
             IPlayniteAPI api,
-            ILogger logger,
-            PlayniteAchievementsSettings settings)
+            ILogger logger)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         }
 
         // ---------------------------------------------------------------------
@@ -81,14 +79,14 @@ namespace PlayniteAchievements.Providers.Exophase
                     {
                         var exophaseSettings = ProviderRegistry.Settings<ExophaseSettings>();
                         exophaseSettings.UserId = extractedUsername;
-                        ProviderRegistry.Write(exophaseSettings);
+                        ProviderRegistry.Write(exophaseSettings, persistToDisk: true);
                         return AuthProbeResult.AlreadyAuthenticated(extractedUsername);
                     }
 
                     // Verification failed, clear any stale persisted state
                     var clearSettings = ProviderRegistry.Settings<ExophaseSettings>();
                     clearSettings.UserId = null;
-                    ProviderRegistry.Write(clearSettings);
+                    ProviderRegistry.Write(clearSettings, persistToDisk: true);
 
                     return AuthProbeResult.NotAuthenticated();
                 }
@@ -185,7 +183,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
                 var saveSettings = ProviderRegistry.Settings<ExophaseSettings>();
                 saveSettings.UserId = extractedUsername;
-                ProviderRegistry.Write(saveSettings);
+                ProviderRegistry.Write(saveSettings, persistToDisk: true);
 
                 _logger?.Info("[ExophaseAuth] Interactive login succeeded.");
                 progress?.Report(AuthProgressStep.Completed);
@@ -216,7 +214,7 @@ namespace PlayniteAchievements.Providers.Exophase
             // Clear persisted user ID
             var clearSettings = ProviderRegistry.Settings<ExophaseSettings>();
             clearSettings.UserId = null;
-            ProviderRegistry.Write(clearSettings);
+            ProviderRegistry.Write(clearSettings, persistToDisk: true);
 
             // Clear cookies from CEF
             try
@@ -263,6 +261,75 @@ namespace PlayniteAchievements.Providers.Exophase
             {
                 logger?.Debug(ex, "[ExophaseAuth] Failed to check session cookies.");
                 return false;
+            }
+        }
+
+        public void LoadCefCookiesIntoJar(CookieContainer cookieJar)
+        {
+            LoadCefCookiesIntoJar(_api, _logger, cookieJar);
+        }
+
+        public static void LoadCefCookiesIntoJar(
+            IPlayniteAPI api,
+            ILogger logger,
+            CookieContainer cookieJar)
+        {
+            if (api == null)
+            {
+                throw new ArgumentNullException(nameof(api));
+            }
+
+            if (cookieJar == null)
+            {
+                throw new ArgumentNullException(nameof(cookieJar));
+            }
+
+            try
+            {
+                using (var view = api.WebViews.CreateOffscreenView())
+                {
+                    var cookies = view.GetCookies();
+                    if (cookies == null)
+                    {
+                        return;
+                    }
+
+                    foreach (var cookie in cookies
+                        .Where(c =>
+                            c != null &&
+                            !string.IsNullOrWhiteSpace(c.Domain) &&
+                            c.Domain.IndexOf("exophase.com", StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        try
+                        {
+                            var domain = cookie.Domain.Trim().TrimStart('.');
+                            var path = string.IsNullOrWhiteSpace(cookie.Path) ? "/" : cookie.Path;
+                            var uri = GetAddUriForDomain(domain);
+                            var netCookie = new Cookie(cookie.Name, cookie.Value ?? string.Empty, path)
+                            {
+                                Domain = uri.Host,
+                                Secure = cookie.Secure,
+                                HttpOnly = cookie.HttpOnly
+                            };
+
+                            if (cookie.Expires.HasValue && cookie.Expires.Value > DateTime.MinValue)
+                            {
+                                var expires = cookie.Expires.Value;
+                                netCookie.Expires = expires.Kind == DateTimeKind.Utc ? expires : expires.ToUniversalTime();
+                            }
+
+                            cookieJar.Add(uri, netCookie);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger?.Debug(ex, $"[ExophaseAuth] Failed to add cookie '{cookie?.Name}' to jar.");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                logger?.Debug(ex, "[ExophaseAuth] Failed to load cookies from CEF into jar.");
             }
         }
 
@@ -484,6 +551,24 @@ namespace PlayniteAchievements.Providers.Exophase
                 return false;
 
             return url.IndexOf("/login", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static Uri GetAddUriForDomain(string cookieDomain)
+        {
+            var domain = (cookieDomain ?? string.Empty).Trim().TrimStart('.');
+            if (string.IsNullOrWhiteSpace(domain))
+            {
+                return new Uri("https://www.exophase.com/");
+            }
+
+            try
+            {
+                return new Uri("https://" + domain);
+            }
+            catch
+            {
+                return new Uri("https://www.exophase.com/");
+            }
         }
     }
 }

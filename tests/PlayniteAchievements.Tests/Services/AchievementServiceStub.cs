@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -30,6 +31,19 @@ namespace PlayniteAchievements.Services
         public virtual Task ExecuteRefreshAsync(RefreshRequest request, CancellationToken externalToken)
         {
             return ExecuteRefreshAsync(request);
+        }
+
+        public virtual Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersOrShowDialogAsync(CancellationToken externalToken = default)
+        {
+            return Task.FromResult((IReadOnlyList<IDataProvider>)Array.Empty<IDataProvider>());
+        }
+
+        public virtual Task ExecuteRefreshAsync(
+            RefreshRequest request,
+            IReadOnlyList<IDataProvider> authenticatedProviders,
+            CancellationToken externalToken = default)
+        {
+            return ExecuteRefreshAsync(request, externalToken);
         }
 
         public virtual GameAchievementData GetGameAchievementData(Guid playniteGameId)

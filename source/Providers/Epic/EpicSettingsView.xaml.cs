@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Playnite.SDK;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Logging;
@@ -61,33 +62,44 @@ namespace PlayniteAchievements.Providers.Epic
         {
             _epicSettings = settings as EpicSettings;
             base.Initialize(settings);
-            RefreshAuthStatus();
             _ = RefreshAuthStatusAsync();
         }
 
-        public void RefreshAuthStatus()
+        private void UpdateAuthStatus(AuthProbeResult result)
         {
-            var isAuthenticated = _sessionManager?.IsAuthenticated ?? false;
+            var isAuthenticated = result?.IsSuccess ?? false;
             IsAuthenticated = isAuthenticated;
             var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_Epic");
 
-            AuthStatus = isAuthenticated
-                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName)
-                : string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName);
+            if (isAuthenticated)
+            {
+                AuthStatus = string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName);
+                return;
+            }
+
+            var localized = !string.IsNullOrWhiteSpace(result?.MessageKey)
+                ? ResourceProvider.GetString(result.MessageKey)
+                : null;
+
+            AuthStatus = string.IsNullOrWhiteSpace(localized)
+                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName)
+                : localized;
         }
 
         public async Task RefreshAuthStatusAsync()
         {
+            AuthProbeResult result;
             try
             {
-                await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
+                result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
             }
             catch (Exception ex)
             {
                 Logger.Debug(ex, "Epic auth probe failed during settings refresh.");
+                result = AuthProbeResult.ProbeFailed();
             }
 
-            RefreshAuthStatus();
+            UpdateAuthStatus(result);
         }
 
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)
@@ -95,8 +107,16 @@ namespace PlayniteAchievements.Providers.Epic
             try
             {
                 SetAuthBusy(true);
-                await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
-                RefreshAuthStatus();
+                var result = await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
+                if (result.IsSuccess)
+                {
+                    await RefreshAuthStatusAsync();
+                    PlayniteAchievementsPlugin.NotifySettingsSaved();
+                }
+                else
+                {
+                    UpdateAuthStatus(result);
+                }
             }
             catch (Exception ex)
             {
@@ -114,8 +134,8 @@ namespace PlayniteAchievements.Providers.Epic
             {
                 SetAuthBusy(true);
                 _sessionManager.ClearSession();
-                RefreshAuthStatus();
-                await Task.CompletedTask;
+                await RefreshAuthStatusAsync();
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
             }
             catch (Exception ex)
             {
@@ -134,6 +154,7 @@ namespace PlayniteAchievements.Providers.Epic
                 SetAuthBusy(true);
                 await _sessionManager.LoginAlternativeAsync(CancellationToken.None);
                 await RefreshAuthStatusAsync();
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
             }
             catch (Exception ex)
             {

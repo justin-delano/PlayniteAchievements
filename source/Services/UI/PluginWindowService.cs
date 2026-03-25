@@ -29,7 +29,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly AchievementOverridesService _achievementOverridesService;
         private readonly AchievementDataService _achievementDataService;
         private readonly PlayniteAchievementsSettings _settings;
-        private readonly ManualAchievementsProvider _manualProvider;
+        private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly Action _ensureAchievementResourcesLoaded;
 
         public PluginWindowService(
@@ -41,7 +41,7 @@ namespace PlayniteAchievements.Services.UI
             AchievementOverridesService achievementOverridesService,
             AchievementDataService achievementDataService,
             PlayniteAchievementsSettings settings,
-            ManualAchievementsProvider manualProvider,
+            ManualSourceRegistry manualSourceRegistry,
             Action ensureAchievementResourcesLoaded)
         {
             _api = api;
@@ -52,13 +52,13 @@ namespace PlayniteAchievements.Services.UI
             _achievementOverridesService = achievementOverridesService;
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _settings = settings;
-            _manualProvider = manualProvider;
+            _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
             _ensureAchievementResourcesLoaded = ensureAchievementResourcesLoaded;
         }
 
         public void ShowRefreshProgressControlAndRun(Func<Task> refreshTask, Action<Guid> openSingleGameAchievementsView, Guid? singleGameRefreshId = null)
         {
-            ShowRefreshProgressControl(singleGameRefreshId, refreshTask, openSingleGameAchievementsView, validateCanStart: true);
+            ShowRefreshProgressControl(singleGameRefreshId, refreshTask, openSingleGameAchievementsView, validateCanStart: false);
         }
 
         public void ShowRefreshProgressControl(
@@ -69,11 +69,6 @@ namespace PlayniteAchievements.Services.UI
         {
             try
             {
-                if (validateCanStart && !_refreshService.ValidateCanStartRefresh())
-                {
-                    return;
-                }
-
                 var progressWindow = new RefreshProgressControl(
                     _refreshService,
                     _logger,
@@ -327,7 +322,7 @@ namespace PlayniteAchievements.Services.UI
                     _api,
                     _logger,
                     _settings,
-                    _manualProvider);
+                    _manualSourceRegistry);
 
                 var windowOptions = new WindowOptions
                 {

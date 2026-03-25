@@ -232,7 +232,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             var api = new FakePlayniteApi();
             var refreshRuntime = new RefreshRuntime();
             var achievementDataService = new AchievementDataService();
-            var refreshCoordinator = new RefreshEntryPoint(refreshRuntime, logger: null, providerRegistry: new ProviderRegistry());
+            var refreshCoordinator = new RefreshEntryPoint(refreshRuntime, logger: null);
             var windowService = new FullscreenWindowService(api, settings, _ => { });
             var logger = new FakeLogger();
             using var service = new ThemeIntegrationService(api, refreshRuntime, achievementDataService, refreshCoordinator, settings, windowService, logger);

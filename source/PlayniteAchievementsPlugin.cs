@@ -13,17 +13,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
-using PlayniteAchievements.Providers.RetroAchievements;
-using PlayniteAchievements.Providers.Steam;
-using PlayniteAchievements.Providers.GOG;
-using PlayniteAchievements.Providers.Epic;
-using PlayniteAchievements.Providers.PSN;
-using PlayniteAchievements.Providers.Xbox;
-using PlayniteAchievements.Providers.Exophase;
-using PlayniteAchievements.Providers.ShadPS4;
-using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Providers.Manual;
-using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -58,6 +48,18 @@ namespace PlayniteAchievements
             HasSettings = true
         };
 
+        private static readonly string[] ProviderDisplayOrder =
+        {
+            "Steam", "Epic", "GOG", "PSN", "Xbox", "Exophase",
+            "RetroAchievements", "Manual", "Xenia", "RPCS3", "ShadPS4"
+        };
+
+        private static readonly string[] ProviderRefreshOrder =
+        {
+            "Steam", "Epic", "GOG", "PSN", "Xbox", "Exophase",
+            "RetroAchievements", "Manual", "Xenia", "RPCS3", "ShadPS4"
+        };
+
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly RefreshRuntime _refreshService;
         private readonly AchievementOverridesService _achievementOverridesService;
@@ -67,7 +69,7 @@ namespace PlayniteAchievements
         private readonly DiskImageService _diskImageService;
         private readonly NotificationPublisher _notifications;
         private readonly ProviderRegistry _providerRegistry;
-        private readonly ManualAchievementsProvider _manualProvider;
+        private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly SubscriptionCollection _eventSubscriptions = new SubscriptionCollection();
 
         private readonly BackgroundUpdater _backgroundUpdates;
@@ -172,16 +174,16 @@ namespace PlayniteAchievements
 
                 var settings = _settingsViewModel.Settings;
                 var pluginUserDataPath = GetPluginUserDataPath();
+                _manualSourceRegistry = new ManualSourceRegistry(_logger, settings, PlayniteApi);
 
                 // Create provider registry
-                _providerRegistry = new ProviderRegistry(settings, _logger);
+                _providerRegistry = new ProviderRegistry(settings, ProviderDisplayOrder, _logger, _manualSourceRegistry);
                 _providerRegistry.SyncFromSettings(settings.Persisted);
 
                 List<IDataProvider> providers;
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
                 {
                     providers = _providerRegistry.CreateProviders(settings, PlayniteApi, pluginUserDataPath);
-                    _manualProvider = _providerRegistry.ManualProvider;
                 }
 
                 // Phase 3: Wire core services, refresh pipeline, and tagging.
@@ -190,7 +192,7 @@ namespace PlayniteAchievements
                     _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
                     _imageService = new MemoryImageService(_logger, _diskImageService);
 
-                    _refreshService = new RefreshRuntime(api, settings, _logger, this, providers, _diskImageService, _providerRegistry);
+                    _refreshService = new RefreshRuntime(api, settings, _logger, this, providers, _diskImageService, _providerRegistry, ProviderRefreshOrder);
                     _cacheManager = _refreshService.Cache;
                     _achievementOverridesService = new AchievementOverridesService(
                         settings,
@@ -204,7 +206,6 @@ namespace PlayniteAchievements
                     _refreshCoordinator = new RefreshEntryPoint(
                         _refreshService,
                         _logger,
-                        _providerRegistry,
                         runWithProgressWindow: ShowRefreshProgressControlAndRun);
                     _backgroundUpdates = new BackgroundUpdater(_refreshCoordinator, _refreshService, _cacheManager, settings, _logger, _notifications, null);
 
@@ -225,7 +226,7 @@ namespace PlayniteAchievements
                         _achievementOverridesService,
                         _achievementDataService,
                         _settingsViewModel.Settings,
-                        _manualProvider,
+                        _manualSourceRegistry,
                         EnsureAchievementResourcesLoaded);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
@@ -468,6 +469,7 @@ namespace PlayniteAchievements
 
             try { _imageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose imageService"); }
             try { _diskImageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose diskImageService"); }
+            try { _manualSourceRegistry?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose manualSourceRegistry"); }
             try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
             try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
 

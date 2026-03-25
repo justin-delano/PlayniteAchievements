@@ -89,14 +89,11 @@ namespace PlayniteAchievements.Providers.Steam
         // Session Management
         // ---------------------------------------------------------------------
 
-        public string GetRequiredSelfSteamId64() =>
-            _sessionManager.GetCachedSteamId64();
-
         private async Task<bool> EnsureSessionAsync(CancellationToken ct, bool forceRefresh = false)
         {
             ct.ThrowIfCancellationRequested();
 
-            if (!forceRefresh && !_sessionManager.NeedsRefresh)
+            if (!forceRefresh)
             {
                 // Keep HttpClient cookie jar in sync with CEF cookies even when a full
                 // session refresh isn't due yet. This avoids stale-cookie drift where
@@ -151,7 +148,7 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 lock (_cookieLock)
                 {
-                    _sessionManager.LoadCefCookiesIntoJar(_api, _cookieJar, _logger);
+                    SteamSessionManager.LoadCefCookiesIntoJar(_api, _logger, _cookieJar);
                 }
             }
         }
