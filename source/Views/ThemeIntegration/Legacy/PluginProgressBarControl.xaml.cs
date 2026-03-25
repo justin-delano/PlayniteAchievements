@@ -34,7 +34,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
         public static readonly DependencyProperty IntegrationShowProgressBarPercentProperty =
             PlayniteAchievements.Views.ThemeIntegration.Base.DependencyPropertyHelper.RegisterBoolProperty(
                 nameof(IntegrationShowProgressBarPercent),
-                typeof(PluginProgressBarControl));
+                typeof(PluginProgressBarControl),
+                true);
 
         public bool IntegrationShowProgressBarPercent
         {

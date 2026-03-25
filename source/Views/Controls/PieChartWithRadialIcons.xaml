@@ -31,6 +31,19 @@
             </lvc:PieChart.DataTooltip>
         </lvc:PieChart>
 
+        <TextBlock Text="{Binding CenterPercentageText, ElementName=Root}"
+                   FontSize="{Binding CenterPercentageFontSize, ElementName=Root}"
+                   Visibility="{Binding CenterPercentageVisibility, ElementName=Root}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   TextAlignment="Center"
+                   TextWrapping="NoWrap"
+                   Foreground="{DynamicResource TextBrush}"
+                   FontWeight="SemiBold"
+                   Opacity="0.85"
+                   IsHitTestVisible="False"
+                   Panel.ZIndex="1"/>
+
         <!-- Icon overlay canvas -->
         <Canvas IsHitTestVisible="False"
                 SnapsToDevicePixels="True">

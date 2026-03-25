@@ -31,7 +31,7 @@
                 <Setter Property="Margin" Value="0"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
             </Style>
 
             <Style x:Key="ProgressFooterStyle" TargetType="Grid">
@@ -55,7 +55,10 @@
                          Maximum="100"
                          Style="{StaticResource DesktopProgressBarStyle}"/>
             <TextBlock Text="{Binding Theme.ProgressPercentage, Mode=OneWay, StringFormat={}{0:F0}%}"
-                       Style="{StaticResource DesktopProgressPercentTextStyle}"/>
+                       Style="{StaticResource DesktopProgressPercentTextStyle}"
+                       TextWrapping="NoWrap"
+                       IsHitTestVisible="False"
+                       Panel.ZIndex="1"/>
         </Grid>
 
         <!-- Footer mirrors the sidebar progress entry layout -->

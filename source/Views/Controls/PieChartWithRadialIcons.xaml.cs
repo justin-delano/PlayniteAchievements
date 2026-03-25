@@ -60,6 +60,24 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(nameof(HighlightedLabels), typeof(ObservableCollection<string>), typeof(PieChartWithRadialIcons),
                 new PropertyMetadata(null, OnHighlightedLabelsChanged));
 
+        private static readonly DependencyPropertyKey CenterPercentageTextPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(CenterPercentageText), typeof(string), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(string.Empty));
+
+        public static readonly DependencyProperty CenterPercentageTextProperty = CenterPercentageTextPropertyKey.DependencyProperty;
+
+        private static readonly DependencyPropertyKey CenterPercentageFontSizePropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(CenterPercentageFontSize), typeof(double), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(11.0));
+
+        public static readonly DependencyProperty CenterPercentageFontSizeProperty = CenterPercentageFontSizePropertyKey.DependencyProperty;
+
+        private static readonly DependencyPropertyKey CenterPercentageVisibilityPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(CenterPercentageVisibility), typeof(Visibility), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(Visibility.Collapsed));
+
+        public static readonly DependencyProperty CenterPercentageVisibilityProperty = CenterPercentageVisibilityPropertyKey.DependencyProperty;
+
         public SeriesCollection PieSeries
         {
             get => (SeriesCollection)GetValue(PieSeriesProperty);
@@ -82,6 +100,24 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (ObservableCollection<string>)GetValue(HighlightedLabelsProperty);
             set => SetValue(HighlightedLabelsProperty, value);
+        }
+
+        public string CenterPercentageText
+        {
+            get => (string)GetValue(CenterPercentageTextProperty);
+            private set => SetValue(CenterPercentageTextPropertyKey, value);
+        }
+
+        public double CenterPercentageFontSize
+        {
+            get => (double)GetValue(CenterPercentageFontSizeProperty);
+            private set => SetValue(CenterPercentageFontSizePropertyKey, value);
+        }
+
+        public Visibility CenterPercentageVisibility
+        {
+            get => (Visibility)GetValue(CenterPercentageVisibilityProperty);
+            private set => SetValue(CenterPercentageVisibilityPropertyKey, value);
         }
 
         public ObservableCollection<PieIconPosition> IconPositions { get; } = new ObservableCollection<PieIconPosition>();
@@ -236,22 +272,25 @@ namespace PlayniteAchievements.Views.Controls
             {
                 IconPositions.Clear();
                 ClearSliceTransforms();
+                ClearCenterPercentage();
                 return;
             }
 
             var seriesList = PieSeries.OfType<PieSeries>().ToList();
-            var chartValues = seriesList
+            var sliceData = seriesList
                 .Select(s =>
                 {
                     var values = s.Values as ChartValues<PieSliceChartData>;
-                    return values?.Count > 0 ? values[0].ChartValue : 0;
+                    return values?.Count > 0 ? values[0] : null;
                 })
                 .ToList();
+            var chartValues = sliceData.Select(data => data?.ChartValue ?? 0).ToList();
 
             if (chartValues.Count == 0 || chartValues.All(v => v == 0))
             {
                 IconPositions.Clear();
                 ClearSliceTransforms();
+                ClearCenterPercentage();
                 return;
             }
 
@@ -262,6 +301,7 @@ namespace PlayniteAchievements.Views.Controls
             double controlSize = Math.Min(availableWidth, availableHeight);
             if (controlSize <= 0)
             {
+                ClearCenterPercentage();
                 return;
             }
 
@@ -269,6 +309,8 @@ namespace PlayniteAchievements.Views.Controls
             double iconRadius = pieRadius + IconOffset;
             double centerX = margin.Left + (availableWidth / 2.0);
             double centerY = margin.Top + (availableHeight / 2.0);
+
+            UpdateCenterPercentage(sliceData, controlSize);
 
             // Build highlight set for computing offsets in single pass
             var highlighted = new HashSet<string>(
@@ -331,6 +373,40 @@ namespace PlayniteAchievements.Views.Controls
             // Apply all updates in sequence (but computed in single pass above)
             SynchronizePositions(positions);
             ApplySliceTransformsBatch(sliceTransformData);
+        }
+
+        private void UpdateCenterPercentage(IReadOnlyList<PieSliceChartData> sliceData, double controlSize)
+        {
+            if (sliceData == null || sliceData.Count == 0)
+            {
+                ClearCenterPercentage();
+                return;
+            }
+
+            var totalCount = sliceData
+                .Where(data => data != null)
+                .Sum(data => Math.Max(0, data.Count));
+            if (totalCount <= 0)
+            {
+                ClearCenterPercentage();
+                return;
+            }
+
+            var unlockedCount = sliceData
+                .Where(data => data != null && !data.IsLocked)
+                .Sum(data => Math.Max(0, data.Count));
+            var roundedPercent = (int)Math.Round(unlockedCount * 100d / totalCount, MidpointRounding.AwayFromZero);
+
+            CenterPercentageText = $"{roundedPercent}%";
+            CenterPercentageFontSize = Math.Max(11, Math.Min(18, controlSize * 0.13));
+            CenterPercentageVisibility = Visibility.Visible;
+        }
+
+        private void ClearCenterPercentage()
+        {
+            CenterPercentageText = string.Empty;
+            CenterPercentageFontSize = 11;
+            CenterPercentageVisibility = Visibility.Collapsed;
         }
 
         private void ApplySliceTransformsBatch(List<(PieSlice Slice, double OffsetX, double OffsetY)> transformData)
