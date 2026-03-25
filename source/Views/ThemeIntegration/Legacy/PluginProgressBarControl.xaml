@@ -41,20 +41,16 @@
                      Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}" />
 
         <!-- Percent label overlay -->
-        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
-                    Visibility="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=IntegrationShowProgressBarPercent, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <Label HorizontalAlignment="Center"
-                   Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}"
-                   FontSize="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=FontSize}">
-                <Label.Content>
-                    <MultiBinding StringFormat="{}{0:F0}">
-                        <Binding Path="ProgressPercentage" FallbackValue="30" />
-                    </MultiBinding>
-                </Label.Content>
-            </Label>
-            <Label HorizontalAlignment="Center" Content="%"
-                   Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}"
-                   FontSize="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=FontSize}" />
-        </StackPanel>
+        <TextBlock Grid.Column="1"
+                   Text="{Binding ProgressPercentage, Mode=OneWay, StringFormat={}{0:F0}%, FallbackValue=30%}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   TextAlignment="Center"
+                   TextWrapping="NoWrap"
+                   FontSize="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=FontSize}"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextBrush}"
+                   IsHitTestVisible="False"
+                   Visibility="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=IntegrationShowProgressBarPercent, Converter={StaticResource BooleanToVisibilityConverter}}" />
     </Grid>
 </local:ThemeControlBase>
