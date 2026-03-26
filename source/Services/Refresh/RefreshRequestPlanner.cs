@@ -125,7 +125,7 @@ namespace PlayniteAchievements.Services
                 case RefreshModeType.Missing:
                     return ResolveGameIdList(
                         mode,
-                        _targetSelectionResolver.GetMissingGameIds(authenticatedProviders),
+                        GetMissingGameIds(authenticatedProviders),
                         "Missing games refresh failed.");
 
                 case RefreshModeType.Custom:
@@ -363,7 +363,7 @@ namespace PlayniteAchievements.Services
                     break;
 
                 case CustomGameScope.Missing:
-                    var missingIds = _targetSelectionResolver.GetMissingGameIds(providers);
+                    var missingIds = GetMissingGameIds(providers);
                     scopedGames = missingIds
                         .Select(gameId => _api.Database.Games.Get(gameId))
                         .Where(game => game != null);
@@ -443,10 +443,35 @@ namespace PlayniteAchievements.Services
 
         private List<Guid> GetInstalledGameIds()
         {
-            return _api.Database.Games
-                .Where(g => g != null && g.IsInstalled)
+            var games = _api.Database.Games
+                .Where(g => g != null && g.IsInstalled);
+
+            if (!ShouldIncludeUnplayedGames())
+            {
+                games = games.Where(g => g.Playtime > 0);
+            }
+
+            return games
                 .Select(g => g.Id)
                 .ToList();
+        }
+
+        private List<Guid> GetMissingGameIds(IReadOnlyList<IDataProvider> authenticatedProviders)
+        {
+            var missingIds = _targetSelectionResolver.GetMissingGameIds(authenticatedProviders);
+            if (ShouldIncludeUnplayedGames())
+            {
+                return missingIds;
+            }
+
+            return missingIds
+                .Where(gameId => _api.Database.Games.Get(gameId)?.Playtime > 0)
+                .ToList();
+        }
+
+        private bool ShouldIncludeUnplayedGames()
+        {
+            return _settings?.Persisted?.IncludeUnplayedGames ?? true;
         }
 
         private List<Guid> GetFavoriteGameIds()
