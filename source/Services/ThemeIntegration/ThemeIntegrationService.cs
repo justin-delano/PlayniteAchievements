@@ -766,6 +766,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.SteamGames = ProjectGameSummaries(library.SteamGames);
             _settings.ModernTheme.GOGGames = ProjectGameSummaries(library.GOGGames);
             _settings.ModernTheme.EpicGames = ProjectGameSummaries(library.EpicGames);
+            _settings.ModernTheme.BattleNetGames = ProjectGameSummaries(library.BattleNetGames);
+            _settings.ModernTheme.EAGames = ProjectGameSummaries(library.EAGames);
             _settings.ModernTheme.XboxGames = ProjectGameSummaries(library.XboxGames);
             _settings.ModernTheme.PSNGames = ProjectGameSummaries(library.PSNGames);
             _settings.ModernTheme.RetroAchievementsGames = ProjectGameSummaries(library.RetroAchievementsGames);

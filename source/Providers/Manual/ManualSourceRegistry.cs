@@ -25,12 +25,13 @@ namespace PlayniteAchievements.Providers.Manual
         public ManualSourceRegistry(
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            IPlayniteAPI playniteApi)
+            IPlayniteAPI playniteApi,
+            string pluginUserDataPath)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
 
-            var exophaseSessionManager = new ExophaseSessionManager(playniteApi, logger);
+            var exophaseSessionManager = new ExophaseSessionManager(playniteApi, logger, pluginUserDataPath);
 
             var handler = new HttpClientHandler
             {

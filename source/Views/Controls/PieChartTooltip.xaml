@@ -28,15 +28,15 @@
                     <StackPanel Orientation="Horizontal">
                         <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center">
                             <!-- Badge icons: complex DrawingImages from AchievementResources.xaml -->
-                            <Image Source="{Binding ChartPoint.Instance.(models:PieSliceChartData.IconKey), Converter={StaticResource ResourceKeyToImage}}"
+                            <Image Source="{Binding ChartPoint.Instance.IconKey, Converter={StaticResource ResourceKeyToImage}}"
                                    SnapsToDevicePixels="True"
                                    RenderOptions.BitmapScalingMode="NearestNeighbor"/>
                             <!-- Provider icons: created at runtime from geometry + color -->
                             <Image SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="NearestNeighbor">
                                 <Image.Source>
                                     <MultiBinding Converter="{StaticResource ProviderIconConverter}">
-                                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IconKey)"/>
-                                        <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.ColorHex)"/>
+                                        <Binding Path="ChartPoint.Instance.IconKey"/>
+                                        <Binding Path="ChartPoint.Instance.ColorHex"/>
                                     </MultiBinding>
                                 </Image.Source>
                             </Image>
@@ -47,10 +47,10 @@
                                    FontSize="{DynamicResource FontSize}">
                             <TextBlock.Text>
                                 <MultiBinding Converter="{StaticResource PieTooltipConverter}">
-                                    <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.UnlockedCount)"/>
-                                    <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.TotalCount)"/>
-                                    <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IsLocked)"/>
-                                    <Binding Path="ChartPoint.Instance.(models:PieSliceChartData.IconKey)"/>
+                                    <Binding Path="ChartPoint.Instance.UnlockedCount"/>
+                                    <Binding Path="ChartPoint.Instance.TotalCount"/>
+                                    <Binding Path="ChartPoint.Instance.IsLocked"/>
+                                    <Binding Path="ChartPoint.Instance.IconKey"/>
                                 </MultiBinding>
                             </TextBlock.Text>
                         </TextBlock>

@@ -60,6 +60,14 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">Show Platform Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarRarityPieChart">Show Rarity Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarTrophyPieChart">Show Trophy Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode">Small Slice Handling</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact">Exact</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact_Description">Shows exact slice sizes. Radial icons are hidden for slices under 5% to reduce overlaps.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Hide">Hide</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Hide_Description">Hides slices under 5% from the sidebar pie.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round">Round</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round_Description">Rounds slices under 5% up to 5%.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Note">The center percentage always uses exact counts, so it may differ from the visible pie when slices are hidden or rounded.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Show Sidebar Bar Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamesWithNoUnlocks">Show Games With No Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowUnplayedGames">Show Unplayed Games</sys:String>
@@ -95,6 +103,8 @@
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_BattleNet">Battle.net</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_EA">EA</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_PSN">PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Xbox">Xbox</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Exophase">Exophase</sys:String>
@@ -368,6 +378,13 @@
     <sys:String x:Key="LOCPlayAch_Settings_Auth_AlreadyAuthenticated">{0} configured successfully</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_ProbeFailed">Unable to verify {0} authentication state.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_WindowNotOpened">Could not open the {0} login window. Check Playnite focus and try again.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_AlreadyAuthenticated">Already authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_Authenticated">Authentication completed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_NotAuthenticated">Not authenticated.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_TimedOut">Authentication timed out.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_Cancelled">Authentication was cancelled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_Failed">Authentication failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_ProbeFailed">Unable to verify authentication state.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Gog_OwnAuthHelp">Click Login to authenticate with GOG via an embedded browser window. Your credentials are stored securely within PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicConnection">Epic Games Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Epic Authentication</sys:String>
@@ -423,6 +440,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Xbox">Xbox</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_GOG">GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Epic">Epic Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_BattleNet">Battle.net</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_EA">EA</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Retro">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note: For games on unchecked platforms, use Game Options to include individually.</sys:String>
 
@@ -961,8 +980,11 @@
     <!-- Tagging Progress Messages -->
     <sys:String x:Key="LOCPlayAch_Tagging_SyncingProgress">Syncing tags...</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_SyncComplete">Tag sync complete</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_SyncFailed">Failed to apply and sync tags: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_RemovingProgress">Removing tags...</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_RemoveComplete">Tags removed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemoveAllConfirm">Remove all Playnite Achievements tags from all games?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemoveFailed">Failed to remove tags: {0}</sys:String>
 
 </ResourceDictionary>
 

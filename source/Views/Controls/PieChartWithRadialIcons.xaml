@@ -36,13 +36,20 @@
                    Visibility="{Binding CenterPercentageVisibility, ElementName=Root}"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
+                   LineHeight="{Binding CenterPercentageFontSize, ElementName=Root}"
+                   LineStackingStrategy="BlockLineHeight"
                    TextAlignment="Center"
                    TextWrapping="NoWrap"
                    Foreground="{DynamicResource TextBrush}"
                    FontWeight="SemiBold"
                    Opacity="0.85"
                    IsHitTestVisible="False"
-                   Panel.ZIndex="1"/>
+                   Panel.ZIndex="1">
+            <TextBlock.RenderTransform>
+                <TranslateTransform X="{Binding CenterPercentageOffsetX, ElementName=Root}"
+                                    Y="{Binding CenterPercentageOffsetY, ElementName=Root}"/>
+            </TextBlock.RenderTransform>
+        </TextBlock>
 
         <!-- Icon overlay canvas -->
         <Canvas IsHitTestVisible="False"

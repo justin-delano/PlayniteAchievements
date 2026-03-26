@@ -127,7 +127,6 @@
                             Padding="12"
                             Margin="0,4,0,0">
                         <WrapPanel Orientation="Horizontal"
-                                   ItemWidth="150"
                                    Margin="0,2,0,0">
                             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Steam}"
                                       Loaded="ExophasePlatform_CheckboxLoaded"
@@ -157,6 +156,18 @@
                                       Loaded="ExophasePlatform_CheckboxLoaded"
                                       Click="ExophasePlatform_CheckChanged"
                                       Tag="epic"
+                                      Margin="0,0,12,10"
+                                      FontSize="{DynamicResource FontSize}"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_BattleNet}"
+                                      Loaded="ExophasePlatform_CheckboxLoaded"
+                                      Click="ExophasePlatform_CheckChanged"
+                                      Tag="blizzard"
+                                      Margin="0,0,12,10"
+                                      FontSize="{DynamicResource FontSize}"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_EA}"
+                                      Loaded="ExophasePlatform_CheckboxLoaded"
+                                      Click="ExophasePlatform_CheckChanged"
+                                      Tag="origin"
                                       Margin="0,0,12,10"
                                       FontSize="{DynamicResource FontSize}"/>
                             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_Exophase_Platform_Retro}"

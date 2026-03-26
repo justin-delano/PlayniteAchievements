@@ -60,6 +60,14 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">Afficher le graphique des plateformes</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarRarityPieChart">Afficher le graphique de rareté</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarTrophyPieChart">Afficher le graphique des trophées</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode">Gestion des petites parts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact">Exact</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact_Description">Affiche les parts avec leur taille exacte. Les icônes radiales sont masquées sous 5 % pour limiter les chevauchements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Hide">Masquer</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Hide_Description">Masque les parts inférieures à 5 % dans le graphique circulaire latéral.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round">Arrondir</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round_Description">Arrondit les parts inférieures à 5 % à 5 %.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Note">Le pourcentage central utilise toujours les comptes exacts et peut donc différer du graphique visible quand des parts sont masquées ou arrondies.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Afficher les graphiques à barres</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamesWithNoUnlocks">Afficher les jeux sans succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowUnplayedGames">Afficher les jeux non joués</sys:String>
@@ -95,6 +103,8 @@
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_BattleNet">Battle.net</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_EA">EA</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_PSN">PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Xbox">Xbox</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Exophase">Exophase</sys:String>
@@ -372,6 +382,13 @@
     <sys:String x:Key="LOCPlayAch_Settings_Auth_AlreadyAuthenticated">{0} configuré avec succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_ProbeFailed">Impossible de vérifier l'état d'authentification {0}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_WindowNotOpened">Impossible d'ouvrir la fenêtre de connexion {0}. Vérifiez que Playnite a le focus et réessayez.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_AlreadyAuthenticated">Déjà authentifié.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_Authenticated">Authentification terminée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_NotAuthenticated">Non authentifié.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_TimedOut">Délai d'authentification dépassé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_Cancelled">L'authentification a été annulée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_Failed">Échec de l'authentification.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_ProbeFailed">Impossible de vérifier l'état d'authentification.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Gog_OwnAuthHelp">Cliquez sur Connexion pour vous authentifier avec GOG via une fenêtre de navigateur intégrée. Vos identifiants sont stockés de manière sécurisée dans PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicConnection">Connexion Epic Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Authentification Epic</sys:String>
@@ -416,6 +433,19 @@
     <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_ProbeFailed">Impossible de vérifier l'état d'authentification Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_Checking">Vérification de l'authentification Exophase...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_WindowNotOpened">Échec de l'ouverture de la fenêtre de connexion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider">Activer le fournisseur Exophase</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">Lorsqu'il est activé, Exophase peut suivre automatiquement les succès des jeux sur les plateformes gérées.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Plateformes gérées</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Les jeux sur ces plateformes utiliseront Exophase à la place des fournisseurs modernes. Cochez les plateformes que vous voulez confier à Exophase.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Steam">Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_PSN">PlayStation</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Xbox">Xbox</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_GOG">GOG</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Epic">Epic Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_BattleNet">Battle.net</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_EA">EA</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Platform_Retro">RetroAchievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Remarque : pour les jeux sur les plateformes non cochées, utilisez les Options du jeu pour les inclure individuellement.</sys:String>
 
     <!-- ShadPS4 Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Connection">Connexion ShadPS4</sys:String>
@@ -929,8 +959,11 @@
     <!-- Tagging Progress Messages -->
     <sys:String x:Key="LOCPlayAch_Tagging_SyncingProgress">Synchronisation des étiquettes...</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_SyncComplete">Synchronisation des étiquettes terminée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_SyncFailed">Échec de l'application et de la synchronisation des étiquettes : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_RemovingProgress">Suppression des étiquettes...</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_RemoveComplete">Étiquettes supprimées</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemoveAllConfirm">Supprimer toutes les étiquettes Playnite Achievements de tous les jeux ?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tagging_RemoveFailed">Échec de la suppression des étiquettes : {0}</sys:String>
 
 </ResourceDictionary>
 

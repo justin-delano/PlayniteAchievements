@@ -69,97 +69,131 @@ namespace PlayniteAchievements.Services.UI
         {
             try
             {
-                var progressWindow = new RefreshProgressControl(
-                    _refreshService,
-                    _logger,
+                InvokeOnUiThread(() => ShowRefreshProgressControlCore(
                     singleGameRefreshId,
-                    openSingleGameAchievementsView);
-
-                var windowOptions = new WindowOptions
-                {
-                    ShowMinimizeButton = false,
-                    ShowMaximizeButton = false,
-                    ShowCloseButton = true,
-                    CanBeResizable = false,
-                    Width = 400,
-                    Height = 280
-                };
-
-                var window = PlayniteUiProvider.CreateExtensionWindow(
-                    progressWindow.WindowTitle,
-                    progressWindow,
-                    windowOptions
-                );
-
-                try
-                {
-                    if (window.Owner == null)
-                    {
-                        window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
-                    }
-                }
-                catch
-                {
-                }
-
-                progressWindow.RequestClose += (s, ev) => window.Close();
-
-                window.Closed += (s, ev) =>
-                {
-                    if (_refreshService.IsRebuilding)
-                    {
-                        _logger?.Info("Progress window closed while refresh running - cancelling refresh.");
-                        _refreshService.CancelCurrentRebuild();
-                    }
-                };
-
-                var isFullscreen = false;
-                try
-                {
-                    isFullscreen = _api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "Failed to check fullscreen mode");
-                }
-
-                if (refreshTask != null)
-                {
-                    Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await refreshTask().ConfigureAwait(false);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Error(ex, "Refresh task failed");
-                        }
-                    });
-                }
-
-                if (isFullscreen)
-                {
-                    window.Show();
-                    try
-                    {
-                        window.Topmost = true;
-                        window.Activate();
-                        window.Topmost = false;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Debug(ex, "Failed to activate window in fullscreen");
-                    }
-                }
-                else
-                {
-                    window.ShowDialog();
-                }
+                    refreshTask,
+                    openSingleGameAchievementsView));
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Failed to show refresh progress window");
+            }
+        }
+
+        private void ShowRefreshProgressControlCore(
+            Guid? singleGameRefreshId,
+            Func<Task> refreshTask,
+            Action<Guid> openSingleGameAchievementsView)
+        {
+            var progressWindow = new RefreshProgressControl(
+                _refreshService,
+                _logger,
+                singleGameRefreshId,
+                openSingleGameAchievementsView);
+
+            var windowOptions = new WindowOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = false,
+                ShowCloseButton = true,
+                CanBeResizable = false,
+                Width = 400,
+                Height = 280
+            };
+
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                progressWindow.WindowTitle,
+                progressWindow,
+                windowOptions
+            );
+
+            try
+            {
+                if (window.Owner == null)
+                {
+                    window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
+                }
+            }
+            catch
+            {
+            }
+
+            progressWindow.RequestClose += (s, ev) => window.Close();
+
+            window.Closed += (s, ev) =>
+            {
+                if (_refreshService.IsRebuilding)
+                {
+                    _logger?.Info("Progress window closed while refresh running - cancelling refresh.");
+                    _refreshService.CancelCurrentRebuild();
+                }
+            };
+
+            var isFullscreen = false;
+            try
+            {
+                isFullscreen = _api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to check fullscreen mode");
+            }
+
+            if (refreshTask != null)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await refreshTask().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex, "Refresh task failed");
+                    }
+                });
+            }
+
+            if (isFullscreen)
+            {
+                window.Show();
+                try
+                {
+                    window.Topmost = true;
+                    window.Activate();
+                    window.Topmost = false;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed to activate window in fullscreen");
+                }
+            }
+            else
+            {
+                window.ShowDialog();
+            }
+        }
+
+        private void InvokeOnUiThread(Action action)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+            if (dispatcher == null)
+            {
+                throw new InvalidOperationException("UI dispatcher is not available.");
+            }
+
+            if (dispatcher.CheckAccess())
+            {
+                action();
+            }
+            else
+            {
+                dispatcher.Invoke(action, DispatcherPriority.Normal);
             }
         }
 

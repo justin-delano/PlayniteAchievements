@@ -1333,6 +1333,8 @@
                                                                       PieSeries="{Binding GamesPieChart.PieSeries}"
                                                                       LegendItems="{Binding GamesPieChart.LegendItems}"
                                                                       HighlightedLabels="{Binding GamesPieChart.HighlightedLabels}"
+                                                                      ExactUnlockedCount="{Binding GamesPieChart.ExactUnlockedCount}"
+                                                                      ExactTotalCount="{Binding GamesPieChart.ExactTotalCount}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnGamesPieChartSliceClick"/>
                                 </Grid>
@@ -1358,6 +1360,8 @@
                                                                       PieSeries="{Binding ProviderPieChart.PieSeries}"
                                                                       LegendItems="{Binding ProviderPieChart.LegendItems}"
                                                                       HighlightedLabels="{Binding ProviderPieChart.HighlightedLabels}"
+                                                                      ExactUnlockedCount="{Binding ProviderPieChart.ExactUnlockedCount}"
+                                                                      ExactTotalCount="{Binding ProviderPieChart.ExactTotalCount}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnProviderPieChartSliceClick"/>
                                 </Grid>
@@ -1382,6 +1386,8 @@
                                                                       PieSeries="{Binding RarityPieChart.PieSeries}"
                                                                       LegendItems="{Binding RarityPieChart.LegendItems}"
                                                                       HighlightedLabels="{Binding RarityPieChart.HighlightedLabels}"
+                                                                      ExactUnlockedCount="{Binding RarityPieChart.ExactUnlockedCount}"
+                                                                      ExactTotalCount="{Binding RarityPieChart.ExactTotalCount}"
                                                                       IconOffset="12"/>
                                 </Grid>
 
@@ -1405,6 +1411,8 @@
                                                                       PieSeries="{Binding TrophyPieChart.PieSeries}"
                                                                       LegendItems="{Binding TrophyPieChart.LegendItems}"
                                                                       HighlightedLabels="{Binding TrophyPieChart.HighlightedLabels}"
+                                                                      ExactUnlockedCount="{Binding TrophyPieChart.ExactUnlockedCount}"
+                                                                      ExactTotalCount="{Binding TrophyPieChart.ExactTotalCount}"
                                                                       IconOffset="12"/>
                                 </Grid>
                                 </Grid>

@@ -102,6 +102,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private readonly BulkObservableCollection<GameAchievementSummary> _epicGames = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _battleNetGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _eaGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
         private readonly BulkObservableCollection<GameAchievementSummary> _xboxGames = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
         private readonly BulkObservableCollection<GameAchievementSummary> _psnGames = new BulkObservableCollection<GameAchievementSummary>();
@@ -492,6 +496,20 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
 
         [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> BattleNetGames
+        {
+            get => _battleNetGames;
+            set => ReplaceCollection(_battleNetGames, value, nameof(BattleNetGames));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> EAGames
+        {
+            get => _eaGames;
+            set => ReplaceCollection(_eaGames, value, nameof(EAGames));
+        }
+
+        [DontSerialize]
         public ObservableCollection<GameAchievementSummary> XboxGames
         {
             get => _xboxGames;
@@ -547,4 +565,3 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
     }
 }
-

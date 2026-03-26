@@ -64,7 +64,7 @@ namespace PlayniteAchievements.Providers.Manual
             }
 
             var localized = ResourceProvider.GetString(exception.MessageKey);
-            return string.IsNullOrWhiteSpace(localized)
+            return string.IsNullOrWhiteSpace(localized) || string.Equals(localized, exception.MessageKey, StringComparison.Ordinal)
                 ? exception.Message
                 : localized;
         }

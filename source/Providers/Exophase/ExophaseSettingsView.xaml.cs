@@ -41,18 +41,23 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             _exophaseSettings = settings as ExophaseSettings;
             base.Initialize(settings);
+            SetAuthStatusByKey("LOCPlayAch_Settings_ExophaseAuth_Checking");
             _ = RefreshAuthStatusAsync();
         }
 
         private void UpdateAuthStatus(AuthProbeResult result)
         {
             var isAuthenticated = result?.IsSuccess ?? false;
-            IsAuthenticated = isAuthenticated;
+            SetAuthenticated(isAuthenticated);
             var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_Exophase");
+            if (string.IsNullOrWhiteSpace(providerName))
+            {
+                providerName = "Exophase";
+            }
 
             if (isAuthenticated)
             {
-                AuthStatus = string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName);
+                SetAuthStatus(string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName));
                 return;
             }
 
@@ -60,9 +65,11 @@ namespace PlayniteAchievements.Providers.Exophase
                 ? ResourceProvider.GetString(result.MessageKey)
                 : null;
 
-            AuthStatus = string.IsNullOrWhiteSpace(localized)
+            var status = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, result?.MessageKey, StringComparison.Ordinal)
                 ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName)
                 : localized;
+
+            SetAuthStatus(status);
         }
 
         public async Task RefreshAuthStatusAsync()
@@ -70,6 +77,7 @@ namespace PlayniteAchievements.Providers.Exophase
             AuthProbeResult result;
             try
             {
+                SetAuthStatusByKey("LOCPlayAch_Settings_ExophaseAuth_Checking");
                 result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
             }
             catch (Exception ex)
@@ -118,6 +126,55 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             if (Dispatcher.CheckAccess()) AuthBusy = busy;
             else Dispatcher.BeginInvoke(new Action(() => AuthBusy = busy));
+        }
+
+        private void SetAuthenticated(bool authenticated)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                IsAuthenticated = authenticated;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => IsAuthenticated = authenticated));
+            }
+        }
+
+        private void SetAuthStatus(string status)
+        {
+            var normalized = status ?? string.Empty;
+
+            if (Dispatcher.CheckAccess())
+            {
+                AuthStatus = normalized;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => AuthStatus = normalized));
+            }
+        }
+
+        private void SetAuthStatusByKey(string key)
+        {
+            var localized = ResourceProvider.GetString(key);
+            var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_Exophase");
+            if (string.IsNullOrWhiteSpace(providerName))
+            {
+                providerName = "Exophase";
+            }
+
+            if (string.IsNullOrWhiteSpace(localized) || string.Equals(localized, key, StringComparison.Ordinal))
+            {
+                localized = string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"),
+                    providerName);
+            }
+            else if (localized.Contains("{0}"))
+            {
+                localized = string.Format(localized, providerName);
+            }
+
+            SetAuthStatus(localized);
         }
 
         private void ExophasePlatform_CheckboxLoaded(object sender, RoutedEventArgs e)

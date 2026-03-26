@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
@@ -130,15 +128,10 @@ namespace PlayniteAchievements.Providers.Manual
 
                 var acceptLanguage = ExophaseApiClient.MapLanguageToAcceptLanguage(language);
 
-                List<AchievementDetail> achievements;
-                using (var httpClient = CreateAuthenticatedHttpClient())
-                {
-                    achievements = await _apiClient.FetchAchievementsViaHttpAsync(
-                        achievementUrl,
-                        acceptLanguage,
-                        httpClient,
-                        ct).ConfigureAwait(false);
-                }
+                var achievements = await _apiClient.FetchAchievementsAsync(
+                    achievementUrl,
+                    acceptLanguage,
+                    ct).ConfigureAwait(false);
 
                 if (achievements == null || achievements.Count == 0)
                 {
@@ -170,28 +163,6 @@ namespace PlayniteAchievements.Providers.Manual
                 _logger?.Error(ex, $"Failed to fetch Exophase achievements from slug: {sourceGameId}");
                 return null;
             }
-        }
-
-        private HttpClient CreateAuthenticatedHttpClient()
-        {
-            var cookieJar = new CookieContainer();
-            _sessionManager.LoadCefCookiesIntoJar(cookieJar);
-
-            var handler = new HttpClientHandler
-            {
-                CookieContainer = cookieJar,
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
-                AllowAutoRedirect = true,
-                UseCookies = true
-            };
-
-            var httpClient = new HttpClient(handler)
-            {
-                Timeout = TimeSpan.FromSeconds(30)
-            };
-            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-            return httpClient;
         }
 
     }

@@ -50,14 +50,12 @@ namespace PlayniteAchievements
 
         private static readonly string[] ProviderDisplayOrder =
         {
-            "Steam", "Epic", "GOG", "PSN", "Xbox", "Exophase",
-            "RetroAchievements", "Manual", "Xenia", "RPCS3", "ShadPS4"
+            "Steam", "Epic", "GOG", "BattleNet", "EA", "PSN", "Xbox", "RetroAchievements", "ShadPS4", "Xenia", "RPCS3", "Manual", "Exophase",
         };
 
         private static readonly string[] ProviderRefreshOrder =
         {
-            "Steam", "Epic", "GOG", "PSN", "Xbox", "Exophase",
-            "RetroAchievements", "Manual", "Xenia", "RPCS3", "ShadPS4"
+            "Manual", "Exophase", "Steam", "Epic", "GOG", "PSN", "Xbox", "Xenia", "RPCS3", "ShadPS4", "RetroAchievements",
         };
 
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
@@ -174,7 +172,7 @@ namespace PlayniteAchievements
 
                 var settings = _settingsViewModel.Settings;
                 var pluginUserDataPath = GetPluginUserDataPath();
-                _manualSourceRegistry = new ManualSourceRegistry(_logger, settings, PlayniteApi);
+                _manualSourceRegistry = new ManualSourceRegistry(_logger, settings, PlayniteApi, pluginUserDataPath);
 
                 // Create provider registry
                 _providerRegistry = new ProviderRegistry(settings, ProviderDisplayOrder, _logger, _manualSourceRegistry);

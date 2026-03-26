@@ -39,9 +39,9 @@
             <TextBlock Grid.Column="2"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center">
-                <Run Text="{Binding Theme.UltraRare.Unlocked, Mode=OneWay}"/>
+                <Run Text="{Binding ModernTheme.UltraRare.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
-                <Run Text="{Binding Theme.UltraRare.Total, Mode=OneWay}"/>
+                <Run Text="{Binding ModernTheme.UltraRare.Total, Mode=OneWay}"/>
             </TextBlock>
         </Grid>
 
@@ -68,9 +68,9 @@
             <TextBlock Grid.Column="2"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center">
-                <Run Text="{Binding Theme.Rare.Unlocked, Mode=OneWay}"/>
+                <Run Text="{Binding ModernTheme.Rare.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
-                <Run Text="{Binding Theme.Rare.Total, Mode=OneWay}"/>
+                <Run Text="{Binding ModernTheme.Rare.Total, Mode=OneWay}"/>
             </TextBlock>
         </Grid>
 
@@ -97,9 +97,9 @@
             <TextBlock Grid.Column="2"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center">
-                <Run Text="{Binding Theme.Uncommon.Unlocked, Mode=OneWay}"/>
+                <Run Text="{Binding ModernTheme.Uncommon.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
-                <Run Text="{Binding Theme.Uncommon.Total, Mode=OneWay}"/>
+                <Run Text="{Binding ModernTheme.Uncommon.Total, Mode=OneWay}"/>
             </TextBlock>
         </Grid>
 
@@ -126,9 +126,9 @@
             <TextBlock Grid.Column="2"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center">
-                <Run Text="{Binding Theme.Common.Unlocked, Mode=OneWay}"/>
+                <Run Text="{Binding ModernTheme.Common.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
-                <Run Text="{Binding Theme.Common.Total, Mode=OneWay}"/>
+                <Run Text="{Binding ModernTheme.Common.Total, Mode=OneWay}"/>
             </TextBlock>
         </Grid>
     </StackPanel>

@@ -31,7 +31,7 @@ namespace PlayniteAchievements.Providers.Exophase
         private static readonly TimeSpan SlugCacheTtl = TimeSpan.FromHours(1);
         private static readonly string[] KnownExophasePlatformTokens =
         {
-            "steam", "gog", "epic", "psn", "xbox", "retro"
+            "steam", "gog", "epic", "blizzard", "origin", "psn", "xbox", "retro"
         };
         private readonly Dictionary<Guid, DateTime> _slugCacheTimestamps = new Dictionary<Guid, DateTime>();
         private ExophaseSettings _providerSettings;
@@ -59,12 +59,13 @@ namespace PlayniteAchievements.Providers.Exophase
         public ExophaseDataProvider(
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            IPlayniteAPI playniteApi)
+            IPlayniteAPI playniteApi,
+            string pluginUserDataPath)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
-            _sessionManager = new ExophaseSessionManager(playniteApi, logger);
+            _sessionManager = new ExophaseSessionManager(playniteApi, logger, pluginUserDataPath);
             _apiClient = new ExophaseApiClient(playniteApi, logger);
 
             _providerSettings = ProviderRegistry.Settings<ExophaseSettings>();
@@ -133,9 +134,22 @@ namespace PlayniteAchievements.Providers.Exophase
                 return payload;
             }
 
-            if (!IsAuthenticated)
+            var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
+            var exophaseUserId = probeResult?.UserId?.Trim();
+            var missingVerifiedUser = string.IsNullOrWhiteSpace(exophaseUserId);
+            if (probeResult?.IsSuccess != true || missingVerifiedUser)
             {
-                _logger?.Warn("[Exophase] Cannot refresh: not authenticated");
+                if (probeResult?.Outcome == AuthOutcome.NotAuthenticated ||
+                    probeResult?.Outcome == AuthOutcome.Cancelled ||
+                    probeResult?.Outcome == AuthOutcome.TimedOut ||
+                    (probeResult?.IsSuccess == true && missingVerifiedUser))
+                {
+                    _logger?.Warn("[Exophase] Exophase not authenticated - live /account probe failed. Refresh aborted.");
+                    payload.AuthRequired = true;
+                    return payload;
+                }
+
+                _logger?.Warn($"[Exophase] Exophase auth probe failed with outcome={probeResult?.Outcome}. Refresh aborted.");
                 return payload;
             }
 
@@ -219,7 +233,6 @@ namespace PlayniteAchievements.Providers.Exophase
             var achievements = await _apiClient
                 .FetchAchievementsAsync(achievementUrl, acceptLanguage, cancel)
                 .ConfigureAwait(false);
-
             if (achievements == null || achievements.Count == 0)
             {
                 _logger?.Debug($"[Exophase] No achievements found for slug: {slug}");
@@ -725,8 +738,21 @@ namespace PlayniteAchievements.Providers.Exophase
             if (name.Contains("steam")) return "steam";
             if (name.Contains("gog") || name.Contains("good old games")) return "gog";
             if (name.Contains("epic")) return "epic";
+            if (name.Contains("battle.net") || name.Contains("battlenet") || ContainsDelimitedToken(name, "blizzard")) return "blizzard";
+            if (name.Contains("origin") || name.Contains("electronic arts") || name.Contains("ea app") || ContainsDelimitedToken(name, "ea")) return "origin";
 
             return null;
+        }
+
+        private static bool ContainsDelimitedToken(string value, string token)
+        {
+            if (string.IsNullOrWhiteSpace(value) || string.IsNullOrWhiteSpace(token))
+            {
+                return false;
+            }
+
+            var parts = value.Split(new[] { ' ', '-', '_', '.', ':', '/', '\\', '|', '(', ')', '[', ']' }, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Any(part => string.Equals(part, token, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -789,6 +815,8 @@ namespace PlayniteAchievements.Providers.Exophase
                 case "steam": return "Steam";
                 case "gog": return "GOG";
                 case "epic": return "Epic";
+                case "blizzard": return "BattleNet";
+                case "origin": return "EA";
                 case "xbox": return "Xbox";
                 case "psn": return "PSN";
                 case "retro": return "RetroAchievements";

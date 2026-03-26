@@ -1542,6 +1542,10 @@ namespace PlayniteAchievements.Services.Database
                 case "epic": return "Epic";
                 case "epic games": return "Epic";
                 case "gog": return "GOG";
+                case "battle.net": return "BattleNet";
+                case "battlenet": return "BattleNet";
+                case "ea": return "EA";
+                case "origin": return "EA";
                 case "xbox": return "Xbox";
                 case "psn": return "PSN";
                 case "playstation": return "PSN";

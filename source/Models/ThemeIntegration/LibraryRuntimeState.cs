@@ -19,6 +19,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public List<GameAchievementSummary> SteamGames { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> GOGGames { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> EpicGames { get; set; } = new List<GameAchievementSummary>();
+        public List<GameAchievementSummary> BattleNetGames { get; set; } = new List<GameAchievementSummary>();
+        public List<GameAchievementSummary> EAGames { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> XboxGames { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> PSNGames { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> RetroAchievementsGames { get; set; } = new List<GameAchievementSummary>();

@@ -16,6 +16,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <conv:NullableDoubleTextConverter x:Key="NullableDoubleTextConverter"/>
+            <conv:EnumToBoolConverter x:Key="EnumToBool"/>
 
             <Style x:Key="PreviewThemeControlStyle"
                    TargetType="{x:Type base:ThemeControlBase}">
@@ -136,6 +137,25 @@
                 <Setter Property="Margin" Value="0,0,0,14"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
                 <Setter Property="BorderThickness" Value="1"/>
+            </Style>
+
+            <Style x:Key="SidebarPieModeRadioButtonStyle" TargetType="RadioButton">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Margin" Value="0,0,0,6"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
+                    </Trigger>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.55"/>
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <!-- Accent text style -->
@@ -888,6 +908,47 @@
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowSidebarTrophyPieChart}"
                                                   IsChecked="{Binding Persisted.ShowSidebarTrophyPieChart}"
                                                   Margin="0,0,0,8"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SidebarPieSmallSliceMode}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="0,8,0,8"/>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <RadioButton Content="{DynamicResource LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact}"
+                                                         GroupName="SidebarPieSmallSliceMode"
+                                                         Style="{StaticResource SidebarPieModeRadioButtonStyle}"
+                                                         IsChecked="{Binding Persisted.SidebarPieSmallSliceMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EnumToBool}, ConverterParameter=Exact}"/>
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact_Description}"
+                                                       Style="{StaticResource MutedTextStyle}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="24,0,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <RadioButton Content="{DynamicResource LOCPlayAch_Settings_SidebarPieSmallSliceMode_Hide}"
+                                                         GroupName="SidebarPieSmallSliceMode"
+                                                         Style="{StaticResource SidebarPieModeRadioButtonStyle}"
+                                                         IsChecked="{Binding Persisted.SidebarPieSmallSliceMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EnumToBool}, ConverterParameter=Hide}"/>
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SidebarPieSmallSliceMode_Hide_Description}"
+                                                       Style="{StaticResource MutedTextStyle}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="24,0,0,0"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <RadioButton Content="{DynamicResource LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round}"
+                                                         GroupName="SidebarPieSmallSliceMode"
+                                                         Style="{StaticResource SidebarPieModeRadioButtonStyle}"
+                                                         IsChecked="{Binding Persisted.SidebarPieSmallSliceMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource EnumToBool}, ConverterParameter=Round}"/>
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round_Description}"
+                                                       Style="{StaticResource MutedTextStyle}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="24,0,0,0"/>
+                                        </StackPanel>
+
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SidebarPieSmallSliceMode_Note}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,8"/>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowSidebarBarCharts}"
                                                   IsChecked="{Binding Persisted.ShowSidebarBarCharts}"
                                                   Margin="0,0,0,8"/>

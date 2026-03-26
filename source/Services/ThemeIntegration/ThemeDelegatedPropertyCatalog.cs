@@ -52,6 +52,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.SteamGames),
             nameof(PlayniteAchievementsSettings.GOGGames),
             nameof(PlayniteAchievementsSettings.EpicGames),
+            nameof(PlayniteAchievementsSettings.BattleNetGames),
+            nameof(PlayniteAchievementsSettings.EAGames),
             nameof(PlayniteAchievementsSettings.XboxGames),
             nameof(PlayniteAchievementsSettings.PSNGames),
             nameof(PlayniteAchievementsSettings.RetroAchievementsGames),

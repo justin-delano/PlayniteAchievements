@@ -131,7 +131,12 @@ namespace PlayniteAchievements.Providers.Steam
             }
             else
             {
-                WebAuthStatus = ResourceProvider.GetString(result.MessageKey) ?? result.MessageKey;
+                var localized = ResourceProvider.GetString(result.MessageKey);
+                WebAuthStatus = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, result.MessageKey, StringComparison.Ordinal)
+                    ? string.Format(
+                        ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"),
+                        ResourceProvider.GetString("LOCPlayAch_Provider_Steam"))
+                    : localized;
             }
         }
 

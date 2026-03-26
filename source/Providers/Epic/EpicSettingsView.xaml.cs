@@ -81,7 +81,7 @@ namespace PlayniteAchievements.Providers.Epic
                 ? ResourceProvider.GetString(result.MessageKey)
                 : null;
 
-            AuthStatus = string.IsNullOrWhiteSpace(localized)
+            AuthStatus = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, result?.MessageKey, StringComparison.Ordinal)
                 ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName)
                 : localized;
         }

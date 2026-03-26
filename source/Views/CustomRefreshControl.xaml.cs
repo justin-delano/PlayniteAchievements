@@ -511,7 +511,7 @@ namespace PlayniteAchievements.Views
 
             foreach (var provider in _refreshService.Providers)
             {
-                if (provider == null)
+                if (provider == null || ProviderUiPolicies.ShouldHideFromSetupSurfaces(provider.ProviderKey))
                 {
                     continue;
                 }

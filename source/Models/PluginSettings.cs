@@ -341,6 +341,20 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> BattleNetGames
+        {
+            get => ModernTheme.BattleNetGames;
+            set => ModernTheme.BattleNetGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> EAGames
+        {
+            get => ModernTheme.EAGames;
+            set => ModernTheme.EAGames = value;
+        }
+
+        [DontSerialize]
         public ObservableCollection<GameAchievementSummary> XboxGames
         {
             get => ModernTheme.XboxGames;

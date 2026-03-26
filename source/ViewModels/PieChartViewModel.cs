@@ -6,12 +6,28 @@ using System.Windows.Media;
 using LiveCharts;
 using LiveCharts.Wpf;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.ViewModels
 {
     public class PieChartViewModel : ObservableObject
     {
+        /// <summary>
+        /// Internal data class for raw pie slice processing before any small-slice mode is applied.
+        /// </summary>
+        private sealed class PieSliceInputData
+        {
+            public string Label { get; set; }
+            public int Count { get; set; }
+            public string IconKey { get; set; }
+            public Color Color { get; set; }
+            public string OriginalColorHex { get; set; }
+            public int UnlockedCount { get; set; }
+            public int TotalCount { get; set; }
+            public bool IsLocked { get; set; }
+        }
+
         /// <summary>
         /// Internal data class for pie slice processing.
         /// Contains both the slice color (for rendering) and the legend color hex (for display).
@@ -27,19 +43,56 @@ namespace PlayniteAchievements.ViewModels
             public int UnlockedCount { get; set; }
             public int TotalCount { get; set; }
             public bool IsLocked { get; set; }
+            public bool ShowRadialIcon { get; set; } = true;
+            public bool SuppressRadialIconOnCollision { get; set; }
         }
 
         public SeriesCollection PieSeries { get; } = new SeriesCollection();
         public ObservableCollection<LegendItem> LegendItems { get; } = new ObservableCollection<LegendItem>();
 
         private ObservableCollection<string> _highlightedLabels = new ObservableCollection<string>();
+        private SidebarPieSmallSliceMode _smallSliceMode = SidebarPieSmallSliceMode.Round;
+        private int _exactUnlockedCount;
+        private int _exactTotalCount;
+        private bool _alwaysShowSmallSliceIcons;
+        private int _minimumSeriesCount;
 
         // Maps display labels to provider keys for provider pie chart slice click handling
-        private Dictionary<string, string> _labelToProviderKey = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string> _labelToProviderKey = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public ObservableCollection<string> HighlightedLabels
         {
             get => _highlightedLabels;
             private set => SetValue(ref _highlightedLabels, value);
+        }
+
+        public SidebarPieSmallSliceMode SmallSliceMode
+        {
+            get => _smallSliceMode;
+            set => SetValue(ref _smallSliceMode, value);
+        }
+
+        public int ExactUnlockedCount
+        {
+            get => _exactUnlockedCount;
+            private set => SetValue(ref _exactUnlockedCount, value);
+        }
+
+        public int ExactTotalCount
+        {
+            get => _exactTotalCount;
+            private set => SetValue(ref _exactTotalCount, value);
+        }
+
+        public bool AlwaysShowSmallSliceIcons
+        {
+            get => _alwaysShowSmallSliceIcons;
+            set => SetValue(ref _alwaysShowSmallSliceIcons, value);
+        }
+
+        public int MinimumSeriesCount
+        {
+            get => _minimumSeriesCount;
+            set => SetValue(ref _minimumSeriesCount, Math.Max(0, value));
         }
 
         // Consistent transparent locked color for all pie charts
@@ -87,20 +140,40 @@ namespace PlayniteAchievements.ViewModels
         {
             if (totalGames == 0)
             {
+                UpdateExactCounts(0, 0);
                 SynchronizePieChartAndLegend(new List<PieSliceData>());
                 return;
             }
 
             var incomplete = totalGames - completedGames;
 
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)>
+            var dataPoints = new List<PieSliceInputData>
             {
-                (completedLabel, completedGames, "BadgeCompletedGame", Color.FromRgb(33, 150, 243), string.Empty, completedGames, completedGames, false)
+                new PieSliceInputData
+                {
+                    Label = completedLabel,
+                    Count = completedGames,
+                    IconKey = "BadgeCompletedGame",
+                    Color = Color.FromRgb(33, 150, 243),
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = completedGames,
+                    TotalCount = completedGames,
+                    IsLocked = false
+                },
+                new PieSliceInputData
+                {
+                    Label = incompleteLabel,
+                    Count = incomplete,
+                    IconKey = "BadgeLocked",
+                    Color = LockedTransparent,
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = incomplete,
+                    TotalCount = incomplete,
+                    IsLocked = true
+                }
             };
 
-            dataPoints.Add((incompleteLabel, incomplete, "BadgeLocked", LockedTransparent, string.Empty, incomplete, incomplete, true));
-
-            ApplyMinimumVisibilityRule(dataPoints);
+            ApplySmallSliceMode(dataPoints);
         }
 
         /// <summary>
@@ -111,31 +184,81 @@ namespace PlayniteAchievements.ViewModels
             int commonTotal, int uncommonTotal, int rareTotal, int ultraRareTotal,
             string commonLabel, string uncommonLabel, string rareLabel, string ultraRareLabel, string lockedLabel)
         {
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)>();
+            var dataPoints = new List<PieSliceInputData>();
 
             if (ultraRareUnlocked > 0 || ultraRareTotal > 0)
             {
-                dataPoints.Add((ultraRareLabel, ultraRareUnlocked, "BadgePlatinumHexagon", UltraRarePieColor, string.Empty, ultraRareUnlocked, ultraRareTotal, false));
+                dataPoints.Add(new PieSliceInputData
+                {
+                    Label = ultraRareLabel,
+                    Count = ultraRareUnlocked,
+                    IconKey = "BadgePlatinumHexagon",
+                    Color = UltraRarePieColor,
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = ultraRareUnlocked,
+                    TotalCount = ultraRareTotal,
+                    IsLocked = false
+                });
             }
 
             if (rareUnlocked > 0 || rareTotal > 0)
             {
-                dataPoints.Add((rareLabel, rareUnlocked, "BadgeGoldPentagon", RarePieColor, string.Empty, rareUnlocked, rareTotal, false));
+                dataPoints.Add(new PieSliceInputData
+                {
+                    Label = rareLabel,
+                    Count = rareUnlocked,
+                    IconKey = "BadgeGoldPentagon",
+                    Color = RarePieColor,
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = rareUnlocked,
+                    TotalCount = rareTotal,
+                    IsLocked = false
+                });
             }
 
             if (uncommonUnlocked > 0 || uncommonTotal > 0)
             {
-                dataPoints.Add((uncommonLabel, uncommonUnlocked, "BadgeSilverSquare", UncommonPieColor, string.Empty, uncommonUnlocked, uncommonTotal, false));
+                dataPoints.Add(new PieSliceInputData
+                {
+                    Label = uncommonLabel,
+                    Count = uncommonUnlocked,
+                    IconKey = "BadgeSilverSquare",
+                    Color = UncommonPieColor,
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = uncommonUnlocked,
+                    TotalCount = uncommonTotal,
+                    IsLocked = false
+                });
             }
 
             if (commonUnlocked > 0 || commonTotal > 0)
             {
-                dataPoints.Add((commonLabel, commonUnlocked, "BadgeBronzeTriangle", CommonPieColor, string.Empty, commonUnlocked, commonTotal, false));
+                dataPoints.Add(new PieSliceInputData
+                {
+                    Label = commonLabel,
+                    Count = commonUnlocked,
+                    IconKey = "BadgeBronzeTriangle",
+                    Color = CommonPieColor,
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = commonUnlocked,
+                    TotalCount = commonTotal,
+                    IsLocked = false
+                });
             }
 
-            dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent, string.Empty, locked, locked, true));
+            dataPoints.Add(new PieSliceInputData
+            {
+                Label = lockedLabel,
+                Count = locked,
+                IconKey = "BadgeLocked",
+                Color = LockedTransparent,
+                OriginalColorHex = string.Empty,
+                UnlockedCount = locked,
+                TotalCount = locked,
+                IsLocked = true
+            });
 
-            ApplyMinimumVisibilityRule(dataPoints);
+            ApplySmallSliceMode(dataPoints);
         }
 
         /// <summary>
@@ -155,35 +278,35 @@ namespace PlayniteAchievements.ViewModels
             Dictionary<string, (string iconKey, string colorHex)> providerLookup,
             Dictionary<string, string> providerDisplayNames = null)
         {
-            // Clear previous mappings
             _labelToProviderKey.Clear();
 
             if (unlockedByProvider == null || !unlockedByProvider.Any())
             {
+                UpdateExactCounts(0, 0);
                 SynchronizePieChartAndLegend(new List<PieSliceData>());
                 return;
             }
 
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)>();
+            var dataPoints = new List<PieSliceInputData>();
 
-            // Sort providers by count descending
             foreach (var provider in unlockedByProvider.OrderByDescending(p => p.Value))
             {
                 var providerKey = provider.Key;
                 var unlockedCount = provider.Value;
-                var totalCount = totalByProvider != null && totalByProvider.TryGetValue(providerKey, out var total) ? total : unlockedCount;
+                var totalCount = totalByProvider != null && totalByProvider.TryGetValue(providerKey, out var total)
+                    ? total
+                    : unlockedCount;
 
-                // Get display name for the provider key
                 var displayLabel = providerKey;
-                if (providerDisplayNames != null && providerDisplayNames.TryGetValue(providerKey, out var displayName) && !string.IsNullOrWhiteSpace(displayName))
+                if (providerDisplayNames != null &&
+                    providerDisplayNames.TryGetValue(providerKey, out var displayName) &&
+                    !string.IsNullOrWhiteSpace(displayName))
                 {
                     displayLabel = displayName;
                 }
 
-                // Store mapping from display label to provider key for slice click handling
                 _labelToProviderKey[displayLabel] = providerKey;
 
-                // Look up provider icon and color
                 string colorHex = "#888888";
                 string iconKey = string.Empty;
                 if (providerLookup != null && providerLookup.TryGetValue(providerKey, out var metadata))
@@ -192,20 +315,43 @@ namespace PlayniteAchievements.ViewModels
                     iconKey = metadata.iconKey ?? string.Empty;
                 }
 
-                // Parse color hex to Color
-                if (ColorConverter.ConvertFromString(colorHex) is Color color)
+                Color color;
+                if (ColorConverter.ConvertFromString(colorHex) is Color parsedColor)
                 {
-                    dataPoints.Add((displayLabel, unlockedCount, iconKey, color, colorHex, unlockedCount, totalCount, false));
+                    color = parsedColor;
                 }
                 else
                 {
-                    dataPoints.Add((displayLabel, unlockedCount, iconKey, Colors.Gray, "#888888", unlockedCount, totalCount, false));
+                    color = Colors.Gray;
+                    colorHex = "#888888";
                 }
+
+                dataPoints.Add(new PieSliceInputData
+                {
+                    Label = displayLabel,
+                    Count = unlockedCount,
+                    IconKey = iconKey,
+                    Color = color,
+                    OriginalColorHex = colorHex,
+                    UnlockedCount = unlockedCount,
+                    TotalCount = totalCount,
+                    IsLocked = false
+                });
             }
 
-            dataPoints.Add((lockedLabel, totalLocked, "BadgeLocked", LockedTransparent, string.Empty, totalLocked, totalLocked, true));
+            dataPoints.Add(new PieSliceInputData
+            {
+                Label = lockedLabel,
+                Count = totalLocked,
+                IconKey = "BadgeLocked",
+                Color = LockedTransparent,
+                OriginalColorHex = string.Empty,
+                UnlockedCount = totalLocked,
+                TotalCount = totalLocked,
+                IsLocked = true
+            });
 
-            ApplyMinimumVisibilityRule(dataPoints);
+            ApplySmallSliceMode(dataPoints);
         }
 
         /// <summary>
@@ -229,50 +375,105 @@ namespace PlayniteAchievements.ViewModels
             var totalTrophies = platinumTotal + goldTotal + silverTotal + bronzeTotal;
             if (totalTrophies <= 0)
             {
+                UpdateExactCounts(0, 0);
                 SynchronizePieChartAndLegend(new List<PieSliceData>());
                 return;
             }
 
             var locked = Math.Max(0, totalTrophies - (platinumUnlocked + goldUnlocked + silverUnlocked + bronzeUnlocked));
-            var dataPoints = new List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)>();
+            var dataPoints = new List<PieSliceInputData>();
 
             if (platinumUnlocked > 0 || platinumTotal > 0)
             {
-                dataPoints.Add((platinumLabel, platinumUnlocked, "TrophyPlatinum", UltraRarePieColor, string.Empty, platinumUnlocked, platinumTotal, false));
+                dataPoints.Add(new PieSliceInputData
+                {
+                    Label = platinumLabel,
+                    Count = platinumUnlocked,
+                    IconKey = "TrophyPlatinum",
+                    Color = UltraRarePieColor,
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = platinumUnlocked,
+                    TotalCount = platinumTotal,
+                    IsLocked = false
+                });
             }
 
             if (goldUnlocked > 0 || goldTotal > 0)
             {
-                dataPoints.Add((goldLabel, goldUnlocked, "TrophyGold", RarePieColor, string.Empty, goldUnlocked, goldTotal, false));
+                dataPoints.Add(new PieSliceInputData
+                {
+                    Label = goldLabel,
+                    Count = goldUnlocked,
+                    IconKey = "TrophyGold",
+                    Color = RarePieColor,
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = goldUnlocked,
+                    TotalCount = goldTotal,
+                    IsLocked = false
+                });
             }
 
             if (silverUnlocked > 0 || silverTotal > 0)
             {
-                dataPoints.Add((silverLabel, silverUnlocked, "TrophySilver", UncommonPieColor, string.Empty, silverUnlocked, silverTotal, false));
+                dataPoints.Add(new PieSliceInputData
+                {
+                    Label = silverLabel,
+                    Count = silverUnlocked,
+                    IconKey = "TrophySilver",
+                    Color = UncommonPieColor,
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = silverUnlocked,
+                    TotalCount = silverTotal,
+                    IsLocked = false
+                });
             }
 
             if (bronzeUnlocked > 0 || bronzeTotal > 0)
             {
-                dataPoints.Add((bronzeLabel, bronzeUnlocked, "TrophyBronze", CommonPieColor, string.Empty, bronzeUnlocked, bronzeTotal, false));
+                dataPoints.Add(new PieSliceInputData
+                {
+                    Label = bronzeLabel,
+                    Count = bronzeUnlocked,
+                    IconKey = "TrophyBronze",
+                    Color = CommonPieColor,
+                    OriginalColorHex = string.Empty,
+                    UnlockedCount = bronzeUnlocked,
+                    TotalCount = bronzeTotal,
+                    IsLocked = false
+                });
             }
 
-            dataPoints.Add((lockedLabel, locked, "BadgeLocked", LockedTransparent, string.Empty, locked, locked, true));
+            dataPoints.Add(new PieSliceInputData
+            {
+                Label = lockedLabel,
+                Count = locked,
+                IconKey = "BadgeLocked",
+                Color = LockedTransparent,
+                OriginalColorHex = string.Empty,
+                UnlockedCount = locked,
+                TotalCount = locked,
+                IsLocked = true
+            });
 
-            ApplyMinimumVisibilityRule(dataPoints);
+            ApplySmallSliceMode(dataPoints);
         }
 
-        private void ApplyMinimumVisibilityRule(List<(string Label, int Count, string IconKey, Color Color, string OriginalColorHex, int UnlockedCount, int TotalCount, bool IsLocked)> dataPoints)
+        private void ApplySmallSliceMode(List<PieSliceInputData> dataPoints)
         {
             if (dataPoints == null || dataPoints.Count == 0)
             {
+                UpdateExactCounts(0, 0);
                 SynchronizePieChartAndLegend(new List<PieSliceData>());
                 return;
             }
 
-            // Filter out all slices with zero count (including providers with no achievements)
             dataPoints = dataPoints
-                .Where(d => d.Count > 0)
+                .Where(d => d != null && d.Count > 0)
                 .ToList();
+
+            UpdateExactCounts(
+                dataPoints.Where(d => !d.IsLocked).Sum(d => d.Count),
+                dataPoints.Sum(d => d.Count));
 
             if (dataPoints.Count == 0)
             {
@@ -282,79 +483,181 @@ namespace PlayniteAchievements.ViewModels
 
             var totalCount = dataPoints.Sum(d => d.Count);
             var minSlice = totalCount * 0.05;
-            var adjustments = new Dictionary<int, double>();
-            var totalAdjustment = 0.0;
+            var slices = BuildSlicesForMode(dataPoints, minSlice);
 
-            // First pass: identify slices below 5% and calculate adjustments
+            SynchronizePieChartAndLegend(slices);
+        }
+
+        private List<PieSliceData> BuildSlicesForMode(IReadOnlyList<PieSliceInputData> dataPoints, double minSlice)
+        {
+            switch (SmallSliceMode)
+            {
+                case SidebarPieSmallSliceMode.Exact:
+                    return BuildExactSlices(
+                        dataPoints,
+                        minSlice,
+                        hideSmallIcons: false,
+                        suppressOnCollision: !AlwaysShowSmallSliceIcons);
+                case SidebarPieSmallSliceMode.Hide:
+                    return BuildHiddenSlices(dataPoints, minSlice);
+                case SidebarPieSmallSliceMode.Round:
+                default:
+                    if (TryBuildRoundedSlices(dataPoints, minSlice, out var roundedSlices))
+                    {
+                        return roundedSlices;
+                    }
+
+                    return BuildExactSlices(
+                        dataPoints,
+                        minSlice,
+                        hideSmallIcons: true,
+                        suppressOnCollision: false);
+            }
+        }
+
+        private List<PieSliceData> BuildExactSlices(
+            IReadOnlyList<PieSliceInputData> dataPoints,
+            double minSlice,
+            bool hideSmallIcons,
+            bool suppressOnCollision)
+        {
+            var slices = new List<PieSliceData>(dataPoints.Count);
             for (int i = 0; i < dataPoints.Count; i++)
             {
-                if (dataPoints[i].Count < minSlice && dataPoints[i].Count > 0)
+                var dataPoint = dataPoints[i];
+                var showRadialIcon = !hideSmallIcons || dataPoint.Count >= minSlice;
+                slices.Add(CreateSliceData(
+                    dataPoint,
+                    dataPoint.Count,
+                    showRadialIcon,
+                    suppressOnCollision && showRadialIcon));
+            }
+
+            return slices;
+        }
+
+        private List<PieSliceData> BuildHiddenSlices(IReadOnlyList<PieSliceInputData> dataPoints, double minSlice)
+        {
+            var slices = new List<PieSliceData>(dataPoints.Count);
+            for (int i = 0; i < dataPoints.Count; i++)
+            {
+                var dataPoint = dataPoints[i];
+                if (dataPoint.Count < minSlice)
                 {
-                    var adjustment = minSlice - dataPoints[i].Count;
+                    continue;
+                }
+
+                slices.Add(CreateSliceData(dataPoint, dataPoint.Count, true, false));
+            }
+
+            return slices;
+        }
+
+        private bool TryBuildRoundedSlices(IReadOnlyList<PieSliceInputData> dataPoints, double minSlice, out List<PieSliceData> slices)
+        {
+            var adjustments = new Dictionary<int, double>();
+            var totalAdjustment = 0.0;
+            var largestNonSmallIndex = -1;
+            var largestNonSmallCount = 0;
+
+            for (int i = 0; i < dataPoints.Count; i++)
+            {
+                var count = dataPoints[i].Count;
+                if (count < minSlice)
+                {
+                    var adjustment = minSlice - count;
                     adjustments[i] = adjustment;
                     totalAdjustment += adjustment;
+                    continue;
+                }
+
+                if (largestNonSmallIndex < 0 || count > largestNonSmallCount)
+                {
+                    largestNonSmallIndex = i;
+                    largestNonSmallCount = count;
                 }
             }
 
-            // Find the largest slice to subtract from.
-            int largestSliceIndex = dataPoints
-                .Select((d, i) => (d.Count, i))
-                .OrderByDescending(x => x.Item1)
-                .First().Item2;
+            if (adjustments.Count == 0)
+            {
+                slices = BuildExactSlices(
+                    dataPoints,
+                    minSlice,
+                    hideSmallIcons: false,
+                    suppressOnCollision: false);
+                return true;
+            }
 
-            var slices = new List<PieSliceData>(dataPoints.Count);
+            if (largestNonSmallIndex < 0 || dataPoints[largestNonSmallIndex].Count - totalAdjustment <= 0)
+            {
+                slices = null;
+                return false;
+            }
+
+            slices = new List<PieSliceData>(dataPoints.Count);
             for (int i = 0; i < dataPoints.Count; i++)
             {
                 double chartValue;
                 if (adjustments.ContainsKey(i))
                 {
-                    // Small slice: bump to 5%
                     chartValue = minSlice;
                 }
-                else if (i == largestSliceIndex && totalAdjustment > 0)
+                else if (i == largestNonSmallIndex)
                 {
-                    // Largest slice: subtract the total adjustment
                     chartValue = dataPoints[i].Count - totalAdjustment;
                 }
                 else
                 {
-                    // Normal slice: use actual value
                     chartValue = dataPoints[i].Count;
                 }
 
-                // Determine legend color: use OriginalColorHex for providers, otherwise generate from Color
-                string legendColor;
-                if (!string.IsNullOrEmpty(dataPoints[i].OriginalColorHex))
-                {
-                    // Use original color hex from provider (e.g., "#B0B0B0")
-                    legendColor = dataPoints[i].OriginalColorHex;
-                }
-                else if (dataPoints[i].IconKey == "BadgeLocked")
-                {
-                    // Locked items use consistent color
-                    legendColor = LockedLegendColor;
-                }
-                else
-                {
-                    // Generate from Color (for badges)
-                    legendColor = $"#{dataPoints[i].Color.R:X2}{dataPoints[i].Color.G:X2}{dataPoints[i].Color.B:X2}";
-                }
-
-                slices.Add(new PieSliceData
-                {
-                    Label = dataPoints[i].Label,
-                    Count = dataPoints[i].Count,
-                    IconKey = dataPoints[i].IconKey,
-                    Color = dataPoints[i].Color,
-                    ColorHex = legendColor,
-                    ChartValue = chartValue,
-                    UnlockedCount = dataPoints[i].UnlockedCount,
-                    TotalCount = dataPoints[i].TotalCount,
-                    IsLocked = dataPoints[i].IsLocked
-                });
+                slices.Add(CreateSliceData(dataPoints[i], chartValue, true, false));
             }
 
-            SynchronizePieChartAndLegend(slices);
+            return true;
+        }
+
+        private PieSliceData CreateSliceData(
+            PieSliceInputData dataPoint,
+            double chartValue,
+            bool showRadialIcon,
+            bool suppressOnCollision)
+        {
+            return new PieSliceData
+            {
+                Label = dataPoint.Label,
+                Count = dataPoint.Count,
+                IconKey = dataPoint.IconKey,
+                Color = dataPoint.Color,
+                ColorHex = ResolveLegendColor(dataPoint),
+                ChartValue = chartValue,
+                UnlockedCount = dataPoint.UnlockedCount,
+                TotalCount = dataPoint.TotalCount,
+                IsLocked = dataPoint.IsLocked,
+                ShowRadialIcon = showRadialIcon,
+                SuppressRadialIconOnCollision = suppressOnCollision
+            };
+        }
+
+        private static string ResolveLegendColor(PieSliceInputData dataPoint)
+        {
+            if (!string.IsNullOrEmpty(dataPoint.OriginalColorHex))
+            {
+                return dataPoint.OriginalColorHex;
+            }
+
+            if (dataPoint.IconKey == "BadgeLocked")
+            {
+                return LockedLegendColor;
+            }
+
+            return $"#{dataPoint.Color.R:X2}{dataPoint.Color.G:X2}{dataPoint.Color.B:X2}";
+        }
+
+        private void UpdateExactCounts(int unlockedCount, int totalCount)
+        {
+            ExactUnlockedCount = Math.Max(0, unlockedCount);
+            ExactTotalCount = Math.Max(0, totalCount);
         }
 
         private void SynchronizePieChartAndLegend(IReadOnlyList<PieSliceData> slices)
@@ -368,7 +671,9 @@ namespace PlayniteAchievements.ViewModels
 
         private void SynchronizePieSeries(IReadOnlyList<PieSliceData> slices)
         {
-            for (int i = 0; i < slices.Count; i++)
+            var sliceCount = slices?.Count ?? 0;
+            var targetCount = Math.Max(sliceCount, MinimumSeriesCount);
+            for (int i = 0; i < targetCount; i++)
             {
                 LiveCharts.Wpf.PieSeries series = null;
                 if (i < PieSeries.Count)
@@ -389,14 +694,15 @@ namespace PlayniteAchievements.ViewModels
                     }
                 }
 
-                var slice = slices[i];
-                series.Title = slice.Label;
+                var slice = i < sliceCount ? slices[i] : null;
+                series.Title = slice?.Label ?? string.Empty;
                 series.DataLabels = false;
 
                 var existingBrush = series.Fill as SolidColorBrush;
-                if (existingBrush == null || existingBrush.Color != slice.Color)
+                var sliceColor = slice?.Color ?? Colors.Transparent;
+                if (existingBrush == null || existingBrush.Color != sliceColor)
                 {
-                    series.Fill = new SolidColorBrush(slice.Color);
+                    series.Fill = new SolidColorBrush(sliceColor);
                 }
 
                 var values = series.Values as ChartValues<PieSliceChartData>;
@@ -406,17 +712,10 @@ namespace PlayniteAchievements.ViewModels
                     series.Values = values;
                 }
 
-                var chartData = new PieSliceChartData
-                {
-                    Label = slice.Label,
-                    Count = slice.Count,
-                    IconKey = slice.IconKey,
-                    ColorHex = slice.ColorHex,
-                    ChartValue = slice.ChartValue,
-                    UnlockedCount = slice.UnlockedCount,
-                    TotalCount = slice.TotalCount,
-                    IsLocked = slice.IsLocked
-                };
+                var chartData = values.Count > 0
+                    ? values[0]
+                    : new PieSliceChartData();
+                ApplySliceChartData(chartData, slice);
 
                 if (values.Count == 0)
                 {
@@ -424,7 +723,6 @@ namespace PlayniteAchievements.ViewModels
                 }
                 else
                 {
-                    values[0] = chartData;
                     while (values.Count > 1)
                     {
                         values.RemoveAt(values.Count - 1);
@@ -432,10 +730,24 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            while (PieSeries.Count > slices.Count)
+            while (PieSeries.Count > targetCount)
             {
                 PieSeries.RemoveAt(PieSeries.Count - 1);
             }
+        }
+
+        private static void ApplySliceChartData(PieSliceChartData chartData, PieSliceData slice)
+        {
+            chartData.Label = slice?.Label ?? string.Empty;
+            chartData.Count = slice?.Count ?? 0;
+            chartData.IconKey = slice?.IconKey ?? string.Empty;
+            chartData.ColorHex = slice?.ColorHex ?? string.Empty;
+            chartData.ChartValue = slice?.ChartValue ?? 0;
+            chartData.UnlockedCount = slice?.UnlockedCount ?? 0;
+            chartData.TotalCount = slice?.TotalCount ?? 0;
+            chartData.IsLocked = slice?.IsLocked ?? false;
+            chartData.ShowRadialIcon = slice?.ShowRadialIcon ?? false;
+            chartData.SuppressRadialIconOnCollision = slice?.SuppressRadialIconOnCollision ?? false;
         }
 
         private void SynchronizeLegendItems(IReadOnlyList<PieSliceData> slices)
@@ -462,6 +774,5 @@ namespace PlayniteAchievements.ViewModels
                 LegendItems.RemoveAt(LegendItems.Count - 1);
             }
         }
-
     }
 }

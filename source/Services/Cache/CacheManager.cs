@@ -736,6 +736,7 @@ namespace PlayniteAchievements.Services
             {
                 LastUpdatedUtc = DateTimeUtilities.AsUtcKind(source.LastUpdatedUtc),
                 ProviderKey = source.ProviderKey,
+                ProviderPlatformKey = source.ProviderPlatformKey,
                 LibrarySourceName = source.LibrarySourceName,
                 HasAchievements = source.HasAchievements,
                 ExcludedByUser = source.ExcludedByUser,

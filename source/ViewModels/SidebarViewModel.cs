@@ -54,11 +54,14 @@ namespace PlayniteAchievements.ViewModels
         private readonly object _progressLock = new object();
         private DateTime _lastProgressUpdate = DateTime.MinValue;
         private static readonly TimeSpan ProgressMinInterval = TimeSpan.FromMilliseconds(50);
+        private const int ContextualPieSeriesCount = 5;
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
         private System.Windows.Threading.DispatcherTimer _progressHideTimer;
         private System.Windows.Threading.DispatcherTimer _deltaBatchTimer;
         private bool _showCompletedProgress;
         private bool _refreshAttemptInProgress;
+        private int _selectedGameLoadVersion;
+        private bool _selectedGameLoadInProgress;
         private static readonly TimeSpan ProgressHideDelay = TimeSpan.FromSeconds(3);
         private readonly object _deltaSync = new object();
         private readonly HashSet<string> _pendingDeltaKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -135,10 +138,20 @@ namespace PlayniteAchievements.ViewModels
             GlobalTimeline = new TimelineViewModel();
             SelectedGameTimeline = new TimelineViewModel();
 
-            GamesPieChart = new PieChartViewModel();
-            RarityPieChart = new PieChartViewModel();
+            GamesPieChart = new PieChartViewModel
+            {
+                AlwaysShowSmallSliceIcons = true
+            };
+            RarityPieChart = new PieChartViewModel
+            {
+                MinimumSeriesCount = ContextualPieSeriesCount
+            };
             ProviderPieChart = new PieChartViewModel();
-            TrophyPieChart = new PieChartViewModel();
+            TrophyPieChart = new PieChartViewModel
+            {
+                MinimumSeriesCount = ContextualPieSeriesCount
+            };
+            ApplySidebarPieSmallSliceMode();
 
             // Set defaults: Unlocked Only, sorted by Unlock Date
             _showUnlockedOnly = true;
@@ -608,9 +621,11 @@ namespace PlayniteAchievements.ViewModels
 
                     ResetSelectedGameAchievementVisibilityFilters();
                     (RefreshCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+                    _selectedGameLoadInProgress = true;
 
                     // Defer visibility/data notifications until after data loads to prevent flash
-                    _ = LoadSelectedGameAchievementsAndNotifyAsync();
+                    var loadVersion = Interlocked.Increment(ref _selectedGameLoadVersion);
+                    _ = LoadSelectedGameAchievementsAndNotifyAsync(loadVersion, newGameId);
                 }
             }
         }
@@ -1369,41 +1384,6 @@ namespace PlayniteAchievements.ViewModels
             CompletedGames = snapshot.CompletedGames;
             GlobalProgression = snapshot.GlobalProgressionPercent;
 
-            var providerLookup = BuildProviderLookup();
-            var providerDisplayNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var providerKey in snapshot.UnlockedByProvider.Keys)
-            {
-                providerDisplayNames[providerKey] = GetProviderFilterDisplayName(providerKey);
-            }
-
-            var completedLabel = ResourceProvider.GetString("LOCPlayAch_Filter_Complete");
-            var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Incomplete");
-            var commonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Common");
-            var uncommonLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Uncommon");
-            var rareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_Rare");
-            var ultraRareLabel = ResourceProvider.GetString("LOCPlayAch_Rarity_UltraRare");
-            var trophyPlatinumLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Platinum");
-            var trophyGoldLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Gold");
-            var trophySilverLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Silver");
-            var trophyBronzeLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Bronze");
-            var lockedLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Locked");
-
-            ProviderPieChart.SetProviderData(snapshot.UnlockedByProvider, snapshot.TotalByProvider, snapshot.TotalLocked, lockedLabel, providerLookup, providerDisplayNames);
-
-            GamesPieChart.SetGameData(snapshot.TotalGames, snapshot.CompletedGames, completedLabel, incompleteLabel);
-            UpdateContextualPieCharts(
-                snapshot,
-                commonLabel,
-                uncommonLabel,
-                rareLabel,
-                ultraRareLabel,
-                trophyPlatinumLabel,
-                trophyGoldLabel,
-                trophySilverLabel,
-                trophyBronzeLabel,
-                lockedLabel);
-            UpdateOverviewPieChartSelectionStates();
-
             OnPropertyChanged(nameof(CommonPercentage));
             OnPropertyChanged(nameof(UncommonPercentage));
             OnPropertyChanged(nameof(RarePercentage));
@@ -1511,6 +1491,7 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(UseCoverImages));
                 OnPropertyChanged(nameof(EnableCompactGridMode));
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
+                ApplySidebarPieSmallSliceMode();
                 RaiseSidebarPieChartVisibilityChanged();
                 OnPropertyChanged(nameof(ShowSidebarBarCharts));
                 OnPropertyChanged(nameof(ShowGamesWithNoUnlocks));
@@ -1544,6 +1525,11 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.ShowSidebarBarCharts))
             {
                 OnPropertyChanged(nameof(ShowSidebarBarCharts));
+            }
+            else if (propertyName == nameof(PersistedSettings.SidebarPieSmallSliceMode))
+            {
+                ApplySidebarPieSmallSliceMode();
+                UpdateAggregatePieCharts();
             }
             else if (AchievementProjectionService.IsAppearanceSettingPropertyName(propertyName))
             {
@@ -1774,6 +1760,7 @@ namespace PlayniteAchievements.ViewModels
             ApplyOverviewSummaryFromSnapshot(snapshot);
             RefreshFilter();
             ApplyLeftFilters();
+            UpdateAggregatePieCharts();
             ApplyRightFilters();
             UpdateFilteredStatus();
         }
@@ -2061,28 +2048,18 @@ namespace PlayniteAchievements.ViewModels
             GamesPieChart?.SetSelectedLabels(_selectedCompletenessFilters);
         }
 
+        private void ApplySidebarPieSmallSliceMode()
+        {
+            var mode = _settings?.Persisted?.SidebarPieSmallSliceMode ?? SidebarPieSmallSliceMode.Round;
+            GamesPieChart.SmallSliceMode = mode;
+            ProviderPieChart.SmallSliceMode = mode;
+            RarityPieChart.SmallSliceMode = mode;
+            TrophyPieChart.SmallSliceMode = mode;
+        }
+
         private void UpdateAggregatePieCharts()
         {
-            // Filter games based only on ShowGamesWithNoUnlocks and ShowUnplayedGames settings
-            var filteredGames = _allGamesOverview.AsEnumerable();
-            if (!ShowGamesWithNoUnlocks)
-            {
-                filteredGames = filteredGames.Where(g => g.UnlockedAchievements > 0);
-            }
-            if (!ShowUnplayedGames)
-            {
-                filteredGames = filteredGames.Where(g => g.LastPlayed.HasValue || g.UnlockedAchievements > 0);
-            }
-            var gamesList = filteredGames.ToList();
-
-            if (gamesList.Count == 0)
-            {
-                GamesPieChart?.SetGameData(0, 0, string.Empty, string.Empty);
-                ProviderPieChart?.SetProviderData(new Dictionary<string, int>(), new Dictionary<string, int>(), 0, string.Empty, null, null);
-                RarityPieChart?.SetRarityData(0, 0, 0, 0, 0, 0, 0, 0, 0, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-                TrophyPieChart?.SetTrophyData(0, 0, 0, 0, 0, 0, 0, 0, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-                return;
-            }
+            var snapshot = BuildPieChartSnapshotFromCurrentState();
 
             var completedLabel = ResourceProvider.GetString("LOCPlayAch_Filter_Complete");
             var incompleteLabel = ResourceProvider.GetString("LOCPlayAch_Sidebar_Incomplete");
@@ -2096,64 +2073,107 @@ namespace PlayniteAchievements.ViewModels
             var trophySilverLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Silver");
             var trophyBronzeLabel = ResourceProvider.GetString("LOCPlayAch_Trophy_Bronze");
 
-            // Games pie chart
-            var totalGames = gamesList.Count;
-            var completedGames = gamesList.Count(g => g.IsCompleted);
-            GamesPieChart?.SetGameData(totalGames, completedGames, completedLabel, incompleteLabel);
+            GamesPieChart?.SetGameData(snapshot.TotalGames, snapshot.CompletedGames, completedLabel, incompleteLabel);
 
-            // Provider pie chart
-            var unlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            var totalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (var game in gamesList)
-            {
-                var provider = string.IsNullOrWhiteSpace(game.ProviderKey) ? "Unknown" : game.ProviderKey;
-                if (!unlockedByProvider.ContainsKey(provider))
-                {
-                    unlockedByProvider[provider] = 0;
-                    totalByProvider[provider] = 0;
-                }
-                unlockedByProvider[provider] += game.UnlockedAchievements;
-                totalByProvider[provider] += game.TotalAchievements;
-            }
-            var totalLocked = gamesList.Sum(g => g.TotalAchievements) - gamesList.Sum(g => g.UnlockedAchievements);
             var providerLookup = BuildProviderLookup();
             var providerDisplayNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var providerKey in unlockedByProvider.Keys)
+            foreach (var providerKey in snapshot.UnlockedByProvider.Keys)
             {
                 providerDisplayNames[providerKey] = GetProviderFilterDisplayName(providerKey);
             }
-            ProviderPieChart?.SetProviderData(unlockedByProvider, totalByProvider, totalLocked, lockedLabel, providerLookup, providerDisplayNames);
+            ProviderPieChart?.SetProviderData(
+                snapshot.UnlockedByProvider,
+                snapshot.TotalByProvider,
+                snapshot.TotalLocked,
+                lockedLabel,
+                providerLookup,
+                providerDisplayNames);
 
-            // Rarity pie chart
-            var totalCommon = gamesList.Sum(g => g.CommonCount);
-            var totalUncommon = gamesList.Sum(g => g.UncommonCount);
-            var totalRare = gamesList.Sum(g => g.RareCount);
-            var totalUltraRare = gamesList.Sum(g => g.UltraRareCount);
-            var totalCommonPossible = gamesList.Sum(g => g.TotalCommonPossible);
-            var totalUncommonPossible = gamesList.Sum(g => g.TotalUncommonPossible);
-            var totalRarePossible = gamesList.Sum(g => g.TotalRarePossible);
-            var totalUltraRarePossible = gamesList.Sum(g => g.TotalUltraRarePossible);
-            RarityPieChart?.SetRarityData(
-                totalCommon, totalUncommon, totalRare, totalUltraRare, totalLocked,
-                totalCommonPossible, totalUncommonPossible, totalRarePossible, totalUltraRarePossible,
-                commonLabel, uncommonLabel, rareLabel, ultraRareLabel, lockedLabel);
-
-            // Trophy pie chart - filter achievements by games in filtered list
-            var filteredGameIds = new HashSet<Guid>(gamesList.Where(g => g.PlayniteGameId.HasValue).Select(g => g.PlayniteGameId.Value));
-            var filteredAchievements = (_allAchievements ?? new List<AchievementDisplayItem>())
-                .Where(a => a != null && a.PlayniteGameId.HasValue && filteredGameIds.Contains(a.PlayniteGameId.Value));
-            var trophySummary = BuildTrophySummary(filteredAchievements);
-            TrophyPieChart?.SetTrophyData(
-                trophySummary.PlatinumUnlocked, trophySummary.GoldUnlocked, trophySummary.SilverUnlocked, trophySummary.BronzeUnlocked,
-                trophySummary.PlatinumTotal, trophySummary.GoldTotal, trophySummary.SilverTotal, trophySummary.BronzeTotal,
-                trophyPlatinumLabel, trophyGoldLabel, trophySilverLabel, trophyBronzeLabel, lockedLabel);
-
-            // Reset contextual pie chart titles to base titles (no game name suffix)
-            RarityPieChartTitle = null;
-            TrophyPieChartTitle = null;
-
-            // Update pie chart selection states
             UpdateOverviewPieChartSelectionStates();
+            if (_selectedGameLoadInProgress && SelectedGame?.PlayniteGameId.HasValue == true)
+            {
+                return;
+            }
+
+            UpdateContextualPieCharts(
+                snapshot,
+                commonLabel,
+                uncommonLabel,
+                rareLabel,
+                ultraRareLabel,
+                trophyPlatinumLabel,
+                trophyGoldLabel,
+                trophySilverLabel,
+                trophyBronzeLabel,
+                lockedLabel);
+        }
+
+        private SidebarDataSnapshot BuildPieChartSnapshotFromCurrentState()
+        {
+            var gamesList = GetPieChartGames().ToList();
+            var gameIds = new HashSet<Guid>(
+                gamesList
+                    .Where(game => game?.PlayniteGameId.HasValue == true)
+                    .Select(game => game.PlayniteGameId.Value));
+            var achievements = (_allAchievements ?? new List<AchievementDisplayItem>())
+                .Where(achievement =>
+                    achievement != null &&
+                    achievement.PlayniteGameId.HasValue &&
+                    gameIds.Contains(achievement.PlayniteGameId.Value))
+                .ToList();
+
+            var snapshot = new SidebarDataSnapshot
+            {
+                Achievements = achievements,
+                GamesOverview = gamesList,
+                UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                TotalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            };
+
+            snapshot.TotalGames = gamesList.Count;
+            snapshot.CompletedGames = gamesList.Count(game => game?.IsCompleted == true);
+            snapshot.TotalAchievements = gamesList.Sum(game => game?.TotalAchievements ?? 0);
+            snapshot.TotalUnlocked = gamesList.Sum(game => game?.UnlockedAchievements ?? 0);
+            snapshot.TotalLocked = Math.Max(0, snapshot.TotalAchievements - snapshot.TotalUnlocked);
+            snapshot.TotalCommon = gamesList.Sum(game => game?.CommonCount ?? 0);
+            snapshot.TotalUncommon = gamesList.Sum(game => game?.UncommonCount ?? 0);
+            snapshot.TotalRare = gamesList.Sum(game => game?.RareCount ?? 0);
+            snapshot.TotalUltraRare = gamesList.Sum(game => game?.UltraRareCount ?? 0);
+            snapshot.TotalCommonPossible = gamesList.Sum(game => game?.TotalCommonPossible ?? 0);
+            snapshot.TotalUncommonPossible = gamesList.Sum(game => game?.TotalUncommonPossible ?? 0);
+            snapshot.TotalRarePossible = gamesList.Sum(game => game?.TotalRarePossible ?? 0);
+            snapshot.TotalUltraRarePossible = gamesList.Sum(game => game?.TotalUltraRarePossible ?? 0);
+
+            foreach (var game in gamesList)
+            {
+                var provider = string.IsNullOrWhiteSpace(game?.ProviderKey) ? "Unknown" : game.ProviderKey;
+                if (!snapshot.UnlockedByProvider.ContainsKey(provider))
+                {
+                    snapshot.UnlockedByProvider[provider] = 0;
+                    snapshot.TotalByProvider[provider] = 0;
+                }
+
+                snapshot.UnlockedByProvider[provider] += game?.UnlockedAchievements ?? 0;
+                snapshot.TotalByProvider[provider] += game?.TotalAchievements ?? 0;
+            }
+
+            return snapshot;
+        }
+
+        private IEnumerable<GameOverviewItem> GetPieChartGames()
+        {
+            var filteredGames = (_allGamesOverview ?? new List<GameOverviewItem>()).Where(game => game != null);
+            if (!ShowGamesWithNoUnlocks)
+            {
+                filteredGames = filteredGames.Where(game => game.UnlockedAchievements > 0);
+            }
+
+            if (!ShowUnplayedGames)
+            {
+                filteredGames = filteredGames.Where(game => game.LastPlayed.HasValue || game.UnlockedAchievements > 0);
+            }
+
+            return filteredGames;
         }
 
         private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup()
@@ -2650,23 +2670,37 @@ namespace PlayniteAchievements.ViewModels
         /// Loads game achievements and fires visibility notifications after data is ready.
         /// This prevents flash by ensuring data is loaded before the grid becomes visible.
         /// </summary>
-        private async Task LoadSelectedGameAchievementsAndNotifyAsync()
+        private async Task LoadSelectedGameAchievementsAndNotifyAsync(int loadVersion, Guid? targetGameId)
         {
-            await LoadSelectedGameAchievementsAsync().ConfigureAwait(true);
+            var loadApplied = await LoadSelectedGameAchievementsAsync(loadVersion, targetGameId).ConfigureAwait(true);
+            if (loadVersion == _selectedGameLoadVersion)
+            {
+                _selectedGameLoadInProgress = false;
+            }
+
+            if (!loadApplied)
+            {
+                return;
+            }
 
             // Fire notifications after data is ready
             OnPropertyChanged(nameof(IsGameSelected));
             OnPropertyChanged(nameof(TimelineSectionTitle));
-            UpdateContextualPieCharts(_latestSnapshot);
+            UpdateContextualPieCharts(BuildPieChartSnapshotFromCurrentState());
         }
 
-        private async Task LoadSelectedGameAchievementsAsync()
+        private async Task<bool> LoadSelectedGameAchievementsAsync(int loadVersion, Guid? targetGameId)
         {
             // Reset right search when selecting a game
             RightSearchText = string.Empty;
 
-            if (SelectedGame == null)
+            if (targetGameId == null)
             {
+                if (!IsSelectedGameLoadCurrent(loadVersion, targetGameId))
+                {
+                    return false;
+                }
+
                 _allSelectedGameAchievements = new List<AchievementDisplayItem>();
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
                 UpdateSelectedGameAchievementFilterOptions(null);
@@ -2681,15 +2715,17 @@ namespace PlayniteAchievements.ViewModels
                 }
                 // Restore global timeline to show all games
                 GlobalTimeline.SetCounts(_latestSnapshot?.GlobalUnlockCountsByDate);
-                return;
+                return true;
             }
 
             try
             {
-                if (!SelectedGame.PlayniteGameId.HasValue)
-                    return;
+                if (!IsSelectedGameLoadCurrent(loadVersion, targetGameId))
+                {
+                    return false;
+                }
 
-                var gameId = SelectedGame.PlayniteGameId.Value;
+                var gameId = targetGameId.Value;
                 var showIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
                 var showTitle = _settings?.Persisted?.ShowHiddenTitle ?? false;
                 var showDescription = _settings?.Persisted?.ShowHiddenDescription ?? false;
@@ -2743,6 +2779,11 @@ namespace PlayniteAchievements.ViewModels
                         false);
                 }).ConfigureAwait(true);
 
+                if (!IsSelectedGameLoadCurrent(loadVersion, targetGameId))
+                {
+                    return false;
+                }
+
                 var items = loadResult.Item1;
                 var hasCustomOrder = loadResult.Item2;
                 SelectedGameHasCustomAchievementOrder = hasCustomOrder;
@@ -2776,13 +2817,30 @@ namespace PlayniteAchievements.ViewModels
 
                 GlobalTimeline.SetCounts(selectedTimelineCounts);
                 SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+                return true;
             }
             catch (Exception ex)
             {
+                if (!IsSelectedGameLoadCurrent(loadVersion, targetGameId))
+                {
+                    return false;
+                }
+
                 UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
                 _logger?.Warn(ex, $"Failed to load achievements for game {SelectedGame?.AppId}");
+                return false;
             }
+        }
+
+        private bool IsSelectedGameLoadCurrent(int loadVersion, Guid? targetGameId)
+        {
+            if (loadVersion != _selectedGameLoadVersion)
+            {
+                return false;
+            }
+
+            return SelectedGame?.PlayniteGameId == targetGameId;
         }
 
         public void ClearGameSelection()

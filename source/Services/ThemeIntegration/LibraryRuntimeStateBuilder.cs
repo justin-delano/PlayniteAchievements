@@ -172,6 +172,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var steamGames = new List<GameAchievementSummary>();
             var gogGames = new List<GameAchievementSummary>();
             var epicGames = new List<GameAchievementSummary>();
+            var battleNetGames = new List<GameAchievementSummary>();
+            var eaGames = new List<GameAchievementSummary>();
             var xboxGames = new List<GameAchievementSummary>();
             var psnGames = new List<GameAchievementSummary>();
             var retroAchievementsGames = new List<GameAchievementSummary>();
@@ -204,6 +206,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     case "Epic":
                         epicGames.Add(summary);
                         break;
+                    case "BattleNet":
+                        battleNetGames.Add(summary);
+                        break;
+                    case "EA":
+                        eaGames.Add(summary);
+                        break;
                     case "Xbox":
                         xboxGames.Add(summary);
                         break;
@@ -231,6 +239,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             state.SteamGames = steamGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.GOGGames = gogGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.EpicGames = epicGames.OrderByDescending(item => item.LastUnlockDate).ToList();
+            state.BattleNetGames = battleNetGames.OrderByDescending(item => item.LastUnlockDate).ToList();
+            state.EAGames = eaGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.XboxGames = xboxGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.PSNGames = psnGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.RetroAchievementsGames = retroAchievementsGames.OrderByDescending(item => item.LastUnlockDate).ToList();

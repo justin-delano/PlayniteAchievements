@@ -1,32 +1,99 @@
+using PlayniteAchievements.Common;
+
 namespace PlayniteAchievements.Models
 {
     /// <summary>
     /// Data model for pie chart slices that carries icon metadata alongside the chart value.
     /// Used for custom tooltips that display provider/badge icons with counts.
     /// </summary>
-    public class PieSliceChartData
+    public class PieSliceChartData : ObservableObject
     {
-        public string Label { get; set; }
-        public int Count { get; set; }
-        public string IconKey { get; set; }
-        public string ColorHex { get; set; }
-        public double ChartValue { get; set; }
+        private string _label;
+        public string Label
+        {
+            get => _label;
+            set => SetValue(ref _label, value);
+        }
+
+        private int _count;
+        public int Count
+        {
+            get => _count;
+            set => SetValue(ref _count, value);
+        }
+
+        private string _iconKey;
+        public string IconKey
+        {
+            get => _iconKey;
+            set => SetValue(ref _iconKey, value);
+        }
+
+        private string _colorHex;
+        public string ColorHex
+        {
+            get => _colorHex;
+            set => SetValue(ref _colorHex, value);
+        }
+
+        private double _chartValue;
+        public double ChartValue
+        {
+            get => _chartValue;
+            set => SetValue(ref _chartValue, value);
+        }
 
         /// <summary>
         /// Number of unlocked achievements in this category.
         /// For non-locked slices, same as Count.
         /// </summary>
-        public int UnlockedCount { get; set; }
+        private int _unlockedCount;
+        public int UnlockedCount
+        {
+            get => _unlockedCount;
+            set => SetValue(ref _unlockedCount, value);
+        }
 
         /// <summary>
         /// Total achievements in this category (including locked).
         /// </summary>
-        public int TotalCount { get; set; }
+        private int _totalCount;
+        public int TotalCount
+        {
+            get => _totalCount;
+            set => SetValue(ref _totalCount, value);
+        }
 
         /// <summary>
         /// True if this represents a locked/remaining slice.
         /// Locked slices display just the count, not "unlocked / total".
         /// </summary>
-        public bool IsLocked { get; set; }
+        private bool _isLocked;
+        public bool IsLocked
+        {
+            get => _isLocked;
+            set => SetValue(ref _isLocked, value);
+        }
+
+        /// <summary>
+        /// True when the radial icon should be shown for this slice.
+        /// </summary>
+        private bool _showRadialIcon = true;
+        public bool ShowRadialIcon
+        {
+            get => _showRadialIcon;
+            set => SetValue(ref _showRadialIcon, value);
+        }
+
+        /// <summary>
+        /// True when the control may hide this icon to resolve collisions with adjacent slice icons.
+        /// Used by exact mode after actual icon positions are known.
+        /// </summary>
+        private bool _suppressRadialIconOnCollision;
+        public bool SuppressRadialIconOnCollision
+        {
+            get => _suppressRadialIconOnCollision;
+            set => SetValue(ref _suppressRadialIconOnCollision, value);
+        }
     }
 }

@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Views.Controls
     public partial class PieChartWithRadialIcons : UserControl
     {
         private static readonly double IconSize = 18.0;
+        private const double IconCollisionPadding = 4.0;
         private const double SliceHighlightOffset = 5.0;
         private const double LiveChartsRotationOffset = 45.0;
         private static readonly Duration SliceAnimationDuration = new Duration(TimeSpan.FromMilliseconds(150));
@@ -34,9 +35,22 @@ namespace PlayniteAchievements.Views.Controls
         {
             EasingMode = EasingMode.EaseOut
         };
-        private List<PieSeries> subscribedSeries = new List<PieSeries>();
+        private readonly List<PieSeries> subscribedSeries = new List<PieSeries>();
+        private readonly List<INotifyPropertyChanged> subscribedLegendItems = new List<INotifyPropertyChanged>();
+        private readonly List<INotifyPropertyChanged> subscribedSliceItems = new List<INotifyPropertyChanged>();
         private bool calculationScheduled;
         private string hoveredSliceLabel;
+
+        private sealed class IconCandidate
+        {
+            public int Sequence { get; set; }
+            public PieIconPosition Position { get; set; }
+            public double CenterX { get; set; }
+            public double CenterY { get; set; }
+            public int Count { get; set; }
+            public bool IsHighlighted { get; set; }
+            public bool SuppressOnCollision { get; set; }
+        }
 
         /// <summary>
         /// Event raised when a pie slice is clicked.
@@ -60,6 +74,14 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(nameof(HighlightedLabels), typeof(ObservableCollection<string>), typeof(PieChartWithRadialIcons),
                 new PropertyMetadata(null, OnHighlightedLabelsChanged));
 
+        public static readonly DependencyProperty ExactUnlockedCountProperty =
+            DependencyProperty.Register(nameof(ExactUnlockedCount), typeof(int), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(-1, OnCenterPercentageSourceChanged));
+
+        public static readonly DependencyProperty ExactTotalCountProperty =
+            DependencyProperty.Register(nameof(ExactTotalCount), typeof(int), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(-1, OnCenterPercentageSourceChanged));
+
         private static readonly DependencyPropertyKey CenterPercentageTextPropertyKey =
             DependencyProperty.RegisterReadOnly(nameof(CenterPercentageText), typeof(string), typeof(PieChartWithRadialIcons),
                 new PropertyMetadata(string.Empty));
@@ -77,6 +99,18 @@ namespace PlayniteAchievements.Views.Controls
                 new PropertyMetadata(Visibility.Collapsed));
 
         public static readonly DependencyProperty CenterPercentageVisibilityProperty = CenterPercentageVisibilityPropertyKey.DependencyProperty;
+
+        private static readonly DependencyPropertyKey CenterPercentageOffsetXPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(CenterPercentageOffsetX), typeof(double), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(0.0));
+
+        public static readonly DependencyProperty CenterPercentageOffsetXProperty = CenterPercentageOffsetXPropertyKey.DependencyProperty;
+
+        private static readonly DependencyPropertyKey CenterPercentageOffsetYPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(CenterPercentageOffsetY), typeof(double), typeof(PieChartWithRadialIcons),
+                new PropertyMetadata(0.0));
+
+        public static readonly DependencyProperty CenterPercentageOffsetYProperty = CenterPercentageOffsetYPropertyKey.DependencyProperty;
 
         public SeriesCollection PieSeries
         {
@@ -102,6 +136,18 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(HighlightedLabelsProperty, value);
         }
 
+        public int ExactUnlockedCount
+        {
+            get => (int)GetValue(ExactUnlockedCountProperty);
+            set => SetValue(ExactUnlockedCountProperty, value);
+        }
+
+        public int ExactTotalCount
+        {
+            get => (int)GetValue(ExactTotalCountProperty);
+            set => SetValue(ExactTotalCountProperty, value);
+        }
+
         public string CenterPercentageText
         {
             get => (string)GetValue(CenterPercentageTextProperty);
@@ -120,11 +166,25 @@ namespace PlayniteAchievements.Views.Controls
             private set => SetValue(CenterPercentageVisibilityPropertyKey, value);
         }
 
+        public double CenterPercentageOffsetX
+        {
+            get => (double)GetValue(CenterPercentageOffsetXProperty);
+            private set => SetValue(CenterPercentageOffsetXPropertyKey, value);
+        }
+
+        public double CenterPercentageOffsetY
+        {
+            get => (double)GetValue(CenterPercentageOffsetYProperty);
+            private set => SetValue(CenterPercentageOffsetYPropertyKey, value);
+        }
+
         public ObservableCollection<PieIconPosition> IconPositions { get; } = new ObservableCollection<PieIconPosition>();
 
         public PieChartWithRadialIcons()
         {
             InitializeComponent();
+            Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
             SizeChanged += OnSizeChanged;
         }
 
@@ -155,7 +215,7 @@ namespace PlayniteAchievements.Views.Controls
             {
                 oldSeries.CollectionChanged -= control.OnSeriesCollectionChanged;
             }
-            if (e.NewValue is SeriesCollection newSeries)
+            if (control.IsLoaded && e.NewValue is SeriesCollection newSeries)
             {
                 newSeries.CollectionChanged += control.OnSeriesCollectionChanged;
                 control.SubscribeToSeries(newSeries);
@@ -176,6 +236,8 @@ namespace PlayniteAchievements.Views.Controls
                     chartValues.CollectionChanged -= OnChartValuesChanged;
                 }
             }
+
+            UnsubscribeFromSliceDataItems();
             subscribedSeries.Clear();
         }
 
@@ -193,18 +255,22 @@ namespace PlayniteAchievements.Views.Controls
                 }
                 subscribedSeries.Add(series);
             }
+
+            RefreshSliceDataSubscriptions();
         }
 
         private void OnSeriesPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == "Values")
             {
+                RefreshSliceDataSubscriptions();
                 ScheduleCalculation();
             }
         }
 
         private void OnChartValuesChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            RefreshSliceDataSubscriptions();
             ScheduleCalculation();
         }
 
@@ -215,9 +281,17 @@ namespace PlayniteAchievements.Views.Controls
             {
                 oldItems.CollectionChanged -= control.OnLegendItemsCollectionChanged;
             }
-            if (e.NewValue is ObservableCollection<LegendItem> newItems)
+            if (control.IsLoaded && e.NewValue is ObservableCollection<LegendItem> newItems)
             {
                 newItems.CollectionChanged += control.OnLegendItemsCollectionChanged;
+            }
+            if (control.IsLoaded)
+            {
+                control.RefreshLegendItemSubscriptions();
+            }
+            else
+            {
+                control.UnsubscribeFromLegendItems();
             }
             control.ScheduleCalculation();
         }
@@ -234,16 +308,82 @@ namespace PlayniteAchievements.Views.Controls
             {
                 oldLabels.CollectionChanged -= control.OnHighlightedLabelsCollectionChanged;
             }
-            if (e.NewValue is ObservableCollection<string> newLabels)
+            if (control.IsLoaded && e.NewValue is ObservableCollection<string> newLabels)
             {
                 newLabels.CollectionChanged += control.OnHighlightedLabelsCollectionChanged;
             }
-            control.ApplySliceTransforms();
+            control.ScheduleCalculation();
+        }
+
+        private static void OnCenterPercentageSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((PieChartWithRadialIcons)d).ScheduleCalculation();
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            AttachCurrentSources();
+            ScheduleCalculation();
+        }
+
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            DetachCurrentSources();
         }
 
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             ScheduleCalculation();
+        }
+
+        private void AttachCurrentSources()
+        {
+            if (PieSeries != null)
+            {
+                PieSeries.CollectionChanged -= OnSeriesCollectionChanged;
+                PieSeries.CollectionChanged += OnSeriesCollectionChanged;
+                UnsubscribeFromSeries();
+                SubscribeToSeries(PieSeries);
+            }
+            else
+            {
+                UnsubscribeFromSeries();
+            }
+
+            if (LegendItems != null)
+            {
+                LegendItems.CollectionChanged -= OnLegendItemsCollectionChanged;
+                LegendItems.CollectionChanged += OnLegendItemsCollectionChanged;
+            }
+
+            RefreshLegendItemSubscriptions();
+
+            if (HighlightedLabels != null)
+            {
+                HighlightedLabels.CollectionChanged -= OnHighlightedLabelsCollectionChanged;
+                HighlightedLabels.CollectionChanged += OnHighlightedLabelsCollectionChanged;
+            }
+        }
+
+        private void DetachCurrentSources()
+        {
+            if (PieSeries != null)
+            {
+                PieSeries.CollectionChanged -= OnSeriesCollectionChanged;
+            }
+
+            if (LegendItems != null)
+            {
+                LegendItems.CollectionChanged -= OnLegendItemsCollectionChanged;
+            }
+
+            if (HighlightedLabels != null)
+            {
+                HighlightedLabels.CollectionChanged -= OnHighlightedLabelsCollectionChanged;
+            }
+
+            UnsubscribeFromSeries();
+            UnsubscribeFromLegendItems();
         }
 
         private void OnSeriesCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -258,25 +398,96 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnLegendItemsCollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
+            RefreshLegendItemSubscriptions();
             ScheduleCalculation();
         }
 
         private void OnHighlightedLabelsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            ApplySliceTransforms();
+            ScheduleCalculation();
+        }
+
+        private void RefreshSliceDataSubscriptions()
+        {
+            UnsubscribeFromSliceDataItems();
+
+            if (PieSeries == null)
+            {
+                return;
+            }
+
+            foreach (var sliceData in PieSeries
+                .OfType<PieSeries>()
+                .Where(series => series?.Values != null)
+                .SelectMany(series => series.Values.OfType<INotifyPropertyChanged>()))
+            {
+                sliceData.PropertyChanged += OnSliceDataPropertyChanged;
+                subscribedSliceItems.Add(sliceData);
+            }
+        }
+
+        private void UnsubscribeFromSliceDataItems()
+        {
+            foreach (var sliceData in subscribedSliceItems)
+            {
+                sliceData.PropertyChanged -= OnSliceDataPropertyChanged;
+            }
+
+            subscribedSliceItems.Clear();
+        }
+
+        private void OnSliceDataPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            ScheduleCalculation();
+        }
+
+        private void RefreshLegendItemSubscriptions()
+        {
+            UnsubscribeFromLegendItems();
+
+            if (LegendItems == null)
+            {
+                return;
+            }
+
+            foreach (var item in LegendItems.OfType<INotifyPropertyChanged>())
+            {
+                item.PropertyChanged += OnLegendItemPropertyChanged;
+                subscribedLegendItems.Add(item);
+            }
+        }
+
+        private void UnsubscribeFromLegendItems()
+        {
+            foreach (var item in subscribedLegendItems)
+            {
+                item.PropertyChanged -= OnLegendItemPropertyChanged;
+            }
+
+            subscribedLegendItems.Clear();
+        }
+
+        private void OnLegendItemPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            ScheduleCalculation();
         }
 
         private void CalculatePositions()
         {
-            if (PieSeries == null || PieSeries.Count == 0 || LegendItems == null || LegendItems.Count == 0)
+            var margin = Chart?.Margin ?? new Thickness(0);
+            double availableWidth = Math.Max(0, ActualWidth - margin.Left - margin.Right);
+            double availableHeight = Math.Max(0, ActualHeight - margin.Top - margin.Bottom);
+            double controlSize = Math.Min(availableWidth, availableHeight);
+            if (controlSize <= 0)
             {
                 IconPositions.Clear();
                 ClearSliceTransforms();
                 ClearCenterPercentage();
+                ClearCenterPercentageOffset();
                 return;
             }
 
-            var seriesList = PieSeries.OfType<PieSeries>().ToList();
+            var seriesList = PieSeries?.OfType<PieSeries>().ToList() ?? new List<PieSeries>();
             var sliceData = seriesList
                 .Select(s =>
                 {
@@ -284,33 +495,30 @@ namespace PlayniteAchievements.Views.Controls
                     return values?.Count > 0 ? values[0] : null;
                 })
                 .ToList();
-            var chartValues = sliceData.Select(data => data?.ChartValue ?? 0).ToList();
 
+            UpdateCenterPercentageOffset(seriesList);
+            UpdateCenterPercentage(sliceData, controlSize);
+
+            if (seriesList.Count == 0 || LegendItems == null || LegendItems.Count == 0)
+            {
+                IconPositions.Clear();
+                ClearSliceTransforms();
+                return;
+            }
+
+            var chartValues = sliceData.Select(data => data?.ChartValue ?? 0).ToList();
             if (chartValues.Count == 0 || chartValues.All(v => v == 0))
             {
                 IconPositions.Clear();
                 ClearSliceTransforms();
-                ClearCenterPercentage();
                 return;
             }
 
             double totalValue = chartValues.Sum();
-            var margin = Chart?.Margin ?? new Thickness(0);
-            double availableWidth = Math.Max(0, ActualWidth - margin.Left - margin.Right);
-            double availableHeight = Math.Max(0, ActualHeight - margin.Top - margin.Bottom);
-            double controlSize = Math.Min(availableWidth, availableHeight);
-            if (controlSize <= 0)
-            {
-                ClearCenterPercentage();
-                return;
-            }
-
             double pieRadius = controlSize / 2.0;
             double iconRadius = pieRadius + IconOffset;
             double centerX = margin.Left + (availableWidth / 2.0);
             double centerY = margin.Top + (availableHeight / 2.0);
-
-            UpdateCenterPercentage(sliceData, controlSize);
 
             // Build highlight set for computing offsets in single pass
             var highlighted = new HashSet<string>(
@@ -324,7 +532,7 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             double currentAngle = LiveChartsRotationOffset;
-            var positions = new List<PieIconPosition>();
+            var iconCandidates = new List<IconCandidate>();
             var sliceTransformData = new List<(PieSlice Slice, double OffsetX, double OffsetY)>();
 
             for (int i = 0; i < chartValues.Count && i < LegendItems.Count; i++)
@@ -348,22 +556,34 @@ namespace PlayniteAchievements.Views.Controls
                 }
 
                 // Only show icon if count > 0
-                if (legend.Count > 0)
+                var shouldShowRadialIcon = legend.Count > 0 &&
+                    (i >= sliceData.Count || sliceData[i]?.ShowRadialIcon != false);
+                if (shouldShowRadialIcon)
                 {
+                    var data = i < sliceData.Count ? sliceData[i] : null;
                     // Clockwise from top: x = sin(θ), y = -cos(θ)
                     double x = centerX + iconRadius * Math.Sin(angleRadians) - IconSize / 2.0;
                     double y = centerY - iconRadius * Math.Cos(angleRadians) - IconSize / 2.0;
 
-                    positions.Add(new PieIconPosition
+                    iconCandidates.Add(new IconCandidate
                     {
-                        Label = legend.Label,
-                        IconKey = legend.IconKey,
-                        ColorHex = legend.ColorHex,
+                        Sequence = i,
                         Count = legend.Count,
-                        X = x,
-                        Y = y,
-                        OffsetX = offsetX,
-                        OffsetY = offsetY
+                        IsHighlighted = isHighlighted,
+                        SuppressOnCollision = data?.SuppressRadialIconOnCollision == true,
+                        CenterX = x + (IconSize / 2.0) + offsetX,
+                        CenterY = y + (IconSize / 2.0) + offsetY,
+                        Position = new PieIconPosition
+                        {
+                            Label = legend.Label,
+                            IconKey = legend.IconKey,
+                            ColorHex = legend.ColorHex,
+                            Count = legend.Count,
+                            X = x,
+                            Y = y,
+                            OffsetX = offsetX,
+                            OffsetY = offsetY
+                        }
                     });
                 }
 
@@ -371,12 +591,18 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             // Apply all updates in sequence (but computed in single pass above)
-            SynchronizePositions(positions);
+            SynchronizePositions(ResolveIconPositions(iconCandidates));
             ApplySliceTransformsBatch(sliceTransformData);
         }
 
         private void UpdateCenterPercentage(IReadOnlyList<PieSliceChartData> sliceData, double controlSize)
         {
+            if (TryGetExactCounts(out var exactUnlockedCount, out var exactTotalCount))
+            {
+                UpdateCenterPercentage(exactUnlockedCount, exactTotalCount, controlSize);
+                return;
+            }
+
             if (sliceData == null || sliceData.Count == 0)
             {
                 ClearCenterPercentage();
@@ -386,15 +612,21 @@ namespace PlayniteAchievements.Views.Controls
             var totalCount = sliceData
                 .Where(data => data != null)
                 .Sum(data => Math.Max(0, data.Count));
+            var unlockedCount = sliceData
+                .Where(data => data != null && !data.IsLocked)
+                .Sum(data => Math.Max(0, data.Count));
+            UpdateCenterPercentage(unlockedCount, totalCount, controlSize);
+        }
+
+        private void UpdateCenterPercentage(int unlockedCount, int totalCount, double controlSize)
+        {
             if (totalCount <= 0)
             {
                 ClearCenterPercentage();
                 return;
             }
 
-            var unlockedCount = sliceData
-                .Where(data => data != null && !data.IsLocked)
-                .Sum(data => Math.Max(0, data.Count));
+            unlockedCount = Math.Max(0, Math.Min(unlockedCount, totalCount));
             var roundedPercent = (int)Math.Round(unlockedCount * 100d / totalCount, MidpointRounding.AwayFromZero);
 
             CenterPercentageText = $"{roundedPercent}%";
@@ -402,11 +634,79 @@ namespace PlayniteAchievements.Views.Controls
             CenterPercentageVisibility = Visibility.Visible;
         }
 
+        private bool TryGetExactCounts(out int unlockedCount, out int totalCount)
+        {
+            totalCount = ExactTotalCount;
+            unlockedCount = ExactUnlockedCount;
+            return totalCount >= 0;
+        }
+
         private void ClearCenterPercentage()
         {
             CenterPercentageText = string.Empty;
             CenterPercentageFontSize = 11;
             CenterPercentageVisibility = Visibility.Collapsed;
+        }
+
+        private void UpdateCenterPercentageOffset(IReadOnlyList<PieSeries> seriesList)
+        {
+            if (!TryGetRenderedPieBounds(seriesList, out var pieBounds))
+            {
+                ClearCenterPercentageOffset();
+                return;
+            }
+
+            CenterPercentageOffsetX = (pieBounds.Left + (pieBounds.Width / 2.0)) - (ActualWidth / 2.0);
+            CenterPercentageOffsetY = (pieBounds.Top + (pieBounds.Height / 2.0)) - (ActualHeight / 2.0);
+        }
+
+        private void ClearCenterPercentageOffset()
+        {
+            CenterPercentageOffsetX = 0;
+            CenterPercentageOffsetY = 0;
+        }
+
+        private bool TryGetRenderedPieBounds(IReadOnlyList<PieSeries> seriesList, out Rect pieBounds)
+        {
+            pieBounds = Rect.Empty;
+            if (seriesList == null || seriesList.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var series in seriesList)
+            {
+                var slice = GetPieSlice(series);
+                if (slice == null)
+                {
+                    continue;
+                }
+
+                Rect bounds;
+                try
+                {
+                    var localBounds = VisualTreeHelper.GetDescendantBounds(slice);
+                    if (localBounds.IsEmpty)
+                    {
+                        continue;
+                    }
+
+                    bounds = slice.TransformToAncestor(this).TransformBounds(localBounds);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (slice.RenderTransform is TranslateTransform translate)
+                {
+                    bounds.Offset(-translate.X, -translate.Y);
+                }
+
+                pieBounds = pieBounds.IsEmpty ? bounds : Rect.Union(pieBounds, bounds);
+            }
+
+            return !pieBounds.IsEmpty;
         }
 
         private void ApplySliceTransformsBatch(List<(PieSlice Slice, double OffsetX, double OffsetY)> transformData)
@@ -439,6 +739,8 @@ namespace PlayniteAchievements.Views.Controls
                     existing.Count = newPos.Count;
                     existing.X = newPos.X;
                     existing.Y = newPos.Y;
+                    existing.OffsetX = newPos.OffsetX;
+                    existing.OffsetY = newPos.OffsetY;
                 }
                 else
                 {
@@ -462,7 +764,13 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnPieChartDataHover(object sender, ChartPoint chartPoint)
         {
-            hoveredSliceLabel = (chartPoint?.SeriesView as PieSeries)?.Title;
+            var nextHoveredSliceLabel = (chartPoint?.SeriesView as PieSeries)?.Title;
+            if (string.Equals(hoveredSliceLabel, nextHoveredSliceLabel, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            hoveredSliceLabel = nextHoveredSliceLabel;
             ApplySliceTransforms();
         }
 
@@ -475,6 +783,102 @@ namespace PlayniteAchievements.Views.Controls
 
             hoveredSliceLabel = null;
             ApplySliceTransforms();
+        }
+
+        private static List<PieIconPosition> ResolveIconPositions(IReadOnlyList<IconCandidate> candidates)
+        {
+            if (candidates == null || candidates.Count == 0)
+            {
+                return new List<PieIconPosition>();
+            }
+
+            if (!candidates.Any(candidate => candidate.SuppressOnCollision))
+            {
+                return candidates.Select(candidate => candidate.Position).ToList();
+            }
+
+            var visible = Enumerable.Repeat(true, candidates.Count).ToArray();
+            bool removedCandidate;
+            do
+            {
+                removedCandidate = false;
+                var visibleIndices = Enumerable.Range(0, candidates.Count)
+                    .Where(index => visible[index])
+                    .ToList();
+
+                if (visibleIndices.Count < 2)
+                {
+                    break;
+                }
+
+                for (int i = 0; i < visibleIndices.Count; i++)
+                {
+                    var currentIndex = visibleIndices[i];
+                    var nextIndex = visibleIndices[(i + 1) % visibleIndices.Count];
+                    if (currentIndex == nextIndex || !IconsOverlap(candidates[currentIndex], candidates[nextIndex]))
+                    {
+                        continue;
+                    }
+
+                    var indexToRemove = ChooseCollisionRemovalIndex(candidates, currentIndex, nextIndex);
+                    if (indexToRemove < 0 || !visible[indexToRemove])
+                    {
+                        continue;
+                    }
+
+                    visible[indexToRemove] = false;
+                    removedCandidate = true;
+                    break;
+                }
+            }
+            while (removedCandidate);
+
+            return Enumerable.Range(0, candidates.Count)
+                .Where(index => visible[index])
+                .Select(index => candidates[index].Position)
+                .ToList();
+        }
+
+        private static bool IconsOverlap(IconCandidate first, IconCandidate second)
+        {
+            var minimumDistance = IconSize + IconCollisionPadding;
+            var minimumDistanceSquared = minimumDistance * minimumDistance;
+            var deltaX = first.CenterX - second.CenterX;
+            var deltaY = first.CenterY - second.CenterY;
+            return (deltaX * deltaX) + (deltaY * deltaY) < minimumDistanceSquared;
+        }
+
+        private static int ChooseCollisionRemovalIndex(IReadOnlyList<IconCandidate> candidates, int firstIndex, int secondIndex)
+        {
+            var first = candidates[firstIndex];
+            var second = candidates[secondIndex];
+
+            if (!first.SuppressOnCollision && !second.SuppressOnCollision)
+            {
+                return -1;
+            }
+
+            if (!first.SuppressOnCollision)
+            {
+                return second.SuppressOnCollision ? secondIndex : -1;
+            }
+
+            if (!second.SuppressOnCollision)
+            {
+                return firstIndex;
+            }
+
+            if (first.IsHighlighted != second.IsHighlighted)
+            {
+                return first.IsHighlighted ? secondIndex : firstIndex;
+            }
+
+            if (first.Count != second.Count)
+            {
+                return first.Count < second.Count ? firstIndex : secondIndex;
+            }
+
+            return first.Sequence > second.Sequence ? firstIndex : secondIndex;
         }
 
         private void ApplySliceTransforms(IReadOnlyList<double> chartValues = null)

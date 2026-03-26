@@ -261,6 +261,11 @@ namespace PlayniteAchievements.Views
 
             foreach (var provider in providers)
             {
+                if (ProviderUiPolicies.ShouldHideFromSetupSurfaces(provider?.ProviderKey))
+                {
+                    continue;
+                }
+
                 var isEnabled = _providerRegistry.IsProviderEnabled(provider.ProviderKey);
                 var isAuthenticated = false;
 

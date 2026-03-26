@@ -162,78 +162,16 @@ namespace PlayniteAchievements.Providers.Manual
                 await ManualSourceAuthentication.EnsureAuthenticatedAsync(this, ct).ConfigureAwait(false);
 
                 var steamLanguage = MapLanguageToSteam(language);
-                var url = $"https://api.steampowered.com/IPlayerService/GetGameAchievements/v1/" +
-                          $"?key={Uri.EscapeDataString(apiKey)}" +
-                          $"&appid={appId}" +
-                          $"&language={Uri.EscapeDataString(steamLanguage)}";
+                var result = await FetchAchievementsAsync(apiKey, appId, steamLanguage, ct).ConfigureAwait(false);
 
-                using (var response = await _httpClient.GetAsync(url, ct).ConfigureAwait(false))
+                if ((result == null || result.Count == 0) &&
+                    !string.Equals(steamLanguage, "english", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        _logger?.Debug($"GetGameAchievements API non-success: {(int)response.StatusCode} for appId={appId}");
-                        return null;
-                    }
-
-                    var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    if (string.IsNullOrWhiteSpace(json))
-                    {
-                        return null;
-                    }
-
-                    var root = Serialization.FromJson<GetGameAchievementsRoot>(json);
-                    var achievements = root?.Response?.Achievements;
-
-                    if (achievements == null || achievements.Count == 0)
-                    {
-                        return null;
-                    }
-
-                    var result = new List<AchievementDetail>(achievements.Count);
-
-                    foreach (var ach in achievements)
-                    {
-                        if (ach == null || string.IsNullOrWhiteSpace(ach.InternalName))
-                        {
-                            continue;
-                        }
-
-                        double? globalPercent = null;
-                        if (!string.IsNullOrWhiteSpace(ach.PlayerPercentUnlocked) &&
-                            double.TryParse(ach.PlayerPercentUnlocked, System.Globalization.NumberStyles.Any,
-                                System.Globalization.CultureInfo.InvariantCulture, out var percent))
-                        {
-                            globalPercent = percent;
-                        }
-
-                        var detail = new AchievementDetail
-                        {
-                            ApiName = ach.InternalName,
-                            DisplayName = ach.LocalizedName ?? ach.InternalName,
-                            Description = ach.LocalizedDesc ?? string.Empty,
-                            UnlockedIconPath = $"https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/{appId}/{ach.Icon}",
-                            LockedIconPath = $"https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/{appId}/{ach.IconGray}",
-                            Hidden = ach.Hidden,
-                            Unlocked = false,
-                            UnlockTimeUtc = null,
-                            Rarity = GetFallbackRarity(
-                                ach.Hidden,
-                                null,
-                                null)
-                        };
-
-                        var normalizedPercent = NormalizePercent(globalPercent);
-                        detail.GlobalPercentUnlocked = normalizedPercent;
-                        if (normalizedPercent.HasValue)
-                        {
-                            detail.Rarity = PercentRarityHelper.GetRarityTier(normalizedPercent.Value);
-                        }
-
-                        result.Add(detail);
-                    }
-
-                    return result;
+                    _logger?.Info($"Steam manual schema fetch returned no localized achievements for '{steamLanguage}', retrying with 'english' for appId={appId}");
+                    result = await FetchAchievementsAsync(apiKey, appId, "english", ct).ConfigureAwait(false);
                 }
+
+                return result;
             }
             catch (OperationCanceledException)
             {
@@ -243,6 +181,89 @@ namespace PlayniteAchievements.Providers.Manual
             {
                 _logger?.Error(ex, $"Failed to fetch Steam achievements for appId={appId}");
                 return null;
+            }
+        }
+
+        private async Task<List<AchievementDetail>> FetchAchievementsAsync(
+            string apiKey,
+            int appId,
+            string steamLanguage,
+            CancellationToken ct)
+        {
+            var url = $"https://api.steampowered.com/IPlayerService/GetGameAchievements/v1/" +
+                      $"?key={Uri.EscapeDataString(apiKey)}" +
+                      $"&appid={appId}" +
+                      $"&language={Uri.EscapeDataString(steamLanguage)}";
+
+            using (var response = await _httpClient.GetAsync(url, ct).ConfigureAwait(false))
+            {
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger?.Debug($"GetGameAchievements API non-success: {(int)response.StatusCode} for appId={appId}, language={steamLanguage}");
+                    return null;
+                }
+
+                var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return null;
+                }
+
+                var root = Serialization.FromJson<GetGameAchievementsRoot>(json);
+                var achievements = root?.Response?.Achievements;
+
+                if (achievements == null || achievements.Count == 0)
+                {
+                    return null;
+                }
+
+                var result = new List<AchievementDetail>(achievements.Count);
+
+                foreach (var ach in achievements)
+                {
+                    if (ach == null || string.IsNullOrWhiteSpace(ach.InternalName))
+                    {
+                        continue;
+                    }
+
+                    double? globalPercent = null;
+                    if (!string.IsNullOrWhiteSpace(ach.PlayerPercentUnlocked) &&
+                        double.TryParse(
+                            ach.PlayerPercentUnlocked,
+                            System.Globalization.NumberStyles.Any,
+                            System.Globalization.CultureInfo.InvariantCulture,
+                            out var percent))
+                    {
+                        globalPercent = percent;
+                    }
+
+                    var detail = new AchievementDetail
+                    {
+                        ApiName = ach.InternalName,
+                        DisplayName = ach.LocalizedName ?? ach.InternalName,
+                        Description = ach.LocalizedDesc ?? string.Empty,
+                        UnlockedIconPath = $"https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/{appId}/{ach.Icon}",
+                        LockedIconPath = $"https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/{appId}/{ach.IconGray}",
+                        Hidden = ach.Hidden,
+                        Unlocked = false,
+                        UnlockTimeUtc = null,
+                        Rarity = GetFallbackRarity(
+                            ach.Hidden,
+                            null,
+                            null)
+                    };
+
+                    var normalizedPercent = NormalizePercent(globalPercent);
+                    detail.GlobalPercentUnlocked = normalizedPercent;
+                    if (normalizedPercent.HasValue)
+                    {
+                        detail.Rarity = PercentRarityHelper.GetRarityTier(normalizedPercent.Value);
+                    }
+
+                    result.Add(detail);
+                }
+
+                return result;
             }
         }
 

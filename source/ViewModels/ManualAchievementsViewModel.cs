@@ -603,12 +603,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 _refreshService.RebuildProgress += OnRebuildProgress;
 
-                var request = new RefreshRequest
-                {
-                    GameIds = new List<Guid> { _playniteGame.Id }
-                };
-
-                await ExecuteRefreshRequestAsync(request, _refreshCts.Token);
+                await ExecuteRefreshRequestAsync(
+                    BuildManualProviderRefreshRequest(),
+                    _refreshCts.Token);
 
                 if (_refreshCts.Token.IsCancellationRequested)
                 {
@@ -710,6 +707,24 @@ namespace PlayniteAchievements.ViewModels
                 });
         }
 
+        private RefreshRequest BuildManualProviderRefreshRequest()
+        {
+            return new RefreshRequest
+            {
+                Mode = RefreshModeType.Custom,
+                CustomOptions = new CustomRefreshOptions
+                {
+                    ProviderKeys = new[] { "Manual" },
+                    Scope = CustomGameScope.Explicit,
+                    IncludeGameIds = new[] { _playniteGame.Id },
+                    IncludeUnplayedOverride = true,
+                    RespectUserExclusions = false,
+                    ForceBypassExclusionsForExplicitIncludes = true,
+                    RunProvidersInParallelOverride = false
+                }
+            };
+        }
+
         private void CancelRefresh()
         {
             _refreshCts?.Cancel();
@@ -748,12 +763,9 @@ namespace PlayniteAchievements.ViewModels
 
                 _refreshService.RebuildProgress += OnRebuildProgress;
 
-                var request = new RefreshRequest
-                {
-                    GameIds = new List<Guid> { _playniteGame.Id }
-                };
-
-                await ExecuteRefreshRequestAsync(request, _refreshCts.Token);
+                await ExecuteRefreshRequestAsync(
+                    BuildManualProviderRefreshRequest(),
+                    _refreshCts.Token);
 
                 if (_refreshCts.Token.IsCancellationRequested)
                 {
