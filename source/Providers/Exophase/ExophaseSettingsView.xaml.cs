@@ -48,6 +48,9 @@ namespace PlayniteAchievements.Providers.Exophase
         private void UpdateAuthStatus(AuthProbeResult result)
         {
             var isAuthenticated = result?.IsSuccess ?? false;
+            Logger.Info($"[ExophaseSettings] UpdateAuthStatus: IsAuthenticated={isAuthenticated}, " +
+                $"Outcome={result?.Outcome}, MessageKey='{result?.MessageKey ?? "null"}'");
+
             SetAuthenticated(isAuthenticated);
             var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_Exophase");
             if (string.IsNullOrWhiteSpace(providerName))
@@ -57,7 +60,9 @@ namespace PlayniteAchievements.Providers.Exophase
 
             if (isAuthenticated)
             {
-                SetAuthStatus(string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName));
+                var status = string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName);
+                Logger.Info($"[ExophaseSettings] Setting authenticated status: '{status}'");
+                SetAuthStatus(status);
                 return;
             }
 
@@ -65,28 +70,36 @@ namespace PlayniteAchievements.Providers.Exophase
                 ? ResourceProvider.GetString(result.MessageKey)
                 : null;
 
-            var status = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, result?.MessageKey, StringComparison.Ordinal)
+            Logger.Debug($"[ExophaseSettings] MessageKey localization: key='{result?.MessageKey}', localized='{localized ?? "null"}'");
+
+            var finalStatus = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, result?.MessageKey, StringComparison.Ordinal)
                 ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName)
                 : localized;
 
-            SetAuthStatus(status);
+            Logger.Info($"[ExophaseSettings] Setting not-authenticated status: '{finalStatus}'");
+            SetAuthStatus(finalStatus);
         }
 
         public async Task RefreshAuthStatusAsync()
         {
+            Logger.Info("[ExophaseSettings] RefreshAuthStatusAsync START");
             AuthProbeResult result;
             try
             {
                 SetAuthStatusByKey("LOCPlayAch_Settings_ExophaseAuth_Checking");
+                Logger.Debug("[ExophaseSettings] Calling ProbeAuthStateAsync...");
                 result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
+                Logger.Info($"[ExophaseSettings] ProbeAuthStateAsync result: IsSuccess={result?.IsSuccess}, " +
+                    $"Outcome={result?.Outcome}, UserId='{result?.UserId ?? "null"}', MessageKey='{result?.MessageKey ?? "null"}'");
             }
             catch (Exception ex)
             {
-                Logger.Debug(ex, "Exophase auth probe failed during settings refresh.");
+                Logger.Error(ex, "[ExophaseSettings] Auth probe failed during settings refresh");
                 result = AuthProbeResult.ProbeFailed();
             }
 
             UpdateAuthStatus(result);
+            Logger.Info("[ExophaseSettings] RefreshAuthStatusAsync COMPLETE");
         }
 
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)

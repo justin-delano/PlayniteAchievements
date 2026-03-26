@@ -126,17 +126,26 @@ namespace PlayniteAchievements.Providers.Exophase
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
+            _logger?.Info($"[Exophase] === RefreshAsync START ===");
+            _logger?.Info($"[Exophase] Games to refresh: {gamesToRefresh?.Count ?? 0}");
+
             var summary = new RebuildSummary();
             var payload = new RebuildPayload { Summary = summary };
 
             if (gamesToRefresh == null || gamesToRefresh.Count == 0)
             {
+                _logger?.Warn("[Exophase] RefreshAsync: No games to refresh");
                 return payload;
             }
 
+            _logger?.Debug($"[Exophase] Probing auth state...");
             var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
             var exophaseUserId = probeResult?.UserId?.Trim();
             var missingVerifiedUser = string.IsNullOrWhiteSpace(exophaseUserId);
+
+            _logger?.Info($"[Exophase] Auth probe result: IsSuccess={probeResult?.IsSuccess}, " +
+                $"Outcome={probeResult?.Outcome}, UserId='{exophaseUserId ?? "null"}'");
+
             if (probeResult?.IsSuccess != true || missingVerifiedUser)
             {
                 if (probeResult?.Outcome == AuthOutcome.NotAuthenticated ||
@@ -153,30 +162,49 @@ namespace PlayniteAchievements.Providers.Exophase
                 return payload;
             }
 
+            _logger?.Info($"[Exophase] Auth verified for user: {exophaseUserId}");
+
             var language = _settings.Persisted.GlobalLanguage ?? "english";
+            _logger?.Debug($"[Exophase] Using language: {language}");
 
             foreach (var game in gamesToRefresh)
             {
                 if (cancel.IsCancellationRequested)
                 {
+                    _logger?.Debug("[Exophase] RefreshAsync cancelled");
                     break;
                 }
 
                 if (game == null || game.Id == Guid.Empty)
                 {
+                    _logger?.Debug("[Exophase] Skipping null or empty game");
                     continue;
                 }
 
                 if (!IsCapable(game))
                 {
+                    _logger?.Debug($"[Exophase] Skipping game '{game.Name}' - not capable");
                     continue;
                 }
 
+                _logger?.Info($"[Exophase] >>> Starting refresh for game: '{game.Name}' (ID: {game.Id})");
                 onGameStarting?.Invoke(game);
 
                 try
                 {
                     var data = await RefreshGameAsync(game, language, cancel).ConfigureAwait(false);
+
+                    if (data != null)
+                    {
+                        _logger?.Info($"[Exophase] <<< Completed refresh for '{game.Name}': " +
+                            $"HasAchievements={data.HasAchievements}, " +
+                            $"AchievementCount={data.Achievements?.Count ?? 0}, " +
+                            $"UnlockedCount={data.Achievements?.Count(a => a.Unlocked) ?? 0}");
+                    }
+                    else
+                    {
+                        _logger?.Warn($"[Exophase] <<< Completed refresh for '{game.Name}': data is null");
+                    }
 
                     if (onGameCompleted != null)
                     {
@@ -195,6 +223,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
                 catch (OperationCanceledException)
                 {
+                    _logger?.Warn($"[Exophase] Refresh cancelled for game '{game.Name}'");
                     throw;
                 }
                 catch (Exception ex)
@@ -209,6 +238,11 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
             }
 
+            _logger?.Info($"[Exophase] === RefreshAsync COMPLETE === " +
+                $"GamesRefreshed={summary.GamesRefreshed}, " +
+                $"WithAchievements={summary.GamesWithAchievements}, " +
+                $"WithoutAchievements={summary.GamesWithoutAchievements}");
+
             return payload;
         }
 
@@ -217,29 +251,60 @@ namespace PlayniteAchievements.Providers.Exophase
         /// </summary>
         private async Task<GameAchievementData> RefreshGameAsync(Game game, string language, CancellationToken cancel)
         {
+            _logger?.Info($"[Exophase] === RefreshGameAsync START for '{game.Name}' (ID: {game.Id}) ===");
+            _logger?.Debug($"[Exophase] Game details - Source: '{game.Source?.Name ?? "null"}', " +
+                $"Platforms: [{string.Join(", ", game.Platforms?.Select(p => p.Name) ?? Array.Empty<string>())}], " +
+                $"Language: {language}");
+
             // Resolve the Exophase slug deterministically.
+            _logger?.Debug($"[Exophase] Resolving slug for game '{game.Name}'...");
             var slug = await ResolveExophaseSlugAsync(game, cancel).ConfigureAwait(false);
+            _logger?.Info($"[Exophase] Resolved slug: '{slug ?? "null"}' for game '{game.Name}'");
+
             var providerPlatformKey = ResolveProviderPlatformKey(game, slug);
+            _logger?.Debug($"[Exophase] Resolved providerPlatformKey: '{providerPlatformKey}'");
 
             if (string.IsNullOrWhiteSpace(slug))
             {
-                _logger?.Debug($"[Exophase] Could not resolve slug for game '{game.Name}'");
+                _logger?.Warn($"[Exophase] Could not resolve slug for game '{game.Name}' - returning empty result");
                 return CreateGameResult(game, providerPlatformKey, false, new List<AchievementDetail>());
             }
 
             // Fetch achievement page (includes schema + user progress when authenticated).
             var achievementUrl = ExophaseApiClient.BuildUrlFromSlug(slug);
             var acceptLanguage = ExophaseApiClient.MapLanguageToAcceptLanguage(language);
+            _logger?.Info($"[Exophase] Fetching achievements from URL: {achievementUrl}");
+            _logger?.Debug($"[Exophase] Accept-Language header: {acceptLanguage}");
+
             var achievements = await _apiClient
                 .FetchAchievementsAsync(achievementUrl, acceptLanguage, cancel)
                 .ConfigureAwait(false);
+
             if (achievements == null || achievements.Count == 0)
             {
-                _logger?.Debug($"[Exophase] No achievements found for slug: {slug}");
+                _logger?.Warn($"[Exophase] No achievements found for slug: {slug}, URL: {achievementUrl}");
                 return CreateGameResult(game, providerPlatformKey, false, new List<AchievementDetail>());
             }
 
+            _logger?.Info($"[Exophase] Fetched {achievements.Count} achievements for '{game.Name}'");
+
+            // Log unlock statistics before applying rarity
+            var unlockedBeforeRarity = achievements.Count(a => a.Unlocked);
+            _logger?.Info($"[Exophase] Unlock stats BEFORE ApplyProviderOwnedRarity: {unlockedBeforeRarity}/{achievements.Count} unlocked");
+
+            // Log first few achievements for debugging
+            foreach (var ach in achievements.Take(5))
+            {
+                _logger?.Debug($"[Exophase] Sample achievement: '{ach.DisplayName}' | Unlocked: {ach.Unlocked} | " +
+                    $"UnlockTime: {ach.UnlockTimeUtc?.ToString("o") ?? "null"} | GlobalPercent: {ach.GlobalPercentUnlocked}");
+            }
+
             ApplyProviderOwnedRarity(achievements, providerPlatformKey);
+
+            var unlockedAfterRarity = achievements.Count(a => a.Unlocked);
+            _logger?.Info($"[Exophase] Unlock stats AFTER ApplyProviderOwnedRarity: {unlockedAfterRarity}/{achievements.Count} unlocked");
+
+            _logger?.Info($"[Exophase] === RefreshGameAsync COMPLETE for '{game.Name}' ===");
             return CreateGameResult(game, providerPlatformKey, true, achievements);
         }
 
