@@ -44,6 +44,7 @@ namespace PlayniteAchievements.Views
         {
             private bool _isAuthenticated;
             private bool _isEnabled = true;
+            private bool _isChecking;
 
             public string Name { get; set; }
             public string ProviderKey { get; set; }
@@ -73,7 +74,20 @@ namespace PlayniteAchievements.Views
                 }
             }
 
-            public string StatusIcon => IsAuthenticated ? "\uE73E" : "\uE711"; // Checkmark / Cancel
+            public bool IsChecking
+            {
+                get => _isChecking;
+                set
+                {
+                    _isChecking = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(StatusIcon));
+                    OnPropertyChanged(nameof(StatusSubtitle));
+                    OnPropertyChanged(nameof(StatusBadgeText));
+                }
+            }
+
+            public string StatusIcon => IsChecking ? "\uE946" : IsAuthenticated ? "\uE73E" : "\uE711";
 
             /// <summary>
             /// Gets the localized subtitle text based on authentication and enabled status.
@@ -82,6 +96,11 @@ namespace PlayniteAchievements.Views
             {
                 get
                 {
+                    if (IsChecking)
+                    {
+                        return ResourceProvider.GetString("LOCPlayAch_Landing_Status_Checking")
+                            ?? "Checking...";
+                    }
                     if (!IsEnabled)
                     {
                         return ResourceProvider.GetString("LOCPlayAch_Settings_ProviderDisabledMessage");
@@ -99,6 +118,11 @@ namespace PlayniteAchievements.Views
             {
                 get
                 {
+                    if (IsChecking)
+                    {
+                        return ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeChecking")
+                            ?? "CHECKING";
+                    }
                     if (!IsEnabled)
                     {
                         return ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeDisabled");
