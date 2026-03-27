@@ -234,7 +234,7 @@ namespace PlayniteAchievements
                     _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
                     _imageService = new MemoryImageService(_logger, _diskImageService);
 
-                    _refreshService = new RefreshRuntime(api, settings, _logger, this, providers, _diskImageService, _providerRegistry, ProviderRefreshOrder);
+                    _refreshService = new RefreshRuntime(api, settings, _logger, this, providers, _diskImageService, _providerRegistry, ProviderRefreshOrder, onRefreshCompleted: payload => HandleRefreshAuthNotifications(payload));
                     _cacheManager = _refreshService.Cache;
                     _achievementOverridesService = new AchievementOverridesService(
                         settings,
@@ -626,6 +626,21 @@ namespace PlayniteAchievements
             if (gameIds != null && gameIds.Count > 0)
             {
                 _tagSyncService?.SyncTagsForGames(gameIds);
+            }
+        }
+
+        private void HandleRefreshAuthNotifications(RebuildPayload payload)
+        {
+            if (payload == null)
+                return;
+
+            if (payload.FailedProviderKeys?.Count > 0)
+            {
+                _notifications?.ShowProviderAuthFailed(payload.FailedProviderKeys);
+            }
+            else if (!payload.AuthRequired)
+            {
+                _notifications?.ClearAllProviderAuthNotifications();
             }
         }
 
