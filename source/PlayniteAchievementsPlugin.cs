@@ -136,21 +136,40 @@ namespace PlayniteAchievements
             try
             {
                 var pluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                var locFile = Path.Combine(pluginDir, "Localization", "LocSource.xaml");
+                var locDir = Path.Combine(pluginDir, "Localization");
 
-                if (!File.Exists(locFile))
+                // Always load LocSource.xaml as the English base/fallback.
+                var locSourceFile = Path.Combine(locDir, "LocSource.xaml");
+                if (File.Exists(locSourceFile))
                 {
-                    _logger?.Warn($"Localization source file not found: {locFile}");
-                    return;
+                    MergeDictionary(locSourceFile);
+                }
+                else
+                {
+                    _logger?.Warn($"Localization source file not found: {locSourceFile}");
                 }
 
-                var dict = new ResourceDictionary { Source = new Uri(locFile, UriKind.Absolute) };
-                Application.Current.Resources.MergedDictionaries.Add(dict);
+                // Load the user's language file if it differs from LocSource.
+                var language = PlayniteApi?.ApplicationSettings?.Language;
+                if (!string.IsNullOrEmpty(language) && language != "LocSource")
+                {
+                    var langFile = Path.Combine(locDir, $"{language}.xaml");
+                    if (File.Exists(langFile))
+                    {
+                        MergeDictionary(langFile);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "Failed to load LocSource.xaml");
+                _logger?.Error(ex, "Failed to load localization");
             }
+        }
+
+        private void MergeDictionary(string filePath)
+        {
+            var dict = new ResourceDictionary { Source = new Uri(filePath, UriKind.Absolute) };
+            Application.Current.Resources.MergedDictionaries.Add(dict);
         }
 
         // Public bridge method for external helpers/themes that used to target SuccessStory via reflection.
