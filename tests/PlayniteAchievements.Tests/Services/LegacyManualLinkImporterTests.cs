@@ -454,7 +454,8 @@ namespace PlayniteAchievements.Services.Tests
                         sourceUrl: "https://steamcommunity.com/stats/8888/achievements",
                         items: new[]
                         {
-                            CreateItem("sentinel", "1982-12-15T00:00:00-05:00"),
+                            CreateItem("sentinel_est", "1982-12-15T00:00:00-05:00"),
+                            CreateItem("sentinel_utcplus3", "1982-12-15T00:00:00+03:00"),
                             CreateItem("valid", "2024-12-04T23:42:00-05:00")
                         }));
 
@@ -465,9 +466,12 @@ namespace PlayniteAchievements.Services.Tests
 
                 Assert.AreEqual(1, result.Imported);
                 var link = GetManualLinks(settings)[gameId];
-                Assert.IsTrue(link.UnlockStates.ContainsKey("sentinel"));
-                Assert.IsTrue(link.UnlockStates["sentinel"]);
-                Assert.IsFalse(link.UnlockTimes.ContainsKey("sentinel"));
+                Assert.IsTrue(link.UnlockStates.ContainsKey("sentinel_est"));
+                Assert.IsTrue(link.UnlockStates["sentinel_est"]);
+                Assert.IsFalse(link.UnlockTimes.ContainsKey("sentinel_est"));
+                Assert.IsTrue(link.UnlockStates.ContainsKey("sentinel_utcplus3"));
+                Assert.IsTrue(link.UnlockStates["sentinel_utcplus3"]);
+                Assert.IsFalse(link.UnlockTimes.ContainsKey("sentinel_utcplus3"));
                 Assert.IsTrue(link.UnlockTimes.ContainsKey("valid"));
                 Assert.IsTrue(link.UnlockStates.ContainsKey("valid"));
                 Assert.IsTrue(link.UnlockStates["valid"]);
