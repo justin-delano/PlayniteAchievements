@@ -496,6 +496,104 @@
                             </Button>
                         </StackPanel>
 
+                        <!-- Custom Migration Expander -->
+                        <Border Background="#12000000"
+                                BorderBrush="{DynamicResource NormalBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Margin="0,16,0,0"
+                                Padding="0"
+                                IsEnabled="{Binding HasThemesToMigrate}">
+                            <Expander IsExpanded="False"
+                                      Background="Transparent"
+                                      BorderThickness="0">
+                                <Expander.Header>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Custom}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               FontWeight="SemiBold"
+                                               Margin="-4,8,0,8"/>
+                                </Expander.Header>
+
+                                <StackPanel Margin="12,0,12,12">
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_CustomDescription}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               Opacity="0.6"
+                                               FontSize="11"
+                                               TextWrapping="Wrap"
+                                               HorizontalAlignment="Left"
+                                               Margin="0,0,0,12"
+                                               MaxWidth="520"/>
+
+                                    <Grid Margin="0,0,0,12"
+                                          HorizontalAlignment="Left">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="176"/>
+                                            <ColumnDefinition Width="108"/>
+                                            <ColumnDefinition Width="54"/>
+                                            <ColumnDefinition Width="108"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Button Grid.Column="1"
+                                                Content="{DynamicResource LOCPlayAch_ThemeMigration_AllLegacy}"
+                                                Command="{Binding SetAllMigrationLegacyCommand}"
+                                                Style="{StaticResource MigrationChoiceButtonBaseStyle}"
+                                                Margin="0,0,8,0"/>
+                                        <Button Grid.Column="3"
+                                                Content="{DynamicResource LOCPlayAch_ThemeMigration_AllModern}"
+                                                Command="{Binding SetAllMigrationModernCommand}"
+                                                Style="{StaticResource MigrationChoiceButtonBaseStyle}"/>
+                                    </Grid>
+
+                                    <ItemsControl ItemsSource="{Binding ThemeMigrationCustomOptions}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,0,0,10"
+                                                      HorizontalAlignment="Left">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="176"/>
+                                                        <ColumnDefinition Width="108"/>
+                                                        <ColumnDefinition Width="54"/>
+                                                        <ColumnDefinition Width="108"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock Text="{Binding DisplayName}"
+                                                               Foreground="{DynamicResource TextBrush}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,12,0"/>
+
+                                                    <Button Grid.Column="1"
+                                                            Content="{DynamicResource LOCPlayAch_ThemeMigration_ModeLegacy}"
+                                                            Style="{StaticResource MigrationChoiceLegacyButtonStyle}"
+                                                            Command="{Binding DataContext.SetMigrationRowLegacyCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Margin="0,0,8,0"/>
+
+                                                    <ToggleButton Grid.Column="2"
+                                                                  Style="{StaticResource MigrationSwitchToggleStyle}"
+                                                                  IsChecked="{Binding IsModern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                    <Button Grid.Column="3"
+                                                            Content="{DynamicResource LOCPlayAch_ThemeMigration_ModeModern}"
+                                                            Style="{StaticResource MigrationChoiceModernButtonStyle}"
+                                                            Command="{Binding DataContext.SetMigrationRowModernCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationCustom}"
+                                            Command="{Binding MigrateThemeCustomCommand}"
+                                            Padding="14,6"
+                                            Margin="0,6,0,0"
+                                            MinWidth="100"
+                                            HorizontalAlignment="Right"
+                                            IsEnabled="{Binding HasThemesToMigrate}"/>
+                                </StackPanel>
+                            </Expander>
+                        </Border>
+
                         <!-- No themes message -->
                         <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_NoThemesMessage}"
                                    Style="{DynamicResource BaseTextBlockStyle}"
