@@ -6,30 +6,30 @@
     <!-- ================================================================= -->
 
     <!-- Common Labels -->
-    <sys:String x:Key="LOCPlayAch_Achievements">Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Completed">Completed</sys:String>
-    <sys:String x:Key="LOCPlayAch_Progress">Progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_Achievements">Thành tựu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Completed">Đã hoàn thành</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress">Tiến trình</sys:String>
 
     <!-- Label with Colon (for labels that need trailing punctuation) -->
-    <sys:String x:Key="LOCPlayAch_Label_Rarity">Rarity:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_Trophies">Trophies:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Trophy_Platinum">Platinum</sys:String>
-    <sys:String x:Key="LOCPlayAch_Trophy_Gold">Gold</sys:String>
-    <sys:String x:Key="LOCPlayAch_Trophy_Silver">Silver</sys:String>
-    <sys:String x:Key="LOCPlayAch_Trophy_Bronze">Bronze</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_Rarity">Độ hiếm:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_Trophies">Cúp:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Platinum">Bạch kim</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Gold">Vàng</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Silver">Bạc</sys:String>
+    <sys:String x:Key="LOCPlayAch_Trophy_Bronze">Đồng</sys:String>
 
     <!-- Common Statuses -->
-    <sys:String x:Key="LOCPlayAch_Status_Refreshing">Refreshing...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_Refreshing">Đang làm mới...</sys:String>
 
     <!-- Common Compound Phrases -->
-    <sys:String x:Key="LOCPlayAch_RecentAchievements">Recent Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_RecentAchievements">Thành tựu gần đây</sys:String>
 
     <!-- Common Actions/Labels -->
-    <sys:String x:Key="LOCPlayAch_Common_Edit">Edit</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_SelectAll">Select All</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Deselect All</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_ResetSelected">Reset Selected</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Apply To Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Edit">Chỉnh sửa</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_SelectAll">Chọn tất cả</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Bỏ chọn tất cả</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_ResetSelected">Đặt lại đã chọn</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Áp dụng cho đã chọn</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddType">Add Type</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SetLabelEllipsis">Set Label...</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_RenameLabelEllipsis">Rename Label...</sys:String>
