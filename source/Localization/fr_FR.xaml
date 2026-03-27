@@ -786,6 +786,7 @@
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedTitle">Conversion automatique du thème</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedMessage">{0} a été automatiquement mis à jour pour PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">Veuillez redémarrer Playnite pour appliquer les changements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Notification_ProviderAuthFailed">L'authentification {0} a expiré ou est invalide. Cliquez pour ouvrir les paramètres.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertButton">Rétablir</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">Migration limitée</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationFull">Migration complète</sys:String>
