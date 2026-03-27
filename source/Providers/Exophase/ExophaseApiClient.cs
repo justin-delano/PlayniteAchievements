@@ -141,18 +141,14 @@ namespace PlayniteAchievements.Providers.Exophase
                 var result = Serialization.FromJson<ExophaseSearchResult>(json);
                 if (result?.Games?.List == null || result.Games.List.Count == 0)
                 {
-                    _logger?.Debug($"[Exophase] Parsed result: Games=null, or empty list");
                     return new List<ExophaseGame>();
                 }
-
-                _logger?.Debug($"[Exophase] Parsed {result.Games.List.Count} games from API");
 
                 // Filter to only games with achievements (endpoint_awards URL)
                 var filtered = result.Games.List
                     .Where(g => g != null && !string.IsNullOrWhiteSpace(g.EndpointAwards))
                     .ToList();
 
-                _logger?.Debug($"[Exophase] After filtering: {filtered.Count} games with achievements");
                 return filtered;
             }
             catch (OperationCanceledException)
@@ -185,7 +181,6 @@ namespace PlayniteAchievements.Providers.Exophase
 
                         if (string.IsNullOrWhiteSpace(pageText))
                         {
-                            _logger?.Debug("[Exophase] WebView returned empty page text");
                             return null;
                         }
 
@@ -198,7 +193,6 @@ namespace PlayniteAchievements.Providers.Exophase
                             return null;
                         }
 
-                        _logger?.Debug($"[Exophase] WebView fetched {pageText.Length} chars");
                         return pageText;
                     }
                     catch (OperationCanceledException)
@@ -230,8 +224,6 @@ namespace PlayniteAchievements.Providers.Exophase
             string acceptLanguage,
             CancellationToken ct)
         {
-            _logger?.Info($"[Exophase] FetchAchievementsAsync START - URL: {achievementUrl}, Accept-Language: {acceptLanguage}");
-
             if (string.IsNullOrWhiteSpace(achievementUrl))
             {
                 _logger?.Warn("[Exophase] FetchAchievementsAsync: achievementUrl is null or empty");
@@ -240,7 +232,6 @@ namespace PlayniteAchievements.Providers.Exophase
 
             try
             {
-                _logger?.Debug($"[Exophase] Fetching HTML via WebView for: {achievementUrl}");
                 var html = await FetchHtmlViaWebViewAsync(achievementUrl, ct).ConfigureAwait(false);
 
                 if (string.IsNullOrWhiteSpace(html))
@@ -249,23 +240,17 @@ namespace PlayniteAchievements.Providers.Exophase
                     return null;
                 }
 
-                _logger?.Info($"[Exophase] Successfully fetched HTML: {html.Length} chars for {achievementUrl}");
                 var result = ParseAchievementsHtml(html);
 
-                if (result != null)
+                if (result == null)
                 {
-                    _logger?.Info($"[Exophase] FetchAchievementsAsync SUCCESS: {result.Count} achievements from {achievementUrl}");
-                }
-                else
-                {
-                    _logger?.Warn($"[Exophase] FetchAchievementsAsync: ParseAchievementsHtml returned null for {achievementUrl}");
+                    _logger?.Warn($"[Exophase] ParseAchievementsHtml returned null for {achievementUrl}");
                 }
 
                 return result;
             }
             catch (OperationCanceledException)
             {
-                _logger?.Warn($"[Exophase] FetchAchievementsAsync CANCELLED for {achievementUrl}");
                 throw;
             }
             catch (Exception ex)
@@ -276,85 +261,25 @@ namespace PlayniteAchievements.Providers.Exophase
         }
 
         /// <summary>
-        /// Fetches an Exophase achievement page using an authenticated HTTP client so manual
-        /// linking can send Accept-Language while reusing existing CEF session cookies.
-        /// </summary>
-        public async Task<List<AchievementDetail>> FetchAchievementsViaHttpAsync(
-            string achievementUrl,
-            string acceptLanguage,
-            HttpClient httpClient,
-            CancellationToken ct)
-        {
-            if (string.IsNullOrWhiteSpace(achievementUrl))
-            {
-                return null;
-            }
-
-            if (httpClient == null)
-            {
-                throw new ArgumentNullException(nameof(httpClient));
-            }
-
-            try
-            {
-                using (var request = new HttpRequestMessage(HttpMethod.Get, achievementUrl))
-                {
-                    request.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
-                    if (!string.IsNullOrWhiteSpace(acceptLanguage))
-                    {
-                        request.Headers.TryAddWithoutValidation("Accept-Language", acceptLanguage);
-                    }
-
-                    using (var response = await httpClient.SendAsync(request, ct).ConfigureAwait(false))
-                    {
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            _logger?.Debug($"[Exophase] HTTP fetch returned {(int)response.StatusCode} for {achievementUrl}");
-                            return null;
-                        }
-
-                        var html = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        if (string.IsNullOrWhiteSpace(html))
-                        {
-                            _logger?.Debug($"[Exophase] HTTP fetch returned empty HTML for {achievementUrl}");
-                            return null;
-                        }
-
-                        if (html.Contains("Just a moment") ||
-                            html.Contains("Cloudflare") ||
-                            html.Contains("Verifying you are human"))
-                        {
-                            _logger?.Warn("[Exophase] Cloudflare challenge detected on authenticated HTTP achievement fetch");
-                            return null;
-                        }
-
-                        return ParseAchievementsHtml(html);
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, $"Failed to fetch Exophase achievements via HTTP from {achievementUrl}");
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Fetches HTML from a URL using offscreen WebView to bypass Cloudflare.
         /// Restores cookies from snapshot before fetching to ensure authenticated session.
         /// </summary>
         private async Task<string> FetchHtmlViaWebViewAsync(string url, CancellationToken ct)
         {
-            _logger?.Debug($"[Exophase] FetchHtmlViaWebViewAsync: Starting fetch for {url}");
-
             // Load cookies from snapshot before creating WebView
             List<HttpCookie> snapshotCookies = null;
             var snapshotLoaded = _cookieSnapshotStore?.TryLoad(out snapshotCookies) ?? false;
-            _logger?.Info($"[Exophase] Cookie snapshot loaded: {snapshotLoaded}, cookie count: {snapshotCookies?.Count ?? 0}");
+
+            // Check for critical cookies
+            if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
+            {
+                var missingCritical = ExophaseCookieSnapshotStore.GetMissingCriticalCookies(snapshotCookies);
+                if (missingCritical.Count > 0)
+                {
+                    _logger?.Warn($"[Exophase] Missing critical auth cookies: {string.Join(", ", missingCritical)}. " +
+                        $"Achievement unlock status may not be accurate. User may need to re-authenticate.");
+                }
+            }
 
             var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
             {
@@ -365,7 +290,6 @@ namespace PlayniteAchievements.Providers.Exophase
                         // Restore cookies from snapshot if available
                         if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
                         {
-                            _logger?.Info($"[Exophase] Restoring {snapshotCookies.Count} cookies to WebView before fetch...");
                             await RestoreCookiesAsync(view, snapshotCookies, ct);
                         }
                         else
@@ -375,27 +299,18 @@ namespace PlayniteAchievements.Providers.Exophase
 
                         await view.NavigateAndWaitAsync(url, timeoutMs: 20000);
 
-                        var html = await view.GetPageSourceAsync();
+                        // Wait for JavaScript to populate unlock status (loaded async after initial render)
+                        await Task.Delay(1000, ct);
 
-                        // Exophase can populate rows after initial load; briefly poll for achievement markers.
-                        if (!ContainsAchievementMarkup(html))
-                        {
-                            for (var attempt = 0; attempt < AchievementDomReadyPollAttempts; attempt++)
-                            {
-                                ct.ThrowIfCancellationRequested();
-                                await Task.Delay(AchievementDomReadyPollDelayMs, ct).ConfigureAwait(false);
-
-                                html = await view.GetPageSourceAsync();
-                                if (ContainsAchievementMarkup(html))
-                                {
-                                    break;
-                                }
-                            }
-                        }
+                        var html = await PollAsync(
+                            _ => view.GetPageSourceAsync(),
+                            h => ContainsAchievementMarkup(h) && HasUnlockDataPopulated(h),
+                            AchievementDomReadyPollAttempts,
+                            AchievementDomReadyPollDelayMs,
+                            ct);
 
                         if (string.IsNullOrWhiteSpace(html))
                         {
-                            _logger?.Debug("[Exophase] WebView returned empty HTML");
                             return null;
                         }
 
@@ -408,7 +323,6 @@ namespace PlayniteAchievements.Providers.Exophase
                             return null;
                         }
 
-                        _logger?.Debug($"[Exophase] WebView fetched HTML: {html.Length} chars");
                         return html;
                     }
                     catch (OperationCanceledException)
@@ -432,8 +346,11 @@ namespace PlayniteAchievements.Providers.Exophase
         /// </summary>
         private async Task RestoreCookiesAsync(IWebView view, IReadOnlyList<HttpCookie> cookies, CancellationToken ct)
         {
+            // Delete existing cookies from ALL possible Exophase domains
             view.DeleteDomainCookies(".exophase.com");
             view.DeleteDomainCookies("exophase.com");
+            view.DeleteDomainCookies(".www.exophase.com");
+            view.DeleteDomainCookies("www.exophase.com");
 
             foreach (var cookie in cookies ?? Enumerable.Empty<HttpCookie>())
             {
@@ -445,7 +362,8 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 var cookieCopy = CloneCookie(cookie);
-                view.SetCookies(BuildCookieOriginUrl(cookieCopy), cookieCopy);
+                var originUrl = BuildCookieOriginUrl(cookieCopy);
+                view.SetCookies(originUrl, cookieCopy);
             }
 
             await Task.Delay(250, ct);
@@ -483,6 +401,30 @@ namespace PlayniteAchievements.Providers.Exophase
             return "https://" + domain;
         }
 
+        /// <summary>
+        /// Polls a value factory until a predicate is satisfied or max attempts are exhausted.
+        /// Returns the last value regardless of whether the predicate was met.
+        /// </summary>
+        internal static async Task<T> PollAsync<T>(
+            Func<CancellationToken, Task<T>> valueFactory,
+            Func<T, bool> readyPredicate,
+            int maxAttempts,
+            int delayMs,
+            CancellationToken ct)
+        {
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                ct.ThrowIfCancellationRequested();
+                var value = await valueFactory(ct);
+                if (readyPredicate(value))
+                    return value;
+                if (attempt < maxAttempts - 1)
+                    await Task.Delay(delayMs, ct).ConfigureAwait(false);
+            }
+
+            return await valueFactory(ct);
+        }
+
         private static bool ContainsAchievementMarkup(string html)
         {
             if (string.IsNullOrWhiteSpace(html))
@@ -498,21 +440,31 @@ namespace PlayniteAchievements.Providers.Exophase
         }
 
         /// <summary>
+        /// Checks if unlock data has been populated by JavaScript.
+        /// Returns true if we see any earned achievements, indicating the page JS has executed.
+        /// </summary>
+        private static bool HasUnlockDataPopulated(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return false;
+            }
+
+            // Check for earned class on achievement elements - indicates JS has populated unlock status
+            // Pattern: class="col-12 t1 award visible earned" or similar
+            return html.IndexOf("award visible earned", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   Regex.IsMatch(html, @"data-earned=""[1-9]\d*""", RegexOptions.IgnoreCase);
+        }
+
+        /// <summary>
         /// Parses achievement HTML to extract achievement details.
         /// </summary>
         private List<AchievementDetail> ParseAchievementsHtml(string html)
         {
             if (string.IsNullOrWhiteSpace(html))
             {
-                _logger?.Debug("[Exophase] ParseAchievementsHtml: HTML is null or empty");
                 return null;
             }
-
-            _logger?.Debug($"[Exophase] ParseAchievementsHtml: Starting parse, HTML length: {html.Length} chars");
-
-            // Log a preview of the HTML for debugging
-            var htmlPreview = html.Length > 2000 ? html.Substring(0, 2000) + "..." : html;
-            _logger?.Debug($"[Exophase] HTML preview (first 2000 chars): {htmlPreview}");
 
             try
             {
@@ -525,24 +477,10 @@ namespace PlayniteAchievements.Providers.Exophase
 
                 if (achievementNodes == null || achievementNodes.Count == 0)
                 {
-                    _logger?.Debug("[Exophase] No achievement list found in HTML.");
-
-                    // Try to find any ul elements for debugging
-                    var allUls = doc.DocumentNode.SelectNodes("//ul");
-                    _logger?.Debug($"[Exophase] Found {allUls?.Count ?? 0} ul elements total");
-                    if (allUls != null)
-                    {
-                        foreach (var ul in allUls.Take(5))
-                        {
-                            var ulClass = ul.GetAttributeValue("class", "(no class)");
-                            _logger?.Debug($"[Exophase] ul class: '{ulClass}'");
-                        }
-                    }
-
+                    _logger?.Debug("[Exophase] No achievement list found in HTML");
                     return null;
                 }
 
-                _logger?.Debug($"[Exophase] Found {achievementNodes.Count} achievement li nodes");
                 var achievements = new List<AchievementDetail>(achievementNodes.Count);
 
                 var unlockedCount = 0;
@@ -568,8 +506,7 @@ namespace PlayniteAchievements.Providers.Exophase
                     }
                 }
 
-                _logger?.Info($"[Exophase] ParseAchievementsHtml complete: {achievements.Count} total achievements, " +
-                    $"{unlockedCount} unlocked, {lockedCount} locked");
+                _logger?.Info($"[Exophase] Parsed {achievements.Count} achievements ({unlockedCount} unlocked, {lockedCount} locked)");
 
                 return achievements.Count > 0 ? achievements : null;
             }
@@ -585,25 +522,14 @@ namespace PlayniteAchievements.Providers.Exophase
         /// </summary>
         private AchievementDetail ParseAchievementNode(HtmlNode node)
         {
-            // Log the raw node HTML for debugging (truncate to avoid log spam)
-            var nodeHtml = node.OuterHtml;
-            var nodeHtmlPreview = nodeHtml.Length > 500 ? nodeHtml.Substring(0, 500) + "..." : nodeHtml;
-            _logger?.Debug($"[Exophase] Parsing achievement node, HTML preview: {nodeHtmlPreview}");
-
-            // Log all data-* attributes on the node
-            var allAttributes = string.Join(", ", node.Attributes.Select(a => $"{a.Name}=\"{a.Value}\""));
-            _logger?.Debug($"[Exophase] Node attributes: {allAttributes}");
-
             // Extract data-average for GlobalPercentUnlocked
             double? globalPercent = null;
             var dataAverage = node.GetAttributeValue("data-average", "");
-            _logger?.Debug($"[Exophase] data-average attribute: '{dataAverage}'");
             if (!string.IsNullOrWhiteSpace(dataAverage) &&
                 double.TryParse(dataAverage, System.Globalization.NumberStyles.Any,
                     System.Globalization.CultureInfo.InvariantCulture, out var percent))
             {
                 globalPercent = percent;
-                _logger?.Debug($"[Exophase] Parsed globalPercent from data-average: {globalPercent}");
             }
 
             // Fallback for JS-rendered markup where percentage is text like "95.49% (37.00)".
@@ -612,7 +538,6 @@ namespace PlayniteAchievements.Providers.Exophase
                 var averageNode = node.SelectSingleNode(".//div[contains(@class,'award-average')]//span") ??
                                  node.SelectSingleNode(".//div[contains(@class,'award-average')]");
                 var averageText = WebUtility.HtmlDecode(averageNode?.InnerText?.Trim() ?? "");
-                _logger?.Debug($"[Exophase] Fallback average text from award-average div: '{averageText}'");
                 if (!string.IsNullOrWhiteSpace(averageText))
                 {
                     var percentMatch = System.Text.RegularExpressions.Regex.Match(
@@ -627,48 +552,38 @@ namespace PlayniteAchievements.Providers.Exophase
                             out var parsedPercent))
                     {
                         globalPercent = parsedPercent;
-                        _logger?.Debug($"[Exophase] Parsed globalPercent from average text: {globalPercent}");
                     }
                 }
             }
 
-            // Extract data-earned for unlock status (0 = locked, 1 = unlocked)
+            // Extract data-earned for unlock status (0 = locked, Unix timestamp = unlocked)
             var dataEarned = node.GetAttributeValue("data-earned", "0");
-            var isUnlocked = dataEarned == "1";
-            _logger?.Debug($"[Exophase] data-earned attribute: '{dataEarned}', initial isUnlocked: {isUnlocked}");
+            var isUnlocked = dataEarned != "0" && !string.IsNullOrEmpty(dataEarned);
 
             // Check class attribute for unlock-related classes
             var nodeClass = node.GetAttributeValue("class", "");
-            _logger?.Debug($"[Exophase] Node class attribute: '{nodeClass}'");
 
             // JS-rendered pages may provide unlock state in award-earned text instead of data-earned.
             var earnedNode = node.SelectSingleNode(".//div[contains(@class,'award-earned')]");
             var earnedText = WebUtility.HtmlDecode(earnedNode?.InnerText?.Trim() ?? "");
-            _logger?.Debug($"[Exophase] award-earned div text: '{earnedText}'");
 
             // Also check for earned class on the node itself
             var hasEarnedClass = nodeClass.IndexOf("earned", StringComparison.OrdinalIgnoreCase) >= 0;
             var hasUnlockedClass = nodeClass.IndexOf("unlocked", StringComparison.OrdinalIgnoreCase) >= 0;
             var hasCompletedClass = nodeClass.IndexOf("completed", StringComparison.OrdinalIgnoreCase) >= 0;
-            _logger?.Debug($"[Exophase] Class checks - hasEarnedClass: {hasEarnedClass}, hasUnlockedClass: {hasUnlockedClass}, hasCompletedClass: {hasCompletedClass}");
 
             DateTime? unlockTimeUtc = null;
             if (!string.IsNullOrWhiteSpace(earnedText))
             {
                 unlockTimeUtc = ParseExophaseTimestamp(earnedText);
-                _logger?.Debug($"[Exophase] Parsed unlockTimeUtc from earned text: {unlockTimeUtc?.ToString("o") ?? "null"}");
 
                 if (!isUnlocked)
                 {
                     var wasUnlockedByText = unlockTimeUtc.HasValue ||
                                  earnedText.IndexOf("earned offline", StringComparison.OrdinalIgnoreCase) >= 0 ||
                                  earnedText.IndexOf("earned online", StringComparison.OrdinalIgnoreCase) >= 0;
-                    _logger?.Debug($"[Exophase] Unlock check from text - hasUnlockTime: {unlockTimeUtc.HasValue}, " +
-                        $"contains 'earned offline': {earnedText.IndexOf("earned offline", StringComparison.OrdinalIgnoreCase) >= 0}, " +
-                        $"contains 'earned online': {earnedText.IndexOf("earned online", StringComparison.OrdinalIgnoreCase) >= 0}");
 
                     isUnlocked = wasUnlockedByText || hasEarnedClass || hasUnlockedClass || hasCompletedClass;
-                    _logger?.Debug($"[Exophase] Final isUnlocked determination from text/classes: {isUnlocked}");
                 }
             }
             else
@@ -677,37 +592,31 @@ namespace PlayniteAchievements.Providers.Exophase
                 if (!isUnlocked && (hasEarnedClass || hasUnlockedClass || hasCompletedClass))
                 {
                     isUnlocked = true;
-                    _logger?.Debug($"[Exophase] isUnlocked set to true from class attribute (no earned text)");
                 }
             }
 
             // Extract icon URL from img/@src
             var imgNode = node.SelectSingleNode(".//img");
             var iconUrl = imgNode?.GetAttributeValue("src", "") ?? "";
-            _logger?.Debug($"[Exophase] Icon URL: '{iconUrl}'");
 
             // Extract display name from a text or heading
             var nameNode = node.SelectSingleNode(".//a") ?? node.SelectSingleNode(".//h3") ?? node.SelectSingleNode(".//strong");
             var displayName = WebUtility.HtmlDecode(nameNode?.InnerText?.Trim() ?? "");
-            _logger?.Debug($"[Exophase] Display name: '{displayName}'");
 
             // Extract description from div.award-description/p or similar
             var descNode = node.SelectSingleNode(".//div[contains(@class,'award-description')]/p") ??
                            node.SelectSingleNode(".//div[contains(@class,'description')]") ??
                            node.SelectSingleNode(".//p");
             var description = WebUtility.HtmlDecode(descNode?.InnerText?.Trim() ?? "");
-            _logger?.Debug($"[Exophase] Description: '{(description.Length > 100 ? description.Substring(0, 100) + "..." : description)}'");
 
             // Check for hidden/secret class
             var isHidden = node.GetAttributeValue("class", "").Contains("secret");
-            _logger?.Debug($"[Exophase] isHidden (secret class): {isHidden}");
 
             // Extract platform-specific points/type from award-points section.
             var awardPointsNode = node.SelectSingleNode(".//div[contains(@class,'award-points')]");
             var parsedPoints = ParseAwardPointsValue(awardPointsNode);
             var trophyType = ParseTrophyType(awardPointsNode);
             var isCapstone = string.Equals(trophyType, "platinum", StringComparison.OrdinalIgnoreCase);
-            _logger?.Debug($"[Exophase] Points: {parsedPoints}, TrophyType: '{trophyType}', IsCapstone: {isCapstone}");
 
             // Generate a stable API name from the display name
             var apiName = GenerateApiName(displayName);
@@ -717,9 +626,6 @@ namespace PlayniteAchievements.Providers.Exophase
                 _logger?.Warn("[Exophase] Skipping achievement node - no display name found");
                 return null;
             }
-
-            _logger?.Info($"[Exophase] Parsed achievement: '{displayName}' | Unlocked: {isUnlocked} | " +
-                $"data-earned: '{dataEarned}' | earnedText: '{earnedText}' | unlockTime: {unlockTimeUtc?.ToString("o") ?? "null"}");
 
             return new AchievementDetail
             {
