@@ -1,6 +1,5 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+﻿<?xml version="1.0"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================= -->
     <!-- COMMON STRINGS (Shared across multiple contexts)                 -->
@@ -125,9 +124,13 @@
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ViewRefreshProgress">View</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Clear data for "{0}"?&#10;&#10;This removes cached achievements and icons for this game. If the game has a manual tracking link, that link and its manual unlock times will also be removed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear data for {0} selected games?&#10;&#10;This removes cached achievements and icons for those games. Any manual tracking links and manual unlock times for those games will also be removed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSingle">Cleared cached data for "{0}".</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Clear data for &quot;{0}&quot;?
+
+This removes cached achievements and icons for this game. If the game has a manual tracking link, that link and its manual unlock times will also be removed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear data for {0} selected games?
+
+This removes cached achievements and icons for those games. Any manual tracking links and manual unlock times for those games will also be removed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSingle">Cleared cached data for &quot;{0}&quot;.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_SuccessSelected">Cleared cached data for {0} games.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_Failed">Failed to clear cached data: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Open Game in Library</sys:String>
@@ -143,15 +146,19 @@
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInSummaries">Include in Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">Include in Refreshes</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">Include in Refreshes and Refresh Selected Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSingle">Exclude "{0}" and clear data?&#10;&#10;This will remove the game from the achievements view, delete its cached data, and remove any manual tracking link for the game.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSelected">Exclude {0} selected games and clear data?&#10;&#10;This will remove these games from the achievements view, delete their cached data, and remove any manual tracking links for those games.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSingle">Exclude &quot;{0}&quot; and clear data?
+
+This will remove the game from the achievements view, delete its cached data, and remove any manual tracking link for the game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSelected">Exclude {0} selected games and clear data?
+
+This will remove these games from the achievements view, delete their cached data, and remove any manual tracking links for those games.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetRaGameId">Set RetroAchievements Game ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ChangeRaGameId">Change RetroAchievements Game ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearRaGameId">Clear RetroAchievements Game ID Override</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_DialogTitle">Set RetroAchievements Game ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_DialogHint">Enter the RetroAchievements game ID (found in the game's URL on retroachievements.org)</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Please enter a valid positive integer game ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_ClearConfirm">Clear the RetroAchievements game ID override for "{0}"?</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RaGameId_ClearConfirm">Clear the RetroAchievements game ID override for &quot;{0}&quot;?</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_Cleared">RetroAchievements game ID override cleared.</sys:String>
 
     <!-- ================================================================= -->
@@ -300,12 +307,12 @@
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Save">Save</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_SaveAs">Save As</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Delete">Delete</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NoneOption">&#160;</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NoneOption"></sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogTitle">Save Custom Refresh Preset</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogHint">Enter a preset name (1-64 characters).</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameInvalid">Preset name must be between 1 and {0} characters.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm">Overwrite preset "{0}"?</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_DeleteConfirm">Delete preset "{0}"?</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm">Overwrite preset &quot;{0}&quot;?</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_DeleteConfirm">Delete preset &quot;{0}&quot;?</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_MaxReached">You can save up to {0} presets.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_LoadPrunedSummary">Preset loaded with adjustments: removed {0} unavailable platforms(s) and {1} missing game reference(s).</sys:String>
 
@@ -391,20 +398,20 @@
     <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Epic Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_OwnAuthHelp">Click Login to authenticate with Epic via an embedded browser window. Your credentials are stored securely within PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Alternative Login</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Login to Epic in your default browser when it opens\n2. After logging in, find the "authorizationCode" value on the page\n3. Copy and paste that value in the next dialog</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Login to Epic in your default browser when it opens\n2. After logging in, find the &quot;authorizationCode&quot; value on the page\n3. Copy and paste that value in the next dialog</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Paste the authorizationCode value here:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnConnection">PlayStation Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_PsnAuth">PlayStation Authentication</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">1. Sign in at PlayStation.com (check "Trust this browser")</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">1. Sign in at PlayStation.com (check &quot;Trust this browser&quot;)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp2">2. Go to the Sony SSO cookie page and copy the npsso value</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Paste the value below and press Enter</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1">Sign in at PlayStation.com</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1Note">(check "Trust this browser")</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1Note">(check &quot;Trust this browser&quot;)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2">Open Sony SSO cookie page</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2Note">and copy the npsso value</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step3">Paste the value below and press Enter</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PsnNpsso">NPSSO Cookie</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">Copy only the xxx part from {"npsso":"xxx"}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PsnNpssoHint">Copy only the xxx part from {&quot;npsso&quot;:&quot;xxx&quot;}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Login (Legacy)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Check">Check</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
@@ -615,7 +622,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements_ClickToReveal">Click to reveal</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle">Hidden Achievement</sys:String>
-    <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle_WithParens">&#32;(Hidden Achievement)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle_WithParens"> (Hidden Achievement)</sys:String>
 
     <!-- ================================================================= -->
     <!-- RARITY                                                             -->
@@ -624,9 +631,9 @@
     <sys:String x:Key="LOCPlayAch_Rarity_Uncommon">Uncommon</sys:String>
     <sys:String x:Key="LOCPlayAch_Rarity_Rare">Rare</sys:String>
     <sys:String x:Key="LOCPlayAch_Rarity_UltraRare">Ultra Rare</sys:String>
-    <sys:String x:Key="LOCPlayAch_RarityThreshold_GTEPoints">&#8805; minimum points</sys:String>
-    <sys:String x:Key="LOCPlayAch_RarityThreshold_LTE">&#8804; threshold %</sys:String>
-    <sys:String x:Key="LOCPlayAch_RarityThreshold_GT">&#62; uncommon threshold</sys:String>
+    <sys:String x:Key="LOCPlayAch_RarityThreshold_GTEPoints">≥ minimum points</sys:String>
+    <sys:String x:Key="LOCPlayAch_RarityThreshold_LTE">≤ threshold %</sys:String>
+    <sys:String x:Key="LOCPlayAch_RarityThreshold_GT">&gt; uncommon threshold</sys:String>
 
     <!-- ================================================================= -->
     <!-- STATUSES AND PROGRESS                                              -->
@@ -848,7 +855,7 @@
     <sys:String x:Key="LOCPlayAch_Capstone_ButtonClear">Clear Capstone</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_ButtonDone">Done</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_SearchPlaceholder">Search achievements...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_NoCachedData">No cached achievements are available for "{0}". Refresh this game first.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_NoCachedData">No cached achievements are available for &quot;{0}&quot;. Refresh this game first.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Error_InvalidGame">Invalid game selection.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Error_NotCached">No cached achievement data is available for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Error_MarkerNotFound">The selected achievement is no longer available in cached data.</sys:String>
@@ -900,8 +907,10 @@
     <sys:String x:Key="LOCPlayAch_Menu_LinkSteamAchievements">Enable Manual Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_EditManualAchievements">Edit Manual Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements">Unlink Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Unlink achievements for "{0}"?&#10;&#10;This will remove the manual achievement link, delete all manually set unlock times, and clear cached data for this game immediately.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Success">Achievements unlinked for "{0}".</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Unlink achievements for &quot;{0}&quot;?
+
+This will remove the manual achievement link, delete all manually set unlock times, and clear cached data for this game immediately.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Success">Achievements unlinked for &quot;{0}&quot;.</sys:String>
 
     <!-- Search dialog -->
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Title">Link Achievements</sys:String>
@@ -989,4 +998,3 @@
     <sys:String x:Key="LOCPlayAch_Tagging_RemoveFailed">Failed to remove tags: {0}</sys:String>
 
 </ResourceDictionary>
-
