@@ -38,8 +38,8 @@ namespace PlayniteAchievements.Services
         private static readonly DateTime MinimumLegacyUnlockUtc =
             new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        private static readonly DateTime LegacyUnknownUnlockSentinelUtc =
-            new DateTimeOffset(1982, 12, 15, 0, 0, 0, TimeSpan.FromHours(-5)).UtcDateTime;
+        private static readonly DateTime LegacySentinelDate =
+            new DateTime(1982, 12, 15);
 
         private static readonly Regex SteamStatsAppIdRegex = new Regex(
             @"/stats/(?<id>\d+)",
@@ -395,7 +395,7 @@ namespace PlayniteAchievements.Services
                     out var dto))
             {
                 var parsedUtc = dto.UtcDateTime;
-                if (parsedUtc == LegacyUnknownUnlockSentinelUtc)
+                if (dto.DateTime.Date == LegacySentinelDate)
                 {
                     return true;
                 }
