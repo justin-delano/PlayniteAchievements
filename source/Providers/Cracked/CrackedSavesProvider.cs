@@ -24,7 +24,7 @@ namespace PlayniteAchievements.Providers.Cracked
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _pluginSettings;
-        private readonly string debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Cracked_Debug.txt");
+        // private readonly string debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Cracked_Debug.txt");
         private readonly Dictionary<int, SchemaAndPercentages> _steamSchemaCache = new Dictionary<int, SchemaAndPercentages>();
 
         public string ProviderKey => "Cracked";
@@ -37,7 +37,7 @@ namespace PlayniteAchievements.Providers.Cracked
 
         private void Log(string msg)
         {
-            try { File.AppendAllText(debugPath, $"{DateTime.Now:HH:mm:ss} | {msg}{Environment.NewLine}"); } catch { }
+            // Debug logging disabled to avoid creating Cracked_Debug.txt
         }
 
         public CrackedSavesProvider(IPlayniteAPI playniteApi, ILogger logger, PlayniteAchievementsSettings settings)
