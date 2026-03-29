@@ -1,0 +1,97 @@
+<settings:ProviderSettingsViewBase x:Class="PlayniteAchievements.Providers.Cracked.CrackedSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:settings="clr-namespace:PlayniteAchievements.Providers.Settings"
+             mc:Ignorable="d" d:DesignHeight="600" d:DesignWidth="700">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Providers/ProviderSettingsStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20">
+            <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,16">
+                <StackPanel>
+                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ProviderEnabled}"
+                              IsChecked="{Binding Settings.IsEnabled, Mode=TwoWay}"
+                              FontWeight="SemiBold"
+                              FontSize="{DynamicResource FontSize}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}">
+                <StackPanel>
+                    <TextBlock Text="Cracked Achievement Folders"
+                               Style="{StaticResource SectionHeaderStyle}"
+                               Margin="0,0,0,12"/>
+
+                    <TextBlock Text="The following folders are scanned automatically for cracked achievement JSON files:"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,10"
+                               TextWrapping="Wrap"/>
+
+                    <TextBlock Text="%PUBLIC%\Documents\OnlineFix"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%PUBLIC%\Documents\Steam\RUNE"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%PUBLIC%\Documents\Steam\CODEX"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%APPDATA%\Goldberg SteamEmu Saves"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%APPDATA%\GSE Saves"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%APPDATA%\EMPRESS"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%PUBLIC%\EMPRESS"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%APPDATA%\Steam\CODEX"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%ProgramData%\Steam"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%LOCALAPPDATA%\SKIDROW"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%DOCUMENTS%\SkidRow"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%APPDATA%\SmartSteamEmu"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,4"/>
+                    <TextBlock Text="%APPDATA%\CreamAPI"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,12"/>
+
+                    <TextBlock Text="Additional folders to scan (semicolon-separated):"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding Settings.ExtraCrackedPaths, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"
+                             HorizontalScrollBarVisibility="Disabled"
+                             Height="100"
+                             TextWrapping="Wrap"
+                             Margin="0,0,0,6"/>
+                    <TextBlock Text="Use semicolons (;) to separate multiple root folders. Environment variables such as %PUBLIC% or %APPDATA% are expanded automatically."
+                               Style="{StaticResource MutedTextStyle}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</settings:ProviderSettingsViewBase>

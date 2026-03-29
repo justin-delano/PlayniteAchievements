@@ -16,6 +16,7 @@ packages/
 *.snupkg
 project.lock.json
 project.fragment.lock.json
+nuget.exe
 
 # Visual Studio
 .vs/

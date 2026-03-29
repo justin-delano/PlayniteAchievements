@@ -52,12 +52,12 @@ namespace PlayniteAchievements
 
         private static readonly string[] ProviderDisplayOrder =
         {
-            "Steam", "Epic", "GOG", "BattleNet", "EA", "PSN", "Xbox", "RetroAchievements", "ShadPS4", "Xenia", "RPCS3", "Manual", "Exophase",
+            "Steam", "Epic", "GOG", "BattleNet", "EA", "PSN", "Xbox", "RetroAchievements", "ShadPS4", "Xenia", "RPCS3", "Cracked", "Manual", "Exophase",
         };
 
         private static readonly string[] ProviderRefreshOrder =
         {
-            "Manual", "Exophase", "Steam", "Epic", "GOG", "PSN", "Xbox", "Xenia", "RPCS3", "ShadPS4", "RetroAchievements",
+            "Manual", "Exophase", "Steam", "Epic", "GOG", "PSN", "Xbox", "Xenia", "RPCS3", "ShadPS4", "RetroAchievements", "Cracked",
         };
 
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
@@ -226,6 +226,11 @@ namespace PlayniteAchievements
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
                 {
                     providers = _providerRegistry.CreateProviders(settings, PlayniteApi, pluginUserDataPath);
+
+                    /*// === ADD CRACKED PROVIDER MANUALLY ===
+                    var crackedProvider = new Providers.Cracked.CrackedSavesProvider(PlayniteApi, _logger, settings.Persisted);
+                    providers.Add(crackedProvider);
+                    _providerRegistry.RegisterProvider(crackedProvider); */  // This line may or may not be needed — try without first
                 }
 
                 // Phase 3: Wire core services, refresh pipeline, and tagging.
