@@ -774,6 +774,8 @@ This will remove these games from the achievements view, delete their cached dat
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeReady">READY</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">SETUP</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeDisabled">DISABLED</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_Checking">Checking...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeChecking">CHECKING</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Language">Achievement Language</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_EnableProvider">Enable</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_LanguageHint">Language for achievement text. Platforms will use this when available.</sys:String>
@@ -813,6 +815,7 @@ This will remove these games from the achievements view, delete their cached dat
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedTitle">Theme Auto-Migrated</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedMessage">{0} has been automatically updated for PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">Please restart Playnite to apply the changes.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Notification_ProviderAuthFailed">{0} authentication has expired or is invalid. Click to open settings.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">Limited Migration</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationFull">Full Migration</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationCustom">Custom Migration</sys:String>
