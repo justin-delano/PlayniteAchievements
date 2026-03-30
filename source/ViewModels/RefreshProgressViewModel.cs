@@ -81,7 +81,8 @@ namespace PlayniteAchievements.ViewModels
             OpenSingleGameCommand = new RelayCommand(_ => OpenSingleGame(), _ => ShowOpenSingleGameButton);
 
             IsCompleted = false;
-            ApplyRefreshStatus(_refreshService.GetRefreshStatusSnapshot());
+            ProgressPercent = 0;
+            ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
         }
 
         public void OnProgress(ProgressReport report)

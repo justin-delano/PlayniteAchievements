@@ -291,7 +291,7 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public RefreshStatusSnapshot GetStartingRefreshStatusSnapshot()
         {
-            return _progressReportingService.GetStartingRefreshStatusSnapshot(IsRebuilding);
+            return _progressReportingService.GetStartingRefreshStatusSnapshot(true);
         }
 
         // -----------------------------

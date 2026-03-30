@@ -59,7 +59,7 @@ namespace PlayniteAchievements.ViewModels
         private System.Windows.Threading.DispatcherTimer _progressHideTimer;
         private System.Windows.Threading.DispatcherTimer _deltaBatchTimer;
         private bool _showCompletedProgress;
-        private bool _refreshAttemptInProgress;
+        private bool _refreshInitiated;
         private int _selectedGameLoadVersion;
         private bool _selectedGameLoadInProgress;
         private static readonly TimeSpan ProgressHideDelay = TimeSpan.FromSeconds(3);
@@ -763,7 +763,7 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _progressMessage, value);
         }
 
-        public bool ShowProgress => IsRefreshing || _showCompletedProgress;
+        public bool ShowProgress => _refreshInitiated || IsRefreshing || _showCompletedProgress;
 
         #endregion
 
@@ -992,8 +992,8 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 CancelProgressHideTimer(clearCompletedProgress: false);
+                _refreshInitiated = true;
                 ApplyRefreshStatus(_refreshService.GetStartingRefreshStatusSnapshot());
-                _refreshAttemptInProgress = true;
 
                 await _refreshCoordinator.ExecuteAsync(
                     refreshRequest,
@@ -1085,8 +1085,8 @@ namespace PlayniteAchievements.ViewModels
             try
             {
                 CancelProgressHideTimer(clearCompletedProgress: false);
+                _refreshInitiated = true;
                 ApplyRefreshStatus(_refreshService.GetStartingRefreshStatusSnapshot());
-                _refreshAttemptInProgress = true;
 
                 await _refreshCoordinator.ExecuteAsync(
                     new RefreshRequest
@@ -1846,7 +1846,7 @@ namespace PlayniteAchievements.ViewModels
 
             if (clearCompletedProgress)
             {
-                _refreshAttemptInProgress = false;
+                _refreshInitiated = false;
                 if (_showCompletedProgress)
                 {
                     _showCompletedProgress = false;
@@ -1858,7 +1858,7 @@ namespace PlayniteAchievements.ViewModels
         private void OnProgressHideTimerTick(object sender, EventArgs e)
         {
             _progressHideTimer?.Stop();
-            _refreshAttemptInProgress = false;
+            _refreshInitiated = false;
             if (_showCompletedProgress)
             {
                 _showCompletedProgress = false;
@@ -1878,11 +1878,11 @@ namespace PlayniteAchievements.ViewModels
 
             if (status.IsRefreshing)
             {
-                _refreshAttemptInProgress = true;
+                _refreshInitiated = true;
                 CancelProgressHideTimer(clearCompletedProgress: false);
                 _showCompletedProgress = false;
             }
-            else if (_refreshAttemptInProgress)
+            else if (_refreshInitiated)
             {
                 _showCompletedProgress = true;
                 StartProgressHideTimer();
