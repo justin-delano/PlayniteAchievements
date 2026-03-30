@@ -605,6 +605,7 @@
     <sys:String x:Key="LOCPlayAch_RarityThreshold_GTEPoints">&#8805; points minimums</sys:String>
     <sys:String x:Key="LOCPlayAch_RarityThreshold_LTE">&#8804; seuil %</sys:String>
     <sys:String x:Key="LOCPlayAch_RarityThreshold_GT">&#62; seuil peu commun</sys:String>
+    <sys:String x:Key="LOCPlayAch_RaEnableSubsetScanning">Récupérer les sous-ensembles RetroAchievements</sys:String>
 
     <!-- ================================================================= -->
     <!-- STATUSES AND PROGRESS                                              -->
