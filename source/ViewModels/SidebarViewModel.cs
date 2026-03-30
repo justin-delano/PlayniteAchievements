@@ -1214,15 +1214,11 @@ namespace PlayniteAchievements.ViewModels
 
             UpdateProviderFilterOptions(_allGamesOverview);
             UpdateCompletenessFilterOptions();
-            UpdatePlayStatusFilterOptions();
-
-            // Default: select "Played" to match prior behavior (hiding unplayed/no-progress games)
+            // Default: select "Played" before initializing options so the first render shows "Played"
             var playedOption = L("LOCPlayAch_Filter_Played", "Played");
-            if (_selectedPlayStatusFilters.Count == 0 && PlayStatusFilterOptions?.Contains(playedOption) == true)
-            {
-                _selectedPlayStatusFilters.Add(playedOption);
-                OnPropertyChanged(nameof(SelectedPlayStatusFilterText));
-            }
+            _selectedPlayStatusFilters.Add(playedOption);
+
+            UpdatePlayStatusFilterOptions();
 
             // Initialize filtered lists
             _filteredRecentAchievements = new List<AchievementDisplayItem>(_allRecentAchievements);
