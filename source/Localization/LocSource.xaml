@@ -70,8 +70,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round_Description">Rounds slices under 5% up to 5%.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Note">The center percentage always uses exact counts, so it may differ from the visible pie when slices are hidden or rounded.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Show Sidebar Bar Charts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowGamesWithNoUnlocks">Show Games With No Unlocks</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowUnplayedGames">Show Unplayed Games</sys:String>
 
     <!-- Theme Controls Preview Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeControlsSection">Theme Controls Preview</sys:String>
@@ -606,8 +604,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_Games">Search Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Search Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_ShowNoUnlocks">Show No Unlocks</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_ShowUnplayed">Show Unplayed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_NoProgress">No Progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Unplayed</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unlocked">Unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Hidden">Hidden</sys:String>
 
@@ -682,6 +680,8 @@
     <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">Achievements by Platform</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_ProviderSelectorPlaceholder">Platform</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_CompletenessSelectorPlaceholder">Completeness</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_PlayStatusSelectorPlaceholder">Play Status</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Played">Played</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Complete">Complete</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">Completed Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_RarityPieChart">Achievements by Rarity</sys:String>
