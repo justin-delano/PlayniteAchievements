@@ -151,6 +151,8 @@
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SteamApiKey}"
                                                    Margin="0,0,0,8"/>
                                         <TextBox Text="{Binding Settings.SteamApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 LostFocus="SteamApiKey_LostFocus"
+                                                 KeyDown="SteamApiKey_KeyDown"
                                                  Padding="4"/>
                                         <TextBlock Style="{StaticResource MutedTextStyle}"
                                                    Margin="0,8,0,0"
