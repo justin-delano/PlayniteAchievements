@@ -460,7 +460,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             return string.Join(",", hashes.Select(h => string.IsNullOrWhiteSpace(h) ? "?" : h));
         }
 
-        private static List<AchievementDetail> ParseAchievements(Models.RaGameInfoUserProgress gameInfo, string rarityStats)
+        private static List<AchievementDetail> ParseAchievements(Models.RaGameInfoUserProgress gameInfo, string rarityStats, string categoryLabel = null, bool isSubset = false)
         {
             var list = new List<AchievementDetail>();
 
@@ -575,7 +575,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     LockedIconPath = string.IsNullOrWhiteSpace(badge) ? null : $"https://i.retroachievements.org/Badge/{badge}_lock.png",
                     Points = ach.Points,
                     ScaledPoints = ach.TrueRatio,
-                    Category = null,
+                    Category = categoryLabel,
+                    CategoryType = isSubset ? "Subset" : null,
                     IsCapstone = string.Equals(ach.Type, "win_condition", StringComparison.OrdinalIgnoreCase),
                     UnlockTimeUtc = unlockUtc,
                     Hidden = false,
@@ -589,6 +590,49 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             }
 
             return list;
+        }
+
+        internal static string ExtractCategoryLabel(string subsetTitle)
+        {
+            if (string.IsNullOrWhiteSpace(subsetTitle))
+                return null;
+
+            // Try "[Subset - Label]" pattern first.
+            var subsetStart = subsetTitle.IndexOf("[Subset - ", StringComparison.OrdinalIgnoreCase);
+            if (subsetStart >= 0)
+            {
+                var labelStart = subsetStart + "[Subset - ".Length;
+                var labelEnd = subsetTitle.IndexOf(']', labelStart);
+                if (labelEnd > labelStart)
+                {
+                    return subsetTitle.Substring(labelStart, labelEnd - labelStart).Trim();
+                }
+            }
+
+            // Try "[Bonus]", "[Hub]", etc. — single-word bracket label.
+            var bracketStart = subsetTitle.IndexOf('[');
+            if (bracketStart >= 0)
+            {
+                var bracketEnd = subsetTitle.IndexOf(']', bracketStart + 1);
+                if (bracketEnd > bracketStart + 1)
+                {
+                    return subsetTitle.Substring(bracketStart + 1, bracketEnd - bracketStart - 1).Trim();
+                }
+            }
+
+            // Parenthesized pattern: "(Subset - Label)".
+            var parenStart = subsetTitle.IndexOf("(Subset - ", StringComparison.OrdinalIgnoreCase);
+            if (parenStart >= 0)
+            {
+                var labelStart = parenStart + "(Subset - ".Length;
+                var labelEnd = subsetTitle.IndexOf(')', labelStart);
+                if (labelEnd > labelStart)
+                {
+                    return subsetTitle.Substring(labelStart, labelEnd - labelStart).Trim();
+                }
+            }
+
+            return null;
         }
 
         private static DateTime? ParseRaUtcTimestamp(string s)
