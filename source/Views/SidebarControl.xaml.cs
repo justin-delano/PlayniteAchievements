@@ -308,6 +308,20 @@ namespace PlayniteAchievements.Views
                 (option, isSelected) => _viewModel.SetCompletenessFilterSelected(option, isSelected));
         }
 
+        private void PlayStatusFilterSelectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel == null)
+            {
+                return;
+            }
+
+            OpenMultiSelectFilterContextMenu(
+                PlayStatusFilterSelectionButton,
+                _viewModel.PlayStatusFilterOptions,
+                option => _viewModel.IsPlayStatusFilterSelected(option),
+                (option, isSelected) => _viewModel.SetPlayStatusFilterSelected(option, isSelected));
+        }
+
         private void SelectedGameTypeFilterSelectionButton_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel == null)
