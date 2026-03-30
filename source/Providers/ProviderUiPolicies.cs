@@ -8,8 +8,7 @@ namespace PlayniteAchievements.Providers
         private static readonly HashSet<string> HiddenFromSetupSurfaces =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "BattleNet",
-                "EA"
+                "BattleNet"
             };
 
         public static bool ShouldHideFromSetupSurfaces(string providerKey)
