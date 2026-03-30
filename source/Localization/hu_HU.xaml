@@ -633,6 +633,7 @@ This will remove these games from the achievements view, delete their cached dat
     <sys:String x:Key="LOCPlayAch_RarityThreshold_GTEPoints">≥ minimum points</sys:String>
     <sys:String x:Key="LOCPlayAch_RarityThreshold_LTE">≤ threshold %</sys:String>
     <sys:String x:Key="LOCPlayAch_RarityThreshold_GT">&gt; uncommon threshold</sys:String>
+    <sys:String x:Key="LOCPlayAch_RaEnableSubsetScanning">Fetch RetroAchievements subsets</sys:String>
 
     <!-- ================================================================= -->
     <!-- STATUSES AND PROGRESS                                              -->
