@@ -3,22 +3,22 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Settings;
 
-namespace PlayniteAchievements.Providers.Cracked
+namespace PlayniteAchievements.Providers.Local
 {
-    public partial class CrackedSettingsView : ProviderSettingsViewBase
+    public partial class LocalSettingsView : ProviderSettingsViewBase
     {
-        private CrackedSettings _crackedSettings;
+        private LocalSettings _localSettings;
 
-        public new CrackedSettings Settings => _crackedSettings;
+        public new LocalSettings Settings => _localSettings;
 
-        public CrackedSettingsView()
+        public LocalSettingsView()
         {
             InitializeComponent();
         }
 
         public override void Initialize(IProviderSettings settings)
         {
-            _crackedSettings = settings as CrackedSettings;
+            _localSettings = settings as LocalSettings;
             base.Initialize(settings);
         }
     }

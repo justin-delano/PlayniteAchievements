@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
@@ -80,7 +81,7 @@ namespace PlayniteAchievements.Models.Settings
             new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase);
         private TaggingSettings _taggingSettings;
         private Dictionary<string, JObject> _providerSettings = new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
-        private string _extraCrackedPaths = "";
+        private string _extraLocalPaths = "";
 
         #endregion
 
@@ -109,12 +110,13 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _globalLanguage, value);
         }
         /// <summary>
-        /// Semicolon-separated list of extra folders to scan for cracked achievements.json files.
+        /// Semicolon-separated list of extra folders to scan for local achievements.json files.
         /// </summary>
-        public string ExtraCrackedPaths
+        [JsonProperty("ExtraCrackedPaths")]
+        public string ExtraLocalPaths
         {
-            get => _extraCrackedPaths;
-            set => SetValue(ref _extraCrackedPaths, value ?? "");
+            get => _extraLocalPaths;
+            set => SetValue(ref _extraLocalPaths, value ?? "");
         }
 
         #endregion

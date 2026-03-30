@@ -1,4 +1,4 @@
-<settings:ProviderSettingsViewBase x:Class="PlayniteAchievements.Providers.Cracked.CrackedSettingsView"
+<settings:ProviderSettingsViewBase x:Class="PlayniteAchievements.Providers.Local.LocalSettingsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -27,11 +27,11 @@
 
             <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
-                    <TextBlock Text="Cracked Achievement Folders"
+                    <TextBlock Text="Local Achievement Folders"
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="0,0,0,12"/>
 
-                    <TextBlock Text="The following folders are scanned automatically for cracked achievement JSON files:"
+                    <TextBlock Text="The following folders are scanned automatically for local achievement JSON files:"
                                Style="{StaticResource MutedTextStyle}"
                                Margin="0,0,0,10"
                                TextWrapping="Wrap"/>
@@ -80,7 +80,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                FontWeight="SemiBold"
                                Margin="0,0,0,4"/>
-                    <TextBox Text="{Binding Settings.ExtraCrackedPaths, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox Text="{Binding Settings.ExtraLocalPaths, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto"
                              HorizontalScrollBarVisibility="Disabled"

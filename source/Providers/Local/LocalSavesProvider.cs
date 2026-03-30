@@ -17,18 +17,18 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Models.Settings;
 
-namespace PlayniteAchievements.Providers.Cracked
+namespace PlayniteAchievements.Providers.Local
 {
-    public class CrackedSavesProvider : IDataProvider
+    public class LocalSavesProvider : IDataProvider
     {
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _pluginSettings;
-        // private readonly string debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Cracked_Debug.txt");
+        // private readonly string debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Local_Debug.txt");
         private readonly Dictionary<int, SchemaAndPercentages> _steamSchemaCache = new Dictionary<int, SchemaAndPercentages>();
 
         public string ProviderKey => "Cracked";
-        public string ProviderName => "Cracked"; 
+        public string ProviderName => "Local"; 
         public string ProviderIconKey => null;
         public string ProviderColorHex => "#FFD700";
 
@@ -37,10 +37,10 @@ namespace PlayniteAchievements.Providers.Cracked
 
         private void Log(string msg)
         {
-            // Debug logging disabled to avoid creating Cracked_Debug.txt
+            // Debug logging disabled to avoid creating Local_Debug.txt
         }
 
-        public CrackedSavesProvider(IPlayniteAPI playniteApi, ILogger logger, PlayniteAchievementsSettings settings)
+        public LocalSavesProvider(IPlayniteAPI playniteApi, ILogger logger, PlayniteAchievementsSettings settings)
         {
             _api = playniteApi;
             _logger = logger;
@@ -60,7 +60,7 @@ namespace PlayniteAchievements.Providers.Cracked
             try
             {
                 var json = await Task.Run(() => File.ReadAllText(jsonPath));
-                var raw = JsonConvert.DeserializeObject<Dictionary<string, CrackedEntry>>(json);
+                var raw = JsonConvert.DeserializeObject<Dictionary<string, LocalEntry>>(json);
                 if (raw == null || raw.Count == 0) return null;
 
                 SchemaAndPercentages steamSchema = null;
@@ -208,7 +208,7 @@ namespace PlayniteAchievements.Providers.Cracked
                 return false;
             }
 
-            foreach (var root in GetCrackedRootPaths())
+            foreach (var root in GetLocalRootPaths())
             {
                 if (string.IsNullOrWhiteSpace(root))
                 {
@@ -305,7 +305,7 @@ namespace PlayniteAchievements.Providers.Cracked
             return Math.Max(0d, Math.Min(100d, rawPercent.Value));
         }
 
-        private IEnumerable<string> GetCrackedRootPaths()
+        private IEnumerable<string> GetLocalRootPaths()
         {
             var roots = new List<string>();
             var roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -341,9 +341,9 @@ namespace PlayniteAchievements.Providers.Cracked
 
             roots.Add(Path.Combine(localAppData, "SKIDROW"));
 
-            if (_pluginSettings?.Persisted?.ExtraCrackedPaths != null)
+            if (_pluginSettings?.Persisted?.ExtraLocalPaths != null)
             {
-                var extra = _pluginSettings.Persisted.ExtraCrackedPaths
+                var extra = _pluginSettings.Persisted.ExtraLocalPaths
                     .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (var raw in extra)
@@ -365,12 +365,12 @@ namespace PlayniteAchievements.Providers.Cracked
         // REQUIRED: Returning a real settings object makes the platform appear in the UI Filters
         public IProviderSettings GetSettings()
         {
-            var settings = ProviderRegistry.Settings<CrackedSettings>();
+            var settings = ProviderRegistry.Settings<LocalSettings>();
 
-            if (string.IsNullOrWhiteSpace(settings.ExtraCrackedPaths)
-                && !string.IsNullOrWhiteSpace(_pluginSettings?.Persisted?.ExtraCrackedPaths))
+            if (string.IsNullOrWhiteSpace(settings.ExtraLocalPaths)
+                && !string.IsNullOrWhiteSpace(_pluginSettings?.Persisted?.ExtraLocalPaths))
             {
-                settings.ExtraCrackedPaths = _pluginSettings.Persisted.ExtraCrackedPaths;
+                settings.ExtraLocalPaths = _pluginSettings.Persisted.ExtraLocalPaths;
             }
 
             return settings;
@@ -378,18 +378,18 @@ namespace PlayniteAchievements.Providers.Cracked
 
         public void ApplySettings(IProviderSettings settings)
         {
-            if (settings is CrackedSettings crackedSettings)
+            if (settings is LocalSettings localSettings)
             {
                 if (_pluginSettings?.Persisted != null)
                 {
-                    _pluginSettings.Persisted.ExtraCrackedPaths = crackedSettings.ExtraCrackedPaths ?? string.Empty;
+                    _pluginSettings.Persisted.ExtraLocalPaths = localSettings.ExtraLocalPaths ?? string.Empty;
                 }
             }
         }
 
-        public ProviderSettingsViewBase CreateSettingsView() => new CrackedSettingsView();
+        public ProviderSettingsViewBase CreateSettingsView() => new LocalSettingsView();
 
-        private struct CrackedEntry
+        private struct LocalEntry
         {
             public bool earned { get; set; }
             public long earned_time { get; set; }

@@ -227,10 +227,10 @@ namespace PlayniteAchievements
                 {
                     providers = _providerRegistry.CreateProviders(settings, PlayniteApi, pluginUserDataPath);
 
-                    /*// === ADD CRACKED PROVIDER MANUALLY ===
-                    var crackedProvider = new Providers.Cracked.CrackedSavesProvider(PlayniteApi, _logger, settings.Persisted);
-                    providers.Add(crackedProvider);
-                    _providerRegistry.RegisterProvider(crackedProvider); */  // This line may or may not be needed — try without first
+                    /*// === ADD LOCAL PROVIDER MANUALLY ===
+                    var localProvider = new Providers.Local.LocalSavesProvider(PlayniteApi, _logger, settings.Persisted);
+                    providers.Add(localProvider);
+                    _providerRegistry.RegisterProvider(localProvider); */  // This line may or may not be needed — try without first
                 }
 
                 // Phase 3: Wire core services, refresh pipeline, and tagging.
