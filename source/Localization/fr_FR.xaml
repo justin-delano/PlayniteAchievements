@@ -365,6 +365,9 @@
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId_Help">Votre ID Steam 64 bits. Il est détecté automatiquement lors de l'authentification.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GogConnection">Connexion GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_GogAuth">Authentification GOG</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EA_Connection">Connexion EA</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_EAAuth">Authentification EA</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EA_OwnAuthHelp">Cliquez sur Connexion pour vous authentifier avec EA via une fenêtre de navigateur intégrée. Vos identifiants sont stockés en toute sécurité dans PlayniteAchievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_NotChecked">{0} : Non vérifié</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_Checking">Vérification de l'authentification {0}...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_CheckingExistingSession">Vérification de la session {0} existante...</sys:String>
