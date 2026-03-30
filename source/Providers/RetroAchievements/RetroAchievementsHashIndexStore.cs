@@ -35,6 +35,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         {
             public DateTime UpdatedUtc { get; set; }
             public Dictionary<string, int> Index { get; set; }
+            public Dictionary<int, List<RaSubsetEntry>> Subsets { get; set; }
         }
 
         private readonly ConcurrentDictionary<int, CachedIndex> _memory = new ConcurrentDictionary<int, CachedIndex>();
@@ -75,12 +76,12 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 if (disk != null && !IsStale(disk.UpdatedUtc))
                 {
                     _logger?.Info($"[RA] Loaded hash index from disk for consoleId={consoleId} with {disk.HashToGameId.Count} hashes (cached at {disk.UpdatedUtc:yyyy-MM-dd HH:mm:ss} UTC).");
-                    _memory[consoleId] = new CachedIndex { UpdatedUtc = disk.UpdatedUtc, Index = disk.HashToGameId };
+                    _memory[consoleId] = new CachedIndex { UpdatedUtc = disk.UpdatedUtc, Index = disk.HashToGameId, Subsets = disk.BaseGameToSubsets };
                     return disk.HashToGameId;
                 }
 
                 var rebuilt = await RebuildIndexAsync(consoleId, cancel).ConfigureAwait(false);
-                _memory[consoleId] = new CachedIndex { UpdatedUtc = rebuilt.UpdatedUtc, Index = rebuilt.HashToGameId };
+                _memory[consoleId] = new CachedIndex { UpdatedUtc = rebuilt.UpdatedUtc, Index = rebuilt.HashToGameId, Subsets = rebuilt.BaseGameToSubsets };
                 await SaveToDiskAsync(consoleId, rebuilt, cancel).ConfigureAwait(false);
                 return rebuilt.HashToGameId;
             }
@@ -172,6 +173,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         {
             _logger?.Info($"[RA] Rebuilding hash index for consoleId={consoleId}...");
 
+            var allItems = new List<RaGameListItem>();
             var index = new Dictionary<string, int>(StringComparer.Ordinal);
 
             var offset = 0;
@@ -198,43 +200,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     _logger?.Debug($"[RA] Item {i}: ID={item.ID}, GameID={item.GameID}, Hashes type={hashesType}, value={hashesValue}");
                 }
 
-                foreach (var item in items)
-                {
-                    cancel.ThrowIfCancellationRequested();
-
-                    var gameId = item.ID;
-                    if (gameId == 0)
-                        gameId = item.GameID;
-                    if (gameId == 0)
-                        continue;
-
-                    // Filter out subset/tournament games by title pattern
-                    if (!string.IsNullOrWhiteSpace(item.Title))
-                    {
-                        var titleLower = item.Title.ToLowerInvariant();
-                        // Skip subsets, tournaments, events, bonus sets, and hubs
-                        if (titleLower.Contains("[subset") ||
-                            titleLower.Contains("[tournament") ||
-                            titleLower.Contains("[event") ||
-                            titleLower.Contains("[bonus") ||
-                            titleLower.Contains("[hub") ||
-                            titleLower.Contains("[specialty") ||
-                            titleLower.Contains("[exclusive") ||
-                            titleLower.Contains("(subset"))
-                        {
-                            _logger?.Debug($"[RA] Skipping subset/tournament game: {item.Title} (ID={gameId})");
-                            continue;
-                        }
-                    }
-
-                    foreach (var hash in EnumerateHashes(item.Hashes))
-                    {
-                        if (string.IsNullOrWhiteSpace(hash)) continue;
-                        var key = hash.Trim().ToLowerInvariant();
-                        if (key.Length == 0) continue;
-                        index[key] = gameId;
-                    }
-                }
+                allItems.AddRange(items);
 
                 if (items.Count < PageSize)
                 {
@@ -244,13 +210,124 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 offset += PageSize;
             }
 
-            _logger?.Info($"[RA] Hash index for consoleId={consoleId} built with {index.Count} hashes.");
+            // Build title-to-ID lookup for base games (non-subset entries).
+            var baseTitleToId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var subsetItems = new List<RaGameListItem>();
+
+            foreach (var item in allItems)
+            {
+                var gameId = item.ID;
+                if (gameId == 0)
+                    gameId = item.GameID;
+                if (gameId == 0)
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(item.Title) && IsSubsetLikeTitle(item.Title))
+                {
+                    subsetItems.Add(item);
+                    continue;
+                }
+
+                baseTitleToId[item.Title?.Trim() ?? ""] = gameId;
+
+                foreach (var hash in EnumerateHashes(item.Hashes))
+                {
+                    if (string.IsNullOrWhiteSpace(hash)) continue;
+                    var key = hash.Trim().ToLowerInvariant();
+                    if (key.Length == 0) continue;
+                    index[key] = gameId;
+                }
+            }
+
+            // Build subset mapping: baseGameId → list of subset entries.
+            var subsets = new Dictionary<int, List<RaSubsetEntry>>();
+            foreach (var sub in subsetItems)
+            {
+                var baseTitle = ExtractBaseTitle(sub.Title);
+                if (string.IsNullOrWhiteSpace(baseTitle))
+                    continue;
+
+                if (baseTitleToId.TryGetValue(baseTitle, out var baseGameId))
+                {
+                    if (!subsets.TryGetValue(baseGameId, out var list))
+                    {
+                        list = new List<RaSubsetEntry>();
+                        subsets[baseGameId] = list;
+                    }
+                    list.Add(new RaSubsetEntry
+                    {
+                        Id = sub.ID != 0 ? sub.ID : sub.GameID,
+                        Title = sub.Title
+                    });
+                    _logger?.Debug($"[RA] Mapped subset '{sub.Title}' (ID={sub.ID}) to base game ID={baseGameId}");
+                }
+                else
+                {
+                    _logger?.Debug($"[RA] Could not find base game for subset '{sub.Title}'");
+                }
+            }
+
+            _logger?.Info($"[RA] Hash index for consoleId={consoleId} built with {index.Count} hashes and {subsets.Count} subset mappings.");
 
             return new RaHashIndexCacheFile
             {
                 UpdatedUtc = DateTime.UtcNow,
-                HashToGameId = index
+                HashToGameId = index,
+                BaseGameToSubsets = subsets
             };
+        }
+
+        public async Task<List<RaSubsetEntry>> GetSubsetsForGameAsync(int baseGameId, int consoleId, CancellationToken cancel)
+        {
+            // Ensure index is loaded (triggers build/load if needed).
+            await GetHashIndexAsync(consoleId, cancel).ConfigureAwait(false);
+
+            if (_memory.TryGetValue(consoleId, out var cached) && cached.Subsets != null)
+            {
+                if (cached.Subsets.TryGetValue(baseGameId, out var list))
+                {
+                    return list;
+                }
+            }
+
+            return new List<RaSubsetEntry>();
+        }
+
+        internal static string ExtractBaseTitle(string subsetTitle)
+        {
+            if (string.IsNullOrWhiteSpace(subsetTitle))
+                return null;
+
+            // Strip the first bracket-delimited suffix: "[Subset - ...]", "[Bonus]", "[Hub]", etc.
+            var bracketStart = subsetTitle.IndexOf('[');
+            if (bracketStart > 0)
+            {
+                return subsetTitle.Substring(0, bracketStart).Trim();
+            }
+
+            var parenStart = subsetTitle.IndexOf('(');
+            if (parenStart > 0)
+            {
+                return subsetTitle.Substring(0, parenStart).Trim();
+            }
+
+            return null;
+        }
+
+        private static bool IsSubsetLikeTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                return false;
+
+            var titleLower = title.ToLowerInvariant();
+            return titleLower.Contains("[subset") ||
+                   titleLower.Contains("[tournament") ||
+                   titleLower.Contains("[event") ||
+                   titleLower.Contains("[bonus") ||
+                   titleLower.Contains("[hub") ||
+                   titleLower.Contains("[specialty") ||
+                   titleLower.Contains("[exclusive") ||
+                   titleLower.Contains("(subset");
         }
 
         private List<RaGameListItem> EnumerateGameListItems(string json)
