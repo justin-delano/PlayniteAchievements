@@ -85,7 +85,7 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
         }
 
-        public async Task<EaPlayerIdentity> GetPlayerIdentityAsync(CancellationToken ct)
+        internal async Task<EaPlayerIdentity> GetPlayerIdentityAsync(CancellationToken ct)
         {
             var token = await _sessionManager.GetAccessTokenAsync(ct).ConfigureAwait(false);
             var response = await QueryGraphQlAsync<GraphQlIdentityResponse>(
@@ -125,7 +125,7 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
 
                 var variables = new
                 {
-                    locale = "en_US",
+                    locale = "US",
                     entitlementEnabled = true,
                     storefronts = new[] { "EA" },
                     type = new[] { "DIGITAL_FULL_GAME", "PACKAGED_FULL_GAME" },
@@ -185,7 +185,7 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
             {
                 offerId = offerId,
                 playerPsd = playerPsd,
-                locale = "en_US"
+                locale = "US"
             };
 
             var response = await QueryGraphQlAsync<GraphQlAchievementsResponse>(
