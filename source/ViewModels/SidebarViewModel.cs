@@ -573,6 +573,8 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowSidebarBarCharts => _settings?.Persisted?.ShowSidebarBarCharts ?? true;
 
+        public bool ShowCompletionBorder => _settings?.Persisted?.ShowCompletionBorder ?? true;
+
         private int _totalGamesOverview;
         public int TotalGamesOverview
         {
@@ -1555,6 +1557,7 @@ namespace PlayniteAchievements.ViewModels
                 RaiseSidebarPieChartVisibilityChanged();
                 OnPropertyChanged(nameof(ShowSidebarPiePercentages));
                 OnPropertyChanged(nameof(ShowSidebarBarCharts));
+                OnPropertyChanged(nameof(ShowCompletionBorder));
                 _ = RefreshViewAsync();
                 ApplyLeftFilters();
                 UpdateAggregatePieCharts();
@@ -1588,6 +1591,10 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.ShowSidebarBarCharts))
             {
                 OnPropertyChanged(nameof(ShowSidebarBarCharts));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowCompletionBorder))
+            {
+                OnPropertyChanged(nameof(ShowCompletionBorder));
             }
             else if (propertyName == nameof(PersistedSettings.SidebarPieSmallSliceMode))
             {
