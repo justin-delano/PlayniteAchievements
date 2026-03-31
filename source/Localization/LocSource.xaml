@@ -334,6 +334,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Icon">Icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_ApiName">API Name</sys:String>
     <sys:String x:Key="LOCPlayAch_Tooltip_RightClickShowHide">Right Click to Show/Hide</sys:String>
 
     <!-- ================================================================= -->
