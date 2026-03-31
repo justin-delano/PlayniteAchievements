@@ -126,7 +126,7 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
                 var variables = new
                 {
                     locale = "DEFAULT",
-                    entitlementEnabled = true,
+                    entitlementEnabled = false,
                     storefronts = new[] { "EA" },
                     type = new[] { "DIGITAL_FULL_GAME", "PACKAGED_FULL_GAME", "DIGITAL_EXTRA_CONTENT", "PACKAGED_EXTRA_CONTENT" },
                     platforms = new[] { "PC" },
@@ -139,9 +139,11 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
                 var items = response?.Data?.Me?.OwnedGameProducts?.Items;
                 if (items == null || items.Count == 0)
                 {
-                    _logger?.Debug("[EAApi] No owned games returned from EA API.");
+                    _logger?.Debug($"[EAApi] No owned games returned from EA API. Raw data={response?.Data != null}, me={response?.Data?.Me != null}, products={response?.Data?.Me?.OwnedGameProducts != null}");
                     return new List<EaOwnedGame>();
                 }
+
+                _logger?.Debug($"[EAApi] EA returned {items.Count} owned game items.");
 
                 var result = items
                     .Where(i => i.Product?.BaseItem?.GameType == "BASE_GAME")
@@ -277,6 +279,8 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
 
                         throw new EaApiHttpException(statusCode, $"EA API returned HTTP {(int)statusCode}: {responseBody}");
                     }
+
+                    _logger?.Debug($"[EAApi] GraphQL response ({typeof(T).Name}): {responseBody}");
 
                     return JsonConvert.DeserializeObject<T>(responseBody);
                 }

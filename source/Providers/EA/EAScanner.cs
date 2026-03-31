@@ -1,6 +1,7 @@
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -103,14 +104,29 @@ namespace PlayniteAchievements.Providers.EA
                 var ownedGames = await _apiClient.GetOwnedGamesAsync(cancel).ConfigureAwait(false);
                 var matched = MatchGame(ownedGames, game, gameId);
 
-                if (matched == null)
+                string offerId;
+
+                if (matched != null)
                 {
-                    _logger?.Debug($"[EAAch] No EA owned game matched gameId={gameId}, game={game?.Name}.");
-                    return null;
+                    offerId = matched.OriginOfferId;
+                }
+                else
+                {
+                    // Fallback: extract the offer ID directly from the Playnite game ID.
+                    // EA/Origin games in Playnite have IDs like "Origin.OFR.50.0001456"
+                    // where the part after "Origin." is the EA offer ID.
+                    offerId = ExtractOfferIdFromGameId(gameId);
+                    if (string.IsNullOrWhiteSpace(offerId))
+                    {
+                        _logger?.Debug($"[EAAch] No EA owned game matched and could not extract offer ID from gameId={gameId}, game={game?.Name}.");
+                        return null;
+                    }
+
+                    _logger?.Debug($"[EAAch] Owned game lookup had no match for gameId={gameId}. Falling back to extracted offer ID={offerId}.");
                 }
 
                 var items = await _apiClient.GetAchievementsAsync(
-                    matched.OriginOfferId, playerPsd, cancel).ConfigureAwait(false);
+                    offerId, playerPsd, cancel).ConfigureAwait(false);
 
                 return MapToGameData(game, gameId, items);
             }
@@ -123,6 +139,28 @@ namespace PlayniteAchievements.Providers.EA
                 _logger?.Warn(ex, $"[EAAch] Error fetching data for {game?.Name} (gameId={gameId}).");
                 return null;
             }
+        }
+
+        private static string ExtractOfferIdFromGameId(string gameId)
+        {
+            if (string.IsNullOrWhiteSpace(gameId))
+            {
+                return null;
+            }
+
+            var trimmed = gameId.Trim();
+
+            // Playnite's Origin library uses "Origin." prefix for game IDs.
+            // The EA offer ID is the part after the prefix.
+            var prefix = "Origin.";
+            if (trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var offerId = trimmed.Substring(prefix.Length).Trim();
+                return string.IsNullOrWhiteSpace(offerId) ? null : offerId;
+            }
+
+            // If no prefix, the ID itself might be the offer ID (e.g. "OFR.50.0001456").
+            return trimmed;
         }
 
         private EaOwnedGame MatchGame(List<EaOwnedGame> ownedGames, Game game, string gameId)
