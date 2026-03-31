@@ -76,6 +76,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Compact List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview_Description">2 hidden, 2 locked, 1 unlocked achievement mockups</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">Show Rarity Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Show Completion Border</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview">Achievement DataGrid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview_Description">2 unlocked (1 ultra rare, 1 gold), 1 locked achievement mockups</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Max Height</sys:String>

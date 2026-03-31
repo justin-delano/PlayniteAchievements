@@ -53,6 +53,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showSidebarBarCharts = true;
         private bool _showTopMenuBarButton = true;
         private bool _showCompactListRarityBar = true;
+        private bool _showCompletionBorder = true;
         private bool _enableCompactGridMode = false;
         private double? _achievementDataGridMaxHeight = null;
         private bool _enableParallelProviderRefresh = true;
@@ -438,6 +439,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showCompactListRarityBar;
             set => SetValue(ref _showCompactListRarityBar, value);
+        }
+
+        /// <summary>
+        /// When true, completed games display a blue border in the games overview.
+        /// </summary>
+        public bool ShowCompletionBorder
+        {
+            get => _showCompletionBorder;
+            set => SetValue(ref _showCompletionBorder, value);
         }
 
         /// <summary>
@@ -881,6 +891,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowSidebarBarCharts = this.ShowSidebarBarCharts,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
+                ShowCompletionBorder = this.ShowCompletionBorder,
                 EnableCompactGridMode = this.EnableCompactGridMode,
                 AchievementDataGridMaxHeight = this.AchievementDataGridMaxHeight,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
