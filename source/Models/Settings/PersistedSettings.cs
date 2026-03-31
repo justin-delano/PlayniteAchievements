@@ -36,6 +36,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenDescription = false;
         private bool _showHiddenSuffix = true;
         private bool _showLockedIcon = true;
+        private bool _preserveAchievementIconResolution = false;
+        private bool _useSeparateLockedIconsWhenAvailable = false;
         private bool _showRarityGlow = true;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
@@ -233,13 +235,34 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, locked achievement icons are shown in grayscale.
+        /// When true, locked achievement icons are shown.
+        /// This uses a provider-supplied locked icon when available, otherwise a grayscaled unlocked fallback.
         /// When false, locked achievement icons are hidden with a placeholder until revealed.
         /// </summary>
         public bool ShowLockedIcon
         {
             get => _showLockedIcon;
             set => SetValue(ref _showLockedIcon, value);
+        }
+
+        /// <summary>
+        /// When true, achievement icons are cached at their original decoded size instead of the optimized 128px cache mode.
+        /// Changes apply on the next refresh.
+        /// </summary>
+        public bool PreserveAchievementIconResolution
+        {
+            get => _preserveAchievementIconResolution;
+            set => SetValue(ref _preserveAchievementIconResolution, value);
+        }
+
+        /// <summary>
+        /// When true, providers with distinct locked icons will cache and use them instead of grayscaling the unlocked icon.
+        /// Changes apply on the next refresh for newly cached icons.
+        /// </summary>
+        public bool UseSeparateLockedIconsWhenAvailable
+        {
+            get => _useSeparateLockedIconsWhenAvailable;
+            set => SetValue(ref _useSeparateLockedIconsWhenAvailable, value);
         }
 
         /// <summary>
@@ -817,6 +840,8 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenDescription = this.ShowHiddenDescription,
                 ShowHiddenSuffix = this.ShowHiddenSuffix,
                 ShowLockedIcon = this.ShowLockedIcon,
+                PreserveAchievementIconResolution = this.PreserveAchievementIconResolution,
+                UseSeparateLockedIconsWhenAvailable = this.UseSeparateLockedIconsWhenAvailable,
                 ShowRarityGlow = this.ShowRarityGlow,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,

@@ -12,6 +12,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.ViewModels;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -721,7 +722,7 @@ namespace PlayniteAchievements.Models
         private void Persisted_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             var propertyName = e?.PropertyName;
-            if (AchievementProjectionService.IsAppearanceSettingPropertyName(propertyName))
+            if (AchievementDisplayItem.IsAppearanceSettingPropertyName(propertyName))
             {
                 RefreshThemeDisplayItemsFromPersisted();
             }
@@ -746,6 +747,7 @@ namespace PlayniteAchievements.Models
                 persisted.ShowHiddenDescription,
                 persisted.ShowHiddenSuffix,
                 persisted.ShowLockedIcon,
+                persisted.UseSeparateLockedIconsWhenAvailable,
                 persisted.ShowRarityGlow,
                 persisted.ShowCompactListRarityBar);
         }

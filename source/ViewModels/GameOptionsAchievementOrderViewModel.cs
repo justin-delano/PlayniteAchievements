@@ -82,13 +82,12 @@ namespace PlayniteAchievements.ViewModels
                     orderedAchievements = achievements;
                 }
 
-                var projectionOptions = AchievementProjectionService.CreateOptions(_settings, gameData);
                 var rows = orderedAchievements
-                    .Select(a => AchievementProjectionService.CreateDisplayItem(
+                    .Select(a => AchievementDisplayItem.Create(
                         gameData,
                         a,
-                        projectionOptions,
-                        _gameId))
+                        _settings,
+                        playniteGameIdOverride: _gameId))
                     .Where(a => a != null && !string.IsNullOrWhiteSpace(a.ApiName))
                     .ToList();
 

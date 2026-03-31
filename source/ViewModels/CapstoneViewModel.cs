@@ -207,8 +207,6 @@ namespace PlayniteAchievements.ViewModels
 
                 var gameData = _achievementDataService.GetGameAchievementData(_gameId);
                 var achievements = gameData?.Achievements ?? new List<AchievementDetail>();
-                var projectionOptions = AchievementProjectionService.CreateOptions(_settings, gameData);
-
                 // Find the current capstone by checking IsCapstone on achievements
                 var currentCapstone = achievements.FirstOrDefault(a => a?.IsCapstone == true);
                 var currentCapstoneApiName = NormalizeText(currentCapstone?.ApiName);
@@ -225,11 +223,11 @@ namespace PlayniteAchievements.ViewModels
                 for (int i = 0; i < sortedAchievements.Count; i++)
                 {
                     var achievement = sortedAchievements[i];
-                    var projected = AchievementProjectionService.CreateDisplayItem(
+                    var projected = AchievementDisplayItem.Create(
                         gameData,
                         achievement,
-                        projectionOptions,
-                        _gameId);
+                        _settings,
+                        playniteGameIdOverride: _gameId);
                     var option = CreateOptionItem(projected, achievement, currentCapstoneApiName);
                     if (option == null)
                     {
@@ -280,7 +278,8 @@ namespace PlayniteAchievements.ViewModels
                 ApiName = projected.ApiName,
                 DisplayName = projected.DisplayName,
                 Description = projected.Description,
-                IconPath = projected.IconPath,
+                UnlockedIconPath = projected.UnlockedIconPath,
+                LockedIconPath = projected.LockedIconPath,
                 UnlockTimeUtc = projected.UnlockTimeUtc,
                 GlobalPercentUnlocked = projected.GlobalPercentUnlocked,
                 PointsValue = projected.PointsValue,
@@ -296,6 +295,7 @@ namespace PlayniteAchievements.ViewModels
                 ShowRarityBar = projected.ShowRarityBar,
                 ShowHiddenSuffix = projected.ShowHiddenSuffix,
                 ShowLockedIcon = projected.ShowLockedIcon,
+                UseSeparateLockedIconsWhenAvailable = projected.UseSeparateLockedIconsWhenAvailable,
                 IsRevealed = projected.IsRevealed,
                 IsCapstone = sourceAchievement.IsCapstone,
                 IsCurrentMarker = string.Equals(

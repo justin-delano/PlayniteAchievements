@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
@@ -102,7 +101,7 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// Icon URL for display.
         /// For hidden achievements that aren't revealed, uses placeholder icon.
-        /// Otherwise uses unlocked icon with grayscale prefix applied for locked achievements.
+        /// Otherwise uses the unlocked icon or the resolved locked-icon display path.
         /// </summary>
         public string DisplayIconUrl
         {
@@ -114,11 +113,11 @@ namespace PlayniteAchievements.ViewModels
                     return DefaultIcon;
                 }
 
-                var candidate = UnlockedIconUrl;
-                if (!IsUnlocked && !string.IsNullOrWhiteSpace(candidate))
-                {
-                    candidate = AchievementIconResolver.ApplyGrayPrefix(candidate);
-                }
+                var candidate = IsUnlocked
+                    ? AchievementIconResolver.GetUnlockedDisplayIcon(UnlockedIconUrl)
+                    : AchievementIconResolver.GetLockedDisplayIcon(
+                        UnlockedIconUrl,
+                        UseSeparateLockedIconsWhenAvailable ? LockedIconUrl : null);
 
                 return !string.IsNullOrWhiteSpace(candidate) ? candidate : DefaultIcon;
             }
@@ -126,6 +125,8 @@ namespace PlayniteAchievements.ViewModels
         public string DisplayIcon => DisplayIconUrl;
 
         private static string DefaultIcon => AchievementIconResolver.GetDefaultIcon();
+        private static bool UseSeparateLockedIconsWhenAvailable =>
+            PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.UseSeparateLockedIconsWhenAvailable ?? false;
 
         /// <summary>
         /// Whether this hidden achievement can be revealed (hidden and not unlocked).

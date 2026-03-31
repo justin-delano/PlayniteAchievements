@@ -572,6 +572,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_LockedAchievements">Visibilité des succès verrouillés</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LockedAchievements_Description">Contrôlez l'affichage des icônes des succès verrouillés.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealLockedIcon">Révéler l'icône verrouillée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache">Cache d'icônes des succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Description">Contrôlez la façon dont les icônes de succès sont stockées sur le disque. Les changements s'appliquent au prochain rafraîchissement.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">Conserver les icônes de succès en pleine résolution</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">Enregistre les icônes en cache à leur résolution d'origine au lieu du mode de cache optimisé en 128 px. Cela utilise plus d'espace disque.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable">Utiliser des icônes verrouillées distinctes quand disponibles</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Télécharge et enregistre les icônes verrouillées fournies par le service uniquement lorsqu'elles diffèrent de l'icône déverrouillée. Sinon, l'icône déverrouillée est convertie en niveaux de gris.</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Inclure les jeux non joués</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">Si décoché, les jeux avec 0 temps de jeu seront ignorés lors des actualisations.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh">Activer l'actualisation parallèle des fournisseurs</sys:String>

@@ -151,14 +151,6 @@ namespace PlayniteAchievements.Models.Achievements
 
 namespace PlayniteAchievements.Services
 {
-    public static class AchievementProjectionService
-    {
-        public static bool IsAppearanceSettingPropertyName(string propertyName)
-        {
-            return false;
-        }
-    }
-
     public class ProviderRegistry
     {
         public static string GetLocalizedName(string providerKey)
@@ -220,14 +212,77 @@ namespace PlayniteAchievements.ViewModels
     {
         public bool ShowHiddenSuffix { get; set; }
 
+        public static AchievementDisplayItem Create(
+            PlayniteAchievements.Models.Achievements.GameAchievementData gameData,
+            PlayniteAchievements.Models.Achievements.AchievementDetail achievement,
+            PlayniteAchievements.Models.PlayniteAchievementsSettings settings,
+            ISet<string> revealedKeys = null,
+            Guid? playniteGameIdOverride = null)
+        {
+            return new AchievementDisplayItem();
+        }
+
+        public static AchievementDisplayItem CreateRecent(
+            PlayniteAchievements.Models.Achievements.GameAchievementData gameData,
+            PlayniteAchievements.Models.Achievements.AchievementDetail achievement,
+            PlayniteAchievements.Models.PlayniteAchievementsSettings settings,
+            string gameIconPath,
+            string gameCoverPath)
+        {
+            return new AchievementDisplayItem();
+        }
+
+        public static bool IsAppearanceSettingPropertyName(string propertyName)
+        {
+            return false;
+        }
+
+        public static string MakeRevealKey(Guid? playniteGameId, string apiName, string gameName)
+        {
+            return string.Empty;
+        }
+
+        public static void AccumulateRarity(
+            PlayniteAchievements.Models.Achievements.AchievementDetail achievement,
+            ref int common,
+            ref int uncommon,
+            ref int rare,
+            ref int ultraRare)
+        {
+        }
+
+        public static void AccumulateTrophy(
+            PlayniteAchievements.Models.Achievements.AchievementDetail achievement,
+            ref int platinum,
+            ref int gold,
+            ref int silver,
+            ref int bronze)
+        {
+        }
+
+        public static void AccumulateTrophy(
+            string trophyType,
+            ref int platinum,
+            ref int gold,
+            ref int silver,
+            ref int bronze)
+        {
+        }
+
+        public void ApplyAppearanceSettings(PlayniteAchievements.Models.PlayniteAchievementsSettings settings)
+        {
+        }
+
         public void UpdateFrom(
             PlayniteAchievements.Models.Achievements.AchievementDetail source,
             string gameName,
             Guid? playniteGameId,
-            bool hideIcon,
-            bool hideTitle,
-            bool hideDescription,
-            bool hideLockedIcon,
+            bool showHiddenIcon,
+            bool showHiddenTitle,
+            bool showHiddenDescription,
+            bool showHiddenSuffix,
+            bool showLockedIcon,
+            bool useSeparateLockedIconsWhenAvailable,
             bool showRarityGlow,
             bool showRarityBar)
         {

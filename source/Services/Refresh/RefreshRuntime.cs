@@ -150,7 +150,7 @@ namespace PlayniteAchievements.Services
             if (providers == null) throw new ArgumentNullException(nameof(providers));
             _diskImageService = diskImageService ?? throw new ArgumentNullException(nameof(diskImageService));
             _cacheService = new CacheManager(api, logger, plugin, _diskImageService);
-            _achievementIconService = new AchievementIconService(_diskImageService, _logger);
+            _achievementIconService = new AchievementIconService(_diskImageService, settings?.Persisted, _logger);
             _progressReportingService = new ProgressReportingService(_logger, PostToUi);
             _refreshStateManager = new RefreshStateManager();
             _targetSelectionResolver = new TargetSelectionResolver(_api, _settings, _cacheService, _logger, refreshOrder);

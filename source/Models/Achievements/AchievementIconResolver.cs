@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace PlayniteAchievements.Models.Achievements
 {
@@ -11,40 +12,48 @@ namespace PlayniteAchievements.Models.Achievements
         private const string GrayPrefix = "gray:";
 
         /// <summary>
-        /// Resolve the display icon for an achievement based on its unlock state.
-        /// Theme-facing icon must be cheap to evaluate (WPF may call it frequently).
-        /// Always uses the same icon URL; grayscale is applied by AsyncImage when needed.
+        /// Get the default hidden icon pack URI.
         /// </summary>
-        public static string GetDisplayIcon(bool unlocked, string iconPath)
+        public static string GetDefaultIcon() => DefaultIconPackUri;
+
+        public static string GetUnlockedDisplayIcon(string unlockedIconPath) =>
+            string.IsNullOrWhiteSpace(unlockedIconPath)
+                ? DefaultIconPackUri
+                : unlockedIconPath;
+
+        public static string GetLockedDisplayIcon(string unlockedIconPath, string lockedIconPath)
         {
-            var candidate = iconPath;
-            if (!unlocked && !string.IsNullOrWhiteSpace(candidate))
+            if (HasExplicitLockedIcon(lockedIconPath, unlockedIconPath))
             {
-                candidate = ApplyGrayPrefix(candidate);
+                return lockedIconPath;
             }
 
+            var candidate = ApplyGrayPrefix(unlockedIconPath);
             return string.IsNullOrWhiteSpace(candidate) ? DefaultIconPackUri : candidate;
         }
 
-        /// <summary>
-        /// True if two icon identifiers are the same (case-insensitive, trimmed).
-        /// Kept for compatibility with existing code.
-        /// </summary>
-        public static bool AreSameIcon(string left, string right)
+        public static bool HasExplicitLockedIcon(string lockedIconPath, string unlockedIconPath)
         {
-            if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+            if (string.IsNullOrWhiteSpace(lockedIconPath))
+            {
+                return false;
+            }
+
+            if (!IsUsableDisplayPath(lockedIconPath))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(unlockedIconPath))
             {
                 return true;
             }
 
-            return string.Equals(NormalizeIcon(left), NormalizeIcon(right), StringComparison.OrdinalIgnoreCase);
+            return !string.Equals(
+                NormalizeIcon(lockedIconPath),
+                NormalizeIcon(unlockedIconPath),
+                StringComparison.OrdinalIgnoreCase);
         }
-
-
-        /// <summary>
-        /// Get the default hidden icon pack URI.
-        /// </summary>
-        public static string GetDefaultIcon() => DefaultIconPackUri;
 
         /// <summary>
         /// Prefixes the icon identifier with "gray:" when not already prefixed.
@@ -62,5 +71,25 @@ namespace PlayniteAchievements.Models.Achievements
         }
 
         private static string NormalizeIcon(string value) => value?.Trim();
+
+        private static bool IsUsableDisplayPath(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            if (value.StartsWith("pack://", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (value.StartsWith(GrayPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return File.Exists(value);
+        }
     }
 }

@@ -1594,7 +1594,7 @@ namespace PlayniteAchievements.ViewModels
                 ApplySidebarPieSmallSliceMode();
                 UpdateAggregatePieCharts();
             }
-            else if (AchievementProjectionService.IsAppearanceSettingPropertyName(propertyName))
+            else if (AchievementDisplayItem.IsAppearanceSettingPropertyName(propertyName))
             {
                 _ = RefreshViewAsync();
             }
@@ -1616,7 +1616,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var key = AchievementProjectionService.MakeRevealKey(item.PlayniteGameId, item.ApiName, item.GameName);
+            var key = AchievementDisplayItem.MakeRevealKey(item.PlayniteGameId, item.ApiName, item.GameName);
 
             item.ToggleReveal();
 
@@ -2438,7 +2438,7 @@ namespace PlayniteAchievements.ViewModels
                     continue;
                 }
 
-                AchievementProjectionService.AccumulateTrophy(
+                AchievementDisplayItem.AccumulateTrophy(
                     achievement.TrophyType,
                     ref platinumTotal,
                     ref goldTotal,
@@ -2450,7 +2450,7 @@ namespace PlayniteAchievements.ViewModels
                     continue;
                 }
 
-                AchievementProjectionService.AccumulateTrophy(
+                AchievementDisplayItem.AccumulateTrophy(
                     achievement.TrophyType,
                     ref platinumUnlocked,
                     ref goldUnlocked,
@@ -2837,11 +2837,10 @@ namespace PlayniteAchievements.ViewModels
                         return Tuple.Create(new List<AchievementDisplayItem>(), false);
                     }
 
-                    var options = AchievementProjectionService.CreateOptions(_settings, gameData, revealedCopy);
                     var achievements = new List<AchievementDisplayItem>(gameData.Achievements.Count);
                     foreach (var ach in gameData.Achievements)
                     {
-                        var item = AchievementProjectionService.CreateDisplayItem(gameData, ach, options, gameId);
+                        var item = AchievementDisplayItem.Create(gameData, ach, _settings, revealedCopy, gameId);
                         if (item != null)
                         {
                             achievements.Add(item);

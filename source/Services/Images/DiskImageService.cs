@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -106,10 +105,9 @@ namespace PlayniteAchievements.Services.Images
         }
 
         /// <summary>
-        /// Generate cache filename from URI using SHA256 hash.
-        /// If gameId is provided, creates per-game subfolder structure.
-        /// Results are cached to avoid repeated SHA256 computation.
-        /// Decode-size suffix is included to preserve "_128" naming convention.
+        /// Legacy helper: generate a cache filename from a URI using a SHA256 hash.
+        /// New achievement icon writes should use API-name paths instead.
+        /// This is retained for display-time fallback and lazy legacy migration.
         /// </summary>
         public string GetIconCachePathFromUri(string uri, int decodeSize, string gameId = null)
         {
@@ -142,16 +140,58 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
-        private void EnsureGameIconDirectory(string gameId)
+        internal string GetAchievementIconCachePath(
+            string gameId,
+            bool preserveOriginalResolution,
+            string fileStem,
+            AchievementIconVariant variant)
         {
-            if (string.IsNullOrEmpty(gameId))
-                return;
+            var relativePath = AchievementIconCachePathBuilder.BuildRelativePath(
+                gameId,
+                preserveOriginalResolution,
+                fileStem,
+                variant);
+            return Path.Combine(_cacheRoot, relativePath);
+        }
 
-            var gameDir = Path.Combine(IconCacheDirectory, gameId);
-            if (!Directory.Exists(gameDir))
+        public bool TryMigrateLegacyAchievementIcon(
+            string legacySourceIdentifier,
+            string targetPath,
+            int legacyDecodeSize,
+            string gameId = null)
+        {
+            if (string.IsNullOrWhiteSpace(legacySourceIdentifier) ||
+                string.IsNullOrWhiteSpace(targetPath) ||
+                legacyDecodeSize <= 0)
             {
-                Directory.CreateDirectory(gameDir);
-                _logger?.Debug($"Created game icon directory: {gameDir}");
+                return false;
+            }
+
+            try
+            {
+                if (File.Exists(targetPath))
+                {
+                    return true;
+                }
+
+                var legacyPath = GetIconCachePathFromUri(legacySourceIdentifier, legacyDecodeSize, gameId);
+                if (string.IsNullOrWhiteSpace(legacyPath) || !File.Exists(legacyPath))
+                {
+                    return false;
+                }
+
+                EnsureTargetDirectory(targetPath);
+                File.Move(legacyPath, targetPath);
+                return true;
+            }
+            catch (IOException)
+            {
+                return File.Exists(targetPath);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to migrate legacy cached icon to {targetPath}");
+                return false;
             }
         }
 
@@ -210,41 +250,41 @@ namespace PlayniteAchievements.Services.Images
                 return null;
             }
 
-            // Ensure game directory exists if gameId provided
-            if (!string.IsNullOrEmpty(gameId))
-            {
-                EnsureGameIconDirectory(gameId);
-            }
-
-            // Check if already cached on disk
             var cachePath = GetIconCachePathFromUri(uri, decodeSize, gameId);
-            if (File.Exists(cachePath))
+            return await GetOrDownloadIconToPathAsync(uri, cachePath, decodeSize, cancel).ConfigureAwait(false);
+        }
+
+        public async Task<string> GetOrDownloadIconToPathAsync(
+            string uri,
+            string targetPath,
+            int decodeSize,
+            CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(uri) || string.IsNullOrWhiteSpace(targetPath))
             {
-                return cachePath;
+                return null;
             }
 
-            var pathLock = _pathWriteLocks.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
+            EnsureTargetDirectory(targetPath);
+
+            var pathLock = _pathWriteLocks.GetOrAdd(targetPath, _ => new SemaphoreSlim(1, 1));
             await pathLock.WaitAsync(cancel).ConfigureAwait(false);
             try
             {
-                // Double-check after acquiring path-specific write lock.
-                if (File.Exists(cachePath))
+                if (File.Exists(targetPath))
                 {
-                    return cachePath;
+                    return targetPath;
                 }
 
-                // Use appropriate gate based on domain rate-limiting behavior
                 var downloadGate = IsRateLimitedDomain(uri) ? _rateLimitedDownloadGate : _downloadGate;
 
-                // Download bytes under shared download concurrency gate.
-                // Image processing happens outside the gate to avoid blocking other downloads.
                 byte[] bytes;
                 await downloadGate.WaitAsync(cancel).ConfigureAwait(false);
                 try
                 {
-                    if (File.Exists(cachePath))
+                    if (File.Exists(targetPath))
                     {
-                        return cachePath;
+                        return targetPath;
                     }
 
                     bytes = await DownloadBytesAsync(uri, cancel).ConfigureAwait(false);
@@ -254,40 +294,18 @@ namespace PlayniteAchievements.Services.Images
                     downloadGate.Release();
                 }
 
-                // Process image outside the download gate - allows parallel processing
                 if (bytes == null || bytes.Length == 0)
                 {
                     return null;
                 }
 
-                // Convert to PNG and save
                 using (var ms = new MemoryStream(bytes, writable: false))
                 {
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                    if (decodeSize > 0)
-                    {
-                        bitmap.DecodePixelWidth = decodeSize;
-                    }
-                    bitmap.StreamSource = ms;
-                    bitmap.EndInit();
-
-                    // Crop to square for consistent aspect ratio and smaller file size
-                    var finalBitmap = CropToSquare(bitmap);
-
-                    var encoder = new PngBitmapEncoder();
-                    encoder.Frames.Add(BitmapFrame.Create(finalBitmap));
-                    await SavePngWithRetryAsync(cachePath, encoder, cancel).ConfigureAwait(false);
-
-                    // _logger?.Debug($"Cached icon: {cachePath}");
-                    return cachePath;
+                    return await SaveBitmapStreamToPathAsync(ms, targetPath, decodeSize, cancel).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
             {
-                // Let cancellation propagate - handled by caller
                 throw;
             }
             catch (Exception ex)
@@ -556,52 +574,43 @@ namespace PlayniteAchievements.Services.Images
                 return null;
             }
 
-            // Ensure game directory exists if gameId provided
-            if (!string.IsNullOrEmpty(gameId))
-            {
-                EnsureGameIconDirectory(gameId);
-            }
-
-            // Check if already cached on disk
             var cachePath = GetIconCachePathFromUri(localPath, decodeSize, gameId);
-            if (File.Exists(cachePath))
+            return await GetOrCopyLocalIconToPathAsync(localPath, cachePath, decodeSize, cancel).ConfigureAwait(false);
+        }
+
+        public async Task<string> GetOrCopyLocalIconToPathAsync(
+            string localPath,
+            string targetPath,
+            int decodeSize,
+            CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(localPath) ||
+                !File.Exists(localPath) ||
+                string.IsNullOrWhiteSpace(targetPath))
             {
-                return cachePath;
+                return null;
             }
 
-            var pathLock = _pathWriteLocks.GetOrAdd(cachePath, _ => new SemaphoreSlim(1, 1));
+            EnsureTargetDirectory(targetPath);
+
+            var pathLock = _pathWriteLocks.GetOrAdd(targetPath, _ => new SemaphoreSlim(1, 1));
             await pathLock.WaitAsync(cancel).ConfigureAwait(false);
             try
             {
-                // Double-check after acquiring lock
-                if (File.Exists(cachePath))
+                if (File.Exists(targetPath))
                 {
-                    return cachePath;
+                    return targetPath;
                 }
 
-                // Read local file and convert to PNG
+                cancel.ThrowIfCancellationRequested();
                 using (var ms = new MemoryStream(File.ReadAllBytes(localPath), writable: false))
                 {
-                    var bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                    if (decodeSize > 0)
-                    {
-                        bitmap.DecodePixelWidth = decodeSize;
-                    }
-                    bitmap.StreamSource = ms;
-                    bitmap.EndInit();
-
-                    // Crop to square for consistent aspect ratio and smaller file size
-                    var finalBitmap = CropToSquare(bitmap);
-
-                    var encoder = new PngBitmapEncoder();
-                    encoder.Frames.Add(BitmapFrame.Create(finalBitmap));
-                    await SavePngWithRetryAsync(cachePath, encoder, cancel).ConfigureAwait(false);
-
-                    return cachePath;
+                    return await SaveBitmapStreamToPathAsync(ms, targetPath, decodeSize, cancel).ConfigureAwait(false);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -611,6 +620,100 @@ namespace PlayniteAchievements.Services.Images
             finally
             {
                 pathLock.Release();
+            }
+        }
+
+        public async Task<string> CopyCachedIconAsync(
+            string existingPath,
+            string targetPath,
+            CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(existingPath) ||
+                !File.Exists(existingPath) ||
+                string.IsNullOrWhiteSpace(targetPath))
+            {
+                return null;
+            }
+
+            if (string.Equals(existingPath, targetPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return existingPath;
+            }
+
+            EnsureTargetDirectory(targetPath);
+            var pathLock = _pathWriteLocks.GetOrAdd(targetPath, _ => new SemaphoreSlim(1, 1));
+            await pathLock.WaitAsync(cancel).ConfigureAwait(false);
+            try
+            {
+                if (File.Exists(targetPath))
+                {
+                    return targetPath;
+                }
+
+                cancel.ThrowIfCancellationRequested();
+                File.Copy(existingPath, targetPath, overwrite: false);
+                return targetPath;
+            }
+            catch (IOException)
+            {
+                return File.Exists(targetPath) ? targetPath : null;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to copy cached icon from {existingPath} to {targetPath}");
+                return null;
+            }
+            finally
+            {
+                pathLock.Release();
+            }
+        }
+
+        private async Task<string> SaveBitmapStreamToPathAsync(
+            Stream imageStream,
+            string targetPath,
+            int decodeSize,
+            CancellationToken cancel)
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+            if (decodeSize > 0)
+            {
+                bitmap.DecodePixelWidth = decodeSize;
+            }
+            bitmap.StreamSource = imageStream;
+            bitmap.EndInit();
+
+            var finalBitmap = CropToSquare(bitmap);
+
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(finalBitmap));
+            await SavePngWithRetryAsync(targetPath, encoder, cancel).ConfigureAwait(false);
+            return targetPath;
+        }
+
+        private static void EnsureTargetDirectory(string targetPath)
+        {
+            if (string.IsNullOrWhiteSpace(targetPath))
+            {
+                return;
+            }
+
+            var directory = Path.GetDirectoryName(targetPath);
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                return;
+            }
+
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
             }
         }
     }

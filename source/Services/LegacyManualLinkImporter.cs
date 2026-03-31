@@ -391,15 +391,17 @@ namespace PlayniteAchievements.Services
             if (DateTimeOffset.TryParse(
                     value,
                     CultureInfo.InvariantCulture,
-                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    DateTimeStyles.AssumeUniversal,
                     out var dto))
             {
-                var parsedUtc = dto.UtcDateTime;
-                if (dto.DateTime.Date == LegacySentinelDate)
+                if (dto.Year == LegacySentinelDate.Year &&
+                    dto.Month == LegacySentinelDate.Month &&
+                    dto.Day == LegacySentinelDate.Day)
                 {
                     return true;
                 }
 
+                var parsedUtc = dto.UtcDateTime;
                 if (parsedUtc < MinimumLegacyUnlockUtc)
                 {
                     return false;

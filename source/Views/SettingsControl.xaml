@@ -822,6 +822,32 @@
                                     </StackPanel>
                                 </Border>
 
+                                <Border Style="{StaticResource SettingGroupCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache_Description}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="0,0,0,8"
+                                                   TextWrapping="Wrap"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable}"
+                                                  IsChecked="{Binding Persisted.UseSeparateLockedIconsWhenAvailable}"
+                                                  Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="24,0,0,10"
+                                                   TextWrapping="Wrap"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_PreserveAchievementIconResolution}"
+                                                  IsChecked="{Binding Persisted.PreserveAchievementIconResolution}"
+                                                  Margin="0,0,0,4"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PreserveAchievementIconResolution_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="24,0,0,0"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+
                                 <!-- Hidden Achievement Visibility -->
                                 <Border Style="{StaticResource SettingGroupCardStyle}">
                                     <StackPanel>

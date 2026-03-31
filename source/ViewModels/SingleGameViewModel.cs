@@ -590,7 +590,6 @@ namespace PlayniteAchievements.ViewModels
                 int common = 0, uncommon = 0, rare = 0, ultraRare = 0;
                 // Calculate trophy counts (for PlayStation games)
                 int trophyPlatinum = 0, trophyGold = 0, trophySilver = 0, trophyBronze = 0;
-                var projectionOptions = AchievementProjectionService.CreateOptions(_settings, gameData);
                 var displayItems = new List<AchievementDisplayItem>();
                 var unlockCounts = new Dictionary<DateTime, int>();
 
@@ -621,11 +620,11 @@ namespace PlayniteAchievements.ViewModels
                         }
 
                         // Only count rarity if data is available (null means no rarity info for this provider)
-                        AchievementProjectionService.AccumulateRarity(ach, ref common, ref uncommon, ref rare, ref ultraRare);
-                        AchievementProjectionService.AccumulateTrophy(ach, ref trophyPlatinum, ref trophyGold, ref trophySilver, ref trophyBronze);
+                        AchievementDisplayItem.AccumulateRarity(ach, ref common, ref uncommon, ref rare, ref ultraRare);
+                        AchievementDisplayItem.AccumulateTrophy(ach, ref trophyPlatinum, ref trophyGold, ref trophySilver, ref trophyBronze);
                     }
 
-                    var item = AchievementProjectionService.CreateDisplayItem(gameData, ach, projectionOptions, _gameId);
+                    var item = AchievementDisplayItem.Create(gameData, ach, _settings, playniteGameIdOverride: _gameId);
                     if (item != null)
                     {
                         displayItems.Add(item);
@@ -763,7 +762,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (AchievementProjectionService.IsAppearanceSettingPropertyName(e?.PropertyName))
+            if (AchievementDisplayItem.IsAppearanceSettingPropertyName(e?.PropertyName))
             {
                 ApplyAppearanceSettingsToAchievements();
             }
@@ -776,7 +775,6 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var options = AchievementProjectionService.CreateOptions(_settings, null);
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
                 var items = new HashSet<AchievementDisplayItem>();
@@ -798,7 +796,7 @@ namespace PlayniteAchievements.ViewModels
 
                 foreach (var item in items)
                 {
-                    AchievementProjectionService.ApplyAppearanceSettings(item, options);
+                    item.ApplyAppearanceSettings(_settings);
                 }
             });
         }

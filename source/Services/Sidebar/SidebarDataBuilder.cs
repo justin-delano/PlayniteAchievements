@@ -225,8 +225,6 @@ namespace PlayniteAchievements.Services.Sidebar
                 ProviderName = providerName
             };
 
-            var projectionOptions = AchievementProjectionService.CreateOptions(settings, gameData, revealedKeys);
-
             var achievements = gameData.Achievements;
             int gameTotal = achievements.Count;
             int gameUnlocked = 0;
@@ -259,7 +257,7 @@ namespace PlayniteAchievements.Services.Sidebar
                     continue;
                 }
 
-                var displayItem = AchievementProjectionService.CreateDisplayItem(gameData, ach, projectionOptions);
+                var displayItem = AchievementDisplayItem.Create(gameData, ach, settings, revealedKeys);
                 if (displayItem != null)
                 {
                     fragment.Achievements.Add(displayItem);
@@ -267,8 +265,8 @@ namespace PlayniteAchievements.Services.Sidebar
 
                 // Calculate total rarity tier for ALL achievements (including locked)
                 // Only count if rarity data is available (null means no rarity info for this provider)
-                AchievementProjectionService.AccumulateRarity(ach, ref gameTotalCommon, ref gameTotalUncommon, ref gameTotalRare, ref gameTotalUltraRare);
-                AchievementProjectionService.AccumulateTrophy(
+                AchievementDisplayItem.AccumulateRarity(ach, ref gameTotalCommon, ref gameTotalUncommon, ref gameTotalRare, ref gameTotalUltraRare);
+                AchievementDisplayItem.AccumulateTrophy(
                     ach,
                     ref gameTrophyPlatinumTotal,
                     ref gameTrophyGoldTotal,
@@ -280,10 +278,10 @@ namespace PlayniteAchievements.Services.Sidebar
                     gameUnlocked++;
 
                     // Only count rarity if data is available
-                    AchievementProjectionService.AccumulateRarity(ach, ref gameCommon, ref gameUncommon, ref gameRare, ref gameUltraRare);
+                    AchievementDisplayItem.AccumulateRarity(ach, ref gameCommon, ref gameUncommon, ref gameRare, ref gameUltraRare);
 
                     // Track trophy types for unlocked achievements
-                    AchievementProjectionService.AccumulateTrophy(ach, ref gameTrophyPlatinum, ref gameTrophyGold, ref gameTrophySilver, ref gameTrophyBronze);
+                    AchievementDisplayItem.AccumulateTrophy(ach, ref gameTrophyPlatinum, ref gameTrophyGold, ref gameTrophySilver, ref gameTrophyBronze);
 
                     if (ach.UnlockTimeUtc.HasValue)
                     {
@@ -292,10 +290,10 @@ namespace PlayniteAchievements.Services.Sidebar
 
                         if (gameData.PlayniteGameId.HasValue)
                         {
-                            var recentItem = AchievementProjectionService.CreateRecentItem(
+                            var recentItem = AchievementDisplayItem.CreateRecent(
                                 gameData,
                                 ach,
-                                projectionOptions,
+                                settings,
                                 gameIconPath,
                                 gameCoverPath);
                             if (recentItem != null)

@@ -460,8 +460,6 @@ namespace PlayniteAchievements.ViewModels
                 var categoryTypeOverrides = GetCurrentCategoryTypeOverrideMap();
                 HasCustomOverrides = categoryOverrides.Count > 0 || categoryTypeOverrides.Count > 0;
                 var projectionSource = hydratedGameData ?? rawGameData;
-                var projectionOptions = AchievementProjectionService.CreateOptions(_settings, projectionSource);
-
                 List<AchievementDetail> orderedAchievements;
                 if (hydratedGameData?.AchievementOrder != null && hydratedGameData.AchievementOrder.Count > 0)
                 {
@@ -497,11 +495,11 @@ namespace PlayniteAchievements.ViewModels
                     var effectiveCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(
                         hasCategoryTypeOverride ? overrideCategoryType : providerCategoryType);
 
-                    var projected = AchievementProjectionService.CreateDisplayItem(
+                    var projected = AchievementDisplayItem.Create(
                         projectionSource,
                         a,
-                        projectionOptions,
-                        _gameId);
+                        _settings,
+                        playniteGameIdOverride: _gameId);
                     if (projected == null)
                     {
                         return null;
@@ -516,7 +514,8 @@ namespace PlayniteAchievements.ViewModels
                         ApiName = apiName,
                         DisplayName = projected.DisplayName,
                         Description = projected.Description,
-                        IconPath = projected.IconPath,
+                        UnlockedIconPath = projected.UnlockedIconPath,
+                        LockedIconPath = projected.LockedIconPath,
                         UnlockTimeUtc = projected.UnlockTimeUtc,
                         GlobalPercentUnlocked = projected.GlobalPercentUnlocked,
                         PointsValue = projected.PointsValue,
@@ -532,6 +531,7 @@ namespace PlayniteAchievements.ViewModels
                         ShowRarityBar = projected.ShowRarityBar,
                         ShowHiddenSuffix = projected.ShowHiddenSuffix,
                         ShowLockedIcon = projected.ShowLockedIcon,
+                        UseSeparateLockedIconsWhenAvailable = projected.UseSeparateLockedIconsWhenAvailable,
                         IsRevealed = revealedStateByApiName.TryGetValue(apiName, out var isRevealed)
                             ? isRevealed
                             : projected.IsRevealed,
