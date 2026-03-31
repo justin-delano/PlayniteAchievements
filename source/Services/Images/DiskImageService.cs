@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -506,16 +507,19 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
-        public int ClearIconCache(IconCacheClearScope scope, IEnumerable<string> additionalPaths = null)
+        public int ClearIconCache(
+            IconCacheClearScope scope,
+            IEnumerable<string> additionalPaths = null,
+            Action<int, int> reportDeleteProgress = null)
         {
             try
             {
                 if (scope == IconCacheClearScope.All)
                 {
-                    return ClearEntireIconCache();
+                    return ClearEntireIconCache(reportDeleteProgress);
                 }
 
-                return ClearScopedIconCache(scope, additionalPaths);
+                return ClearScopedIconCache(scope, additionalPaths, reportDeleteProgress);
             }
             catch (Exception ex)
             {
@@ -550,27 +554,41 @@ namespace PlayniteAchievements.Services.Images
             ClearGameCache(gameId);
         }
 
-        private int ClearEntireIconCache()
+        private int ClearEntireIconCache(Action<int, int> reportDeleteProgress)
         {
             if (!Directory.Exists(IconCacheDirectory))
             {
                 EnsureIconCacheDirectory();
+                reportDeleteProgress?.Invoke(0, 0);
                 return 0;
             }
 
-            var deletedCount = CountCachedPngFiles(IconCacheDirectory);
-            Directory.Delete(IconCacheDirectory, recursive: true);
+            var filesToDelete = Directory
+                .EnumerateFiles(IconCacheDirectory, "*.png", SearchOption.AllDirectories)
+                .Select(Path.GetFullPath)
+                .ToList();
+            var deletedCount = DeleteFiles(filesToDelete, reportDeleteProgress);
+
+            if (Directory.Exists(IconCacheDirectory))
+            {
+                Directory.Delete(IconCacheDirectory, recursive: true);
+            }
+
             EnsureIconCacheDirectory();
             try { _iconPathCache.Clear(); } catch { }
             _logger?.Info($"Cleared all icon cache files. deletedCount={deletedCount}");
             return deletedCount;
         }
 
-        private int ClearScopedIconCache(IconCacheClearScope scope, IEnumerable<string> additionalPaths)
+        private int ClearScopedIconCache(
+            IconCacheClearScope scope,
+            IEnumerable<string> additionalPaths,
+            Action<int, int> reportDeleteProgress)
         {
             if (!Directory.Exists(IconCacheDirectory))
             {
                 EnsureIconCacheDirectory();
+                reportDeleteProgress?.Invoke(0, 0);
                 return 0;
             }
 
@@ -610,9 +628,27 @@ namespace PlayniteAchievements.Services.Images
                 }
             }
 
+            var deletedCount = DeleteFiles(filesToDelete, reportDeleteProgress);
+
+            DeleteEmptyDirectories(cacheRoot);
+            EnsureIconCacheDirectory();
+            _logger?.Info($"Cleared icon cache scope '{scope}'. deletedCount={deletedCount}");
+            return deletedCount;
+        }
+
+        private int DeleteFiles(IEnumerable<string> filesToDelete, Action<int, int> reportDeleteProgress)
+        {
+            var targets = (filesToDelete ?? Enumerable.Empty<string>())
+                .Where(file => !string.IsNullOrWhiteSpace(file))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            reportDeleteProgress?.Invoke(0, targets.Count);
+
             var deletedCount = 0;
-            foreach (var file in filesToDelete)
+            for (var i = 0; i < targets.Count; i++)
             {
+                var file = targets[i];
                 try
                 {
                     if (!File.Exists(file))
@@ -627,11 +663,12 @@ namespace PlayniteAchievements.Services.Images
                 {
                     _logger?.Warn(ex, $"Failed to delete cached icon '{file}'.");
                 }
+                finally
+                {
+                    reportDeleteProgress?.Invoke(i + 1, targets.Count);
+                }
             }
 
-            DeleteEmptyDirectories(cacheRoot);
-            EnsureIconCacheDirectory();
-            _logger?.Info($"Cleared icon cache scope '{scope}'. deletedCount={deletedCount}");
             return deletedCount;
         }
 

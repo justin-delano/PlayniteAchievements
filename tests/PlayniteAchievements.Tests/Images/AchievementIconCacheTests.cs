@@ -410,6 +410,40 @@ namespace PlayniteAchievements.Services.Images.Tests
         }
 
         [TestMethod]
+        public void ClearIconCache_ReportsDeletionProgress()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var gameId = Guid.NewGuid().ToString("D");
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var firstPath = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: false, "boss_one", AchievementIconVariant.Unlocked);
+                var secondPath = diskImageService.GetAchievementIconCachePath(gameId, preserveOriginalResolution: false, "boss_two", AchievementIconVariant.Unlocked);
+                var snapshots = new List<Tuple<int, int>>();
+
+                WritePlaceholderFile(firstPath);
+                WritePlaceholderFile(secondPath);
+
+                var deletedCount = diskImageService.ClearIconCache(
+                    IconCacheClearScope.CompressedOnly,
+                    reportDeleteProgress: (processed, total) => snapshots.Add(Tuple.Create(processed, total)));
+
+                Assert.AreEqual(2, deletedCount);
+                Assert.IsTrue(snapshots.Count >= 2);
+                Assert.AreEqual(0, snapshots[0].Item1);
+                Assert.AreEqual(2, snapshots[0].Item2);
+                var last = snapshots[snapshots.Count - 1];
+                Assert.AreEqual(2, last.Item1);
+                Assert.AreEqual(2, last.Item2);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void PersistedSettingsCloneAndCopy_PreserveAchievementIconCacheFlags()
         {
             var gameId = Guid.NewGuid();

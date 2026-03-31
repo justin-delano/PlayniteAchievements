@@ -568,10 +568,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_Cache_Wiped">Cache cleared.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailed">Failed to clear cache (files remain).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailedWithError">Failed to wipe cache: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Cache_ProgressClearing">Clearing cached achievement data...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Description">Clear the plugin's in-memory achievement icon cache.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Clear">Clear Image Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Cleared">Image cache cleared.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_ClearFailed">Failed to clear image cache</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressScanning">Scanning cached {0} files...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressDeletingCount">Deleting cached {0} files... ({1}/{2})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressNoFiles">No cached {0} files were found.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressScanningLockedReferences">Scanning cached locked icon references... ({0}/{1})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressNoLockedReferences">No cached locked icon references were found.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next sidebar open.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Reset Landing Page</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupDone">First-time setup has been reset. Close and reopen the sidebar to see the landing page.</sys:String>

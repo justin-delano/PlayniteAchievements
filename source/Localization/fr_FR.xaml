@@ -547,10 +547,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_Cache_Wiped">Cache supprimé.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailed">Impossible de supprimer le cache (des fichiers restent).</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_WipeFailedWithError">Échec de la suppression du cache : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Cache_ProgressClearing">Suppression des données de succès en cache...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Description">Vider le cache en mémoire des icônes de succès.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Clear">Vider le cache d'images</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_Cleared">Cache d'images vidé.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ImageCache_ClearFailed">Échec du vidage du cache d'images</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressScanning">Recherche des fichiers de {0} en cache...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressDeletingCount">Suppression des fichiers de {0} en cache... ({1}/{2})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressNoFiles">Aucun fichier de {0} en cache n'a été trouvé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressScanningLockedReferences">Recherche des références d'icônes verrouillées en cache... ({0}/{1})</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IconCache_ProgressNoLockedReferences">Aucune référence d'icône verrouillée en cache n'a été trouvée.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Afficher à nouveau la page de configuration de premier démarrage à la prochaine ouverture de la barre latérale.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Réinitialiser la page d'accueil</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupDone">La configuration de premier démarrage a été réinitialisée. Fermez et rouvrez la barre latérale pour voir la page d'accueil.</sys:String>
