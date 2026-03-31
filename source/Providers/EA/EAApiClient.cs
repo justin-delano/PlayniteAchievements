@@ -125,10 +125,10 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
 
                 var variables = new
                 {
-                    locale = "US",
+                    locale = "DEFAULT",
                     entitlementEnabled = true,
                     storefronts = new[] { "EA" },
-                    type = new[] { "DIGITAL_FULL_GAME", "PACKAGED_FULL_GAME" },
+                    type = new[] { "DIGITAL_FULL_GAME", "PACKAGED_FULL_GAME", "DIGITAL_EXTRA_CONTENT", "PACKAGED_EXTRA_CONTENT" },
                     platforms = new[] { "PC" },
                     limit = 9999
                 };
