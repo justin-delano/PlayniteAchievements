@@ -27,7 +27,7 @@ namespace PlayniteAchievements.Providers.Local
         // private readonly string debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Local_Debug.txt");
         private readonly Dictionary<int, SchemaAndPercentages> _steamSchemaCache = new Dictionary<int, SchemaAndPercentages>();
 
-        public string ProviderKey => "Cracked";
+        public string ProviderKey => "Local";
         public string ProviderName => "Local"; 
         public string ProviderIconKey => null;
         public string ProviderColorHex => "#FFD700";

@@ -112,7 +112,7 @@ namespace PlayniteAchievements.Models.Settings
         /// <summary>
         /// Semicolon-separated list of extra folders to scan for local achievements.json files.
         /// </summary>
-        [JsonProperty("ExtraCrackedPaths")]
+        [JsonProperty("ExtraLocalPaths")]
         public string ExtraLocalPaths
         {
             get => _extraLocalPaths;

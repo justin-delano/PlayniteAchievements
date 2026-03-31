@@ -4,7 +4,7 @@ namespace PlayniteAchievements.Providers.Local
 {
     public class LocalSettings : ProviderSettingsBase
     {
-        public override string ProviderKey => "Cracked";
+        public override string ProviderKey => "Local";
 
         public string ExtraLocalPaths { get; set; } = string.Empty;
 
