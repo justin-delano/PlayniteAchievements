@@ -6,11 +6,26 @@ namespace PlayniteAchievements.Providers.RetroAchievements.Models
 {
     internal sealed class RaHashIndexCacheFile
     {
+        [JsonProperty("FormatVersion")]
+        public int FormatVersion { get; set; }
+
         [JsonProperty("UpdatedUtc")]
         public DateTime UpdatedUtc { get; set; }
 
         [JsonProperty("HashToGameId")]
         public Dictionary<string, int> HashToGameId { get; set; } = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        [JsonProperty("BaseGameToSubsets")]
+        public Dictionary<int, List<RaSubsetEntry>> BaseGameToSubsets { get; set; } = new Dictionary<int, List<RaSubsetEntry>>();
+    }
+
+    internal sealed class RaSubsetEntry
+    {
+        [JsonProperty("Id")]
+        public int Id { get; set; }
+
+        [JsonProperty("Title")]
+        public string Title { get; set; }
     }
 
     internal sealed class RaGameListResponse

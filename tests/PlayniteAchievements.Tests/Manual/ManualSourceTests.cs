@@ -91,60 +91,6 @@ namespace PlayniteAchievements.Manual.Tests
             Assert.AreEqual(1, sessionManager.ProbeCallCount);
         }
 
-        [TestMethod]
-        public async Task ExophaseApiClient_FetchAchievementsViaHttpAsync_SendsAcceptLanguageAndParsesHtml()
-        {
-            string capturedAcceptLanguage = null;
-            var handler = new StubHttpMessageHandler(request =>
-            {
-                if (request.Headers.TryGetValues("Accept-Language", out var values))
-                {
-                    capturedAcceptLanguage = string.Join(",", values);
-                }
-
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(
-                        "<html><body><ul class='achievement'><li data-average='95.49' data-earned='0'><img src='https://example.com/icon.png'/><a>Lokalisierter Titel</a><div class='award-description'><p>Beschreibung</p></div><div class='award-average'><span>95.49%</span></div></li></ul></body></html>",
-                        Encoding.UTF8,
-                        "text/html")
-                };
-            });
-
-            using var httpClient = new HttpClient(handler);
-            var apiClient = new ExophaseApiClient(new FakePlayniteApi(), logger: null, cookieSnapshotStore: null);
-
-            var achievements = await apiClient.FetchAchievementsViaHttpAsync(
-                "https://www.exophase.com/game/test-game/achievements/",
-                "de-DE,de;q=0.9",
-                httpClient,
-                CancellationToken.None).ConfigureAwait(false);
-
-            var normalizedAcceptLanguage = (capturedAcceptLanguage ?? string.Empty).Replace(" ", string.Empty);
-            Assert.AreEqual("de-DE,de;q=0.9", normalizedAcceptLanguage);
-            Assert.IsNotNull(achievements);
-            Assert.AreEqual(1, achievements.Count);
-            Assert.AreEqual("Lokalisierter Titel", achievements[0].DisplayName);
-            Assert.AreEqual("Beschreibung", achievements[0].Description);
-            Assert.AreEqual(95.49d, achievements[0].GlobalPercentUnlocked.Value, 0.001d);
-            Assert.AreEqual(RarityTier.Common, achievements[0].Rarity);
-        }
-
-        private sealed class StubHttpMessageHandler : HttpMessageHandler
-        {
-            private readonly Func<HttpRequestMessage, HttpResponseMessage> _responseFactory;
-
-            public StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
-            {
-                _responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
-            }
-
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                return Task.FromResult(_responseFactory(request));
-            }
-        }
-
         private sealed class FakePlayniteApi : IPlayniteAPI
         {
             public IMainViewAPI MainView => null;

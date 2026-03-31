@@ -636,6 +636,21 @@
                         </Button.ContextMenu>
                     </Button>
 
+                        <Button x:Name="PlayStatusFilterSelectionButton"
+                                Style="{StaticResource AchievementSelectorButtonStyle}"
+                                Grid.Column="3"
+                                Content="{Binding SelectedPlayStatusFilterText}"
+                                Click="PlayStatusFilterSelectionButton_Click"
+                                Width="170"
+                                Height="30"
+                                Margin="4,0,0,0"
+                                VerticalAlignment="Center">
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="PlayStatusFilterSelectionContextMenu"
+                                             ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                        </Button.ContextMenu>
+                    </Button>
+
                     </Grid>
                 </Border>
 

@@ -69,6 +69,22 @@ namespace PlayniteAchievements.Services
         {
             policy ??= RefreshExecutionPolicy.Default();
             var normalizedRequest = NormalizeRequest(request);
+
+            if (policy.UseProgressWindow && _runWithProgressWindow != null)
+            {
+                var singleGameId = policy.ProgressSingleGameId ?? normalizedRequest.SingleGameId;
+                _runWithProgressWindow(() => FullPipelineAsync(normalizedRequest, policy), singleGameId);
+            }
+            else
+            {
+                await FullPipelineAsync(normalizedRequest, policy).ConfigureAwait(false);
+            }
+        }
+
+        private async Task FullPipelineAsync(
+            RefreshRequest request,
+            RefreshExecutionPolicy policy)
+        {
             IReadOnlyList<IDataProvider> authenticatedProviders = null;
 
             if (policy.ValidateAuthentication)
@@ -82,15 +98,7 @@ namespace PlayniteAchievements.Services
                 }
             }
 
-            if (policy.UseProgressWindow && _runWithProgressWindow != null)
-            {
-                var singleGameId = policy.ProgressSingleGameId ?? normalizedRequest.SingleGameId;
-                _runWithProgressWindow(() => ExecuteWithCallbackAsync(normalizedRequest, policy, authenticatedProviders), singleGameId);
-            }
-            else
-            {
-                await ExecuteWithCallbackAsync(normalizedRequest, policy, authenticatedProviders).ConfigureAwait(false);
-            }
+            await ExecuteWithCallbackAsync(request, policy, authenticatedProviders).ConfigureAwait(false);
         }
 
         private async Task ExecuteWithCallbackAsync(

@@ -70,8 +70,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round_Description">Arrondit les parts inférieures à 5 % à 5 %.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Note">Le pourcentage central utilise toujours les comptes exacts et peut donc différer du graphique visible quand des parts sont masquées ou arrondies.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Afficher les graphiques à barres</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowGamesWithNoUnlocks">Afficher les jeux sans succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowUnplayedGames">Afficher les jeux non joués</sys:String>
 
     <!-- Theme Controls Preview Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeControlsSection">Aperçu des contrôles de thème</sys:String>
@@ -381,6 +379,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Auth_Cancelled">L'authentification {0} a été annulée.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_CookiesCleared">Session {0} effacée.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_AlreadyAuthenticated">{0} configuré avec succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Steam_WebAuthOnly">Session web Steam active, mais la clé API est requise.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_ProbeFailed">Impossible de vérifier l'état d'authentification {0}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Auth_WindowNotOpened">Impossible d'ouvrir la fenêtre de connexion {0}. Vérifiez que Playnite a le focus et réessayez.</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_AlreadyAuthenticated">Déjà authentifié.</sys:String>
@@ -584,8 +583,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_Games">Filtrer les jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Filtrer les succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_ShowNoUnlocks">Afficher sans déblocages</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_ShowUnplayed">Afficher non joués</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_NoProgress">Sans progression</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Non joué</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unlocked">Débloqué</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Hidden">Masqué</sys:String>
 
@@ -606,6 +605,7 @@
     <sys:String x:Key="LOCPlayAch_RarityThreshold_GTEPoints">&#8805; points minimums</sys:String>
     <sys:String x:Key="LOCPlayAch_RarityThreshold_LTE">&#8804; seuil %</sys:String>
     <sys:String x:Key="LOCPlayAch_RarityThreshold_GT">&#62; seuil peu commun</sys:String>
+    <sys:String x:Key="LOCPlayAch_RaEnableSubsetScanning">Récupérer les sous-ensembles RetroAchievements</sys:String>
 
     <!-- ================================================================= -->
     <!-- STATUSES AND PROGRESS                                              -->
@@ -660,6 +660,8 @@
     <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">Succès par fournisseur</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_ProviderSelectorPlaceholder">Plateforme</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_CompletenessSelectorPlaceholder">Complétude</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_PlayStatusSelectorPlaceholder">Statut de jeu</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_Played">Joué</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Complete">Complet</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">Complétion des jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Sidebar_RarityPieChart">Succès par rareté</sys:String>

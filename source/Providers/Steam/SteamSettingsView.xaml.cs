@@ -1,8 +1,10 @@
 using System;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Navigation;
 using System.Diagnostics;
 using Playnite.SDK;
@@ -90,6 +92,13 @@ namespace PlayniteAchievements.Providers.Steam
         {
             _steamSettings = settings as SteamSettings;
             base.Initialize(settings);
+
+            if (_steamSettings is INotifyPropertyChanged notify)
+            {
+                notify.PropertyChanged -= SteamSettings_PropertyChanged;
+                notify.PropertyChanged += SteamSettings_PropertyChanged;
+            }
+
             _ = RefreshAuthStatusAsync();
         }
 
@@ -123,11 +132,15 @@ namespace PlayniteAchievements.Providers.Steam
             WebAuthenticated = hasWebAuth;
             FullyConfigured = hasWebAuth && hasApiKey;
 
-            if (hasWebAuth)
+            if (hasWebAuth && hasApiKey)
             {
                 WebAuthStatus = string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"),
                     ResourceProvider.GetString("LOCPlayAch_Provider_Steam"));
+            }
+            else if (hasWebAuth)
+            {
+                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Steam_WebAuthOnly");
             }
             else
             {
@@ -200,6 +213,59 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 SetAuthBusy(false);
             }
+        }
+
+        private void SteamSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e?.PropertyName == nameof(SteamSettings.SteamApiKey))
+            {
+                UpdateConfiguredState();
+            }
+        }
+
+        private void UpdateConfiguredState()
+        {
+            var hasApiKey = !string.IsNullOrWhiteSpace(_steamSettings?.SteamApiKey);
+            FullyConfigured = WebAuthenticated && hasApiKey;
+
+            if (WebAuthenticated && hasApiKey)
+            {
+                WebAuthStatus = string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"),
+                    ResourceProvider.GetString("LOCPlayAch_Provider_Steam"));
+            }
+            else if (WebAuthenticated)
+            {
+                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Steam_WebAuthOnly");
+            }
+            else
+            {
+                WebAuthStatus = string.Format(
+                    ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"),
+                    ResourceProvider.GetString("LOCPlayAch_Provider_Steam"));
+            }
+        }
+
+        private async void SteamApiKey_LostFocus(object sender, RoutedEventArgs e)
+        {
+            await RefreshAuthStatusAsync();
+        }
+
+        private async void SteamApiKey_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
+                await RefreshAuthStatusAsync();
+                MoveFocusFrom((TextBox)sender);
+            }
+        }
+
+        private static void MoveFocusFrom(TextBox textBox)
+        {
+            var parent = textBox?.Parent as FrameworkElement;
+            parent?.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
         }
 
         private void SetAuthBusy(bool busy)

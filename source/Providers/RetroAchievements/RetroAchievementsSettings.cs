@@ -17,6 +17,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private bool _enableArchiveScanning = true;
         private bool _enableDiscHashing = true;
         private bool _enableRaNameFallback = true;
+        private bool _enableRaSubsetScanning = true;
         private Dictionary<Guid, int> _raGameIdOverrides = new Dictionary<Guid, int>();
 
         /// <inheritdoc />
@@ -111,6 +112,16 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         {
             get => _enableRaNameFallback;
             set => SetValue(ref _enableRaNameFallback, value);
+        }
+
+        /// <summary>
+        /// Enable scanning for RetroAchievements subset achievement sets alongside the base game.
+        /// When enabled, subset achievements are merged into the same game entry with distinct categories.
+        /// </summary>
+        public bool EnableRaSubsetScanning
+        {
+            get => _enableRaSubsetScanning;
+            set => SetValue(ref _enableRaSubsetScanning, value);
         }
 
         /// <summary>
