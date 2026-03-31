@@ -17,13 +17,13 @@
             <Style x:Key="AuthActionButtonStyle"
                    TargetType="Button"
                    BasedOn="{StaticResource {x:Type Button}}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding AuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                             Value="True">
-                    <Setter Property="IsEnabled" Value="False"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding AuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                 Value="True">
+                        <Setter Property="IsEnabled" Value="False"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -50,8 +50,9 @@
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>
-                    </TextBlock.Style>
-                </TextBlock>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
 
             <!-- EA Authentication -->
             <Border Style="{StaticResource SectionBorderStyle}"
