@@ -41,9 +41,7 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                var data = _cacheService.LoadGameData(playniteGameId);
-                _hydrator.Hydrate(data);
-                return data;
+                return GetMergedGameAchievementData(playniteGameId, includeAchievementOverlays: true);
             }
             catch (Exception ex)
             {
@@ -88,9 +86,7 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                var data = _cacheService.LoadGameData(playniteGameId.ToString());
-                _hydrator.HydrateForSidebar(data);
-                return data;
+                return GetMergedGameAchievementData(playniteGameId.ToString(), includeAchievementOverlays: false);
             }
             catch (Exception ex)
             {
@@ -106,7 +102,7 @@ namespace PlayniteAchievements.Services
             try
             {
                 var result = LoadAllCachedGameData();
-                _hydrator.HydrateAll(result);
+                HydrateAll(result, includeAchievementOverlays: true);
                 return result;
             }
             catch (Exception ex)
@@ -121,7 +117,7 @@ namespace PlayniteAchievements.Services
             try
             {
                 var result = LoadAllCachedGameData();
-                _hydrator.HydrateAllForSidebar(result);
+                HydrateAll(result, includeAchievementOverlays: false);
                 return result;
             }
             catch (Exception ex)
@@ -163,6 +159,35 @@ namespace PlayniteAchievements.Services
             }
 
             return result;
+        }
+
+        private GameAchievementData GetMergedGameAchievementData(
+            string playniteGameId,
+            bool includeAchievementOverlays)
+        {
+            var data = _cacheService.LoadGameData(playniteGameId);
+            if (includeAchievementOverlays)
+            {
+                _hydrator.Hydrate(data);
+            }
+            else
+            {
+                _hydrator.HydrateForSidebar(data);
+            }
+
+            return data;
+        }
+
+        private void HydrateAll(IEnumerable<GameAchievementData> games, bool includeAchievementOverlays)
+        {
+            if (includeAchievementOverlays)
+            {
+                _hydrator.HydrateAll(games);
+            }
+            else
+            {
+                _hydrator.HydrateAllForSidebar(games);
+            }
         }
     }
 }

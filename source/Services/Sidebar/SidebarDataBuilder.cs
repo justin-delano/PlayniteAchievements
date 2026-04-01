@@ -411,6 +411,10 @@ namespace PlayniteAchievements.Services.Sidebar
             };
 
             var achievements = gameData.Achievements;
+            var appearanceSettings = AchievementDisplayItem.CreateAppearanceSettingsSnapshot(
+                settings,
+                gameData.PlayniteGameId,
+                gameData.UseSeparateLockedIconsWhenAvailable);
             int gameTotal = achievements.Count;
             int gameUnlocked = 0;
             int gameCommon = 0;
@@ -444,7 +448,13 @@ namespace PlayniteAchievements.Services.Sidebar
 
                 if (includeAchievementItems)
                 {
-                    var displayItem = AchievementDisplayItem.Create(gameData, ach, settings, revealedKeys);
+                    var displayItem = AchievementDisplayItem.Create(
+                        gameData,
+                        ach,
+                        settings,
+                        revealedKeys,
+                        gameData.PlayniteGameId,
+                        appearanceSettings);
                     if (displayItem != null)
                     {
                         fragment.Achievements.Add(displayItem);
@@ -483,7 +493,8 @@ namespace PlayniteAchievements.Services.Sidebar
                                 ach,
                                 settings,
                                 gameIconPath,
-                                gameCoverPath);
+                                gameCoverPath,
+                                appearanceSettings);
                             if (recentItem != null)
                             {
                                 fragment.RecentAchievements.Add(recentItem);
@@ -570,6 +581,7 @@ namespace PlayniteAchievements.Services.Sidebar
             excludedSummaryIds ??= new HashSet<Guid>();
 
             var recentGameDataByKey = new Dictionary<string, GameAchievementData>(StringComparer.OrdinalIgnoreCase);
+            var appearanceByGameKey = new Dictionary<string, AchievementDisplayItem.AppearanceSettingsSnapshot>(StringComparer.OrdinalIgnoreCase);
             foreach (var recent in recentAchievements)
             {
                 cancel.ThrowIfCancellationRequested();
@@ -597,6 +609,11 @@ namespace PlayniteAchievements.Services.Sidebar
                         Achievements = new List<AchievementDetail>()
                     };
                     recentGameDataByKey[gameKey] = gameData;
+
+                    appearanceByGameKey[gameKey] = AchievementDisplayItem.CreateAppearanceSettingsSnapshot(
+                        settings,
+                        gameData.PlayniteGameId,
+                        gameData.UseSeparateLockedIconsWhenAvailable);
                 }
 
                 var detail = new AchievementDetail
@@ -627,7 +644,10 @@ namespace PlayniteAchievements.Services.Sidebar
                     detail,
                     settings,
                     presentation.IconPath,
-                    presentation.CoverPath);
+                    presentation.CoverPath,
+                    appearanceByGameKey.TryGetValue(gameKey, out var appearance)
+                        ? appearance
+                        : null);
                 if (item != null)
                 {
                     items.Add(item);

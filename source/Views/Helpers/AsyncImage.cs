@@ -97,9 +97,11 @@ namespace PlayniteAchievements.Views.Helpers
                 fe.Loaded -= OnLoaded;
                 fe.Unloaded -= OnUnloaded;
                 fe.SizeChanged -= OnSizeChanged;
+                fe.IsVisibleChanged -= OnIsVisibleChanged;
                 fe.Loaded += OnLoaded;
                 fe.Unloaded += OnUnloaded;
                 fe.SizeChanged += OnSizeChanged;
+                fe.IsVisibleChanged += OnIsVisibleChanged;
             }
 
             // If the new value is already an ImageSource, apply it directly
@@ -135,6 +137,11 @@ namespace PlayniteAchievements.Views.Helpers
         private static void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (!(sender is FrameworkElement fe) || !fe.IsLoaded)
+            {
+                return;
+            }
+
+            if (!fe.IsVisible)
             {
                 return;
             }
@@ -179,6 +186,22 @@ namespace PlayniteAchievements.Views.Helpers
             }
         }
 
+        private static void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (!(sender is FrameworkElement fe) || !fe.IsLoaded)
+            {
+                return;
+            }
+
+            if (fe.IsVisible)
+            {
+                _ = StartLoadAsync(fe);
+                return;
+            }
+
+            CancelExisting(fe);
+        }
+
         private static void CancelExisting(DependencyObject d)
         {
             try
@@ -203,6 +226,11 @@ namespace PlayniteAchievements.Views.Helpers
 
         private static async Task StartLoadAsync(DependencyObject d)
         {
+            if (d is FrameworkElement fe && !fe.IsVisible)
+            {
+                return;
+            }
+
             var uri = GetUri(d);
 
             // If already an ImageSource, apply directly (fallback path from converter)
@@ -222,12 +250,6 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             CancelExisting(d);
-
-            if (TryStartGifAnimation(d, uriString))
-            {
-                SetLastRequestedDecodePixel(d, 0);
-                return;
-            }
 
             if (GetGray(d) && !uriString.StartsWith(GrayPrefix, StringComparison.OrdinalIgnoreCase))
             {
@@ -274,9 +296,8 @@ namespace PlayniteAchievements.Views.Helpers
                     ApplySource(d, bmp);
                 }
 
-                // For GIF URLs, loading through the image service may cache the GIF on disk.
-                // Retry GIF animation after load so URL previews can animate once cached.
-                TryStartGifAnimation(d, uriString);
+                // Start GIF animation asynchronously after the first static frame is already visible.
+                _ = StartGifAnimationAsync(d, uriString, cts.Token);
             }
             catch (OperationCanceledException)
             {
@@ -295,6 +316,61 @@ namespace PlayniteAchievements.Views.Helpers
                     SetLoadCts(d, null);
                 }
                 try { cts.Dispose(); } catch { }
+            }
+        }
+
+        private static async Task StartGifAnimationAsync(DependencyObject d, string uriString, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(uriString))
+            {
+                return;
+            }
+
+            try
+            {
+                var applyGray = GetGray(d);
+                var created = await Task.Run(() =>
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return (ok: false, normalized: (string)null, firstFrame: (ImageSource)null, animation: (ObjectAnimationUsingKeyFrames)null);
+                    }
+
+                    var ok = GifAnimationHelper.TryCreateAnimation(
+                        uriString,
+                        applyGray,
+                        out var normalized,
+                        out var firstFrame,
+                        out var animation);
+                    return (ok, normalized, firstFrame, animation);
+                }, cancellationToken).ConfigureAwait(false);
+
+                if (!created.ok || cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                var dispatcher = Application.Current?.Dispatcher;
+                if (dispatcher != null && !dispatcher.CheckAccess())
+                {
+                    _ = dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        if (!cancellationToken.IsCancellationRequested)
+                        {
+                            ApplyAnimatedFrames(d, created.normalized, created.firstFrame, created.animation);
+                        }
+                    }));
+                }
+                else if (!cancellationToken.IsCancellationRequested)
+                {
+                    ApplyAnimatedFrames(d, created.normalized, created.firstFrame, created.animation);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch
+            {
             }
         }
 
@@ -335,31 +411,6 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             return inferredDecode > 0 ? inferredDecode : DefaultDecodePixel;
-        }
-
-        private static bool TryStartGifAnimation(DependencyObject target, string uri)
-        {
-            if (!(target is System.Windows.Controls.Image) &&
-                !(target is System.Windows.Media.ImageBrush))
-            {
-                return false;
-            }
-
-            var applyGray = GetGray(target);
-            if (!GifAnimationHelper.TryCreateAnimation(uri, applyGray, out var normalized, out var firstFrame, out var animation))
-            {
-                return false;
-            }
-
-            var activeSource = GetActiveAnimatedGifSource(target);
-            if (!string.IsNullOrWhiteSpace(activeSource) &&
-                string.Equals(activeSource, normalized, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            ApplyAnimatedFrames(target, normalized, firstFrame, animation);
-            return true;
         }
 
         private static void ApplyAnimatedFrames(DependencyObject target, string normalizedSource, ImageSource firstFrame, ObjectAnimationUsingKeyFrames animation)

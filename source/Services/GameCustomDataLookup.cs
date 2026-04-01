@@ -78,25 +78,25 @@ namespace PlayniteAchievements.Services
                         ? customData?.UseSeparateLockedIconsOverride == true
                         : fallbackSettings?.SeparateLockedIconEnabledGameIds?.Contains(gameId) == true),
                 ManualCapstoneApiName = hasCustomData
-                    ? NormalizeValue(customData?.ManualCapstoneApiName)
+                    ? customData?.ManualCapstoneApiName
                                         : fallbackSettings?.ManualCapstones != null &&
                                             fallbackSettings.ManualCapstones.TryGetValue(gameId, out var capstone)
                                                 ? NormalizeValue(capstone)
                                                 : null,
                 AchievementOrder = hasCustomData
-                    ? AchievementOrderHelper.NormalizeApiNames(customData?.AchievementOrder)
+                    ? customData?.AchievementOrder ?? new List<string>()
                                         : fallbackSettings?.AchievementOrderOverrides != null &&
                                             fallbackSettings.AchievementOrderOverrides.TryGetValue(gameId, out var configuredOrder)
                                                 ? AchievementOrderHelper.NormalizeApiNames(configuredOrder)
                                                 : new List<string>(),
                 AchievementCategoryOverrides = hasCustomData
-                    ? CloneStringMap(customData?.AchievementCategoryOverrides)
+                    ? customData?.AchievementCategoryOverrides ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                                         : fallbackSettings?.AchievementCategoryOverrides != null &&
                                             fallbackSettings.AchievementCategoryOverrides.TryGetValue(gameId, out var configuredCategoryOverrides)
                                                 ? CloneStringMap(configuredCategoryOverrides)
                                                 : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
                 AchievementCategoryTypeOverrides = hasCustomData
-                    ? CloneStringMap(customData?.AchievementCategoryTypeOverrides)
+                    ? customData?.AchievementCategoryTypeOverrides ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                                         : fallbackSettings?.AchievementCategoryTypeOverrides != null &&
                                             fallbackSettings.AchievementCategoryTypeOverrides.TryGetValue(gameId, out var configuredCategoryTypeOverrides)
                                                 ? CloneStringMap(configuredCategoryTypeOverrides)

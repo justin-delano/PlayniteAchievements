@@ -35,6 +35,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly RefreshRuntime _refreshService;
         private readonly Action _persistSettingsForUi;
         private readonly AchievementDataService _achievementDataService;
+        private readonly AchievementSelectionPipeline _selectedGamePipeline;
         private readonly RefreshEntryPoint _refreshCoordinator;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
@@ -61,20 +62,12 @@ namespace PlayniteAchievements.ViewModels
         private System.Windows.Threading.DispatcherTimer _deltaBatchTimer;
         private bool _showCompletedProgress;
         private bool _refreshInitiated;
-        private int _selectedGameLoadVersion;
         private bool _selectedGameLoadInProgress;
+        private CancellationTokenSource _selectedGameLoadCts;
         private static readonly TimeSpan ProgressHideDelay = TimeSpan.FromSeconds(3);
         private readonly object _deltaSync = new object();
         private readonly HashSet<string> _pendingDeltaKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _pendingFullResetFromDelta;
-        private readonly Dictionary<Guid, SelectedGameLoadCacheEntry> _selectedGameLoadCache =
-            new Dictionary<Guid, SelectedGameLoadCacheEntry>();
-
-        private sealed class SelectedGameLoadCacheEntry
-        {
-            public List<AchievementDisplayItem> Items { get; set; }
-            public bool HasCustomOrder { get; set; }
-        }
 
         private List<AchievementDisplayItem> _filteredRecentAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
@@ -112,6 +105,7 @@ namespace PlayniteAchievements.ViewModels
             _logger = logger;
             _settings = settings;
             _dataBuilder = new SidebarDataBuilder(_achievementDataService, _refreshService.Providers, _playniteApi, _logger);
+            _selectedGamePipeline = new AchievementSelectionPipeline(_achievementDataService, _settings);
 
             // Initialize debounce timer
             _refreshDebounceTimer = new System.Windows.Threading.DispatcherTimer
@@ -668,10 +662,11 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(TimelineSectionTitle));
                     (RefreshCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                     _selectedGameLoadInProgress = true;
+                    CancelSelectedGameLoad();
+                    _selectedGameLoadCts = new CancellationTokenSource();
 
                     // Defer visibility/data notifications until after data loads to prevent flash
-                    var loadVersion = Interlocked.Increment(ref _selectedGameLoadVersion);
-                    _ = LoadSelectedGameAchievementsAndNotifyAsync(loadVersion, newGameId);
+                    _ = LoadSelectedGameAchievementsAndNotifyAsync(newGameId, _selectedGameLoadCts.Token);
                 }
             }
         }
@@ -1291,7 +1286,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            _selectedGameLoadCache.Clear();
+            _selectedGamePipeline.InvalidateAll();
 
             _latestSnapshot = snapshot;
             _allAchievements = snapshot.Achievements ?? new List<AchievementDisplayItem>();
@@ -1366,7 +1361,7 @@ namespace PlayniteAchievements.ViewModels
             _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
             _allGamesOverview.RemoveAll(g => g?.PlayniteGameId == gameId);
             _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
-            _selectedGameLoadCache.Remove(gameId);
+            _selectedGamePipeline.Invalidate(gameId);
 
             if (fragment == null)
             {
@@ -1855,21 +1850,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var showIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
-            var showTitle = _settings?.Persisted?.ShowHiddenTitle ?? false;
-            var showDescription = _settings?.Persisted?.ShowHiddenDescription ?? false;
-            var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
-            var revealedCopy = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            if (anyHidingEnabled)
-            {
-                lock (_revealedKeys)
-                {
-                    if (_revealedKeys.Count > 0)
-                    {
-                        revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
-                    }
-                }
-            }
+            var revealedCopy = GetRevealedKeysSnapshotIfNeeded();
 
             var fragments = await Task.Run(() =>
             {
@@ -2580,68 +2561,35 @@ namespace PlayniteAchievements.ViewModels
 
         private void UpdateSelectedGameAchievementFilterOptions(IEnumerable<AchievementDisplayItem> source)
         {
-            var typeValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var categoryValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            if (source != null)
-            {
-                foreach (var item in source)
-                {
-                    if (item == null)
-                    {
-                        continue;
-                    }
-
-                    var parsedTypes = AchievementCategoryTypeHelper.ParseValues(
-                        AchievementCategoryTypeHelper.NormalizeOrDefault(item.CategoryType));
-                    foreach (var parsedType in parsedTypes)
-                    {
-                        if (!string.IsNullOrWhiteSpace(parsedType))
-                        {
-                            typeValues.Add(parsedType);
-                        }
-                    }
-
-                    var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel);
-                    if (!string.IsNullOrWhiteSpace(normalizedCategory))
-                    {
-                        categoryValues.Add(normalizedCategory);
-                    }
-                }
-            }
-
-            var typeOptions = AchievementCategoryTypeHelper.AllowedCategoryTypes
-                .Where(typeValues.Contains)
-                .ToList();
-
-            var categoryOptions = categoryValues
-                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var options = SidebarAchievementFilters.BuildSelectedGameFilterOptions(
+                source,
+                _selectedGameTypeFilters,
+                _selectedGameCategoryFilters);
 
             if (SelectedGameTypeFilterOptions == null)
             {
-                SelectedGameTypeFilterOptions = new ObservableCollection<string>(typeOptions);
+                SelectedGameTypeFilterOptions = new ObservableCollection<string>(options.TypeOptions);
             }
             else
             {
-                CollectionHelper.SynchronizeCollection(SelectedGameTypeFilterOptions, typeOptions);
+                CollectionHelper.SynchronizeCollection(SelectedGameTypeFilterOptions, options.TypeOptions);
             }
 
             if (SelectedGameCategoryFilterOptions == null)
             {
-                SelectedGameCategoryFilterOptions = new ObservableCollection<string>(categoryOptions);
+                SelectedGameCategoryFilterOptions = new ObservableCollection<string>(options.CategoryOptions);
             }
             else
             {
-                CollectionHelper.SynchronizeCollection(SelectedGameCategoryFilterOptions, categoryOptions);
+                CollectionHelper.SynchronizeCollection(SelectedGameCategoryFilterOptions, options.CategoryOptions);
             }
 
-            if (PruneFilterSelections(_selectedGameTypeFilters, SelectedGameTypeFilterOptions))
+            if (options.TypeSelectionPruned)
             {
                 OnPropertyChanged(nameof(SelectedGameTypeFilterText));
             }
 
-            if (PruneFilterSelections(_selectedGameCategoryFilters, SelectedGameCategoryFilterOptions))
+            if (options.CategorySelectionPruned)
             {
                 OnPropertyChanged(nameof(SelectedGameCategoryFilterText));
             }
@@ -2741,48 +2689,15 @@ namespace PlayniteAchievements.ViewModels
             // Contextually filter based on IsGameSelected
             if (IsGameSelected)
             {
-                // Filter SelectedGameAchievements
-                var filtered = _allSelectedGameAchievements.AsEnumerable();
+                _filteredSelectedGameAchievements = SidebarAchievementFilters.FilterSelectedGameAchievements(
+                    _allSelectedGameAchievements,
+                    ShowSelectedGameHidden,
+                    ShowSelectedGameUnlocked,
+                    ShowSelectedGameLocked,
+                    _selectedGameTypeFilters,
+                    _selectedGameCategoryFilters,
+                    RightSearchText);
 
-                if (!ShowSelectedGameHidden)
-                {
-                    filtered = filtered.Where(a => !(a.Hidden && !a.Unlocked));
-                }
-
-                filtered = filtered.Where(a => a.Unlocked ? ShowSelectedGameUnlocked : ShowSelectedGameLocked);
-
-                if (_selectedGameTypeFilters.Count > 0)
-                {
-                    var selectedTypeSet = new HashSet<string>(
-                        _selectedGameTypeFilters
-                            .Select(AchievementCategoryTypeHelper.NormalizeOrDefault)
-                            .Where(value => !string.IsNullOrWhiteSpace(value)),
-                        StringComparer.OrdinalIgnoreCase);
-                    filtered = filtered.Where(a =>
-                        AchievementCategoryTypeHelper.ParseValues(
-                                AchievementCategoryTypeHelper.NormalizeOrDefault(a.CategoryType))
-                            .Any(selectedTypeSet.Contains));
-                }
-
-                if (_selectedGameCategoryFilters.Count > 0)
-                {
-                    var selectedCategorySet = new HashSet<string>(
-                        _selectedGameCategoryFilters
-                            .Select(AchievementCategoryTypeHelper.NormalizeCategoryOrDefault)
-                            .Where(value => !string.IsNullOrWhiteSpace(value)),
-                        StringComparer.OrdinalIgnoreCase);
-                    filtered = filtered.Where(a =>
-                        selectedCategorySet.Contains(
-                            AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel)));
-                }
-
-                if (!string.IsNullOrEmpty(RightSearchText))
-                {
-                    filtered = filtered.Where(a =>
-                        (a.DisplayName?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                        (a.Description?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0));
-                }
-                _filteredSelectedGameAchievements = filtered.ToList();
                 if (!string.IsNullOrEmpty(_selectedGameSortPath))
                 {
                     SortSelectedGameAchievements(_selectedGameSortPath, _selectedGameSortDirection);
@@ -2801,15 +2716,10 @@ namespace PlayniteAchievements.ViewModels
             }
             else
             {
-                // Filter RecentAchievements
-                var filtered = _allRecentAchievements.AsEnumerable();
-                if (!string.IsNullOrEmpty(RightSearchText))
-                {
-                    filtered = filtered.Where(r =>
-                        (r.GameName?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                        (r.Name?.IndexOf(RightSearchText, StringComparison.OrdinalIgnoreCase) >= 0));
-                }
-                _filteredRecentAchievements = filtered.ToList();
+                _filteredRecentAchievements = SidebarAchievementFilters.FilterRecentAchievements(
+                    _allRecentAchievements,
+                    RightSearchText);
+
                 if (!string.IsNullOrEmpty(_recentSortPath))
                 {
                     SortRecentAchievements(_recentSortPath, _recentSortDirection);
@@ -2866,10 +2776,10 @@ namespace PlayniteAchievements.ViewModels
         /// Loads game achievements and fires visibility notifications after data is ready.
         /// This prevents flash by ensuring data is loaded before the grid becomes visible.
         /// </summary>
-        private async Task LoadSelectedGameAchievementsAndNotifyAsync(int loadVersion, Guid? targetGameId)
+        private async Task LoadSelectedGameAchievementsAndNotifyAsync(Guid? targetGameId, CancellationToken cancellationToken)
         {
-            var loadApplied = await LoadSelectedGameAchievementsAsync(loadVersion, targetGameId).ConfigureAwait(true);
-            if (loadVersion == _selectedGameLoadVersion)
+            var loadApplied = await LoadSelectedGameAchievementsAsync(targetGameId, cancellationToken).ConfigureAwait(true);
+            if (!cancellationToken.IsCancellationRequested)
             {
                 _selectedGameLoadInProgress = false;
             }
@@ -2885,14 +2795,14 @@ namespace PlayniteAchievements.ViewModels
             UpdateContextualPieCharts(BuildPieChartSnapshotFromCurrentState());
         }
 
-        private async Task<bool> LoadSelectedGameAchievementsAsync(int loadVersion, Guid? targetGameId)
+        private async Task<bool> LoadSelectedGameAchievementsAsync(Guid? targetGameId, CancellationToken cancellationToken)
         {
             // Reset right search when selecting a game
             RightSearchText = string.Empty;
 
             if (targetGameId == null)
             {
-                if (!IsSelectedGameLoadCurrent(loadVersion, targetGameId))
+                if (!IsSelectedGameLoadCurrent(targetGameId, cancellationToken))
                 {
                     return false;
                 }
@@ -2916,7 +2826,7 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                if (!IsSelectedGameLoadCurrent(loadVersion, targetGameId))
+                if (!IsSelectedGameLoadCurrent(targetGameId, cancellationToken))
                 {
                     return false;
                 }
@@ -2936,120 +2846,26 @@ namespace PlayniteAchievements.ViewModels
 
                 var gameId = targetGameId.Value;
 
-                if (_selectedGameLoadCache.TryGetValue(gameId, out var cached) && cached?.Items != null)
-                {
-                    if (!IsSelectedGameLoadCurrent(loadVersion, targetGameId))
-                    {
-                        return false;
-                    }
+                var revealedCopy = GetRevealedKeysSnapshotIfNeeded();
 
-                    var cachedItems = new List<AchievementDisplayItem>(cached.Items);
-                    SelectedGameHasCustomAchievementOrder = cached.HasCustomOrder;
+                var loadResult = await _selectedGamePipeline
+                    .LoadAsync(gameId, revealedCopy, cancellationToken)
+                    .ConfigureAwait(true);
 
-                    if (cached.HasCustomOrder &&
-                        string.Equals(_selectedGameSortPath, nameof(AchievementDisplayItem.UnlockTime), StringComparison.Ordinal))
-                    {
-                        _selectedGameSortPath = null;
-                    }
-                    else if (!cached.HasCustomOrder && string.IsNullOrEmpty(_selectedGameSortPath))
-                    {
-                        _selectedGameSortPath = nameof(AchievementDisplayItem.UnlockTime);
-                        _selectedGameSortDirection = ListSortDirection.Descending;
-                    }
-
-                    _allSelectedGameAchievements = cachedItems;
-                    UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
-                    ApplyRightFilters();
-
-                    IDictionary<DateTime, int> selectedTimelineCounts = null;
-                    if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
-                        _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var cachedCounts))
-                    {
-                        selectedTimelineCounts = cachedCounts;
-                    }
-                    else
-                    {
-                        selectedTimelineCounts = new Dictionary<DateTime, int>();
-                    }
-
-                    GlobalTimeline.SetCounts(selectedTimelineCounts);
-                    SelectedGameTimeline.SetCounts(selectedTimelineCounts);
-                    return true;
-                }
-
-                var showIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
-                var showTitle = _settings?.Persisted?.ShowHiddenTitle ?? false;
-                var showDescription = _settings?.Persisted?.ShowHiddenDescription ?? false;
-                var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
-                ISet<string> revealedCopy = null;
-                if (anyHidingEnabled)
-                {
-                    lock (_revealedKeys)
-                    {
-                        if (_revealedKeys.Count > 0)
-                        {
-                            revealedCopy = new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
-                        }
-                    }
-                }
-
-                var loadResult = await Task.Run(() =>
-                {
-                    var gameData = _achievementDataService.GetGameAchievementData(gameId);
-                    if (gameData == null || gameData.Achievements == null)
-                    {
-                        return Tuple.Create(new List<AchievementDisplayItem>(), false);
-                    }
-
-                    var achievements = new List<AchievementDisplayItem>(gameData.Achievements.Count);
-                    foreach (var ach in gameData.Achievements)
-                    {
-                        var item = AchievementDisplayItem.Create(gameData, ach, _settings, revealedCopy, gameId);
-                        if (item != null)
-                        {
-                            achievements.Add(item);
-                        }
-                    }
-
-                    var hasCustomOrder = gameData.AchievementOrder != null && gameData.AchievementOrder.Count > 0;
-                    if (hasCustomOrder)
-                    {
-                        return Tuple.Create(
-                            AchievementOrderHelper.ApplyOrder(
-                                achievements,
-                                a => a.ApiName,
-                                gameData.AchievementOrder),
-                            true);
-                    }
-
-                    return Tuple.Create(
-                        AchievementGridSortHelper.CreateDefaultSortedList(
-                            achievements,
-                            AchievementGridSortScope.GameAchievements),
-                        false);
-                }).ConfigureAwait(true);
-
-                if (!IsSelectedGameLoadCurrent(loadVersion, targetGameId))
+                if (!IsSelectedGameLoadCurrent(targetGameId, cancellationToken))
                 {
                     return false;
                 }
 
-                var items = loadResult.Item1;
-                var hasCustomOrder = loadResult.Item2;
+                var items = loadResult.Items ?? new List<AchievementDisplayItem>();
+                var hasCustomOrder = loadResult.HasCustomOrder;
                 SelectedGameHasCustomAchievementOrder = hasCustomOrder;
-                _selectedGameLoadCache[gameId] = new SelectedGameLoadCacheEntry
-                {
-                    Items = new List<AchievementDisplayItem>(items),
-                    HasCustomOrder = hasCustomOrder
-                };
 
                 if (hasCustomOrder &&
                     string.Equals(_selectedGameSortPath, nameof(AchievementDisplayItem.UnlockTime), StringComparison.Ordinal))
-                _selectedGameLoadCache.Clear();
                 {
                     _selectedGameSortPath = null;
                 }
-                    _selectedGameLoadCache.Clear();
                 else if (!hasCustomOrder && string.IsNullOrEmpty(_selectedGameSortPath))
                 {
                     _selectedGameSortPath = nameof(AchievementDisplayItem.UnlockTime);
@@ -3060,25 +2876,18 @@ namespace PlayniteAchievements.ViewModels
                 UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
                 ApplyRightFilters();
 
-                // Update timeline to show selected game's unlock history
-                IDictionary<DateTime, int> selectedTimelineCounts = null;
-                if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
-                    _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var counts))
-                {
-                    selectedTimelineCounts = counts;
-                }
-                else
-                {
-                    selectedTimelineCounts = new Dictionary<DateTime, int>();
-                }
-
+                var selectedTimelineCounts = GetSelectedGameTimelineCounts(gameId);
                 GlobalTimeline.SetCounts(selectedTimelineCounts);
                 SelectedGameTimeline.SetCounts(selectedTimelineCounts);
                 return true;
             }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
             catch (Exception ex)
             {
-                if (!IsSelectedGameLoadCurrent(loadVersion, targetGameId))
+                if (!IsSelectedGameLoadCurrent(targetGameId, cancellationToken))
                 {
                     return false;
                 }
@@ -3090,14 +2899,72 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private bool IsSelectedGameLoadCurrent(int loadVersion, Guid? targetGameId)
+        private bool IsSelectedGameLoadCurrent(Guid? targetGameId, CancellationToken cancellationToken)
         {
-            if (loadVersion != _selectedGameLoadVersion)
+            if (cancellationToken.IsCancellationRequested)
             {
                 return false;
             }
 
             return SelectedGame?.PlayniteGameId == targetGameId;
+        }
+
+        private ISet<string> GetRevealedKeysSnapshotIfNeeded()
+        {
+            var showIcon = _settings?.Persisted?.ShowHiddenIcon ?? false;
+            var showTitle = _settings?.Persisted?.ShowHiddenTitle ?? false;
+            var showDescription = _settings?.Persisted?.ShowHiddenDescription ?? false;
+            var anyHidingEnabled = !showIcon || !showTitle || !showDescription;
+            if (!anyHidingEnabled)
+            {
+                return null;
+            }
+
+            lock (_revealedKeys)
+            {
+                if (_revealedKeys.Count == 0)
+                {
+                    return null;
+                }
+
+                return new HashSet<string>(_revealedKeys, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private IDictionary<DateTime, int> GetSelectedGameTimelineCounts(Guid gameId)
+        {
+            if (_latestSnapshot?.UnlockCountsByDateByGame != null &&
+                _latestSnapshot.UnlockCountsByDateByGame.TryGetValue(gameId, out var counts))
+            {
+                return counts;
+            }
+
+            return new Dictionary<DateTime, int>();
+        }
+
+        private void CancelSelectedGameLoad()
+        {
+            var cts = Interlocked.Exchange(ref _selectedGameLoadCts, null);
+            if (cts == null)
+            {
+                return;
+            }
+
+            try
+            {
+                cts.Cancel();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                cts.Dispose();
+            }
+            catch
+            {
+            }
         }
 
         public void ClearGameSelection()
@@ -3290,6 +3157,7 @@ namespace PlayniteAchievements.ViewModels
         {
             _disposed = true;
             SetActive(false);
+            CancelSelectedGameLoad();
             _refreshDebounceTimer?.Stop();
             _progressHideTimer?.Stop();
             _deltaBatchTimer?.Stop();

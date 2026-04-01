@@ -14,6 +14,11 @@ namespace PlayniteAchievements.Views.Helpers
         private const string PreviewHttpPrefix = "previewhttp:";
         private const int MaxCompositedGifFrames = 120;
         private const int MaxGifPixelArea = 2048 * 2048;
+        private const int MaxCachedGifAnimations = 64;
+
+        private static readonly object CacheSync = new object();
+        private static readonly Dictionary<string, (List<BitmapSource> Frames, List<int> Delays)> FrameCache =
+            new Dictionary<string, (List<BitmapSource> Frames, List<int> Delays)>(StringComparer.OrdinalIgnoreCase);
 
         public static bool TryCreateAnimation(string uri, bool applyGray, out string normalizedSource, out ImageSource firstFrame, out ObjectAnimationUsingKeyFrames animation)
         {
@@ -35,14 +40,33 @@ namespace PlayniteAchievements.Views.Helpers
 
             try
             {
-                var decoder = new GifBitmapDecoder(new Uri(normalizedSource, UriKind.Absolute), BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                if (decoder.Frames == null || decoder.Frames.Count == 0)
+                var cacheKey = GetFrameCacheKey(normalizedSource, applyGray);
+                var cached = TryGetCachedAnimation(cacheKey);
+                if (cached == null)
                 {
-                    return false;
+                    var decoder = new GifBitmapDecoder(new Uri(normalizedSource, UriKind.Absolute), BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                    if (decoder.Frames == null || decoder.Frames.Count == 0)
+                    {
+                        return false;
+                    }
+
+                    var frames = BuildCompositedGifFrames(decoder, applyGray);
+                    if (frames.Count == 0)
+                    {
+                        return false;
+                    }
+
+                    var delays = BuildFrameDelays(decoder, frames.Count);
+                    if (delays.Count != frames.Count)
+                    {
+                        return false;
+                    }
+
+                    cached = (frames, delays);
+                    SetCachedAnimation(cacheKey, cached.Value);
                 }
 
-                var frames = BuildCompositedGifFrames(decoder, applyGray);
-                if (frames.Count == 0)
+                if (cached.Value.Frames.Count == 0)
                 {
                     return false;
                 }
@@ -53,19 +77,15 @@ namespace PlayniteAchievements.Views.Helpers
                 };
 
                 var current = TimeSpan.Zero;
-                for (var i = 0; i < frames.Count; i++)
+                for (var i = 0; i < cached.Value.Frames.Count; i++)
                 {
-                    var frame = frames[i];
+                    var frame = cached.Value.Frames[i];
                     if (frame == null)
                     {
                         continue;
                     }
 
-                    var delayMilliseconds = GetGifFrameDelayMilliseconds(decoder.Frames[i]);
-                    if (delayMilliseconds < 20)
-                    {
-                        delayMilliseconds = 100;
-                    }
+                    var delayMilliseconds = cached.Value.Delays[i];
 
                     keyFrames.KeyFrames.Add(new DiscreteObjectKeyFrame(frame, KeyTime.FromTimeSpan(current)));
                     current = current.Add(TimeSpan.FromMilliseconds(delayMilliseconds));
@@ -76,7 +96,12 @@ namespace PlayniteAchievements.Views.Helpers
                     return false;
                 }
 
-                firstFrame = frames[0];
+                if (keyFrames.CanFreeze)
+                {
+                    keyFrames.Freeze();
+                }
+
+                firstFrame = cached.Value.Frames[0];
                 animation = keyFrames;
                 return true;
             }
@@ -182,6 +207,67 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             return 100;
+        }
+
+        private static List<int> BuildFrameDelays(GifBitmapDecoder decoder, int frameCount)
+        {
+            var delays = new List<int>(frameCount);
+            for (var i = 0; i < frameCount; i++)
+            {
+                var delayMilliseconds = i < decoder.Frames.Count
+                    ? GetGifFrameDelayMilliseconds(decoder.Frames[i])
+                    : 100;
+                if (delayMilliseconds < 20)
+                {
+                    delayMilliseconds = 100;
+                }
+
+                delays.Add(delayMilliseconds);
+            }
+
+            return delays;
+        }
+
+        private static string GetFrameCacheKey(string normalizedSource, bool applyGray)
+        {
+            return applyGray
+                ? "gray|" + normalizedSource
+                : normalizedSource;
+        }
+
+        private static (List<BitmapSource> Frames, List<int> Delays)? TryGetCachedAnimation(string cacheKey)
+        {
+            if (string.IsNullOrWhiteSpace(cacheKey))
+            {
+                return null;
+            }
+
+            lock (CacheSync)
+            {
+                if (!FrameCache.TryGetValue(cacheKey, out var cached))
+                {
+                    return null;
+                }
+                return cached;
+            }
+        }
+
+        private static void SetCachedAnimation(string cacheKey, (List<BitmapSource> Frames, List<int> Delays) cached)
+        {
+            if (string.IsNullOrWhiteSpace(cacheKey) || cached.Frames == null || cached.Delays == null)
+            {
+                return;
+            }
+
+            lock (CacheSync)
+            {
+                if (FrameCache.Count >= MaxCachedGifAnimations && !FrameCache.ContainsKey(cacheKey))
+                {
+                    FrameCache.Clear();
+                }
+
+                FrameCache[cacheKey] = cached;
+            }
         }
 
         private static List<BitmapSource> BuildCompositedGifFrames(GifBitmapDecoder decoder, bool applyGray)
