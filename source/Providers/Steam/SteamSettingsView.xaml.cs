@@ -87,6 +87,9 @@ namespace PlayniteAchievements.Providers.Steam
         {
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             InitializeComponent();
+            AuthLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Label_ProviderAuth"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_Steam"));
         }
 
         public override void Initialize(IProviderSettings settings)
@@ -135,7 +138,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (hasWebAuth && hasApiKey)
             {
-                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_AlreadyAuthenticated");
+                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated");
             }
             else if (hasWebAuth)
             {
@@ -227,7 +230,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (WebAuthenticated && hasApiKey)
             {
-                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_AlreadyAuthenticated");
+                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated");
             }
             else if (WebAuthenticated)
             {
