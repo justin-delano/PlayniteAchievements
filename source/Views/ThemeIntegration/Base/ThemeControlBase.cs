@@ -155,6 +155,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         protected PlayniteAchievementsSettings EffectiveSettings => SettingsOverride ?? Plugin?.Settings;
 
         /// <summary>
+        /// Gets the effective persisted settings object for visibility and option bindings.
+        /// </summary>
+        public PersistedSettings Persisted => EffectiveSettings?.Persisted;
+
+        /// <summary>
         /// Gets the effective modern theme bindings to use for binding.
         /// Returns ThemeDataOverride if set, otherwise Plugin.Settings.ModernTheme.
         /// </summary>

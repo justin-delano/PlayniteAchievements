@@ -56,6 +56,16 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showTopMenuBarButton = true;
         private bool _showCompactListRarityBar = true;
         private bool _showCompletionBorder = true;
+        private bool _enableAchievementCompactListControl = true;
+        private bool _enableAchievementDataGridControl = true;
+        private bool _enableAchievementCompactUnlockedListControl = true;
+        private bool _enableAchievementCompactLockedListControl = true;
+        private bool _enableAchievementProgressBarControl = true;
+        private bool _enableAchievementStatsControl = true;
+        private bool _enableAchievementButtonControl = true;
+        private bool _enableAchievementViewItemControl = true;
+        private bool _enableAchievementPieChartControl = true;
+        private bool _enableAchievementBarChartControl = true;
         private bool _enableCompactGridMode = false;
         private double? _achievementDataGridMaxHeight = null;
         private bool _enableParallelProviderRefresh = true;
@@ -452,6 +462,96 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showCompletionBorder;
             set => SetValue(ref _showCompletionBorder, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern compact list control.
+        /// </summary>
+        public bool EnableAchievementCompactListControl
+        {
+            get => _enableAchievementCompactListControl;
+            set => SetValue(ref _enableAchievementCompactListControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern achievement datagrid control.
+        /// </summary>
+        public bool EnableAchievementDataGridControl
+        {
+            get => _enableAchievementDataGridControl;
+            set => SetValue(ref _enableAchievementDataGridControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern compact unlocked list control.
+        /// </summary>
+        public bool EnableAchievementCompactUnlockedListControl
+        {
+            get => _enableAchievementCompactUnlockedListControl;
+            set => SetValue(ref _enableAchievementCompactUnlockedListControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern compact locked list control.
+        /// </summary>
+        public bool EnableAchievementCompactLockedListControl
+        {
+            get => _enableAchievementCompactLockedListControl;
+            set => SetValue(ref _enableAchievementCompactLockedListControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern progress bar control.
+        /// </summary>
+        public bool EnableAchievementProgressBarControl
+        {
+            get => _enableAchievementProgressBarControl;
+            set => SetValue(ref _enableAchievementProgressBarControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern stats control.
+        /// </summary>
+        public bool EnableAchievementStatsControl
+        {
+            get => _enableAchievementStatsControl;
+            set => SetValue(ref _enableAchievementStatsControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern button control.
+        /// </summary>
+        public bool EnableAchievementButtonControl
+        {
+            get => _enableAchievementButtonControl;
+            set => SetValue(ref _enableAchievementButtonControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern view item control.
+        /// </summary>
+        public bool EnableAchievementViewItemControl
+        {
+            get => _enableAchievementViewItemControl;
+            set => SetValue(ref _enableAchievementViewItemControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern pie chart control.
+        /// </summary>
+        public bool EnableAchievementPieChartControl
+        {
+            get => _enableAchievementPieChartControl;
+            set => SetValue(ref _enableAchievementPieChartControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern bar chart control.
+        /// </summary>
+        public bool EnableAchievementBarChartControl
+        {
+            get => _enableAchievementBarChartControl;
+            set => SetValue(ref _enableAchievementBarChartControl, value);
         }
 
         /// <summary>
@@ -908,6 +1008,16 @@ namespace PlayniteAchievements.Models.Settings
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
                 ShowCompletionBorder = this.ShowCompletionBorder,
+                EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
+                EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
+                EnableAchievementCompactUnlockedListControl = this.EnableAchievementCompactUnlockedListControl,
+                EnableAchievementCompactLockedListControl = this.EnableAchievementCompactLockedListControl,
+                EnableAchievementProgressBarControl = this.EnableAchievementProgressBarControl,
+                EnableAchievementStatsControl = this.EnableAchievementStatsControl,
+                EnableAchievementButtonControl = this.EnableAchievementButtonControl,
+                EnableAchievementViewItemControl = this.EnableAchievementViewItemControl,
+                EnableAchievementPieChartControl = this.EnableAchievementPieChartControl,
+                EnableAchievementBarChartControl = this.EnableAchievementBarChartControl,
                 EnableCompactGridMode = this.EnableCompactGridMode,
                 AchievementDataGridMaxHeight = this.AchievementDataGridMaxHeight,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,

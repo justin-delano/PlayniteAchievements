@@ -38,6 +38,7 @@
     <sys:String x:Key="LOCPlayAch_Common_RevertChanges">Revert Changes</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ExistingLabel">Existing Label</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NewLabel">New Label</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Enabled">Enabled</sys:String>
 
     <!-- ================================================================= -->
     <!-- PLUGIN                                                             -->
