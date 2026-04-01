@@ -49,7 +49,7 @@
                                Style="{StaticResource MutedTextStyle}"
                                Margin="0,0,0,12"
                                TextWrapping="Wrap"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ExophaseConnection}"
+                    <TextBlock x:Name="ConnectionLabel"
                                Style="{StaticResource SectionHeaderStyle}"/>
                     <TextBlock Style="{StaticResource MutedTextStyle}"
                                Margin="0,0,0,12"
@@ -61,7 +61,7 @@
 
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="180"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{DynamicResource LOCPlayAch_Label_ExophaseAuth}"
+                        <TextBlock Grid.Column="0" x:Name="AuthLabel"
                                    Foreground="{DynamicResource TextBrush}" VerticalAlignment="Top" Margin="0,8,0,0"/>
 
                         <Border Grid.Column="1" Background="{DynamicResource PanelBackgroundBrush}"

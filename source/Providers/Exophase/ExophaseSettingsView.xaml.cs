@@ -35,6 +35,12 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             InitializeComponent();
+            ConnectionLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderConnection"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_Exophase"));
+            AuthLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Label_ProviderAuth"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_Exophase"));
         }
 
         public override void Initialize(IProviderSettings settings)
@@ -55,7 +61,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
             if (isAuthenticated)
             {
-                var status = ResourceProvider.GetString("LOCPlayAch_Auth_AlreadyAuthenticated");
+                var status = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated");
                 Logger.Info($"[ExophaseSettings] Setting authenticated status: '{status}'");
                 SetAuthStatus(status);
                 return;
