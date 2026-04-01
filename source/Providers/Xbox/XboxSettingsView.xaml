@@ -45,7 +45,7 @@
 
             <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_XboxConnection}"
+                    <TextBlock x:Name="ConnectionLabel"
                                Style="{StaticResource SectionHeaderStyle}"/>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Xbox_Help}"
                                Style="{StaticResource MutedTextStyle}"
@@ -54,7 +54,7 @@
 
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="180"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="{DynamicResource LOCPlayAch_Label_XboxAuth}"
+                        <TextBlock Grid.Column="0" x:Name="AuthLabel"
                                    Foreground="{DynamicResource TextBrush}" VerticalAlignment="Top" Margin="0,8,0,0"/>
 
                         <Border Grid.Column="1" Background="{DynamicResource PanelBackgroundBrush}"
