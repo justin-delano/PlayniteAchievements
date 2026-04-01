@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
 namespace PlayniteAchievements.Views.Helpers
@@ -70,6 +71,18 @@ namespace PlayniteAchievements.Views.Helpers
         private static void SetLastRequestedDecodePixel(DependencyObject element, int value) =>
             element.SetValue(LastRequestedDecodePixelProperty, value);
 
+        private static readonly DependencyProperty ActiveAnimatedGifSourceProperty = DependencyProperty.RegisterAttached(
+            "ActiveAnimatedGifSource",
+            typeof(string),
+            typeof(AsyncImage),
+            new PropertyMetadata(null));
+
+        private static string GetActiveAnimatedGifSource(DependencyObject element) =>
+            element?.GetValue(ActiveAnimatedGifSourceProperty) as string;
+
+        private static void SetActiveAnimatedGifSource(DependencyObject element, string value) =>
+            element?.SetValue(ActiveAnimatedGifSourceProperty, value);
+
         private static void OnUriChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d == null)
@@ -131,6 +144,14 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
+            var normalizedGifUri = GifAnimationHelper.NormalizeGifSourceUri(uri);
+            if (!string.IsNullOrWhiteSpace(normalizedGifUri) &&
+                normalizedGifUri.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+            {
+                // GIFs do not benefit from decode-pixel resize reloads and reloading causes visible animation flicker.
+                return;
+            }
+
             var desiredDecode = ResolveDecodePixel(fe);
             if (desiredDecode <= 0)
             {
@@ -162,6 +183,8 @@ namespace PlayniteAchievements.Views.Helpers
         {
             try
             {
+                StopAnimation(d);
+
                 var existing = GetLoadCts(d);
                 if (existing != null)
                 {
@@ -198,6 +221,14 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
+            CancelExisting(d);
+
+            if (TryStartGifAnimation(d, uriString))
+            {
+                SetLastRequestedDecodePixel(d, 0);
+                return;
+            }
+
             if (GetGray(d) && !uriString.StartsWith(GrayPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 uriString = GrayPrefix + uriString;
@@ -206,7 +237,6 @@ namespace PlayniteAchievements.Views.Helpers
             // Don't clear existing source while loading - keep current image visible
             // until the new one is ready. This prevents flash during visibility toggles.
 
-            CancelExisting(d);
             var cts = new CancellationTokenSource();
             SetLoadCts(d, cts);
 
@@ -243,6 +273,10 @@ namespace PlayniteAchievements.Views.Helpers
                 {
                     ApplySource(d, bmp);
                 }
+
+                // For GIF URLs, loading through the image service may cache the GIF on disk.
+                // Retry GIF animation after load so URL previews can animate once cached.
+                TryStartGifAnimation(d, uriString);
             }
             catch (OperationCanceledException)
             {
@@ -268,12 +302,14 @@ namespace PlayniteAchievements.Views.Helpers
         {
             if (d is System.Windows.Controls.Image img)
             {
+                StopAnimation(d);
                 img.Source = source;
                 return;
             }
 
             if (d is System.Windows.Media.ImageBrush brush)
             {
+                StopAnimation(d);
                 brush.ImageSource = source;
                 return;
             }
@@ -299,6 +335,66 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             return inferredDecode > 0 ? inferredDecode : DefaultDecodePixel;
+        }
+
+        private static bool TryStartGifAnimation(DependencyObject target, string uri)
+        {
+            if (!(target is System.Windows.Controls.Image) &&
+                !(target is System.Windows.Media.ImageBrush))
+            {
+                return false;
+            }
+
+            var applyGray = GetGray(target);
+            if (!GifAnimationHelper.TryCreateAnimation(uri, applyGray, out var normalized, out var firstFrame, out var animation))
+            {
+                return false;
+            }
+
+            var activeSource = GetActiveAnimatedGifSource(target);
+            if (!string.IsNullOrWhiteSpace(activeSource) &&
+                string.Equals(activeSource, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            ApplyAnimatedFrames(target, normalized, firstFrame, animation);
+            return true;
+        }
+
+        private static void ApplyAnimatedFrames(DependencyObject target, string normalizedSource, ImageSource firstFrame, ObjectAnimationUsingKeyFrames animation)
+        {
+            StopAnimation(target);
+            SetActiveAnimatedGifSource(target, normalizedSource);
+
+            if (target is System.Windows.Controls.Image image)
+            {
+                image.Source = firstFrame;
+                image.BeginAnimation(System.Windows.Controls.Image.SourceProperty, animation, HandoffBehavior.SnapshotAndReplace);
+                return;
+            }
+
+            if (target is System.Windows.Media.ImageBrush brush)
+            {
+                brush.ImageSource = firstFrame;
+                brush.BeginAnimation(System.Windows.Media.ImageBrush.ImageSourceProperty, animation, HandoffBehavior.SnapshotAndReplace);
+            }
+        }
+
+        private static void StopAnimation(DependencyObject target)
+        {
+            SetActiveAnimatedGifSource(target, null);
+
+            if (target is System.Windows.Controls.Image image)
+            {
+                image.BeginAnimation(System.Windows.Controls.Image.SourceProperty, null);
+                return;
+            }
+
+            if (target is System.Windows.Media.ImageBrush brush)
+            {
+                brush.BeginAnimation(System.Windows.Media.ImageBrush.ImageSourceProperty, null);
+            }
         }
 
         private static int InferDecodePixel(FrameworkElement fe)

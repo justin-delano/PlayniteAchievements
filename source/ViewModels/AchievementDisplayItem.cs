@@ -615,6 +615,14 @@ namespace PlayniteAchievements.ViewModels
 
         public void ApplyAppearanceSettings(PlayniteAchievementsSettings settings, Guid? playniteGameId = null)
         {
+            ApplyAppearanceSettings(settings, playniteGameId, null);
+        }
+
+        public void ApplyAppearanceSettings(
+            PlayniteAchievementsSettings settings,
+            Guid? playniteGameId,
+            bool? resolvedUseSeparateLockedIcons)
+        {
             var persisted = settings?.Persisted;
             var resolvedGameId = playniteGameId ?? PlayniteGameId;
             ApplyAppearanceSettings(
@@ -623,7 +631,8 @@ namespace PlayniteAchievements.ViewModels
                 persisted?.ShowHiddenDescription ?? false,
                 persisted?.ShowHiddenSuffix ?? true,
                 persisted?.ShowLockedIcon ?? true,
-                persisted?.ShouldUseSeparateLockedIcons(resolvedGameId) ?? false,
+                resolvedUseSeparateLockedIcons ??
+                    GameCustomDataLookup.ShouldUseSeparateLockedIcons(resolvedGameId, persisted),
                 persisted?.ShowRarityGlow ?? true,
                 persisted?.ShowCompactListRarityBar ?? true);
         }
@@ -667,7 +676,6 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool UsesExplicitLockedIcon =>
-            UseSeparateLockedIconsWhenAvailable &&
             AchievementIconResolver.HasExplicitLockedIcon(LockedIconPath, UnlockedIconPath);
 
         /// <summary>
@@ -787,7 +795,10 @@ namespace PlayniteAchievements.ViewModels
             var gameId = playniteGameIdOverride ?? gameData?.PlayniteGameId;
             var item = CreateBaseItem(gameData, achievement, gameId, ResolvePoints(achievement, gameData));
             item.IsRevealed = ShouldRestoreRevealedState(gameData, achievement, settings, revealedKeys, gameId);
-            item.ApplyAppearanceSettings(settings, gameId);
+            item.ApplyAppearanceSettings(
+                settings,
+                gameId,
+                gameData?.UseSeparateLockedIconsWhenAvailable);
             return item;
         }
 
@@ -810,7 +821,10 @@ namespace PlayniteAchievements.ViewModels
                 ResolvePoints(achievement, gameData));
             item.GameIconPath = gameIconPath;
             item.GameCoverPath = gameCoverPath;
-            item.ApplyAppearanceSettings(settings, gameData?.PlayniteGameId);
+            item.ApplyAppearanceSettings(
+                settings,
+                gameData?.PlayniteGameId,
+                gameData?.UseSeparateLockedIconsWhenAvailable);
             return item;
         }
 
@@ -1012,7 +1026,7 @@ namespace PlayniteAchievements.ViewModels
         {
             return AchievementIconResolver.GetLockedDisplayIcon(
                 UnlockedIconPath,
-                UseSeparateLockedIconsWhenAvailable ? LockedIconPath : null);
+                LockedIconPath);
         }
 
         private static AchievementDisplayItem CreateBaseItem(
