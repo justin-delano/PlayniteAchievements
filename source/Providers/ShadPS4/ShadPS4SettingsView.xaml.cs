@@ -96,7 +96,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (System.IO.Directory.Exists(gameDataPath))
             {
                 SetAuthenticated(true);
-                SetAuthStatusByKey("LOCPlayAch_Settings_ShadPS4_Verified");
+                SetAuthStatusByKey("LOCPlayAch_Status_Succeeded");
             }
             else
             {

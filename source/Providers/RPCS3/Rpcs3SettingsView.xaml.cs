@@ -142,22 +142,8 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return;
             }
 
-            var trophyCount = 0;
-            try
-            {
-                trophyCount = System.IO.Directory.GetDirectories(trophyPath)
-                    .Count(d => System.IO.File.Exists(System.IO.Path.Combine(d, "TROPCONF.SFM")));
-            }
-            catch
-            {
-            }
-
             SetAuthenticated(true);
-            var successMsg = ResourceProvider.GetString("LOCPlayAch_Rpcs3Validation_Success");
-            if (!string.IsNullOrWhiteSpace(successMsg))
-            {
-                SetAuthStatus(string.Format(successMsg, trophyCount));
-            }
+            SetAuthStatusByKey("LOCPlayAch_Status_Succeeded");
         }
 
         private void SetAuthStatusByKey(string key)

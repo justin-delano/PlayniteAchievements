@@ -417,14 +417,12 @@
     <!-- ShadPS4 Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Game Data Folder</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Path to the user/game_data folder containing trophy data</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Verified">ShadPS4 game data folder verified.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} not configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_FolderNotFound">ShadPS4 game data folder not found.</sys:String>
 
     <!-- RPCS3 Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Executable Path</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Path to rpcs3.exe</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Verified">RPCS3 executable path verified.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_FolderNotFound">RPCS3 trophy folder not found.</sys:String>
 
     <!-- RPCS3 Validation -->
@@ -432,16 +430,13 @@
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NotRpcs3">Not a valid RPCS3 installation - missing dev_hdd0\home</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">No user profile found in dev_hdd0\home</sys:String>
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoTrophyFolder">Trophy folder not found</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rpcs3Validation_Success">RPCS3 executable path verified.</sys:String>
 
     <!-- Xenia Settings -->
     <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPath">Account Path</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPathHint">&lt;Xenia Path&gt;\content\&lt;Account ID&gt;\FFFE07D1\00010000\&lt;Account ID&gt;\</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Xenia_Verified">Xenia account path verified.</sys:String>
 
     <!-- RPCS3 Validation -->
     <sys:String x:Key="LOCPlayAch_XeniaValidation_NoAccount">Not a valid Xenia account path - No Account file</sys:String>
-    <sys:String x:Key="LOCPlayAch_XeniaValidation_Success">Xenia account path verified.</sys:String>
     
     <!-- ================================================================= -->
     <!-- SETTINGS SECTIONS                                                  -->

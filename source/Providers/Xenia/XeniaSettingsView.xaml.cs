@@ -97,7 +97,7 @@ namespace PlayniteAchievements.Providers.Xenia
                 if (File.Exists(Path.Combine(accountPath, "Account")))
                 {
                     SetAuthenticated(true);
-                    SetAuthStatusByKey("LOCPlayAch_XeniaValidation_Success");
+                    SetAuthStatusByKey("LOCPlayAch_Status_Succeeded");
                 }
                 else
                 {
