@@ -794,14 +794,8 @@ namespace PlayniteAchievements.Views
                     try
                     {
                         _plugin.RefreshRuntime.Cache.ClearCache();
-                        var stillPresent = _plugin.RefreshRuntime.Cache.CacheFileExists();
-
-                        var result = !stillPresent
-                            ? (L("LOCPlayAch_Status_Succeeded", "Success!"), MessageBoxImage.Information)
-                            : (LF("LOCPlayAch_Status_Failed", "Error: {0}", "files remain"), MessageBoxImage.Error);
-
-                        message = result.Item1;
-                        image = result.Item2;
+                        message = L("LOCPlayAch_Status_Succeeded", "Success!");
+                        image = MessageBoxImage.Information;
                     }
                     catch (Exception ex)
                     {
@@ -1081,29 +1075,11 @@ namespace PlayniteAchievements.Views
 
                 _plugin.SavePluginSettings(_settingsViewModel.Settings);
 
-                _logger.Info("Settings saved. Verifying save...");
-
-                // Verify the save worked by re-loading
-                var reloaded = _plugin.LoadPluginSettings<PlayniteAchievementsSettings>();
-                var reloadedValue = reloaded?.Persisted.FirstTimeSetupCompleted ?? true;
-                _logger.Info($"Value after reload: {reloadedValue}");
-
-                if (!reloadedValue)
-                {
-                    _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        L("LOCPlayAch_Status_Succeeded", "Success!"),
-                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                }
-                else
-                {
-                    _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        LF("LOCPlayAch_Status_Failed", "Error: {0}", "verification failed"),
-                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                }
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    L("LOCPlayAch_Status_Succeeded", "Success!"),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -1121,19 +1097,7 @@ namespace PlayniteAchievements.Views
             try
             {
                 var exportBaseDir = _plugin.GetPluginUserDataPath();
-                var cache = _plugin.RefreshRuntime?.Cache;
-
-                if (cache == null)
-                {
-                    _plugin.PlayniteApi.Dialogs.ShowMessage(
-                        LF("LOCPlayAch_Status_Failed", "Error: {0}", "database not available"),
-                        ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
-                    return;
-                }
-
-                var exportDir = cache.ExportDatabaseToCsv(exportBaseDir);
+                var exportDir = _plugin.RefreshRuntime.Cache.ExportDatabaseToCsv(exportBaseDir);
 
                 _logger.Info($"Database exported to: {exportDir}");
 
