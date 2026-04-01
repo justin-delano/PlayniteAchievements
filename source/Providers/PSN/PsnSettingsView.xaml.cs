@@ -38,6 +38,12 @@ namespace PlayniteAchievements.Providers.PSN
         {
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             InitializeComponent();
+            ConnectionLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderConnection"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_PSN"));
+            AuthLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Label_ProviderAuth"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_PSN"));
         }
 
         public override void Initialize(IProviderSettings settings)
@@ -54,7 +60,7 @@ namespace PlayniteAchievements.Providers.PSN
 
             if (isAuthenticated)
             {
-                SetAuthStatusByKey("LOCPlayAch_Auth_AlreadyAuthenticated");
+                SetAuthStatusByKey("LOCPlayAch_Auth_Authenticated");
                 return;
             }
 
@@ -124,7 +130,7 @@ namespace PlayniteAchievements.Providers.PSN
             catch (Exception ex)
             {
                 Logger.Error(ex, "PSN login failed");
-                SetAuthStatusByKey("LOCPlayAch_Auth_Failed");
+                SetAuthStatusByKey("LOCPlayAch_Auth_NotAuthenticated");
             }
             finally
             {
@@ -163,7 +169,7 @@ namespace PlayniteAchievements.Providers.PSN
             {
                 Logger.Error(ex, "PSN auth check failed");
                 SetAuthenticated(false);
-                SetAuthStatusByKey("LOCPlayAch_Auth_ProbeFailed");
+                SetAuthStatusByKey("LOCPlayAch_Auth_NotAuthenticated");
             }
             finally
             {
