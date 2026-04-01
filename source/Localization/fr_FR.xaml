@@ -588,11 +588,6 @@
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} succès ({1} débloqués) de {2} jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Actualisation des succès pour {0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithIcons">Actualisation des succès pour {0} ({1}) - Téléchargement des icônes {2}/{3}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingSelfAchievements">Actualisation des succès pour {0}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_LoadingOwnedGames">Chargement des jeux possédés...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_LoadingExistingCache">Chargement depuis le cache...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rebuild_Completed">Actualisation terminée</sys:String>
-    <sys:String x:Key="LOCPlayAch_Rebuild_YourCacheUpToDate">Votre cache de succès est à jour.</sys:String>
 
     <!-- ================================================================= -->
     <!-- ERRORS                                                             -->
