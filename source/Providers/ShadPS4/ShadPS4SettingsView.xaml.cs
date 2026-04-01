@@ -37,6 +37,9 @@ namespace PlayniteAchievements.Providers.ShadPS4
         {
             _playniteApi = playniteApi;
             InitializeComponent();
+            ConnectionLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderConnection"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_ShadPS4"));
         }
 
         public override void Initialize(IProviderSettings settings)
@@ -86,7 +89,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (string.IsNullOrWhiteSpace(gameDataPath))
             {
                 SetAuthenticated(false);
-                SetAuthStatusByKey("LOCPlayAch_Settings_ShadPS4_NotConfigured");
+                SetAuthStatus(string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_NotConfigured"), ResourceProvider.GetString("LOCPlayAch_Provider_ShadPS4")));
                 return;
             }
 
