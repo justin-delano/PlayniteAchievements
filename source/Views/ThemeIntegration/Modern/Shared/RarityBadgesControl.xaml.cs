@@ -43,9 +43,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern.Shared
     {
         private static readonly Uri BadgeResourcesUri =
             new Uri("pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml", UriKind.Absolute);
-        private static readonly object BadgeResourcesLock = new object();
-
-        private static ResourceDictionary _fallbackBadgeResources;
+        private static readonly Lazy<ResourceDictionary> FallbackBadgeResources =
+            new Lazy<ResourceDictionary>(CreateFallbackBadgeResources);
 
         public ObservableCollection<BadgeItem> BadgeItems { get; } = new ObservableCollection<BadgeItem>();
 
@@ -163,15 +162,20 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern.Shared
         private ImageSource GetBadgeIcon(string resourceKey)
         {
             return TryGetImageSource(Resources, resourceKey) ??
-                   TryGetImageSource(Application.Current?.Resources, resourceKey) ??
-                   TryGetImageSource(GetFallbackBadgeResources(), resourceKey);
+                   TryGetApplicationImageSource(resourceKey) ??
+                   TryGetImageSource(FallbackBadgeResources.Value, resourceKey);
         }
 
         private static ImageSource TryGetImageSource(ResourceDictionary resources, string resourceKey)
         {
+            if (resources == null || string.IsNullOrWhiteSpace(resourceKey))
+            {
+                return null;
+            }
+
             try
             {
-                return TryGetResource(resources, resourceKey) as ImageSource;
+                return resources[resourceKey] as ImageSource;
             }
             catch
             {
@@ -179,56 +183,36 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern.Shared
             }
         }
 
-        private static object TryGetResource(ResourceDictionary resources, object resourceKey)
+        private static ImageSource TryGetApplicationImageSource(string resourceKey)
         {
-            if (resources == null || resourceKey == null)
+            if (string.IsNullOrWhiteSpace(resourceKey))
             {
                 return null;
             }
 
-            if (resources.Contains(resourceKey))
+            try
             {
-                return resources[resourceKey];
+                return Application.Current?.TryFindResource(resourceKey) as ImageSource;
             }
-
-            for (int i = resources.MergedDictionaries.Count - 1; i >= 0; i--)
+            catch
             {
-                var value = TryGetResource(resources.MergedDictionaries[i], resourceKey);
-                if (value != null)
-                {
-                    return value;
-                }
+                return null;
             }
-
-            return null;
         }
 
-        private static ResourceDictionary GetFallbackBadgeResources()
+        private static ResourceDictionary CreateFallbackBadgeResources()
         {
-            if (_fallbackBadgeResources != null)
+            try
             {
-                return _fallbackBadgeResources;
-            }
-
-            lock (BadgeResourcesLock)
-            {
-                if (_fallbackBadgeResources == null)
+                return new ResourceDictionary
                 {
-                    try
-                    {
-                        _fallbackBadgeResources = new ResourceDictionary
-                        {
-                            Source = BadgeResourcesUri
-                        };
-                    }
-                    catch
-                    {
-                        _fallbackBadgeResources = new ResourceDictionary();
-                    }
-                }
+                    Source = BadgeResourcesUri
+                };
             }
-
-            return _fallbackBadgeResources;
+            catch
+            {
+                return new ResourceDictionary();
+            }
         }
     }
 
