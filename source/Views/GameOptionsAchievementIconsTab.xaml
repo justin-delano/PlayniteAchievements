@@ -59,7 +59,7 @@
                 <Setter Property="Padding" Value="10,6,30,6" />
                 <Setter Property="MinHeight" Value="34" />
                 <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource GlyphBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                 <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}" />
