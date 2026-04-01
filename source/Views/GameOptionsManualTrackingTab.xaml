@@ -546,7 +546,8 @@
                                                     </TextBox.Style>
                                                 </TextBox>
                                                 <ComboBox ItemsSource="{Binding AvailableTimeModes}"
-                                                          SelectedItem="{Binding SelectedTimeModeText, Mode=TwoWay}"
+                                                          SelectedItem="{Binding SelectedTimeModeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          SelectionChanged="TimeModeComboBox_SelectionChanged"
                                                           Width="74"
                                                           VerticalContentAlignment="Center"
                                                           Padding="4,0"

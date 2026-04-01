@@ -79,6 +79,7 @@
     <Compile Include="..\..\source\Common\DispatcherExtensions.cs" Link="Source\Common\DispatcherExtensions.cs" />
     <Compile Include="..\..\source\Common\RelayCommand.cs" Link="Source\Common\RelayCommand.cs" />
     <Compile Include="..\..\source\Common\WebViewExtensions.cs" Link="Source\Common\WebViewExtensions.cs" />
+    <Compile Include="..\..\source\ViewModels\ManualAchievementEditItem.cs" Link="Source\ViewModels\ManualAchievementEditItem.cs" />
     <Compile Include="..\..\source\Views\Converters\PercentToRarityGlowConverter.cs" Link="Source\Views\Converters\PercentToRarityGlowConverter.cs" />
     <Compile Include="..\..\source\Models\AuthOutcome.cs" Link="Source\Models\AuthOutcome.cs" />
     <Compile Include="..\..\source\Models\AuthProbeResult.cs" Link="Source\Models\AuthProbeResult.cs" />
@@ -127,4 +128,3 @@
     </None>
   </ItemGroup>
 </Project>
-

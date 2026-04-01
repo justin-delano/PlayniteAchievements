@@ -209,7 +209,11 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(UnlockTimeLocal));
                     OnPropertyChanged(nameof(UnlockDate));
                     OnPropertyChanged(nameof(UnlockTimeOfDay));
-                    InitializeTimePickerFromUnlockTime();
+
+                    if (!_isApplyingPickerUpdate)
+                    {
+                        InitializeTimePickerFromUnlockTime();
+                    }
 
                     // Ensure unlocked state matches
                     if (value.HasValue && !_isUnlocked)
@@ -297,6 +301,7 @@ namespace PlayniteAchievements.ViewModels
         private string _timeText;
         private bool _isValidTime = true;
         private bool _isUpdatingFromText;
+        private bool _isApplyingPickerUpdate;
 
         // Cached time mode display strings for dropdown
         private static readonly string[] TimeModeDisplayNames = { "AM", "PM", "24hr" };
@@ -447,8 +452,15 @@ namespace PlayniteAchievements.ViewModels
                     }
                     else if (previousMode == TimeMode.TwentyFourHour)
                     {
-                        // Switching from 24hr to 12hr
-                        Convert24To12Hour(_selectedHour, out _selectedHour, out _selectedTimeMode);
+                        // Switching from 24hr to 12hr keeps explicit AM/PM selection.
+                        if (_selectedHour == 0)
+                        {
+                            _selectedHour = 12;
+                        }
+                        else if (_selectedHour > 12)
+                        {
+                            _selectedHour -= 12;
+                        }
                     }
                     // Switching between AM and PM keeps hour/minute values as entered.
                     SetTimeTextFromSelection();
@@ -472,7 +484,15 @@ namespace PlayniteAchievements.ViewModels
                 ? _selectedHour
                 : Convert12To24Hour(_selectedHour, _selectedTimeMode);
 
-            UnlockTimeLocal = UnlockDate.Value.Date + new TimeSpan(hour24, _selectedMinute, 0);
+            _isApplyingPickerUpdate = true;
+            try
+            {
+                UnlockTimeLocal = UnlockDate.Value.Date + new TimeSpan(hour24, _selectedMinute, 0);
+            }
+            finally
+            {
+                _isApplyingPickerUpdate = false;
+            }
         }
 
         private int Convert12To24Hour(int hour12, TimeMode mode)
