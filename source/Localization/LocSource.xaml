@@ -370,31 +370,18 @@
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKeyHint">Get your API key from</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CheckSteamAuth">Check</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">Authenticate</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_SteamAuth">Steam Authentication</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_RaAuth">RetroAchievements Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId">Steam User ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId_Help">Your 64-bit Steam ID. This is automatically detected when you authenticate.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GogConnection">GOG Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_GogAuth">GOG Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Steam_WebAuthOnly">Steam web session active, but API key is required.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_AlreadyAuthenticated">Already authenticated.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_Authenticated">Authentication completed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_NotAuthenticated">Not authenticated.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_TimedOut">Authentication timed out.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_Cancelled">Authentication was cancelled.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_Failed">Authentication failed.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_ProbeFailed">Unable to verify authentication state.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_Authenticated">Authenticated</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_NotAuthenticated">Not authenticated</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_NotChecked">Not checked</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_Checking">Checking authentication...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Gog_OwnAuthHelp">Click Login to authenticate with GOG via an embedded browser window. Your credentials are stored securely within PlayniteAchievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EpicConnection">Epic Games Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Epic Authentication</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Epic_OwnAuthHelp">Click Login to authenticate with Epic via an embedded browser window. Your credentials are stored securely within PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_ProviderAuth">{0} Authentication</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">{0} Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Alternative Login</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Login to Epic in your default browser when it opens\n2. After logging in, find the "authorizationCode" value on the page\n3. Copy and paste that value in the next dialog</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Paste the authorizationCode value here:</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PsnConnection">PlayStation Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_PsnAuth">PlayStation Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">1. Sign in at PlayStation.com (check "Trust this browser")</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp2">2. Go to the Sony SSO cookie page and copy the npsso value</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Paste the value below and press Enter</sys:String>
@@ -408,21 +395,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Login (Legacy)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Check">Check</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_XboxConnection">Xbox Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Xbox_Description">Configure Xbox Live integration to track achievements from Xbox One, Xbox Series X|S, Xbox 360, and PC Game Pass games.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_XboxEnabled">Enable Xbox Achievement Tracking</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_XboxAuth">Xbox Authentication</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Xbox_Help">Click Login to authenticate with Xbox Live via Microsoft account.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons">Download Smaller Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons_Help">Enable if Xbox icon downloads are slow. Requests 128px icons instead of full resolution.</sys:String>
 
     <!-- Exophase Settings -->
-    <sys:String x:Key="LOCPlayAch_Settings_ExophaseConnection">Exophase Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_Description">Login is required for Exophase tracking and manual linking. Achievement names and descriptions use your Global Language setting when Exophase serves that locale.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_ExophaseAuth">Exophase Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authenticate with Exophase to refresh tracked data and use Exophase manual links.</sys:String>
     <!-- Exophase Provider Settings -->
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider">Enable Exophase Provider</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">When enabled, Exophase can automatically track achievements for games on managed platforms.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Managed Platforms</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Games on these platforms will use Exophase instead of modern providers. Check platforms you want Exophase to manage.</sys:String>
@@ -437,23 +415,16 @@
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">Please enter an Exophase game ID.</sys:String>
 
     <!-- ShadPS4 Settings -->
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Connection">ShadPS4 Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Description">Configure ShadPS4 emulator integration to track trophies from PlayStation 4 games played in the emulator.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Enabled">Enable ShadPS4 Trophy Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Game Data Folder</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Path to the user/game_data folder containing trophy data</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Verified">ShadPS4 game data folder verified.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_NotConfigured">ShadPS4 game data folder not configured.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} not configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_FolderNotFound">ShadPS4 game data folder not found.</sys:String>
 
     <!-- RPCS3 Settings -->
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Connection">RPCS3 Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Description">Configure RPCS3 emulator integration to track trophies from PlayStation 3 games played in the emulator.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Enabled">Enable RPCS3 Trophy Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Executable Path</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Path to rpcs3.exe</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Verified">RPCS3 executable path verified.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_NotConfigured">RPCS3 executable path not configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_FolderNotFound">RPCS3 trophy folder not found.</sys:String>
 
     <!-- RPCS3 Validation -->
@@ -464,13 +435,9 @@
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_Success">RPCS3 executable path verified.</sys:String>
 
     <!-- Xenia Settings -->
-    <sys:String x:Key="LOCPlayAch_Settings_XeniaConnection">Xenia Connection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Xenia_Description">Configure Xenia emulator integration to track achievements from Xbox 360 games played in the emulator.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_XeniaEnabled">Enable Xenia Achievement Tracking</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPath">Account Path</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPathHint">&lt;Xenia Path&gt;\content\&lt;Account ID&gt;\FFFE07D1\00010000\&lt;Account ID&gt;\</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Xenia_Verified">Xenia account path verified.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Xenia_NotConfigured">Xenia account path not configured.</sys:String>
 
     <!-- RPCS3 Validation -->
     <sys:String x:Key="LOCPlayAch_XeniaValidation_NoAccount">Not a valid Xenia account path - No Account file</sys:String>

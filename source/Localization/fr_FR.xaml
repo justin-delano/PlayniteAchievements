@@ -375,31 +375,18 @@
     <sys:String x:Key="LOCPlayAch_Settings_SteamApiKeyHint">Obtenez votre clé API de</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CheckSteamAuth">Vérifier l'authentification Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">S'authentifier via le navigateur</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_SteamAuth">Authentification Steam</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_RaAuth">Authentification RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId">ID utilisateur Steam</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_SteamUserId_Help">Votre ID Steam 64 bits. Il est détecté automatiquement lors de l'authentification.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GogConnection">Connexion GOG</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_GogAuth">Authentification GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Steam_WebAuthOnly">Session web Steam active, mais la clé API est requise.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_AlreadyAuthenticated">Déjà authentifié.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_Authenticated">Authentification terminée.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_Authenticated">Authentifié</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_NotAuthenticated">Non authentifié.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_TimedOut">Délai d'authentification dépassé.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_Cancelled">L'authentification a été annulée.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_Failed">Échec de l'authentification.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_ProbeFailed">Impossible de vérifier l'état d'authentification.</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_NotChecked">Non vérifié</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_Checking">Vérification de l'authentification...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Gog_OwnAuthHelp">Cliquez sur Connexion pour vous authentifier avec GOG via une fenêtre de navigateur intégrée. Vos identifiants sont stockés de manière sécurisée dans PlayniteAchievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EpicConnection">Connexion Epic Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Authentification Epic</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Epic_OwnAuthHelp">Cliquez sur Connexion pour vous authentifier avec Epic via une fenêtre de navigateur intégrée. Vos identifiants sont stockés de manière sécurisée dans PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_ProviderAuth">Authentification {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderConnection">Connexion {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_LoginAlternative">Connexion alternative</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthInstructions">1. Connectez-vous à Epic dans votre navigateur par défaut\n2. Après la connexion, trouvez la valeur "authorizationCode" sur la page\n3. Copiez et collez cette valeur dans la boîte de dialogue suivante</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Collez la valeur authorizationCode ici :</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PsnConnection">Connexion PlayStation</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_PsnAuth">Authentification PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp">1. Connectez-vous sur PlayStation.com (cochez &quot;Faire confiance à ce navigateur&quot;)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp2">2. Allez sur la page de cookie SSO Sony et copiez la valeur npsso</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_OwnAuthHelp3">3. Collez la valeur ci-dessous et appuyez sur Entrée</sys:String>
@@ -413,18 +400,10 @@
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Connexion (Legacy)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Check">Vérifier</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_XboxConnection">Connexion Xbox</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Xbox_Description">Configurez l'intégration Xbox Live pour suivre les succès de Xbox One, Xbox Series X|S, Xbox 360 et PC Game Pass.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_XboxEnabled">Activer le suivi des succès Xbox</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_XboxAuth">Authentification Xbox</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Xbox_Help">Cliquez sur Connexion pour vous authentifier avec Xbox Live via votre compte Microsoft.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons">Télécharger des icônes plus petites</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons_Help">Activer si les téléchargements d'icônes Xbox sont lents. Demande des icônes de 128px au lieu de la résolution complète.</sys:String>
 
     <!-- Exophase Settings -->
-    <sys:String x:Key="LOCPlayAch_Settings_ExophaseConnection">Connexion Exophase</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ExophaseAuth_Description">La connexion est requise pour le suivi Exophase et les liens manuels. Les noms et descriptions des succès utilisent votre paramètre de langue globale lorsque Exophase propose cette langue.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_ExophaseAuth">Authentification Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Authentifiez-vous auprès d'Exophase pour actualiser les données suivies et utiliser les liens manuels Exophase.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider">Activer le fournisseur Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_EnableProvider_Help">Lorsqu'il est activé, Exophase peut suivre automatiquement les succès des jeux sur les plateformes gérées.</sys:String>
@@ -433,23 +412,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Remarque : pour les jeux sur les plateformes non cochées, utilisez les Options du jeu pour les inclure individuellement.</sys:String>
 
     <!-- ShadPS4 Settings -->
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Connection">Connexion ShadPS4</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Description">Configurez l'intégration de l'émulateur ShadPS4 pour suivre les trophées des jeux PlayStation 4 joués dans l'émulateur.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4Enabled">Activer le suivi des trophées ShadPS4</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Dossier de données de jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Chemin vers le dossier user/game_data contenant les données de trophées</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_Verified">Dossier de données de jeu ShadPS4 vérifié.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_NotConfigured">Dossier de données de jeu ShadPS4 non configuré.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_NotConfigured">{0} non configuré.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShadPS4_FolderNotFound">Dossier de données de jeu ShadPS4 introuvable.</sys:String>
 
     <!-- RPCS3 Settings -->
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Connection">Connexion RPCS3</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Description">Configurez l'intégration de l'émulateur RPCS3 pour suivre les trophées des jeux PlayStation 3 joués dans l'émulateur.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3Enabled">Activer le suivi des trophées RPCS3</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Chemin de l'exécutable</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Chemin vers rpcs3.exe</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_Verified">Chemin de l'exécutable RPCS3 vérifié.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_NotConfigured">Chemin de l'exécutable RPCS3 non configuré.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3_FolderNotFound">Dossier trophy RPCS3 introuvable.</sys:String>
 
     <!-- RPCS3 Validation -->

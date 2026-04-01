@@ -47,10 +47,6 @@
                 <StackPanel>
                     <TextBlock x:Name="ConnectionLabel"
                                Style="{StaticResource SectionHeaderStyle}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Xbox_Help}"
-                               Style="{StaticResource MutedTextStyle}"
-                               Margin="0,0,0,12"
-                               TextWrapping="Wrap"/>
 
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition Width="180"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
