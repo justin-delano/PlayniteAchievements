@@ -651,6 +651,7 @@ namespace PlayniteAchievements
 
         public override Control GetGameViewControl(GetGameViewControlArgs args)
         {
+            EnsureAchievementResourcesLoaded();
             return _themeControlRegistry.TryCreate(args.Name, out var control) ? control : null;
         }
 

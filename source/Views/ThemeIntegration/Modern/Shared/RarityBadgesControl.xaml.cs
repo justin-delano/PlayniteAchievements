@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
@@ -40,6 +41,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern.Shared
     /// </summary>
     public partial class RarityBadgesControl : UserControl
     {
+        private static readonly Uri BadgeResourcesUri =
+            new Uri("pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml", UriKind.Absolute);
+        private static readonly Lazy<ResourceDictionary> FallbackBadgeResources =
+            new Lazy<ResourceDictionary>(CreateFallbackBadgeResources);
+
         public ObservableCollection<BadgeItem> BadgeItems { get; } = new ObservableCollection<BadgeItem>();
 
         public static readonly DependencyProperty ShowZeroCountsProperty =
@@ -114,14 +120,19 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern.Shared
             Models.Achievements.AchievementRarityStats uncommon,
             Models.Achievements.AchievementRarityStats common)
         {
+            ultraRare = ultraRare ?? new AchievementRarityStats();
+            rare = rare ?? new AchievementRarityStats();
+            uncommon = uncommon ?? new AchievementRarityStats();
+            common = common ?? new AchievementRarityStats();
+
             BadgeItems.Clear();
 
             var badges = new (ImageSource Icon, int Count, int Total)[]
             {
-                ((ImageSource)TryFindResource("BadgePlatinumHexagon"), GetCount(ultraRare), ultraRare.Total),
-                ((ImageSource)TryFindResource("BadgeGoldPentagon"), GetCount(rare), rare.Total),
-                ((ImageSource)TryFindResource("BadgeSilverSquare"), GetCount(uncommon), uncommon.Total),
-                ((ImageSource)TryFindResource("BadgeBronzeTriangle"), GetCount(common), common.Total)
+                (GetBadgeIcon("BadgePlatinumHexagon"), GetCount(ultraRare), ultraRare.Total),
+                (GetBadgeIcon("BadgeGoldPentagon"), GetCount(rare), rare.Total),
+                (GetBadgeIcon("BadgeSilverSquare"), GetCount(uncommon), uncommon.Total),
+                (GetBadgeIcon("BadgeBronzeTriangle"), GetCount(common), common.Total)
             };
 
             foreach (var (icon, count, total) in badges)
@@ -146,6 +157,62 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern.Shared
                 BadgesDisplayMode.Total => stats.Total,
                 _ => stats.Unlocked
             };
+        }
+
+        private ImageSource GetBadgeIcon(string resourceKey)
+        {
+            return TryGetImageSource(Resources, resourceKey) ??
+                   TryGetApplicationImageSource(resourceKey) ??
+                   TryGetImageSource(FallbackBadgeResources.Value, resourceKey);
+        }
+
+        private static ImageSource TryGetImageSource(ResourceDictionary resources, string resourceKey)
+        {
+            if (resources == null || string.IsNullOrWhiteSpace(resourceKey))
+            {
+                return null;
+            }
+
+            try
+            {
+                return resources[resourceKey] as ImageSource;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static ImageSource TryGetApplicationImageSource(string resourceKey)
+        {
+            if (string.IsNullOrWhiteSpace(resourceKey))
+            {
+                return null;
+            }
+
+            try
+            {
+                return Application.Current?.TryFindResource(resourceKey) as ImageSource;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static ResourceDictionary CreateFallbackBadgeResources()
+        {
+            try
+            {
+                return new ResourceDictionary
+                {
+                    Source = BadgeResourcesUri
+                };
+            }
+            catch
+            {
+                return new ResourceDictionary();
+            }
         }
     }
 
