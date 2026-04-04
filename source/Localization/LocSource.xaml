@@ -386,6 +386,17 @@
     <sys:String x:Key="LOCPlayAch_Auth_Failed">Authentication failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_ProbeFailed">Unable to verify authentication state.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Gog_OwnAuthHelp">Click Login to authenticate with GOG via an embedded browser window. Your credentials are stored securely within PlayniteAchievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNetConnection">Battle.net Connection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_BattleNetAuth">Battle.net Authentication</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OwnAuthHelp">Click Login to authenticate with Battle.net via an embedded browser window. Required for track StarCraft II and Overwatch achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowSection">World of Warcraft</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowRegion">Region</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowRealm">Realm</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowCharacter">Character Name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Section">StarCraft II</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Region">SC2 Region</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_Sc2Detected">StarCraft II profile detected</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_NoSc2Profile">No StarCraft II profile found</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EpicConnection">Epic Games Connection</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_EpicAuth">Epic Authentication</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Epic_OwnAuthHelp">Click Login to authenticate with Epic via an embedded browser window. Your credentials are stored securely within PlayniteAchievements.</sys:String>
