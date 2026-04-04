@@ -225,13 +225,47 @@
            TargetType="MenuItem">
         <Style.Resources>
             <Style x:Key="AchievementSelectorMenuCheckBoxStyle"
-                   TargetType="CheckBox"
-                   BasedOn="{StaticResource {x:Type CheckBox}}">
+                   TargetType="CheckBox">
                 <Setter Property="Margin" Value="0"/>
                 <Setter Property="Focusable" Value="False"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                 <Setter Property="HorizontalAlignment" Value="Left"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="OverridesDefaultStyle" Value="True"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="CheckBox">
+                            <Border x:Name="CheckBoxBox"
+                                    Width="20" Height="20"
+                                    Background="{DynamicResource ControlBackgroundDarkBrush}"
+                                    BorderBrush="{DynamicResource SelectionLightBrush}"
+                                    BorderThickness="1.5"
+                                    CornerRadius="2"
+                                    SnapsToDevicePixels="True">
+                                <Viewbox Width="12" Height="12"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center">
+                                    <Path x:Name="CheckMark"
+                                          Data="M 1,5 L 5,9 L 11,1"
+                                          Stroke="{DynamicResource TextBrush}"
+                                          StrokeThickness="2"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          Visibility="Collapsed"/>
+                                </Viewbox>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="CheckBoxBox" Property="BorderBrush"
+                                            Value="{DynamicResource HighlightGlyphBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
         </Style.Resources>
         <Setter Property="OverridesDefaultStyle" Value="True"/>

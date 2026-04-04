@@ -89,61 +89,9 @@
         <Setter Property="PopupAnimation" Value="Fade" />
     </Style>
 
-    <!-- CheckBox style for fullscreen with adequate sizing.
-         Default WPF CheckBox is tiny at fullscreen font sizes (22px).
-         Uses x:Key so it does NOT override the internal checkbox in AchievementMultiSelectMenuItemStyle. -->
-    <Style x:Key="FullscreenCheckBoxStyle" TargetType="CheckBox">
-        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="VerticalAlignment" Value="Center" />
-        <Setter Property="Padding" Value="6,4" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="CheckBox">
-                    <BulletDecorator Background="Transparent"
-                                     VerticalAlignment="{TemplateBinding VerticalAlignment}">
-                        <BulletDecorator.Bullet>
-                            <Border x:Name="CheckBoxBorder"
-                                    Width="22" Height="22"
-                                    Background="{DynamicResource ControlBackgroundDarkBrush}"
-                                    BorderBrush="{DynamicResource SelectionLightBrush}"
-                                    BorderThickness="1.5"
-                                    CornerRadius="2"
-                                    SnapsToDevicePixels="True">
-                                <Viewbox Width="14" Height="14"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center">
-                                    <Path x:Name="CheckMark"
-                                          Data="M 1,5 L 5,9 L 11,1"
-                                          Stroke="{DynamicResource TextBrush}"
-                                          StrokeThickness="2"
-                                          StrokeStartLineCap="Round"
-                                          StrokeEndLineCap="Round"
-                                          Visibility="Collapsed" />
-                                </Viewbox>
-                            </Border>
-                        </BulletDecorator.Bullet>
-                        <ContentPresenter Margin="8,0,0,0"
-                                          HorizontalAlignment="Left"
-                                          VerticalAlignment="Center"
-                                          RecognizesAccessKey="True" />
-                    </BulletDecorator>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
-                        </Trigger>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="CheckBoxBorder" Property="BorderBrush"
-                                    Value="{DynamicResource HighlightGlyphBrush}" />
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <!-- Default implicit CheckBox style for fullscreen - lightweight, no custom template.
-         Only overrides colors/sizing, keeps default WPF rendering for the checkmark. -->
+         Only overrides colors/sizing, keeps default WPF rendering for the checkmark.
+         Menu item checkboxes use their own template via AchievementSelectorMenuCheckBoxStyle. -->
     <Style TargetType="CheckBox">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
         <Setter Property="Background" Value="Transparent" />
