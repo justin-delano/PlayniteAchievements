@@ -71,7 +71,7 @@ namespace PlayniteAchievements
             };
 
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                ResourceProvider.GetString("LOCPlayAch_Menu_OpenOverview"),
+                string.Empty,
                 view,
                 windowOptions,
                 isFullscreen: true);

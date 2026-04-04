@@ -94,7 +94,15 @@ namespace PlayniteAchievements.Views.Helpers
         private static void OnTitleChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var container = (FullscreenOverlayContainer)d;
-            container.TitleText.Text = e.NewValue as string ?? string.Empty;
+            var title = e.NewValue as string ?? string.Empty;
+            var hasTitle = !string.IsNullOrWhiteSpace(title);
+            container.TitleText.Text = title;
+            container.TitleBar.Visibility = hasTitle
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            container.CloseButton.Visibility = hasTitle
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         private static UIElement FindFirstFocusable(DependencyObject root)
