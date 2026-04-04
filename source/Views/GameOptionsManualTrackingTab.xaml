@@ -492,7 +492,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Unlock time set/null + date/time editor -->
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_UnlockTime}"
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_UnlockTime}"
                                                     Width="300"
                                                     SortMemberPath="UnlockTime"
                                                     HeaderStyle="{StaticResource AchievementColumnHeaderStyle}"

@@ -43,6 +43,7 @@
     <sys:String x:Key="LOCPlayAch_Common_SetLabelEllipsis">Set Label...</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_Disabled">Disabled</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_Linked">Linked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_None">None</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NoOverrideSet">No override set</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">Not linked</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_OverrideSetValue">Override set: {0}</sys:String>
@@ -59,6 +60,7 @@
     <sys:String x:Key="LOCPlayAch_Trophy_Gold">Gold</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Platinum">Platinum</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Silver">Silver</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_UnlockTime">Unlock Time</sys:String>
 
     <!-- ================================================================= -->
     <!-- 03 Columns -->
@@ -224,7 +226,6 @@
     <!-- 08 Manual Tracking and Linking -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">Check off achievements you've unlocked and set unlock times. Changes are saved when you click OK.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_UnlockTime">Unlock Time</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">Unable to verify Exophase authentication for manual linking. Retry, or re-authenticate with Exophase in plugin settings.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">Exophase login is required for manual linking. Authenticate with Exophase in plugin settings, then try again.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_ApiKeyRequired">Steam API key is required to fetch achievement data. Configure it in plugin settings.</sys:String>
@@ -474,6 +475,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_ScanningHashing">Scanning &amp; Hashing</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SetCompletionStatus">Set Completion Status for Completed Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompactListRarityBar">Show Rarity Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SortBy">Sort By</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Toggle sort direction</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Show Completion Border</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Show (Hidden Achievement) suffix</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Show Rarity Glow on Unlocked Icons</sys:String>
