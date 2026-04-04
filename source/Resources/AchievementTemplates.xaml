@@ -235,25 +235,29 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="CheckBox">
-                            <Border x:Name="CheckBoxBox"
-                                    Width="20" Height="20"
-                                    Background="{DynamicResource ControlBackgroundDarkBrush}"
-                                    BorderBrush="{DynamicResource SelectionLightBrush}"
-                                    BorderThickness="1.5"
-                                    CornerRadius="2"
-                                    SnapsToDevicePixels="True">
-                                <Viewbox Width="12" Height="12"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center">
-                                    <Path x:Name="CheckMark"
-                                          Data="M 1,5 L 5,9 L 11,1"
-                                          Stroke="{DynamicResource TextBrush}"
-                                          StrokeThickness="2"
-                                          StrokeStartLineCap="Round"
-                                          StrokeEndLineCap="Round"
-                                          Visibility="Collapsed"/>
-                                </Viewbox>
-                            </Border>
+                            <Grid Background="Transparent">
+                                <Border x:Name="CheckBoxBox"
+                                        Width="20" Height="20"
+                                        Background="Transparent"
+                                        BorderBrush="{DynamicResource SelectionLightBrush}"
+                                        BorderThickness="1.5"
+                                        CornerRadius="2"
+                                        SnapsToDevicePixels="True"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                    <Viewbox Width="12" Height="12"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center">
+                                        <Path x:Name="CheckMark"
+                                              Data="M 1,5 L 5,9 L 11,1"
+                                              Stroke="{DynamicResource TextBrush}"
+                                              StrokeThickness="2"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Visibility="Collapsed"/>
+                                    </Viewbox>
+                                </Border>
+                            </Grid>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>

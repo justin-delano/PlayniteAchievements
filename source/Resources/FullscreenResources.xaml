@@ -76,12 +76,27 @@
         </Style.Triggers>
     </Style>
 
-    <!-- ContextMenu background for fullscreen. -->
+    <!-- ContextMenu template override for fullscreen dark background.
+         Default ContextMenu popup has white chrome that bleeds through. -->
     <Style TargetType="ContextMenu">
         <Setter Property="Background" Value="{DynamicResource ControlBackgroundDarkBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SelectionLightBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="2" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="3"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <ItemsPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Popup background for fullscreen (ContextMenu uses Popup internally). -->
