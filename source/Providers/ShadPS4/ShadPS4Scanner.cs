@@ -47,7 +47,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            // Use the provider's cache if available, otherwise build our own
+            // Build caches for both old and new formats
             Dictionary<string, string> titleCache;
             if (_provider != null)
             {
@@ -58,20 +58,40 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 titleCache = await BuildTitleIdCacheAsync(cancel).ConfigureAwait(false);
             }
 
-            if (titleCache == null || titleCache.Count == 0)
+            Dictionary<string, string> npCommIdCache;
+            if (_provider != null)
             {
-                _logger?.Warn("[ShadPS4] No games found in ShadPS4 user/game_data folder.");
+                npCommIdCache = _provider.GetOrBuildNpCommIdCache();
+            }
+            else
+            {
+                npCommIdCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var hasOldData = titleCache != null && titleCache.Count > 0;
+            var hasNewData = npCommIdCache != null && npCommIdCache.Count > 0;
+
+            if (!hasOldData && !hasNewData)
+            {
+                _logger?.Warn("[ShadPS4] No games found in any ShadPS4 trophy location.");
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            _logger?.Info($"[ShadPS4] Scanning {titleCache.Count} titles from game_data folder.");
+            if (hasOldData)
+            {
+                _logger?.Info($"[ShadPS4] Found {titleCache.Count} titles in old game_data format.");
+            }
+            if (hasNewData)
+            {
+                _logger?.Info($"[ShadPS4] Found {npCommIdCache.Count} titles in new AppData format.");
+            }
 
             return await ProviderRefreshExecutor.RunProviderGamesAsync(
                 gamesToRefresh,
                 onGameStarting,
                 async (game, token) =>
                 {
-                    var data = await FetchGameDataAsync(game, titleCache, token).ConfigureAwait(false);
+                    var data = await FetchGameDataAsync(game, titleCache, npCommIdCache, token).ConfigureAwait(false);
                     return new ProviderRefreshExecutor.ProviderGameResult
                     {
                         Data = data
@@ -203,6 +223,32 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private Task<GameAchievementData> FetchGameDataAsync(
             Game game,
             Dictionary<string, string> titleCache,
+            Dictionary<string, string> npCommIdCache,
+            CancellationToken cancel)
+        {
+            if (game == null)
+            {
+                return Task.FromResult<GameAchievementData>(null);
+            }
+
+            // Try new format first: resolve npcommid from npbind.dat
+            if (npCommIdCache != null && npCommIdCache.Count > 0)
+            {
+                var npcommid = _provider?.ResolveNpCommIdForGame(game);
+                if (!string.IsNullOrWhiteSpace(npcommid) &&
+                    npCommIdCache.TryGetValue(npcommid, out var perUserXmlPath))
+                {
+                    return FetchGameDataNewFormatAsync(game, npcommid, perUserXmlPath, cancel);
+                }
+            }
+
+            // Fall back to old format: title ID lookup
+            return FetchGameDataOldFormatAsync(game, titleCache, cancel);
+        }
+
+        private Task<GameAchievementData> FetchGameDataOldFormatAsync(
+            Game game,
+            Dictionary<string, string> titleCache,
             CancellationToken cancel)
         {
             if (game == null)
@@ -310,6 +356,136 @@ namespace PlayniteAchievements.Providers.ShadPS4
             {
                 _logger?.Error(ex, $"[ShadPS4] Failed to parse TROP.XML for {game.Name}");
                 return Task.FromResult(BuildNoAchievementsData(game));
+            }
+        }
+
+        /// <summary>
+        /// Fetches trophy data from the new AppData-based format.
+        /// The per-user XML contains the full trophy config with unlock state.
+        /// Icons are loaded from the shared trophy base directory.
+        /// </summary>
+        private Task<GameAchievementData> FetchGameDataNewFormatAsync(
+            Game game,
+            string npcommid,
+            string perUserXmlPath,
+            CancellationToken cancel)
+        {
+            if (!File.Exists(perUserXmlPath))
+            {
+                return Task.FromResult(BuildNoAchievementsData(game));
+            }
+
+            cancel.ThrowIfCancellationRequested();
+
+            // Icons are in the shared trophy base directory
+            var appDataPath = _provider?.GetAppDataPath();
+            var iconsFolder = !string.IsNullOrWhiteSpace(appDataPath)
+                ? Path.Combine(appDataPath, "trophy", npcommid, "Icons")
+                : null;
+
+            try
+            {
+                var doc = XDocument.Load(perUserXmlPath);
+                var achievements = new List<AchievementDetail>();
+                var unlockedCount = 0;
+                var groupNamesById = BuildGroupNamesDictionary(doc);
+
+                var ps4Locale = MapGlobalLanguageToPs4Locale(_settings?.Persisted?.GlobalLanguage);
+
+                foreach (var trophyElement in doc.Descendants("trophy"))
+                {
+                    cancel.ThrowIfCancellationRequested();
+
+                    var trophyId = trophyElement.Attribute("id")?.Value;
+                    var trophyType = trophyElement.Attribute("ttype")?.Value;
+                    var isHidden = trophyElement.Attribute("hidden")?.Value == "yes";
+                    var name = GetLocalizedElement(trophyElement, "name", ps4Locale)?.Trim();
+                    var description = GetLocalizedElement(trophyElement, "detail", ps4Locale)?.Trim();
+                    var groupId = trophyElement.Attribute("gid")?.Value?.Trim();
+                    groupId = string.IsNullOrWhiteSpace(groupId) ? "0" : groupId;
+                    groupNamesById.TryGetValue(groupId, out var groupName);
+
+                    // New format: unlockstate is "true" or "false" (always present)
+                    var unlockStateValue = trophyElement.Attribute("unlockstate")?.Value;
+                    var isUnlocked = string.Equals(unlockStateValue, "true", StringComparison.OrdinalIgnoreCase);
+                    DateTime? unlockTime = null;
+
+                    if (isUnlocked)
+                    {
+                        unlockedCount++;
+                        var timestamp = trophyElement.Attribute("timestamp")?.Value;
+                        unlockTime = ConvertUnixTimestamp(timestamp);
+                    }
+
+                    string trophyTypeNormalized = NormalizeTrophyType(trophyType);
+
+                    var iconPath = iconsFolder != null
+                        ? GetTrophyIconPath(iconsFolder, trophyId)
+                        : null;
+
+                    achievements.Add(new AchievementDetail
+                    {
+                        ApiName = trophyId,
+                        DisplayName = name,
+                        Description = description,
+                        UnlockedIconPath = iconPath,
+                        LockedIconPath = iconPath,
+                        Hidden = isHidden,
+                        Unlocked = isUnlocked,
+                        UnlockTimeUtc = unlockTime,
+                        GlobalPercentUnlocked = null,
+                        Rarity = GetRarityFromTrophyType(trophyTypeNormalized),
+                        TrophyType = trophyTypeNormalized,
+                        IsCapstone = trophyType?.ToUpperInvariant() == "P",
+                        CategoryType = MapGroupIdToCategoryType(groupId),
+                        Category = string.IsNullOrWhiteSpace(groupName) ? null : groupName.Trim()
+                    });
+                }
+
+                _logger?.Info($"[ShadPS4] Parsed {achievements.Count} trophies (new format) for '{game.Name}' ({unlockedCount} unlocked)");
+
+                return Task.FromResult(new GameAchievementData
+                {
+                    ProviderKey = "ShadPS4",
+                    LibrarySourceName = game?.Source?.Name,
+                    GameName = game?.Name,
+                    PlayniteGameId = game?.Id,
+                    HasAchievements = achievements.Count > 0,
+                    Achievements = achievements,
+                    LastUpdatedUtc = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"[ShadPS4] Failed to parse new-format trophy XML for {game.Name}");
+                return Task.FromResult(BuildNoAchievementsData(game));
+            }
+        }
+
+        /// <summary>
+        /// Converts a standard Unix timestamp (seconds since 1970-01-01) to UTC DateTime.
+        /// Used by the new AppData trophy format.
+        /// </summary>
+        private static DateTime? ConvertUnixTimestamp(string timestamp)
+        {
+            if (string.IsNullOrEmpty(timestamp))
+            {
+                return null;
+            }
+
+            try
+            {
+                var seconds = long.Parse(timestamp);
+                if (seconds <= 0)
+                {
+                    return null;
+                }
+
+                return DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
