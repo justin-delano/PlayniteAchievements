@@ -613,7 +613,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     Points = ach.Points,
                     ScaledPoints = ach.TrueRatio,
                     Category = categoryLabel,
-                    IsCapstone = string.Equals(ach.Type, "win_condition", StringComparison.OrdinalIgnoreCase),
+                    // IsCapstone = string.Equals(ach.Type, "win_condition", StringComparison.OrdinalIgnoreCase),
+                    IsCapstone  = false,
                     UnlockTimeUtc = unlockUtc,
                     Hidden = false,
                     Rarity = globalPercent.HasValue
