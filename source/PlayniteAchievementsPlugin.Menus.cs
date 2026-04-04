@@ -149,8 +149,8 @@ namespace PlayniteAchievements
                 yield return new GameMenuItem
                 {
                     Description = allExcludedFromSummaries
-                        ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeInSummaries")
-                        : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeFromSummaries"),
+                        ? ResourceProvider.GetString("LOCPlayAch_Common_Action_IncludeInSummaries")
+                        : ResourceProvider.GetString("LOCPlayAch_Common_Action_ExcludeFromSummaries"),
                     MenuSection = PluginGameMenuSection,
                     Action = (a) =>
                     {
@@ -270,8 +270,8 @@ namespace PlayniteAchievements
             yield return new GameMenuItem
             {
                 Description = excludedFromSummaries
-                    ? ResourceProvider.GetString("LOCPlayAch_Menu_IncludeInSummaries")
-                    : ResourceProvider.GetString("LOCPlayAch_Menu_ExcludeFromSummaries"),
+                    ? ResourceProvider.GetString("LOCPlayAch_Common_Action_IncludeInSummaries")
+                    : ResourceProvider.GetString("LOCPlayAch_Common_Action_ExcludeFromSummaries"),
                 MenuSection = PluginGameMenuSection,
                 Action = (a) =>
                 {
@@ -495,7 +495,7 @@ namespace PlayniteAchievements
                 }
 
                 PlayniteApi?.Dialogs?.ShowMessage(
-                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_SuccessSingle"), game.Name),
+                    ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -504,7 +504,7 @@ namespace PlayniteAchievements
             {
                 _logger?.Error(ex, $"Failed to clear cached data for game '{game.Name}' ({game.Id}).");
                 PlayniteApi?.Dialogs?.ShowMessage(
-                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_Failed"), ex.Message),
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
@@ -558,7 +558,7 @@ namespace PlayniteAchievements
             }
 
             PlayniteApi?.Dialogs?.ShowMessage(
-                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_SuccessSelected"), clearedCount),
+                ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"),
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -566,12 +566,18 @@ namespace PlayniteAchievements
 
         public bool IsGameExcluded(Guid gameId)
         {
-            return _settingsViewModel.Settings.Persisted.ExcludedGameIds.Contains(gameId);
+            return GameCustomDataLookup.IsExcludedFromRefreshes(
+                gameId,
+                _settingsViewModel?.Settings?.Persisted,
+                _gameCustomDataStore);
         }
 
         public bool IsGameExcludedFromSummaries(Guid gameId)
         {
-            return _settingsViewModel.Settings.Persisted.ExcludedFromSummariesGameIds.Contains(gameId);
+            return GameCustomDataLookup.IsExcludedFromSummaries(
+                gameId,
+                _settingsViewModel?.Settings?.Persisted,
+                _gameCustomDataStore);
         }
 
         public void ToggleGameExclusion(Guid gameId)

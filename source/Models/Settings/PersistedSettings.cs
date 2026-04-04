@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Playnite.SDK;
+using Playnite.SDK.Data;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Tagging;
@@ -36,6 +38,9 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showHiddenDescription = false;
         private bool _showHiddenSuffix = true;
         private bool _showLockedIcon = true;
+        private bool _preserveAchievementIconResolution = false;
+        private bool _useSeparateLockedIconsWhenAvailable = false;
+        private HashSet<Guid> _separateLockedIconEnabledGameIds = new HashSet<Guid>();
         private bool _showRarityGlow = true;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
@@ -50,6 +55,17 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showSidebarBarCharts = true;
         private bool _showTopMenuBarButton = true;
         private bool _showCompactListRarityBar = true;
+        private bool _showCompletionBorder = true;
+        private bool _enableAchievementCompactListControl = true;
+        private bool _enableAchievementDataGridControl = true;
+        private bool _enableAchievementCompactUnlockedListControl = true;
+        private bool _enableAchievementCompactLockedListControl = true;
+        private bool _enableAchievementProgressBarControl = true;
+        private bool _enableAchievementStatsControl = true;
+        private bool _enableAchievementButtonControl = true;
+        private bool _enableAchievementViewItemControl = true;
+        private bool _enableAchievementPieChartControl = true;
+        private bool _enableAchievementBarChartControl = true;
         private bool _enableCompactGridMode = false;
         private double? _achievementDataGridMaxHeight = null;
         private bool _enableParallelProviderRefresh = true;
@@ -233,13 +249,61 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, locked achievement icons are shown in grayscale.
+        /// When true, locked achievement icons are shown.
+        /// This uses a provider-supplied locked icon when available, otherwise a grayscaled unlocked fallback.
         /// When false, locked achievement icons are hidden with a placeholder until revealed.
         /// </summary>
         public bool ShowLockedIcon
         {
             get => _showLockedIcon;
             set => SetValue(ref _showLockedIcon, value);
+        }
+
+        /// <summary>
+        /// When true, achievement icons are cached at their original decoded size instead of the optimized 128px cache mode.
+        /// Changes apply on the next refresh.
+        /// </summary>
+        public bool PreserveAchievementIconResolution
+        {
+            get => _preserveAchievementIconResolution;
+            set => SetValue(ref _preserveAchievementIconResolution, value);
+        }
+
+        /// <summary>
+        /// When true, providers with distinct locked icons will cache and use them instead of grayscaling the unlocked icon.
+        /// Changes apply on the next refresh for newly cached icons.
+        /// </summary>
+        public bool UseSeparateLockedIconsWhenAvailable
+        {
+            get => _useSeparateLockedIconsWhenAvailable;
+            set => SetValue(ref _useSeparateLockedIconsWhenAvailable, value);
+        }
+
+        /// <summary>
+        /// Game IDs that always use separate locked icons when available, regardless of the global default.
+        /// When absent, the game falls back to the global UseSeparateLockedIconsWhenAvailable setting.
+        /// </summary>
+        [JsonIgnore]
+        [DontSerialize]
+        public HashSet<Guid> SeparateLockedIconEnabledGameIds
+        {
+            get => _separateLockedIconEnabledGameIds;
+            set => SetValue(ref _separateLockedIconEnabledGameIds, value ?? new HashSet<Guid>());
+        }
+
+        /// <summary>
+        /// Resolves whether a game should use separate locked icons after applying the per-game override.
+        /// </summary>
+        public bool ShouldUseSeparateLockedIcons(Guid? playniteGameId)
+        {
+            if (UseSeparateLockedIconsWhenAvailable)
+            {
+                return true;
+            }
+
+            return playniteGameId.HasValue &&
+                   playniteGameId.Value != Guid.Empty &&
+                   SeparateLockedIconEnabledGameIds?.Contains(playniteGameId.Value) == true;
         }
 
         /// <summary>
@@ -389,6 +453,105 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showCompactListRarityBar;
             set => SetValue(ref _showCompactListRarityBar, value);
+        }
+
+        /// <summary>
+        /// When true, completed games display a blue border in the games overview.
+        /// </summary>
+        public bool ShowCompletionBorder
+        {
+            get => _showCompletionBorder;
+            set => SetValue(ref _showCompletionBorder, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern compact list control.
+        /// </summary>
+        public bool EnableAchievementCompactListControl
+        {
+            get => _enableAchievementCompactListControl;
+            set => SetValue(ref _enableAchievementCompactListControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern achievement datagrid control.
+        /// </summary>
+        public bool EnableAchievementDataGridControl
+        {
+            get => _enableAchievementDataGridControl;
+            set => SetValue(ref _enableAchievementDataGridControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern compact unlocked list control.
+        /// </summary>
+        public bool EnableAchievementCompactUnlockedListControl
+        {
+            get => _enableAchievementCompactUnlockedListControl;
+            set => SetValue(ref _enableAchievementCompactUnlockedListControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern compact locked list control.
+        /// </summary>
+        public bool EnableAchievementCompactLockedListControl
+        {
+            get => _enableAchievementCompactLockedListControl;
+            set => SetValue(ref _enableAchievementCompactLockedListControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern progress bar control.
+        /// </summary>
+        public bool EnableAchievementProgressBarControl
+        {
+            get => _enableAchievementProgressBarControl;
+            set => SetValue(ref _enableAchievementProgressBarControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern stats control.
+        /// </summary>
+        public bool EnableAchievementStatsControl
+        {
+            get => _enableAchievementStatsControl;
+            set => SetValue(ref _enableAchievementStatsControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern button control.
+        /// </summary>
+        public bool EnableAchievementButtonControl
+        {
+            get => _enableAchievementButtonControl;
+            set => SetValue(ref _enableAchievementButtonControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern view item control.
+        /// </summary>
+        public bool EnableAchievementViewItemControl
+        {
+            get => _enableAchievementViewItemControl;
+            set => SetValue(ref _enableAchievementViewItemControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern pie chart control.
+        /// </summary>
+        public bool EnableAchievementPieChartControl
+        {
+            get => _enableAchievementPieChartControl;
+            set => SetValue(ref _enableAchievementPieChartControl, value);
+        }
+
+        /// <summary>
+        /// When true, enables the modern bar chart control.
+        /// </summary>
+        public bool EnableAchievementBarChartControl
+        {
+            get => _enableAchievementBarChartControl;
+            set => SetValue(ref _enableAchievementBarChartControl, value);
         }
 
         /// <summary>
@@ -696,6 +859,8 @@ namespace PlayniteAchievements.Models.Settings
         /// Game IDs that the user has explicitly excluded from achievement tracking.
         /// These exclusions persist across cache clears.
         /// </summary>
+        [JsonIgnore]
+        [DontSerialize]
         public HashSet<Guid> ExcludedGameIds
         {
             get => _excludedGameIds;
@@ -706,6 +871,8 @@ namespace PlayniteAchievements.Models.Settings
         /// Game IDs that are excluded from all summary surfaces.
         /// These exclusions persist across cache clears.
         /// </summary>
+        [JsonIgnore]
+        [DontSerialize]
         public HashSet<Guid> ExcludedFromSummariesGameIds
         {
             get => _excludedFromSummariesGameIds;
@@ -716,6 +883,8 @@ namespace PlayniteAchievements.Models.Settings
         /// Manual capstone selections. Key = Playnite Game ID, Value = Achievement ApiName.
         /// These selections persist across cache clears.
         /// </summary>
+        [JsonIgnore]
+        [DontSerialize]
         public Dictionary<Guid, string> ManualCapstones
         {
             get => _manualCapstones;
@@ -727,6 +896,8 @@ namespace PlayniteAchievements.Models.Settings
         /// Key = Playnite Game ID, Value = full ordered list of achievement ApiName values.
         /// These overrides persist across cache clears.
         /// </summary>
+        [JsonIgnore]
+        [DontSerialize]
         public Dictionary<Guid, List<string>> AchievementOrderOverrides
         {
             get => _achievementOrderOverrides;
@@ -738,6 +909,8 @@ namespace PlayniteAchievements.Models.Settings
         /// Key = Playnite Game ID, Value = map of Achievement ApiName -> Category.
         /// These overrides persist across cache clears.
         /// </summary>
+        [JsonIgnore]
+        [DontSerialize]
         public Dictionary<Guid, Dictionary<string, string>> AchievementCategoryOverrides
         {
             get => _achievementCategoryOverrides;
@@ -750,6 +923,8 @@ namespace PlayniteAchievements.Models.Settings
         /// Allowed values: Base, DLC, Singleplayer, Multiplayer.
         /// These overrides persist across cache clears.
         /// </summary>
+        [JsonIgnore]
+        [DontSerialize]
         public Dictionary<Guid, Dictionary<string, string>> AchievementCategoryTypeOverrides
         {
             get => _achievementCategoryTypeOverrides;
@@ -817,6 +992,8 @@ namespace PlayniteAchievements.Models.Settings
                 ShowHiddenDescription = this.ShowHiddenDescription,
                 ShowHiddenSuffix = this.ShowHiddenSuffix,
                 ShowLockedIcon = this.ShowLockedIcon,
+                PreserveAchievementIconResolution = this.PreserveAchievementIconResolution,
+                UseSeparateLockedIconsWhenAvailable = this.UseSeparateLockedIconsWhenAvailable,
                 ShowRarityGlow = this.ShowRarityGlow,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
@@ -830,6 +1007,17 @@ namespace PlayniteAchievements.Models.Settings
                 ShowSidebarBarCharts = this.ShowSidebarBarCharts,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
+                ShowCompletionBorder = this.ShowCompletionBorder,
+                EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
+                EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
+                EnableAchievementCompactUnlockedListControl = this.EnableAchievementCompactUnlockedListControl,
+                EnableAchievementCompactLockedListControl = this.EnableAchievementCompactLockedListControl,
+                EnableAchievementProgressBarControl = this.EnableAchievementProgressBarControl,
+                EnableAchievementStatsControl = this.EnableAchievementStatsControl,
+                EnableAchievementButtonControl = this.EnableAchievementButtonControl,
+                EnableAchievementViewItemControl = this.EnableAchievementViewItemControl,
+                EnableAchievementPieChartControl = this.EnableAchievementPieChartControl,
+                EnableAchievementBarChartControl = this.EnableAchievementBarChartControl,
                 EnableCompactGridMode = this.EnableCompactGridMode,
                 AchievementDataGridMaxHeight = this.AchievementDataGridMaxHeight,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
@@ -886,6 +1074,9 @@ namespace PlayniteAchievements.Models.Settings
                     : new HashSet<Guid>(),
                 ExcludedFromSummariesGameIds = this.ExcludedFromSummariesGameIds != null
                     ? new HashSet<Guid>(this.ExcludedFromSummariesGameIds)
+                    : new HashSet<Guid>(),
+                SeparateLockedIconEnabledGameIds = this.SeparateLockedIconEnabledGameIds != null
+                    ? new HashSet<Guid>(this.SeparateLockedIconEnabledGameIds)
                     : new HashSet<Guid>(),
                 ManualCapstones = this.ManualCapstones != null
                     ? new Dictionary<Guid, string>(this.ManualCapstones)

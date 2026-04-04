@@ -336,7 +336,6 @@ namespace PlayniteAchievements.Services.ThemeMigration
             foreach (var controlName in ControlMappings.LegacyToModernControlNames.Keys)
             {
                 if (content.IndexOf($"SuccessStory_{controlName}", StringComparison.Ordinal) >= 0 ||
-                    content.IndexOf($"PlayniteAchievements_{controlName}", StringComparison.Ordinal) >= 0 ||
                     Regex.IsMatch(content, GetStandaloneControlNamePattern(controlName)))
                 {
                     return true;

@@ -232,13 +232,15 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 }
 
                 var settings = PlayniteAchievementsPlugin.Instance?.Settings;
-                var hideIcon = !(settings?.Persisted?.ShowHiddenIcon ?? false);
-                var hideTitle = !(settings?.Persisted?.ShowHiddenTitle ?? false);
-                var hideDescription = !(settings?.Persisted?.ShowHiddenDescription ?? false);
-                var showHiddenSuffix = settings?.Persisted?.ShowHiddenSuffix ?? true;
-                var hideLockedIcon = !(settings?.Persisted?.ShowLockedIcon ?? true);
-                var showRarityGlow = settings?.Persisted?.ShowRarityGlow ?? true;
-                var showRarityBar = settings?.Persisted?.ShowCompactListRarityBar ?? true;
+                var persisted = settings?.Persisted;
+                var showHiddenIcon = persisted?.ShowHiddenIcon ?? false;
+                var showHiddenTitle = persisted?.ShowHiddenTitle ?? false;
+                var showHiddenDescription = persisted?.ShowHiddenDescription ?? false;
+                var showHiddenSuffix = persisted?.ShowHiddenSuffix ?? true;
+                var showLockedIcon = persisted?.ShowLockedIcon ?? true;
+                var useSeparateLockedIcons = persisted?.UseSeparateLockedIconsWhenAvailable ?? false;
+                var showRarityGlow = persisted?.ShowRarityGlow ?? true;
+                var showRarityBar = persisted?.ShowCompactListRarityBar ?? true;
 
                 var items = new List<AchievementDisplayItem>(_allAchievements.Count);
                 foreach (var achievement in _allAchievements)
@@ -246,8 +248,18 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                     var item = new AchievementDisplayItem();
                     var gameName = achievement.Game?.Name ?? "Unknown";
                     var gameId = achievement.Game?.Id;
-                    item.UpdateFrom(achievement, gameName, gameId, hideIcon, hideTitle, hideDescription, hideLockedIcon, showRarityGlow, showRarityBar);
-                    item.ShowHiddenSuffix = showHiddenSuffix;
+                    item.UpdateFrom(
+                        achievement,
+                        gameName,
+                        gameId,
+                        showHiddenIcon,
+                        showHiddenTitle,
+                        showHiddenDescription,
+                        showHiddenSuffix,
+                        showLockedIcon,
+                        ResolveUseSeparateLockedIcons(persisted, gameId, useSeparateLockedIcons),
+                        showRarityGlow,
+                        showRarityBar);
                     items.Add(item);
                 }
 
@@ -262,6 +274,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             bool showHiddenDescription,
             bool showHiddenSuffix,
             bool showLockedIcon,
+            bool useSeparateLockedIconsWhenAvailable,
             bool showRarityGlow,
             bool showRarityBar)
         {
@@ -272,19 +285,25 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 return;
             }
 
-            var hideIcon = !showHiddenIcon;
-            var hideTitle = !showHiddenTitle;
-            var hideDescription = !showHiddenDescription;
-            var hideLockedIcon = !showLockedIcon;
-
             var items = new List<AchievementDisplayItem>(_allAchievements.Count);
+            var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
             foreach (var achievement in _allAchievements)
             {
                 var item = new AchievementDisplayItem();
                 var gameName = achievement.Game?.Name ?? "Unknown";
                 var gameId = achievement.Game?.Id;
-                item.UpdateFrom(achievement, gameName, gameId, hideIcon, hideTitle, hideDescription, hideLockedIcon, showRarityGlow, showRarityBar);
-                item.ShowHiddenSuffix = showHiddenSuffix;
+                item.UpdateFrom(
+                    achievement,
+                    gameName,
+                    gameId,
+                    showHiddenIcon,
+                    showHiddenTitle,
+                    showHiddenDescription,
+                    showHiddenSuffix,
+                    showLockedIcon,
+                    ResolveUseSeparateLockedIcons(persisted, gameId, useSeparateLockedIconsWhenAvailable),
+                    showRarityGlow,
+                    showRarityBar);
                 items.Add(item);
             }
 
@@ -562,6 +581,19 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             target.ReplaceAll(value ?? new List<T>());
             OnPropertyChanged(propertyName);
+        }
+
+        private static bool ResolveUseSeparateLockedIcons(
+            Models.Settings.PersistedSettings settings,
+            System.Guid? playniteGameId,
+            bool fallbackValue)
+        {
+            if (settings == null || !playniteGameId.HasValue || playniteGameId.Value == System.Guid.Empty)
+            {
+                return fallbackValue;
+            }
+
+            return Services.GameCustomDataLookup.ShouldUseSeparateLockedIcons(playniteGameId, settings);
         }
     }
 }

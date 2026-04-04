@@ -252,8 +252,9 @@ namespace PlayniteAchievements.Providers.Xenia
 
                             var gpdfile = new GPDResolver().LoadGPD(gpdFilePath);
                             var gameName = gpdfile.StringData.Replace("\0", "");
+                            gameName = gameName.Replace("\"", "");
 
-                            if (gameName.Contains(ROMTitle))
+                            if (gameName == ROMTitle)
                             {
                                 titleID = Path.GetFileNameWithoutExtension(gpdFilePath);
                                 return true;
