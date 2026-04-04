@@ -1029,7 +1029,7 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0"
@@ -1043,26 +1043,24 @@
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                             </ComboBox>
-                                            <CheckBox Grid.Column="2"
-                                                      IsChecked="{Binding Persisted.CompactListSortDescending, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                      ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                      Margin="4,0,0,0"
-                                                      VerticalAlignment="Center">
-                                                <CheckBox.Content>
-                                                    <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="14">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Text" Value="&#xea65;"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Persisted.CompactListSortDescending}" Value="True">
-                                                                        <Setter Property="Text" Value="&#xea66;"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </CheckBox.Content>
-                                            </CheckBox>
+                                            <Button Grid.Column="2"
+                                                    ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
+                                                    Margin="4,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Click="ToggleCompactListSortDescending">
+                                                <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="&#xea65;"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Persisted.CompactListSortDescending}" Value="True">
+                                                                    <Setter Property="Text" Value="&#xea66;"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Button>
                                         </Grid>
                                     </StackPanel>
                                 </Border>
@@ -1143,7 +1141,7 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0"
@@ -1157,26 +1155,24 @@
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                             </ComboBox>
-                                            <CheckBox Grid.Column="2"
-                                                      IsChecked="{Binding Persisted.CompactUnlockedListSortDescending, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                      ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                      Margin="4,0,0,0"
-                                                      VerticalAlignment="Center">
-                                                <CheckBox.Content>
-                                                    <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="14">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Text" Value="&#xea65;"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Persisted.CompactUnlockedListSortDescending}" Value="True">
-                                                                        <Setter Property="Text" Value="&#xea66;"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </CheckBox.Content>
-                                            </CheckBox>
+                                            <Button Grid.Column="2"
+                                                    ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
+                                                    Margin="4,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Click="ToggleCompactUnlockedListSortDescending">
+                                                <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="&#xea65;"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Persisted.CompactUnlockedListSortDescending}" Value="True">
+                                                                    <Setter Property="Text" Value="&#xea66;"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Button>
                                         </Grid>
                                     </StackPanel>
                                 </Border>
@@ -1215,7 +1211,7 @@
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0"
@@ -1229,26 +1225,24 @@
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                             </ComboBox>
-                                            <CheckBox Grid.Column="2"
-                                                      IsChecked="{Binding Persisted.CompactLockedListSortDescending, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                      ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                      Margin="4,0,0,0"
-                                                      VerticalAlignment="Center">
-                                                <CheckBox.Content>
-                                                    <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="14">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Text" Value="&#xea65;"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Persisted.CompactLockedListSortDescending}" Value="True">
-                                                                        <Setter Property="Text" Value="&#xea66;"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </CheckBox.Content>
-                                            </CheckBox>
+                                            <Button Grid.Column="2"
+                                                    ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
+                                                    Margin="4,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Click="ToggleCompactLockedListSortDescending">
+                                                <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="&#xea65;"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Persisted.CompactLockedListSortDescending}" Value="True">
+                                                                    <Setter Property="Text" Value="&#xea66;"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Button>
                                         </Grid>
                                     </StackPanel>
                                 </Border>

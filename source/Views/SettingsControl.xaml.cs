@@ -1200,6 +1200,37 @@ namespace PlayniteAchievements.Views
         }
 
         // -----------------------------
+        // Compact list sort direction toggles
+        // -----------------------------
+
+        private void ToggleCompactListSortDescending(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted != null)
+            {
+                persisted.CompactListSortDescending = !persisted.CompactListSortDescending;
+            }
+        }
+
+        private void ToggleCompactUnlockedListSortDescending(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted != null)
+            {
+                persisted.CompactUnlockedListSortDescending = !persisted.CompactUnlockedListSortDescending;
+            }
+        }
+
+        private void ToggleCompactLockedListSortDescending(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted != null)
+            {
+                persisted.CompactLockedListSortDescending = !persisted.CompactLockedListSortDescending;
+            }
+        }
+
+        // -----------------------------
         // Tagging Methods
         // -----------------------------
 
