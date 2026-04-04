@@ -21,8 +21,8 @@
                     <DataTrigger Binding="{Binding AuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                  Value="True">
                         <Setter Property="IsEnabled" Value="False"/>
+                    </DataTrigger>
                     </Style.Triggers>
-                </Style>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -111,7 +111,7 @@
 
                                     <TextBlock Grid.Column="0"
                                                FontFamily="Segoe MDL2 Assets"
- Color="{DynamicResource TextBrush}"
+                                               Foreground="{DynamicResource TextBrush}"
                                                FontSize="{DynamicResource FontSize}" Margin="0,0,12,0"
  VerticalAlignment="Center">
                                         <TextBlock.RenderTransform>
@@ -128,7 +128,8 @@
                                                         <Setter Property="Foreground" Value="#06FFA5"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
-                                            </TextBlock.Style>
+                                            </Style>
+                                        </TextBlock.Style>
                                         </TextBlock>
 
                                     <TextBlock Grid.Column="1"

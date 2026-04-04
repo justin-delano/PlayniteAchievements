@@ -5,21 +5,21 @@ using System.Runtime.Serialization;
 namespace PlayniteAchievements.Providers.BattleNet.Models
 {
     [DataContract]
-    internal sealed class WowRegionResult
+    public sealed class WowRegionResult
     {
         [DataMember(Name = "data")]
         public WowData Data { get; set; }
     }
 
     [DataContract]
-    internal sealed class WowData
+    public sealed class WowData
     {
         [DataMember(Name = "Realms")]
         public List<WowRealm> Realms { get; set; }
     }
 
     [DataContract]
-    internal sealed class WowRealm
+    public sealed class WowRealm
     {
         [DataMember(Name = "name")]
         public string Name { get; set; }
@@ -29,7 +29,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class WowAchievementsData
+    public sealed class WowAchievementsData
     {
         [DataMember(Name = "name")]
         public string Name { get; set; }
@@ -42,7 +42,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class WowSubcategory
+    public sealed class WowSubcategory
     {
         [DataMember(Name = "id")]
         public string Id { get; set; }
@@ -55,7 +55,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class WowAchievement
+    public sealed class WowAchievement
     {
         [DataMember(Name = "id")]
         public int Id { get; set; }
@@ -80,7 +80,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class WowIcon
+    public sealed class WowIcon
     {
         [DataMember(Name = "url")]
         public string Url { get; set; }

@@ -3,13 +3,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Data;
+using Playnite.SDK.Events;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers.BattleNet.Models;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {
-    internal sealed class BattleNetSessionManager : ISessionManager
+    public sealed class BattleNetSessionManager : ISessionManager
     {
         private const string UrlLogin = "https://starcraft2.com/login";
         private const string UrlAuthProbe = "https://starcraft2.blizzard.com/nav/authenticate";

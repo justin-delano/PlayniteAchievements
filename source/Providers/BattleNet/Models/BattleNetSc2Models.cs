@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 namespace PlayniteAchievements.Providers.BattleNet.Models
 {
     [DataContract]
-    internal sealed class BattleNetUser
+    public sealed class BattleNetUser
     {
         [DataMember(Name = "id")]
         public int Id { get; set; }
@@ -14,7 +14,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class Sc2ProfileResponse
+    public sealed class Sc2ProfileResponse
     {
         [DataMember(Name = "summary")]
         public Sc2Summary Summary { get; set; }
@@ -27,7 +27,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class Sc2Summary
+    public sealed class Sc2Summary
     {
         [DataMember(Name = "id")]
         public string Id { get; set; }
@@ -40,7 +40,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class Sc2EarnedAchievement
+    public sealed class Sc2EarnedAchievement
     {
         [DataMember(Name = "achievementId")]
         public string AchievementId { get; set; }
@@ -56,7 +56,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class Sc2CategoryPointProgress
+    public sealed class Sc2CategoryPointProgress
     {
         [DataMember(Name = "categoryId")]
         public string CategoryId { get; set; }
@@ -66,7 +66,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class Sc2AchievementDefinitionsResponse
+    public sealed class Sc2AchievementDefinitionsResponse
     {
         [DataMember(Name = "achievements")]
         public List<Sc2AchievementDefinition> Achievements { get; set; }
@@ -76,7 +76,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class Sc2AchievementDefinition
+    public sealed class Sc2AchievementDefinition
     {
         [DataMember(Name = "id")]
         public string Id { get; set; }
@@ -98,7 +98,7 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
-    internal sealed class Sc2Category
+    public sealed class Sc2Category
     {
         [DataMember(Name = "id")]
         public string Id { get; set; }

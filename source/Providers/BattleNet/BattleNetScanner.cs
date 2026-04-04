@@ -60,7 +60,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                     return new ProviderRefreshExecutor.ProviderGameResult { Data = data };
                 },
                 onGameCompleted,
-                isAuthRequiredException: ex => ex is AuthRequiredException,
+                isAuthRequiredException: _ => false,
                 onGameError: (game, ex, consecutiveErrors) =>
                 {
                     _logger?.Debug(ex, $"[BattleNet] Failed to scan {game?.Name} after {consecutiveErrors} consecutive errors");

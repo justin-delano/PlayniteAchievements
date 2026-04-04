@@ -20,8 +20,9 @@ namespace PlayniteAchievements.Providers.BattleNet
         public BattleNetTransientException(string message, Exception inner) : base(message, inner) { }
     }
 
-    internal sealed class BattleNetApiClient
+    public sealed class BattleNetApiClient : IDisposable
     {
+        private bool _disposed;
         private const string Sc2ProfileUrl = "https://starcraft2.com/api/sc2/profile/{0}/1/{1}?locale={2}";
         private const string Sc2AchievementsUrl = "https://starcraft2.com/api/sc2/static/profile/2?locale={0}";
         private const string WowBaseAchievementUrl = "https://worldofwarcraft.blizzard.com/{0}/character/{1}/{2}/{3}/achievements/{4}";
@@ -163,7 +164,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             if (response.StatusCode == HttpStatusCode.NotFound)
                 return null;
 
-            if (response.StatusCode == HttpStatusCode.TooManyRequests ||
+            if ((int)response.StatusCode == 429 ||
                 (int)response.StatusCode >= 500)
             {
                 throw new BattleNetTransientException($"HTTP {(int)response.StatusCode} from {url}");
@@ -201,6 +202,13 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             return null;
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            _httpClient?.Dispose();
         }
     }
 }
