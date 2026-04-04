@@ -15,20 +15,20 @@
 
                 <!-- Title bar -->
                 <DockPanel Grid.Row="0"
-                           Margin="20,16,20,8"
+                           Margin="16,10,16,6"
                            LastChildFill="True">
                     <Button x:Name="CloseButton"
                             DockPanel.Dock="Right"
-                            Width="60"
-                            Height="60"
-                            FontSize="30"
+                            Width="40"
+                            Height="40"
+                            FontSize="20"
                             FontWeight="Bold"
                             Content="X"
                             HorizontalAlignment="Right"
-                            VerticalAlignment="Top"
+                            VerticalAlignment="Center"
                             Cursor="Hand" />
                     <TextBlock x:Name="TitleText"
-                               FontSize="26"
+                               FontSize="18"
                                FontWeight="Bold"
                                Foreground="{DynamicResource TextBrush}"
                                VerticalAlignment="Center"
