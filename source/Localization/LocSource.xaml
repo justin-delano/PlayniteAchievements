@@ -113,6 +113,15 @@
     <!-- ================================================================= -->
     <!-- 06 Menus -->
     <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Menu_ViewAchievements">View Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">Achievements Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_TestModernControls">Test Modern Theme Controls</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Game Options</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone Achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Single Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ViewRefreshProgress">View</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear data for {0} selected games?&#10;&#10;This removes cached achievements and icons for those games. Any manual tracking links and manual unlock times for those games will also be removed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSingle">Clear data for "{0}"?&#10;&#10;This removes cached achievements and icons for this game. If the game has a manual tracking link, that link and its manual unlock times will also be removed.</sys:String>
