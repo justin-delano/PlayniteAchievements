@@ -188,54 +188,28 @@ namespace PlayniteAchievements.Providers.ShadPS4
         {
             if (game == null) return false;
 
-            // Check if game is configured to use ShadPS4 emulator (by path or name)
-            var usesShadPs4 = UsesShadPS4Emulator(game);
-
-            if (usesShadPs4)
+            // If game is configured to use ShadPS4 emulator, it's capable
+            if (UsesShadPS4Emulator(game))
             {
-                // Try new format first: resolve npcommid from npbind.dat
-                var npcommid = ResolveNpCommIdForGame(game);
-                if (!string.IsNullOrWhiteSpace(npcommid))
-                {
-                    var npCommIdCache = GetOrBuildNpCommIdCache();
-                    if (npCommIdCache != null && npCommIdCache.ContainsKey(npcommid))
-                    {
-                        return true;
-                    }
-                }
-
-                // Fall back to old format: verify title ID in cache
-                var titleId = ExtractTitleIdFromGame(game);
-                if (!string.IsNullOrWhiteSpace(titleId))
-                {
-                    var cache = GetOrBuildTitleCache();
-                    if (cache != null && cache.ContainsKey(titleId))
-                    {
-                        return true;
-                    }
-                }
-
-                // Even without cache match, if emulator is ShadPS4, game may be capable
                 return true;
             }
 
-            // Extract title ID from game's install directory and look up in cache
-            var titleId2 = ExtractTitleIdFromGame(game);
-            if (!string.IsNullOrWhiteSpace(titleId2))
+            // Otherwise, check if we can find trophy data by title ID or npcommid
+            var titleId = ExtractTitleIdFromGame(game);
+            if (!string.IsNullOrWhiteSpace(titleId))
             {
-                var cache2 = GetOrBuildTitleCache();
-                if (cache2 != null && cache2.ContainsKey(titleId2))
+                var cache = GetOrBuildTitleCache();
+                if (cache != null && cache.ContainsKey(titleId))
                 {
                     return true;
                 }
             }
 
-            // Also try new format for non-emulator-matched games
-            var npcommid2 = ResolveNpCommIdForGame(game);
-            if (!string.IsNullOrWhiteSpace(npcommid2))
+            var npcommid = ResolveNpCommIdForGame(game);
+            if (!string.IsNullOrWhiteSpace(npcommid))
             {
-                var npCommIdCache2 = GetOrBuildNpCommIdCache();
-                if (npCommIdCache2 != null && npCommIdCache2.ContainsKey(npcommid2))
+                var npCommIdCache = GetOrBuildNpCommIdCache();
+                if (npCommIdCache != null && npCommIdCache.ContainsKey(npcommid))
                 {
                     return true;
                 }
@@ -431,8 +405,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
         /// <inheritdoc />
         public ProviderSettingsViewBase CreateSettingsView() => new ShadPS4SettingsView(_playniteApi);
 
-        #region New-format (AppData) path discovery
-
         /// <summary>
         /// Auto-discovers the shadPS4 AppData directory.
         /// </summary>
@@ -503,10 +475,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
             return Path.Combine(basePath, "trophy");
         }
 
-        #endregion
-
-        #region npcommid cache
-
         internal Dictionary<string, string> GetOrBuildNpCommIdCache()
         {
             lock (_npCommIdCacheLock)
@@ -562,10 +530,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
             return cache;
         }
 
-        #endregion
-
-        #region npbind.dat parsing
-
         /// <summary>
         /// Resolves the npcommid for a game by parsing its sce_sys/npbind.dat file.
         /// </summary>
@@ -618,8 +582,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
             }
             return null;
         }
-
-        #endregion
     }
 }
 
