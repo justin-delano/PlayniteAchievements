@@ -173,6 +173,12 @@
                                       Tag="android"
                                       Margin="0,0,12,10"
                                       FontSize="{DynamicResource FontSize}"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_Ubisoft}"
+                                      Loaded="ExophasePlatform_CheckboxLoaded"
+                                      Click="ExophasePlatform_CheckChanged"
+                                      Tag="ubisoft"
+                                      Margin="0,0,12,10"
+                                      FontSize="{DynamicResource FontSize}"/>
                             <CheckBox Content="{DynamicResource LOCPlayAch_Provider_RetroAchievements}"
                                       Loaded="ExophasePlatform_CheckboxLoaded"
                                       Click="ExophasePlatform_CheckChanged"

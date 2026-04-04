@@ -10,7 +10,8 @@ namespace PlayniteAchievements.Providers
             {
                 "BattleNet",
                 "GooglePlay",
-                "EA"
+                "EA",
+                "Ubisoft"
             };
 
         public static bool ShouldHideFromSetupSurfaces(string providerKey)
