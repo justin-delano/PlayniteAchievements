@@ -31,6 +31,10 @@
 
     <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 
+    <!-- Override menu highlight for dark fullscreen backgrounds.
+         Desktop uses #14000000 which is invisible on dark backgrounds. -->
+    <SolidColorBrush x:Key="MenuHighlightBrush" Color="#25EC6200" />
+
     <!-- DataGrid selection overrides for fullscreen visibility.
          The default #40FFFFFF white overlays are invisible on dark backgrounds. -->
     <Style TargetType="DataGridCell">

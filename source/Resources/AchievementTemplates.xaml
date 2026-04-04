@@ -16,6 +16,10 @@
     <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
     <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
 
+    <!-- Menu highlight brush used by AchievementMultiSelectMenuItemStyle.
+         Overridden in FullscreenResources.xaml for dark backgrounds. -->
+    <SolidColorBrush x:Key="MenuHighlightBrush" Color="#14000000" />
+
     <!-- =======================
          DATAGRID STYLES
          ======================= -->
@@ -280,7 +284,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="MenuItemBorder" Property="Background" Value="#14000000"/>
+                            <Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource MenuHighlightBrush}"/>
                             <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
