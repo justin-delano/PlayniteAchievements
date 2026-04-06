@@ -30,12 +30,12 @@
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Bỏ chọn tất cả</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ResetSelected">Đặt lại đã chọn</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Áp dụng cho đã chọn</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_AddType">Add Type</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_SetLabelEllipsis">Set Label...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_RenameLabelEllipsis">Rename Label...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_ClearOverrides">Clear Overrides</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_AddType">Thêm loại</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_SetLabelEllipsis">Đặt nhãn...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_RenameLabelEllipsis">Đổi tên nhãn...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_ClearOverrides">Xoá ghi đè</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ExistingLabel">Existing Label</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_NewLabel">New Label</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_NewLabel">Nhãn mới</sys:String>
 
     <!-- ================================================================= -->
     <!-- PLUGIN                                                             -->
