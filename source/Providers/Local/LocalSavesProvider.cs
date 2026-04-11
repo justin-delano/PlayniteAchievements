@@ -77,21 +77,13 @@ namespace PlayniteAchievements.Providers.Local
             string jsonPath = null;
             if (hasResolvedLocalFolder && !string.IsNullOrWhiteSpace(localFolderPath))
             {
-                jsonPath = Path.Combine(localFolderPath, "achievements.json");
-                if (!File.Exists(jsonPath))
-                {
-                    jsonPath = null;
-                }
+                jsonPath = ResolveAchievementFilePath(localFolderPath, "achievements.json");
             }
 
             string iniPath = null;
             if (hasResolvedLocalFolder && !string.IsNullOrWhiteSpace(localFolderPath))
             {
-                iniPath = Path.Combine(localFolderPath, "achievements.ini");
-                if (!File.Exists(iniPath))
-                {
-                    iniPath = null;
-                }
+                iniPath = ResolveAchievementFilePath(localFolderPath, "achievements.ini");
             }
 
             var hasAchievementsFile = !string.IsNullOrWhiteSpace(jsonPath) || !string.IsNullOrWhiteSpace(iniPath);
@@ -157,6 +149,11 @@ namespace PlayniteAchievements.Providers.Local
                     var raw = await LoadLocalEntriesAsync(jsonPath, iniPath).ConfigureAwait(false);
                     if (raw.Count > 0)
                     {
+                        if (steamSchema?.Achievements != null && steamSchema.Achievements.Count > 0)
+                        {
+                            raw = RemapGenericAchievementEntries(raw, steamSchema.Achievements);
+                        }
+
                         var added = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                         if (steamSchema?.Achievements != null && steamSchema.Achievements.Count > 0)
@@ -174,7 +171,13 @@ namespace PlayniteAchievements.Providers.Local
                             }
                         }
 
-                        foreach (var kv in raw.Where(kv => !added.Contains(kv.Key)))
+                        var remaining = raw.Where(kv => !added.Contains(kv.Key));
+                        if (steamSchema?.Achievements != null && steamSchema.Achievements.Count > 0)
+                        {
+                            remaining = remaining.Where(kv => !IsGenericAchievementId(kv.Key));
+                        }
+
+                        foreach (var kv in remaining)
                         {
                             apiNameMap.TryGetValue(kv.Key, out var schemaAch);
                             data.Achievements.Add(CreateAchievementDetail(kv.Key, kv.Value, schemaAch, steamSchema));
@@ -241,8 +244,8 @@ namespace PlayniteAchievements.Providers.Local
                             ApiName = schemaAch.Name,
                             DisplayName = schemaAch.DisplayName ?? schemaAch.Name,
                             Description = schemaAch.Description ?? "Local achievement from " + ProviderName,
-                            UnlockedIconPath = schemaAch.Icon ?? "Resources/UnlockedAchIcon.png",
-                            LockedIconPath = schemaAch.IconGray ?? "Resources/HiddenAchIcon.png",
+                            UnlockedIconPath = schemaAch.Icon ?? AchievementIconResolver.GetDefaultUnlockedIcon(),
+                            LockedIconPath = schemaAch.IconGray ?? AchievementIconResolver.GetDefaultIcon(),
                             Unlocked = false,
                             Hidden = schemaAch.Hidden == 1
                         };
@@ -1116,11 +1119,11 @@ namespace PlayniteAchievements.Providers.Local
 
             var unlockedIcon = !string.IsNullOrWhiteSpace(entry.icon)
                 ? entry.icon
-                : schemaAch?.Icon ?? "Resources/UnlockedAchIcon.png";
+                : schemaAch?.Icon ?? AchievementIconResolver.GetDefaultUnlockedIcon();
 
             var lockedIcon = !string.IsNullOrWhiteSpace(entry.iconGray)
                 ? entry.iconGray
-                : schemaAch?.IconGray ?? "Resources/HiddenAchIcon.png";
+                : schemaAch?.IconGray ?? AchievementIconResolver.GetDefaultIcon();
 
             var detail = new AchievementDetail
             {
@@ -1273,6 +1276,73 @@ namespace PlayniteAchievements.Providers.Local
                    string.Equals(description, "Local achievement from Local", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static Dictionary<string, LocalEntry> RemapGenericAchievementEntries(
+            Dictionary<string, LocalEntry> source,
+            IReadOnlyList<SchemaAchievement> schemaAchievements)
+        {
+            if (source == null || source.Count == 0 || schemaAchievements == null || schemaAchievements.Count == 0)
+            {
+                return source ?? new Dictionary<string, LocalEntry>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var remapped = new Dictionary<string, LocalEntry>(source, StringComparer.OrdinalIgnoreCase);
+            foreach (var kv in source)
+            {
+                if (!TryParseGenericAchievementIndex(kv.Key, out var oneBasedIndex))
+                {
+                    continue;
+                }
+
+                var zeroBasedIndex = oneBasedIndex - 1;
+                if (zeroBasedIndex < 0 || zeroBasedIndex >= schemaAchievements.Count)
+                {
+                    continue;
+                }
+
+                var schemaName = schemaAchievements[zeroBasedIndex]?.Name?.Trim();
+                if (string.IsNullOrWhiteSpace(schemaName) || remapped.ContainsKey(schemaName))
+                {
+                    continue;
+                }
+
+                remapped[schemaName] = kv.Value;
+            }
+
+            return remapped;
+        }
+
+        private static bool IsGenericAchievementId(string value)
+        {
+            return TryParseGenericAchievementIndex(value, out _) || IsSyntheticGenericAchievementId(value);
+        }
+
+        private static bool IsSyntheticGenericAchievementId(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            return SyntheticGenericAchievementIds.Contains(value.Trim());
+        }
+
+        private static bool TryParseGenericAchievementIndex(string value, out int index)
+        {
+            index = 0;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            var match = GenericNumberedAchievementPattern.Match(value.Trim());
+            if (!match.Success)
+            {
+                return false;
+            }
+
+            return int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out index) && index > 0;
+        }
+
         private static bool IsLowQualityIconPath(string iconPath, bool isLockedIcon)
         {
             iconPath = iconPath?.Trim();
@@ -1281,10 +1351,16 @@ namespace PlayniteAchievements.Providers.Local
                 return true;
             }
 
-            var defaultIcon = isLockedIcon
+            var legacyDefaultIcon = isLockedIcon
                 ? "Resources/HiddenAchIcon.png"
                 : "Resources/UnlockedAchIcon.png";
-            return string.Equals(iconPath, defaultIcon, StringComparison.OrdinalIgnoreCase);
+            var normalizedIconPath = AchievementIconResolver.NormalizeIconPath(iconPath);
+            var defaultIcon = isLockedIcon
+                ? AchievementIconResolver.GetDefaultIcon()
+                : AchievementIconResolver.GetDefaultUnlockedIcon();
+
+            return string.Equals(iconPath, legacyDefaultIcon, StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(normalizedIconPath, defaultIcon, StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<Dictionary<string, LocalEntry>> LoadLocalEntriesAsync(string jsonPath, string iniPath)
@@ -1406,9 +1482,16 @@ namespace PlayniteAchievements.Providers.Local
                 return;
             }
 
-            if (!IsGenericIniSection(section) && TryParseKnownIniField(key, out fieldName))
+            var isGenericSection = IsGenericIniSection(section);
+
+            if (!isGenericSection && TryParseKnownIniField(key, out fieldName))
             {
                 ApplyIniField(entries, section, fieldName, value);
+                return;
+            }
+
+            if (!isGenericSection || ShouldIgnoreGenericIniKey(key))
+            {
                 return;
             }
 
@@ -1422,6 +1505,22 @@ namespace PlayniteAchievements.Providers.Local
             {
                 ApplyIniField(entries, key, "earned_time", timestamp.ToString(CultureInfo.InvariantCulture));
             }
+        }
+
+        private static bool ShouldIgnoreGenericIniKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return true;
+            }
+
+            var normalized = key.Trim();
+            if (normalized.All(char.IsDigit))
+            {
+                return true;
+            }
+
+            return IgnoredGenericIniKeys.Contains(normalized);
         }
 
         private static void ApplyIniField(Dictionary<string, LocalEntry> entries, string achievementName, string fieldName, string value)
@@ -1652,8 +1751,9 @@ namespace PlayniteAchievements.Providers.Local
                         continue;
                     }
 
-                    candidate = Path.Combine(candidate, appId, fileName);
-                    if (File.Exists(candidate))
+                    var appFolder = Path.Combine(candidate, appId);
+                    candidate = ResolveAchievementFilePath(appFolder, fileName);
+                    if (!string.IsNullOrWhiteSpace(candidate))
                     {
                         filePath = candidate;
                         return true;
@@ -1666,8 +1766,8 @@ namespace PlayniteAchievements.Providers.Local
 
                     foreach (var matchDir in Directory.EnumerateDirectories(root, appId, SearchOption.AllDirectories))
                     {
-                        candidate = Path.Combine(matchDir, fileName);
-                        if (File.Exists(candidate))
+                        candidate = ResolveAchievementFilePath(matchDir, fileName);
+                        if (!string.IsNullOrWhiteSpace(candidate))
                         {
                             filePath = candidate;
                             return true;
@@ -1802,12 +1902,12 @@ namespace PlayniteAchievements.Providers.Local
         private static int GetLocalFolderCandidateScore(string folderPath)
         {
             var score = 0;
-            if (File.Exists(Path.Combine(folderPath, "achievements.ini")))
+            if (!string.IsNullOrWhiteSpace(ResolveAchievementFilePath(folderPath, "achievements.ini")))
             {
                 score += 2;
             }
 
-            if (File.Exists(Path.Combine(folderPath, "achievements.json")))
+            if (!string.IsNullOrWhiteSpace(ResolveAchievementFilePath(folderPath, "achievements.json")))
             {
                 score += 1;
             }
@@ -1820,8 +1920,8 @@ namespace PlayniteAchievements.Providers.Local
             var latest = DateTime.MinValue;
             foreach (var fileName in new[] { "achievements.ini", "achievements.json" })
             {
-                var filePath = Path.Combine(folderPath, fileName);
-                if (File.Exists(filePath))
+                var filePath = ResolveAchievementFilePath(folderPath, fileName);
+                if (!string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath))
                 {
                     var lastWrite = File.GetLastWriteTimeUtc(filePath);
                     if (lastWrite > latest)
@@ -1832,6 +1932,28 @@ namespace PlayniteAchievements.Providers.Local
             }
 
             return latest;
+        }
+
+        private static string ResolveAchievementFilePath(string folderPath, string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath) || string.IsNullOrWhiteSpace(fileName))
+            {
+                return null;
+            }
+
+            var directPath = Path.Combine(folderPath, fileName);
+            if (File.Exists(directPath))
+            {
+                return directPath;
+            }
+
+            var statsPath = Path.Combine(folderPath, "Stats", fileName);
+            if (File.Exists(statsPath))
+            {
+                return statsPath;
+            }
+
+            return null;
         }
 
         private void NotifyAmbiguousFolderSelection(Game game, string appId, IReadOnlyList<string> candidates, string selectedFolderPath)
@@ -2486,6 +2608,30 @@ namespace PlayniteAchievements.Providers.Local
             "stats",
             "steamstats",
             "steamuserstats"
+        };
+
+        private static readonly Regex GenericNumberedAchievementPattern = new Regex(
+            @"^achievement_(\d+)$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly HashSet<string> SyntheticGenericAchievementIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "achievement_all",
+            "all_achievements",
+            "achievement_complete",
+            "achievements_complete"
+        };
+
+        private static readonly HashSet<string> IgnoredGenericIniKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "count",
+            "total",
+            "curprogress",
+            "currentprogress",
+            "maxprogress",
+            "progress",
+            "statvalue",
+            "value"
         };
 
         private struct LocalEntry

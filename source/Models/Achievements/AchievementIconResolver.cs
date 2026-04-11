@@ -8,6 +8,7 @@ namespace PlayniteAchievements.Models.Achievements
     public static class AchievementIconResolver
     {
         private const string DefaultIconPackUri = "pack://application:,,,/PlayniteAchievements;component/Resources/HiddenAchIcon.png";
+        private const string DefaultUnlockedIconPackUri = "pack://application:,,,/PlayniteAchievements;component/Resources/UnlockedAchIcon.png";
         private const string GrayPrefix = "gray:";
 
         /// <summary>
@@ -17,13 +18,41 @@ namespace PlayniteAchievements.Models.Achievements
         /// </summary>
         public static string GetDisplayIcon(bool unlocked, string iconPath)
         {
-            var candidate = iconPath;
+            var candidate = NormalizeIconPath(iconPath);
             if (!unlocked && !string.IsNullOrWhiteSpace(candidate))
             {
                 candidate = ApplyGrayPrefix(candidate);
             }
 
             return string.IsNullOrWhiteSpace(candidate) ? DefaultIconPackUri : candidate;
+        }
+
+        public static string NormalizeIconPath(string iconPath)
+        {
+            if (string.IsNullOrWhiteSpace(iconPath))
+            {
+                return iconPath;
+            }
+
+            var normalized = iconPath.Trim();
+            var isGray = normalized.StartsWith(GrayPrefix, StringComparison.OrdinalIgnoreCase);
+            if (isGray)
+            {
+                normalized = normalized.Substring(GrayPrefix.Length).Trim();
+            }
+
+            if (string.Equals(normalized, "Resources/UnlockedAchIcon.png", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalized, "UnlockedAchIcon.png", StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = DefaultUnlockedIconPackUri;
+            }
+            else if (string.Equals(normalized, "Resources/HiddenAchIcon.png", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(normalized, "HiddenAchIcon.png", StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = DefaultIconPackUri;
+            }
+
+            return isGray ? ApplyGrayPrefix(normalized) : normalized;
         }
 
         /// <summary>
@@ -45,6 +74,8 @@ namespace PlayniteAchievements.Models.Achievements
         /// Get the default hidden icon pack URI.
         /// </summary>
         public static string GetDefaultIcon() => DefaultIconPackUri;
+
+        public static string GetDefaultUnlockedIcon() => DefaultUnlockedIconPackUri;
 
         /// <summary>
         /// Prefixes the icon identifier with "gray:" when not already prefixed.

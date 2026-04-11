@@ -541,7 +541,7 @@ namespace PlayniteAchievements.ViewModels
 
         public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
 
-        private static string DefaultIcon => "pack://application:,,,/PlayniteAchievements;component/Resources/HiddenAchIcon.png";
+        private static string DefaultIcon => AchievementIconResolver.GetDefaultIcon();
 
         /// <summary>
         /// Returns the appropriate icon based on unlock state and hide settings.
@@ -564,7 +564,7 @@ namespace PlayniteAchievements.ViewModels
                     return DefaultIcon;
                 }
 
-                var candidate = IconPath;
+                var candidate = AchievementIconResolver.NormalizeIconPath(IconPath);
                 if (!Unlocked && !string.IsNullOrWhiteSpace(candidate))
                 {
                     candidate = AchievementIconResolver.ApplyGrayPrefix(candidate);
@@ -652,7 +652,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                var candidate = IconPath;
+                var candidate = AchievementIconResolver.NormalizeIconPath(IconPath);
                 if (string.IsNullOrWhiteSpace(candidate))
                 {
                     return DefaultIcon;
@@ -670,7 +670,7 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                var candidate = IconPath;
+                var candidate = AchievementIconResolver.NormalizeIconPath(IconPath);
                 if (string.IsNullOrWhiteSpace(candidate))
                 {
                     return DefaultIcon;
