@@ -113,6 +113,9 @@
     <Compile Include="..\..\source\Services\ThemeIntegration\SelectedGameRuntimeStateBuilder.cs" Link="Source\Services\ThemeIntegration\SelectedGameRuntimeStateBuilder.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" Link="Source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\ThemeIntegrationService.cs" Link="Source\Services\ThemeIntegration\ThemeIntegrationService.cs" />
+    <Compile Include="..\..\source\Services\ThemeMigration\ControlMappings.cs" Link="Source\Services\ThemeMigration\ControlMappings.cs" />
+    <Compile Include="..\..\source\Services\ThemeMigration\ThemeDiscoveryService.cs" Link="Source\Services\ThemeMigration\ThemeDiscoveryService.cs" />
+    <Compile Include="..\..\source\Services\ThemeMigration\ThemeYamlVersionReader.cs" Link="Source\Services\ThemeMigration\ThemeYamlVersionReader.cs" />
 
     <Reference Include="Playnite.SDK">
       <HintPath>..\..\source\packages\PlayniteSDK.6.14.0\lib\net462\Playnite.SDK.dll</HintPath>
