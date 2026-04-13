@@ -683,7 +683,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
         /// <summary>
         /// Resolves an Exophase game slug for a Playnite game using deterministic linking.
-        /// Priority: Manual override -> Cache -> API search.
+        /// Priority: Manual override -> Cache -> API search with a resolved platform token.
         /// </summary>
         public async Task<string> ResolveExophaseSlugAsync(Game game, CancellationToken ct)
         {
@@ -721,19 +721,20 @@ namespace PlayniteAchievements.Providers.Exophase
             var normalizedName = NormalizeGameName(game.Name);
             _logger?.Debug($"[Exophase] Resolving slug for '{game.Name}' (platform: {platformSlug ?? "unknown"})");
 
+            if (string.IsNullOrWhiteSpace(platformSlug))
+            {
+                _logger?.Debug($"[Exophase] No platform token resolved for '{game.Name}' - skipping name-only fallback");
+                return null;
+            }
+
             try
             {
                 // Search with platform filter.
                 var games = await _apiClient.SearchGamesAsync(normalizedName, platformSlug, ct).ConfigureAwait(false);
                 if (games == null || games.Count == 0)
                 {
-                    // Fallback: try without platform filter.
-                    games = await _apiClient.SearchGamesAsync(normalizedName, ct).ConfigureAwait(false);
-                    if (games == null || games.Count == 0)
-                    {
-                        _logger?.Debug($"[Exophase] No games found for '{normalizedName}'");
-                        return null;
-                    }
+                    _logger?.Debug($"[Exophase] No games found for '{normalizedName}' on platform '{platformSlug}'");
+                    return null;
                 }
 
                 var bestMatch = FindBestMatch(normalizedName, games, platformSlug);
