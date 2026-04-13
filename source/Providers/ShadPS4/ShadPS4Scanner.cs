@@ -96,11 +96,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private async Task<Dictionary<string, string>> BuildTitleIdCacheAsync(CancellationToken cancel)
         {
             var cache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var gameDataPath = _providerSettings?.GameDataPath;
+            var gameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(_providerSettings?.GameDataPath);
 
             if (string.IsNullOrWhiteSpace(gameDataPath))
             {
-                _logger?.Warn("[ShadPS4] No game_data path configured in settings");
+                _logger?.Warn("[ShadPS4] No valid legacy game_data path configured in settings");
                 return cache;
             }
 
@@ -280,7 +280,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             {
                 var appDataPath = _provider?.GetAppDataPath();
                 return !string.IsNullOrWhiteSpace(appDataPath)
-                    ? Path.Combine(appDataPath, "trophy", npcommid, "Icons")
+                    ? Path.Combine(_provider.GetTrophyBasePath(appDataPath), npcommid, "Icons")
                     : null;
             }
 

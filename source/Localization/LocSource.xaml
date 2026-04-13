@@ -456,8 +456,8 @@
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">No user profile found in dev_hdd0\home</sys:String>
 
     <!-- Provider: ShadPS4 -->
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Game Data Folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Path to the user/game_data folder containing trophy data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Data Folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Defaults to %AppData%\shadPS4. Legacy user/game_data folders are also supported.</sys:String>
 
     <!-- Provider: Xbox -->
     <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons">Download Smaller Icons</sys:String>

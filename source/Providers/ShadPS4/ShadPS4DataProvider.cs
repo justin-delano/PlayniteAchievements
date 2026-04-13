@@ -88,15 +88,15 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         /// <summary>
         /// Gets the game data path using priority order:
-        /// 1. User settings (validated game_data folder)
+        /// 1. User settings (validated legacy game_data folder)
         /// 2. Game's emulator config
         /// 3. First ShadPS4 emulator in database
         /// </summary>
         public string GetGameDataPath(Game game = null)
         {
-            // Priority 1: From provider settings (user-configured game_data path)
-            var settingsGameDataPath = _providerSettings?.GameDataPath;
-            if (!string.IsNullOrWhiteSpace(settingsGameDataPath) && Directory.Exists(settingsGameDataPath))
+            // Priority 1: From provider settings (user-configured legacy game_data path)
+            var settingsGameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(_providerSettings?.GameDataPath);
+            if (!string.IsNullOrWhiteSpace(settingsGameDataPath))
             {
                 return settingsGameDataPath;
             }
@@ -227,7 +227,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (game?.GameActions == null) return false;
 
             // Get settings path for comparison - derive emulator root from game_data path
-            var shadps4GameDataPath = _providerSettings?.GameDataPath;
+            var shadps4GameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(_providerSettings?.GameDataPath);
             string shadps4InstallFolder = null;
             if (!string.IsNullOrWhiteSpace(shadps4GameDataPath))
             {
@@ -406,49 +406,20 @@ namespace PlayniteAchievements.Providers.ShadPS4
         public ProviderSettingsViewBase CreateSettingsView() => new ShadPS4SettingsView(_playniteApi);
 
         /// <summary>
-        /// Auto-discovers the shadPS4 AppData directory.
+        /// Gets the configured shadPS4 AppData directory when the settings path points to one.
         /// </summary>
         internal string GetAppDataPath()
         {
-            try
-            {
-                var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                var shadps4Path = Path.Combine(appData, "shadPS4");
-                if (Directory.Exists(shadps4Path))
-                {
-                    return shadps4Path;
-                }
-            }
-            catch { }
-
-            return null;
+            return ShadPS4PathResolver.ResolveConfiguredAppDataPath(_providerSettings?.GameDataPath);
         }
 
         /// <summary>
         /// Discovers the shadPS4 user ID by scanning the home directory.
         /// Defaults to "1000" if no users are found.
         /// </summary>
-        internal string GetUserId()
+        internal string GetUserId(string appDataPath = null)
         {
-            var appDataPath = GetAppDataPath();
-            if (!string.IsNullOrWhiteSpace(appDataPath))
-            {
-                var homePath = Path.Combine(appDataPath, "home");
-                if (Directory.Exists(homePath))
-                {
-                    try
-                    {
-                        var dirs = Directory.GetDirectories(homePath);
-                        if (dirs.Length > 0)
-                        {
-                            return Path.GetFileName(dirs[0].TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-                        }
-                    }
-                    catch { }
-                }
-            }
-
-            return "1000";
+            return ShadPS4PathResolver.DiscoverUserId(appDataPath ?? GetAppDataPath());
         }
 
         /// <summary>
@@ -457,10 +428,9 @@ namespace PlayniteAchievements.Providers.ShadPS4
         internal string GetTrophyUserPath(string appDataPath = null)
         {
             var basePath = appDataPath ?? GetAppDataPath();
-            if (string.IsNullOrWhiteSpace(basePath)) return null;
-
-            var userId = GetUserId();
-            return Path.Combine(basePath, "home", userId, "trophy");
+            return string.IsNullOrWhiteSpace(basePath)
+                ? null
+                : ShadPS4PathResolver.GetTrophyUserPath(basePath, GetUserId(basePath));
         }
 
         /// <summary>
@@ -470,9 +440,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         internal string GetTrophyBasePath(string appDataPath = null)
         {
             var basePath = appDataPath ?? GetAppDataPath();
-            if (string.IsNullOrWhiteSpace(basePath)) return null;
-
-            return Path.Combine(basePath, "trophy");
+            return ShadPS4PathResolver.GetTrophyBasePath(basePath);
         }
 
         internal Dictionary<string, string> GetOrBuildNpCommIdCache()
