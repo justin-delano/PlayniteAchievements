@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -54,6 +55,7 @@ namespace PlayniteAchievements.ViewModels
             SaveCommand = new RelayCommand(_ => Save(), _ => CanSave);
             RevertChangesCommand = new RelayCommand(_ => RevertChanges(), _ => HasChanges && !IsSaving);
             ClearAllCommand = new RelayCommand(_ => ClearAllOverrides(), _ => HasAchievements && HasAnyOverrides && !IsSaving);
+            OpenIconsFolderCommand = new RelayCommand(_ => OpenIconsFolder(), _ => !IsSaving);
 
             ForceReloadData();
         }
@@ -65,6 +67,7 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand SaveCommand { get; }
         public RelayCommand RevertChangesCommand { get; }
         public RelayCommand ClearAllCommand { get; }
+        public RelayCommand OpenIconsFolderCommand { get; }
 
         public bool HasAchievements
         {
@@ -395,6 +398,40 @@ namespace PlayniteAchievements.ViewModels
             RefreshComputedState();
         }
 
+        private void OpenIconsFolder()
+        {
+            try
+            {
+                var pluginDataPath = PlayniteAchievementsPlugin.Instance?.GetPluginUserDataPath();
+                if (string.IsNullOrWhiteSpace(pluginDataPath))
+                {
+                    SetSaveStatus(
+                        string.Format(
+                            L("LOCPlayAch_Status_Failed", "Error: {0}"),
+                            L("LOCPlayAch_GameOptions_CustomIcons_OpenFolderUnavailable", "The extension data path is unavailable.")),
+                        isError: true);
+                    return;
+                }
+
+                var iconsFolderPath = Path.Combine(pluginDataPath, "icon_cache", _gameIdText);
+                Directory.CreateDirectory(iconsFolderPath);
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = iconsFolderPath,
+                    UseShellExecute = true,
+                    Verb = "open"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed opening icon cache folder for gameId={_gameId}.");
+                SetSaveStatus(
+                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    isError: true);
+            }
+        }
+
         private void ReplaceRows(IEnumerable<AchievementIconOverrideItem> rows)
         {
             foreach (var row in AchievementRows)
@@ -464,6 +501,7 @@ namespace PlayniteAchievements.ViewModels
             SaveCommand?.RaiseCanExecuteChanged();
             RevertChangesCommand?.RaiseCanExecuteChanged();
             ClearAllCommand?.RaiseCanExecuteChanged();
+            OpenIconsFolderCommand?.RaiseCanExecuteChanged();
         }
 
         private void TrackManagedOverridePath(ICollection<string> retainedManagedPaths, string overrideValue)
