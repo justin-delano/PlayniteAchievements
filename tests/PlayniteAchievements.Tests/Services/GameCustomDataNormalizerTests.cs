@@ -63,6 +63,8 @@ namespace PlayniteAchievements.Services.Tests
                     }
                 },
                 new GameCustomDataFile { RetroAchievementsGameIdOverride = 42 },
+                new GameCustomDataFile { XeniaTitleIdOverride = "4d5307e6" },
+                new GameCustomDataFile { ShadPS4MatchIdOverride = "npwr12345_00" },
                 new GameCustomDataFile { ForceUseExophase = true },
                 new GameCustomDataFile { ExophaseSlugOverride = "game-slug" },
                 new GameCustomDataFile

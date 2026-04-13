@@ -144,6 +144,56 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Save_XeniaTitleIdOverrideOnly_IsVisibleCustomization()
+        {
+            var tempDir = CreateTempDirectory();
+            var gameId = Guid.NewGuid();
+
+            try
+            {
+                var store = new GameCustomDataStore(tempDir);
+                store.Save(gameId, new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    XeniaTitleIdOverride = "0x4d5307e6"
+                });
+
+                Assert.IsTrue(store.TryLoad(gameId, out var loaded));
+                Assert.AreEqual("4D5307E6", loaded.XeniaTitleIdOverride);
+                Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(loaded));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void Save_ShadPS4MatchIdOverrideOnly_IsVisibleCustomization()
+        {
+            var tempDir = CreateTempDirectory();
+            var gameId = Guid.NewGuid();
+
+            try
+            {
+                var store = new GameCustomDataStore(tempDir);
+                store.Save(gameId, new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ShadPS4MatchIdOverride = "npwr12345_00"
+                });
+
+                Assert.IsTrue(store.TryLoad(gameId, out var loaded));
+                Assert.AreEqual("NPWR12345_00", loaded.ShadPS4MatchIdOverride);
+                Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(loaded));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void Save_ExophaseIncludeOnly_IsVisibleCustomization()
         {
             var tempDir = CreateTempDirectory();
@@ -218,7 +268,9 @@ namespace PlayniteAchievements.Services.Tests
                     {
                         ["ach_one"] = " https://example.com/locked.png "
                     },
-                    RetroAchievementsGameIdOverride = 12345
+                    RetroAchievementsGameIdOverride = 12345,
+                    XeniaTitleIdOverride = "0x4d5307e6",
+                    ShadPS4MatchIdOverride = "npwr12345_00"
                 });
 
                 store.Export(gameId, exportPath);
@@ -237,6 +289,8 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.AreEqual(1, portable.AchievementUnlockedIconOverrides.Count);
                 Assert.AreEqual(1, portable.AchievementLockedIconOverrides.Count);
                 Assert.AreEqual(12345, portable.RetroAchievementsGameIdOverride);
+                Assert.AreEqual("4D5307E6", portable.XeniaTitleIdOverride);
+                Assert.AreEqual("NPWR12345_00", portable.ShadPS4MatchIdOverride);
                 Assert.IsTrue(portable.UseSeparateLockedIconsOverride == true);
             }
             finally
@@ -472,6 +526,8 @@ namespace PlayniteAchievements.Services.Tests
                                 ["ach_one"] = " https://example.com/new-locked.png "
                             },
                             RetroAchievementsGameIdOverride = 444,
+                            XeniaTitleIdOverride = "0x4d5307e6",
+                            ShadPS4MatchIdOverride = "npwr12345_00",
                             ForceUseExophase = true
                         }));
 
@@ -485,6 +541,8 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.AreEqual("https://example.com/new-unlocked.png", imported.AchievementUnlockedIconOverrides["ach_one"]);
                 Assert.AreEqual("https://example.com/new-locked.png", imported.AchievementLockedIconOverrides["ach_one"]);
                 Assert.AreEqual(444, imported.RetroAchievementsGameIdOverride);
+                Assert.AreEqual("4D5307E6", imported.XeniaTitleIdOverride);
+                Assert.AreEqual("NPWR12345_00", imported.ShadPS4MatchIdOverride);
                 Assert.IsTrue(imported.ForceUseExophase == true);
                 Assert.IsNull(imported.UseSeparateLockedIconsOverride);
             }

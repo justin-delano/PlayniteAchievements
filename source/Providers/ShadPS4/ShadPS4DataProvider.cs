@@ -11,8 +11,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Services;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace PlayniteAchievements.Providers.ShadPS4
 {
@@ -29,9 +29,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         private Dictionary<string, string> _npCommIdCache;
         private readonly object _npCommIdCacheLock = new object();
-
-        private static readonly Regex NpCommIdPattern =
-            new Regex(@"(NPWR\d{5}_\d{2})", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public ShadPS4DataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
         {
@@ -188,6 +185,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
         {
             if (game == null) return false;
 
+            if (TryGetMatchIdOverride(game.Id, out _))
+            {
+                return true;
+            }
+
             // If game is configured to use ShadPS4 emulator, it's capable
             if (UsesShadPS4Emulator(game))
             {
@@ -216,6 +218,54 @@ namespace PlayniteAchievements.Providers.ShadPS4
             }
 
             return false;
+        }
+
+        internal static bool TryGetMatchIdOverride(Guid gameId, out string matchIdOverride)
+        {
+            return GameCustomDataLookup.TryGetShadPS4MatchIdOverride(gameId, out matchIdOverride);
+        }
+
+        internal static bool TrySetMatchIdOverride(Guid gameId, string matchId, string gameName, Action persistSettingsForUi, ILogger logger)
+        {
+            if (!ShadPS4MatchIdHelper.TryNormalize(matchId, out var normalizedMatchId))
+            {
+                return false;
+            }
+
+            var customDataStore = PlayniteAchievementsPlugin.Instance?.GameCustomDataStore;
+            if (customDataStore == null)
+            {
+                return false;
+            }
+
+            customDataStore.Update(gameId, customData =>
+            {
+                customData.ShadPS4MatchIdOverride = normalizedMatchId;
+            });
+
+            persistSettingsForUi?.Invoke();
+            logger?.Info($"Set ShadPS4 match ID override for '{gameName}' to {normalizedMatchId}");
+            return true;
+        }
+
+        internal static bool TryClearMatchIdOverride(Guid gameId, string gameName, Action persistSettingsForUi, ILogger logger)
+        {
+            var customDataStore = PlayniteAchievementsPlugin.Instance?.GameCustomDataStore;
+            if (customDataStore == null ||
+                !customDataStore.TryLoad(gameId, out var customData) ||
+                string.IsNullOrWhiteSpace(customData.ShadPS4MatchIdOverride))
+            {
+                return false;
+            }
+
+            customDataStore.Update(gameId, data =>
+            {
+                data.ShadPS4MatchIdOverride = null;
+            });
+
+            persistSettingsForUi?.Invoke();
+            logger?.Info($"Cleared ShadPS4 match ID override for '{gameName}'");
+            return true;
         }
 
         /// <summary>
@@ -300,7 +350,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             var match = TitleIdPattern.Match(installDir);
             if (match.Success)
             {
-                return match.Groups[1].Value.ToUpperInvariant();
+                return ShadPS4MatchIdHelper.Normalize(match.Groups[1].Value);
             }
 
             return null;
@@ -483,10 +533,10 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 var files = Directory.GetFiles(userTrophyPath, "*.xml");
                 foreach (var file in files)
                 {
-                    var npcommid = Path.GetFileNameWithoutExtension(file);
-                    if (!string.IsNullOrWhiteSpace(npcommid) && NpCommIdPattern.IsMatch(npcommid))
+                    var npcommid = ShadPS4MatchIdHelper.Normalize(Path.GetFileNameWithoutExtension(file));
+                    if (ShadPS4MatchIdHelper.GetKind(npcommid) == ShadPS4MatchIdKind.NpCommId)
                     {
-                        cache[npcommid.ToUpperInvariant()] = file;
+                        cache[npcommid] = file;
                     }
                 }
             }
@@ -538,10 +588,13 @@ namespace PlayniteAchievements.Providers.ShadPS4
             {
                 var bytes = File.ReadAllBytes(npbindPath);
                 var content = Encoding.ASCII.GetString(bytes);
-                var match = NpCommIdPattern.Match(content);
+                var match = System.Text.RegularExpressions.Regex.Match(
+                    content,
+                    @"(NPWR\d{5}_\d{2})",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 if (match.Success)
                 {
-                    return match.Groups[1].Value.ToUpperInvariant();
+                    return ShadPS4MatchIdHelper.Normalize(match.Groups[1].Value);
                 }
             }
             catch (Exception ex)

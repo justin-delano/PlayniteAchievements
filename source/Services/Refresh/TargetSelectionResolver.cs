@@ -45,6 +45,12 @@ namespace PlayniteAchievements.Services
                 return null;
             }
 
+            var forcedProvider = ResolveForcedProviderForGame(game, providers);
+            if (forcedProvider != null || HasForcedProviderOverride(game.Id))
+            {
+                return forcedProvider;
+            }
+
             foreach (var provider in OrderProvidersForRefresh(providers))
             {
                 try
@@ -63,6 +69,36 @@ namespace PlayniteAchievements.Services
             }
 
             return null;
+        }
+
+        private IDataProvider ResolveForcedProviderForGame(Game game, IReadOnlyList<IDataProvider> providers)
+        {
+            if (game == null || providers == null || providers.Count == 0)
+            {
+                return null;
+            }
+
+            if (GameCustomDataLookup.TryGetXeniaTitleIdOverride(game.Id, out _))
+            {
+                return providers.FirstOrDefault(provider =>
+                    provider != null &&
+                    string.Equals(provider.ProviderKey, "Xenia", StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (GameCustomDataLookup.TryGetShadPS4MatchIdOverride(game.Id, out _))
+            {
+                return providers.FirstOrDefault(provider =>
+                    provider != null &&
+                    string.Equals(provider.ProviderKey, "ShadPS4", StringComparison.OrdinalIgnoreCase));
+            }
+
+            return null;
+        }
+
+        private static bool HasForcedProviderOverride(Guid gameId)
+        {
+            return GameCustomDataLookup.TryGetXeniaTitleIdOverride(gameId, out _) ||
+                   GameCustomDataLookup.TryGetShadPS4MatchIdOverride(gameId, out _);
         }
 
         public IReadOnlyList<IDataProvider> OrderProvidersForRefresh(IEnumerable<IDataProvider> providers)

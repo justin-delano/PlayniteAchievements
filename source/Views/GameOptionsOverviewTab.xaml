@@ -163,6 +163,8 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0"
@@ -191,6 +193,30 @@
                                Text="{Binding RaStatusText}"
                                Margin="0,8,0,0"
                                Visibility="{Binding IsRaCapable, Converter={StaticResource BoolToVis}}" />
+
+                    <TextBlock Grid.Row="3"
+                               Style="{StaticResource FieldLabelStyle}"
+                               Text="{DynamicResource LOCPlayAch_GameOptions_Overview_XeniaOverride}"
+                               Margin="0,8,0,0"
+                               Visibility="{Binding ShowXeniaTitleIdOverride, Converter={StaticResource BoolToVis}}" />
+                    <TextBlock Grid.Row="3"
+                               Grid.Column="1"
+                               Style="{StaticResource FieldValueStyle}"
+                               Text="{Binding XeniaTitleIdStatusText}"
+                               Margin="0,8,0,0"
+                               Visibility="{Binding ShowXeniaTitleIdOverride, Converter={StaticResource BoolToVis}}" />
+
+                    <TextBlock Grid.Row="4"
+                               Style="{StaticResource FieldLabelStyle}"
+                               Text="{DynamicResource LOCPlayAch_GameOptions_Overview_ShadPS4Override}"
+                               Margin="0,8,0,0"
+                               Visibility="{Binding ShowShadPS4MatchIdOverride, Converter={StaticResource BoolToVis}}" />
+                    <TextBlock Grid.Row="4"
+                               Grid.Column="1"
+                               Style="{StaticResource FieldValueStyle}"
+                               Text="{Binding ShadPS4MatchIdStatusText}"
+                               Margin="0,8,0,0"
+                               Visibility="{Binding ShowShadPS4MatchIdOverride, Converter={StaticResource BoolToVis}}" />
                 </Grid>
             </Border>
 

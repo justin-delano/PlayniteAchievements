@@ -27,7 +27,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
         // ShadPS4-specific year offset correction
         private const int YearOffset = 2007;
 
-        // PS4 title ID patterns: CUSA (US), BCAS (Asia), PCAS (Asia digital), etc.
         private static readonly System.Text.RegularExpressions.Regex TitleIdPattern =
             new System.Text.RegularExpressions.Regex(@"\b([A-Z]{4}\d{5})\b",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
@@ -64,8 +63,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
             var hasOldData = titleCache?.Count > 0;
             var hasNewData = npCommIdCache?.Count > 0;
+            var hasOverrideGames = gamesToRefresh.Any(game =>
+                game != null &&
+                GameCustomDataLookup.TryGetShadPS4MatchIdOverride(game.Id, out _));
 
-            if (!hasOldData && !hasNewData)
+            if (!hasOldData && !hasNewData && !hasOverrideGames)
             {
                 _logger?.Warn("[ShadPS4] No games found in any ShadPS4 trophy location.");
                 return new RebuildPayload { Summary = new RebuildSummary() };
@@ -140,6 +142,16 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (game == null)
                 return Task.FromResult<GameAchievementData>(null);
 
+            if (GameCustomDataLookup.TryGetShadPS4MatchIdOverride(game.Id, out var overrideMatchId))
+            {
+                return ResolveOverrideGameData(game, overrideMatchId, titleCache, npCommIdCache, cancel);
+            }
+
+            if ((titleCache?.Count ?? 0) <= 0 && (npCommIdCache?.Count ?? 0) <= 0)
+            {
+                return Task.FromResult<GameAchievementData>(null);
+            }
+
             // Try new format: resolve npcommid from npbind.dat
             if (npCommIdCache?.Count > 0)
             {
@@ -164,6 +176,42 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 return Task.FromResult(BuildNoAchievementsData(game));
 
             return ParseTrophyXml(game, xmlPath, TrophyFormat.Old, null, cancel);
+        }
+
+        private Task<GameAchievementData> ResolveOverrideGameData(
+            Game game,
+            string overrideMatchId,
+            Dictionary<string, string> titleCache,
+            Dictionary<string, string> npCommIdCache,
+            CancellationToken cancel)
+        {
+            switch (ShadPS4MatchIdHelper.GetKind(overrideMatchId))
+            {
+                case ShadPS4MatchIdKind.NpCommId:
+                    if (npCommIdCache != null &&
+                        npCommIdCache.TryGetValue(overrideMatchId, out var perUserXmlPath))
+                    {
+                        return ParseTrophyXml(game, perUserXmlPath, TrophyFormat.New, overrideMatchId, cancel);
+                    }
+
+                    return Task.FromResult(BuildNoAchievementsData(game));
+
+                case ShadPS4MatchIdKind.TitleId:
+                    if (titleCache != null &&
+                        titleCache.TryGetValue(overrideMatchId, out var trophyDataPath))
+                    {
+                        var xmlPath = Path.Combine(trophyDataPath, "trophyfiles", "trophy00", "Xml", "TROP.XML");
+                        if (File.Exists(xmlPath))
+                        {
+                            return ParseTrophyXml(game, xmlPath, TrophyFormat.Old, null, cancel);
+                        }
+                    }
+
+                    return Task.FromResult(BuildNoAchievementsData(game));
+
+                default:
+                    return Task.FromResult(BuildNoAchievementsData(game));
+            }
         }
 
         /// <summary>
@@ -455,7 +503,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (string.IsNullOrWhiteSpace(installDir)) return null;
 
             var match = TitleIdPattern.Match(installDir);
-            return match.Success ? match.Groups[1].Value.ToUpperInvariant() : null;
+            return match.Success ? ShadPS4MatchIdHelper.Normalize(match.Groups[1].Value) : null;
         }
 
         private string ExpandGamePath(Game game, string path)

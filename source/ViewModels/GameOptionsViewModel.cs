@@ -14,6 +14,8 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Providers.RetroAchievements;
+using PlayniteAchievements.Providers.ShadPS4;
+using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Services;
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
@@ -51,6 +53,14 @@ namespace PlayniteAchievements.ViewModels
         private bool _hasRaOverride;
         private string _raOverrideValue;
         private string _raOverrideInput;
+        private bool _showXeniaTitleIdOverride;
+        private bool _hasXeniaTitleIdOverride;
+        private string _xeniaTitleIdOverrideValue;
+        private string _xeniaTitleIdOverrideInput;
+        private bool _showShadPS4MatchIdOverride;
+        private bool _hasShadPS4MatchIdOverride;
+        private string _shadPS4MatchIdOverrideValue;
+        private string _shadPS4MatchIdOverrideInput;
         private bool _hasManualTrackingLink;
         private string _manualTrackingSummary;
         private bool _hasCapstoneData;
@@ -77,6 +87,10 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand ToggleSummaryExclusionCommand { get; }
         public RelayCommand ApplyRaOverrideCommand { get; }
         public RelayCommand ClearRaOverrideCommand { get; }
+        public RelayCommand ApplyXeniaTitleIdOverrideCommand { get; }
+        public RelayCommand ClearXeniaTitleIdOverrideCommand { get; }
+        public RelayCommand ApplyShadPS4MatchIdOverrideCommand { get; }
+        public RelayCommand ClearShadPS4MatchIdOverrideCommand { get; }
         public RelayCommand ApplyExophaseSlugOverrideCommand { get; }
         public RelayCommand ClearExophaseSlugOverrideCommand { get; }
         public RelayCommand UnlinkManualTrackingCommand { get; }
@@ -116,6 +130,10 @@ namespace PlayniteAchievements.ViewModels
             ToggleSummaryExclusionCommand = new RelayCommand(_ => ToggleSummaryExclusion(), _ => HasGame);
             ApplyRaOverrideCommand = new RelayCommand(_ => ApplyRaOverride(), _ => HasGame && IsRaCapable);
             ClearRaOverrideCommand = new RelayCommand(_ => ClearRaOverride(), _ => HasGame && IsRaCapable && HasRaOverride);
+            ApplyXeniaTitleIdOverrideCommand = new RelayCommand(_ => ApplyXeniaTitleIdOverride(), _ => HasGame && ShowXeniaTitleIdOverride);
+            ClearXeniaTitleIdOverrideCommand = new RelayCommand(_ => ClearXeniaTitleIdOverride(), _ => HasGame && ShowXeniaTitleIdOverride && HasXeniaTitleIdOverride);
+            ApplyShadPS4MatchIdOverrideCommand = new RelayCommand(_ => ApplyShadPS4MatchIdOverride(), _ => HasGame && ShowShadPS4MatchIdOverride);
+            ClearShadPS4MatchIdOverrideCommand = new RelayCommand(_ => ClearShadPS4MatchIdOverride(), _ => HasGame && ShowShadPS4MatchIdOverride && HasShadPS4MatchIdOverride);
             ApplyExophaseSlugOverrideCommand = new RelayCommand(_ => ApplyExophaseSlugOverride(), _ => HasGame && ShowExophaseToggle);
             ClearExophaseSlugOverrideCommand = new RelayCommand(_ => ClearExophaseSlugOverride(), _ => HasGame && ShowExophaseToggle && HasExophaseSlugOverride);
             UnlinkManualTrackingCommand = new RelayCommand(_ => UnlinkManualTracking(), _ => HasGame && HasManualTrackingLink);
@@ -197,6 +215,18 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _showExophaseToggle;
             private set => SetValue(ref _showExophaseToggle, value);
+        }
+
+        public bool ShowXeniaTitleIdOverride
+        {
+            get => _showXeniaTitleIdOverride;
+            private set
+            {
+                if (SetValueAndReturn(ref _showXeniaTitleIdOverride, value))
+                {
+                    RaiseCommandStates();
+                }
+            }
         }
 
         public bool UseSeparateLockedIconsOverride
@@ -489,7 +519,13 @@ namespace PlayniteAchievements.ViewModels
         public string RaOverrideValue
         {
             get => _raOverrideValue;
-            private set => SetValue(ref _raOverrideValue, value);
+            private set
+            {
+                if (SetValueAndReturn(ref _raOverrideValue, value))
+                {
+                    OnPropertyChanged(nameof(RaStatusText));
+                }
+            }
         }
 
         public string RaOverrideInput
@@ -523,6 +559,104 @@ namespace PlayniteAchievements.ViewModels
                     RaOverrideValue);
             }
         }
+
+        public bool ShowShadPS4MatchIdOverride
+        {
+            get => _showShadPS4MatchIdOverride;
+            private set
+            {
+                if (SetValueAndReturn(ref _showShadPS4MatchIdOverride, value))
+                {
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public bool HasXeniaTitleIdOverride
+        {
+            get => _hasXeniaTitleIdOverride;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasXeniaTitleIdOverride, value))
+                {
+                    OnPropertyChanged(nameof(XeniaTitleIdStatusText));
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public string XeniaTitleIdOverrideValue
+        {
+            get => _xeniaTitleIdOverrideValue;
+            private set
+            {
+                if (SetValueAndReturn(ref _xeniaTitleIdOverrideValue, value))
+                {
+                    OnPropertyChanged(nameof(XeniaTitleIdStatusText));
+                }
+            }
+        }
+
+        public string XeniaTitleIdOverrideInput
+        {
+            get => _xeniaTitleIdOverrideInput;
+            set
+            {
+                if (SetValueAndReturn(ref _xeniaTitleIdOverrideInput, value ?? string.Empty))
+                {
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public string XeniaTitleIdStatusText => !HasXeniaTitleIdOverride
+            ? L("LOCPlayAch_Common_Status_NoOverrideSet", "No override set")
+            : string.Format(
+                L("LOCPlayAch_Common_Status_OverrideSetValue", "Override set: {0}"),
+                XeniaTitleIdOverrideValue);
+
+        public bool HasShadPS4MatchIdOverride
+        {
+            get => _hasShadPS4MatchIdOverride;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasShadPS4MatchIdOverride, value))
+                {
+                    OnPropertyChanged(nameof(ShadPS4MatchIdStatusText));
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public string ShadPS4MatchIdOverrideValue
+        {
+            get => _shadPS4MatchIdOverrideValue;
+            private set
+            {
+                if (SetValueAndReturn(ref _shadPS4MatchIdOverrideValue, value))
+                {
+                    OnPropertyChanged(nameof(ShadPS4MatchIdStatusText));
+                }
+            }
+        }
+
+        public string ShadPS4MatchIdOverrideInput
+        {
+            get => _shadPS4MatchIdOverrideInput;
+            set
+            {
+                if (SetValueAndReturn(ref _shadPS4MatchIdOverrideInput, value ?? string.Empty))
+                {
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public string ShadPS4MatchIdStatusText => !HasShadPS4MatchIdOverride
+            ? L("LOCPlayAch_Common_Status_NoOverrideSet", "No override set")
+            : string.Format(
+                L("LOCPlayAch_Common_Status_OverrideSetValue", "Override set: {0}"),
+                ShadPS4MatchIdOverrideValue);
 
         public bool HasManualTrackingLink
         {
@@ -692,6 +826,41 @@ namespace PlayniteAchievements.ViewModels
                     RaOverrideInput = string.Empty;
                 }
 
+                var effectiveProviderKey = gameData?.EffectiveProviderKey?.Trim();
+                if (XeniaDataProvider.TryGetTitleIdOverride(_gameId, out var xeniaTitleIdOverride))
+                {
+                    HasXeniaTitleIdOverride = true;
+                    XeniaTitleIdOverrideValue = xeniaTitleIdOverride;
+                    XeniaTitleIdOverrideInput = xeniaTitleIdOverride;
+                }
+                else
+                {
+                    HasXeniaTitleIdOverride = false;
+                    XeniaTitleIdOverrideValue = string.Empty;
+                    XeniaTitleIdOverrideInput = string.Empty;
+                }
+
+                ShowXeniaTitleIdOverride = HasXeniaTitleIdOverride ||
+                    string.IsNullOrWhiteSpace(effectiveProviderKey) ||
+                    string.Equals(effectiveProviderKey, "Xenia", StringComparison.OrdinalIgnoreCase);
+
+                if (ShadPS4DataProvider.TryGetMatchIdOverride(_gameId, out var shadPS4MatchIdOverride))
+                {
+                    HasShadPS4MatchIdOverride = true;
+                    ShadPS4MatchIdOverrideValue = shadPS4MatchIdOverride;
+                    ShadPS4MatchIdOverrideInput = shadPS4MatchIdOverride;
+                }
+                else
+                {
+                    HasShadPS4MatchIdOverride = false;
+                    ShadPS4MatchIdOverrideValue = string.Empty;
+                    ShadPS4MatchIdOverrideInput = string.Empty;
+                }
+
+                ShowShadPS4MatchIdOverride = HasShadPS4MatchIdOverride ||
+                    string.IsNullOrWhiteSpace(effectiveProviderKey) ||
+                    string.Equals(effectiveProviderKey, "ShadPS4", StringComparison.OrdinalIgnoreCase);
+
                 ManualAchievementLink manualLink;
                 var hasManualLink = ManualAchievementsProvider.TryGetManualLink(_gameId, out manualLink);
                 HasManualTrackingLink = hasManualLink;
@@ -776,6 +945,44 @@ namespace PlayniteAchievements.ViewModels
             }
 
             if (TrySetRaOverride(newId))
+            {
+                Reload();
+            }
+        }
+
+        private void ApplyXeniaTitleIdOverride()
+        {
+            var text = (XeniaTitleIdOverrideInput ?? string.Empty).Trim();
+            if (!XeniaTitleIdHelper.TryNormalize(text, out var normalizedTitleId))
+            {
+                _playniteApi?.Dialogs?.ShowMessage(
+                    L("LOCPlayAch_Menu_XeniaTitleId_InvalidId", "Please enter a valid 8-character hexadecimal Xenia TitleID."),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
+            if (TrySetXeniaTitleIdOverride(normalizedTitleId))
+            {
+                Reload();
+            }
+        }
+
+        private void ApplyShadPS4MatchIdOverride()
+        {
+            var text = (ShadPS4MatchIdOverrideInput ?? string.Empty).Trim();
+            if (!ShadPS4MatchIdHelper.TryNormalize(text, out var normalizedMatchId))
+            {
+                _playniteApi?.Dialogs?.ShowMessage(
+                    L("LOCPlayAch_Menu_ShadPS4MatchId_InvalidId", "Please enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00."),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+                return;
+            }
+
+            if (TrySetShadPS4MatchIdOverride(normalizedMatchId))
             {
                 Reload();
             }
@@ -1024,6 +1231,22 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private void ClearXeniaTitleIdOverride()
+        {
+            if (TryClearXeniaTitleIdOverride())
+            {
+                Reload();
+            }
+        }
+
+        private void ClearShadPS4MatchIdOverride()
+        {
+            if (TryClearShadPS4MatchIdOverride())
+            {
+                Reload();
+            }
+        }
+
         private bool TrySetRaOverride(int newId)
         {
             var game = _playniteApi?.Database?.Games?.Get(_gameId);
@@ -1050,6 +1273,74 @@ namespace PlayniteAchievements.ViewModels
             }
 
             if (!RetroAchievementsDataProvider.TryClearGameIdOverride(_gameId, game.Name, _persistSettingsForUi, _logger))
+            {
+                return false;
+            }
+
+            TriggerRefresh();
+            return true;
+        }
+
+        private bool TrySetXeniaTitleIdOverride(string titleId)
+        {
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            if (game == null || string.IsNullOrWhiteSpace(titleId))
+            {
+                return false;
+            }
+
+            if (!XeniaDataProvider.TrySetTitleIdOverride(_gameId, titleId, game.Name, _persistSettingsForUi, _logger))
+            {
+                return false;
+            }
+
+            TriggerRefresh();
+            return true;
+        }
+
+        private bool TryClearXeniaTitleIdOverride()
+        {
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            if (game == null)
+            {
+                return false;
+            }
+
+            if (!XeniaDataProvider.TryClearTitleIdOverride(_gameId, game.Name, _persistSettingsForUi, _logger))
+            {
+                return false;
+            }
+
+            TriggerRefresh();
+            return true;
+        }
+
+        private bool TrySetShadPS4MatchIdOverride(string matchId)
+        {
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            if (game == null || string.IsNullOrWhiteSpace(matchId))
+            {
+                return false;
+            }
+
+            if (!ShadPS4DataProvider.TrySetMatchIdOverride(_gameId, matchId, game.Name, _persistSettingsForUi, _logger))
+            {
+                return false;
+            }
+
+            TriggerRefresh();
+            return true;
+        }
+
+        private bool TryClearShadPS4MatchIdOverride()
+        {
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            if (game == null)
+            {
+                return false;
+            }
+
+            if (!ShadPS4DataProvider.TryClearMatchIdOverride(_gameId, game.Name, _persistSettingsForUi, _logger))
             {
                 return false;
             }
@@ -1255,6 +1546,10 @@ namespace PlayniteAchievements.ViewModels
             ToggleSummaryExclusionCommand?.RaiseCanExecuteChanged();
             ApplyRaOverrideCommand?.RaiseCanExecuteChanged();
             ClearRaOverrideCommand?.RaiseCanExecuteChanged();
+            ApplyXeniaTitleIdOverrideCommand?.RaiseCanExecuteChanged();
+            ClearXeniaTitleIdOverrideCommand?.RaiseCanExecuteChanged();
+            ApplyShadPS4MatchIdOverrideCommand?.RaiseCanExecuteChanged();
+            ClearShadPS4MatchIdOverrideCommand?.RaiseCanExecuteChanged();
             ApplyExophaseSlugOverrideCommand?.RaiseCanExecuteChanged();
             ClearExophaseSlugOverrideCommand?.RaiseCanExecuteChanged();
             UnlinkManualTrackingCommand?.RaiseCanExecuteChanged();
@@ -1463,6 +1758,8 @@ namespace PlayniteAchievements.ViewModels
         {
             return data?.ManualLink != null ||
                    data?.RetroAchievementsGameIdOverride.HasValue == true ||
+                   !string.IsNullOrWhiteSpace(data?.XeniaTitleIdOverride) ||
+                   !string.IsNullOrWhiteSpace(data?.ShadPS4MatchIdOverride) ||
                    data?.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data?.ExophaseSlugOverride);
         }

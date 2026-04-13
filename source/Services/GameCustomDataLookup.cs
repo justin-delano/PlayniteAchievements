@@ -3,7 +3,9 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Providers.RetroAchievements;
+using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Providers.Xenia;
 using System;
 using System.Collections.Generic;
 
@@ -180,6 +182,16 @@ namespace PlayniteAchievements.Services
                 legacyData.RetroAchievementsGameIdOverride = retroAchievementsGameId;
             }
 
+            if (TryGetXeniaTitleIdOverride(gameId, out var xeniaTitleIdOverride, store))
+            {
+                legacyData.XeniaTitleIdOverride = xeniaTitleIdOverride;
+            }
+
+            if (TryGetShadPS4MatchIdOverride(gameId, out var shadPS4MatchIdOverride, store))
+            {
+                legacyData.ShadPS4MatchIdOverride = shadPS4MatchIdOverride;
+            }
+
             var exophaseSettings = ProviderRegistry.Settings<ExophaseSettings>();
             if (IsExophaseIncluded(gameId, exophaseSettings, store))
             {
@@ -354,6 +366,26 @@ namespace PlayniteAchievements.Services
             return fallbackSettings?.IncludedGames?.Contains(gameId) == true;
         }
 
+        public static bool TryGetXeniaTitleIdOverride(
+            Guid gameId,
+            out string titleIdOverride,
+            GameCustomDataStore store = null)
+        {
+            titleIdOverride = null;
+            if (gameId == Guid.Empty)
+            {
+                return false;
+            }
+
+            if (TryLoad(gameId, out var customData, store))
+            {
+                titleIdOverride = XeniaTitleIdHelper.Normalize(customData?.XeniaTitleIdOverride);
+                return !string.IsNullOrWhiteSpace(titleIdOverride);
+            }
+
+            return false;
+        }
+
         public static bool TryGetExophaseSlugOverride(
             Guid gameId,
             out string slugOverride,
@@ -380,6 +412,26 @@ namespace PlayniteAchievements.Services
             }
 
             slugOverride = null;
+            return false;
+        }
+
+        public static bool TryGetShadPS4MatchIdOverride(
+            Guid gameId,
+            out string matchIdOverride,
+            GameCustomDataStore store = null)
+        {
+            matchIdOverride = null;
+            if (gameId == Guid.Empty)
+            {
+                return false;
+            }
+
+            if (TryLoad(gameId, out var customData, store))
+            {
+                matchIdOverride = ShadPS4MatchIdHelper.Normalize(customData?.ShadPS4MatchIdOverride);
+                return !string.IsNullOrWhiteSpace(matchIdOverride);
+            }
+
             return false;
         }
 
