@@ -148,13 +148,11 @@ namespace PlayniteAchievements.Providers.Xenia
                         iconPath = null;
                     }
 
-                    bool HideAchievement = (achievement.flags & 8) == 0 && !_providerSettings.ShowHiddenAchievements;
-
                     achievements.Add(new AchievementDetail
                     {
                         ApiName = achievement.id.ToString(),
-                        DisplayName = HideAchievement ? "Secret" : achievement.title,
-                        Description = achievement.unlock_time == 0 ? (HideAchievement ? "Hidden Description" : achievement.description) : achievement.unlockDescription,
+                        DisplayName = achievement.title,
+                        Description = achievement.unlock_time == 0 ? achievement.description : achievement.unlockDescription,
                         Category = ((XdbfAchievementTypes)(achievement.flags & 7)).ToString(),
                         UnlockedIconPath = iconPath,
                         LockedIconPath = iconPath,
@@ -164,6 +162,7 @@ namespace PlayniteAchievements.Providers.Xenia
                         UnlockTimeUtc = achievement.unlock_time != 0
                             ? DateTime.FromFileTimeUtc((Int64)achievement.unlock_time)
                             : (DateTime?)null,
+                        Hidden = ((achievement.flags & 8) == 0)
                     });
                 }
 
