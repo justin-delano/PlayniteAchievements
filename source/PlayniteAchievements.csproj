@@ -68,6 +68,10 @@
       <HintPath>packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="protobuf-net">
+      <HintPath>packages\protobuf-net.2.4.8\lib\net452\protobuf-net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="SharpCompress">
       <HintPath>packages\SharpCompress.0.26.0\lib\net46\SharpCompress.dll</HintPath>
       <Private>True</Private>

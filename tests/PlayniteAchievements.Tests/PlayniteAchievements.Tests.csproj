@@ -13,6 +13,7 @@
     <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.62" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="protobuf-net" Version="2.4.8" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 
@@ -71,6 +72,8 @@
     <Compile Include="..\..\source\Providers\RetroAchievements\RetroAchievementsSettings.cs" Link="Source\Providers\RetroAchievements\RetroAchievementsSettings.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\RetroAchievementsCapabilityHelper.cs" Link="Source\Providers\RetroAchievements\RetroAchievementsCapabilityHelper.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\RaConsoleIdResolver.cs" Link="Source\Providers\RetroAchievements\RaConsoleIdResolver.cs" />
+    <Compile Include="..\..\source\Providers\RetroAchievements\EmuLibraryGameIdDecoder.cs" Link="Source\Providers\RetroAchievements\EmuLibraryGameIdDecoder.cs" />
+    <Compile Include="..\..\source\Providers\RetroAchievements\EmuLibrarySettingsReader.cs" Link="Source\Providers\RetroAchievements\EmuLibrarySettingsReader.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\PlatformMapping\ConsoleMapping.cs" Link="Source\Providers\RetroAchievements\PlatformMapping\ConsoleMapping.cs" />
     <Compile Include="..\..\source\Providers\Exophase\ExophaseSettings.cs" Link="Source\Providers\Exophase\ExophaseSettings.cs" />
     <Compile Include="..\..\source\Providers\Xenia\XeniaSettings.cs" Link="Source\Providers\Xenia\XeniaSettings.cs" />
