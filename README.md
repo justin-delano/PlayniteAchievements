@@ -60,6 +60,13 @@ Extra sounds in the [Resources/AdditionalSounds](source/Resources/AdditionalSoun
 
 The entries below are fork-side changes, grouped by date. When a date includes an upstream sync, only the fork-specific additions are called out here.
 
+### 2026-04-15 - v2.1.1.2
+
+- Updated the fork release metadata to `v2.1.1.2` so Playnite can notify users about new Santodan fork releases.
+- Preserved the fork-specific addon identity so upstream releases no longer appear as direct Playnite extension updates for this fork.
+- Fixed a merged dependency regression by restoring the working `protobuf-net 2.4.8` references used by the fork build.
+- Fixed custom refresh UI freezes by moving expensive target-estimation work off the UI thread.
+
 ### 2026-04-15
 
 - Synced the fork forward to the upstream `v2.1.0` codebase.

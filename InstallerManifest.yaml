@@ -1,5 +1,15 @@
 AddonId: PlayniteAchievementsSantodan
 Packages:
+  - Version: 2.1.1.2
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-04-15
+    PackageUrl: https://github.com/santodan/PlayniteAchievements/releases/download/v2.1.1.2/PlayniteAchievementsSantodan_2_1_1_2.pext
+    Changelog:
+    - "Fork update based on upstream 2.1.1 changes plus Santodan fork fixes."
+    - "Playnite now sees this as version 2.1.1.2 for fork update notifications."
+    - "Fixed custom refresh UI freezes by moving target estimation off the UI thread."
+    - "Preserved fork-specific addon identity so upstream releases no longer appear as direct Playnite updates for this fork."
+
   - Version: 2.1.0.1
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-04-15
