@@ -75,6 +75,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly RefreshEntryPoint _refreshCoordinator;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly FullscreenWindowService _windowService;
+        private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly ThemeRuntimeState _runtimeState = new ThemeRuntimeState();
 
         private readonly object _refreshLock = new object();
@@ -100,7 +101,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings,
             FullscreenWindowService windowService,
-            ILogger logger)
+            ILogger logger,
+            GameCustomDataStore gameCustomDataStore = null)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
@@ -109,6 +111,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
             _logger = logger;
+            _gameCustomDataStore = gameCustomDataStore;
 
             var openOverviewCommand = new RelayCommand(_ => OpenOverviewWindow());
             var openSelectedGameCommand = new RelayCommand(_ => OpenSelectedGameWindow());
@@ -763,7 +766,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             allData ??= new List<GameAchievementData>();
 
-            var excludedIds = GameCustomDataLookup.GetExcludedSummaryGameIds(_settings?.Persisted);
+            var excludedIds = GameCustomDataLookup.GetExcludedSummaryGameIds(_settings?.Persisted, _gameCustomDataStore);
             if (excludedIds == null || excludedIds.Count == 0)
             {
                 return allData;
@@ -961,6 +964,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             _runtimeState.SelectedGame = state;
             _settings.ModernTheme.HasAchievements = true;
+            _settings.ModernTheme.HasCustomAchievementOrder = state.HasCustomAchievementOrder;
             _settings.ModernTheme.IsCompleted = state.IsCompleted;
             _settings.ModernTheme.AchievementCount = state.AchievementCount;
             _settings.ModernTheme.UnlockedCount = state.UnlockedCount;
@@ -1002,6 +1006,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             _runtimeState.SelectedGame = SelectedGameRuntimeState.Empty;
             _settings.ModernTheme.HasAchievements = false;
+            _settings.ModernTheme.HasCustomAchievementOrder = false;
             _settings.ModernTheme.IsCompleted = false;
             _settings.ModernTheme.AchievementCount = 0;
             _settings.ModernTheme.UnlockedCount = 0;

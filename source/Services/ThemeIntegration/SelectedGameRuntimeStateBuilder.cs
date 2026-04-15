@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -30,6 +31,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     0,
                     0,
                     0,
+                    false,
                     false,
                     new List<AchievementDetail>(),
                     new List<AchievementDetail>(),
@@ -67,7 +69,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             var locked = total - unlocked;
             var percent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(unlocked, total);
-            var all = achievements.ToList();
+            var hasCustomOrder = data.AchievementOrder != null && data.AchievementOrder.Count > 0;
+            var all = hasCustomOrder
+                ? AchievementOrderHelper.ApplyOrder(
+                    achievements,
+                    achievement => achievement?.ApiName,
+                    data.AchievementOrder)
+                : AchievementGridSortHelper.CreateDefaultSortedDetailList(achievements);
             var oldestFirst = AchievementGridSortHelper.CreateSortedDetailList(
                 all,
                 nameof(AchievementDisplayItem.UnlockTime),
@@ -128,6 +136,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 locked,
                 percent,
                 data.IsCompleted,
+                hasCustomOrder,
                 all,
                 oldestFirst,
                 newestFirst,

@@ -104,13 +104,18 @@ namespace PlayniteAchievements.ViewModels
             _playniteApi = playniteApi;
             _logger = logger;
             _settings = settings;
-            _dataBuilder = new SidebarDataBuilder(_achievementDataService, _refreshService.Providers, _playniteApi, _logger);
+            _dataBuilder = new SidebarDataBuilder(
+                _achievementDataService,
+                _refreshService.Providers,
+                _playniteApi,
+                _logger,
+                PlayniteAchievementsPlugin.Instance?.GameCustomDataStore);
             _selectedGamePipeline = new AchievementSelectionPipeline(_achievementDataService, _settings);
 
             // Initialize debounce timer
             _refreshDebounceTimer = new System.Windows.Threading.DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(500)
+                Interval = TimeSpan.FromMilliseconds(150)
             };
             _refreshDebounceTimer.Tick += OnRefreshDebounceTimerTick;
 
@@ -208,6 +213,7 @@ namespace PlayniteAchievements.ViewModels
             // Subscribe to progress events
             _refreshService.RebuildProgress += OnRebuildProgress;
             _refreshService.CacheDeltaUpdated += OnCacheDeltaUpdated;
+            _refreshService.CacheInvalidated += OnCacheInvalidated;
             if (_settings != null)
             {
                 _settings.PropertyChanged += OnSettingsChanged;
@@ -1840,6 +1846,25 @@ namespace PlayniteAchievements.ViewModels
             });
         }
 
+        private void OnCacheInvalidated(object sender, EventArgs e)
+        {
+            if (!_isActive || _disposed || _refreshService.IsRebuilding)
+            {
+                return;
+            }
+
+            System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
+            {
+                if (!_isActive || _disposed)
+                {
+                    return;
+                }
+
+                _refreshDebounceTimer.Stop();
+                _refreshDebounceTimer.Start();
+            });
+        }
+
         private async void OnDeltaBatchTimerTick(object sender, EventArgs e)
         {
             _deltaBatchTimer.Stop();
@@ -3203,6 +3228,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 _refreshService.RebuildProgress -= OnRebuildProgress;
                 _refreshService.CacheDeltaUpdated -= OnCacheDeltaUpdated;
+                _refreshService.CacheInvalidated -= OnCacheInvalidated;
             }
             if (_settings != null)
             {

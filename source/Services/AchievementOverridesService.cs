@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Manual;
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
@@ -202,16 +203,31 @@ namespace PlayniteAchievements.Services
 
         private bool RemoveManualTrackingLink(Guid playniteGameId, string gameName)
         {
-            if (!_gameCustomDataStore.TryLoad(playniteGameId, out var customData) ||
-                customData.ManualLink == null)
+            var removedFromStore = false;
+            if (_gameCustomDataStore.TryLoad(playniteGameId, out var customData) &&
+                customData?.ManualLink != null)
+            {
+                _gameCustomDataStore.Update(playniteGameId, data =>
+                {
+                    data.ManualLink = null;
+                });
+
+                removedFromStore = true;
+            }
+
+            var removedFromSettings = false;
+            var manualSettings = ProviderRegistry.Settings<ManualSettings>();
+            if (manualSettings?.AchievementLinks != null &&
+                manualSettings.AchievementLinks.Remove(playniteGameId))
+            {
+                removedFromSettings = true;
+                ProviderRegistry.Write(manualSettings);
+            }
+
+            if (!removedFromStore && !removedFromSettings)
             {
                 return false;
             }
-
-            _gameCustomDataStore.Update(playniteGameId, data =>
-            {
-                data.ManualLink = null;
-            });
 
             if (string.IsNullOrWhiteSpace(gameName))
             {

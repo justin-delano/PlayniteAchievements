@@ -143,6 +143,8 @@ namespace PlayniteAchievements.Models.Achievements
 
         public Game Game { get; set; }
 
+        public List<string> AchievementOrder { get; set; }
+
         public List<AchievementDetail> Achievements { get; set; } = new List<AchievementDetail>();
 
         public bool IsCompleted =>

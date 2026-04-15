@@ -310,7 +310,8 @@ namespace PlayniteAchievements
                         _refreshCoordinator,
                         _settingsViewModel.Settings,
                         _fullscreenWindowService,
-                        _logger);
+                        _logger,
+                        _gameCustomDataStore);
 
                     SubscribeDatabaseEventHandlers();
 

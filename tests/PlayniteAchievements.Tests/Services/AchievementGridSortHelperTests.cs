@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using System;
@@ -65,6 +66,22 @@ namespace PlayniteAchievements.Services.Tests
                 items.Select(item => item.DisplayName).ToArray());
         }
 
+        [TestMethod]
+        public void DefaultDetailSort_PrioritizesUnlockedThenLatestUnlockTime()
+        {
+            var sorted = AchievementGridSortHelper.CreateDefaultSortedDetailList(new List<AchievementDetail>
+            {
+                CreateDetail("Locked", unlocked: false),
+                CreateDetail("Unlocked Older", unlocked: true, unlockTimeUtc: DateTime.SpecifyKind(new DateTime(2026, 3, 1, 10, 0, 0), DateTimeKind.Utc)),
+                CreateDetail("Unlocked Newer", unlocked: true, unlockTimeUtc: DateTime.SpecifyKind(new DateTime(2026, 3, 2, 10, 0, 0), DateTimeKind.Utc)),
+                CreateDetail("Unlocked No Time", unlocked: true)
+            });
+
+            CollectionAssert.AreEqual(
+                new[] { "Unlocked Newer", "Unlocked Older", "Unlocked No Time", "Locked" },
+                sorted.Select(item => item.DisplayName).ToArray());
+        }
+
         private static AchievementDisplayItem CreateItem(
             string displayName,
             DateTime unlockTimeUtc,
@@ -80,6 +97,22 @@ namespace PlayniteAchievements.Services.Tests
                 TrophyType = trophyType,
                 PointsValue = points,
                 Unlocked = true
+            };
+        }
+
+        private static AchievementDetail CreateDetail(
+            string displayName,
+            bool unlocked,
+            DateTime? unlockTimeUtc = null,
+            double? globalPercentUnlocked = 50)
+        {
+            return new AchievementDetail
+            {
+                ApiName = displayName,
+                DisplayName = displayName,
+                Unlocked = unlocked,
+                UnlockTimeUtc = unlockTimeUtc,
+                GlobalPercentUnlocked = globalPercentUnlocked
             };
         }
     }
