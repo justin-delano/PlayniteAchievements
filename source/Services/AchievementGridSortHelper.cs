@@ -154,6 +154,23 @@ namespace PlayniteAchievements.Services
             return list;
         }
 
+        public static List<AchievementDetail> CreateDefaultSortedDetailList(
+            IEnumerable<AchievementDetail> items)
+        {
+            var list = items?.ToList() ?? new List<AchievementDetail>();
+            if (list.Count == 0)
+            {
+                return list;
+            }
+
+            var sorted = list
+                .Select(detail => (Detail: detail, SortProxy: CreateDefaultSortProxy(detail)))
+                .ToList();
+
+            sorted.Sort((left, right) => CompareByDefaultGameOrder(left.SortProxy, right.SortProxy));
+            return sorted.Select(entry => entry.Detail).ToList();
+        }
+
         public static int GetTrophyRank(string trophyType)
         {
             if (string.IsNullOrWhiteSpace(trophyType))
@@ -352,6 +369,22 @@ namespace PlayniteAchievements.Services
             }
 
             return CompareByDisplayName(a, b);
+        }
+
+        private static AchievementDisplayItem CreateDefaultSortProxy(AchievementDetail detail)
+        {
+            return new AchievementDisplayItem
+            {
+                DisplayName = detail?.DisplayName,
+                UnlockTimeUtc = detail?.UnlockTimeUtc,
+                GlobalPercentUnlocked = detail?.GlobalPercentUnlocked,
+                Rarity = detail?.Rarity ?? RarityTier.Common,
+                Unlocked = detail?.Unlocked ?? false,
+                TrophyType = detail?.TrophyType,
+                PointsValue = detail?.Points,
+                ProgressNum = detail?.ProgressNum,
+                ProgressDenom = detail?.ProgressDenom
+            };
         }
 
         private static List<AchievementDetail> CreateDetailUnlockSortedList(

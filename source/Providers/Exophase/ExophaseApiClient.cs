@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Providers.Exophase
     {
         private const string SearchUrl = "https://api.exophase.com/public/archive/games";
         private const string AchievementPageBaseUrl = "https://www.exophase.com/game/{0}/achievements/";
+        internal const string ExophaseApiNamePrefix = "exophase_";
         private const int AchievementDomReadyPollDelayMs = 250;
         private const int AchievementDomReadyPollAttempts = 8;
 
@@ -795,18 +796,47 @@ namespace PlayniteAchievements.Providers.Exophase
             return null;
         }
 
+        internal static string NormalizeLegacyManualApiName(string apiName)
+        {
+            if (string.IsNullOrWhiteSpace(apiName))
+            {
+                return null;
+            }
+
+            var candidate = apiName.Trim();
+            if (candidate.StartsWith(ExophaseApiNamePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                candidate = candidate.Substring(ExophaseApiNamePrefix.Length);
+            }
+
+            var normalized = NormalizeApiNameCore(candidate);
+            return string.IsNullOrWhiteSpace(normalized)
+                ? null
+                : $"{ExophaseApiNamePrefix}{normalized}";
+        }
+
         /// <summary>
         /// Generates a stable API name from the display name for tracking purposes.
         /// </summary>
-        private static string GenerateApiName(string displayName)
+        internal static string GenerateApiName(string displayName)
         {
-            if (string.IsNullOrWhiteSpace(displayName))
+            var normalized = NormalizeApiNameCore(displayName);
+            if (string.IsNullOrWhiteSpace(normalized))
             {
-                return $"exophase_{Guid.NewGuid():N}";
+                return $"{ExophaseApiNamePrefix}{Guid.NewGuid():N}";
             }
 
-            // Create a stable identifier from the display name
-            var normalized = displayName.ToLowerInvariant();
+            return $"{ExophaseApiNamePrefix}{normalized}";
+        }
+
+        private static string NormalizeApiNameCore(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var normalized = value.ToLowerInvariant();
             var safeChars = new char[normalized.Length];
             var pos = 0;
 
@@ -822,8 +852,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
             }
 
-            var result = new string(safeChars, 0, pos).Trim('_');
-            return string.IsNullOrWhiteSpace(result) ? $"exophase_{Guid.NewGuid():N}" : $"exophase_{result}";
+            return new string(safeChars, 0, pos).Trim('_');
         }
 
         /// <summary>

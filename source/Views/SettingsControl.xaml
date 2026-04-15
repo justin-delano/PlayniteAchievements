@@ -1027,6 +1027,48 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- ================== DATA GRID PREVIEW SECTION ================== -->
+                        <Border Style="{StaticResource SectionBorderStyle}">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridPreview}"
+                                               Style="{StaticResource SectionHeaderStyle}"
+                                               Margin="0"/>
+                                    <CheckBox Grid.Column="1"
+                                              Content="{DynamicResource LOCPlayAch_Common_Enabled}"
+                                              IsChecked="{Binding Persisted.EnableAchievementDataGridControl}"
+                                              VerticalAlignment="Center"/>
+                                </Grid>
+                                <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                                <Border Style="{StaticResource SettingGroupCardStyle}"
+                                        Visibility="{Binding Persisted.EnableAchievementDataGridControl, Converter={StaticResource BoolToVis}}">
+                                    <StackPanel>
+                                        <TextBlock Text="PREVIEW"
+                                                   Style="{StaticResource ContextLabelStyle}"/>
+                                        <modern:AchievementDataGridControl
+                                            Style="{StaticResource PreviewThemeControlStyle}"
+                                            ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            PreviewMinimumMaxHeight="220"
+                                            Margin="0,0,0,12"/>
+                                        <TextBlock Text="SETTINGS"
+                                                   Style="{StaticResource ContextLabelStyle}"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridMaxHeight}"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBox Text="{Binding Persisted.AchievementDataGridMaxHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=88}"
+                                                     Width="80" Margin="8,0,0,0"/>
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsUnit}"
+                                                       VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
                         <!-- ================== COMPACT LIST PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
@@ -1072,7 +1114,7 @@
                                             <ComboBox Grid.Column="1"
                                                       SelectedValue="{Binding Persisted.CompactListSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                       SelectedValuePath="Tag">
-                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_None}" Tag="{x:Static settings:CompactListSortMode.None}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Default}" Tag="{x:Static settings:CompactListSortMode.None}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                             </ComboBox>
@@ -1095,48 +1137,6 @@
                                                 </TextBlock>
                                             </Button>
                                         </Grid>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- ================== DATA GRID PREVIEW SECTION ================== -->
-                        <Border Style="{StaticResource SectionBorderStyle}">
-                            <StackPanel>
-                                <Grid Margin="0,0,0,12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridPreview}"
-                                               Style="{StaticResource SectionHeaderStyle}"
-                                               Margin="0"/>
-                                    <CheckBox Grid.Column="1"
-                                              Content="{DynamicResource LOCPlayAch_Common_Enabled}"
-                                              IsChecked="{Binding Persisted.EnableAchievementDataGridControl}"
-                                              VerticalAlignment="Center"/>
-                                </Grid>
-                                <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-                                <Border Style="{StaticResource SettingGroupCardStyle}"
-                                        Visibility="{Binding Persisted.EnableAchievementDataGridControl, Converter={StaticResource BoolToVis}}">
-                                    <StackPanel>
-                                        <TextBlock Text="PREVIEW"
-                                                   Style="{StaticResource ContextLabelStyle}"/>
-                                        <modern:AchievementDataGridControl
-                                            Style="{StaticResource PreviewThemeControlStyle}"
-                                            ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            PreviewMinimumMaxHeight="220"
-                                            Margin="0,0,0,12"/>
-                                        <TextBlock Text="SETTINGS"
-                                                   Style="{StaticResource ContextLabelStyle}"/>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridMaxHeight}"
-                                                       VerticalAlignment="Center"/>
-                                            <TextBox Text="{Binding Persisted.AchievementDataGridMaxHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=88}"
-                                                     Width="80" Margin="8,0,0,0"/>
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsUnit}"
-                                                       VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
-                                        </StackPanel>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -1184,7 +1184,7 @@
                                             <ComboBox Grid.Column="1"
                                                       SelectedValue="{Binding Persisted.CompactUnlockedListSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                       SelectedValuePath="Tag">
-                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_None}" Tag="{x:Static settings:CompactListSortMode.None}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Default}" Tag="{x:Static settings:CompactListSortMode.None}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                             </ComboBox>
@@ -1254,7 +1254,7 @@
                                             <ComboBox Grid.Column="1"
                                                       SelectedValue="{Binding Persisted.CompactLockedListSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                       SelectedValuePath="Tag">
-                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_None}" Tag="{x:Static settings:CompactListSortMode.None}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Default}" Tag="{x:Static settings:CompactListSortMode.None}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                             </ComboBox>

@@ -25,7 +25,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
         /// <summary>
         /// Selects the pre-sorted achievement collection based on CompactUnlockedListSortMode and direction.
-        /// None (default) preserves newest-first ordering.
+        /// None (default) uses the selected-game canonical base order.
         /// </summary>
         protected override List<AchievementDetail> GetOrderedAchievements(ModernThemeBindings theme)
         {
@@ -37,7 +37,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             var settings = EffectiveSettings?.Persisted;
             if (settings == null)
             {
-                return theme.AchievementsNewestFirst ?? base.GetOrderedAchievements(theme);
+                return theme.AllAchievements ?? new List<AchievementDetail>();
             }
 
             switch (settings.CompactUnlockedListSortMode)
@@ -51,7 +51,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                         ? theme.AchievementsRarityDesc ?? theme.AllAchievements
                         : theme.AchievementsRarityAsc ?? theme.AllAchievements;
                 default:
-                    return theme.AchievementsNewestFirst ?? base.GetOrderedAchievements(theme);
+                    return theme.AllAchievements ?? new List<AchievementDetail>();
             }
         }
 
@@ -60,7 +60,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             var settings = EffectiveSettings?.Persisted;
             if (settings == null)
             {
-                return nameof(ModernThemeBindings.AchievementsNewestFirst);
+                return nameof(ModernThemeBindings.AllAchievements);
             }
 
             switch (settings.CompactUnlockedListSortMode)
@@ -74,7 +74,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                         ? nameof(ModernThemeBindings.AchievementsRarityDesc)
                         : nameof(ModernThemeBindings.AchievementsRarityAsc);
                 default:
-                    return nameof(ModernThemeBindings.AchievementsNewestFirst);
+                    return nameof(ModernThemeBindings.AllAchievements);
             }
         }
 

@@ -112,6 +112,53 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Import_NormalizesLegacyExophaseUnlockKeysForManualRefreshMatching()
+        {
+            var gameId = Guid.NewGuid();
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                WriteLegacyFile(
+                    tempDir,
+                    gameId,
+                    CreateLegacyPayload(
+                        isManual: true,
+                        isIgnored: false,
+                        sourceName: "Exophase",
+                        sourceUrl: "https://www.exophase.com/game/pentiment-steam/achievements/",
+                        items: new[]
+                        {
+                            CreateItem("A Fateful Sausage", "1982-12-15T00:00:00+03:00"),
+                            CreateItem("Cookie Master", "2024-12-04T23:42:00-05:00")
+                        }));
+
+                var settings = new PersistedSettings();
+                var importer = CreateImporter(settings, new HashSet<Guid> { gameId }, new HashSet<Guid>());
+
+                var result = importer.Import(tempDir);
+
+                Assert.AreEqual(1, result.Imported);
+
+                var link = GetManualLinks(settings)[gameId];
+                Assert.IsNotNull(link);
+
+                Assert.IsFalse(link.UnlockStates.ContainsKey("A Fateful Sausage"));
+                Assert.IsTrue(link.UnlockStates.ContainsKey("exophase_a_fateful_sausage"));
+                Assert.IsTrue(link.UnlockStates["exophase_a_fateful_sausage"]);
+                Assert.IsFalse(link.UnlockTimes.ContainsKey("exophase_a_fateful_sausage"));
+
+                Assert.IsTrue(link.UnlockStates.ContainsKey("exophase_cookie_master"));
+                Assert.IsTrue(link.UnlockStates["exophase_cookie_master"]);
+                Assert.IsTrue(link.UnlockTimes.ContainsKey("exophase_cookie_master"));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void Import_SkipsNonManualAndIgnored()
         {
             var nonManualGameId = Guid.NewGuid();

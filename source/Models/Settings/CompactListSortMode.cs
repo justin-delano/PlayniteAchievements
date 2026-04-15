@@ -2,7 +2,8 @@ namespace PlayniteAchievements.Models.Settings
 {
     /// <summary>
     /// Sort mode for modern compact list controls.
-    /// None preserves default ordering: provider order for all/locked lists, newest-first for unlocked list.
+    /// None preserves canonical selected-game ordering: custom game order when configured,
+    /// otherwise the shared default ordering.
     /// </summary>
     public enum CompactListSortMode
     {

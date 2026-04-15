@@ -109,6 +109,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override void OnThemeDataOverrideChangedInternal()
         {
             _lastSourceItems = null;
+            ResetSortState();
             UpdatePreviewBehavior();
             base.OnThemeDataOverrideChangedInternal();
         }
@@ -161,6 +162,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             if (sourceItems == null)
             {
                 _lastSourceItems = null;
+                ResetSortState();
                 if (DisplayItems == null)
                 {
                     DisplayItems = new ObservableCollection<AchievementDisplayItem>();
@@ -169,12 +171,15 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 {
                     DisplayItems.Clear();
                 }
+
+                AchievementsGrid?.SetSortIndicator(null, null);
                 return;
             }
 
             // Skip cloning if the source reference hasn't changed
             if (ReferenceEquals(sourceItems, _lastSourceItems))
             {
+                ApplyCurrentSortIndicator(theme);
                 return;
             }
 
@@ -204,6 +209,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             {
                 CollectionHelper.SynchronizeCollection(DisplayItems, clonedItems);
             }
+
+            ApplyCurrentSortIndicator(theme);
         }
 
         /// <summary>
@@ -211,7 +218,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         /// </summary>
         protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
-            return propertyName == nameof(ModernThemeBindings.AllAchievementDisplayItems);
+            return propertyName == nameof(ModernThemeBindings.AllAchievementDisplayItems) ||
+                   propertyName == nameof(ModernThemeBindings.HasCustomAchievementOrder);
         }
 
         /// <summary>
@@ -236,6 +244,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         /// </summary>
         public override void GameContextChanged(Game oldContext, Game newContext)
         {
+            if ((oldContext?.Id ?? Guid.Empty) != (newContext?.Id ?? Guid.Empty))
+            {
+                ResetSortState();
+            }
+
             if (IsLoaded)
             {
                 LoadData();
@@ -271,6 +284,36 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
             // Synchronize in place to trigger efficient UI updates
             CollectionHelper.SynchronizeCollection(DisplayItems, items);
+            ApplyCurrentSortIndicator(EffectiveTheme);
+        }
+
+        private void ResetSortState()
+        {
+            _currentSortPath = null;
+            _currentSortDirection = null;
+        }
+
+        private void ApplyCurrentSortIndicator(ModernThemeBindings theme)
+        {
+            if (AchievementsGrid == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_currentSortPath) && _currentSortDirection.HasValue)
+            {
+                AchievementsGrid.SetSortIndicator(_currentSortPath, _currentSortDirection);
+                return;
+            }
+
+            if (theme?.HasCustomAchievementOrder == true)
+            {
+                AchievementsGrid.SetSortIndicator(null, null);
+                return;
+            }
+
+            // Mirror sidebar/single-game defaults when no custom order is configured.
+            AchievementsGrid.SetSortIndicator(nameof(AchievementDisplayItem.UnlockTime), ListSortDirection.Descending);
         }
 
         private void UpdatePreviewBehavior()

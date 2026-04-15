@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Providers.Settings;
 using System;
@@ -193,7 +194,7 @@ namespace PlayniteAchievements.Services
                     }
 
                     var nowUtc = DateTime.UtcNow;
-                    BuildUnlockData(payload.Items, out var unlockTimes, out var unlockStates);
+                    BuildUnlockData(payload.Items, sourceKey, out var unlockTimes, out var unlockStates);
                     var link = new ManualAchievementLink
                     {
                         SourceKey = sourceKey,
@@ -342,11 +343,12 @@ namespace PlayniteAchievements.Services
 
         private static void BuildUnlockData(
             IReadOnlyList<LegacyAchievementItem> items,
+            string sourceKey,
             out Dictionary<string, DateTime?> unlockTimes,
             out Dictionary<string, bool> unlockStates)
         {
-            unlockTimes = new Dictionary<string, DateTime?>();
-            unlockStates = new Dictionary<string, bool>();
+            unlockTimes = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase);
+            unlockStates = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             if (items == null)
             {
                 return;
@@ -359,9 +361,18 @@ namespace PlayniteAchievements.Services
                     continue;
                 }
 
+                var apiName = item.ApiName.Trim();
+                if (string.Equals(sourceKey, "Exophase", StringComparison.OrdinalIgnoreCase))
+                {
+                    var normalizedExophaseApiName = ExophaseApiClient.NormalizeLegacyManualApiName(apiName);
+                    if (!string.IsNullOrWhiteSpace(normalizedExophaseApiName))
+                    {
+                        apiName = normalizedExophaseApiName;
+                    }
+                }
+
                 if (TryParseLegacyUnlock(item.DateUnlocked, out var unlockUtc))
                 {
-                    var apiName = item.ApiName.Trim();
                     unlockStates[apiName] = true;
                     if (unlockUtc.HasValue)
                     {

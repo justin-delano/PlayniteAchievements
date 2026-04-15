@@ -17,6 +17,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private bool _hasAchievements;
         [DontSerialize]
+        private bool _hasCustomAchievementOrder;
+        [DontSerialize]
         private bool _isCompleted;
         [DontSerialize]
         private int _achievementCount;
@@ -167,6 +169,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _hasAchievements;
             set => SetValue(ref _hasAchievements, value);
+        }
+
+        [DontSerialize]
+        public bool HasCustomAchievementOrder
+        {
+            get => _hasCustomAchievementOrder;
+            set => SetValue(ref _hasCustomAchievementOrder, value);
         }
 
         [DontSerialize]

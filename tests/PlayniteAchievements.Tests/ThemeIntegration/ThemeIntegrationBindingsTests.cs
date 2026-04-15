@@ -51,6 +51,61 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void SelectedGameBuilder_UsesCustomOrderForCanonicalAllAchievements()
+        {
+            var gameId = Guid.NewGuid();
+            var data = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = new Game { Id = gameId, Name = "Custom Ordered Game" },
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail>
+                {
+                    Achievement("First", 80.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 1, 12, 0, 0)),
+                    Achievement("Second", 25.0, unlocked: false),
+                    Achievement("Third", 2.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 2, 12, 0, 0))
+                },
+                AchievementOrder = new List<string> { "Third", "First" }
+            };
+
+            var state = SelectedGameRuntimeStateBuilder.Build(gameId, data);
+
+            Assert.IsTrue(state.HasCustomAchievementOrder);
+            AssertAchievementNames(state.AllAchievements, "Third", "First", "Second");
+        }
+
+        [TestMethod]
+        public void SelectedGameBuilder_DefaultCanonicalOrderMatchesSharedDefaultSorting()
+        {
+            var gameId = Guid.NewGuid();
+            var unlockedNoTime = Achievement("Unlocked No Time", null, unlocked: true, unlockTimeUtc: null);
+            unlockedNoTime.UnlockTimeUtc = null;
+            var data = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = new Game { Id = gameId, Name = "Default Ordered Game" },
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail>
+                {
+                    Achievement("Locked", 80.0, unlocked: false),
+                    Achievement("Unlocked Older", 25.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 1, 9, 0, 0)),
+                    Achievement("Unlocked Newer", 2.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 2, 9, 0, 0)),
+                    unlockedNoTime
+                }
+            };
+
+            var state = SelectedGameRuntimeStateBuilder.Build(gameId, data);
+
+            Assert.IsFalse(state.HasCustomAchievementOrder);
+            AssertAchievementNames(
+                state.AllAchievements,
+                "Unlocked Newer",
+                "Unlocked Older",
+                "Unlocked No Time",
+                "Locked");
+        }
+
+        [TestMethod]
         public void LibraryBuilder_BuildsStatsObjectsAcrossGames()
         {
             PercentRarityHelper.Configure(5, 10, 50);
@@ -275,6 +330,45 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void PopulateSingleGameDataSync_UsesCustomOrderForCanonicalAchievementsAndSetsFlag()
+        {
+            var gameId = Guid.NewGuid();
+            var settings = new PlayniteAchievementsSettings();
+            var plugin = new PlayniteAchievementsPlugin
+            {
+                Settings = settings
+            };
+            PlayniteAchievementsPlugin.Instance = plugin;
+
+            var api = new FakePlayniteApi();
+            var refreshRuntime = new RefreshRuntime();
+            var achievementDataService = new AchievementDataService();
+            achievementDataService.GameDataById[gameId] = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = new Game { Id = gameId, Name = "Custom Ordered Binding Game" },
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail>
+                {
+                    Achievement("One", 75.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 1, 9, 0, 0)),
+                    Achievement("Two", 25.0, unlocked: false),
+                    Achievement("Three", 2.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 2, 9, 0, 0))
+                },
+                AchievementOrder = new List<string> { "Three", "One" }
+            };
+
+            var refreshCoordinator = new RefreshEntryPoint(refreshRuntime, logger: null);
+            var windowService = new FullscreenWindowService(api, settings, _ => { });
+            var logger = new FakeLogger();
+            using var service = new ThemeIntegrationService(api, refreshRuntime, achievementDataService, refreshCoordinator, settings, windowService, logger);
+
+            service.PopulateSingleGameDataSync(gameId);
+
+            Assert.IsTrue(settings.ModernTheme.HasCustomAchievementOrder);
+            AssertAchievementNames(settings.Achievements, "Three", "One", "Two");
+        }
+
+        [TestMethod]
         public void SelectedGameBuilder_UsesRarityTieBreakerForEqualUnlockTimes()
         {
             PercentRarityHelper.Configure(5, 10, 50);
@@ -353,7 +447,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.AreEqual(DynamicThemeViewKeys.All, context.Settings.DynamicAchievementsFilterKey);
             Assert.AreEqual(DynamicThemeViewKeys.Default, context.Settings.DynamicAchievementsSortKey);
             Assert.AreEqual(DynamicThemeViewKeys.Descending, context.Settings.DynamicAchievementsSortDirectionKey);
-            AssertAchievementNames(context.Settings.DynamicAchievements, "Alpha Locked", "Bravo Rare", "Charlie Ultra");
+            AssertAchievementNames(context.Settings.DynamicAchievements, "Charlie Ultra", "Bravo Rare", "Alpha Locked");
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.DynamicAchievements)));
 
             context.Settings.SetDynamicAchievementsFilterCommand.Execute("uNlOcKeD");
@@ -626,6 +720,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.AreEqual(0, settings.AchievementsOldestFirst.Count);
             Assert.AreEqual(0, settings.AchievementsRarityAsc.Count);
             Assert.AreEqual(0, settings.AchievementsRarityDesc.Count);
+            Assert.IsFalse(settings.ModernTheme.HasCustomAchievementOrder);
 
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.Common)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.Uncommon)));

@@ -193,6 +193,24 @@ namespace PlayniteAchievements.Manual.Tests
             Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_ApiKeyRequired", ex.MessageKey);
         }
 
+        [TestMethod]
+        public void ExophaseApiClient_NormalizeLegacyManualApiName_HandlesDisplayAndPrefixedKeys()
+        {
+            Assert.AreEqual(
+                "exophase_a_fateful_sausage",
+                ExophaseApiClient.NormalizeLegacyManualApiName("A Fateful Sausage"));
+
+            Assert.AreEqual(
+                "exophase_a_fateful_sausage",
+                ExophaseApiClient.NormalizeLegacyManualApiName(" exophase_A_Fateful_Sausage "));
+
+            Assert.AreEqual(
+                "exophase_a_fateful_sausage",
+                ExophaseApiClient.NormalizeLegacyManualApiName("a-fateful sausage"));
+
+            Assert.IsNull(ExophaseApiClient.NormalizeLegacyManualApiName("   "));
+        }
+
         private sealed class FakePlayniteApi : IPlayniteAPI
         {
             public IMainViewAPI MainView => null;

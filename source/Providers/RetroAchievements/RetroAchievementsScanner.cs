@@ -424,7 +424,11 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             {
                 var raSettings = ProviderRegistry.Settings<RetroAchievementsSettings>();
                 var gameInfo = await _api.GetGameInfoAndUserProgressAsync(gameId, cancel).ConfigureAwait(false);
-                var achievements = ParseAchievements(gameInfo, raSettings.RaRarityStats, categoryLabel: "Base");
+                var achievements = ParseAchievements(
+                    gameInfo,
+                    raSettings.RaRarityStats,
+                    categoryLabel: "Base",
+                    enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment);
 
                 _logger?.Info($"[RA] Parsed {achievements.Count} achievements for '{gameInfo?.GameTitle}'.");
 
@@ -444,7 +448,11 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                                 {
                                     var subsetInfo = await _api.GetGameInfoAndUserProgressAsync(subset.Id, cancel).ConfigureAwait(false);
                                     var categoryLabel = ExtractCategoryLabel(subset.Title) ?? "Subset";
-                                    var subsetAchievements = ParseAchievements(subsetInfo, raSettings.RaRarityStats, categoryLabel: categoryLabel);
+                                    var subsetAchievements = ParseAchievements(
+                                        subsetInfo,
+                                        raSettings.RaRarityStats,
+                                        categoryLabel: categoryLabel,
+                                        enableAutomaticCapstoneAssignment: raSettings.EnableAutomaticCapstoneAssignment);
 
                                     _logger?.Info($"[RA] Parsed {subsetAchievements.Count} achievements for subset '{subset.Title}' (category={categoryLabel}).");
 
@@ -531,7 +539,11 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             return string.Join(",", hashes.Select(h => string.IsNullOrWhiteSpace(h) ? "?" : h));
         }
 
-        private static List<AchievementDetail> ParseAchievements(Models.RaGameInfoUserProgress gameInfo, string rarityStats, string categoryLabel = null)
+        private static List<AchievementDetail> ParseAchievements(
+            Models.RaGameInfoUserProgress gameInfo,
+            string rarityStats,
+            string categoryLabel = null,
+            bool enableAutomaticCapstoneAssignment = false)
         {
             var list = new List<AchievementDetail>();
 
@@ -647,8 +659,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     Points = ach.Points,
                     ScaledPoints = ach.TrueRatio,
                     Category = categoryLabel,
-                    // IsCapstone = string.Equals(ach.Type, "win_condition", StringComparison.OrdinalIgnoreCase),
-                    IsCapstone  = false,
+                    IsCapstone = enableAutomaticCapstoneAssignment &&
+                                 string.Equals(ach.Type, "win_condition", StringComparison.OrdinalIgnoreCase),
                     UnlockTimeUtc = unlockUtc,
                     Hidden = false,
                     Rarity = globalPercent.HasValue

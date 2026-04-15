@@ -498,6 +498,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 [nameof(ModernThemeBindings.HasAchievements)] = nameof(HasAchievements),
+                [nameof(ModernThemeBindings.HasCustomAchievementOrder)] = nameof(HasCustomAchievementOrder),
                 [nameof(ModernThemeBindings.AchievementCount)] = nameof(AchievementCount),
                 [nameof(ModernThemeBindings.UnlockedCount)] = nameof(UnlockedCount),
                 [nameof(ModernThemeBindings.LockedCount)] = nameof(LockedCount),
@@ -539,6 +540,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         private static readonly string[] ForwardedModernProperties =
         {
             nameof(HasAchievements),
+            nameof(HasCustomAchievementOrder),
             nameof(AchievementCount),
             nameof(UnlockedCount),
             nameof(LockedCount),
@@ -617,6 +619,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         public PlayniteAchievementsSettings Settings => _settings;
 
         public bool HasAchievements => _modernThemeOverride?.HasAchievements ?? _settings?.HasAchievements ?? false;
+
+        public bool HasCustomAchievementOrder => _modernThemeOverride?.HasCustomAchievementOrder ?? false;
 
         public int AchievementCount => _modernThemeOverride?.AchievementCount ?? _settings?.AchievementCount ?? 0;
 

@@ -1,4 +1,4 @@
-AddonId: PlayniteAchievements
+AddonId: PlayniteAchievementsSantodan
 Type: Generic
 InstallerManifestUrl: https://raw.githubusercontent.com/santodan/PlayniteAchievements/main/InstallerManifest.yaml
 ShortDescription: Modern achievement aggregator with multi-platform support, beautiful visualizations, and seamless theme integration
