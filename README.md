@@ -50,7 +50,8 @@ From the PlayniteAchivements menu inside the game
 
 ### Local Realtime Monitoring And Sound Settings
 
-This was a request from a user to have a sound playing when an achivement is unlocked while playing a game.
+This was a request from a user to have a sound playing when an achivement is unlocked while playing a game.<br>
+Extra sounds in the [Resources/AdditionalSounds](source/Resources/AdditionalSounds)
 
 <img src="Images/LocalAchivementsNotification.png" alt="Sidebar single-game view" width="900">.
 
