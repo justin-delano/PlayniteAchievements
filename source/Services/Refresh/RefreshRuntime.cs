@@ -872,7 +872,7 @@ namespace PlayniteAchievements.Services
                     Report(FormatRefreshCompletionWithModeAndCount(resolved.Mode, 0), 1, 1, mode: resolved.Mode);
                 }
 
-                if (!string.IsNullOrWhiteSpace(resolved.UserMessage))
+                if (!request.SuppressUserMessages && !string.IsNullOrWhiteSpace(resolved.UserMessage))
                 {
                     ShowCustomRefreshMessage(resolved.UserMessage);
                 }

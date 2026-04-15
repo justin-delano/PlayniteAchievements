@@ -37,5 +37,11 @@ namespace PlayniteAchievements.Models
         /// Optional custom refresh options for ad-hoc custom mode runs.
         /// </summary>
         public CustomRefreshOptions CustomOptions { get; set; }
+
+        /// <summary>
+        /// When true, suppress non-fatal user-facing warning dialogs for this request.
+        /// Intended for background or managed refresh flows.
+        /// </summary>
+        public bool SuppressUserMessages { get; set; }
     }
 }

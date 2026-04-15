@@ -173,6 +173,7 @@ namespace PlayniteAchievements.Services.Local
                 new RefreshRequest
                 {
                     Mode = RefreshModeType.Custom,
+                    SuppressUserMessages = true,
                     CustomOptions = new CustomRefreshOptions
                     {
                         Scope = CustomGameScope.Explicit,
