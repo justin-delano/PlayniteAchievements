@@ -121,6 +121,27 @@ namespace PlayniteAchievements
         /// </summary>
         public static void NotifySettingsSaved() => SettingsSaved?.Invoke(null, EventArgs.Empty);
 
+        private void TryWarmCustomDataCache()
+        {
+            if (_gameCustomDataStore == null)
+            {
+                return;
+            }
+
+            try
+            {
+                using (PerfScope.StartStartup(_logger, "PluginCtor.CustomDataWarmup", thresholdMs: 50))
+                {
+                    var rows = _gameCustomDataStore.LoadAll();
+                    _logger?.Debug($"Preloaded {rows?.Count ?? 0} game custom-data rows.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to warm game custom-data cache during plugin startup.");
+            }
+        }
+
         public void PersistSettingsForUi()
         {
             try
@@ -228,6 +249,7 @@ namespace PlayniteAchievements
                 _providerRegistry.SyncFromSettings(settings.Persisted);
                 _gameCustomDataStore = _settingsViewModel.GameCustomDataStore;
                 _gameCustomDataStore.AttachRuntimeSettings(settings);
+                TryWarmCustomDataCache();
 
                 List<IDataProvider> providers;
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))

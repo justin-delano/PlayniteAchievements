@@ -389,15 +389,15 @@ namespace PlayniteAchievements.Services
 
         private Dictionary<Guid, GameCustomDataFile> LoadCustomDataByGameId()
         {
+            var map = new Dictionary<Guid, GameCustomDataFile>();
             if (_gameCustomDataStore == null)
             {
-                return new Dictionary<Guid, GameCustomDataFile>();
+                return map;
             }
 
             try
             {
                 var rows = _gameCustomDataStore.LoadAll();
-                var map = new Dictionary<Guid, GameCustomDataFile>();
                 if (rows == null || rows.Count == 0)
                 {
                     return map;
@@ -419,11 +419,24 @@ namespace PlayniteAchievements.Services
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to load per-game custom data for sidebar summary hydration");
-                return new Dictionary<Guid, GameCustomDataFile>();
+                return map;
             }
         }
 
-        private HashSet<Guid> BuildExcludedSummaryGameIds(IReadOnlyDictionary<Guid, GameCustomDataFile> customDataByGameId)
+        private HashSet<Guid> ResolveExcludedSummaryGameIds(IReadOnlyDictionary<Guid, GameCustomDataFile> customDataByGameId)
+        {
+            try
+            {
+                return GameCustomDataLookup.GetExcludedSummaryGameIds(_persistedSettings, _gameCustomDataStore);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to resolve excluded summary game IDs from custom-data store. Falling back to persisted settings projection.");
+                return BuildExcludedSummaryGameIdsFallback(customDataByGameId);
+            }
+        }
+
+        private HashSet<Guid> BuildExcludedSummaryGameIdsFallback(IReadOnlyDictionary<Guid, GameCustomDataFile> customDataByGameId)
         {
             var result = _persistedSettings?.ExcludedFromSummariesGameIds != null
                 ? new HashSet<Guid>(_persistedSettings.ExcludedFromSummariesGameIds)
@@ -497,7 +510,7 @@ namespace PlayniteAchievements.Services
             BuildSidebarCustomDataContext()
         {
             var customDataByGameId = LoadCustomDataByGameId();
-            return (customDataByGameId, BuildExcludedSummaryGameIds(customDataByGameId));
+            return (customDataByGameId, ResolveExcludedSummaryGameIds(customDataByGameId));
         }
 
         private static Dictionary<string, string> ResolveFallbackOverrides(
@@ -539,7 +552,8 @@ namespace PlayniteAchievements.Services
         {
             allData ??= new List<GameAchievementData>();
 
-            var excludedSummaryIds = BuildExcludedSummaryGameIds(LoadCustomDataByGameId());
+            var customDataByGameId = LoadCustomDataByGameId();
+            var excludedSummaryIds = ResolveExcludedSummaryGameIds(customDataByGameId);
             if (excludedSummaryIds == null || excludedSummaryIds.Count == 0)
             {
                 return allData;
