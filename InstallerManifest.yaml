@@ -9,6 +9,7 @@ Packages:
     - "RetroAchievements - Restored option to automatically assign capstones (default: Disabled). A refresh will be required to update these capstones."
     - "Fix - Capstone completion will now show correctly show in the Sidebar"
     - "Fix - Made sorting of theme elements (compact lists, datagrids) more consistent."
+    - "Fix - Legacy manual tracking import bug fixes."
     - "Fix - Adjusted dependencies to better match Playnite's."
 
   - Version: 2.1.0
