@@ -33,6 +33,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
         private string _lastUpstreamReleaseNotificationVersion = string.Empty;
+        private string _lastForkReleaseNotificationVersion = string.Empty;
         private int _recentRefreshGamesCount = 10;
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
@@ -234,6 +235,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _lastUpstreamReleaseNotificationVersion;
             set => SetValue(ref _lastUpstreamReleaseNotificationVersion, value ?? string.Empty);
+        }
+
+        /// <summary>
+        /// Last Santodan fork release version already shown to the user.
+        /// </summary>
+        public string LastForkReleaseNotificationVersion
+        {
+            get => _lastForkReleaseNotificationVersion;
+            set => SetValue(ref _lastForkReleaseNotificationVersion, value ?? string.Empty);
         }
 
         #endregion
@@ -1091,6 +1101,7 @@ namespace PlayniteAchievements.Models.Settings
                 NotifyPeriodicUpdates = this.NotifyPeriodicUpdates,
                 NotifyOnRebuild = this.NotifyOnRebuild,
                 LastUpstreamReleaseNotificationVersion = this.LastUpstreamReleaseNotificationVersion,
+                LastForkReleaseNotificationVersion = this.LastForkReleaseNotificationVersion,
 
                 // Display Preferences
                 ShowHiddenIcon = this.ShowHiddenIcon,

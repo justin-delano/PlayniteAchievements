@@ -120,6 +120,32 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        public void ShowForkReleaseAvailable(string forkVersion, string releaseUrl)
+        {
+            if (_settings?.Persisted?.EnableNotifications != true)
+            {
+                return;
+            }
+
+            var title = "Santodan Fork Update Available";
+            var message = string.Format(
+                "The Santodan PlayniteAchievements fork released version {0}. Click to open the fork releases page.",
+                forkVersion ?? "?");
+
+            try
+            {
+                _api.Notifications.Add(new NotificationMessage(
+                    $"PlayniteAchievements-ForkRelease-{forkVersion}",
+                    $"{title}\n{message}",
+                    NotificationType.Info,
+                    () => OpenUrl(releaseUrl)));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to show fork release notification.");
+            }
+        }
+
         public void ShowLocalAchievementUnlocked(string gameName, IReadOnlyList<string> unlockedAchievementNames, string customSoundPath)
         {
             if (_settings?.Persisted?.EnableNotifications != true)

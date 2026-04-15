@@ -89,6 +89,7 @@ namespace PlayniteAchievements
         private readonly ThemeControlRegistry _themeControlRegistry;
         private readonly PluginWindowService _windowService;
         private readonly ThemeAutoMigrationService _themeAutoMigrationService;
+        private readonly ForkReleaseMonitor _forkReleaseMonitor;
         private readonly UpstreamReleaseMonitor _upstreamReleaseMonitor;
         private readonly ActiveGameAchievementMonitor _activeGameAchievementMonitor;
 
@@ -280,6 +281,12 @@ namespace PlayniteAchievements
                     _achievementDataService = new AchievementDataService(_cacheManager, PlayniteApi, _settingsViewModel.Settings, _logger);
                     _gameCustomDataStore.AttachAchievementDataService(_achievementDataService);
                     _notifications = new NotificationPublisher(api, settings, _logger);
+                    _forkReleaseMonitor = new ForkReleaseMonitor(
+                        api,
+                        settings,
+                        _notifications,
+                        () => SavePluginSettings(_settingsViewModel.Settings),
+                        _logger);
                     _upstreamReleaseMonitor = new UpstreamReleaseMonitor(
                         api,
                         settings,
@@ -516,6 +523,7 @@ namespace PlayniteAchievements
                 // Auto-migrate themes that have been updated since the last migration.
                 _themeAutoMigrationService?.ScheduleAutoMigration();
 
+                _ = _forkReleaseMonitor?.CheckForForkReleaseAsync();
                 _ = _upstreamReleaseMonitor?.CheckForUpstreamReleaseAsync();
 
                 RestartBackgroundUpdater();
