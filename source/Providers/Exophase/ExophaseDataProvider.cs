@@ -138,27 +138,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 return payload;
             }
 
-            _logger?.Debug($"[Exophase] Probing auth state...");
-            var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
-            var exophaseUserId = probeResult?.UserId?.Trim();
-            var missingVerifiedUser = string.IsNullOrWhiteSpace(exophaseUserId);
+            var exophaseUserId = _sessionManager?.Username?.Trim();
+            var isAuthenticated = _sessionManager?.IsAuthenticated == true;
 
-            _logger?.Info($"[Exophase] Auth probe result: IsSuccess={probeResult?.IsSuccess}, " +
-                $"Outcome={probeResult?.Outcome}, UserId='{exophaseUserId ?? "null"}'");
-
-            if (probeResult?.IsSuccess != true || missingVerifiedUser)
+            if (!isAuthenticated || string.IsNullOrWhiteSpace(exophaseUserId))
             {
-                if (probeResult?.Outcome == AuthOutcome.NotAuthenticated ||
-                    probeResult?.Outcome == AuthOutcome.Cancelled ||
-                    probeResult?.Outcome == AuthOutcome.TimedOut ||
-                    (probeResult?.IsSuccess == true && missingVerifiedUser))
-                {
-                    _logger?.Warn("[Exophase] Exophase not authenticated - live /account probe failed. Refresh aborted.");
-                    payload.AuthRequired = true;
-                    return payload;
-                }
-
-                _logger?.Warn($"[Exophase] Exophase auth probe failed with outcome={probeResult?.Outcome}. Refresh aborted.");
+                _logger?.Warn("[Exophase] Exophase session is not authenticated at refresh start. Refresh aborted.");
+                payload.AuthRequired = true;
                 return payload;
             }
 
