@@ -32,12 +32,6 @@
 - Faster access to saved refresh presets from the main sidebar refresh selector
 - Local-only realtime monitoring and notification improvements
 
-## Screenshot Gallery
-
-The gallery below is intentionally reserved for screenshots of fork-specific features only.
-
-The current screenshot files in the repo are mostly generic plugin views inherited from the broader project. Since you want this README to highlight only the changes made in your fork, the sections below are placeholders for the fork-specific screenshots you plan to add later.
-
 ### Local Provider Folder List And Browse Flow
 
 You can set any custom folder where you have saves located in your system
