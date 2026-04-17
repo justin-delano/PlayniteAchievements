@@ -69,6 +69,7 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 - Improved Local schema matching, hidden-achievement handling, and metadata enrichment for anonymous Steam sources so titles, descriptions, icons, and hidden flags resolve more reliably when public data is available.
 - Fixed Local schema fallback order so progress-only Goldberg or GSE `achievements.json` files are no longer mistaken for full schema payloads.
 - Removed the need for the steam account to have an API key
+- Better refresh performance
 
 ### 2026-04-15 - v2.1.1.2
 

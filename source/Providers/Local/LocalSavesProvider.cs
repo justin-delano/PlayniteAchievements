@@ -60,6 +60,14 @@ namespace PlayniteAchievements.Providers.Local
         // private readonly string debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Local_Debug.txt");
         private readonly Dictionary<int, SchemaAndPercentages> _steamSchemaCache = new Dictionary<int, SchemaAndPercentages>();
         private readonly Dictionary<int, string> _steamSchemaSourceCache = new Dictionary<int, string>();
+        private readonly object _discoveryCacheLock = new object();
+        private readonly Dictionary<string, IReadOnlyList<string>> _localFolderCandidatesCache = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<int, IReadOnlyList<string>> _steamAppCacheSchemaFilePathsCache = new Dictionary<int, IReadOnlyList<string>>();
+        private readonly Dictionary<int, IReadOnlyList<string>> _steamAppCacheUserStatsFilePathsCache = new Dictionary<int, IReadOnlyList<string>>();
+        private readonly Dictionary<int, IReadOnlyList<string>> _steamLibraryCacheFilePathsCache = new Dictionary<int, IReadOnlyList<string>>();
+        private IReadOnlyList<string> _steamAchievementProgressFilePathsCache;
+        private IReadOnlyList<string> _steamUserdataRootsCache;
+        private IReadOnlyList<string> _steamInstallRootsCache;
         private HashSet<int> _steamLocalProgressAppIdsCache;
 
         public string ProviderKey => "Local";
@@ -918,6 +926,14 @@ namespace PlayniteAchievements.Providers.Local
 
         private IEnumerable<string> GetSteamAppCacheSchemaFilePaths(int appId)
         {
+            lock (_discoveryCacheLock)
+            {
+                if (_steamAppCacheSchemaFilePathsCache.TryGetValue(appId, out var cachedPaths))
+                {
+                    return cachedPaths;
+                }
+            }
+
             var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var fileName = $"UserGameStatsSchema_{appId}.bin";
 
@@ -930,11 +946,25 @@ namespace PlayniteAchievements.Providers.Local
                 }
             }
 
-            return candidates;
+            var resolvedCandidates = candidates.ToList();
+            lock (_discoveryCacheLock)
+            {
+                _steamAppCacheSchemaFilePathsCache[appId] = resolvedCandidates;
+            }
+
+            return resolvedCandidates;
         }
 
         private IEnumerable<string> GetSteamAppCacheUserStatsFilePaths(int appId)
         {
+            lock (_discoveryCacheLock)
+            {
+                if (_steamAppCacheUserStatsFilePathsCache.TryGetValue(appId, out var cachedPaths))
+                {
+                    return cachedPaths;
+                }
+            }
+
             var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var suffix = "_" + appId.ToString(CultureInfo.InvariantCulture) + ".bin";
             var preferredAccountIds = GetPreferredSteamAccountIds();
@@ -971,7 +1001,13 @@ namespace PlayniteAchievements.Providers.Local
                 }
             }
 
-            return candidates;
+            var resolvedCandidates = candidates.ToList();
+            lock (_discoveryCacheLock)
+            {
+                _steamAppCacheUserStatsFilePathsCache[appId] = resolvedCandidates;
+            }
+
+            return resolvedCandidates;
         }
 
         private IEnumerable<string> GetPreferredSteamAccountIds()
@@ -2139,11 +2175,20 @@ namespace PlayniteAchievements.Providers.Local
 
         private List<string> FindLocalFolders(string appId)
         {
-            var folders = new List<string>();
             if (string.IsNullOrWhiteSpace(appId))
             {
-                return folders;
+                return new List<string>();
             }
+
+            lock (_discoveryCacheLock)
+            {
+                if (_localFolderCandidatesCache.TryGetValue(appId, out var cachedFolders))
+                {
+                    return cachedFolders.ToList();
+                }
+            }
+
+            var folders = new List<string>();
 
             foreach (var root in GetLocalRootPaths())
             {
@@ -2179,11 +2224,18 @@ namespace PlayniteAchievements.Providers.Local
                 }
             }
 
-            return folders
+            var resolvedFolders = folders
                 .Where(path => !string.IsNullOrWhiteSpace(path))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
+            lock (_discoveryCacheLock)
+            {
+                _localFolderCandidatesCache[appId] = resolvedFolders;
+            }
+
+            return resolvedFolders.ToList();
         }
 
         private string ChooseBestLocalFolderCandidate(IEnumerable<string> candidates)
@@ -2479,6 +2531,14 @@ namespace PlayniteAchievements.Providers.Local
 
         private IEnumerable<string> GetSteamLibraryCacheFilePaths(int appId)
         {
+            lock (_discoveryCacheLock)
+            {
+                if (_steamLibraryCacheFilePathsCache.TryGetValue(appId, out var cachedPaths))
+                {
+                    return cachedPaths;
+                }
+            }
+
             var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var fileName = appId.ToString(CultureInfo.InvariantCulture) + ".json";
 
@@ -2512,11 +2572,25 @@ namespace PlayniteAchievements.Providers.Local
                 }
             }
 
-            return candidates;
+            var resolvedCandidates = candidates.ToList();
+            lock (_discoveryCacheLock)
+            {
+                _steamLibraryCacheFilePathsCache[appId] = resolvedCandidates;
+            }
+
+            return resolvedCandidates;
         }
 
         private IEnumerable<string> GetSteamAchievementProgressFilePaths()
         {
+            lock (_discoveryCacheLock)
+            {
+                if (_steamAchievementProgressFilePathsCache != null)
+                {
+                    return _steamAchievementProgressFilePathsCache;
+                }
+            }
+
             var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var userdataRoot in GetSteamUserdataRoots())
@@ -2549,7 +2623,13 @@ namespace PlayniteAchievements.Providers.Local
                 }
             }
 
-            return candidates;
+            var resolvedCandidates = candidates.ToList();
+            lock (_discoveryCacheLock)
+            {
+                _steamAchievementProgressFilePathsCache = resolvedCandidates;
+            }
+
+            return resolvedCandidates;
         }
 
         private bool HasSteamAchievementProgressForApp(int appId)
@@ -2620,6 +2700,14 @@ namespace PlayniteAchievements.Providers.Local
 
         private IEnumerable<string> GetSteamUserdataRoots()
         {
+            lock (_discoveryCacheLock)
+            {
+                if (_steamUserdataRootsCache != null)
+                {
+                    return _steamUserdataRootsCache;
+                }
+            }
+
             var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var configuredUserdataPath = GetConfiguredSteamUserdataPath();
@@ -2661,11 +2749,25 @@ namespace PlayniteAchievements.Providers.Local
                 }
             }
 
-            return roots;
+            var resolvedRoots = roots.ToList();
+            lock (_discoveryCacheLock)
+            {
+                _steamUserdataRootsCache = resolvedRoots;
+            }
+
+            return resolvedRoots;
         }
 
         private IEnumerable<string> GetSteamInstallRoots()
         {
+            lock (_discoveryCacheLock)
+            {
+                if (_steamInstallRootsCache != null)
+                {
+                    return _steamInstallRootsCache;
+                }
+            }
+
             var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var configuredPath = GetConfiguredSteamBasePath();
@@ -2693,7 +2795,13 @@ namespace PlayniteAchievements.Providers.Local
                 }
             }
 
-            return roots;
+            var resolvedRoots = roots.ToList();
+            lock (_discoveryCacheLock)
+            {
+                _steamInstallRootsCache = resolvedRoots;
+            }
+
+            return resolvedRoots;
         }
 
         private string GetConfiguredSteamBasePath()
