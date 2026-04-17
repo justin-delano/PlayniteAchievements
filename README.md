@@ -60,6 +60,12 @@ Extra sounds in the [Resources/AdditionalSounds](source/Resources/AdditionalSoun
 
 The entries below are fork-side changes, grouped by date. When a date includes an upstream sync, only the fork-specific additions are called out here.
 
+### 2026-04-17 - v2.1.1.3
+
+- Added anonymous Steam metadata lookup for the Local provider using the reachable SteamHunters API, so Local Steam achievements can resolve proper names and rarity without requiring a Steam login.
+- Fixed Local schema fallback order so progress-only Goldberg or GSE `achievements.json` files are no longer mistaken for full schema payloads.
+- Added Local provider icon enrichment from Steam's public achievement pages when public icon data is available.
+
 ### 2026-04-15 - v2.1.1.2
 
 - Updated the fork release metadata to `v2.1.1.2` so Playnite can notify users about new Santodan fork releases.
