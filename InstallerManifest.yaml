@@ -1,5 +1,14 @@
 AddonId: PlayniteAchievementsSantodan
 Packages:
+  - Version: 2.1.1.3
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-04-17
+    PackageUrl: https://github.com/santodan/PlayniteAchievements/releases/download/v2.1.1.3/PlayniteAchievementsSantodan_2_1_1_3.pext
+    Changelog:
+    - "Local provider now fetches anonymous Steam achievement names and rarity from the reachable SteamHunters API instead of requiring Steam login."
+    - "Fixed Local provider fallback order so progress-only Goldberg or GSE achievement files are no longer mistaken for schema files."
+    - "Added anonymous Steam community icon enrichment for Local Steam achievements when public page data is available."
+
   - Version: 2.1.1.2
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-04-15
