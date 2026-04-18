@@ -1,36 +1,48 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Media;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using Playnite.SDK.Plugins;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Providers.Local
 {
     public partial class LocalSettingsView : ProviderSettingsViewBase
     {
         private readonly IPlayniteAPI _playniteApi;
+        private readonly PlayniteAchievementsSettings _pluginSettings;
+        private readonly ILogger _logger;
         private LocalSettings _localSettings;
+        private CancellationTokenSource _localImportCts;
         private bool _isRefreshingBundledSoundSelection;
         private bool _isRefreshingCustomSoundPathText;
 
         public ObservableCollection<string> ExtraLocalPathEntries { get; } = new ObservableCollection<string>();
         public ObservableCollection<BundledSoundOption> BundledUnlockSounds { get; } = new ObservableCollection<BundledSoundOption>();
+        public ObservableCollection<string> AvailableSourceNames { get; } = new ObservableCollection<string>();
+        public ObservableCollection<LocalMetadataSourceOption> AvailableMetadataSources { get; } = new ObservableCollection<LocalMetadataSourceOption>();
 
         public new LocalSettings Settings => _localSettings;
 
-        public LocalSettingsView(IPlayniteAPI playniteApi)
+        public LocalSettingsView(IPlayniteAPI playniteApi, PlayniteAchievementsSettings pluginSettings, ILogger logger)
         {
             _playniteApi = playniteApi;
+            _pluginSettings = pluginSettings;
+            _logger = logger;
             InitializeComponent();
         }
 
@@ -46,14 +58,18 @@ namespace PlayniteAchievements.Providers.Local
             base.Initialize(settings);
             ExtraLocalPathsList.ItemsSource = ExtraLocalPathEntries;
             BundledUnlockSoundComboBox.ItemsSource = BundledUnlockSounds;
+            ImportedGameCustomSourceComboBox.ItemsSource = AvailableSourceNames;
             if (_localSettings != null)
             {
                 _localSettings.PropertyChanged += LocalSettings_PropertyChanged;
             }
 
+            RefreshAvailableSourceNames();
+            RefreshAvailableMetadataSources();
             RefreshBundledUnlockSounds();
             RefreshRealtimeMonitoringControls();
             RefreshExtraLocalPathEntries();
+            RefreshImportedGameTargetControls();
             UpdateExtraLocalPathButtonStates();
         }
 
@@ -262,6 +278,35 @@ namespace PlayniteAchievements.Providers.Local
             UpdateExtraLocalPathButtonStates();
         }
 
+        private void ImportExtraLocalGamesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_pluginSettings == null)
+            {
+                return;
+            }
+
+            if (!TryShowImportTargetDialog(out var selectedTarget, out var customSourceName, out var metadataSourceId, out var existingGameBehavior))
+            {
+                return;
+            }
+
+            if (_localSettings != null)
+            {
+                _localSettings.ImportedGameLibraryTarget = selectedTarget;
+                _localSettings.ImportedGameCustomSourceName = customSourceName ?? string.Empty;
+                _localSettings.ImportedGameMetadataSourceId = metadataSourceId ?? string.Empty;
+                _localSettings.ExistingGameImportBehavior = existingGameBehavior;
+                RefreshImportedGameTargetControls();
+            }
+
+            var roots = ExtraLocalPathEntries
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            StartLocalImport(roots, selectedTarget, customSourceName, metadataSourceId, existingGameBehavior);
+        }
+
         private void PendingExtraLocalPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             UpdateExtraLocalPathButtonStates();
@@ -270,6 +315,11 @@ namespace PlayniteAchievements.Providers.Local
         private void ExtraLocalPathsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             UpdateExtraLocalPathButtonStates();
+        }
+
+        private void ImportedGameLibraryTargetComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshImportedGameTargetControls();
         }
 
         private void RefreshExtraLocalPathEntries()
@@ -301,6 +351,318 @@ namespace PlayniteAchievements.Providers.Local
             if (RemoveExtraLocalPathButton != null)
             {
                 RemoveExtraLocalPathButton.IsEnabled = ExtraLocalPathsList?.SelectedItem is string;
+            }
+
+            if (ImportExtraLocalGamesButton != null)
+            {
+                ImportExtraLocalGamesButton.IsEnabled = _localImportCts == null;
+            }
+        }
+
+        private void RefreshImportedGameTargetControls()
+        {
+            if (ImportedGameCustomSourcePanel == null)
+            {
+                return;
+            }
+
+            ImportedGameCustomSourcePanel.Visibility = _localSettings?.ImportedGameLibraryTarget == LocalImportedGameLibraryTarget.CustomSource
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        private void RefreshAvailableSourceNames()
+        {
+            AvailableSourceNames.Clear();
+
+            try
+            {
+                foreach (var sourceName in _playniteApi?.Database?.Sources?
+                    .Where(source => source != null && !string.IsNullOrWhiteSpace(source.Name))
+                    .Select(source => source.Name)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(name => name, StringComparer.OrdinalIgnoreCase) ?? Enumerable.Empty<string>())
+                {
+                    AvailableSourceNames.Add(sourceName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed loading Playnite source names for Local import settings.");
+            }
+
+            if (_localSettings != null &&
+                _localSettings.ImportedGameLibraryTarget == LocalImportedGameLibraryTarget.CustomSource &&
+                !string.IsNullOrWhiteSpace(_localSettings.ImportedGameCustomSourceName))
+            {
+                var match = AvailableSourceNames.FirstOrDefault(name =>
+                    string.Equals(name, _localSettings.ImportedGameCustomSourceName, StringComparison.OrdinalIgnoreCase));
+                _localSettings.ImportedGameCustomSourceName = match ?? AvailableSourceNames.FirstOrDefault() ?? string.Empty;
+            }
+        }
+
+        private void RefreshAvailableMetadataSources()
+        {
+            AvailableMetadataSources.Clear();
+            AvailableMetadataSources.Add(new LocalMetadataSourceOption(string.Empty, "Automatic"));
+
+            try
+            {
+                foreach (var option in GetInstalledMetadataProviderOptions())
+                {
+                    AvailableMetadataSources.Add(option);
+                }
+
+                _logger?.Info($"[LocalImport] Available metadata providers for Local import: {string.Join(", ", AvailableMetadataSources.Select(option => option.DisplayName))}");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed loading Playnite metadata plugins for Local import settings.");
+            }
+
+            if (_localSettings == null)
+            {
+                return;
+            }
+
+            var selectedId = (_localSettings.ImportedGameMetadataSourceId ?? string.Empty).Trim();
+            if (!AvailableMetadataSources.Any(option => string.Equals(option.Id, selectedId, StringComparison.OrdinalIgnoreCase)))
+            {
+                _localSettings.ImportedGameMetadataSourceId = string.Empty;
+            }
+        }
+
+        private IReadOnlyList<LocalMetadataSourceOption> GetInstalledMetadataProviderOptions()
+        {
+            var options = new List<LocalMetadataSourceOption>();
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            try
+            {
+                foreach (var extensionsDirectory in GetCandidateExtensionsDirectories())
+                {
+                    foreach (var manifestPath in Directory.EnumerateFiles(extensionsDirectory, "extension.yaml", SearchOption.AllDirectories))
+                    {
+                        string type = null;
+                        string name = null;
+                        foreach (var line in File.ReadLines(manifestPath))
+                        {
+                            if (line.StartsWith("Type:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                type = line.Substring(5).Trim();
+                            }
+                            else if (line.StartsWith("Name:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                name = line.Substring(5).Trim();
+                            }
+                        }
+
+                        if (string.Equals(type, "MetadataProvider", StringComparison.OrdinalIgnoreCase) &&
+                            !string.IsNullOrWhiteSpace(name) &&
+                            names.Add(name.Trim()))
+                        {
+                            options.Add(new LocalMetadataSourceOption($"name:{name.Trim()}", name.Trim()));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed reading installed metadata provider manifests for Local import settings.");
+            }
+
+            return options
+                .OrderBy(option => option.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private IEnumerable<string> GetCandidateExtensionsDirectories()
+        {
+            var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            void AddCandidate(string path)
+            {
+                if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path))
+                {
+                    candidates.Add(path);
+                }
+            }
+
+            var applicationPath = _playniteApi?.Paths?.ApplicationPath?.Trim();
+            if (!string.IsNullOrWhiteSpace(applicationPath))
+            {
+                if (Directory.Exists(applicationPath))
+                {
+                    AddCandidate(Path.Combine(applicationPath, "Extensions"));
+                }
+
+                var applicationDirectory = Directory.Exists(applicationPath)
+                    ? applicationPath
+                    : Path.GetDirectoryName(applicationPath);
+                AddCandidate(Path.Combine(applicationDirectory ?? string.Empty, "Extensions"));
+            }
+
+            AddCandidate(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Extensions"));
+
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            if (!string.IsNullOrWhiteSpace(assemblyDirectory))
+            {
+                var parentDirectory = Directory.GetParent(assemblyDirectory);
+                AddCandidate(parentDirectory?.FullName);
+                AddCandidate(Path.Combine(parentDirectory?.Parent?.FullName ?? string.Empty, "Extensions"));
+            }
+
+            _logger?.Info($"[LocalImport] Metadata provider manifest search paths: {string.Join(", ", candidates)}");
+            return candidates;
+        }
+
+        private bool TryShowImportTargetDialog(
+            out LocalImportedGameLibraryTarget selectedTarget,
+            out string customSourceName,
+            out string metadataSourceId,
+            out LocalExistingGameImportBehavior existingGameBehavior)
+        {
+            selectedTarget = _localSettings?.ImportedGameLibraryTarget ?? LocalImportedGameLibraryTarget.None;
+            customSourceName = _localSettings?.ImportedGameCustomSourceName ?? string.Empty;
+            metadataSourceId = _localSettings?.ImportedGameMetadataSourceId ?? string.Empty;
+            existingGameBehavior = _localSettings?.ExistingGameImportBehavior ?? LocalExistingGameImportBehavior.OverwriteExisting;
+
+            var dialog = new LocalImportTargetDialog(selectedTarget, customSourceName, metadataSourceId, existingGameBehavior, AvailableSourceNames, AvailableMetadataSources);
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                "Import Local Games",
+                dialog,
+                new WindowOptions
+                {
+                    Width = 560,
+                    Height = 360,
+                    CanBeResizable = false,
+                    ShowCloseButton = true,
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false
+                });
+
+            dialog.RequestClose += (s, e) => window.Close();
+            window.ShowDialog();
+
+            if (dialog.DialogResult != true)
+            {
+                return false;
+            }
+
+            selectedTarget = dialog.SelectedTarget;
+            customSourceName = dialog.CustomSourceName?.Trim() ?? string.Empty;
+            metadataSourceId = dialog.MetadataSourceId?.Trim() ?? string.Empty;
+            existingGameBehavior = dialog.ExistingGameBehavior;
+            return true;
+        }
+
+        private void StartLocalImport(
+            System.Collections.Generic.IReadOnlyCollection<string> roots,
+            LocalImportedGameLibraryTarget selectedTarget,
+            string customSourceName,
+            string metadataSourceId,
+            LocalExistingGameImportBehavior existingGameBehavior)
+        {
+            _localImportCts?.Dispose();
+            _localImportCts = new CancellationTokenSource();
+            UpdateExtraLocalPathButtonStates();
+
+            var progressControl = new LocalImportProgressControl();
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                "Import Local Games",
+                progressControl,
+                new WindowOptions
+                {
+                    Width = 430,
+                    Height = 250,
+                    CanBeResizable = false,
+                    ShowCloseButton = true,
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false
+                });
+
+            progressControl.RequestClose += (s, e) => window.Close();
+            progressControl.CancelRequested += (s, e) => _localImportCts?.Cancel();
+            window.Closed += (s, e) =>
+            {
+                if (_localImportCts != null && !_localImportCts.IsCancellationRequested && progressControl.ShowCancelButton)
+                {
+                    _localImportCts.Cancel();
+                }
+            };
+
+            UpdateImportStatus("Starting Local import...");
+            window.Show();
+
+            var progress = new Progress<LocalFolderGamesImporter.LocalImportProgressInfo>(report =>
+            {
+                progressControl.Update(report?.Percent ?? 0d, report?.Message, report?.Detail);
+                UpdateImportStatus(report?.Message);
+            });
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var importer = new LocalFolderGamesImporter(_playniteApi, _pluginSettings, _logger);
+                    var result = await importer.ImportFromRootsAsync(
+                        roots,
+                        selectedTarget,
+                        customSourceName,
+                        metadataSourceId,
+                        existingGameBehavior,
+                        _localImportCts.Token,
+                        progress).ConfigureAwait(false);
+
+                    var targetLabel = selectedTarget == LocalImportedGameLibraryTarget.CustomSource
+                        ? $"custom source '{customSourceName?.Trim()}'"
+                        : (selectedTarget == LocalImportedGameLibraryTarget.Steam ? "Steam library" : "None/manual library");
+                    var metadataLabel = AvailableMetadataSources.FirstOrDefault(option => string.Equals(option.Id, metadataSourceId ?? string.Empty, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? "Automatic";
+                    var existingBehaviorLabel = existingGameBehavior == LocalExistingGameImportBehavior.SkipExisting ? "skip existing" : "overwrite existing";
+                    var summary = $"Imported {result.ImportedCount} new games, reused {result.LinkedExistingCount} existing games, skipped {result.SkippedCount}, failed {result.FailedCount} across {result.UniqueAppIdCount} detected App IDs for {targetLabel} using metadata source '{metadataLabel}' with existing-game behavior '{existingBehaviorLabel}'.";
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        progressControl.MarkCompleted(summary);
+                        UpdateImportStatus(summary);
+                    });
+                }
+                catch (OperationCanceledException)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        const string message = "Local import cancelled.";
+                        progressControl.MarkCancelled(message);
+                        UpdateImportStatus(message);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Warn(ex, "Failed importing games from Local folders.");
+                    Dispatcher.Invoke(() =>
+                    {
+                        var message = $"Import failed: {ex.Message}";
+                        progressControl.MarkFailed(message);
+                        UpdateImportStatus(message);
+                    });
+                }
+                finally
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        _localImportCts?.Dispose();
+                        _localImportCts = null;
+                        UpdateExtraLocalPathButtonStates();
+                    });
+                }
+            });
+        }
+
+        private void UpdateImportStatus(string message)
+        {
+            if (ImportExtraLocalGamesStatusTextBlock != null)
+            {
+                ImportExtraLocalGamesStatusTextBlock.Text = message ?? string.Empty;
             }
         }
 

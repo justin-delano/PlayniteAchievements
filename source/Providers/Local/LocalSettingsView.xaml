@@ -167,7 +167,12 @@
                                 Margin="0,0,0,12"
                                 TextWrapping="Wrap"/>
 
-                        <TextBlock Text="The following folders are scanned automatically for local achievement and Steam cache files:"
+                           <TextBlock Text="Automatic folders"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,4"/>
+
+                           <TextBlock Text="The following folders are scanned automatically for local achievement and Steam cache files:"
                                Style="{StaticResource MutedTextStyle}"
                                Margin="0,0,0,10"
                                TextWrapping="Wrap"/>
@@ -235,6 +240,11 @@
                                Style="{StaticResource MutedTextStyle}"
                                Margin="0,0,0,12"/>
 
+                    <TextBlock Text="Custom folders"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,4"/>
+
                     <TextBlock Text="Additional folders to scan:"
                                Foreground="{DynamicResource TextBrush}"
                                FontWeight="SemiBold"
@@ -285,6 +295,71 @@
 
                     <TextBlock Text="Use Browse to select folders, then Apply to add them to the list. Environment variables such as %PUBLIC% or %APPDATA% are still expanded automatically when scanning."
                                Style="{StaticResource MutedTextStyle}"
+                               TextWrapping="Wrap"/>
+
+                        <TextBlock Text="Imported game target library:"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontWeight="SemiBold"
+                               Margin="0,12,0,4"/>
+                        <ComboBox SelectedValue="{Binding Settings.ImportedGameLibraryTarget, Mode=TwoWay}"
+                              SelectedValuePath="Tag"
+                              Margin="0,0,0,6"
+                              SelectionChanged="ImportedGameLibraryTargetComboBox_SelectionChanged">
+                        <ComboBoxItem Content="None (manual game)"
+                                  Tag="{x:Static local:LocalImportedGameLibraryTarget.None}"/>
+                        <ComboBoxItem Content="Steam library"
+                                  Tag="{x:Static local:LocalImportedGameLibraryTarget.Steam}"/>
+                        <ComboBoxItem Content="Playnite source"
+                                  Tag="{x:Static local:LocalImportedGameLibraryTarget.CustomSource}"/>
+                        </ComboBox>
+
+                        <DockPanel x:Name="ImportedGameCustomSourcePanel"
+                               Margin="0,0,0,12">
+                        <TextBlock Text="Playnite source:"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontWeight="SemiBold"/>
+                        <ComboBox x:Name="ImportedGameCustomSourceComboBox"
+                              SelectedItem="{Binding Settings.ImportedGameCustomSourceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              MinHeight="28" />
+                        </DockPanel>
+
+                        <DockPanel Margin="0,0,0,12">
+                        <TextBlock Text="Metadata source:"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontWeight="SemiBold"/>
+                        <ComboBox x:Name="ImportedGameMetadataSourceComboBox"
+                              ItemsSource="{Binding AvailableMetadataSources, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="Id"
+                              SelectedValue="{Binding Settings.ImportedGameMetadataSourceId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              MinHeight="28" />
+                        </DockPanel>
+
+                        <TextBlock Text="Choose where newly imported Local-folder games should live in Playnite and which installed Playnite metadata plugin should populate their details. None uses the manual-game path, Steam imports into the Steam library, and Playnite source creates manual games under one of your existing Playnite Sources entries."
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,0,0,12"
+                               TextWrapping="Wrap"/>
+
+                        <DockPanel Margin="0,0,0,6">
+                        <Button x:Name="ImportExtraLocalGamesButton"
+                            Content="Import games from Local folders"
+                            HorizontalAlignment="Left"
+                            Padding="12,6"
+                            Click="ImportExtraLocalGamesButton_Click" />
+                        <TextBlock x:Name="ImportExtraLocalGamesStatusTextBlock"
+                               Margin="10,0,0,0"
+                               VerticalAlignment="Center"
+                               TextWrapping="Wrap"
+                               Style="{StaticResource MutedTextStyle}" />
+                        </DockPanel>
+
+                    <TextBlock Text="The importer scans the built-in default Local roots and any additional roots listed here for numeric App ID folders with Local achievement files, imports missing games with Steam metadata, and binds them to the Local provider automatically."
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="0,6,0,0"
                                TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>

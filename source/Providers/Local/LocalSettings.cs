@@ -15,6 +15,32 @@ namespace PlayniteAchievements.Providers.Local
         PreferCompletionist = 3
     }
 
+    public enum LocalImportedGameLibraryTarget
+    {
+        None = 0,
+        Steam = 1,
+        CustomSource = 2
+    }
+
+    public enum LocalExistingGameImportBehavior
+    {
+        OverwriteExisting = 0,
+        SkipExisting = 1
+    }
+
+    public sealed class LocalMetadataSourceOption
+    {
+        public LocalMetadataSourceOption(string id, string displayName)
+        {
+            Id = id ?? string.Empty;
+            DisplayName = displayName ?? string.Empty;
+        }
+
+        public string Id { get; }
+
+        public string DisplayName { get; }
+    }
+
     public class LocalSettings : ProviderSettingsBase
     {
         public const int MinActiveGameMonitoringIntervalSeconds = 2;
@@ -29,6 +55,10 @@ namespace PlayniteAchievements.Providers.Local
         private string _bundledUnlockSoundPath = string.Empty;
         private string _customUnlockSoundPath = string.Empty;
         private LocalSteamSchemaPreference _steamSchemaPreference = LocalSteamSchemaPreference.PreferSteam;
+        private LocalImportedGameLibraryTarget _importedGameLibraryTarget = LocalImportedGameLibraryTarget.None;
+        private string _importedGameCustomSourceName = string.Empty;
+        private string _importedGameMetadataSourceId = string.Empty;
+        private LocalExistingGameImportBehavior _existingGameImportBehavior = LocalExistingGameImportBehavior.OverwriteExisting;
 
         public override string ProviderKey => "Local";
 
@@ -115,6 +145,30 @@ namespace PlayniteAchievements.Providers.Local
         {
             get => _steamSchemaPreference;
             set => SetValue(ref _steamSchemaPreference, value);
+        }
+
+        public LocalImportedGameLibraryTarget ImportedGameLibraryTarget
+        {
+            get => _importedGameLibraryTarget;
+            set => SetValue(ref _importedGameLibraryTarget, value);
+        }
+
+        public string ImportedGameCustomSourceName
+        {
+            get => _importedGameCustomSourceName;
+            set => SetValue(ref _importedGameCustomSourceName, value ?? string.Empty);
+        }
+
+        public string ImportedGameMetadataSourceId
+        {
+            get => _importedGameMetadataSourceId;
+            set => SetValue(ref _importedGameMetadataSourceId, value ?? string.Empty);
+        }
+
+        public LocalExistingGameImportBehavior ExistingGameImportBehavior
+        {
+            get => _existingGameImportBehavior;
+            set => SetValue(ref _existingGameImportBehavior, value);
         }
 
         public Dictionary<Guid, int> SteamAppIdOverrides

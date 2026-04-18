@@ -33,6 +33,7 @@
 - Per-game Local overrides inside Game Options
 - Faster access to saved refresh presets from the main sidebar refresh selector
 - Local-only realtime monitoring and notification improvements
+- Add all the local achievements' games with the corresponding metadata
 
 ### Local Provider Folder List And Browse Flow
 
@@ -58,6 +59,12 @@ Extra sounds in the [Resources/AdditionalSounds](source/Resources/AdditionalSoun
 <img src="Images/LocalAchivementsNotification.png" alt="Sidebar single-game view" width="900">.
 
 
+### Local Achivements' Games import
+
+This is a way of adding all of those achievements that are in the folders ina  way that it isn't needed to go through the foldrs and adding one by one
+
+<img src="Images/LocalAchivementsGamesImport.png" alt="Sidebar single-game view" width="900">.
+
 ## Fork Changelog
 
 The entries below are fork-side changes, grouped by date. When a date includes an upstream sync, only the fork-specific additions are called out here.
@@ -72,6 +79,7 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 - Better refresh performance
 - No longer needed the Steam API key for the extension to gather the owned games
 - Added setting in the General tab to select the default filter in the main page
+- Added the option to import all local games with achievements to the library and get the metadata ( Tested with Steam universal Metadata extension )
 
 ### 2026-04-15 - v2.1.1.2
 

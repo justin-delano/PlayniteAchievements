@@ -4233,7 +4233,7 @@ namespace PlayniteAchievements.Providers.Local
             }
         }
 
-        public ProviderSettingsViewBase CreateSettingsView() => new LocalSettingsView(_api);
+        public ProviderSettingsViewBase CreateSettingsView() => new LocalSettingsView(_api, _pluginSettings, _logger);
 
         private static readonly Dictionary<string, string> KnownIniFields = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
