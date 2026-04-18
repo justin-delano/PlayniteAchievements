@@ -43,6 +43,13 @@ namespace PlayniteAchievements
 {
     public partial class PlayniteAchievementsPlugin : GenericPlugin
     {
+        private static readonly string[] ThemeSourceAliases =
+        {
+            "PlayniteAchievements",
+            "SuccessStory",
+            "SSHelper"
+        };
+
         private readonly ILogger _logger;
 
 
@@ -357,17 +364,7 @@ namespace PlayniteAchievements
 
                     SubscribeDatabaseEventHandlers();
 
-                    AddSettingsSupport(new AddSettingsSupportArgs
-                    {
-                        SourceName = "PlayniteAchievements",
-                        SettingsRoot = "Settings"
-                    });
-
-                    AddCustomElementSupport(new AddCustomElementSupportArgs
-                    {
-                        ElementList = _themeControlRegistry.GetSupportedElementNames(),
-                        SourceName = "PlayniteAchievements"
-                    });
+                    RegisterThemeSourceAliases();
                 }
 
                 // Initialize top panel item for popout window
@@ -382,6 +379,32 @@ namespace PlayniteAchievements
         {
             _logger.Info($"GetSettings called, firstRunSettings={firstRunSettings}");
             return _settingsViewModel;
+        }
+
+        private void RegisterThemeSourceAliases()
+        {
+            var registeredAliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var supportedElements = _themeControlRegistry.GetSupportedElementNames();
+
+            foreach (var sourceName in ThemeSourceAliases)
+            {
+                if (string.IsNullOrWhiteSpace(sourceName) || !registeredAliases.Add(sourceName))
+                {
+                    continue;
+                }
+
+                AddSettingsSupport(new AddSettingsSupportArgs
+                {
+                    SourceName = sourceName,
+                    SettingsRoot = "Settings"
+                });
+
+                AddCustomElementSupport(new AddCustomElementSupportArgs
+                {
+                    ElementList = supportedElements,
+                    SourceName = sourceName
+                });
+            }
         }
 
         public override UserControl GetSettingsView(bool firstRunView)

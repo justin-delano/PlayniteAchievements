@@ -632,14 +632,30 @@ namespace PlayniteAchievements.Providers.Local
 
         private Game FindExistingGame(int appId, LocalImportedGameLibraryTarget importTarget, string customSourceName)
         {
-            var appIdText = appId.ToString(CultureInfo.InvariantCulture);
+            var matchingGames = _api.Database.Games
+                .Where(game => MatchesResolvedAppId(game, appId))
+                .ToList();
 
-            return _api.Database.Games.FirstOrDefault(game =>
-                game != null &&
-                game.Id != Guid.Empty &&
-                MatchesRequestedImportTarget(game, importTarget, customSourceName) &&
-                (string.Equals(game.GameId, appIdText, StringComparison.OrdinalIgnoreCase) ||
-                 (LocalSavesProvider.TryResolveAppId(game, out var resolvedAppId, out _) && resolvedAppId == appId)));
+            if (matchingGames.Count == 0)
+            {
+                return null;
+            }
+
+            return matchingGames.FirstOrDefault(game => MatchesRequestedImportTarget(game, importTarget, customSourceName))
+                ?? matchingGames.FirstOrDefault(game => IsExistingLocalBinding(game))
+                ?? matchingGames.FirstOrDefault();
+        }
+
+        private bool MatchesResolvedAppId(Game game, int appId)
+        {
+            if (game == null || game.Id == Guid.Empty || appId <= 0)
+            {
+                return false;
+            }
+
+            var appIdText = appId.ToString(CultureInfo.InvariantCulture);
+            return string.Equals(game.GameId, appIdText, StringComparison.OrdinalIgnoreCase) ||
+                (LocalSavesProvider.TryResolveAppId(game, out var resolvedAppId, out _) && resolvedAppId == appId);
         }
 
         private bool MatchesRequestedImportTarget(Game game, LocalImportedGameLibraryTarget importTarget, string customSourceName)
@@ -649,7 +665,6 @@ namespace PlayniteAchievements.Providers.Local
                 return false;
             }
 
-            var isExistingLocalBinding = IsExistingLocalBinding(game);
             var isManualOrCustomGame = game.PluginId == Guid.Empty;
 
             switch (importTarget)
@@ -658,7 +673,18 @@ namespace PlayniteAchievements.Providers.Local
                     return game.PluginId == SteamDataProvider.SteamPluginId;
 
                 case LocalImportedGameLibraryTarget.CustomSource:
-                    return isManualOrCustomGame;
+                    if (!isManualOrCustomGame)
+                    {
+                        return false;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(customSourceName))
+                    {
+                        return true;
+                    }
+
+                    var sourceName = _api.Database.Sources?.FirstOrDefault(source => source?.Id == game.SourceId)?.Name;
+                    return string.Equals(sourceName?.Trim(), customSourceName.Trim(), StringComparison.OrdinalIgnoreCase);
 
                 case LocalImportedGameLibraryTarget.None:
                 default:
