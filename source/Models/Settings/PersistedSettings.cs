@@ -27,7 +27,7 @@ namespace PlayniteAchievements.Models.Settings
 
         private string _globalLanguage = "english";
         private bool _enablePeriodicUpdates = true;
-        private bool _autoExcludeHiddenGames = false;
+        private bool _includeHiddenGamesInBulkScans = true;
         private int _periodicUpdateHours = 6;
         private bool _enableNotifications = true;
         private bool _notifyPeriodicUpdates = true;
@@ -143,13 +143,13 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, Playnite hide/unhide actions automatically exclude/include games from tracking.
-        /// Hiding also clears cached data for the game.
+        /// When true, bulk refreshes include games marked hidden in Playnite.
+        /// Explicit user-targeted refreshes ignore this setting.
         /// </summary>
-        public bool AutoExcludeHiddenGames
+        public bool IncludeHiddenGamesInBulkScans
         {
-            get => _autoExcludeHiddenGames;
-            set => SetValue(ref _autoExcludeHiddenGames, value);
+            get => _includeHiddenGamesInBulkScans;
+            set => SetValue(ref _includeHiddenGamesInBulkScans, value);
         }
 
         /// <summary>
@@ -1047,7 +1047,7 @@ namespace PlayniteAchievements.Models.Settings
 
                 // Update and Refresh Settings
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
-                AutoExcludeHiddenGames = this.AutoExcludeHiddenGames,
+                IncludeHiddenGamesInBulkScans = this.IncludeHiddenGamesInBulkScans,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 RecentRefreshGamesCount = this.RecentRefreshGamesCount,
                 CustomRefreshPresets = this.CustomRefreshPresets != null

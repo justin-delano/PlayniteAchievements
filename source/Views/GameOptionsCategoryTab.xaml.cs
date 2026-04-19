@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Playnite.SDK;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 
@@ -34,22 +35,28 @@ namespace PlayniteAchievements.Views
 
         private void TypeSelectionButton_Click(object sender, RoutedEventArgs e)
         {
-            if (TypeSelectionContextMenu == null || TypeSelectionButton == null)
+            if (ViewModel == null || TypeSelectionContextMenu == null || TypeSelectionButton == null)
             {
                 return;
             }
 
-            OpenSelectorContextMenu(TypeSelectionButton, TypeSelectionContextMenu);
+            OpenCategoryTypeContextMenu(
+                TypeSelectionButton,
+                TypeSelectionContextMenu,
+                ViewModel.TypeSelectionOptions);
         }
 
         private void FilterTypeSelectionButton_Click(object sender, RoutedEventArgs e)
         {
-            if (FilterTypeSelectionContextMenu == null || FilterTypeSelectionButton == null)
+            if (ViewModel == null || FilterTypeSelectionContextMenu == null || FilterTypeSelectionButton == null)
             {
                 return;
             }
 
-            OpenSelectorContextMenu(FilterTypeSelectionButton, FilterTypeSelectionContextMenu);
+            OpenCategoryTypeContextMenu(
+                FilterTypeSelectionButton,
+                FilterTypeSelectionContextMenu,
+                ViewModel.TypeFilterOptions);
         }
 
         private void CategoryLabelFilterSelectionButton_Click(object sender, RoutedEventArgs e)
@@ -254,30 +261,14 @@ namespace PlayniteAchievements.Views
             {
                 Header = L("LOCPlayAch_Common_AddType", "Add Type")
             };
-            addTypeMenu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_GameOptions_Category_Type_Base", "Base"),
-                () => AddTypeFromContext(contextItem, "Base")));
-            addTypeMenu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_GameOptions_Category_Type_DLC", "DLC"),
-                () => AddTypeFromContext(contextItem, "DLC")));
-            addTypeMenu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_GameOptions_Category_Type_Singleplayer", "Singleplayer"),
-                () => AddTypeFromContext(contextItem, "Singleplayer")));
-            addTypeMenu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_GameOptions_Category_Type_Multiplayer", "Multiplayer"),
-                () => AddTypeFromContext(contextItem, "Multiplayer")));
-            addTypeMenu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_GameOptions_Category_Type_Collectable", "Collectable"),
-                () => AddTypeFromContext(contextItem, "Collectable")));
-            addTypeMenu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_GameOptions_Category_Type_Missable", "Missable"),
-                () => AddTypeFromContext(contextItem, "Missable")));
-            addTypeMenu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_GameOptions_Category_Type_Difficulty", "Difficulty"),
-                () => AddTypeFromContext(contextItem, "Difficulty")));
-            addTypeMenu.Items.Add(CreateMenuItem(
-                L("LOCPlayAch_GameOptions_Category_Type_Stackable", "Stackable"),
-                () => AddTypeFromContext(contextItem, "Stackable")));
+            foreach (var categoryType in AchievementCategoryTypeHelper.AllowedCategoryTypes.Where(type =>
+                         !string.Equals(type, AchievementCategoryTypeHelper.DefaultCategoryType, StringComparison.OrdinalIgnoreCase)))
+            {
+                var capturedType = categoryType;
+                addTypeMenu.Items.Add(CreateMenuItem(
+                    GameOptionsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
+                    () => AddTypeFromContext(contextItem, capturedType)));
+            }
             menu.Items.Add(addTypeMenu);
 
             menu.Items.Add(CreateMenuItem(
@@ -479,6 +470,50 @@ namespace PlayniteAchievements.Views
             menu.Closed += onClosed;
             menu.PlacementTarget = button;
             menu.IsOpen = true;
+        }
+
+        private static void OpenCategoryTypeContextMenu(
+            Button button,
+            ContextMenu menu,
+            IEnumerable<CategoryTypeSelectionOption> options)
+        {
+            if (button == null || menu == null)
+            {
+                return;
+            }
+
+            menu.Items.Clear();
+
+            var itemStyle = button.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
+            foreach (var option in options ?? Enumerable.Empty<CategoryTypeSelectionOption>())
+            {
+                if (option == null)
+                {
+                    continue;
+                }
+
+                var item = new MenuItem
+                {
+                    Header = option.DisplayName,
+                    IsCheckable = true,
+                    StaysOpenOnClick = true,
+                    IsChecked = option.IsSelected
+                };
+                if (itemStyle != null)
+                {
+                    item.Style = itemStyle;
+                }
+
+                item.Click += (_, __) => option.IsSelected = item.IsChecked;
+                menu.Items.Add(item);
+            }
+
+            if (menu.Items.Count == 0)
+            {
+                return;
+            }
+
+            OpenSelectorContextMenu(button, menu);
         }
 
         private static void OpenMultiSelectFilterContextMenu(

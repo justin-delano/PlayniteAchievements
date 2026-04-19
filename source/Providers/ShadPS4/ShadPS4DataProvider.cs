@@ -85,13 +85,13 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         /// <summary>
         /// Gets the game data path using priority order:
-        /// 1. User settings (validated legacy game_data folder)
-        /// 2. Game's emulator config
-        /// 3. First ShadPS4 emulator in database
+        /// 1. User settings (single root path, auto-resolved to legacy game_data)
+        /// 2. Game's emulator config (auto-resolved)
+        /// 3. First ShadPS4 emulator in database (auto-resolved, with compatibility fallback)
         /// </summary>
         public string GetGameDataPath(Game game = null)
         {
-            // Priority 1: From provider settings (user-configured legacy game_data path)
+            // Priority 1: From provider settings
             var settingsGameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(_providerSettings?.GameDataPath);
             if (!string.IsNullOrWhiteSpace(settingsGameDataPath))
             {
@@ -100,24 +100,34 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
             // Priority 2: From game's emulator config
             var emulatorRoot = GetEmulatorRootFromGame(game);
-            if (!string.IsNullOrWhiteSpace(emulatorRoot))
+            var gameScopedLegacyPath = ResolveLegacyPathFromEmulatorRoot(emulatorRoot, allowNonExistingFallbackPath: false);
+            if (!string.IsNullOrWhiteSpace(gameScopedLegacyPath))
             {
-                var gameDataPath = Path.Combine(emulatorRoot, "user", "game_data");
-                if (Directory.Exists(gameDataPath))
-                {
-                    return gameDataPath;
-                }
+                return gameScopedLegacyPath;
             }
 
             // Priority 3: From first ShadPS4 emulator in database
             emulatorRoot = FindAnyShadps4EmulatorRoot();
-            if (!string.IsNullOrWhiteSpace(emulatorRoot))
+            var globalLegacyPath = ResolveLegacyPathFromEmulatorRoot(emulatorRoot, allowNonExistingFallbackPath: true);
+            if (!string.IsNullOrWhiteSpace(globalLegacyPath))
             {
-                var gameDataPath = Path.Combine(emulatorRoot, "user", "game_data");
-                return gameDataPath;
+                return globalLegacyPath;
             }
 
             return null;
+        }
+
+        private static string ResolveLegacyPathFromEmulatorRoot(string emulatorRoot, bool allowNonExistingFallbackPath)
+        {
+            if (string.IsNullOrWhiteSpace(emulatorRoot))
+            {
+                return null;
+            }
+
+            return ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(emulatorRoot) ??
+                   (allowNonExistingFallbackPath
+                       ? Path.Combine(emulatorRoot, "user", "game_data")
+                       : null);
         }
 
         /// <summary>
@@ -276,14 +286,9 @@ namespace PlayniteAchievements.Providers.ShadPS4
         {
             if (game?.GameActions == null) return false;
 
-            // Get settings path for comparison - derive emulator root from game_data path
-            var shadps4GameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(_providerSettings?.GameDataPath);
-            string shadps4InstallFolder = null;
-            if (!string.IsNullOrWhiteSpace(shadps4GameDataPath))
-            {
-                // game_data is under user/, so go up two levels to get emulator root
-                shadps4InstallFolder = Path.GetDirectoryName(Path.GetDirectoryName(shadps4GameDataPath));
-            }
+            // Get settings root for comparison and normalize to likely emulator install folder.
+            var configuredRootPath = ShadPS4PathResolver.ResolveConfiguredRootPath(_providerSettings?.GameDataPath);
+            var shadps4InstallFolder = ResolveInstallFolderFromConfiguredRoot(configuredRootPath);
 
             foreach (var action in game.GameActions)
             {
@@ -311,6 +316,19 @@ namespace PlayniteAchievements.Providers.ShadPS4
             }
 
             return false;
+        }
+
+        private static string ResolveInstallFolderFromConfiguredRoot(string configuredRootPath)
+        {
+            if (string.IsNullOrWhiteSpace(configuredRootPath))
+            {
+                return null;
+            }
+
+            var trimmedRoot = configuredRootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return string.Equals(Path.GetFileName(trimmedRoot), "user", StringComparison.OrdinalIgnoreCase)
+                ? Path.GetDirectoryName(trimmedRoot) ?? trimmedRoot
+                : trimmedRoot;
         }
 
         private static bool PathsEqual(string path1, string path2)

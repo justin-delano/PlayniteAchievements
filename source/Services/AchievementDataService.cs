@@ -41,6 +41,7 @@ namespace PlayniteAchievements.Services
         private readonly Dictionary<int, CachedSummaryData> _sidebarSummaryCacheByLimit =
             new Dictionary<int, CachedSummaryData>();
         private List<CachedRecentUnlockData> _sidebarRecentUnlocksCache;
+        private bool? _sidebarHasIgnoredCategoryTypeOverrides;
 
         public AchievementDataService(
             ICacheManager cacheService,
@@ -76,6 +77,27 @@ namespace PlayniteAchievements.Services
             {
                 _logger?.Error(ex, string.Format(
                     "Failed to get achievement data for gameId={0}",
+                    playniteGameId));
+                return null;
+            }
+        }
+
+        public GameAchievementData GetVisibleGameAchievementData(string playniteGameId)
+        {
+            if (string.IsNullOrWhiteSpace(playniteGameId))
+            {
+                return null;
+            }
+
+            try
+            {
+                return ProjectVisibleGameAchievementData(
+                    GetMergedGameAchievementData(playniteGameId, includeAchievementOverlays: true));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, string.Format(
+                    "Failed to get visible achievement data for gameId={0}",
                     playniteGameId));
                 return null;
             }
@@ -129,6 +151,11 @@ namespace PlayniteAchievements.Services
             return GetGameAchievementData(playniteGameId.ToString());
         }
 
+        public GameAchievementData GetVisibleGameAchievementData(Guid playniteGameId)
+        {
+            return GetVisibleGameAchievementData(playniteGameId.ToString());
+        }
+
         public GameAchievementData GetGameAchievementDataForSidebar(Guid playniteGameId)
         {
             if (playniteGameId == Guid.Empty)
@@ -138,7 +165,8 @@ namespace PlayniteAchievements.Services
 
             try
             {
-                return GetMergedGameAchievementData(playniteGameId.ToString(), includeAchievementOverlays: false);
+                return ProjectVisibleGameAchievementData(
+                    GetMergedGameAchievementData(playniteGameId.ToString(), includeAchievementOverlays: false));
             }
             catch (Exception ex)
             {
@@ -179,6 +207,21 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        public List<GameAchievementData> GetAllVisibleGameAchievementDataForSidebar()
+        {
+            try
+            {
+                var result = LoadAllCachedGameData();
+                HydrateAll(result, includeAchievementOverlays: false);
+                return ProjectVisibleGameAchievementData(result);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to get all visible sidebar achievement data");
+                return new List<GameAchievementData>();
+            }
+        }
+
         public List<GameAchievementData> GetAllGameAchievementDataForTheme()
         {
             try
@@ -189,6 +232,20 @@ namespace PlayniteAchievements.Services
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to get all theme achievement data");
+                return new List<GameAchievementData>();
+            }
+        }
+
+        public List<GameAchievementData> GetAllVisibleGameAchievementDataForTheme()
+        {
+            try
+            {
+                var allData = GetAllGameAchievementData();
+                return ExcludeSummaryGames(ProjectVisibleGameAchievementData(allData));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to get all visible theme achievement data");
                 return new List<GameAchievementData>();
             }
         }
@@ -208,6 +265,11 @@ namespace PlayniteAchievements.Services
 
         internal CachedSummaryData GetCachedSummaryDataForSidebar(int recentAchievementDetailLimit = 0)
         {
+            if (HasIgnoredCategoryTypeOverridesConfigured())
+            {
+                return null;
+            }
+
             var normalizedLimit = Math.Max(0, recentAchievementDetailLimit);
             lock (_sidebarProjectionCacheSync)
             {
@@ -243,6 +305,11 @@ namespace PlayniteAchievements.Services
 
         internal List<CachedRecentUnlockData> GetCachedRecentUnlocksForSidebar()
         {
+            if (HasIgnoredCategoryTypeOverridesConfigured())
+            {
+                return null;
+            }
+
             lock (_sidebarProjectionCacheSync)
             {
                 if (_sidebarRecentUnlocksCache != null)
@@ -564,6 +631,125 @@ namespace PlayniteAchievements.Services
                 .ToList();
         }
 
+        private List<GameAchievementData> ProjectVisibleGameAchievementData(IEnumerable<GameAchievementData> source)
+        {
+            return (source ?? Enumerable.Empty<GameAchievementData>())
+                .Select(ProjectVisibleGameAchievementData)
+                .Where(gameData => gameData != null)
+                .ToList();
+        }
+
+        private GameAchievementData ProjectVisibleGameAchievementData(GameAchievementData source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            var sourceAchievements = source.Achievements ?? new List<AchievementDetail>();
+            var visibleAchievements = FilterVisibleAchievements(sourceAchievements);
+            if (visibleAchievements.Count == sourceAchievements.Count)
+            {
+                return source;
+            }
+
+            return new GameAchievementData
+            {
+                LastUpdatedUtc = source.LastUpdatedUtc,
+                ProviderKey = source.ProviderKey,
+                ProviderPlatformKey = source.ProviderPlatformKey,
+                LibrarySourceName = source.LibrarySourceName,
+                HasAchievements = source.HasAchievements && visibleAchievements.Count > 0,
+                ExcludedByUser = source.ExcludedByUser,
+                IsAppIdOverridden = source.IsAppIdOverridden,
+                GameName = source.GameName,
+                AppId = source.AppId,
+                PlayniteGameId = source.PlayniteGameId,
+                Game = source.Game,
+                AchievementOrder = source.AchievementOrder != null
+                    ? new List<string>(source.AchievementOrder)
+                    : null,
+                ExcludedFromSummaries = source.ExcludedFromSummaries,
+                UseSeparateLockedIconsWhenAvailable = source.UseSeparateLockedIconsWhenAvailable,
+                Achievements = visibleAchievements
+            };
+        }
+
+        private static List<AchievementDetail> FilterVisibleAchievements(IEnumerable<AchievementDetail> achievements)
+        {
+            var visibleAchievements = new List<AchievementDetail>();
+            foreach (var achievement in achievements ?? Enumerable.Empty<AchievementDetail>())
+            {
+                if (achievement == null || !AchievementCategoryTypeHelper.IsIgnored(achievement.CategoryType))
+                {
+                    visibleAchievements.Add(achievement);
+                }
+            }
+
+            return visibleAchievements;
+        }
+
+        private bool HasIgnoredCategoryTypeOverridesConfigured()
+        {
+            lock (_sidebarProjectionCacheSync)
+            {
+                if (_sidebarHasIgnoredCategoryTypeOverrides.HasValue)
+                {
+                    return _sidebarHasIgnoredCategoryTypeOverrides.Value;
+                }
+            }
+
+            var hasIgnoredOverrides = ComputeHasIgnoredCategoryTypeOverridesConfigured();
+            lock (_sidebarProjectionCacheSync)
+            {
+                _sidebarHasIgnoredCategoryTypeOverrides = hasIgnoredOverrides;
+                return hasIgnoredOverrides;
+            }
+        }
+
+        private bool ComputeHasIgnoredCategoryTypeOverridesConfigured()
+        {
+            var customDataByGameId = LoadCustomDataByGameId();
+            foreach (var customData in customDataByGameId.Values)
+            {
+                if (ContainsIgnoredCategoryTypeOverride(customData?.AchievementCategoryTypeOverrides))
+                {
+                    return true;
+                }
+            }
+
+            var persistedOverridesByGameId = _persistedSettings?.AchievementCategoryTypeOverrides;
+            if (persistedOverridesByGameId == null || persistedOverridesByGameId.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var pair in persistedOverridesByGameId)
+            {
+                if (customDataByGameId.ContainsKey(pair.Key))
+                {
+                    continue;
+                }
+
+                if (ContainsIgnoredCategoryTypeOverride(pair.Value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool ContainsIgnoredCategoryTypeOverride(IReadOnlyDictionary<string, string> overrides)
+        {
+            if (overrides == null || overrides.Count == 0)
+            {
+                return false;
+            }
+
+            return overrides.Values.Any(AchievementCategoryTypeHelper.IsIgnored);
+        }
+
         private void ApplyGameSummaryCustomization(
             IList<CachedGameSummaryData> games,
             IReadOnlyDictionary<Guid, SummaryCustomizationData> customizationByGameId)
@@ -773,6 +959,7 @@ namespace PlayniteAchievements.Services
             {
                 _sidebarSummaryCacheByLimit.Clear();
                 _sidebarRecentUnlocksCache = null;
+                _sidebarHasIgnoredCategoryTypeOverrides = null;
             }
         }
 

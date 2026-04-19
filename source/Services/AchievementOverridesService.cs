@@ -152,22 +152,6 @@ namespace PlayniteAchievements.Services
             _notifyCacheInvalidated(true);
         }
 
-        public void SetExcludedFromHiddenState(Guid playniteGameId, bool hidden)
-        {
-            if (playniteGameId == Guid.Empty)
-            {
-                return;
-            }
-
-            SetRefreshExclusion(playniteGameId, hidden);
-            if (hidden)
-            {
-                ClearGameData(playniteGameId, clearIconCache: false, persistAfter: false);
-            }
-
-            _notifyCacheInvalidated(true);
-        }
-
         public void SetExcludedFromSummaries(Guid playniteGameId, bool excluded)
         {
             if (playniteGameId == Guid.Empty)

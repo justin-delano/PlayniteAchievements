@@ -855,6 +855,11 @@ namespace PlayniteAchievements.Views
                     break;
             }
 
+            if (ShouldApplyHiddenFilter(SelectedScope))
+            {
+                scopedGames = BulkRefreshGameFilter.ApplyHiddenFilter(scopedGames, _settings?.Persisted);
+            }
+
             var includeIds = GameOptions
                 .Where(option => option.IsIncluded)
                 .Select(option => option.GameId)
@@ -961,6 +966,21 @@ namespace PlayniteAchievements.Views
             }
 
             return false;
+        }
+
+        private static bool ShouldApplyHiddenFilter(CustomGameScope scope)
+        {
+            switch (scope)
+            {
+                case CustomGameScope.All:
+                case CustomGameScope.Installed:
+                case CustomGameScope.Favorites:
+                case CustomGameScope.Recent:
+                case CustomGameScope.Missing:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         private static bool IsInstalledOrHasOverride(Game game)

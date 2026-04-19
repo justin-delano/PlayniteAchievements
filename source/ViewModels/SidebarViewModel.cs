@@ -1949,7 +1949,7 @@ namespace PlayniteAchievements.ViewModels
 
                     var gameData = Guid.TryParse(key, out var parsedGameId)
                         ? _achievementDataService.GetGameAchievementDataForSidebar(parsedGameId)
-                        : _achievementDataService.GetGameAchievementData(key);
+                        : _achievementDataService.GetVisibleGameAchievementData(key);
                     dict[key] = gameData == null
                         ? null
                         : _dataBuilder.BuildGameFragment(

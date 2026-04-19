@@ -315,10 +315,10 @@
                                 </Grid>
 
                                 <StackPanel Margin="0,0,0,16">
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_AutoExcludeHiddenGames}"
-                                              IsChecked="{Binding Persisted.AutoExcludeHiddenGames}"
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes}"
+                                              IsChecked="{Binding Persisted.IncludeHiddenGamesInBulkScans}"
                                               Margin="0,0,0,4"/>
-                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AutoExcludeHiddenGames_Description}"
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes_Description}"
                                                Style="{StaticResource MutedTextStyle}"
                                                Margin="18,0,0,0"
                                                TextWrapping="Wrap"/>
@@ -1525,6 +1525,7 @@
                                         </Button.ToolTip>
                                     </Button>
                                     <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationFull}"
+                                            x:Name="ThemeMigrationFullButton"
                                             Click="MigrateThemeFull_Click"
                                             Padding="14,6"
                                             MinWidth="100"
@@ -1541,6 +1542,7 @@
                                 </StackPanel>
 
                                 <Border Background="#12000000"
+                                        x:Name="ThemeMigrationCustomContainer"
                                         BorderBrush="{DynamicResource NormalBorderBrush}"
                                         BorderThickness="1"
                                         CornerRadius="6"

@@ -42,7 +42,7 @@ namespace PlayniteAchievements.Models.Settings
 
             // Update and Refresh Settings
             target.EnablePeriodicUpdates = source.EnablePeriodicUpdates;
-            target.AutoExcludeHiddenGames = source.AutoExcludeHiddenGames;
+            target.IncludeHiddenGamesInBulkScans = source.IncludeHiddenGamesInBulkScans;
             target.PeriodicUpdateHours = source.PeriodicUpdateHours;
             target.RecentRefreshGamesCount = source.RecentRefreshGamesCount;
             target.CustomRefreshPresets = source.CustomRefreshPresets != null

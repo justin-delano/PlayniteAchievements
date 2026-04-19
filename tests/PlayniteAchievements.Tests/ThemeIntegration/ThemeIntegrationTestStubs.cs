@@ -14,6 +14,8 @@ namespace PlayniteAchievements
 
         public PlayniteAchievementsSettings Settings { get; set; }
 
+        public Services.AchievementDataService AchievementDataService { get; set; }
+
         public Services.GameCustomDataStore GameCustomDataStore { get; set; }
 
         public IPlayniteAPI PlayniteApi { get; set; }
@@ -235,6 +237,9 @@ namespace PlayniteAchievements.ViewModels
         public double? GlobalPercentUnlocked { get; set; }
 
         public double GlobalPercent => GlobalPercentUnlocked ?? 0;
+
+        public PlayniteAchievements.Models.Achievements.RarityTier Rarity { get; set; }
+            = PlayniteAchievements.Models.Achievements.RarityTier.Common;
 
         public double RaritySortValue { get; set; }
 

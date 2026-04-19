@@ -151,11 +151,19 @@ namespace PlayniteAchievements.Services
             var recentLimit = Math.Max(1, options.RecentRefreshGamesCount);
             var skippedNoProvider = 0;
             var skippedNoAchievements = 0;
+            var skippedHiddenGames = 0;
+            var applyBulkHiddenFilter = options.PlayniteGameIds == null || options.PlayniteGameIds.Count == 0;
 
             foreach (var game in candidates)
             {
                 if (game == null || !seenGameIds.Add(game.Id))
                 {
+                    continue;
+                }
+
+                if (applyBulkHiddenFilter && !BulkRefreshGameFilter.ShouldIncludeGame(game, _settings?.Persisted))
+                {
+                    skippedHiddenGames++;
                     continue;
                 }
 
@@ -190,6 +198,11 @@ namespace PlayniteAchievements.Services
                 _logger?.Debug($"Skipped {skippedNoAchievements} games with HasAchievements=false or ExcludedByUser=true.");
             }
 
+            if (skippedHiddenGames > 0)
+            {
+                _logger?.Debug($"Skipped {skippedHiddenGames} hidden games during bulk refresh targeting.");
+            }
+
             return targets;
         }
 
@@ -214,6 +227,11 @@ namespace PlayniteAchievements.Services
             foreach (var game in allGames)
             {
                 if (game == null)
+                {
+                    continue;
+                }
+
+                if (!BulkRefreshGameFilter.ShouldIncludeGame(game, _settings?.Persisted))
                 {
                     continue;
                 }

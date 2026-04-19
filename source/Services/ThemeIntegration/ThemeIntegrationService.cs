@@ -92,6 +92,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private DateTime _appliedLastUpdatedUtc;
 
         private bool _fullscreenInitialized;
+        private bool _hasLoadedLibraryState;
+        private bool _lastLibraryRefreshIncludedHeavyAchievementLists = true;
 
         public ThemeIntegrationService(
             IPlayniteAPI api,
@@ -265,6 +267,52 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
+        public void NotifyCustomDataChanged(Guid? gameId)
+        {
+            try
+            {
+                var resolvedGameId = gameId.HasValue && gameId.Value != Guid.Empty
+                    ? gameId
+                    : ResolveSelectedGameIdForThemeUpdate();
+                var shouldRefreshSelectedGame = resolvedGameId.HasValue &&
+                    ((_appliedGameId.HasValue && _appliedGameId.Value == resolvedGameId.Value) ||
+                     (_requestedGameId.HasValue && _requestedGameId.Value == resolvedGameId.Value) ||
+                     (_settings?.SelectedGame?.Id == resolvedGameId.Value));
+
+                if (shouldRefreshSelectedGame)
+                {
+                    var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+                    dispatcher.InvokeIfNeeded(
+                        () => PopulateSingleGameDataSync(resolvedGameId.Value),
+                        DispatcherPriority.Background);
+                }
+                else if (resolvedGameId.HasValue)
+                {
+                    RequestUpdate(resolvedGameId.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to refresh selected-game theme state after custom-data change.");
+            }
+
+            try
+            {
+                if (_hasLoadedLibraryState)
+                {
+                    EnsureAllGamesThemeDataLoaded(_lastLibraryRefreshIncludedHeavyAchievementLists);
+                }
+                else if (IsFullscreen() && _fullscreenInitialized)
+                {
+                    RequestRefresh();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to refresh library theme state after custom-data change.");
+            }
+        }
+
         private bool IsFullscreen()
         {
             try
@@ -395,7 +443,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 GameAchievementData gameData = null;
                 try
                 {
-                    gameData = await Task.Run(() => _achievementDataService.GetGameAchievementData(gameId.Value), token).ConfigureAwait(false);
+                    gameData = await Task.Run(() => _achievementDataService.GetVisibleGameAchievementData(gameId.Value), token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -737,7 +785,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 _logger?.Info("PopulateAllGamesDataSync: Starting to populate all-games achievement data.");
 
-                var allData = _achievementDataService.GetAllGameAchievementDataForTheme() ?? new List<GameAchievementData>();
+                var allData = _achievementDataService.GetAllVisibleGameAchievementDataForTheme() ?? new List<GameAchievementData>();
                 _logger?.Info($"PopulateAllGamesDataSync: Found {allData.Count} total game data entries.");
 
                 var state = LibraryRuntimeStateBuilder.Build(
@@ -748,6 +796,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                 _logger?.Info($"PopulateAllGamesDataSync: State created - TotalTrophies={state.TotalTrophies}, PlatinumTrophies={state.PlatinumTrophies}, GoldTrophies={state.GoldTrophies}, Rank={state.Rank}");
 
+                _hasLoadedLibraryState = true;
+                _lastLibraryRefreshIncludedHeavyAchievementLists = includeHeavyAchievementLists;
                 ApplyLibraryState(state);
 
                 _logger?.Info($"PopulateAllGamesDataSync: Applied snapshot. AllGamesWithAchievements count={_settings.LegacyTheme.AllGamesWithAchievements?.Count ?? 0}");
@@ -768,7 +818,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             try
             {
-                var gameData = _achievementDataService.GetGameAchievementData(gameId);
+                var gameData = _achievementDataService.GetVisibleGameAchievementData(gameId);
                 var state = SelectedGameRuntimeStateBuilder.Build(
                     gameId,
                     gameData);
@@ -822,7 +872,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     await Task.Delay(500, token).ConfigureAwait(false);
 
-                    var allData = _achievementDataService.GetAllGameAchievementDataForTheme() ?? new List<GameAchievementData>();
+                    var allData = _achievementDataService.GetAllVisibleGameAchievementDataForTheme() ?? new List<GameAchievementData>();
 
                     token.ThrowIfCancellationRequested();
 
@@ -833,7 +883,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         shouldBuildHeavyAchievementLists);
 
                     var uiDispatcher = _api.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
-                    uiDispatcher?.InvokeIfNeeded(() => ApplyLibraryState(state), DispatcherPriority.Background);
+                    uiDispatcher?.InvokeIfNeeded(() =>
+                    {
+                        _hasLoadedLibraryState = true;
+                        _lastLibraryRefreshIncludedHeavyAchievementLists = shouldBuildHeavyAchievementLists;
+                        ApplyLibraryState(state);
+                    }, DispatcherPriority.Background);
                 }
                 catch (OperationCanceledException)
                 {

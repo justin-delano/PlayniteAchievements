@@ -13,7 +13,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
         public override string ProviderKey => "ShadPS4";
 
         /// <summary>
-        /// Gets or sets the path to the ShadPS4 AppData root or legacy user/game_data folder.
+        /// Gets or sets the ShadPS4 root path.
+        /// The resolver accepts emulator install roots, data roots, and legacy game_data paths.
         /// </summary>
         public string GameDataPath
         {

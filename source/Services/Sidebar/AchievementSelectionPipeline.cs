@@ -84,7 +84,7 @@ namespace PlayniteAchievements.Services.Sidebar
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var gameData = _achievementDataService.GetGameAchievementData(gameId);
+                var gameData = _achievementDataService.GetVisibleGameAchievementData(gameId);
                 if (gameData?.Achievements == null)
                 {
                     return EmptyResult;

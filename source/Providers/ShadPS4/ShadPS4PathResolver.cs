@@ -5,6 +5,75 @@ namespace PlayniteAchievements.Providers.ShadPS4
 {
     internal static class ShadPS4PathResolver
     {
+        private static string TrimTrailingSeparators(string path)
+        {
+            return string.IsNullOrWhiteSpace(path)
+                ? path
+                : path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+
+        private static bool IsExistingDirectory(string path)
+        {
+            return !string.IsNullOrWhiteSpace(path) && Directory.Exists(path);
+        }
+
+        private static bool HasLegacyGameDataMarker(string path)
+        {
+            return IsExistingDirectory(path) &&
+                   Directory.Exists(Path.Combine(path, "game_data"));
+        }
+
+        private static bool HasAppDataMarkers(string path)
+        {
+            return IsExistingDirectory(path) &&
+                   (Directory.Exists(Path.Combine(path, "home")) ||
+                    Directory.Exists(Path.Combine(path, "trophy")));
+        }
+
+        private static string[] GetRootCandidates(string configuredPath)
+        {
+            var normalizedPath = NormalizePath(configuredPath);
+            if (!IsExistingDirectory(normalizedPath))
+            {
+                return Array.Empty<string>();
+            }
+
+            var trimmedPath = TrimTrailingSeparators(normalizedPath);
+            var parentPath = Path.GetDirectoryName(trimmedPath);
+            var grandParentPath = string.IsNullOrWhiteSpace(parentPath)
+                ? null
+                : Path.GetDirectoryName(TrimTrailingSeparators(parentPath));
+
+            return new[]
+            {
+                trimmedPath,
+                Path.Combine(trimmedPath, "user"),
+                parentPath,
+                string.IsNullOrWhiteSpace(parentPath) ? null : Path.Combine(parentPath, "user"),
+                grandParentPath,
+                string.IsNullOrWhiteSpace(grandParentPath) ? null : Path.Combine(grandParentPath, "user")
+            };
+        }
+
+        private static string ResolveRootPath(string configuredPath, Func<string, bool> match)
+        {
+            foreach (var candidatePath in GetRootCandidates(configuredPath))
+            {
+                var candidate = NormalizePath(candidatePath);
+                if (!IsExistingDirectory(candidate))
+                {
+                    continue;
+                }
+
+                if (match(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
         public static string GetDefaultSettingsPath()
         {
             try
@@ -54,49 +123,45 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         public static bool LooksLikeAppDataRootPath(string path)
         {
-            var normalized = NormalizePath(path);
-            if (string.IsNullOrWhiteSpace(normalized) || LooksLikeLegacyGameDataPath(normalized))
-            {
-                return false;
-            }
+            return !string.IsNullOrWhiteSpace(ResolveConfiguredAppDataPath(path));
+        }
 
-            var leafName = Path.GetFileName(normalized.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-            if (string.Equals(leafName, "shadPS4", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            try
-            {
-                return Directory.Exists(Path.Combine(normalized, "home")) ||
-                       Directory.Exists(Path.Combine(normalized, "trophy"));
-            }
-            catch
-            {
-                return false;
-            }
+        public static string ResolveConfiguredRootPath(string configuredPath)
+        {
+            return ResolveRootPath(
+                configuredPath,
+                candidate => HasAppDataMarkers(candidate) || HasLegacyGameDataMarker(candidate));
         }
 
         public static string ResolveConfiguredLegacyGameDataPath(string configuredPath)
         {
             var normalized = NormalizePath(configuredPath);
-            if (!LooksLikeLegacyGameDataPath(normalized) || !Directory.Exists(normalized))
+            if (LooksLikeLegacyGameDataPath(normalized) && IsExistingDirectory(normalized))
             {
-                return null;
+                return normalized;
             }
 
-            return normalized;
+            foreach (var candidatePath in GetRootCandidates(normalized))
+            {
+                var candidate = NormalizePath(candidatePath);
+                if (!IsExistingDirectory(candidate))
+                {
+                    continue;
+                }
+
+                var gameDataPath = Path.Combine(candidate, "game_data");
+                if (IsExistingDirectory(gameDataPath))
+                {
+                    return gameDataPath;
+                }
+            }
+
+            return null;
         }
 
         public static string ResolveConfiguredAppDataPath(string configuredPath)
         {
-            var normalized = NormalizePath(configuredPath);
-            if (!LooksLikeAppDataRootPath(normalized) || !Directory.Exists(normalized))
-            {
-                return null;
-            }
-
-            return normalized;
+            return ResolveRootPath(configuredPath, HasAppDataMarkers);
         }
 
         public static string DiscoverUserId(string appDataPath)
@@ -108,10 +173,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 {
                     try
                     {
-                        var dirs = Directory.GetDirectories(homePath);
-                        if (dirs.Length > 0)
+                        var userDirectories = Directory.GetDirectories(homePath);
+                        Array.Sort(userDirectories, StringComparer.OrdinalIgnoreCase);
+                        if (userDirectories.Length > 0)
                         {
-                            return Path.GetFileName(dirs[0].TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                            return Path.GetFileName(TrimTrailingSeparators(userDirectories[0]));
                         }
                     }
                     catch

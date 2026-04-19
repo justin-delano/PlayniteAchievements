@@ -589,6 +589,7 @@ namespace PlayniteAchievements.Views
             {
                 _selectedThemePath = value;
                 OnPropertyChanged(nameof(SelectedThemePath));
+                UpdateThemeMigrationModeButtonState();
             }
         }
 
@@ -811,6 +812,7 @@ namespace PlayniteAchievements.Views
                     ShowNoRevertableThemesMessage = true;
                     OnPropertyChanged(nameof(HasThemesToMigrate));
                     OnPropertyChanged(nameof(HasRevertableThemes));
+                    UpdateThemeMigrationModeButtonState();
                     return;
                 }
 
@@ -835,6 +837,7 @@ namespace PlayniteAchievements.Views
                 ShowNoRevertableThemesMessage = _revertableThemes.Count == 0;
                 OnPropertyChanged(nameof(HasThemesToMigrate));
                 OnPropertyChanged(nameof(HasRevertableThemes));
+                UpdateThemeMigrationModeButtonState();
 
                 _logger.Info($"Loaded {_availableThemes.Count} themes that need migrating, {_revertableThemes.Count} themes that can be reverted.");
             }
@@ -925,9 +928,28 @@ namespace PlayniteAchievements.Views
 
         private void UpdateThemeMigrationModeButtonState()
         {
-            if (ThemeMigrationPresetButtons != null && ThemeMigrationCustomExpander != null)
+            var isCustomExpanded = ThemeMigrationCustomExpander?.IsExpanded == true;
+            var isFullscreenTheme = ThemeMigrationService.IsFullscreenThemePath(SelectedThemePath);
+
+            if (isFullscreenTheme && isCustomExpanded)
             {
-                ThemeMigrationPresetButtons.IsEnabled = !ThemeMigrationCustomExpander.IsExpanded;
+                ThemeMigrationCustomExpander.IsExpanded = false;
+                isCustomExpanded = false;
+            }
+
+            if (ThemeMigrationPresetButtons != null)
+            {
+                ThemeMigrationPresetButtons.IsEnabled = HasThemesToMigrate && !isCustomExpanded;
+            }
+
+            if (ThemeMigrationFullButton != null)
+            {
+                ThemeMigrationFullButton.IsEnabled = HasThemesToMigrate && !isCustomExpanded && !isFullscreenTheme;
+            }
+
+            if (ThemeMigrationCustomContainer != null)
+            {
+                ThemeMigrationCustomContainer.IsEnabled = HasThemesToMigrate && !isFullscreenTheme;
             }
         }
 

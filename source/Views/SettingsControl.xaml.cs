@@ -288,7 +288,7 @@ namespace PlayniteAchievements.Views
                 nameof(SelectedThemePath),
                 typeof(string),
                 typeof(SettingsControl),
-                new PropertyMetadata(string.Empty));
+                new PropertyMetadata(string.Empty, OnSelectedThemePathChanged));
 
         public string SelectedThemePath
         {
@@ -532,6 +532,7 @@ namespace PlayniteAchievements.Views
             HasRevertableThemes = hasRevertable;
             ShowNoThemesMessage = !hasThemes;
             ShowNoRevertableThemesMessage = !hasRevertable;
+            UpdateThemeMigrationModeButtonState();
         }
 
         private async void MigrateThemeLimited_Click(object sender, RoutedEventArgs e)
@@ -731,6 +732,41 @@ namespace PlayniteAchievements.Views
                 isModern: true);
         }
 
+        private static void OnSelectedThemePathChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is SettingsControl control)
+            {
+                control.UpdateThemeMigrationModeButtonState();
+            }
+        }
+
+        private void UpdateThemeMigrationModeButtonState()
+        {
+            var isCustomExpanded = ThemeMigrationCustomExpander?.IsExpanded == true;
+            var isFullscreenTheme = ThemeMigrationService.IsFullscreenThemePath(SelectedThemePath);
+
+            if (isFullscreenTheme && isCustomExpanded)
+            {
+                ThemeMigrationCustomExpander.IsExpanded = false;
+                isCustomExpanded = false;
+            }
+
+            if (ThemeMigrationPresetButtons != null)
+            {
+                ThemeMigrationPresetButtons.IsEnabled = HasThemesToMigrate && !isCustomExpanded;
+            }
+
+            if (ThemeMigrationFullButton != null)
+            {
+                ThemeMigrationFullButton.IsEnabled = HasThemesToMigrate && !isCustomExpanded && !isFullscreenTheme;
+            }
+
+            if (ThemeMigrationCustomContainer != null)
+            {
+                ThemeMigrationCustomContainer.IsEnabled = HasThemesToMigrate && !isFullscreenTheme;
+            }
+        }
+
         private CustomMigrationSelection BuildCustomMigrationSelection()
         {
             var modernControlNames = ThemeMigrationCustomOptions
@@ -762,14 +798,6 @@ namespace PlayniteAchievements.Views
             foreach (var option in ThemeMigrationCustomOptions)
             {
                 option.IsModern = isModern;
-            }
-        }
-
-        private void UpdateThemeMigrationModeButtonState()
-        {
-            if (ThemeMigrationPresetButtons != null && ThemeMigrationCustomExpander != null)
-            {
-                ThemeMigrationPresetButtons.IsEnabled = !ThemeMigrationCustomExpander.IsExpanded;
             }
         }
 

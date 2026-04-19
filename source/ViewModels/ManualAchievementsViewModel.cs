@@ -481,11 +481,6 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                await ManualSourceAuthentication.EnsureAuthenticatedIfRequiredAsync(
-                    _source,
-                    RequireExophaseAuthentication,
-                    ct);
-
                 var results = await _source.SearchGamesAsync(SearchText.Trim(), _language, ct);
 
                 if (ct.IsCancellationRequested)

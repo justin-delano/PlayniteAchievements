@@ -38,7 +38,8 @@ namespace PlayniteAchievements.Providers.Steam
             // Create Steam-specific dependencies
             _steamClient = new SteamHttpClient(api, logger, _sessionManager, pluginUserDataPath);
             var steamApiClient = new SteamApiClient(_steamClient.ApiHttpClient, logger);
-            _scanner = new SteamScanner(settings, _providerSettings, _steamClient, _sessionManager, steamApiClient, api, logger);
+            var tokenResolver = new SteamWebApiTokenResolver(_sessionManager, _steamClient.GetWebApiTokenAsync, logger);
+            _scanner = new SteamScanner(settings, _steamClient, steamApiClient, tokenResolver, api, logger);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
@@ -51,8 +52,7 @@ namespace PlayniteAchievements.Providers.Steam
         /// AuthSession is the authoritative auth check for runtime flows.
         /// </summary>
         public bool IsAuthenticated =>
-            !string.IsNullOrWhiteSpace(_providerSettings.SteamUserId) &&
-            !string.IsNullOrWhiteSpace(_providerSettings.SteamApiKey);
+            !string.IsNullOrWhiteSpace(_providerSettings.SteamUserId);
 
         public ISessionManager AuthSession => _sessionManager;
 

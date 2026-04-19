@@ -161,6 +161,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Filter_Label">Filter by Category Label</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Filter_Type">Filter by Category Type</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Hint">Set categories for this game's achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Category_IgnoredHint">Achievements with type Ignored are hidden from all UI elements.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_InputPlaceholder">Category label for selected achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_RenameDialog_Hint">Select the existing label and provide the new label text.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_RenameDialog_NoLabels">No category labels are available to rename.</sys:String>
@@ -174,6 +175,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Multiplayer">Multiplayer</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Singleplayer">Singleplayer</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Stackable">Stackable</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Ignored">Ignored</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_TypeSelectorLabel">Category Type</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_Header">Custom Achievement Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_Hint">Set optional unlocked and locked image overrides for this game's achievements. Drag in browser links, drag in local image files, or browse for a file. Local images are copied immediately into plugin-managed storage.</sys:String>
@@ -250,7 +252,7 @@
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">Check off achievements you've unlocked and set unlock times. Changes are saved when you click OK.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">Unable to verify Exophase authentication for manual linking. Retry, or re-authenticate with Exophase in plugin settings.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">Exophase login is required for manual linking. Authenticate with Exophase in plugin settings, then try again.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_ApiKeyRequired">Steam API key is required to fetch achievement data. Configure it in plugin settings.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired">Steam login is required to fetch achievement data. Authenticate with Steam in plugin settings, then try again.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_NoAchievements">The selected game has no achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Header">Search for a game to link achievements from. The selected game's achievements will be linked to this Playnite game.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">No games found. Try a different search term.</sys:String>
@@ -350,8 +352,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Description">Control how achievement icons are stored on disk. Changes apply on the next refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Title">Achievement Icon Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">Apply &amp; Sync</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AutoExcludeHiddenGames">Auto-exclude hidden games and clear cached data</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_AutoExcludeHiddenGames_Description">When enabled, hiding a game in Playnite excludes it from tracking and clears cached achievement data. Unhiding includes it again and can override manual exclusions.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes">Include hidden games in bulk refreshes</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes_Description">Controls whether bulk refreshes include games marked hidden in Playnite. Single-game and other explicit user-targeted refreshes still include hidden games.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">Bar Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">Button</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_ProgressClearing">Clearing cached achievement data...</sys:String>
@@ -462,10 +464,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_SteamUserId">Steam User ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamUserId_Help">Your 64-bit Steam ID. This is automatically detected when you authenticate.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">Authenticate</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Steam_WebAuthOnly">Steam web session active, but API key is required.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SteamApiKey">Steam Web API Key</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SteamApiKeyHint">Get your API key from</sys:String>
-
     <!-- Provider: RPCS3 -->
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Executable Path</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePathHint">Path to rpcs3.exe</sys:String>
@@ -474,8 +472,8 @@
     <sys:String x:Key="LOCPlayAch_Rpcs3Validation_NoUser">No user profile found in dev_hdd0\home</sys:String>
 
     <!-- Provider: ShadPS4 -->
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Data Folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Defaults to %AppData%\shadPS4. Legacy user/game_data folders are also supported.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPath">Root Folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShadPS4GameDataPathHint">Set your ShadPS4 root folder. The plugin automatically finds both legacy game_data and newer home/trophy layouts. Default: %AppData%\shadPS4.</sys:String>
 
     <!-- Provider: Xbox -->
     <sys:String x:Key="LOCPlayAch_Settings_XboxLowResIcons">Download Smaller Icons</sys:String>

@@ -619,11 +619,8 @@ namespace PlayniteAchievements
 
         private void SubscribeDatabaseEventHandlers()
         {
-            // Listen for game database changes to auto-refresh new entries and react to hide/unhide edits.
+            // Listen for game database changes to auto-refresh new entries and clean up removed games.
             PlayniteApi?.Database?.Games?.ItemCollectionChanged += Games_ItemCollectionChanged;
-            PlayniteApi?.Database?.Games?.ItemUpdated += Games_ItemUpdated;
-
-            _eventSubscriptions.Add(() => PlayniteApi?.Database?.Games?.ItemUpdated -= Games_ItemUpdated);
             _eventSubscriptions.Add(() => PlayniteApi?.Database?.Games?.ItemCollectionChanged -= Games_ItemCollectionChanged);
         }
 
@@ -666,6 +663,15 @@ namespace PlayniteAchievements
             if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
             {
                 _tagSyncService.SyncTagsForGames(new List<Guid> { e.PlayniteGameId });
+            }
+
+            try
+            {
+                _themeIntegrationService?.NotifyCustomDataChanged(e.PlayniteGameId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={e.PlayniteGameId}.");
             }
         }
 
@@ -741,32 +747,6 @@ namespace PlayniteAchievements
 
                     _ = TriggerRemovedGameCleanupAsync(game);
                 }
-            }
-        }
-
-        private void Games_ItemUpdated(object sender, ItemUpdatedEventArgs<Game> e)
-        {
-            if (e?.UpdatedItems == null
-                || _settingsViewModel?.Settings?.Persisted?.AutoExcludeHiddenGames != true)
-            {
-                return;
-            }
-
-            foreach (var update in e.UpdatedItems)
-            {
-                var oldGame = update?.OldData;
-                var newGame = update?.NewData;
-                if (oldGame == null || newGame == null || newGame.Id == Guid.Empty)
-                {
-                    continue;
-                }
-
-                if (oldGame.Hidden == newGame.Hidden)
-                {
-                    continue;
-                }
-
-                _achievementOverridesService.SetExcludedFromHiddenState(newGame.Id, newGame.Hidden);
             }
         }
 

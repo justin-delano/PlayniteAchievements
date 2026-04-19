@@ -30,27 +30,24 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         private readonly PlayniteAchievementsSettings _settings;
-        private readonly SteamSettings _providerSettings;
         private readonly SteamHttpClient _steamClient;
-        private readonly SteamSessionManager _sessionManager;
         private readonly SteamApiClient _steamApiClient;
+        private readonly SteamWebApiTokenResolver _tokenResolver;
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
 
         public SteamScanner(
             PlayniteAchievementsSettings settings,
-            SteamSettings providerSettings,
             SteamHttpClient steamClient,
-            SteamSessionManager sessionManager,
             SteamApiClient steamApiClient,
+            SteamWebApiTokenResolver tokenResolver,
             IPlayniteAPI api,
             ILogger logger)
         {
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _providerSettings = providerSettings ?? throw new ArgumentNullException(nameof(providerSettings));
             _steamClient = steamClient ?? throw new ArgumentNullException(nameof(steamClient));
-            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _steamApiClient = steamApiClient ?? throw new ArgumentNullException(nameof(steamApiClient));
+            _tokenResolver = tokenResolver ?? throw new ArgumentNullException(nameof(tokenResolver));
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
         }
@@ -65,19 +62,12 @@ namespace PlayniteAchievements.Providers.Steam
 
             try
             {
-                var apiKey = _providerSettings.SteamApiKey?.Trim();
-                if (string.IsNullOrWhiteSpace(apiKey))
-                {
-                    _logger?.Warn("[SteamAch] Missing Steam API key - cannot scan achievements.");
-                    return new RebuildPayload { Summary = new RebuildSummary(), AuthRequired = true };
-                }
-
                 _logger?.Info("[SteamAch] Probing Steam login status before scan...");
-                var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
-                var steamUserId = probeResult?.UserId?.Trim();
-                if (!probeResult.IsSuccess || string.IsNullOrWhiteSpace(steamUserId))
+                var tokenResolution = await _tokenResolver.ResolveAsync(cancel).ConfigureAwait(false);
+                var steamUserId = tokenResolution.UserId?.Trim();
+                if (!tokenResolution.IsSuccess || string.IsNullOrWhiteSpace(steamUserId))
                 {
-                    _logger?.Warn("[SteamAch] Steam web auth check failed: not logged in. Aborting scan.");
+                    _logger?.Warn("[SteamAch] Steam authentication check failed. Aborting scan.");
                     return new RebuildPayload
                     {
                         Summary = new RebuildSummary(),
@@ -109,7 +99,7 @@ namespace PlayniteAchievements.Providers.Steam
                         }
 
                         var data = await rateLimiter.ExecuteWithRetryAsync(
-                            () => FetchGameDataAsync(game, steamUserId, token),
+                            () => FetchGameDataAsync(game, steamUserId, tokenResolution.Token, token),
                             IsTransientError,
                             token).ConfigureAwait(false);
 
@@ -216,6 +206,7 @@ namespace PlayniteAchievements.Providers.Steam
         private async Task<GameAchievementData> FetchGameDataAsync(
             Game game,
             string steamUserId,
+            string accessToken,
             CancellationToken cancel)
         {
             if (!TryGetPlatformAppId(game, out var appId))
@@ -224,8 +215,8 @@ namespace PlayniteAchievements.Providers.Steam
                 return null;
             }
 
-            var schema = await FetchSchemaAsync(appId, cancel).ConfigureAwait(false);
-            var unlocked = await FetchUnlockedAsync(appId, game?.Name, steamUserId, schema, cancel).ConfigureAwait(false);
+            var schema = await FetchSchemaAsync(accessToken, appId, cancel).ConfigureAwait(false);
+            var unlocked = await FetchUnlockedAsync(appId, game?.Name, steamUserId, accessToken, schema, cancel).ConfigureAwait(false);
 
             var gameData = new GameAchievementData
             {
@@ -303,11 +294,11 @@ namespace PlayniteAchievements.Providers.Steam
             return gameData;
         }
 
-        private Task<SchemaAndPercentages> FetchSchemaAsync(int appId, CancellationToken cancel)
+        private Task<SchemaAndPercentages> FetchSchemaAsync(string accessToken, int appId, CancellationToken cancel)
         {
             var language = string.IsNullOrWhiteSpace(_settings.Persisted.GlobalLanguage) ? "english" : _settings.Persisted.GlobalLanguage.Trim();
             return _steamApiClient.GetSchemaForGameDetailedAsync(
-                _providerSettings.SteamApiKey.Trim(),
+                accessToken,
                 appId,
                 language,
                 cancel);
@@ -317,10 +308,11 @@ namespace PlayniteAchievements.Providers.Steam
             int appId,
             string gameName,
             string steamUserId,
+            string accessToken,
             SchemaAndPercentages schema,
             CancellationToken cancel)
         {
-            if (string.IsNullOrWhiteSpace(steamUserId) || string.IsNullOrWhiteSpace(_providerSettings.SteamApiKey))
+            if (string.IsNullOrWhiteSpace(steamUserId))
                 return new UserUnlockedAchievements();
 
             // If the schema confirms no achievements, skip HTML scraping entirely.
@@ -341,7 +333,7 @@ namespace PlayniteAchievements.Providers.Steam
             AchievementsScrapeResponse scraped = null;
             try
             {
-                scraped = await ScrapeAchievementsAsync(steamUserId, appId, cancel, includeLocked: true, gameName: gameName)
+                scraped = await ScrapeAchievementsAsync(steamUserId, appId, accessToken, cancel, includeLocked: true, gameName: gameName)
                     .ConfigureAwait(false);
             }
             catch (OperationCanceledException) { throw; }
@@ -494,6 +486,7 @@ namespace PlayniteAchievements.Providers.Steam
         private async Task<AchievementsScrapeResponse> ScrapeAchievementsAsync(
             string steamId64,
             int appId,
+            string accessToken,
             CancellationToken cancel,
             bool includeLocked = false,
             string gameName = null)
@@ -587,7 +580,7 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 res.StatsUnavailable = true;
                 res.SetDetail(SteamScrapeDetail.RedirectOffStats);
-                await MaybeClassifyNoAchievementsBySchemaAsync(res, appId, cancel).ConfigureAwait(false);
+                await MaybeClassifyNoAchievementsBySchemaAsync(res, accessToken, appId, cancel).ConfigureAwait(false);
                 return res;
             }
 
@@ -623,14 +616,14 @@ namespace PlayniteAchievements.Providers.Steam
                         var fallbackClassified = ClassifyScrapeOrPrivate(fallbackResponse, fallbackHtml, includeLocked, language, gameName);
                         if (fallbackClassified.SuccessWithRows)
                         {
-                            await MaybeClassifyNoAchievementsBySchemaAsync(fallbackClassified, appId, cancel).ConfigureAwait(false);
+                            await MaybeClassifyNoAchievementsBySchemaAsync(fallbackClassified, accessToken, appId, cancel).ConfigureAwait(false);
                             return fallbackClassified;
                         }
                     }
                 }
             }
 
-            await MaybeClassifyNoAchievementsBySchemaAsync(result, appId, cancel).ConfigureAwait(false);
+            await MaybeClassifyNoAchievementsBySchemaAsync(result, accessToken, appId, cancel).ConfigureAwait(false);
             return result;
         }
 
@@ -731,18 +724,16 @@ namespace PlayniteAchievements.Providers.Steam
             return false;
         }
 
-        private async Task MaybeClassifyNoAchievementsBySchemaAsync(AchievementsScrapeResponse res, int appId, CancellationToken ct)
+        private async Task MaybeClassifyNoAchievementsBySchemaAsync(AchievementsScrapeResponse res, string accessToken, int appId, CancellationToken ct)
         {
             if (res == null || appId <= 0) return;
             if (!res.StatsUnavailable) return;
-
-            var apiKey = _providerSettings.SteamApiKey?.Trim();
-            if (string.IsNullOrWhiteSpace(apiKey)) return;
+            if (string.IsNullOrWhiteSpace(accessToken)) return;
 
             bool? has;
             try
             {
-                has = await _steamClient.GetAppHasAchievementsAsync(apiKey, appId, ct).ConfigureAwait(false);
+                has = await _steamApiClient.GetGameHasAchievementsAsync(accessToken, appId, "english", ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)

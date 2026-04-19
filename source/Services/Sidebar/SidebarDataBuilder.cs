@@ -99,7 +99,7 @@ namespace PlayniteAchievements.Services.Sidebar
             int totalRarePossible = 0;
             int totalUltraRarePossible = 0;
 
-            var allGameData = _achievementDataService.GetAllGameAchievementDataForSidebar() ?? new List<GameAchievementData>();
+            var allGameData = _achievementDataService.GetAllVisibleGameAchievementDataForSidebar() ?? new List<GameAchievementData>();
             for (var i = 0; i < allGameData.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
@@ -364,7 +364,7 @@ namespace PlayniteAchievements.Services.Sidebar
 
             var hydratedRecent = new List<AchievementDisplayItem>();
             var providerLookup = BuildProviderLookup();
-            var allGameData = _achievementDataService.GetAllGameAchievementDataForSidebar() ?? new List<GameAchievementData>();
+            var allGameData = _achievementDataService.GetAllVisibleGameAchievementDataForSidebar() ?? new List<GameAchievementData>();
             var revealedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             for (var i = 0; i < allGameData.Count; i++)

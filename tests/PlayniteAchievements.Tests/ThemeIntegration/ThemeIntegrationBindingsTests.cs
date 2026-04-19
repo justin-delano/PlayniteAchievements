@@ -379,6 +379,54 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void PopulateSingleGameDataSync_UsesVisibleAchievementProjection()
+        {
+            var gameId = Guid.NewGuid();
+            var settings = new PlayniteAchievementsSettings();
+            var plugin = new PlayniteAchievementsPlugin
+            {
+                Settings = settings
+            };
+            PlayniteAchievementsPlugin.Instance = plugin;
+
+            var rawVisible = Achievement("Visible", 75.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 1, 9, 0, 0));
+            var rawAlsoVisible = Achievement("Visible Too", 25.0, unlocked: false);
+            var rawIgnored = Achievement("Ignored Entry", 2.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 2, 9, 0, 0));
+            rawIgnored.CategoryType = "Ignored";
+
+            var visibleData = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = new Game { Id = gameId, Name = "Visible Projection Game" },
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail> { rawVisible, rawAlsoVisible }
+            };
+
+            var api = new FakePlayniteApi();
+            var refreshRuntime = new RefreshRuntime();
+            var achievementDataService = new AchievementDataService();
+            achievementDataService.GameDataById[gameId] = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = visibleData.Game,
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail> { rawVisible, rawAlsoVisible, rawIgnored }
+            };
+            achievementDataService.VisibleGameDataById[gameId] = visibleData;
+
+            var refreshCoordinator = new RefreshEntryPoint(refreshRuntime, logger: null);
+            var windowService = new FullscreenWindowService(api, settings, _ => { });
+            var logger = new FakeLogger();
+            using var service = new ThemeIntegrationService(api, refreshRuntime, achievementDataService, refreshCoordinator, settings, windowService, logger);
+
+            service.PopulateSingleGameDataSync(gameId);
+
+            Assert.AreEqual(2, settings.Achievements.Count);
+            AssertAchievementNames(settings.Achievements, "Visible", "Visible Too");
+            Assert.AreEqual(50d, settings.ProgressPercentage);
+        }
+
+        [TestMethod]
         public void SelectedGameBuilder_UsesRarityTieBreakerForEqualUnlockTimes()
         {
             PercentRarityHelper.Configure(5, 10, 50);
@@ -413,6 +461,115 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             CollectionAssert.AreEqual(
                 new[] { "Ultra", "Rare", "Common" },
                 state.AchievementsOldestFirst.Select(a => a.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void OpenAchievementWindow_UsesVisibleThemeLibraryProjection()
+        {
+            using var context = CreateServiceContext();
+
+            var gameId = Guid.NewGuid();
+            var game = new Game
+            {
+                Id = gameId,
+                Name = "Library Projection Game",
+                LastActivity = Utc(2026, 4, 9, 8, 0, 0)
+            };
+
+            var visibleUnlocked = Achievement("Visible Unlock", 8.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 1, 9, 0, 0));
+            var visibleLocked = Achievement("Visible Locked", 75.0, unlocked: false);
+            var ignored = Achievement("Ignored Unlock", 2.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 2, 9, 0, 0));
+            ignored.CategoryType = "Ignored";
+
+            context.AchievementDataService.AllGameData = new List<GameAchievementData>
+            {
+                new GameAchievementData
+                {
+                    PlayniteGameId = gameId,
+                    ProviderKey = "Steam",
+                    Game = game,
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail> { visibleUnlocked, visibleLocked, ignored }
+                }
+            };
+            context.AchievementDataService.VisibleAllGameData = new List<GameAchievementData>
+            {
+                new GameAchievementData
+                {
+                    PlayniteGameId = gameId,
+                    ProviderKey = "Steam",
+                    Game = game,
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail> { visibleUnlocked, visibleLocked }
+                }
+            };
+
+            context.Settings.OpenAchievementWindow.Execute(null);
+
+            Assert.AreEqual(2, context.Settings.DynamicLibraryAchievements.Count);
+            AssertAchievementNames(context.Settings.DynamicLibraryAchievements, "Visible Unlock", "Visible Locked");
+
+            var summary = FindSummary(context.Settings.DynamicGameSummaries, gameId);
+            Assert.AreEqual(1, summary.UnlockedCount);
+            Assert.AreEqual(2, summary.AchievementCount);
+        }
+
+        [TestMethod]
+        public void NotifyCustomDataChanged_RefreshesLoadedThemeBindings()
+        {
+            using var context = CreateServiceContext();
+
+            var gameId = Guid.NewGuid();
+            var game = new Game
+            {
+                Id = gameId,
+                Name = "Immediate Theme Refresh Game",
+                LastActivity = Utc(2026, 4, 9, 8, 0, 0)
+            };
+
+            var initialVisibleOne = Achievement("Visible One", 8.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 1, 9, 0, 0));
+            var initialVisibleTwo = Achievement("Visible Two", 75.0, unlocked: false);
+            var initialSelected = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = game,
+                ProviderKey = "Steam",
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail> { initialVisibleOne, initialVisibleTwo }
+            };
+
+            context.AchievementDataService.VisibleGameDataById[gameId] = initialSelected;
+            context.AchievementDataService.VisibleAllGameData = new List<GameAchievementData> { initialSelected };
+
+            context.Settings.OpenAchievementWindow.Execute(null);
+            context.Service.PopulateSingleGameDataSync(gameId);
+
+            Assert.AreEqual(2, context.Settings.DynamicLibraryAchievements.Count);
+            Assert.AreEqual(2, context.Settings.Achievements.Count);
+
+            var updatedVisible = Achievement("Visible One", 8.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 1, 9, 0, 0));
+            var updatedSelected = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = game,
+                ProviderKey = "Steam",
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail> { updatedVisible }
+            };
+
+            context.AchievementDataService.VisibleGameDataById[gameId] = updatedSelected;
+            context.AchievementDataService.VisibleAllGameData = new List<GameAchievementData> { updatedSelected };
+
+            context.Service.NotifyCustomDataChanged(gameId);
+
+            Assert.AreEqual(1, context.Settings.DynamicLibraryAchievements.Count);
+            AssertAchievementNames(context.Settings.DynamicLibraryAchievements, "Visible One");
+            Assert.AreEqual(1, context.Settings.Achievements.Count);
+            AssertAchievementNames(context.Settings.Achievements, "Visible One");
+
+            var summary = FindSummary(context.Settings.DynamicGameSummaries, gameId);
+            Assert.AreEqual(1, summary.UnlockedCount);
+            Assert.AreEqual(1, summary.AchievementCount);
         }
 
         [TestMethod]
