@@ -80,6 +80,7 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 - No longer needed the Steam API key for the extension to gather the owned games
 - Added setting in the General tab to select the default filter in the main page
 - Added the option to import all local games with achievements to the library and get the metadata ( Tested with Steam universal Metadata extension )
+- Fixed theme migration
 
 ### 2026-04-15 - v2.1.1.2
 

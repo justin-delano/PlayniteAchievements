@@ -23,6 +23,12 @@ namespace PlayniteAchievements.Services.ThemeMigration
         private const string BackupFolderName = "PlayniteAchievements_backup";
         private const string ManifestFileName = "backup_manifest.txt";
 
+        // Extension ID from extension.yaml — used for [id].IsInstalled bindings in themes
+        private const string PluginExtensionId = "PlayniteAchievementsSantodan";
+
+        // SourceName registered with Playnite via AddCustomElementSupport — used for control-name prefixes
+        private const string ThemeSourceName = "PlayniteAchievements";
+
         /// <summary>
         /// Binary file extensions that should never be processed.
         /// These files should not be read as text or modified.
@@ -530,19 +536,19 @@ namespace PlayniteAchievements.Services.ThemeMigration
             string result = content;
 
             // Replace SuccessStoryFullscreenHelper first (most specific - fullscreen installation checks)
-            result = result.Replace("SuccessStoryFullscreenHelper", "PlayniteAchievements");
+            result = result.Replace("SuccessStoryFullscreenHelper", PluginExtensionId);
             replacements += CountOccurrences(originalContent, "SuccessStoryFullscreenHelper");
 
             // Replace playnite-successstory-plugin second (installation checks)
-            result = result.Replace("playnite-successstory-plugin", "PlayniteAchievements");
+            result = result.Replace("playnite-successstory-plugin", PluginExtensionId);
             replacements += CountOccurrences(originalContent, "playnite-successstory-plugin");
 
             // Replace SSHelper third (class references)
-            result = result.Replace("SSHelper", "PlayniteAchievements");
+            result = result.Replace("SSHelper", ThemeSourceName);
             replacements += CountOccurrences(originalContent, "SSHelper");
 
             // Then replace SuccessStory (most general - matches all above)
-            result = result.Replace("SuccessStory", "PlayniteAchievements");
+            result = result.Replace("SuccessStory", ThemeSourceName);
             replacements += CountOccurrences(originalContent, "SuccessStory");
 
             // Fix style key names to match plugin expectations
