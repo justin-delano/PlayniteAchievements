@@ -1,8 +1,5 @@
-using System.Collections.Generic;
-using System.Windows.Controls;
 using PlayniteAchievements.Models.Achievements;
-using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
@@ -24,59 +21,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override bool FilterAchievement(AchievementDetail achievement) => achievement.Unlocked;
 
         /// <summary>
-        /// Selects the pre-sorted achievement collection based on CompactUnlockedListSortMode and direction.
-        /// None (default) uses the selected-game canonical base order.
+        /// Uses the shared selected-game sort source, then filters to unlocked achievements.
         /// </summary>
-        protected override List<AchievementDetail> GetOrderedAchievements(ModernThemeBindings theme)
-        {
-            if (theme == null)
-            {
-                return new List<AchievementDetail>();
-            }
-
-            var settings = EffectiveSettings?.Persisted;
-            if (settings == null)
-            {
-                return theme.AllAchievements ?? new List<AchievementDetail>();
-            }
-
-            switch (settings.CompactUnlockedListSortMode)
-            {
-                case CompactListSortMode.UnlockTime:
-                    return settings.CompactUnlockedListSortDescending
-                        ? theme.AchievementsNewestFirst ?? theme.AllAchievements
-                        : theme.AchievementsOldestFirst ?? theme.AllAchievements;
-                case CompactListSortMode.Rarity:
-                    return settings.CompactUnlockedListSortDescending
-                        ? theme.AchievementsRarityDesc ?? theme.AllAchievements
-                        : theme.AchievementsRarityAsc ?? theme.AllAchievements;
-                default:
-                    return theme.AllAchievements ?? new List<AchievementDetail>();
-            }
-        }
-
-        protected override string GetOrderedAchievementsPropertyName()
-        {
-            var settings = EffectiveSettings?.Persisted;
-            if (settings == null)
-            {
-                return nameof(ModernThemeBindings.AllAchievements);
-            }
-
-            switch (settings.CompactUnlockedListSortMode)
-            {
-                case CompactListSortMode.UnlockTime:
-                    return settings.CompactUnlockedListSortDescending
-                        ? nameof(ModernThemeBindings.AchievementsNewestFirst)
-                        : nameof(ModernThemeBindings.AchievementsOldestFirst);
-                case CompactListSortMode.Rarity:
-                    return settings.CompactUnlockedListSortDescending
-                        ? nameof(ModernThemeBindings.AchievementsRarityDesc)
-                        : nameof(ModernThemeBindings.AchievementsRarityAsc);
-                default:
-                    return nameof(ModernThemeBindings.AllAchievements);
-            }
-        }
+        protected override AchievementSortSurface SortSurface => AchievementSortSurface.CompactUnlockedList;
 
         /// <summary>
         /// Refreshes the ItemsControl ItemsSource binding.
@@ -90,4 +37,5 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         }
     }
 }
+
 

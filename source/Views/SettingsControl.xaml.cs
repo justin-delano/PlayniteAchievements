@@ -1258,6 +1258,33 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void ToggleSidebarSelectedGameGridSortDescending(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted != null)
+            {
+                persisted.SidebarSelectedGameGridSortDescending = !persisted.SidebarSelectedGameGridSortDescending;
+            }
+        }
+
+        private void ToggleSingleGameGridSortDescending(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted != null)
+            {
+                persisted.SingleGameGridSortDescending = !persisted.SingleGameGridSortDescending;
+            }
+        }
+
+        private void ToggleAchievementDataGridSortDescending(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted != null)
+            {
+                persisted.AchievementDataGridSortDescending = !persisted.AchievementDataGridSortDescending;
+            }
+        }
+
         // -----------------------------
         // Tagging Methods
         // -----------------------------
@@ -1535,6 +1562,7 @@ namespace PlayniteAchievements.Views
         public event PropertyChangedEventHandler PropertyChanged;
     }
 }
+
 
 
 

@@ -119,9 +119,7 @@ namespace PlayniteAchievements.Services.Sidebar
                         achievements,
                         a => a.ApiName,
                         gameData.AchievementOrder)
-                    : AchievementGridSortHelper.CreateDefaultSortedList(
-                        achievements,
-                        AchievementGridSortScope.GameAchievements);
+                    : achievements;
 
                 return (orderedItems, hasCustomOrder);
             }, cancellationToken).ConfigureAwait(false);

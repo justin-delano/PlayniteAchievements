@@ -25,7 +25,6 @@ namespace PlayniteAchievements.Services.Sidebar
             HashSet<string> selectedCategoryFilters)
         {
             var typeValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var categoryValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (source != null)
             {
@@ -44,12 +43,6 @@ namespace PlayniteAchievements.Services.Sidebar
                             typeValues.Add(parsedType);
                         }
                     }
-
-                    var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel);
-                    if (!string.IsNullOrWhiteSpace(normalizedCategory))
-                    {
-                        categoryValues.Add(normalizedCategory);
-                    }
                 }
             }
 
@@ -57,9 +50,9 @@ namespace PlayniteAchievements.Services.Sidebar
                 .Where(typeValues.Contains)
                 .ToList();
 
-            var categoryOptions = categoryValues
-                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var categoryOptions = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
+                source,
+                item => item?.CategoryLabel);
 
             return new SelectedGameFilterOptions
             {

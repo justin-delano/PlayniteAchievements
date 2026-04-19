@@ -602,11 +602,11 @@ namespace PlayniteAchievements.Views.Controls
 
             var currentSortPath = string.Empty;
             ListSortDirection? currentSortDirection = null;
-            if (!AchievementGridSortHelper.TrySortItems(
+            if (!AchievementSortHelper.TrySortItems(
                     items,
                     e.Column.SortMemberPath,
                     sortDirection.Value,
-                    AchievementGridSortScope.GameAchievements,
+                    AchievementSortScope.GameAchievements,
                     ref currentSortPath,
                     ref currentSortDirection))
             {
@@ -748,3 +748,4 @@ namespace PlayniteAchievements.Views.Controls
         }
     }
 }
+

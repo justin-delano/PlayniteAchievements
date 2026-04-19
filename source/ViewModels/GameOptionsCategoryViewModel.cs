@@ -22,6 +22,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly ILogger _logger;
 
         private List<GameOptionsCategoryItem> _allRows = new List<GameOptionsCategoryItem>();
+        private List<string> _canonicalCategoryLabelFilterOptions = new List<string>();
         private bool _hasAchievements;
         private string _searchText = string.Empty;
         private bool _showUnlocked = true;
@@ -229,19 +230,26 @@ namespace PlayniteAchievements.ViewModels
                 HasCustomOverrides = categoryOverrides.Count > 0 || categoryTypeOverrides.Count > 0;
                 var projectionSource = hydratedGameData ?? rawGameData;
                 List<AchievementDetail> orderedAchievements;
+                List<AchievementDetail> canonicalAchievements;
                 if (hydratedGameData?.AchievementOrder != null && hydratedGameData.AchievementOrder.Count > 0)
                 {
                     orderedAchievements = AchievementOrderHelper.ApplyOrder(
                         rawAchievements,
                         a => a.ApiName,
                         hydratedGameData.AchievementOrder);
+                    canonicalAchievements = orderedAchievements;
                 }
                 else
                 {
                     orderedAchievements = rawAchievements
                         .OrderBy(a => a.DisplayName ?? a.ApiName, StringComparer.OrdinalIgnoreCase)
                         .ToList();
+                    canonicalAchievements = rawAchievements;
                 }
+
+                _canonicalCategoryLabelFilterOptions = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
+                    canonicalAchievements,
+                    achievement => ResolveEffectiveCategoryLabel(achievement, categoryOverrides));
 
                 _allRows = orderedAchievements.Select(a =>
                 {
@@ -319,6 +327,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, $"Failed loading category rows for gameId={_gameId}");
                 _allRows = new List<GameOptionsCategoryItem>();
+                _canonicalCategoryLabelFilterOptions = new List<string>();
                 CollectionHelper.SynchronizeCollection(AchievementRows, _allRows);
                 CollectionHelper.SynchronizeCollection(CategoryLabelOptions, new List<string>());
                 CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, new List<string>());
@@ -725,7 +734,18 @@ namespace PlayniteAchievements.ViewModels
                 .ToList();
             CollectionHelper.SynchronizeCollection(CategoryLabelOptions, renameableLabels);
 
-            var categoryLabelFilterOptions = new List<string>(labels);
+            var labelSet = new HashSet<string>(labels, StringComparer.OrdinalIgnoreCase);
+            var categoryLabelFilterOptions = (_canonicalCategoryLabelFilterOptions ?? new List<string>())
+                .Where(label => !string.IsNullOrWhiteSpace(label) && labelSet.Contains(label))
+                .ToList();
+            foreach (var label in labels)
+            {
+                if (!categoryLabelFilterOptions.Contains(label, StringComparer.OrdinalIgnoreCase))
+                {
+                    categoryLabelFilterOptions.Add(label);
+                }
+            }
+
             CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, categoryLabelFilterOptions);
 
             if (PruneCategoryLabelFilterSelections(categoryLabelFilterOptions))
@@ -778,6 +798,22 @@ namespace PlayniteAchievements.ViewModels
         {
             var normalized = (value ?? string.Empty).Trim();
             return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+        }
+
+        private static string ResolveEffectiveCategoryLabel(
+            AchievementDetail achievement,
+            IReadOnlyDictionary<string, string> categoryOverrides)
+        {
+            var apiName = (achievement?.ApiName ?? string.Empty).Trim();
+            if (!string.IsNullOrWhiteSpace(apiName) &&
+                categoryOverrides != null &&
+                categoryOverrides.TryGetValue(apiName, out var categoryOverride) &&
+                !string.IsNullOrWhiteSpace(categoryOverride))
+            {
+                return categoryOverride;
+            }
+
+            return achievement?.Category;
         }
 
         private bool PruneCategoryLabelFilterSelections(IEnumerable<string> options)

@@ -370,6 +370,13 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _selectedGameHasCustomAchievementOrder, value);
         }
 
+        public string SelectedGameSortPath => _selectedGameSortPath;
+
+        public ListSortDirection? SelectedGameSortDirection =>
+            string.IsNullOrWhiteSpace(_selectedGameSortPath)
+                ? (ListSortDirection?)null
+                : _selectedGameSortDirection;
+
         private ObservableCollection<string> _providerFilterOptions;
         public ObservableCollection<string> ProviderFilterOptions
         {
@@ -1767,6 +1774,15 @@ namespace PlayniteAchievements.ViewModels
                 ApplySidebarPieSmallSliceMode();
                 UpdateAggregatePieCharts();
             }
+            else if (AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                propertyName,
+                AchievementSortSurface.SidebarSelectedGame))
+            {
+                if (IsGameSelected && !SelectedGameSortDirection.HasValue)
+                {
+                    ApplyRightFilters();
+                }
+            }
             else if (AchievementDisplayItem.IsAppearanceSettingPropertyName(propertyName))
             {
                 _ = RefreshViewAsync();
@@ -1992,9 +2008,9 @@ namespace PlayniteAchievements.ViewModels
 
             if (string.IsNullOrEmpty(_recentSortPath))
             {
-                _allRecentAchievements = AchievementGridSortHelper.CreateDefaultSortedList(
+                _allRecentAchievements = AchievementSortHelper.CreateDefaultSortedList(
                     _allRecentAchievements,
-                    AchievementGridSortScope.RecentAchievements);
+                    AchievementSortScope.RecentAchievements);
             }
 
             var snapshot = BuildSnapshotFromSourceLists();
@@ -2788,6 +2804,13 @@ namespace PlayniteAchievements.ViewModels
                 }
                 else
                 {
+                    AchievementSortHelper.ApplyConfiguredDefaultSort(
+                        _filteredSelectedGameAchievements,
+                        _settings?.Persisted,
+                        AchievementSortSurface.SidebarSelectedGame,
+                        AchievementSortScope.GameAchievements,
+                        stableOrder: AchievementSortHelper.CreateStableOrderMap(_filteredSelectedGameAchievements));
+
                     if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
                     {
                         bulk.ReplaceAll(_filteredSelectedGameAchievements);
@@ -2896,9 +2919,10 @@ namespace PlayniteAchievements.ViewModels
 
         private void ResetSelectedGameSortToDefault()
         {
-            _selectedGameSortPath = nameof(AchievementDisplayItem.UnlockTime);
-            _selectedGameSortDirection = ListSortDirection.Descending;
-            SelectedGameHasCustomAchievementOrder = false;
+            _selectedGameSortPath = null;
+            _selectedGameSortDirection = AchievementSortHelper.GetConfiguredDefaultSort(
+                _settings?.Persisted,
+                AchievementSortSurface.SidebarSelectedGame).Direction;
         }
 
         /// <summary>
@@ -2990,17 +3014,6 @@ namespace PlayniteAchievements.ViewModels
                 var items = loadResult.Items ?? new List<AchievementDisplayItem>();
                 var hasCustomOrder = loadResult.HasCustomOrder;
                 SelectedGameHasCustomAchievementOrder = hasCustomOrder;
-
-                if (hasCustomOrder &&
-                    string.Equals(_selectedGameSortPath, nameof(AchievementDisplayItem.UnlockTime), StringComparison.Ordinal))
-                {
-                    _selectedGameSortPath = null;
-                }
-                else if (!hasCustomOrder && string.IsNullOrEmpty(_selectedGameSortPath))
-                {
-                    _selectedGameSortPath = nameof(AchievementDisplayItem.UnlockTime);
-                    _selectedGameSortDirection = ListSortDirection.Descending;
-                }
 
                 _allSelectedGameAchievements = items;
                 UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
@@ -3188,11 +3201,11 @@ namespace PlayniteAchievements.ViewModels
         private void SortRecentAchievements(string sortMemberPath, ListSortDirection direction)
         {
             var recentSortDirection = (ListSortDirection?)_recentSortDirection;
-            if (!AchievementGridSortHelper.TrySortItems(
+            if (!AchievementSortHelper.TrySortItems(
                     _filteredRecentAchievements,
                     sortMemberPath,
                     direction,
-                    AchievementGridSortScope.RecentAchievements,
+                    AchievementSortScope.RecentAchievements,
                     ref _recentSortPath,
                     ref recentSortDirection))
             {
@@ -3221,11 +3234,11 @@ namespace PlayniteAchievements.ViewModels
                 .ToDictionary(x => x.item, x => x.index);
 
             var selectedSortDirection = (ListSortDirection?)_selectedGameSortDirection;
-            if (!AchievementGridSortHelper.TrySortItems(
+            if (!AchievementSortHelper.TrySortItems(
                     _allSelectedGameAchievements,
                     sortMemberPath,
                     direction,
-                    AchievementGridSortScope.GameAchievements,
+                    AchievementSortScope.GameAchievements,
                     ref _selectedGameSortPath,
                     ref selectedSortDirection,
                     existingAllOrder))
@@ -3243,11 +3256,11 @@ namespace PlayniteAchievements.ViewModels
                 .ToDictionary(x => x.item, x => x.index);
 
             selectedSortDirection = _selectedGameSortDirection;
-            AchievementGridSortHelper.TrySortItems(
+            AchievementSortHelper.TrySortItems(
                 _filteredSelectedGameAchievements,
                 sortMemberPath,
                 direction,
-                AchievementGridSortScope.GameAchievements,
+                AchievementSortScope.GameAchievements,
                 ref _selectedGameSortPath,
                 ref selectedSortDirection,
                 sortedAllOrder);
@@ -3264,7 +3277,7 @@ namespace PlayniteAchievements.ViewModels
 
         private static int GetTrophyRank(string trophyType)
         {
-            return AchievementGridSortHelper.GetTrophyRank(trophyType);
+            return AchievementSortHelper.GetTrophyRank(trophyType);
         }
 
         private static int CompareGameOverviewByTrophyType(GameOverviewItem a, GameOverviewItem b)
@@ -3323,6 +3336,7 @@ namespace PlayniteAchievements.ViewModels
         }
     }
 }
+
 
 
 

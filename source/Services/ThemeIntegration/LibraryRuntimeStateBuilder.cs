@@ -290,22 +290,22 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     }
                 }
 
-                state.AllAchievementsUnlockAsc = AchievementGridSortHelper.CreateSortedDetailList(
+                state.AllAchievementsUnlockAsc = AchievementSortHelper.CreateSortedDetailList(
                     allAchievements,
                     nameof(AchievementDisplayItem.UnlockTime),
                     ListSortDirection.Ascending,
                     includeGameNameTieBreak: true);
-                state.AllAchievementsUnlockDesc = AchievementGridSortHelper.CreateSortedDetailList(
+                state.AllAchievementsUnlockDesc = AchievementSortHelper.CreateSortedDetailList(
                     allAchievements,
                     nameof(AchievementDisplayItem.UnlockTime),
                     ListSortDirection.Descending,
                     includeGameNameTieBreak: true);
-                state.AllAchievementsRarityAsc = AchievementGridSortHelper.CreateSortedDetailList(
+                state.AllAchievementsRarityAsc = AchievementSortHelper.CreateSortedDetailList(
                     allAchievements,
                     nameof(AchievementDisplayItem.RaritySortValue),
                     ListSortDirection.Ascending,
                     includeGameNameTieBreak: true);
-                state.AllAchievementsRarityDesc = AchievementGridSortHelper.CreateSortedDetailList(
+                state.AllAchievementsRarityDesc = AchievementSortHelper.CreateSortedDetailList(
                     allAchievements,
                     nameof(AchievementDisplayItem.RaritySortValue),
                     ListSortDirection.Descending,
@@ -352,13 +352,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             unlockedAchievements ??= new List<AchievementDetail>();
 
-            var mostRecent = AchievementGridSortHelper.CreateSortedDetailList(
+            var mostRecent = AchievementSortHelper.CreateSortedDetailList(
                 unlockedAchievements,
                 nameof(AchievementDisplayItem.UnlockTime),
                 ListSortDirection.Descending,
                 includeGameNameTieBreak: true);
             var rareRecentCutoffUtc = DateTime.UtcNow.AddDays(-180);
-            var rareRecent = AchievementGridSortHelper.CreateSortedDetailList(
+            var rareRecent = AchievementSortHelper.CreateSortedDetailList(
                 unlockedAchievements.Where(a => NormalizeUtc(a.UnlockTimeUtc.Value) >= rareRecentCutoffUtc),
                 nameof(AchievementDisplayItem.RaritySortValue),
                 ListSortDirection.Ascending,
@@ -551,3 +551,4 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         }
     }
 }
+

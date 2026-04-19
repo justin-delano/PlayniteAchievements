@@ -349,6 +349,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridMaxHeight">Max Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridPreview">Achievement DataGrid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridThemeControl">Sort By</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Description">Control how achievement icons are stored on disk. Changes apply on the next refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Title">Achievement Icon Cache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">Apply &amp; Sync</sys:String>
@@ -424,6 +425,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">Preserve full-resolution achievement icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">Saves cached icons at their original resolution instead of the optimized 128px cache mode. This uses more disk space.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Progress Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Sidebar Selected Game Grid</sys:String>
 
     <!-- Provider: Shared -->
     <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} Authentication</sys:String>
@@ -510,6 +512,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarRarityPieChart">Show Rarity Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarTrophyPieChart">Show Trophy Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Show Top Menu Bar Button</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">Single Game View Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">View Achievements Window</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode">Small Slice Handling</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact">Exact</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact_Description">Shows exact slice sizes. Radial icons are hidden for slices under 5% to reduce overlaps.</sys:String>
@@ -694,3 +698,4 @@
     <sys:String x:Key="LOCPlayniteAchievementsUserStats">User statistics</sys:String>
 
 </ResourceDictionary>
+

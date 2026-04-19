@@ -99,6 +99,12 @@ namespace PlayniteAchievements.Models.Settings
         private bool _compactUnlockedListSortDescending = false;
         private CompactListSortMode _compactLockedListSortMode = CompactListSortMode.None;
         private bool _compactLockedListSortDescending = false;
+        private CompactListSortMode _sidebarSelectedGameGridSortMode = CompactListSortMode.UnlockTime;
+        private bool _sidebarSelectedGameGridSortDescending = true;
+        private CompactListSortMode _singleGameGridSortMode = CompactListSortMode.UnlockTime;
+        private bool _singleGameGridSortDescending = true;
+        private CompactListSortMode _achievementDataGridSortMode = CompactListSortMode.UnlockTime;
+        private bool _achievementDataGridSortDescending = true;
         private TaggingSettings _taggingSettings;
         private Dictionary<string, JObject> _providerSettings = new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
 
@@ -637,6 +643,66 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Sort mode for the sidebar selected-game grid.
+        /// None preserves custom order when configured, otherwise provider order.
+        /// </summary>
+        public CompactListSortMode SidebarSelectedGameGridSortMode
+        {
+            get => _sidebarSelectedGameGridSortMode;
+            set => SetValue(ref _sidebarSelectedGameGridSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the configured sort direction for the sidebar selected-game grid.
+        /// Ignored when SidebarSelectedGameGridSortMode is None.
+        /// </summary>
+        public bool SidebarSelectedGameGridSortDescending
+        {
+            get => _sidebarSelectedGameGridSortDescending;
+            set => SetValue(ref _sidebarSelectedGameGridSortDescending, value);
+        }
+
+        /// <summary>
+        /// Sort mode for the single-game achievement grid.
+        /// None preserves custom order when configured, otherwise provider order.
+        /// </summary>
+        public CompactListSortMode SingleGameGridSortMode
+        {
+            get => _singleGameGridSortMode;
+            set => SetValue(ref _singleGameGridSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the configured sort direction for the single-game grid.
+        /// Ignored when SingleGameGridSortMode is None.
+        /// </summary>
+        public bool SingleGameGridSortDescending
+        {
+            get => _singleGameGridSortDescending;
+            set => SetValue(ref _singleGameGridSortDescending, value);
+        }
+
+        /// <summary>
+        /// Sort mode for the shared modern AchievementDataGrid control.
+        /// None preserves custom order when configured, otherwise provider order.
+        /// </summary>
+        public CompactListSortMode AchievementDataGridSortMode
+        {
+            get => _achievementDataGridSortMode;
+            set => SetValue(ref _achievementDataGridSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the configured sort direction for the shared modern AchievementDataGrid control.
+        /// Ignored when AchievementDataGridSortMode is None.
+        /// </summary>
+        public bool AchievementDataGridSortDescending
+        {
+            get => _achievementDataGridSortDescending;
+            set => SetValue(ref _achievementDataGridSortDescending, value);
+        }
+
+        /// <summary>
         /// Maximum height for AchievementDataGrid controls (null = unlimited).
         /// </summary>
         public double? AchievementDataGridMaxHeight
@@ -1099,6 +1165,12 @@ namespace PlayniteAchievements.Models.Settings
                 CompactUnlockedListSortDescending = this.CompactUnlockedListSortDescending,
                 CompactLockedListSortMode = this.CompactLockedListSortMode,
                 CompactLockedListSortDescending = this.CompactLockedListSortDescending,
+                SidebarSelectedGameGridSortMode = this.SidebarSelectedGameGridSortMode,
+                SidebarSelectedGameGridSortDescending = this.SidebarSelectedGameGridSortDescending,
+                SingleGameGridSortMode = this.SingleGameGridSortMode,
+                SingleGameGridSortDescending = this.SingleGameGridSortDescending,
+                AchievementDataGridSortMode = this.AchievementDataGridSortMode,
+                AchievementDataGridSortDescending = this.AchievementDataGridSortDescending,
                 AchievementDataGridMaxHeight = this.AchievementDataGridMaxHeight,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
@@ -1289,4 +1361,5 @@ namespace PlayniteAchievements.Models.Settings
         #endregion
     }
 }
+
 

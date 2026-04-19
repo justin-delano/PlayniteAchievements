@@ -1,9 +1,9 @@
 namespace PlayniteAchievements.Models.Settings
 {
     /// <summary>
-    /// Sort mode for modern compact list controls.
-    /// None preserves canonical selected-game ordering: custom game order when configured,
-    /// otherwise the shared default ordering.
+    /// Sort mode for selected-game achievement list controls.
+    /// None preserves the control's source order, which for the selected-game default surfaces
+    /// means custom order when configured, otherwise provider order.
     /// </summary>
     public enum CompactListSortMode
     {

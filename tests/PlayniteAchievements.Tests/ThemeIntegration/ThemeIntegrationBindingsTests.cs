@@ -614,7 +614,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.AreEqual(DynamicThemeViewKeys.All, context.Settings.DynamicAchievementsFilterKey);
             Assert.AreEqual(DynamicThemeViewKeys.Default, context.Settings.DynamicAchievementsSortKey);
             Assert.AreEqual(DynamicThemeViewKeys.Descending, context.Settings.DynamicAchievementsSortDirectionKey);
-            AssertAchievementNames(context.Settings.DynamicAchievements, "Charlie Ultra", "Bravo Rare", "Alpha Locked");
+            AssertAchievementNames(context.Settings.DynamicAchievements, "Alpha Locked", "Bravo Rare", "Charlie Ultra");
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.DynamicAchievements)));
 
             context.Settings.SetDynamicAchievementsFilterCommand.Execute("uNlOcKeD");

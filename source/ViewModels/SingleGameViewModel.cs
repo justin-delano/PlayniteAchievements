@@ -357,6 +357,13 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _hasCustomAchievementOrder, value);
         }
 
+        public string CurrentSortPath => _currentSortPath;
+
+        public ListSortDirection? CurrentSortDirection =>
+            string.IsNullOrWhiteSpace(_currentSortPath)
+                ? (ListSortDirection?)null
+                : _currentSortDirection;
+
         public string SearchText
         {
             get => _searchText;
@@ -535,7 +542,6 @@ namespace PlayniteAchievements.ViewModels
         private void UpdateAchievementFilterOptions(IEnumerable<AchievementDisplayItem> source)
         {
             var typeValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var categoryValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (source != null)
             {
@@ -555,12 +561,6 @@ namespace PlayniteAchievements.ViewModels
                             typeValues.Add(parsedType);
                         }
                     }
-
-                    var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel);
-                    if (!string.IsNullOrWhiteSpace(normalizedCategory))
-                    {
-                        categoryValues.Add(normalizedCategory);
-                    }
                 }
             }
 
@@ -568,9 +568,9 @@ namespace PlayniteAchievements.ViewModels
                 .Where(typeValues.Contains)
                 .ToList();
 
-            var categoryOptions = categoryValues
-                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var categoryOptions = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
+                source,
+                item => item?.CategoryLabel);
 
             CollectionHelper.SynchronizeCollection(CategoryTypeFilterOptions, typeOptions);
             CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, categoryOptions);
@@ -693,19 +693,7 @@ namespace PlayniteAchievements.ViewModels
                 TrophySilverCount = trophySilver;
                 TrophyBronzeCount = trophyBronze;
 
-                if (hasCustomOrder)
-                {
-                    _allAchievements = AchievementOrderHelper.ApplyOrder(
-                        displayItems,
-                        a => a.ApiName,
-                        gameData.AchievementOrder);
-                }
-                else
-                {
-                    _allAchievements = AchievementGridSortHelper.CreateDefaultSortedList(
-                        displayItems,
-                        AchievementGridSortScope.GameAchievements);
-                }
+                _allAchievements = displayItems;
 
                 UpdateAchievementFilterOptions(_allAchievements);
                 ApplySearchFilter();
@@ -831,6 +819,15 @@ namespace PlayniteAchievements.ViewModels
             if (AchievementDisplayItem.IsAppearanceSettingPropertyName(e?.PropertyName))
             {
                 ApplyAppearanceSettingsToAchievements();
+                return;
+            }
+
+            if (!CurrentSortDirection.HasValue &&
+                AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                    e?.PropertyName,
+                    AchievementSortSurface.SingleGame))
+            {
+                ApplySearchFilter();
             }
         }
 
@@ -885,11 +882,11 @@ namespace PlayniteAchievements.ViewModels
         {
             var items = Achievements.ToList();
             var currentSortDirection = (ListSortDirection?)_currentSortDirection;
-            if (!AchievementGridSortHelper.TrySortItems(
+            if (!AchievementSortHelper.TrySortItems(
                     items,
                     sortMemberPath,
                     direction,
-                    AchievementGridSortScope.GameAchievements,
+                    AchievementSortScope.GameAchievements,
                     ref _currentSortPath,
                     ref currentSortDirection))
             {
@@ -949,7 +946,29 @@ namespace PlayniteAchievements.ViewModels
 
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
-                CollectionHelper.SynchronizeCollection(Achievements, filtered.ToList());
+                var filteredItems = filtered.ToList();
+                if (CurrentSortDirection.HasValue)
+                {
+                    var currentSortDirection = CurrentSortDirection;
+                    AchievementSortHelper.TrySortItems(
+                        filteredItems,
+                        _currentSortPath,
+                        currentSortDirection.Value,
+                        AchievementSortScope.GameAchievements,
+                        ref _currentSortPath,
+                        ref currentSortDirection);
+                }
+                else
+                {
+                    AchievementSortHelper.ApplyConfiguredDefaultSort(
+                        filteredItems,
+                        _settings?.Persisted,
+                        AchievementSortSurface.SingleGame,
+                        AchievementSortScope.GameAchievements,
+                        stableOrder: AchievementSortHelper.CreateStableOrderMap(filteredItems));
+                }
+
+                CollectionHelper.SynchronizeCollection(Achievements, filteredItems);
             });
         }
 
@@ -978,6 +997,7 @@ namespace PlayniteAchievements.ViewModels
         #endregion
     }
 }
+
 
 
 

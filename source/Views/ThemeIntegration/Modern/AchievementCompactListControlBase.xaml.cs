@@ -8,6 +8,7 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
@@ -178,21 +179,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         /// </summary>
         protected virtual bool FilterAchievement(AchievementDetail achievement) => true;
 
+        protected virtual AchievementSortSurface SortSurface => AchievementSortSurface.CompactList;
+
         /// <summary>
         /// Gets the ordered achievement source that should drive the compact list.
         /// Defaults to the provider/source order list.
         /// </summary>
         protected virtual List<AchievementDetail> GetOrderedAchievements(ModernThemeBindings theme)
         {
-            return theme?.AllAchievements ?? new List<AchievementDetail>();
-        }
-
-        /// <summary>
-        /// Gets the modern theme property name that backs <see cref="GetOrderedAchievements"/>.
-        /// </summary>
-        protected virtual string GetOrderedAchievementsPropertyName()
-        {
-            return nameof(ModernThemeBindings.AllAchievements);
+            return AchievementSortHelper.ResolveSelectedGameAchievements(
+                theme,
+                EffectiveSettings?.Persisted,
+                SortSurface);
         }
 
         /// <summary>
@@ -396,7 +394,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             // Refresh when achievement data changes
             return propertyName == nameof(ModernThemeBindings.AllAchievementDisplayItems) ||
                    propertyName == nameof(ModernThemeBindings.AllAchievements) ||
-                   propertyName == GetOrderedAchievementsPropertyName();
+                   AchievementSortHelper.IsSelectedGameAchievementsPropertyName(propertyName);
         }
 
         /// <summary>
@@ -405,12 +403,15 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         /// </summary>
         protected override bool ShouldHandleSettingsDataChange(string propertyName)
         {
-            return propertyName == nameof(PersistedSettings.CompactListSortMode) ||
-                   propertyName == nameof(PersistedSettings.CompactListSortDescending) ||
-                   propertyName == nameof(PersistedSettings.CompactUnlockedListSortMode) ||
-                   propertyName == nameof(PersistedSettings.CompactUnlockedListSortDescending) ||
-                   propertyName == nameof(PersistedSettings.CompactLockedListSortMode) ||
-                   propertyName == nameof(PersistedSettings.CompactLockedListSortDescending);
+            return AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.CompactList) ||
+                   AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.CompactUnlockedList) ||
+                   AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.CompactLockedList);
         }
 
         /// <summary>
@@ -434,5 +435,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         }
     }
 }
+
 
 

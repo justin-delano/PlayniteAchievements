@@ -53,9 +53,11 @@
     <Compile Include="..\..\source\Services\Images\DiskImageService.cs" Link="Source\Services\Images\DiskImageService.cs" />
     <Compile Include="..\..\source\Services\Images\ManagedCustomIconService.cs" Link="Source\Services\Images\ManagedCustomIconService.cs" />
     <Compile Include="..\..\source\Services\Images\AchievementIconService.cs" Link="Source\Services\Images\AchievementIconService.cs" />
-    <Compile Include="..\..\source\Services\AchievementGridSortHelper.cs" Link="Source\Services\AchievementGridSortHelper.cs" />
+    <Compile Include="..\..\source\Services\AchievementSortHelper.cs" Link="Source\Services\AchievementSortHelper.cs" />
+    <Compile Include="..\..\source\Services\AchievementCategoryFilterOrderHelper.cs" Link="Source\Services\AchievementCategoryFilterOrderHelper.cs" />
     <Compile Include="..\..\source\Services\AchievementOrderHelper.cs" Link="Source\Services\AchievementOrderHelper.cs" />
     <Compile Include="..\..\source\Services\AchievementCategoryTypeHelper.cs" Link="Source\Services\AchievementCategoryTypeHelper.cs" />
+    <Compile Include="..\..\source\Services\Sidebar\SidebarAchievementFilters.cs" Link="Source\Services\Sidebar\SidebarAchievementFilters.cs" />
     <Compile Include="..\..\source\Services\PlayniteGameMetadataFormatter.cs" Link="Source\Services\PlayniteGameMetadataFormatter.cs" />
     <Compile Include="..\..\source\Services\BackupHelper.cs" Link="Source\Services\BackupHelper.cs" />
     <Compile Include="..\..\source\Models\RebuildProgressModels.cs" Link="Source\Models\RebuildProgressModels.cs" />
@@ -171,3 +173,4 @@
     </None>
   </ItemGroup>
 </Project>
+

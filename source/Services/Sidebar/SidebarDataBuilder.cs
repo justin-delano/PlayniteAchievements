@@ -172,9 +172,9 @@ namespace PlayniteAchievements.Services.Sidebar
                 .OrderByDescending(g => g.LastPlayed ?? DateTime.MinValue)
                 .ToList();
 
-            recentAchievements = AchievementGridSortHelper.CreateDefaultSortedList(
+            recentAchievements = AchievementSortHelper.CreateDefaultSortedList(
                 recentAchievements,
-                AchievementGridSortScope.RecentAchievements);
+                AchievementSortScope.RecentAchievements);
 
             snapshot.Achievements = new List<AchievementDisplayItem>();
             snapshot.GamesOverview = gamesOverview;
@@ -383,9 +383,9 @@ namespace PlayniteAchievements.Services.Sidebar
                 }
             }
 
-            return AchievementGridSortHelper.CreateDefaultSortedList(
+            return AchievementSortHelper.CreateDefaultSortedList(
                 hydratedRecent,
-                AchievementGridSortScope.RecentAchievements);
+                AchievementSortScope.RecentAchievements);
         }
 
         public SidebarGameFragment BuildGameFragment(
@@ -679,9 +679,9 @@ namespace PlayniteAchievements.Services.Sidebar
                 }
             }
 
-            return AchievementGridSortHelper.CreateDefaultSortedList(
+            return AchievementSortHelper.CreateDefaultSortedList(
                 items,
-                AchievementGridSortScope.RecentAchievements);
+                AchievementSortScope.RecentAchievements);
         }
 
         private Dictionary<Guid, GamePresentation> BuildGamePresentationCache(IEnumerable<Guid> playniteGameIds)
@@ -849,3 +849,4 @@ namespace PlayniteAchievements.Services.Sidebar
         }
     }
 }
+

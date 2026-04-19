@@ -1273,36 +1273,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             SelectedGameRuntimeState state,
             SelectedGameAchievementViewState viewState)
         {
-            switch (viewState?.SortKey)
-            {
-                case DynamicThemeViewKeys.UnlockTime:
-                    return string.Equals(viewState.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal)
-                        ? state.AchievementsOldestFirst
-                        : state.AchievementsNewestFirst;
-                case DynamicThemeViewKeys.Rarity:
-                    return string.Equals(viewState.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal)
-                        ? state.AchievementsRarityAsc
-                        : state.AchievementsRarityDesc;
-                default:
-                    return state.AllAchievements;
-            }
+            return AchievementSortHelper.ResolveSelectedGameAchievements(
+                state,
+                viewState?.SortKey,
+                viewState?.SortDirectionKey);
         }
 
         private static IEnumerable<AchievementDetail> SelectLibraryAchievementSource(
             LibraryRuntimeState state,
             LibraryAchievementViewState viewState)
         {
-            switch (viewState?.SortKey)
-            {
-                case DynamicThemeViewKeys.Rarity:
-                    return string.Equals(viewState.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal)
-                        ? state.AllAchievementsRarityAsc
-                        : state.AllAchievementsRarityDesc;
-                default:
-                    return string.Equals(viewState?.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal)
-                        ? state.AllAchievementsUnlockAsc
-                        : state.AllAchievementsUnlockDesc;
-            }
+            return AchievementSortHelper.ResolveLibraryAchievements(
+                state,
+                viewState?.SortKey,
+                viewState?.SortDirectionKey);
         }
 
         private static IEnumerable<AchievementDetail> ApplyAchievementUnlockFilter(
@@ -1568,6 +1552,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         }
     }
 }
+
 
 
 

@@ -79,20 +79,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 : achievements.ToList();
             var all = hasCustomOrder
                 ? defaultOrder
-                : AchievementGridSortHelper.CreateDefaultSortedDetailList(achievements);
-            var oldestFirst = AchievementGridSortHelper.CreateSortedDetailList(
+                : AchievementSortHelper.CreateDefaultSortedDetailList(achievements);
+            var oldestFirst = AchievementSortHelper.CreateSortedDetailList(
                 all,
                 nameof(AchievementDisplayItem.UnlockTime),
                 ListSortDirection.Ascending);
-            var newestFirst = AchievementGridSortHelper.CreateSortedDetailList(
+            var newestFirst = AchievementSortHelper.CreateSortedDetailList(
                 all,
                 nameof(AchievementDisplayItem.UnlockTime),
                 ListSortDirection.Descending);
-            var rarityAsc = AchievementGridSortHelper.CreateSortedDetailList(
+            var rarityAsc = AchievementSortHelper.CreateSortedDetailList(
                 all,
                 nameof(AchievementDisplayItem.RaritySortValue),
                 ListSortDirection.Ascending);
-            var rarityDesc = AchievementGridSortHelper.CreateSortedDetailList(
+            var rarityDesc = AchievementSortHelper.CreateSortedDetailList(
                 all,
                 nameof(AchievementDisplayItem.RaritySortValue),
                 ListSortDirection.Descending);
@@ -156,3 +156,4 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
     }
 }
+
