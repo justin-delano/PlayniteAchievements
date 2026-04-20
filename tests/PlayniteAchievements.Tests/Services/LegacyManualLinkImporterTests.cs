@@ -608,6 +608,8 @@ namespace PlayniteAchievements.Services.Tests
                         {
                             CreateItem("sentinel_est", "1982-12-15T00:00:00-05:00"),
                             CreateItem("sentinel_utcplus3", "1982-12-15T00:00:00+03:00"),
+                            CreateItem("sentinel_utcshifted", "1982-12-14T21:00:00Z"),
+                            CreateItem("non_sentinel_pre1990", "1982-12-13T00:00:00Z"),
                             CreateItem("valid", "2024-12-04T23:42:00-05:00")
                         }));
 
@@ -624,6 +626,11 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.IsTrue(link.UnlockStates.ContainsKey("sentinel_utcplus3"));
                 Assert.IsTrue(link.UnlockStates["sentinel_utcplus3"]);
                 Assert.IsFalse(link.UnlockTimes.ContainsKey("sentinel_utcplus3"));
+                Assert.IsTrue(link.UnlockStates.ContainsKey("sentinel_utcshifted"));
+                Assert.IsTrue(link.UnlockStates["sentinel_utcshifted"]);
+                Assert.IsFalse(link.UnlockTimes.ContainsKey("sentinel_utcshifted"));
+                Assert.IsFalse(link.UnlockStates.ContainsKey("non_sentinel_pre1990"));
+                Assert.IsFalse(link.UnlockTimes.ContainsKey("non_sentinel_pre1990"));
                 Assert.IsTrue(link.UnlockTimes.ContainsKey("valid"));
                 Assert.IsTrue(link.UnlockStates.ContainsKey("valid"));
                 Assert.IsTrue(link.UnlockStates["valid"]);
