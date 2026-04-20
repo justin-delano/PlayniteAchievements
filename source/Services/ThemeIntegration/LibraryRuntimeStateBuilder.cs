@@ -187,6 +187,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var xboxGames = new List<GameAchievementSummary>();
             var psnGames = new List<GameAchievementSummary>();
             var retroAchievementsGames = new List<GameAchievementSummary>();
+            var appleGames = new List<GameAchievementSummary>();
+            var googlePlayGames = new List<GameAchievementSummary>();
+            var ubisoftGames = new List<GameAchievementSummary>();
             var rpcs3Games = new List<GameAchievementSummary>();
             var xeniaGames = new List<GameAchievementSummary>();
             var shadPS4Games = new List<GameAchievementSummary>();
@@ -231,6 +234,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     case "RetroAchievements":
                         retroAchievementsGames.Add(summary);
                         break;
+                    case "Apple":
+                        appleGames.Add(summary);
+                        break;
+                    case "GooglePlay":
+                        googlePlayGames.Add(summary);
+                        break;
+                    case "Ubisoft":
+                        ubisoftGames.Add(summary);
+                        break;
                     case "RPCS3":
                         rpcs3Games.Add(summary);
                         break;
@@ -254,6 +266,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             state.XboxGames = xboxGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.PSNGames = psnGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.RetroAchievementsGames = retroAchievementsGames.OrderByDescending(item => item.LastUnlockDate).ToList();
+            state.AppleGames = appleGames.OrderByDescending(item => item.LastUnlockDate).ToList();
+            state.GooglePlayGames = googlePlayGames.OrderByDescending(item => item.LastUnlockDate).ToList();
+            state.UbisoftGames = ubisoftGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.RPCS3Games = rpcs3Games.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.XeniaGames = xeniaGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.ShadPS4Games = shadPS4Games.OrderByDescending(item => item.LastUnlockDate).ToList();

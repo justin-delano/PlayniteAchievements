@@ -851,6 +851,85 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void OpenAchievementWindow_PublishesAppleGooglePlayAndUbisoftProviderLists()
+        {
+            PercentRarityHelper.Configure(5, 10, 50);
+
+            using var context = CreateServiceContext();
+            var changedProperties = TrackPropertyChanges(context.Settings);
+
+            var appleGameId = Guid.NewGuid();
+            var googlePlayGameId = Guid.NewGuid();
+            var ubisoftGameId = Guid.NewGuid();
+
+            context.AchievementDataService.AllGameData = new List<GameAchievementData>
+            {
+                new GameAchievementData
+                {
+                    PlayniteGameId = appleGameId,
+                    ProviderKey = "Exophase",
+                    ProviderPlatformKey = "Apple",
+                    Game = new Game
+                    {
+                        Id = appleGameId,
+                        Name = "Apple Summary",
+                        LastActivity = Utc(2026, 4, 10, 8, 0, 0)
+                    },
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail>
+                    {
+                        Achievement("Apple Unlock", 8.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 1, 9, 0, 0))
+                    }
+                },
+                new GameAchievementData
+                {
+                    PlayniteGameId = googlePlayGameId,
+                    ProviderKey = "GooglePlay",
+                    Game = new Game
+                    {
+                        Id = googlePlayGameId,
+                        Name = "Google Play Summary",
+                        LastActivity = Utc(2026, 4, 11, 8, 0, 0)
+                    },
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail>
+                    {
+                        Achievement("Google Play Unlock", 25.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 2, 9, 0, 0))
+                    }
+                },
+                new GameAchievementData
+                {
+                    PlayniteGameId = ubisoftGameId,
+                    ProviderKey = "Exophase",
+                    ProviderPlatformKey = "Ubisoft",
+                    Game = new Game
+                    {
+                        Id = ubisoftGameId,
+                        Name = "Ubisoft Summary",
+                        LastActivity = Utc(2026, 4, 12, 8, 0, 0)
+                    },
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail>
+                    {
+                        Achievement("Ubisoft Unlock", 2.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 3, 9, 0, 0))
+                    }
+                }
+            };
+
+            context.Settings.OpenAchievementWindow.Execute(null);
+
+            AssertSummaryNames(context.Settings.AppleGames, "Apple Summary");
+            AssertSummaryNames(context.Settings.GooglePlayGames, "Google Play Summary");
+            AssertSummaryNames(context.Settings.UbisoftGames, "Ubisoft Summary");
+            Assert.AreEqual("Apple", context.Settings.AppleGames.Single().ProviderKey);
+            Assert.AreEqual("GooglePlay", context.Settings.GooglePlayGames.Single().ProviderKey);
+            Assert.AreEqual("Ubisoft", context.Settings.UbisoftGames.Single().ProviderKey);
+            Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AppleGames)));
+            Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.GooglePlayGames)));
+            Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.UbisoftGames)));
+        }
+
+        [TestMethod]
         public void ClearSingleGameThemeProperties_ResetsAndPublishesRareAndUltraRare()
         {
             var settings = new PlayniteAchievementsSettings();

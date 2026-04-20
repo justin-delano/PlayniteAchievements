@@ -532,6 +532,27 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> AppleGames
+        {
+            get => ModernTheme.AppleGames;
+            set => ModernTheme.AppleGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> GooglePlayGames
+        {
+            get => ModernTheme.GooglePlayGames;
+            set => ModernTheme.GooglePlayGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> UbisoftGames
+        {
+            get => ModernTheme.UbisoftGames;
+            set => ModernTheme.UbisoftGames = value;
+        }
+
+        [DontSerialize]
         public ObservableCollection<GameAchievementSummary> RPCS3Games
         {
             get => ModernTheme.RPCS3Games;
