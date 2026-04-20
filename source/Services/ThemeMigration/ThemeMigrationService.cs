@@ -551,12 +551,41 @@ namespace PlayniteAchievements.Services.ThemeMigration
             result = result.Replace("SuccessStory", ThemeSourceName);
             replacements += CountOccurrences(originalContent, "SuccessStory");
 
+            // Fix PluginStatus install-check bindings: PluginStatus uses the extension ID, not the SourceName.
+            // Themes designed for the original PlayniteAchievements fork write "PluginStatus Plugin=PlayniteAchievements"
+            // which resolves to nothing in this fork (extension ID is PlayniteAchievementsSantodan).
+            // Must come after all SuccessStory→PlayniteAchievements replacements above.
+            result = Regex.Replace(
+                result,
+                @"(?<=PluginStatus\s+Plugin=)PlayniteAchievements(?!Santodan)",
+                PluginExtensionId,
+                RegexOptions.IgnoreCase);
+            replacements += Regex.Matches(
+                originalContent,
+                @"(?<=PluginStatus\s+Plugin=)PlayniteAchievements(?!Santodan)",
+                RegexOptions.IgnoreCase).Count;
+
             // Fix style key names to match plugin expectations
-            // Plugin looks for "GameAchievementsWindow" but themes have "GameAchievementsWindowStyle"
-            result = result.Replace("GameAchievementsWindowStyle", "GameAchievementsWindow");
-            replacements += CountOccurrences(originalContent, "GameAchievementsWindowStyle");
-            result = result.Replace("AchievementsWindowStyle", "AchievementsWindow");
-            replacements += CountOccurrences(originalContent, "AchievementsWindowStyle");
+            // Plugin looks for "GameAchievementsWindow" but themes have "GameAchievementsWindowStyle".
+            // Skip each rename if a style with the target key already exists in the file — renaming
+            // would produce a duplicate x:Key which causes a fatal XAML parse error on load.
+            // Themes like Aniki ReMake already ship both keys (one for PA, one for SS fall-back).
+            bool hasNativeGameAchievementsWindow = Regex.IsMatch(originalContent, @"[""']GameAchievementsWindow[""']");
+            if (!hasNativeGameAchievementsWindow)
+            {
+                result = result.Replace("GameAchievementsWindowStyle", "GameAchievementsWindow");
+                replacements += CountOccurrences(originalContent, "GameAchievementsWindowStyle");
+            }
+
+            // NOTE: "AchievementsWindowStyle" is a substring of "GameAchievementsWindowStyle".
+            // Use a negative lookbehind to avoid renaming GameAchievementsWindowStyle here —
+            // that key is handled (or deliberately skipped) by the guard above.
+            bool hasNativeAchievementsWindow = Regex.IsMatch(originalContent, @"[""']AchievementsWindow[""']");
+            if (!hasNativeAchievementsWindow)
+            {
+                result = Regex.Replace(result, @"(?<![a-zA-Z])AchievementsWindowStyle", "AchievementsWindow");
+                replacements += Regex.Matches(originalContent, @"(?<![a-zA-Z])AchievementsWindowStyle").Count;
+            }
 
             // Convert DataContext bindings to use PluginSettings with our exposed properties
             // {Binding SelectedGame.DisplayBackgroundImageObject} -> {PluginSettings Plugin=PlayniteAchievements, Path=SelectedGameBackgroundPath}

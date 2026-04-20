@@ -16,6 +16,8 @@ namespace PlayniteAchievements.Services.ThemeMigration
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
         private const string BackupFolderName = "PlayniteAchievements_backup";
+        // Must match ThemeMigrationService.PluginExtensionId
+        private const string PluginExtensionId = "PlayniteAchievementsSantodan";
 
         public ThemeDiscoveryService(ILogger logger, IPlayniteAPI playniteApi)
         {
@@ -331,6 +333,15 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 return false;
             }
 
+            // Themes built for the original PlayniteAchievements fork (e.g. Aniki ReMake) write
+            // "PluginStatus Plugin=PlayniteAchievements" for install checks.  PluginStatus resolves
+            // against the extension ID, not the SourceName, so this always returns false in this fork
+            // (ID = PlayniteAchievementsSantodan).  Detect and flag them for migration.
+            if (Regex.IsMatch(content, @"PluginStatus\s+Plugin=PlayniteAchievements(?!Santodan)", RegexOptions.IgnoreCase))
+            {
+                return true;
+            }
+
             if (content.IndexOf("SuccessStoryFullscreenHelper", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 content.IndexOf("playnite-successstory-plugin", StringComparison.OrdinalIgnoreCase) >= 0 ||
                 content.IndexOf("SSHelper", StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -368,7 +379,10 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 return false;
             }
 
-            return content.IndexOf("PlayniteAchievements", StringComparison.OrdinalIgnoreCase) >= 0;
+            // Only treat as already-native if the theme explicitly references the Santodan extension ID.
+            // Themes that only contain the SourceName "PlayniteAchievements" (e.g. PluginSettings bindings)
+            // still need the PluginStatus install-check bindings fixed.
+            return content.IndexOf(PluginExtensionId, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static string GetStandaloneControlNamePattern(string controlName)
