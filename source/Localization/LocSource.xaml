@@ -540,6 +540,7 @@
     <sys:String x:Key="LOCPlayAch_Auth_Authenticated">Authenticated</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_Checking">Checking authentication...</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_NotChecked">Not checked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_TemporaryFailure">Authentication check failed. Retry.</sys:String>
 
     <!-- ================================================================= -->
     <!-- 12 Sidebar and Filters -->
