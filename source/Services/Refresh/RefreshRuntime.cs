@@ -82,11 +82,11 @@ namespace PlayniteAchievements.Services
             }
 
             _logger.Info("Refresh attempted but no platforms are authenticated.");
-            _api.Dialogs.ShowMessage(
+            PostToUi(() => _api.Dialogs.ShowMessage(
                 ResourceProvider.GetString("LOCPlayAch_Error_NoAuthenticatedProviders"),
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.OK,
-                MessageBoxImage.Warning);
+                MessageBoxImage.Warning));
             return Array.Empty<IDataProvider>();
         }
 

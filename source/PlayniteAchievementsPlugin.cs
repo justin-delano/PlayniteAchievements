@@ -301,6 +301,7 @@ namespace PlayniteAchievements
                         PlayniteApi,
                         _logger,
                         _refreshService,
+                        _refreshCoordinator,
                         _cacheManager,
                         PersistSettingsForUi,
                         _achievementOverridesService,
@@ -336,7 +337,8 @@ namespace PlayniteAchievements
                         _refreshCoordinator,
                         _settingsViewModel.Settings,
                         _fullscreenWindowService,
-                        _logger);
+                        _logger,
+                        _windowService.RunRefreshWithGlobalProgressAsync);
 
                     SubscribeDatabaseEventHandlers();
 

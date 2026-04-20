@@ -73,6 +73,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly RefreshRuntime _refreshService;
         private readonly AchievementDataService _achievementDataService;
         private readonly RefreshEntryPoint _refreshCoordinator;
+        private readonly Func<RefreshRequest, string, bool, Action<bool>, Task> _runRefreshWithGlobalProgressAsync;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly FullscreenWindowService _windowService;
         private readonly ThemeRuntimeState _runtimeState = new ThemeRuntimeState();
@@ -102,12 +103,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings,
             FullscreenWindowService windowService,
-            ILogger logger)
+            ILogger logger,
+            Func<RefreshRequest, string, bool, Action<bool>, Task> runRefreshWithGlobalProgressAsync = null)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _refreshCoordinator = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
+            _runRefreshWithGlobalProgressAsync = runRefreshWithGlobalProgressAsync ?? RunRefreshWithoutGlobalProgressAsync;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
             _logger = logger;
@@ -598,6 +601,51 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         #region Refresh Operations
 
+        public Task RunFullscreenRefreshRequestAsync(
+            RefreshRequest request,
+            string errorLogMessage,
+            bool validateAuthentication,
+            Action<bool> onCompleted = null)
+        {
+            request ??= new RefreshRequest();
+
+            EnsureFullscreenInitialized();
+            _logger?.Info($"RunFullscreenRefreshRequestAsync: Starting mode={request.Mode}, singleGameId={request.SingleGameId}, explicitGameCount={request.GameIds?.Count ?? 0}, validateAuthentication={validateAuthentication}");
+
+            var singleGameId = request.SingleGameId;
+            if (!singleGameId.HasValue && request.Mode == RefreshModeType.Single)
+            {
+                singleGameId = GetSingleSelectedGameId();
+            }
+
+            var resolvedErrorMessage = !string.IsNullOrWhiteSpace(errorLogMessage)
+                ? errorLogMessage
+                : request.Mode.HasValue
+                    ? GetLocalizedRefreshFailureMessage(request.Mode.Value)
+                    : ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
+
+            return _runRefreshWithGlobalProgressAsync(
+                request,
+                resolvedErrorMessage,
+                validateAuthentication,
+                success =>
+                {
+                    if (success)
+                    {
+                        _logger?.Info($"RunFullscreenRefreshRequestAsync: Completed, success={success}, mode={request.Mode}, singleGameId={singleGameId}");
+                    }
+
+                    if (singleGameId.HasValue)
+                    {
+                        try { RequestUpdate(singleGameId.Value); } catch { }
+                    }
+
+                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+
+                    try { onCompleted?.Invoke(success); } catch { }
+                });
+        }
+
         private void RefreshWithMode(RefreshModeType mode)
         {
             Guid? gameIdForThemeUpdate = null;
@@ -618,15 +666,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void RunAchievementRefresh(RefreshModeType mode, Guid? gameIdForThemeUpdate)
         {
-            var errorLogMessage = mode switch
-            {
-                RefreshModeType.Full => "Full achievement refresh failed.",
-                RefreshModeType.Installed => "Installed games achievement refresh failed.",
-                RefreshModeType.Single => "Single game achievement refresh failed.",
-                RefreshModeType.Recent => "Recent achievement refresh failed.",
-                RefreshModeType.Favorites => "Favorites achievement refresh failed.",
-                _ => "Achievement refresh failed."
-            };
+            var errorLogMessage = GetLocalizedRefreshFailureMessage(mode);
 
             var isFullscreen = IsFullscreen();
             _logger?.Info($"RunAchievementRefresh: mode={mode}, isFullscreen={isFullscreen}, gameId={gameIdForThemeUpdate}");
@@ -646,96 +686,71 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             Guid? gameIdForThemeUpdate,
             string errorLogMessage)
         {
-            var progressOptions = new GlobalProgressOptions(ResourceProvider.GetString("LOCPlayAch_Status_Starting"), true)
+            var request = new RefreshRequest
             {
-                Cancelable = true,
-                IsIndeterminate = false
+                Mode = mode,
+                SingleGameId = mode == RefreshModeType.Single ? gameIdForThemeUpdate : null
             };
 
-            _api.Dialogs.ActivateGlobalProgress((progress) =>
-            {
-                progress.ProgressMaxValue = 100;
-                progress.CurrentProgressValue = 0;
-
-                EventHandler<ProgressReport> progressHandler = null;
-                progressHandler = (sender, report) =>
+            _ = _runRefreshWithGlobalProgressAsync(
+                request,
+                errorLogMessage,
+                false,
+                success =>
                 {
-                    if (report == null) return;
-
-                    try
+                    if (success)
                     {
-                        if (!string.IsNullOrWhiteSpace(report.Message))
-                        {
-                            progress.Text = report.Message;
-                        }
-
-                        var percent = report.PercentComplete;
-                        if (percent <= 0 || double.IsNaN(percent))
-                        {
-                            if (report.TotalSteps > 0)
-                            {
-                                percent = (report.CurrentStep * 100.0) / report.TotalSteps;
-                            }
-                            else
-                            {
-                                percent = 0;
-                            }
-                        }
-                        progress.CurrentProgressValue = Math.Max(0, Math.Min(100, percent));
-
-                        if (report.IsCanceled || progress.CancelToken.IsCancellationRequested)
-                        {
-                            _logger?.Info("Progress handler detected cancellation request.");
-                            return;
-                        }
+                        _logger?.Info($"RunAchievementRefreshWithGlobalProgress: Completed, success={success}, gameId={gameIdForThemeUpdate}");
                     }
-                    catch { }
-                };
 
-                _refreshService.RebuildProgress += progressHandler;
-
-                try
-                {
-                    var request = new RefreshRequest
-                    {
-                        Mode = mode,
-                        SingleGameId = mode == RefreshModeType.Single ? gameIdForThemeUpdate : null
-                    };
-
-                    var refreshTask = _refreshCoordinator.ExecuteAsync(
-                        request,
-                        new RefreshExecutionPolicy
-                        {
-                            ValidateAuthentication = false,
-                            SwallowExceptions = false,
-                            ErrorLogMessage = errorLogMessage,
-                            ExternalCancellationToken = progress.CancelToken
-                        });
-
-                    refreshTask.Wait(progress.CancelToken);
-                    progress.CurrentProgressValue = 100;
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
-                }
-                catch (OperationCanceledException)
-                {
-                    _refreshService.CancelCurrentRebuild();
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Error(ex, errorLogMessage);
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
-                }
-                finally
-                {
-                    _refreshService.RebuildProgress -= progressHandler;
                     if (gameIdForThemeUpdate.HasValue)
                     {
                         try { RequestUpdate(gameIdForThemeUpdate.Value); } catch { }
                     }
+
                     try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
-                }
-            }, progressOptions);
+                });
+        }
+
+        private Task RunRefreshWithoutGlobalProgressAsync(
+            RefreshRequest request,
+            string errorLogMessage,
+            bool validateAuthentication,
+            Action<bool> onCompleted)
+        {
+            request ??= new RefreshRequest();
+
+            return _refreshCoordinator.ExecuteAsync(
+                request,
+                new RefreshExecutionPolicy
+                {
+                    ValidateAuthentication = validateAuthentication,
+                    SwallowExceptions = true,
+                    ErrorLogMessage = errorLogMessage,
+                    OnRefreshCompleted = success =>
+                    {
+                        try
+                        {
+                            onCompleted?.Invoke(success);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.Debug(ex, "Refresh completion callback failed.");
+                        }
+                    }
+                });
+        }
+
+        private static string GetLocalizedRefreshFailureMessage(RefreshModeType mode)
+        {
+            var modeName = ResourceProvider.GetString(mode.GetResourceKey());
+            var format = ResourceProvider.GetString("LOCPlayAch_Error_RefreshFailed");
+            if (!string.IsNullOrWhiteSpace(format) && !string.IsNullOrWhiteSpace(modeName))
+            {
+                return string.Format(format, modeName);
+            }
+
+            return ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
         }
 
         private void RunAchievementRefreshWithProgressWindow(
