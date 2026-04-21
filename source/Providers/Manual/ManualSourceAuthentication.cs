@@ -120,7 +120,7 @@ namespace PlayniteAchievements.Providers.Manual
             var sourceKey = source?.SourceKey?.Trim();
             if (string.Equals(sourceKey, "Steam", StringComparison.OrdinalIgnoreCase))
             {
-                return "LOCPlayAch_ManualAchievements_Schema_ApiKeyRequired";
+                return "LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired";
             }
 
             if (string.Equals(sourceKey, "Exophase", StringComparison.OrdinalIgnoreCase))

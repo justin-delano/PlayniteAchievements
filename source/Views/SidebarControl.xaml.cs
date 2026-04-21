@@ -100,6 +100,7 @@ namespace PlayniteAchievements.Views
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.SetActive(false);
+            PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
         }
 
         private void InitSaveTimer()
@@ -139,6 +140,7 @@ namespace PlayniteAchievements.Views
                 {
                     _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
                 }
+                PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
                 FlushPendingUpdates();
                 DetachAllHandlers();
                 _viewModel?.Dispose();
@@ -159,7 +161,13 @@ namespace PlayniteAchievements.Views
             // GameAchievementsGrid uses AchievementDataGridControl with built-in persistence
             ApplyVisibilityToGrids();
             ApplyWidthsToGrids();
+            ResetAchievementsSortDirection();
             UpdatePieChartLayout();
+        }
+
+        private void Plugin_SettingsSaved(object sender, EventArgs e)
+        {
+            ResetAchievementsSortDirection();
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -188,6 +196,8 @@ namespace PlayniteAchievements.Views
             // This prevents flicker by ensuring all layout happens in one render pass
             Dispatcher.BeginInvoke(new Action(() =>
             {
+                ResetAchievementsSortDirection();
+
                 if (!_viewModel.IsGameSelected)
                 {
                     ResetRecentAchievementsToDefaultSort();
@@ -1434,13 +1444,18 @@ namespace PlayniteAchievements.Views
             if (grid == null) return;
             foreach (var c in grid.Columns) c.SortDirection = null;
 
-            if (_viewModel?.SelectedGameHasCustomAchievementOrder == true)
+            if (_viewModel?.IsGameSelected != true)
             {
+                GameAchievementsGrid?.SetSortIndicator(null, null);
                 return;
             }
 
-            // Use SetSortIndicator on the control for external sorting
-            GameAchievementsGrid?.SetSortIndicator("UnlockTime", ListSortDirection.Descending);
+            AchievementSortHelper.ApplySortIndicator(
+                _viewModel.SelectedGameSortPath,
+                _viewModel.SelectedGameSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.SidebarSelectedGame,
+                (sortPath, sortDirection) => GameAchievementsGrid?.SetSortIndicator(sortPath, sortDirection));
         }
 
         private void ResetRecentAchievementsSortDirection()
@@ -1482,5 +1497,6 @@ namespace PlayniteAchievements.Views
         }
     }
 }
+
 
 

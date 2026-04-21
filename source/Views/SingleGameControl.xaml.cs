@@ -92,13 +92,18 @@ namespace PlayniteAchievements.Views
 
         private void UpdateDefaultSortIndicator()
         {
-            if (ViewModel?.HasCustomAchievementOrder == true)
+            if (ViewModel == null)
             {
                 AchievementsDataGridControl?.SetSortIndicator(null, null);
                 return;
             }
 
-            AchievementsDataGridControl?.SetSortIndicator("UnlockTime", ListSortDirection.Descending);
+            AchievementSortHelper.ApplySortIndicator(
+                ViewModel.CurrentSortPath,
+                ViewModel.CurrentSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.SingleGame,
+                (sortPath, sortDirection) => AchievementsDataGridControl?.SetSortIndicator(sortPath, sortDirection));
         }
 
         private void OnGridSorting(object sender, DataGridSortingEventArgs e)
@@ -225,4 +230,5 @@ namespace PlayniteAchievements.Views
         }
     }
 }
+
 

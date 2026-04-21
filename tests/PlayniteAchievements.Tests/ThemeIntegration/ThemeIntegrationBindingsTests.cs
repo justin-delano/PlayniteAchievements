@@ -72,6 +72,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
 
             Assert.IsTrue(state.HasCustomAchievementOrder);
             AssertAchievementNames(state.AllAchievements, "Third", "First", "Second");
+            AssertAchievementNames(state.AchievementDefaultOrder, "Third", "First", "Second");
         }
 
         [TestMethod]
@@ -103,6 +104,12 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 "Unlocked Older",
                 "Unlocked No Time",
                 "Locked");
+            AssertAchievementNames(
+                state.AchievementDefaultOrder,
+                "Locked",
+                "Unlocked Older",
+                "Unlocked Newer",
+                "Unlocked No Time");
         }
 
         [TestMethod]
@@ -317,12 +324,14 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             service.PopulateSingleGameDataSync(gameId);
 
             Assert.AreEqual(3, settings.Achievements.Count);
+            Assert.AreEqual(3, settings.AchievementDefaultOrder.Count);
             Assert.AreEqual(3, settings.AchievementsNewestFirst.Count);
             Assert.AreEqual(3, settings.AchievementsOldestFirst.Count);
             Assert.AreEqual(3, settings.AchievementsRarityAsc.Count);
             Assert.AreEqual(3, settings.AchievementsRarityDesc.Count);
 
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.Achievements)));
+            Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AchievementDefaultOrder)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AchievementsNewestFirst)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AchievementsOldestFirst)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AchievementsRarityAsc)));
@@ -366,6 +375,55 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
 
             Assert.IsTrue(settings.ModernTheme.HasCustomAchievementOrder);
             AssertAchievementNames(settings.Achievements, "Three", "One", "Two");
+            AssertAchievementNames(settings.AchievementDefaultOrder, "Three", "One", "Two");
+        }
+
+        [TestMethod]
+        public void PopulateSingleGameDataSync_UsesVisibleAchievementProjection()
+        {
+            var gameId = Guid.NewGuid();
+            var settings = new PlayniteAchievementsSettings();
+            var plugin = new PlayniteAchievementsPlugin
+            {
+                Settings = settings
+            };
+            PlayniteAchievementsPlugin.Instance = plugin;
+
+            var rawVisible = Achievement("Visible", 75.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 1, 9, 0, 0));
+            var rawAlsoVisible = Achievement("Visible Too", 25.0, unlocked: false);
+            var rawIgnored = Achievement("Ignored Entry", 2.0, unlocked: true, unlockTimeUtc: Utc(2026, 3, 2, 9, 0, 0));
+            rawIgnored.CategoryType = "Ignored";
+
+            var visibleData = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = new Game { Id = gameId, Name = "Visible Projection Game" },
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail> { rawVisible, rawAlsoVisible }
+            };
+
+            var api = new FakePlayniteApi();
+            var refreshRuntime = new RefreshRuntime();
+            var achievementDataService = new AchievementDataService();
+            achievementDataService.GameDataById[gameId] = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = visibleData.Game,
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail> { rawVisible, rawAlsoVisible, rawIgnored }
+            };
+            achievementDataService.VisibleGameDataById[gameId] = visibleData;
+
+            var refreshCoordinator = new RefreshEntryPoint(refreshRuntime, logger: null);
+            var windowService = new FullscreenWindowService(api, settings, _ => { });
+            var logger = new FakeLogger();
+            using var service = new ThemeIntegrationService(api, refreshRuntime, achievementDataService, refreshCoordinator, settings, windowService, logger);
+
+            service.PopulateSingleGameDataSync(gameId);
+
+            Assert.AreEqual(2, settings.Achievements.Count);
+            AssertAchievementNames(settings.Achievements, "Visible", "Visible Too");
+            Assert.AreEqual(50d, settings.ProgressPercentage);
         }
 
         [TestMethod]
@@ -403,6 +461,115 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             CollectionAssert.AreEqual(
                 new[] { "Ultra", "Rare", "Common" },
                 state.AchievementsOldestFirst.Select(a => a.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void OpenAchievementWindow_UsesVisibleThemeLibraryProjection()
+        {
+            using var context = CreateServiceContext();
+
+            var gameId = Guid.NewGuid();
+            var game = new Game
+            {
+                Id = gameId,
+                Name = "Library Projection Game",
+                LastActivity = Utc(2026, 4, 9, 8, 0, 0)
+            };
+
+            var visibleUnlocked = Achievement("Visible Unlock", 8.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 1, 9, 0, 0));
+            var visibleLocked = Achievement("Visible Locked", 75.0, unlocked: false);
+            var ignored = Achievement("Ignored Unlock", 2.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 2, 9, 0, 0));
+            ignored.CategoryType = "Ignored";
+
+            context.AchievementDataService.AllGameData = new List<GameAchievementData>
+            {
+                new GameAchievementData
+                {
+                    PlayniteGameId = gameId,
+                    ProviderKey = "Steam",
+                    Game = game,
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail> { visibleUnlocked, visibleLocked, ignored }
+                }
+            };
+            context.AchievementDataService.VisibleAllGameData = new List<GameAchievementData>
+            {
+                new GameAchievementData
+                {
+                    PlayniteGameId = gameId,
+                    ProviderKey = "Steam",
+                    Game = game,
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail> { visibleUnlocked, visibleLocked }
+                }
+            };
+
+            context.Settings.OpenAchievementWindow.Execute(null);
+
+            Assert.AreEqual(2, context.Settings.DynamicLibraryAchievements.Count);
+            AssertAchievementNames(context.Settings.DynamicLibraryAchievements, "Visible Unlock", "Visible Locked");
+
+            var summary = FindSummary(context.Settings.DynamicGameSummaries, gameId);
+            Assert.AreEqual(1, summary.UnlockedCount);
+            Assert.AreEqual(2, summary.AchievementCount);
+        }
+
+        [TestMethod]
+        public void NotifyCustomDataChanged_RefreshesLoadedThemeBindings()
+        {
+            using var context = CreateServiceContext();
+
+            var gameId = Guid.NewGuid();
+            var game = new Game
+            {
+                Id = gameId,
+                Name = "Immediate Theme Refresh Game",
+                LastActivity = Utc(2026, 4, 9, 8, 0, 0)
+            };
+
+            var initialVisibleOne = Achievement("Visible One", 8.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 1, 9, 0, 0));
+            var initialVisibleTwo = Achievement("Visible Two", 75.0, unlocked: false);
+            var initialSelected = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = game,
+                ProviderKey = "Steam",
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail> { initialVisibleOne, initialVisibleTwo }
+            };
+
+            context.AchievementDataService.VisibleGameDataById[gameId] = initialSelected;
+            context.AchievementDataService.VisibleAllGameData = new List<GameAchievementData> { initialSelected };
+
+            context.Settings.OpenAchievementWindow.Execute(null);
+            context.Service.PopulateSingleGameDataSync(gameId);
+
+            Assert.AreEqual(2, context.Settings.DynamicLibraryAchievements.Count);
+            Assert.AreEqual(2, context.Settings.Achievements.Count);
+
+            var updatedVisible = Achievement("Visible One", 8.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 1, 9, 0, 0));
+            var updatedSelected = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = game,
+                ProviderKey = "Steam",
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail> { updatedVisible }
+            };
+
+            context.AchievementDataService.VisibleGameDataById[gameId] = updatedSelected;
+            context.AchievementDataService.VisibleAllGameData = new List<GameAchievementData> { updatedSelected };
+
+            context.Service.NotifyCustomDataChanged(gameId);
+
+            Assert.AreEqual(1, context.Settings.DynamicLibraryAchievements.Count);
+            AssertAchievementNames(context.Settings.DynamicLibraryAchievements, "Visible One");
+            Assert.AreEqual(1, context.Settings.Achievements.Count);
+            AssertAchievementNames(context.Settings.Achievements, "Visible One");
+
+            var summary = FindSummary(context.Settings.DynamicGameSummaries, gameId);
+            Assert.AreEqual(1, summary.UnlockedCount);
+            Assert.AreEqual(1, summary.AchievementCount);
         }
 
         [TestMethod]
@@ -447,7 +614,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.AreEqual(DynamicThemeViewKeys.All, context.Settings.DynamicAchievementsFilterKey);
             Assert.AreEqual(DynamicThemeViewKeys.Default, context.Settings.DynamicAchievementsSortKey);
             Assert.AreEqual(DynamicThemeViewKeys.Descending, context.Settings.DynamicAchievementsSortDirectionKey);
-            AssertAchievementNames(context.Settings.DynamicAchievements, "Charlie Ultra", "Bravo Rare", "Alpha Locked");
+            AssertAchievementNames(context.Settings.DynamicAchievements, "Alpha Locked", "Bravo Rare", "Charlie Ultra");
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.DynamicAchievements)));
 
             context.Settings.SetDynamicAchievementsFilterCommand.Execute("uNlOcKeD");
@@ -684,6 +851,85 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void OpenAchievementWindow_PublishesAppleGooglePlayAndUbisoftProviderLists()
+        {
+            PercentRarityHelper.Configure(5, 10, 50);
+
+            using var context = CreateServiceContext();
+            var changedProperties = TrackPropertyChanges(context.Settings);
+
+            var appleGameId = Guid.NewGuid();
+            var googlePlayGameId = Guid.NewGuid();
+            var ubisoftGameId = Guid.NewGuid();
+
+            context.AchievementDataService.AllGameData = new List<GameAchievementData>
+            {
+                new GameAchievementData
+                {
+                    PlayniteGameId = appleGameId,
+                    ProviderKey = "Exophase",
+                    ProviderPlatformKey = "Apple",
+                    Game = new Game
+                    {
+                        Id = appleGameId,
+                        Name = "Apple Summary",
+                        LastActivity = Utc(2026, 4, 10, 8, 0, 0)
+                    },
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail>
+                    {
+                        Achievement("Apple Unlock", 8.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 1, 9, 0, 0))
+                    }
+                },
+                new GameAchievementData
+                {
+                    PlayniteGameId = googlePlayGameId,
+                    ProviderKey = "GooglePlay",
+                    Game = new Game
+                    {
+                        Id = googlePlayGameId,
+                        Name = "Google Play Summary",
+                        LastActivity = Utc(2026, 4, 11, 8, 0, 0)
+                    },
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail>
+                    {
+                        Achievement("Google Play Unlock", 25.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 2, 9, 0, 0))
+                    }
+                },
+                new GameAchievementData
+                {
+                    PlayniteGameId = ubisoftGameId,
+                    ProviderKey = "Exophase",
+                    ProviderPlatformKey = "Ubisoft",
+                    Game = new Game
+                    {
+                        Id = ubisoftGameId,
+                        Name = "Ubisoft Summary",
+                        LastActivity = Utc(2026, 4, 12, 8, 0, 0)
+                    },
+                    HasAchievements = true,
+                    Achievements = new List<AchievementDetail>
+                    {
+                        Achievement("Ubisoft Unlock", 2.0, unlocked: true, unlockTimeUtc: Utc(2026, 4, 3, 9, 0, 0))
+                    }
+                }
+            };
+
+            context.Settings.OpenAchievementWindow.Execute(null);
+
+            AssertSummaryNames(context.Settings.AppleGames, "Apple Summary");
+            AssertSummaryNames(context.Settings.GooglePlayGames, "Google Play Summary");
+            AssertSummaryNames(context.Settings.UbisoftGames, "Ubisoft Summary");
+            Assert.AreEqual("Apple", context.Settings.AppleGames.Single().ProviderKey);
+            Assert.AreEqual("GooglePlay", context.Settings.GooglePlayGames.Single().ProviderKey);
+            Assert.AreEqual("Ubisoft", context.Settings.UbisoftGames.Single().ProviderKey);
+            Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AppleGames)));
+            Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.GooglePlayGames)));
+            Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.UbisoftGames)));
+        }
+
+        [TestMethod]
         public void ClearSingleGameThemeProperties_ResetsAndPublishesRareAndUltraRare()
         {
             var settings = new PlayniteAchievementsSettings();
@@ -692,6 +938,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             settings.ModernTheme.Rare = new AchievementRarityStats { Total = 4, Unlocked = 2, Locked = 2 };
             settings.ModernTheme.UltraRare = new AchievementRarityStats { Total = 1, Unlocked = 1, Locked = 0 };
             settings.ModernTheme.RareAndUltraRare = new AchievementRarityStats { Total = 5, Unlocked = 3, Locked = 2 };
+            settings.ModernTheme.AchievementDefaultOrder = new List<AchievementDetail> { Achievement("Default", 75.0, unlocked: true) };
             settings.ModernTheme.AllAchievements = new List<AchievementDetail> { Achievement("All", 75.0, unlocked: true) };
             settings.ModernTheme.AchievementsNewestFirst = new List<AchievementDetail> { Achievement("Newest", 2.0, unlocked: true) };
             settings.ModernTheme.AchievementsOldestFirst = new List<AchievementDetail> { Achievement("Oldest", 25.0, unlocked: true) };
@@ -715,6 +962,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             AssertStat(settings.ModernTheme.Rare, total: 0, unlocked: 0, locked: 0);
             AssertStat(settings.ModernTheme.UltraRare, total: 0, unlocked: 0, locked: 0);
             AssertStat(settings.ModernTheme.RareAndUltraRare, total: 0, unlocked: 0, locked: 0);
+            Assert.AreEqual(0, settings.AchievementDefaultOrder.Count);
             Assert.AreEqual(0, settings.Achievements.Count);
             Assert.AreEqual(0, settings.AchievementsNewestFirst.Count);
             Assert.AreEqual(0, settings.AchievementsOldestFirst.Count);
@@ -727,6 +975,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.Rare)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.UltraRare)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.RareAndUltraRare)));
+            Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AchievementDefaultOrder)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.Achievements)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AchievementsNewestFirst)));
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AchievementsOldestFirst)));

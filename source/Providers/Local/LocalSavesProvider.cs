@@ -2317,19 +2317,16 @@ namespace PlayniteAchievements.Providers.Local
                     if (Directory.Exists(root))
                     {
                         var candidate = Path.Combine(root, appId);
-                        if (Directory.Exists(candidate))
-                        {
-                            folders.Add(candidate);
-                        }
+                        TryAddLocalFolderCandidate(folders, candidate);
 
                         if (string.Equals(Path.GetFileName(root), appId, StringComparison.OrdinalIgnoreCase))
                         {
-                            folders.Add(root);
+                            TryAddLocalFolderCandidate(folders, root);
                         }
 
                         foreach (var matchDir in Directory.EnumerateDirectories(root, appId, SearchOption.AllDirectories))
                         {
-                            folders.Add(matchDir);
+                            TryAddLocalFolderCandidate(folders, matchDir);
                         }
                     }
                 }
@@ -2351,6 +2348,25 @@ namespace PlayniteAchievements.Providers.Local
             }
 
             return resolvedFolders.ToList();
+        }
+
+        private static void TryAddLocalFolderCandidate(ICollection<string> folders, string folderPath)
+        {
+            if (folders == null || string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
+            {
+                return;
+            }
+
+            if (HasLocalAchievementFiles(folderPath))
+            {
+                folders.Add(folderPath);
+            }
+        }
+
+        private static bool HasLocalAchievementFiles(string folderPath)
+        {
+            return !string.IsNullOrWhiteSpace(ResolveAchievementFilePath(folderPath, "achievements.ini")) ||
+                !string.IsNullOrWhiteSpace(ResolveAchievementFilePath(folderPath, "achievements.json"));
         }
 
         private string ChooseBestLocalFolderCandidate(IEnumerable<string> candidates)
@@ -2829,6 +2845,14 @@ namespace PlayniteAchievements.Providers.Local
             if (!string.IsNullOrWhiteSpace(configuredUserdataPath))
             {
                 roots.Add(configuredUserdataPath);
+
+                var configuredRoots = roots.ToList();
+                lock (_discoveryCacheLock)
+                {
+                    _steamUserdataRootsCache = configuredRoots;
+                }
+
+                return configuredRoots;
             }
 
             foreach (var candidate in GetSteamInstallCandidates())
@@ -2886,9 +2910,18 @@ namespace PlayniteAchievements.Providers.Local
             var roots = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var configuredPath = GetConfiguredSteamBasePath();
-            if (!string.IsNullOrWhiteSpace(configuredPath) && Directory.Exists(configuredPath))
+            if (!string.IsNullOrWhiteSpace(configuredPath) &&
+                Directory.Exists(Path.Combine(configuredPath, "appcache", "stats")))
             {
                 roots.Add(configuredPath);
+
+                var configuredRoots = roots.ToList();
+                lock (_discoveryCacheLock)
+                {
+                    _steamInstallRootsCache = configuredRoots;
+                }
+
+                return configuredRoots;
             }
 
             foreach (var candidate in GetSteamInstallCandidates())
@@ -2904,7 +2937,7 @@ namespace PlayniteAchievements.Providers.Local
                     continue;
                 }
 
-                if (Directory.Exists(Path.Combine(expanded, "appcache", "stats")) || Directory.Exists(Path.Combine(expanded, "userdata")))
+                if (Directory.Exists(Path.Combine(expanded, "appcache", "stats")))
                 {
                     roots.Add(expanded);
                 }
@@ -3015,28 +3048,6 @@ namespace PlayniteAchievements.Providers.Local
             }
 
             var steamSettings = ProviderRegistry.Settings<SteamSettings>();
-            var apiKey = steamSettings?.SteamApiKey?.Trim();
-            if (!string.IsNullOrWhiteSpace(apiKey))
-            {
-                try
-                {
-                    using var httpClient = new HttpClient();
-                    var apiClient = new SteamApiClient(httpClient, _logger);
-                    var language = GetSteamLanguage();
-
-                    var schema = await apiClient.GetSchemaForGameDetailedAsync(apiKey, appId, language, CancellationToken.None).ConfigureAwait(false);
-                    if (schema?.Achievements?.Count > 0)
-                    {
-                        _steamSchemaCache[appId] = schema;
-                        _steamSchemaSourceCache[appId] = "steam-api";
-                        return schema;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log($"STEAM SCHEMA API ERROR: appId={appId} msg={ex.Message}");
-                }
-            }
 
             var appCacheSchema = TryGetSteamAppCacheSchemaAndPercentages(appId);
             if (appCacheSchema?.Achievements?.Count > 0)

@@ -120,6 +120,12 @@
                                Opacity="0.75"
                                TextWrapping="Wrap"
                                Margin="0,6,0,0" />
+                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Category_IgnoredHint}"
+                               Foreground="{DynamicResource TextBrush}"
+                               Opacity="0.68"
+                               FontSize="{DynamicResource FontSizeSmall}"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0" />
                 </StackPanel>
                 <Button Grid.Column="1"
                     Content="{DynamicResource LOCPlayAch_Button_Reset}"
@@ -178,55 +184,7 @@
                     VerticalAlignment="Center"
                     ToolTip="{DynamicResource LOCPlayAch_GameOptions_Category_Filter_Type}">
                 <Button.ContextMenu>
-                    <ContextMenu x:Name="FilterTypeSelectionContextMenu"
-                                  DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
-                                  ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}">
-                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Default}"
-                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                  IsCheckable="True"
-                                  StaysOpenOnClick="True"
-                                  IsChecked="{Binding TypeFilterDefaultSelected, Mode=TwoWay}" />
-                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Base}"
-                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                  IsCheckable="True"
-                                  StaysOpenOnClick="True"
-                                  IsChecked="{Binding TypeFilterBaseSelected, Mode=TwoWay}" />
-                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_DLC}"
-                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                  IsCheckable="True"
-                                  StaysOpenOnClick="True"
-                                  IsChecked="{Binding TypeFilterDlcSelected, Mode=TwoWay}" />
-                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Singleplayer}"
-                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                  IsCheckable="True"
-                                  StaysOpenOnClick="True"
-                                  IsChecked="{Binding TypeFilterSingleplayerSelected, Mode=TwoWay}" />
-                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Multiplayer}"
-                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                  IsCheckable="True"
-                                  StaysOpenOnClick="True"
-                                  IsChecked="{Binding TypeFilterMultiplayerSelected, Mode=TwoWay}" />
-                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Collectable}"
-                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                  IsCheckable="True"
-                                  StaysOpenOnClick="True"
-                                  IsChecked="{Binding TypeFilterCollectableSelected, Mode=TwoWay}" />
-                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Missable}"
-                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                  IsCheckable="True"
-                                  StaysOpenOnClick="True"
-                                  IsChecked="{Binding TypeFilterMissableSelected, Mode=TwoWay}" />
-                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Difficulty}"
-                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                  IsCheckable="True"
-                                  StaysOpenOnClick="True"
-                                  IsChecked="{Binding TypeFilterDifficultySelected, Mode=TwoWay}" />
-                        <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Stackable}"
-                                  Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                  IsCheckable="True"
-                                  StaysOpenOnClick="True"
-                                  IsChecked="{Binding TypeFilterStackableSelected, Mode=TwoWay}" />
-                    </ContextMenu>
+                    <ContextMenu x:Name="FilterTypeSelectionContextMenu" />
                 </Button.ContextMenu>
             </Button>
 
@@ -421,55 +379,7 @@
                             Height="30"
                             Margin="0,6,0,0">
                         <Button.ContextMenu>
-                            <ContextMenu x:Name="TypeSelectionContextMenu"
-                                         DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
-                                         ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}">
-                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Default}"
-                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                          IsCheckable="True"
-                                          StaysOpenOnClick="True"
-                                          IsChecked="{Binding TypeDefaultSelected, Mode=TwoWay}" />
-                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Base}"
-                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                          IsCheckable="True"
-                                          StaysOpenOnClick="True"
-                                          IsChecked="{Binding TypeBaseSelected, Mode=TwoWay}" />
-                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_DLC}"
-                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                          IsCheckable="True"
-                                          StaysOpenOnClick="True"
-                                          IsChecked="{Binding TypeDlcSelected, Mode=TwoWay}" />
-                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Singleplayer}"
-                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                          IsCheckable="True"
-                                          StaysOpenOnClick="True"
-                                          IsChecked="{Binding TypeSingleplayerSelected, Mode=TwoWay}" />
-                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Multiplayer}"
-                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                          IsCheckable="True"
-                                          StaysOpenOnClick="True"
-                                          IsChecked="{Binding TypeMultiplayerSelected, Mode=TwoWay}" />
-                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Collectable}"
-                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                          IsCheckable="True"
-                                          StaysOpenOnClick="True"
-                                          IsChecked="{Binding TypeCollectableSelected, Mode=TwoWay}" />
-                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Missable}"
-                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                          IsCheckable="True"
-                                          StaysOpenOnClick="True"
-                                          IsChecked="{Binding TypeMissableSelected, Mode=TwoWay}" />
-                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Difficulty}"
-                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                          IsCheckable="True"
-                                          StaysOpenOnClick="True"
-                                          IsChecked="{Binding TypeDifficultySelected, Mode=TwoWay}" />
-                                <MenuItem Header="{DynamicResource LOCPlayAch_GameOptions_Category_Type_Stackable}"
-                                          Style="{StaticResource AchievementMultiSelectMenuItemStyle}"
-                                          IsCheckable="True"
-                                          StaysOpenOnClick="True"
-                                          IsChecked="{Binding TypeStackableSelected, Mode=TwoWay}" />
-                            </ContextMenu>
+                            <ContextMenu x:Name="TypeSelectionContextMenu" />
                         </Button.ContextMenu>
                     </Button>
 

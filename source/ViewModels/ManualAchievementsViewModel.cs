@@ -481,11 +481,6 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                await ManualSourceAuthentication.EnsureAuthenticatedIfRequiredAsync(
-                    _source,
-                    RequireExophaseAuthentication,
-                    ct);
-
                 var results = await _source.SearchGamesAsync(SearchText.Trim(), _language, ct);
 
                 if (ct.IsCancellationRequested)
@@ -596,7 +591,7 @@ namespace PlayniteAchievements.ViewModels
 
             var hadExistingLink = ManualAchievementsProvider.TryGetManualLink(_playniteGame.Id, out var existingLink);
             var rollbackLink = existingLink?.Clone();
-            var rollbackCacheData = _cacheManager?.LoadGameData(_playniteGame.Id.ToString());
+            var rollbackCacheData = _achievementDataService?.GetRawGameAchievementData(_playniteGame.Id);
             var rollbackPending = true;
 
             SetLinkInMemory(link);
@@ -826,7 +821,7 @@ namespace PlayniteAchievements.ViewModels
 
         private bool TransitionToEditing(ManualAchievementLink link, bool requireManualProviderData = false)
         {
-            var cachedData = _cacheManager.LoadGameData(_playniteGame.Id.ToString());
+            var cachedData = _achievementDataService.GetRawGameAchievementData(_playniteGame.Id);
             var hydratedData = _achievementDataService.GetGameAchievementData(_playniteGame.Id);
             string providerKey = cachedData?.ProviderKey;
             var achievements = cachedData?.Achievements?
@@ -1444,7 +1439,7 @@ namespace PlayniteAchievements.ViewModels
                 var link = BuildLink();
                 SaveLink(link);
 
-                var cachedData = _cacheManager.LoadGameData(_playniteGame.Id.ToString());
+                var cachedData = _achievementDataService.GetRawGameAchievementData(_playniteGame.Id);
                 if (cachedData?.Achievements != null)
                 {
                     var nowUtc = DateTime.UtcNow;

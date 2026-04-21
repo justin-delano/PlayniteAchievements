@@ -187,6 +187,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var xboxGames = new List<GameAchievementSummary>();
             var psnGames = new List<GameAchievementSummary>();
             var retroAchievementsGames = new List<GameAchievementSummary>();
+            var appleGames = new List<GameAchievementSummary>();
+            var googlePlayGames = new List<GameAchievementSummary>();
+            var ubisoftGames = new List<GameAchievementSummary>();
             var rpcs3Games = new List<GameAchievementSummary>();
             var xeniaGames = new List<GameAchievementSummary>();
             var shadPS4Games = new List<GameAchievementSummary>();
@@ -231,6 +234,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     case "RetroAchievements":
                         retroAchievementsGames.Add(summary);
                         break;
+                    case "Apple":
+                        appleGames.Add(summary);
+                        break;
+                    case "GooglePlay":
+                        googlePlayGames.Add(summary);
+                        break;
+                    case "Ubisoft":
+                        ubisoftGames.Add(summary);
+                        break;
                     case "RPCS3":
                         rpcs3Games.Add(summary);
                         break;
@@ -254,6 +266,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             state.XboxGames = xboxGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.PSNGames = psnGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.RetroAchievementsGames = retroAchievementsGames.OrderByDescending(item => item.LastUnlockDate).ToList();
+            state.AppleGames = appleGames.OrderByDescending(item => item.LastUnlockDate).ToList();
+            state.GooglePlayGames = googlePlayGames.OrderByDescending(item => item.LastUnlockDate).ToList();
+            state.UbisoftGames = ubisoftGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.RPCS3Games = rpcs3Games.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.XeniaGames = xeniaGames.OrderByDescending(item => item.LastUnlockDate).ToList();
             state.ShadPS4Games = shadPS4Games.OrderByDescending(item => item.LastUnlockDate).ToList();
@@ -290,22 +305,22 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     }
                 }
 
-                state.AllAchievementsUnlockAsc = AchievementGridSortHelper.CreateSortedDetailList(
+                state.AllAchievementsUnlockAsc = AchievementSortHelper.CreateSortedDetailList(
                     allAchievements,
                     nameof(AchievementDisplayItem.UnlockTime),
                     ListSortDirection.Ascending,
                     includeGameNameTieBreak: true);
-                state.AllAchievementsUnlockDesc = AchievementGridSortHelper.CreateSortedDetailList(
+                state.AllAchievementsUnlockDesc = AchievementSortHelper.CreateSortedDetailList(
                     allAchievements,
                     nameof(AchievementDisplayItem.UnlockTime),
                     ListSortDirection.Descending,
                     includeGameNameTieBreak: true);
-                state.AllAchievementsRarityAsc = AchievementGridSortHelper.CreateSortedDetailList(
+                state.AllAchievementsRarityAsc = AchievementSortHelper.CreateSortedDetailList(
                     allAchievements,
                     nameof(AchievementDisplayItem.RaritySortValue),
                     ListSortDirection.Ascending,
                     includeGameNameTieBreak: true);
-                state.AllAchievementsRarityDesc = AchievementGridSortHelper.CreateSortedDetailList(
+                state.AllAchievementsRarityDesc = AchievementSortHelper.CreateSortedDetailList(
                     allAchievements,
                     nameof(AchievementDisplayItem.RaritySortValue),
                     ListSortDirection.Descending,
@@ -352,13 +367,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             unlockedAchievements ??= new List<AchievementDetail>();
 
-            var mostRecent = AchievementGridSortHelper.CreateSortedDetailList(
+            var mostRecent = AchievementSortHelper.CreateSortedDetailList(
                 unlockedAchievements,
                 nameof(AchievementDisplayItem.UnlockTime),
                 ListSortDirection.Descending,
                 includeGameNameTieBreak: true);
             var rareRecentCutoffUtc = DateTime.UtcNow.AddDays(-180);
-            var rareRecent = AchievementGridSortHelper.CreateSortedDetailList(
+            var rareRecent = AchievementSortHelper.CreateSortedDetailList(
                 unlockedAchievements.Where(a => NormalizeUtc(a.UnlockTimeUtc.Value) >= rareRecentCutoffUtc),
                 nameof(AchievementDisplayItem.RaritySortValue),
                 ListSortDirection.Ascending,
@@ -551,3 +566,4 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         }
     }
 }
+

@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
@@ -28,6 +29,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
         // Cache the source reference to avoid unnecessary cloning when data hasn't changed
         private List<AchievementDisplayItem> _lastSourceItems;
+        private List<AchievementDetail> _lastOrderedAchievements;
 
         // Sort state tracking
         private string _currentSortPath;
@@ -109,6 +111,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override void OnThemeDataOverrideChangedInternal()
         {
             _lastSourceItems = null;
+            _lastOrderedAchievements = null;
             ResetSortState();
             UpdatePreviewBehavior();
             base.OnThemeDataOverrideChangedInternal();
@@ -159,9 +162,15 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         {
             var theme = EffectiveTheme;
             var sourceItems = theme?.AllAchievementDisplayItems;
+            var settings = EffectiveSettings?.Persisted;
+            var orderedAchievements = AchievementSortHelper.ResolveSelectedGameAchievements(
+                theme,
+                settings,
+                AchievementSortSurface.AchievementDataGrid);
             if (sourceItems == null)
             {
                 _lastSourceItems = null;
+                _lastOrderedAchievements = null;
                 ResetSortState();
                 if (DisplayItems == null)
                 {
@@ -176,31 +185,39 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 return;
             }
 
-            // Skip cloning if the source reference hasn't changed
-            if (ReferenceEquals(sourceItems, _lastSourceItems))
+            var needsReload =
+                !ReferenceEquals(sourceItems, _lastSourceItems) ||
+                !ReferenceEquals(orderedAchievements, _lastOrderedAchievements);
+
+            if (!needsReload)
             {
                 ApplyCurrentSortIndicator(theme);
                 return;
             }
 
             _lastSourceItems = sourceItems;
+            _lastOrderedAchievements = orderedAchievements;
             var revealedKeys = GetRevealedKeys(DisplayItems);
             var clonedItems = sourceItems.Select(item => item.Clone()).ToList();
             RestoreRevealedState(clonedItems, revealedKeys);
 
-            // Reapply current sort if active
             if (!string.IsNullOrWhiteSpace(_currentSortPath) && _currentSortDirection.HasValue)
             {
-                AchievementGridSortHelper.TrySortItems(
+                AchievementSortHelper.TrySortItems(
                     clonedItems,
                     _currentSortPath,
                     _currentSortDirection.Value,
-                    AchievementGridSortScope.GameAchievements,
+                    AchievementSortScope.GameAchievements,
                     ref _currentSortPath,
                     ref _currentSortDirection);
             }
+            else
+            {
+                AchievementSortHelper.ApplyExplicitOrder(
+                    clonedItems,
+                    AchievementSortHelper.CreateExplicitOrderKeys(orderedAchievements));
+            }
 
-            // Initialize or synchronize collection
             if (DisplayItems == null)
             {
                 DisplayItems = new ObservableCollection<AchievementDisplayItem>(clonedItems);
@@ -219,6 +236,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
             return propertyName == nameof(ModernThemeBindings.AllAchievementDisplayItems) ||
+                   AchievementSortHelper.IsSelectedGameAchievementsPropertyName(propertyName) ||
                    propertyName == nameof(ModernThemeBindings.HasCustomAchievementOrder);
         }
 
@@ -227,7 +245,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         /// </summary>
         protected override bool ShouldHandleSettingsDataChange(string propertyName)
         {
-            return propertyName == nameof(PersistedSettings.AchievementDataGridMaxHeight);
+            return propertyName == nameof(PersistedSettings.AchievementDataGridMaxHeight) ||
+                   AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.AchievementDataGrid);
         }
 
         /// <summary>
@@ -274,11 +295,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
             // Sort to a new list
             var items = DisplayItems.ToList();
-            AchievementGridSortHelper.TrySortItems(
+            AchievementSortHelper.TrySortItems(
                 items,
                 sortMemberPath,
                 direction,
-                AchievementGridSortScope.GameAchievements,
+                AchievementSortScope.GameAchievements,
                 ref _currentSortPath,
                 ref _currentSortDirection);
 
@@ -300,20 +321,12 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 return;
             }
 
-            if (!string.IsNullOrWhiteSpace(_currentSortPath) && _currentSortDirection.HasValue)
-            {
-                AchievementsGrid.SetSortIndicator(_currentSortPath, _currentSortDirection);
-                return;
-            }
-
-            if (theme?.HasCustomAchievementOrder == true)
-            {
-                AchievementsGrid.SetSortIndicator(null, null);
-                return;
-            }
-
-            // Mirror sidebar/single-game defaults when no custom order is configured.
-            AchievementsGrid.SetSortIndicator(nameof(AchievementDisplayItem.UnlockTime), ListSortDirection.Descending);
+            AchievementSortHelper.ApplySortIndicator(
+                _currentSortPath,
+                _currentSortDirection,
+                EffectiveSettings?.Persisted,
+                AchievementSortSurface.AchievementDataGrid,
+                (sortPath, sortDirection) => AchievementsGrid.SetSortIndicator(sortPath, sortDirection));
         }
 
         private void UpdatePreviewBehavior()
@@ -388,5 +401,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         }
     }
 }
+
 
 

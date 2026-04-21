@@ -153,6 +153,99 @@ namespace PlayniteAchievements.Providers.Tests
             }
         }
 
+        [TestMethod]
+        public void Provider_SharedRootWithNestedUserPath_IsResolvedForAppDataAndLegacy()
+        {
+            var root = CreateTempDirectory();
+
+            try
+            {
+                var userRoot = Path.Combine(root, "user");
+                var userTrophyPath = Path.Combine(userRoot, "home", "1000", "trophy");
+                var legacyGameDataPath = Path.Combine(userRoot, "game_data");
+
+                Directory.CreateDirectory(userTrophyPath);
+                Directory.CreateDirectory(legacyGameDataPath);
+                File.WriteAllText(Path.Combine(userTrophyPath, "NPWR12345_00.xml"), "<trophyconf/>");
+
+                var provider = CreateProvider(root);
+
+                Assert.AreEqual(userRoot, provider.GetAppDataPath());
+                Assert.AreEqual(legacyGameDataPath, provider.GetGameDataPath());
+                Assert.AreEqual("1000", provider.GetUserId());
+                Assert.IsTrue(provider.IsAuthenticated);
+            }
+            finally
+            {
+                DeleteDirectory(root);
+            }
+        }
+
+        [TestMethod]
+        public void PathResolver_EmulatorRootInput_ResolvesCanonicalRootAndLegacyPath()
+        {
+            var root = CreateTempDirectory();
+
+            try
+            {
+                var userRoot = Path.Combine(root, "user");
+                var legacyGameDataPath = Path.Combine(userRoot, "game_data");
+                Directory.CreateDirectory(legacyGameDataPath);
+
+                Assert.AreEqual(userRoot, ShadPS4PathResolver.ResolveConfiguredRootPath(root));
+                Assert.AreEqual(legacyGameDataPath, ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(root));
+            }
+            finally
+            {
+                DeleteDirectory(root);
+            }
+        }
+
+        [TestMethod]
+        public void PathResolver_DataRootInput_ResolvesCanonicalRootAndAppDataPath()
+        {
+            var root = CreateTempDirectory();
+
+            try
+            {
+                var userTrophyPath = Path.Combine(root, "home", "1000", "trophy");
+                Directory.CreateDirectory(userTrophyPath);
+
+                Assert.AreEqual(root, ShadPS4PathResolver.ResolveConfiguredRootPath(root));
+                Assert.AreEqual(root, ShadPS4PathResolver.ResolveConfiguredAppDataPath(root));
+            }
+            finally
+            {
+                DeleteDirectory(root);
+            }
+        }
+
+        [TestMethod]
+        public void PathResolver_LegacyInput_PreservesLegacyPathAndStillFindsAppDataRoot()
+        {
+            var root = CreateTempDirectory();
+
+            try
+            {
+                var userRoot = Path.Combine(root, "user");
+                var legacyGameDataPath = Path.Combine(userRoot, "game_data");
+                var userTrophyPath = Path.Combine(userRoot, "home", "1000", "trophy");
+
+                Directory.CreateDirectory(legacyGameDataPath);
+                Directory.CreateDirectory(userTrophyPath);
+                File.WriteAllText(Path.Combine(userTrophyPath, "NPWR12345_00.xml"), "<trophyconf/>");
+
+                Assert.AreEqual(legacyGameDataPath, ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(legacyGameDataPath));
+                Assert.AreEqual(userRoot, ShadPS4PathResolver.ResolveConfiguredRootPath(legacyGameDataPath));
+                Assert.AreEqual(userRoot, ShadPS4PathResolver.ResolveConfiguredAppDataPath(legacyGameDataPath));
+                Assert.IsTrue(ShadPS4PathResolver.HasConfiguredAppDataTrophyData(legacyGameDataPath));
+            }
+            finally
+            {
+                DeleteDirectory(root);
+            }
+        }
+
         private static ShadPS4DataProvider CreateProvider(string configuredPath, IPlayniteAPI api = null)
         {
             var settings = new PlayniteAchievementsSettings();

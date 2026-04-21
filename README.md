@@ -69,8 +69,9 @@ This is a way of adding all of those achievements that are in the folders ina  w
 
 The entries below are fork-side changes, grouped by date. When a date includes an upstream sync, only the fork-specific additions are called out here.
 
-## 2026- - v2.1.1.4
+## 2026- - v2.1.2.4
 
+- Merge from original v2.1.2 - https://github.com/justin-delano/PlayniteAchievements/releases/tag/v2.1.2
 - Corrected the compatability with Anaki themes
 - Corrected the steam import without API key
 - Added the possibility to import Steam family-shared games

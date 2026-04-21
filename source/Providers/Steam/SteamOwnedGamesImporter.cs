@@ -73,6 +73,7 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly SteamSessionManager _sessionManager;
+        private readonly ImportedGameMetadataApplier _metadataApplier;
 
         public SteamOwnedGamesImporter(
             IPlayniteAPI api,
@@ -82,6 +83,7 @@ namespace PlayniteAchievements.Providers.Steam
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
+            _metadataApplier = new ImportedGameMetadataApplier(_api, _logger, "SteamAch");
         }
 
         public async Task<ImportResult> ImportOwnedGamesAsync(
@@ -103,11 +105,12 @@ namespace PlayniteAchievements.Providers.Steam
             result.IsAuthenticated = true;
             steamSettings = steamSettings ?? ProviderRegistry.Settings<SteamSettings>();
             result.FamilyShareEnabled = steamSettings?.IncludeFamilySharedGames == true;
-            var metadataSourceId = (steamSettings?.ImportedGameMetadataSourceId ?? string.Empty).Trim();
+            var metadataSourceId = ImportedGameMetadataSourceCatalog.NormalizeMetadataSourceId(
+                _api,
+                _logger,
+                steamSettings?.ImportedGameMetadataSourceId ?? string.Empty);
             var usesBuiltInMetadata = ImportedGameMetadataSourceCatalog.IsBuiltInSource(metadataSourceId);
-            var selectedMetadataPlugin = string.IsNullOrWhiteSpace(metadataSourceId) || usesBuiltInMetadata
-                ? null
-                : ImportedGameMetadataSourceCatalog.ResolveMetadataPlugin(_api, _logger, metadataSourceId);
+            var selectedMetadataPlugin = ResolveSelectedMetadataPlugin(metadataSourceId);
             var overwriteExisting = (steamSettings?.ExistingGameImportBehavior ?? SteamExistingGameImportBehavior.OverwriteExisting)
                 == SteamExistingGameImportBehavior.OverwriteExisting;
 
@@ -183,12 +186,12 @@ namespace PlayniteAchievements.Providers.Steam
                             Game imported = null;
                             if (isExistingGame)
                             {
-                                ApplyOwnedGameMetadata(existingGame, ownedGame);
+                                ApplyOwnedGameMetadata(existingGame, ownedGame, selectedMetadataPlugin);
                                 imported = existingGame;
                             }
                             else
                             {
-                                imported = _api.Database.ImportGame(BuildMetadata(ownedGame), steamLibraryPlugin);
+                                imported = _api.Database.ImportGame(BuildMetadata(ownedGame, selectedMetadataPlugin), steamLibraryPlugin);
                             }
 
                             if (imported == null)
@@ -235,14 +238,14 @@ namespace PlayniteAchievements.Providers.Steam
             return result;
         }
 
-        private void ApplyOwnedGameMetadata(Game targetGame, OwnedGame ownedGame)
+        private void ApplyOwnedGameMetadata(Game targetGame, OwnedGame ownedGame, MetadataPlugin selectedMetadataPlugin)
         {
             if (targetGame == null || ownedGame == null)
             {
                 return;
             }
 
-            var metadata = BuildMetadata(ownedGame);
+            var metadata = BuildMetadata(ownedGame, selectedMetadataPlugin);
             if (metadata == null)
             {
                 return;
@@ -289,43 +292,7 @@ namespace PlayniteAchievements.Providers.Steam
             IProgress<ImportProgressInfo> progress,
             SteamSettings steamSettings)
         {
-            var apiKey = steamSettings?.SteamApiKey?.Trim();
             var resolvedGames = new ResolveOwnedGamesResult();
-
-            if (!string.IsNullOrWhiteSpace(apiKey)
-                && !string.IsNullOrWhiteSpace(steamUserId))
-            {
-                var steamApiClient = new SteamApiClient(steamClient.ApiHttpClient, _logger);
-                if (await steamApiClient.ValidateApiKeyAsync(apiKey, steamUserId, ct).ConfigureAwait(false))
-                {
-                    _logger?.Info("[SteamAch] Loading owned Steam games from Steam Web API for owned-games import.");
-                    resolvedGames.Games.AddRange(await steamApiClient.GetOwnedGamesDetailedAsync(apiKey, steamUserId, includePlayedFreeGames: true, ct).ConfigureAwait(false));
-
-                    if (steamSettings?.IncludeFamilySharedGames == true)
-                    {
-                        _logger?.Info("[SteamAch] Family-shared Steam import is enabled.");
-                        _logger?.Info("[SteamAch] Loading family-shared Steam games from Steam Family Groups Web API.");
-                        var familySharedAppIds = await steamApiClient.GetFamilySharedAppIdsAsync(apiKey, steamUserId, ct).ConfigureAwait(false);
-                        if (familySharedAppIds.Count > 0)
-                        {
-                            var familyResolution = await steamClient.ResolveOwnedGamesFromAppIdsAsync(
-                                familySharedAppIds,
-                                "Steam Family Sharing",
-                                ct,
-                                CreateResolutionProgress(progress, "Steam Family Sharing games")).ConfigureAwait(false);
-                            resolvedGames.Games.AddRange(familyResolution.Games);
-                            resolvedGames.WasCanceled = familyResolution.WasCanceled;
-                        }
-                    }
-
-                    var deduplicatedGames = DeduplicateGamesByAppId(resolvedGames.Games);
-                    resolvedGames.Games.Clear();
-                    resolvedGames.Games.AddRange(deduplicatedGames);
-                    return resolvedGames;
-                }
-
-                _logger?.Warn("[SteamAch] Steam Web API key did not validate for owned-games import. Falling back to authenticated store session.");
-            }
 
             var ownedResolution = await steamClient
                 .GetOwnedGamesFromSessionAsync(ct, CreateResolutionProgress(progress, "owned Steam games"))
@@ -393,19 +360,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             try
             {
-                if (ImportedGameMetadataSourceCatalog.IsBuiltInSource(metadataSourceId))
-                {
-                    ApplyBuiltInMetadata(importedGame, appId, metadataSourceId);
-                }
-                else if (selectedMetadataPlugin != null)
-                {
-                    ApplyMetadataPlugin(importedGame, appId, selectedMetadataPlugin);
-                }
-                else
-                {
-                    ApplyDownloadedMetadata(importedGame, metadataDownloader);
-                }
-
+                _metadataApplier.ApplyToGame(importedGame, appId, metadataSourceId, selectedMetadataPlugin, metadataDownloader);
                 NormalizeImportedGameMetadata(importedGame, appId);
                 _api.Database.Games.Update(importedGame);
             }
@@ -413,6 +368,27 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 _logger?.Debug(ex, $"[SteamAch] Failed applying import metadata for appId={appId} game '{importedGame?.Name}'.");
             }
+        }
+
+        private MetadataPlugin ResolveSelectedMetadataPlugin(string metadataSourceId)
+        {
+            var normalizedSourceId = ImportedGameMetadataSourceCatalog.NormalizeMetadataSourceId(_api, _logger, metadataSourceId);
+            if (string.IsNullOrWhiteSpace(normalizedSourceId))
+            {
+                return null;
+            }
+
+            if (ImportedGameMetadataSourceCatalog.IsUniversalSteamMetadataSource(normalizedSourceId))
+            {
+                return ImportedGameMetadataSourceCatalog.ResolveUniversalSteamMetadataPlugin(_api, _logger);
+            }
+
+            if (ImportedGameMetadataSourceCatalog.IsBuiltInSource(normalizedSourceId))
+            {
+                return null;
+            }
+
+            return ImportedGameMetadataSourceCatalog.ResolveMetadataPlugin(_api, _logger, normalizedSourceId);
         }
         private static void ReportProgress(
             IProgress<ImportProgressInfo> progress,
@@ -1387,7 +1363,7 @@ namespace PlayniteAchievements.Providers.Steam
             return string.IsNullOrWhiteSpace(sanitized) ? $"steam_meta_{Guid.NewGuid():N}.img" : sanitized;
         }
 
-        private static GameMetadata BuildMetadata(Models.OwnedGame ownedGame)
+        private GameMetadata BuildMetadata(Models.OwnedGame ownedGame, MetadataPlugin selectedMetadataPlugin)
         {
             var appId = ownedGame?.AppId ?? 0;
             var name = string.IsNullOrWhiteSpace(ownedGame?.Name)
@@ -1397,7 +1373,7 @@ namespace PlayniteAchievements.Providers.Steam
                 ? "Steam"
                 : ownedGame.LibrarySourceName.Trim();
 
-            return new GameMetadata
+            var metadata = new GameMetadata
             {
                 Name = name,
                 SortingName = name,
@@ -1409,6 +1385,164 @@ namespace PlayniteAchievements.Providers.Steam
                     ? DateTimeOffset.FromUnixTimeSeconds(ownedGame.RTimeLastPlayed.Value).UtcDateTime
                     : (DateTime?)null
             };
+
+            if (appId > 0 && selectedMetadataPlugin != null && ImportedGameMetadataSourceCatalog.IsUniversalSteamMetadataPlugin(selectedMetadataPlugin, _api, _logger))
+            {
+                ApplyMetadataPluginToMetadata(metadata, appId, selectedMetadataPlugin);
+            }
+
+            return metadata;
+        }
+
+        private bool ApplyMetadataPluginToMetadata(GameMetadata metadata, int appId, MetadataPlugin metadataPlugin)
+        {
+            if (metadata == null || appId <= 0 || metadataPlugin == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var temporaryGame = new Game
+                {
+                    GameId = metadata.GameId,
+                    Name = metadata.Name,
+                    SortingName = metadata.SortingName,
+                    PluginId = SteamDataProvider.SteamPluginId
+                };
+                var lookupGame = CreateMetadataPluginLookupGame(temporaryGame, appId, metadataPlugin);
+
+                using (var provider = metadataPlugin.GetMetadataProvider(new MetadataRequestOptions(lookupGame, true)))
+                {
+                    if (provider == null)
+                    {
+                        return false;
+                    }
+
+                    var args = new GetMetadataFieldArgs();
+                    var applied = false;
+
+                    var name = provider.GetName(args);
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        metadata.Name = name;
+                        metadata.SortingName = name;
+                        applied = true;
+                    }
+
+                    var description = provider.GetDescription(args);
+                    if (!string.IsNullOrWhiteSpace(description))
+                    {
+                        metadata.Description = PrepareProviderMetadataDescription(description);
+                        applied = true;
+                    }
+
+                    var releaseDate = provider.GetReleaseDate(args);
+                    if (releaseDate != null)
+                    {
+                        metadata.ReleaseDate = releaseDate;
+                        applied = true;
+                    }
+
+                    var criticScore = provider.GetCriticScore(args);
+                    if (criticScore.HasValue)
+                    {
+                        metadata.CriticScore = criticScore;
+                        applied = true;
+                    }
+
+                    var communityScore = provider.GetCommunityScore(args);
+                    if (communityScore.HasValue)
+                    {
+                        metadata.CommunityScore = communityScore;
+                        applied = true;
+                    }
+
+                    var platforms = provider.GetPlatforms(args)?.ToList();
+                    var genres = provider.GetGenres(args)?.ToList();
+                    var developers = provider.GetDevelopers(args)?.ToList();
+                    var publishers = provider.GetPublishers(args)?.ToList();
+                    var tags = provider.GetTags(args)?.ToList();
+                    var features = provider.GetFeatures(args)?.ToList();
+                    var ageRatings = provider.GetAgeRatings(args)?.ToList();
+                    var regions = provider.GetRegions(args)?.ToList();
+                    var series = provider.GetSeries(args)?.ToList();
+                    var links = provider.GetLinks(args)?.ToList();
+
+                    _logger?.Info(
+                        $"[SteamAch] Metadata plugin '{metadataPlugin.Name}' metadata-build field counts for appId={appId}: " +
+                        $"platforms={platforms?.Count ?? 0}, genres={genres?.Count ?? 0}, developers={developers?.Count ?? 0}, " +
+                        $"publishers={publishers?.Count ?? 0}, tags={tags?.Count ?? 0}, features={features?.Count ?? 0}, " +
+                        $"ageRatings={ageRatings?.Count ?? 0}, regions={regions?.Count ?? 0}, series={series?.Count ?? 0}, links={links?.Count ?? 0}.");
+
+                    if (platforms?.Count > 0)
+                    {
+                        metadata.Platforms = new HashSet<MetadataProperty>(platforms);
+                        applied = true;
+                    }
+
+                    if (genres?.Count > 0)
+                    {
+                        metadata.Genres = new HashSet<MetadataProperty>(genres);
+                        applied = true;
+                    }
+
+                    if (developers?.Count > 0)
+                    {
+                        metadata.Developers = new HashSet<MetadataProperty>(developers);
+                        applied = true;
+                    }
+
+                    if (publishers?.Count > 0)
+                    {
+                        metadata.Publishers = new HashSet<MetadataProperty>(publishers);
+                        applied = true;
+                    }
+
+                    if (tags?.Count > 0)
+                    {
+                        metadata.Tags = new HashSet<MetadataProperty>(tags);
+                        applied = true;
+                    }
+
+                    if (features?.Count > 0)
+                    {
+                        metadata.Features = new HashSet<MetadataProperty>(features);
+                        applied = true;
+                    }
+
+                    if (ageRatings?.Count > 0)
+                    {
+                        metadata.AgeRatings = new HashSet<MetadataProperty>(ageRatings);
+                        applied = true;
+                    }
+
+                    if (regions?.Count > 0)
+                    {
+                        metadata.Regions = new HashSet<MetadataProperty>(regions);
+                        applied = true;
+                    }
+
+                    if (series?.Count > 0)
+                    {
+                        metadata.Series = new HashSet<MetadataProperty>(series);
+                        applied = true;
+                    }
+
+                    if (links?.Count > 0)
+                    {
+                        metadata.Links = links.ToList();
+                        applied = true;
+                    }
+
+                    return applied;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[SteamAch] Failed applying metadata plugin '{metadataPlugin?.Name}' while building metadata for appId={appId}.");
+                return false;
+            }
         }
 
         private LibraryPlugin ResolveSteamLibraryPlugin()

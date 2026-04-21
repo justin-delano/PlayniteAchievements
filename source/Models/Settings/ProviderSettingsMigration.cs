@@ -118,8 +118,7 @@ namespace PlayniteAchievements.Models.Settings
             var settings = new SteamSettings
             {
                 IsEnabled = persisted["SteamEnabled"]?.Value<bool>() ?? true,
-                SteamUserId = persisted["SteamUserId"]?.ToString(),
-                SteamApiKey = persisted["SteamApiKey"]?.ToString()
+                SteamUserId = persisted["SteamUserId"]?.ToString()
             };
             providerSettings["Steam"] = JObject.Parse(settings.SerializeToJson());
         }

@@ -41,6 +41,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private List<AchievementDetail> _allAchievements = new List<AchievementDetail>();
         [DontSerialize]
+        private List<AchievementDetail> _achievementDefaultOrder = new List<AchievementDetail>();
+        [DontSerialize]
         private List<AchievementDetail> _achievementsNewestFirst = new List<AchievementDetail>();
         [DontSerialize]
         private List<AchievementDetail> _achievementsOldestFirst = new List<AchievementDetail>();
@@ -155,6 +157,12 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private readonly BulkObservableCollection<GameAchievementSummary> _psnGames = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
         private readonly BulkObservableCollection<GameAchievementSummary> _retroAchievementsGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _appleGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _googlePlayGames = new BulkObservableCollection<GameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<GameAchievementSummary> _ubisoftGames = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
         private readonly BulkObservableCollection<GameAchievementSummary> _rpcs3Games = new BulkObservableCollection<GameAchievementSummary>();
         [DontSerialize]
@@ -360,6 +368,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
 
             _allAchievementDisplayItems = items;
             OnPropertyChanged(nameof(AllAchievementDisplayItems));
+        }
+
+        [DontSerialize]
+        public List<AchievementDetail> AchievementDefaultOrder
+        {
+            get => _achievementDefaultOrder;
+            set => SetValue(ref _achievementDefaultOrder, value);
         }
 
         [DontSerialize]
@@ -745,6 +760,27 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _retroAchievementsGames;
             set => ReplaceCollection(_retroAchievementsGames, value, nameof(RetroAchievementsGames));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> AppleGames
+        {
+            get => _appleGames;
+            set => ReplaceCollection(_appleGames, value, nameof(AppleGames));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> GooglePlayGames
+        {
+            get => _googlePlayGames;
+            set => ReplaceCollection(_googlePlayGames, value, nameof(GooglePlayGames));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> UbisoftGames
+        {
+            get => _ubisoftGames;
+            set => ReplaceCollection(_ubisoftGames, value, nameof(UbisoftGames));
         }
 
         [DontSerialize]

@@ -6,6 +6,7 @@ using PlayniteAchievements.Services.ThemeMigration;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PlayniteAchievements.ThemeMigration.Tests
 {
@@ -58,6 +59,61 @@ namespace PlayniteAchievements.ThemeMigration.Tests
 
                 Assert.IsTrue(theme.NeedsMigration);
                 Assert.IsFalse(theme.CouldNotScan);
+            }
+            finally
+            {
+                DeleteDirectory(themesRoot);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(MigrationMode.Full)]
+        [DataRow(MigrationMode.Custom)]
+        public async Task MigrateThemeAsync_BlocksAdvancedModesForFullscreenThemes(MigrationMode mode)
+        {
+            var themesRoot = CreateThemesRoot();
+
+            try
+            {
+                var themePath = Path.Combine(themesRoot, "Fullscreen", "Aniki-ReMake_ab123456");
+                Directory.CreateDirectory(themePath);
+                var viewPath = Path.Combine(themePath, "View.xaml");
+                File.WriteAllText(Path.Combine(themePath, "theme.yaml"), "Name: Aniki ReMake\nVersion: 2.5.5\n");
+                File.WriteAllText(viewPath, "<TextBlock Text=\"SuccessStory_PluginButton\" />");
+
+                var service = new ThemeMigrationService(new FakeLogger());
+                var result = await service.MigrateThemeAsync(themePath, mode, new CustomMigrationSelection());
+
+                Assert.IsFalse(result.Success);
+                Assert.AreEqual(ThemeMigrationService.FullscreenThemesLimitedOnlyMessage, result.Message);
+                Assert.IsFalse(Directory.Exists(Path.Combine(themePath, "PlayniteAchievements_backup")));
+                Assert.AreEqual("<TextBlock Text=\"SuccessStory_PluginButton\" />", File.ReadAllText(viewPath));
+            }
+            finally
+            {
+                DeleteDirectory(themesRoot);
+            }
+        }
+
+        [TestMethod]
+        public async Task MigrateThemeAsync_AllowsLimitedModeForFullscreenThemes()
+        {
+            var themesRoot = CreateThemesRoot();
+
+            try
+            {
+                var themePath = Path.Combine(themesRoot, "Fullscreen", "Aniki-ReMake_ab123456");
+                Directory.CreateDirectory(themePath);
+                var viewPath = Path.Combine(themePath, "View.xaml");
+                File.WriteAllText(Path.Combine(themePath, "theme.yaml"), "Name: Aniki ReMake\nVersion: 2.5.5\n");
+                File.WriteAllText(viewPath, "<TextBlock Text=\"SuccessStory\" />");
+
+                var service = new ThemeMigrationService(new FakeLogger());
+                var result = await service.MigrateThemeAsync(themePath, MigrationMode.Limited);
+
+                Assert.IsTrue(result.Success);
+                Assert.IsTrue(Directory.Exists(Path.Combine(themePath, "PlayniteAchievements_backup")));
+                Assert.AreEqual("<TextBlock Text=\"PlayniteAchievements\" />", File.ReadAllText(viewPath));
             }
             finally
             {

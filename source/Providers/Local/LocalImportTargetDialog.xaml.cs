@@ -79,6 +79,19 @@ namespace PlayniteAchievements.Providers.Local
                 typeof(LocalImportTargetDialog),
                 new PropertyMetadata(string.Empty));
 
+        public bool IncludeFoldersWithoutAchievementFiles
+        {
+            get => (bool)GetValue(IncludeFoldersWithoutAchievementFilesProperty);
+            set => SetValue(IncludeFoldersWithoutAchievementFilesProperty, value);
+        }
+
+        public static readonly DependencyProperty IncludeFoldersWithoutAchievementFilesProperty =
+            DependencyProperty.Register(
+                nameof(IncludeFoldersWithoutAchievementFiles),
+                typeof(bool),
+                typeof(LocalImportTargetDialog),
+                new PropertyMetadata(false));
+
         public bool? DialogResult { get; private set; }
 
         public event EventHandler RequestClose;
@@ -88,6 +101,7 @@ namespace PlayniteAchievements.Providers.Local
             string customSourceName,
             string metadataSourceId,
             string steamAppCacheUserId,
+            bool includeFoldersWithoutAchievementFiles,
             LocalExistingGameImportBehavior existingGameBehavior,
             IEnumerable<string> sourceOptions,
             IEnumerable<ImportedGameMetadataSourceOption> metadataSourceOptions,
@@ -127,6 +141,7 @@ namespace PlayniteAchievements.Providers.Local
             CustomSourceName = ResolveSelectedSource(customSourceName);
             MetadataSourceId = ResolveSelectedMetadataSourceId(metadataSourceId);
             SteamAppCacheUserId = ResolveSelectedSteamAppCacheUserId(steamAppCacheUserId);
+            IncludeFoldersWithoutAchievementFiles = includeFoldersWithoutAchievementFiles;
             ExistingGameBehavior = existingGameBehavior;
             DataContext = this;
             RefreshControlState();

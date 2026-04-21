@@ -395,6 +395,11 @@ namespace PlayniteAchievements.Services
                     break;
             }
 
+            if (ShouldApplyHiddenFilter(options.Scope))
+            {
+                scopedGames = BulkRefreshGameFilter.ApplyHiddenFilter(scopedGames, _settings?.Persisted);
+            }
+
             return scopedGames.ToList();
         }
 
@@ -463,13 +468,15 @@ namespace PlayniteAchievements.Services
 
         private List<Guid> GetInstalledGameIds()
         {
-            var games = _api.Database.Games
+            IEnumerable<Game> games = _api.Database.Games
                 .Where(g => g != null && IsInstalledOrHasOverride(g));
 
             if (!ShouldIncludeUnplayedGames())
             {
                 games = games.Where(g => g.Playtime > 0);
             }
+
+            games = BulkRefreshGameFilter.ApplyHiddenFilter(games, _settings?.Persisted);
 
             return games
                 .Select(g => g.Id)
@@ -504,8 +511,9 @@ namespace PlayniteAchievements.Services
 
         private List<Guid> GetFavoriteGameIds()
         {
-            return _api.Database.Games
-                .Where(g => g != null && g.Favorite)
+            return BulkRefreshGameFilter.ApplyHiddenFilter(
+                    _api.Database.Games.Where(g => g != null && g.Favorite),
+                    _settings?.Persisted)
                 .Select(g => g.Id)
                 .ToList();
         }
@@ -516,6 +524,21 @@ namespace PlayniteAchievements.Services
                 .Where(g => g != null)
                 .Select(g => g.Id)
                 .ToList();
+        }
+
+        private static bool ShouldApplyHiddenFilter(CustomGameScope scope)
+        {
+            switch (scope)
+            {
+                case CustomGameScope.All:
+                case CustomGameScope.Installed:
+                case CustomGameScope.Favorites:
+                case CustomGameScope.Recent:
+                case CustomGameScope.Missing:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

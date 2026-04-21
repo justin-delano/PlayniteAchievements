@@ -24,7 +24,6 @@ namespace PlayniteAchievements.Views
     {
         private readonly ILogger _logger;
         private readonly RefreshRuntime _refreshService;
-        private readonly ICacheManager _cacheManager;
         private readonly RefreshEntryPoint _refreshCoordinator;
         private readonly PlayniteAchievementsPlugin _plugin;
         private PlayniteAchievementsSettings _settings;
@@ -248,7 +247,6 @@ namespace PlayniteAchievements.Views
             IPlayniteAPI api,
             ILogger logger,
             RefreshRuntime refreshRuntime,
-            ICacheManager cacheManager,
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings,
             PlayniteAchievementsPlugin plugin,
@@ -257,7 +255,6 @@ namespace PlayniteAchievements.Views
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
-            _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
             _refreshCoordinator = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
@@ -378,8 +375,8 @@ namespace PlayniteAchievements.Views
             {
                 try
                 {
-                    var cachedIds = _cacheManager.GetCachedGameIds();
-                    return cachedIds != null && cachedIds.Count > 0;
+                    var dataService = _plugin?.AchievementDataService;
+                    return dataService?.HasCachedGameData() == true;
                 }
                 catch (Exception ex)
                 {
@@ -617,6 +614,7 @@ namespace PlayniteAchievements.Views
             {
                 _selectedThemePath = value;
                 OnPropertyChanged(nameof(SelectedThemePath));
+                UpdateThemeMigrationModeButtonState();
             }
         }
 
@@ -839,6 +837,7 @@ namespace PlayniteAchievements.Views
                     ShowNoRevertableThemesMessage = true;
                     OnPropertyChanged(nameof(HasThemesToMigrate));
                     OnPropertyChanged(nameof(HasRevertableThemes));
+                    UpdateThemeMigrationModeButtonState();
                     return;
                 }
 
@@ -863,6 +862,7 @@ namespace PlayniteAchievements.Views
                 ShowNoRevertableThemesMessage = _revertableThemes.Count == 0;
                 OnPropertyChanged(nameof(HasThemesToMigrate));
                 OnPropertyChanged(nameof(HasRevertableThemes));
+                UpdateThemeMigrationModeButtonState();
 
                 _logger.Info($"Loaded {_availableThemes.Count} themes that need migrating, {_revertableThemes.Count} themes that can be reverted.");
             }
@@ -953,9 +953,28 @@ namespace PlayniteAchievements.Views
 
         private void UpdateThemeMigrationModeButtonState()
         {
-            if (ThemeMigrationPresetButtons != null && ThemeMigrationCustomExpander != null)
+            var isCustomExpanded = ThemeMigrationCustomExpander?.IsExpanded == true;
+            var isFullscreenTheme = ThemeMigrationService.IsFullscreenThemePath(SelectedThemePath);
+
+            if (isFullscreenTheme && isCustomExpanded)
             {
-                ThemeMigrationPresetButtons.IsEnabled = !ThemeMigrationCustomExpander.IsExpanded;
+                ThemeMigrationCustomExpander.IsExpanded = false;
+                isCustomExpanded = false;
+            }
+
+            if (ThemeMigrationPresetButtons != null)
+            {
+                ThemeMigrationPresetButtons.IsEnabled = HasThemesToMigrate && !isCustomExpanded;
+            }
+
+            if (ThemeMigrationFullButton != null)
+            {
+                ThemeMigrationFullButton.IsEnabled = HasThemesToMigrate && !isCustomExpanded && !isFullscreenTheme;
+            }
+
+            if (ThemeMigrationCustomContainer != null)
+            {
+                ThemeMigrationCustomContainer.IsEnabled = HasThemesToMigrate && !isFullscreenTheme;
             }
         }
 

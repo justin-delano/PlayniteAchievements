@@ -8,6 +8,7 @@ namespace PlayniteAchievements.Services
     {
         public const string DefaultCategoryType = "Default";
         public const string DefaultCategoryLabel = "Default";
+        public const string IgnoredCategoryType = "Ignored";
 
         private static readonly string[] CanonicalOrder =
         {
@@ -19,7 +20,8 @@ namespace PlayniteAchievements.Services
             "Collectable",
             "Missable",
             "Difficulty",
-            "Stackable"
+            "Stackable",
+            IgnoredCategoryType
         };
 
         private static readonly Dictionary<string, string> CanonicalByAlias =
@@ -42,7 +44,9 @@ namespace PlayniteAchievements.Services
                 ["diff"] = "Difficulty",
                 ["stackable"] = "Stackable",
                 ["stack"] = "Stackable",
-                ["stacking"] = "Stackable"
+                ["stacking"] = "Stackable",
+                ["ignored"] = IgnoredCategoryType,
+                ["ignore"] = IgnoredCategoryType
             };
 
         public static IReadOnlyList<string> AllowedCategoryTypes => CanonicalOrder;
@@ -124,6 +128,12 @@ namespace PlayniteAchievements.Services
         {
             var values = ParseValues(NormalizeOrDefault(rawValue));
             return values.Count == 0 ? DefaultCategoryType : string.Join(", ", values);
+        }
+
+        public static bool IsIgnored(string rawValue)
+        {
+            return ParseValues(rawValue)
+                .Any(value => string.Equals(value, IgnoredCategoryType, StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool TryCanonicalize(string rawValue, out string canonical)

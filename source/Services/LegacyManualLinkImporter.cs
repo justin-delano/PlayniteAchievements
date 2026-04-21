@@ -49,6 +49,12 @@ namespace PlayniteAchievements.Services
         private static readonly DateTime LegacySentinelDate =
             new DateTime(1982, 12, 15);
 
+        private static readonly DateTimeOffset LegacySentinelUtcWindowStart =
+            new DateTimeOffset(1982, 12, 14, 10, 0, 0, TimeSpan.Zero);
+
+        private static readonly DateTimeOffset LegacySentinelUtcWindowEnd =
+            new DateTimeOffset(1982, 12, 15, 14, 0, 0, TimeSpan.Zero);
+
         private static readonly Regex SteamStatsAppIdRegex = new Regex(
             @"/stats/(?<id>\d+)",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -509,9 +515,7 @@ namespace PlayniteAchievements.Services
                     DateTimeStyles.AssumeUniversal,
                     out var dto))
             {
-                if (dto.Year == LegacySentinelDate.Year &&
-                    dto.Month == LegacySentinelDate.Month &&
-                    dto.Day == LegacySentinelDate.Day)
+                if (IsLegacySentinelDate(dto))
                 {
                     return true;
                 }
@@ -527,6 +531,22 @@ namespace PlayniteAchievements.Services
             }
 
             return false;
+        }
+
+        private static bool IsLegacySentinelDate(DateTimeOffset dto)
+        {
+            if (dto.Year == LegacySentinelDate.Year &&
+                dto.Month == LegacySentinelDate.Month &&
+                dto.Day == LegacySentinelDate.Day)
+            {
+                return true;
+            }
+
+            // SuccessStory commonly stores manual-only unlocks as a 1982-12-15 local midnight sentinel.
+            // Some legacy exports normalize that value to UTC, which shifts positive-offset users back into 1982-12-14Z.
+            var utc = dto.ToUniversalTime();
+            return utc >= LegacySentinelUtcWindowStart &&
+                   utc <= LegacySentinelUtcWindowEnd;
         }
 
         private static LegacyPayload ParsePayload(string filePath)

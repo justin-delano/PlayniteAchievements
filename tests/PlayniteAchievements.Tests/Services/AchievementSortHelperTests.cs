@@ -1,5 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using System;
@@ -10,7 +12,7 @@ using System.Linq;
 namespace PlayniteAchievements.Services.Tests
 {
     [TestClass]
-    public class AchievementGridSortHelperTests
+    public class AchievementSortHelperTests
     {
         [TestMethod]
         public void UnlockTime_TieBreaksByRarityBeforeTrophyType()
@@ -25,11 +27,11 @@ namespace PlayniteAchievements.Services.Tests
             string sortPath = null;
             ListSortDirection? sortDirection = null;
 
-            var handled = AchievementGridSortHelper.TrySortItems(
+            var handled = AchievementSortHelper.TrySortItems(
                 items,
                 "UnlockTime",
                 ListSortDirection.Descending,
-                AchievementGridSortScope.GameAchievements,
+                AchievementSortScope.GameAchievements,
                 ref sortPath,
                 ref sortDirection);
 
@@ -52,11 +54,11 @@ namespace PlayniteAchievements.Services.Tests
             string sortPath = null;
             ListSortDirection? sortDirection = null;
 
-            var handled = AchievementGridSortHelper.TrySortItems(
+            var handled = AchievementSortHelper.TrySortItems(
                 items,
                 "TrophyType",
                 ListSortDirection.Descending,
-                AchievementGridSortScope.GameAchievements,
+                AchievementSortScope.GameAchievements,
                 ref sortPath,
                 ref sortDirection);
 
@@ -69,7 +71,7 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public void DefaultDetailSort_PrioritizesUnlockedThenLatestUnlockTime()
         {
-            var sorted = AchievementGridSortHelper.CreateDefaultSortedDetailList(new List<AchievementDetail>
+            var sorted = AchievementSortHelper.CreateDefaultSortedDetailList(new List<AchievementDetail>
             {
                 CreateDetail("Locked", unlocked: false),
                 CreateDetail("Unlocked Older", unlocked: true, unlockTimeUtc: DateTime.SpecifyKind(new DateTime(2026, 3, 1, 10, 0, 0), DateTimeKind.Utc)),
@@ -80,6 +82,32 @@ namespace PlayniteAchievements.Services.Tests
             CollectionAssert.AreEqual(
                 new[] { "Unlocked Newer", "Unlocked Older", "Unlocked No Time", "Locked" },
                 sorted.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void ResolveSelectedGameAchievements_DefaultFallsBackToAllAchievements_WhenDefaultOrderIsEmpty()
+        {
+            var first = CreateDetail("First", unlocked: true);
+            var second = CreateDetail("Second", unlocked: false);
+            var theme = new ModernThemeBindings
+            {
+                HasAchievements = true,
+                AllAchievements = new List<AchievementDetail> { first, second },
+                AchievementDefaultOrder = new List<AchievementDetail>()
+            };
+
+            var settings = new PersistedSettings
+            {
+                CompactListSortMode = CompactListSortMode.None,
+                CompactListSortDescending = false
+            };
+
+            var resolved = AchievementSortHelper.ResolveSelectedGameAchievements(
+                theme,
+                settings,
+                AchievementSortSurface.CompactList);
+
+            CollectionAssert.AreEqual(new[] { first, second }, resolved);
         }
 
         private static AchievementDisplayItem CreateItem(
@@ -117,3 +145,4 @@ namespace PlayniteAchievements.Services.Tests
         }
     }
 }
+

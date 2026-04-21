@@ -62,7 +62,7 @@ namespace PlayniteAchievements
 
         private static readonly string[] ProviderDisplayOrder =
         {
-            "Steam", "Epic", "GOG", "BattleNet", "GooglePlay", "EA", "PSN", "Xbox", "RetroAchievements", "ShadPS4", "Xenia", "RPCS3", "Local", "Manual", "Exophase",
+            "Steam", "Epic", "GOG", "BattleNet", "GooglePlay", "Apple", "EA", "PSN", "Xbox", "RetroAchievements", "ShadPS4", "Xenia", "RPCS3", "Local", "Manual", "Exophase",
         };
 
         private static readonly string[] ProviderRefreshOrder =
@@ -133,6 +133,27 @@ namespace PlayniteAchievements
         /// Raises the SettingsSaved event to notify listeners that settings have changed.
         /// </summary>
         public static void NotifySettingsSaved() => SettingsSaved?.Invoke(null, EventArgs.Empty);
+
+        private void TryWarmCustomDataCache()
+        {
+            if (_gameCustomDataStore == null)
+            {
+                return;
+            }
+
+            try
+            {
+                using (PerfScope.StartStartup(_logger, "PluginCtor.CustomDataWarmup", thresholdMs: 50))
+                {
+                    var rows = _gameCustomDataStore.LoadAll();
+                    _logger?.Debug($"Preloaded {rows?.Count ?? 0} game custom-data rows.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to warm game custom-data cache during plugin startup.");
+            }
+        }
 
         public void PersistSettingsForUi()
         {
@@ -241,6 +262,7 @@ namespace PlayniteAchievements
                 _providerRegistry.SyncFromSettings(settings.Persisted);
                 _gameCustomDataStore = _settingsViewModel.GameCustomDataStore;
                 _gameCustomDataStore.AttachRuntimeSettings(settings);
+                TryWarmCustomDataCache();
 
                 List<IDataProvider> providers;
                 using (PerfScope.StartStartup(_logger, "PluginCtor.ProviderCreation", thresholdMs: 50))
@@ -286,7 +308,12 @@ namespace PlayniteAchievements
                                 _themeIntegrationService?.RequestUpdate(gameId);
                             }
                         });
-                    _achievementDataService = new AchievementDataService(_cacheManager, PlayniteApi, _settingsViewModel.Settings, _logger);
+                    _achievementDataService = new AchievementDataService(
+                        _cacheManager,
+                        PlayniteApi,
+                        _settingsViewModel.Settings,
+                        _logger,
+                        _gameCustomDataStore);
                     _gameCustomDataStore.AttachAchievementDataService(_achievementDataService);
                     _notifications = new NotificationPublisher(api, settings, _logger);
                     _forkReleaseMonitor = new ForkReleaseMonitor(
@@ -317,14 +344,14 @@ namespace PlayniteAchievements
                     _tagSyncService = new TagSyncService(
                         PlayniteApi,
                         _logger,
-                        settings.Persisted,
-                        _cacheManager);
+                        settings.Persisted);
                     _tagSyncService.InitializeAndSubscribeTaggingSettings();
 
                     _windowService = new PluginWindowService(
                         PlayniteApi,
                         _logger,
                         _refreshService,
+                        _refreshCoordinator,
                         _cacheManager,
                         PersistSettingsForUi,
                         _achievementOverridesService,
@@ -361,7 +388,7 @@ namespace PlayniteAchievements
                         _settingsViewModel.Settings,
                         _fullscreenWindowService,
                         _logger,
-                        _gameCustomDataStore);
+                        _windowService.RunRefreshWithGlobalProgressAsync);
 
                     SubscribeDatabaseEventHandlers();
 
@@ -444,7 +471,6 @@ namespace PlayniteAchievements
                         _logger,
                         PlayniteApi,
                         _refreshService,
-                        _cacheManager,
                         this);
                 }
             };
@@ -770,11 +796,8 @@ namespace PlayniteAchievements
 
         private void SubscribeDatabaseEventHandlers()
         {
-            // Listen for game database changes to auto-refresh new entries and react to hide/unhide edits.
+            // Listen for game database changes to auto-refresh new entries and clean up removed games.
             PlayniteApi?.Database?.Games?.ItemCollectionChanged += Games_ItemCollectionChanged;
-            PlayniteApi?.Database?.Games?.ItemUpdated += Games_ItemUpdated;
-
-            _eventSubscriptions.Add(() => PlayniteApi?.Database?.Games?.ItemUpdated -= Games_ItemUpdated);
             _eventSubscriptions.Add(() => PlayniteApi?.Database?.Games?.ItemCollectionChanged -= Games_ItemCollectionChanged);
         }
 
@@ -817,6 +840,15 @@ namespace PlayniteAchievements
             if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
             {
                 _tagSyncService.SyncTagsForGames(new List<Guid> { e.PlayniteGameId });
+            }
+
+            try
+            {
+                _themeIntegrationService?.NotifyCustomDataChanged(e.PlayniteGameId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={e.PlayniteGameId}.");
             }
         }
 
@@ -892,32 +924,6 @@ namespace PlayniteAchievements
 
                     _ = TriggerRemovedGameCleanupAsync(game);
                 }
-            }
-        }
-
-        private void Games_ItemUpdated(object sender, ItemUpdatedEventArgs<Game> e)
-        {
-            if (e?.UpdatedItems == null
-                || _settingsViewModel?.Settings?.Persisted?.AutoExcludeHiddenGames != true)
-            {
-                return;
-            }
-
-            foreach (var update in e.UpdatedItems)
-            {
-                var oldGame = update?.OldData;
-                var newGame = update?.NewData;
-                if (oldGame == null || newGame == null || newGame.Id == Guid.Empty)
-                {
-                    continue;
-                }
-
-                if (oldGame.Hidden == newGame.Hidden)
-                {
-                    continue;
-                }
-
-                _achievementOverridesService.SetExcludedFromHiddenState(newGame.Id, newGame.Hidden);
             }
         }
 

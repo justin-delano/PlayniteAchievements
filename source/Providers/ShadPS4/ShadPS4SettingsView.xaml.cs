@@ -85,15 +85,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private void CheckShadPS4Auth()
         {
             var configuredPath = _shadps4Settings?.GameDataPath;
-            var gameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(configuredPath);
-            if (!string.IsNullOrWhiteSpace(gameDataPath))
-            {
-                SetAuthenticated(true);
-                SetAuthStatusByKey("LOCPlayAch_Status_Succeeded");
-                return;
-            }
-
-            if (ShadPS4PathResolver.HasConfiguredAppDataTrophyData(configuredPath))
+            if (!string.IsNullOrWhiteSpace(ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(configuredPath)) ||
+                ShadPS4PathResolver.HasConfiguredAppDataTrophyData(configuredPath))
             {
                 SetAuthenticated(true);
                 SetAuthStatusByKey("LOCPlayAch_Status_Succeeded");

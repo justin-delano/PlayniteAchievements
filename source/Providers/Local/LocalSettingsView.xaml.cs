@@ -446,7 +446,7 @@ namespace PlayniteAchievements.Providers.Local
                 return;
             }
 
-            if (!TryShowImportTargetDialog(out var selectedTarget, out var customSourceName, out var metadataSourceId, out var steamAppCacheUserId, out var existingGameBehavior))
+            if (!TryShowImportTargetDialog(out var selectedTarget, out var customSourceName, out var metadataSourceId, out var steamAppCacheUserId, out var existingGameBehavior, out var includeFoldersWithoutAchievementFiles))
             {
                 return;
             }
@@ -458,6 +458,7 @@ namespace PlayniteAchievements.Providers.Local
                 _localSettings.ImportedGameMetadataSourceId = metadataSourceId ?? string.Empty;
                 _localSettings.SteamAppCacheUserId = steamAppCacheUserId ?? string.Empty;
                 _localSettings.ExistingGameImportBehavior = existingGameBehavior;
+                _localSettings.IncludeFoldersWithoutAchievementFilesOnImport = includeFoldersWithoutAchievementFiles;
                 RefreshImportedGameTargetControls();
             }
 
@@ -466,7 +467,7 @@ namespace PlayniteAchievements.Providers.Local
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            StartLocalImport(roots, selectedTarget, customSourceName, metadataSourceId, existingGameBehavior, steamAppCacheUserId);
+            StartLocalImport(roots, selectedTarget, customSourceName, metadataSourceId, existingGameBehavior, steamAppCacheUserId, includeFoldersWithoutAchievementFiles);
         }
 
         private void PendingExtraLocalPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -584,6 +585,15 @@ namespace PlayniteAchievements.Providers.Local
             if (_localSettings == null)
             {
                 return;
+            }
+
+            var normalizedSelectedId = ImportedGameMetadataSourceCatalog.NormalizeMetadataSourceId(
+                _playniteApi,
+                _logger,
+                _localSettings.ImportedGameMetadataSourceId);
+            if (!string.Equals(_localSettings.ImportedGameMetadataSourceId, normalizedSelectedId, StringComparison.OrdinalIgnoreCase))
+            {
+                _localSettings.ImportedGameMetadataSourceId = normalizedSelectedId;
             }
 
             var selectedId = (_localSettings.ImportedGameMetadataSourceId ?? string.Empty).Trim();
@@ -845,22 +855,24 @@ namespace PlayniteAchievements.Providers.Local
             out string customSourceName,
             out string metadataSourceId,
             out string steamAppCacheUserId,
-            out LocalExistingGameImportBehavior existingGameBehavior)
+            out LocalExistingGameImportBehavior existingGameBehavior,
+            out bool includeFoldersWithoutAchievementFiles)
         {
             selectedTarget = _localSettings?.ImportedGameLibraryTarget ?? LocalImportedGameLibraryTarget.None;
             customSourceName = _localSettings?.ImportedGameCustomSourceName ?? string.Empty;
             metadataSourceId = _localSettings?.ImportedGameMetadataSourceId ?? string.Empty;
             steamAppCacheUserId = _localSettings?.SteamAppCacheUserId ?? string.Empty;
             existingGameBehavior = _localSettings?.ExistingGameImportBehavior ?? LocalExistingGameImportBehavior.OverwriteExisting;
+            includeFoldersWithoutAchievementFiles = _localSettings?.IncludeFoldersWithoutAchievementFilesOnImport == true;
 
-            var dialog = new LocalImportTargetDialog(selectedTarget, customSourceName, metadataSourceId, steamAppCacheUserId, existingGameBehavior, AvailableSourceNames, AvailableMetadataSources, AvailableSteamAppCacheUsers);
+            var dialog = new LocalImportTargetDialog(selectedTarget, customSourceName, metadataSourceId, steamAppCacheUserId, includeFoldersWithoutAchievementFiles, existingGameBehavior, AvailableSourceNames, AvailableMetadataSources, AvailableSteamAppCacheUsers);
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 "Import Local Games",
                 dialog,
                 new WindowOptions
                 {
                     Width = 560,
-                    Height = 400,
+                    Height = 450,
                     CanBeResizable = false,
                     ShowCloseButton = true,
                     ShowMinimizeButton = false,
@@ -880,6 +892,7 @@ namespace PlayniteAchievements.Providers.Local
             metadataSourceId = dialog.MetadataSourceId?.Trim() ?? string.Empty;
             steamAppCacheUserId = dialog.SteamAppCacheUserId?.Trim() ?? string.Empty;
             existingGameBehavior = dialog.ExistingGameBehavior;
+            includeFoldersWithoutAchievementFiles = dialog.IncludeFoldersWithoutAchievementFiles;
             return true;
         }
 
@@ -889,7 +902,8 @@ namespace PlayniteAchievements.Providers.Local
             string customSourceName,
             string metadataSourceId,
             LocalExistingGameImportBehavior existingGameBehavior,
-            string steamAppCacheUserId = null)
+            string steamAppCacheUserId = null,
+            bool includeFoldersWithoutAchievementFiles = false)
         {
             _localImportCts?.Dispose();
             _localImportCts = new CancellationTokenSource();
@@ -942,6 +956,7 @@ namespace PlayniteAchievements.Providers.Local
                         customSourceName,
                         metadataSourceId,
                         existingGameBehavior,
+                        includeFoldersWithoutAchievementFiles,
                         _localImportCts.Token,
                         progress,
                         steamAppCacheUserIdOverride: steamAppCacheUserId).ConfigureAwait(false);
@@ -951,7 +966,8 @@ namespace PlayniteAchievements.Providers.Local
                         : (selectedTarget == LocalImportedGameLibraryTarget.Steam ? "Steam library" : "None/manual library");
                     var metadataLabel = AvailableMetadataSources.FirstOrDefault(option => string.Equals(option.Id, metadataSourceId ?? string.Empty, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? "Automatic";
                     var existingBehaviorLabel = existingGameBehavior == LocalExistingGameImportBehavior.SkipExisting ? "skip existing" : "overwrite existing";
-                    var summary = $"Imported {result.ImportedCount} new games, reused {result.LinkedExistingCount} existing games, skipped {result.SkippedCount}, failed {result.FailedCount} across {result.UniqueAppIdCount} detected App IDs for {targetLabel} using metadata source '{metadataLabel}' with existing-game behavior '{existingBehaviorLabel}'.";
+                    var folderModeLabel = includeFoldersWithoutAchievementFiles ? "including schema-only folders" : "achievement files required";
+                    var summary = $"Imported {result.ImportedCount} new games, reused {result.LinkedExistingCount} existing games, skipped {result.SkippedCount}, failed {result.FailedCount} across {result.UniqueAppIdCount} detected App IDs for {targetLabel} using metadata source '{metadataLabel}' with existing-game behavior '{existingBehaviorLabel}' and folder mode '{folderModeLabel}'.";
 
                     Dispatcher.Invoke(() =>
                     {

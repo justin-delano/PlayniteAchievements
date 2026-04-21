@@ -73,9 +73,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly RefreshRuntime _refreshService;
         private readonly AchievementDataService _achievementDataService;
         private readonly RefreshEntryPoint _refreshCoordinator;
+        private readonly Func<RefreshRequest, string, bool, Action<bool>, Task> _runRefreshWithGlobalProgressAsync;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly FullscreenWindowService _windowService;
-        private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly ThemeRuntimeState _runtimeState = new ThemeRuntimeState();
 
         private readonly object _refreshLock = new object();
@@ -93,6 +93,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private DateTime _appliedLastUpdatedUtc;
 
         private bool _fullscreenInitialized;
+        private bool _hasLoadedLibraryState;
+        private bool _lastLibraryRefreshIncludedHeavyAchievementLists = true;
 
         public ThemeIntegrationService(
             IPlayniteAPI api,
@@ -102,16 +104,16 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             PlayniteAchievementsSettings settings,
             FullscreenWindowService windowService,
             ILogger logger,
-            GameCustomDataStore gameCustomDataStore = null)
+            Func<RefreshRequest, string, bool, Action<bool>, Task> runRefreshWithGlobalProgressAsync = null)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _refreshCoordinator = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
+            _runRefreshWithGlobalProgressAsync = runRefreshWithGlobalProgressAsync ?? RunRefreshWithoutGlobalProgressAsync;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
             _logger = logger;
-            _gameCustomDataStore = gameCustomDataStore;
 
             var openOverviewCommand = new RelayCommand(_ => OpenOverviewWindow());
             var openSelectedGameCommand = new RelayCommand(_ => OpenSelectedGameWindow());
@@ -268,6 +270,52 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
+        public void NotifyCustomDataChanged(Guid? gameId)
+        {
+            try
+            {
+                var resolvedGameId = gameId.HasValue && gameId.Value != Guid.Empty
+                    ? gameId
+                    : ResolveSelectedGameIdForThemeUpdate();
+                var shouldRefreshSelectedGame = resolvedGameId.HasValue &&
+                    ((_appliedGameId.HasValue && _appliedGameId.Value == resolvedGameId.Value) ||
+                     (_requestedGameId.HasValue && _requestedGameId.Value == resolvedGameId.Value) ||
+                     (_settings?.SelectedGame?.Id == resolvedGameId.Value));
+
+                if (shouldRefreshSelectedGame)
+                {
+                    var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+                    dispatcher.InvokeIfNeeded(
+                        () => PopulateSingleGameDataSync(resolvedGameId.Value),
+                        DispatcherPriority.Background);
+                }
+                else if (resolvedGameId.HasValue)
+                {
+                    RequestUpdate(resolvedGameId.Value);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to refresh selected-game theme state after custom-data change.");
+            }
+
+            try
+            {
+                if (_hasLoadedLibraryState)
+                {
+                    EnsureAllGamesThemeDataLoaded(_lastLibraryRefreshIncludedHeavyAchievementLists);
+                }
+                else if (IsFullscreen() && _fullscreenInitialized)
+                {
+                    RequestRefresh();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to refresh library theme state after custom-data change.");
+            }
+        }
+
         private bool IsFullscreen()
         {
             try
@@ -398,7 +446,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 GameAchievementData gameData = null;
                 try
                 {
-                    gameData = await Task.Run(() => _achievementDataService.GetGameAchievementData(gameId.Value), token).ConfigureAwait(false);
+                    gameData = await Task.Run(() => _achievementDataService.GetVisibleGameAchievementData(gameId.Value), token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -553,6 +601,51 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         #region Refresh Operations
 
+        public Task RunFullscreenRefreshRequestAsync(
+            RefreshRequest request,
+            string errorLogMessage,
+            bool validateAuthentication,
+            Action<bool> onCompleted = null)
+        {
+            request ??= new RefreshRequest();
+
+            EnsureFullscreenInitialized();
+            _logger?.Info($"RunFullscreenRefreshRequestAsync: Starting mode={request.Mode}, singleGameId={request.SingleGameId}, explicitGameCount={request.GameIds?.Count ?? 0}, validateAuthentication={validateAuthentication}");
+
+            var singleGameId = request.SingleGameId;
+            if (!singleGameId.HasValue && request.Mode == RefreshModeType.Single)
+            {
+                singleGameId = GetSingleSelectedGameId();
+            }
+
+            var resolvedErrorMessage = !string.IsNullOrWhiteSpace(errorLogMessage)
+                ? errorLogMessage
+                : request.Mode.HasValue
+                    ? GetLocalizedRefreshFailureMessage(request.Mode.Value)
+                    : ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
+
+            return _runRefreshWithGlobalProgressAsync(
+                request,
+                resolvedErrorMessage,
+                validateAuthentication,
+                success =>
+                {
+                    if (success)
+                    {
+                        _logger?.Info($"RunFullscreenRefreshRequestAsync: Completed, success={success}, mode={request.Mode}, singleGameId={singleGameId}");
+                    }
+
+                    if (singleGameId.HasValue)
+                    {
+                        try { RequestUpdate(singleGameId.Value); } catch { }
+                    }
+
+                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+
+                    try { onCompleted?.Invoke(success); } catch { }
+                });
+        }
+
         private void RefreshWithMode(RefreshModeType mode)
         {
             Guid? gameIdForThemeUpdate = null;
@@ -573,15 +666,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private void RunAchievementRefresh(RefreshModeType mode, Guid? gameIdForThemeUpdate)
         {
-            var errorLogMessage = mode switch
-            {
-                RefreshModeType.Full => "Full achievement refresh failed.",
-                RefreshModeType.Installed => "Installed games achievement refresh failed.",
-                RefreshModeType.Single => "Single game achievement refresh failed.",
-                RefreshModeType.Recent => "Recent achievement refresh failed.",
-                RefreshModeType.Favorites => "Favorites achievement refresh failed.",
-                _ => "Achievement refresh failed."
-            };
+            var errorLogMessage = GetLocalizedRefreshFailureMessage(mode);
 
             var isFullscreen = IsFullscreen();
             _logger?.Info($"RunAchievementRefresh: mode={mode}, isFullscreen={isFullscreen}, gameId={gameIdForThemeUpdate}");
@@ -601,96 +686,71 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             Guid? gameIdForThemeUpdate,
             string errorLogMessage)
         {
-            var progressOptions = new GlobalProgressOptions(ResourceProvider.GetString("LOCPlayAch_Status_Starting"), true)
+            var request = new RefreshRequest
             {
-                Cancelable = true,
-                IsIndeterminate = false
+                Mode = mode,
+                SingleGameId = mode == RefreshModeType.Single ? gameIdForThemeUpdate : null
             };
 
-            _api.Dialogs.ActivateGlobalProgress((progress) =>
-            {
-                progress.ProgressMaxValue = 100;
-                progress.CurrentProgressValue = 0;
-
-                EventHandler<ProgressReport> progressHandler = null;
-                progressHandler = (sender, report) =>
+            _ = _runRefreshWithGlobalProgressAsync(
+                request,
+                errorLogMessage,
+                false,
+                success =>
                 {
-                    if (report == null) return;
-
-                    try
+                    if (success)
                     {
-                        if (!string.IsNullOrWhiteSpace(report.Message))
-                        {
-                            progress.Text = report.Message;
-                        }
-
-                        var percent = report.PercentComplete;
-                        if (percent <= 0 || double.IsNaN(percent))
-                        {
-                            if (report.TotalSteps > 0)
-                            {
-                                percent = (report.CurrentStep * 100.0) / report.TotalSteps;
-                            }
-                            else
-                            {
-                                percent = 0;
-                            }
-                        }
-                        progress.CurrentProgressValue = Math.Max(0, Math.Min(100, percent));
-
-                        if (report.IsCanceled || progress.CancelToken.IsCancellationRequested)
-                        {
-                            _logger?.Info("Progress handler detected cancellation request.");
-                            return;
-                        }
+                        _logger?.Info($"RunAchievementRefreshWithGlobalProgress: Completed, success={success}, gameId={gameIdForThemeUpdate}");
                     }
-                    catch { }
-                };
 
-                _refreshService.RebuildProgress += progressHandler;
-
-                try
-                {
-                    var request = new RefreshRequest
-                    {
-                        Mode = mode,
-                        SingleGameId = mode == RefreshModeType.Single ? gameIdForThemeUpdate : null
-                    };
-
-                    var refreshTask = _refreshCoordinator.ExecuteAsync(
-                        request,
-                        new RefreshExecutionPolicy
-                        {
-                            ValidateAuthentication = false,
-                            SwallowExceptions = false,
-                            ErrorLogMessage = errorLogMessage,
-                            ExternalCancellationToken = progress.CancelToken
-                        });
-
-                    refreshTask.Wait(progress.CancelToken);
-                    progress.CurrentProgressValue = 100;
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
-                }
-                catch (OperationCanceledException)
-                {
-                    _refreshService.CancelCurrentRebuild();
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Status_Canceled");
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Error(ex, errorLogMessage);
-                    progress.Text = ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
-                }
-                finally
-                {
-                    _refreshService.RebuildProgress -= progressHandler;
                     if (gameIdForThemeUpdate.HasValue)
                     {
                         try { RequestUpdate(gameIdForThemeUpdate.Value); } catch { }
                     }
+
                     try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
-                }
-            }, progressOptions);
+                });
+        }
+
+        private Task RunRefreshWithoutGlobalProgressAsync(
+            RefreshRequest request,
+            string errorLogMessage,
+            bool validateAuthentication,
+            Action<bool> onCompleted)
+        {
+            request ??= new RefreshRequest();
+
+            return _refreshCoordinator.ExecuteAsync(
+                request,
+                new RefreshExecutionPolicy
+                {
+                    ValidateAuthentication = validateAuthentication,
+                    SwallowExceptions = true,
+                    ErrorLogMessage = errorLogMessage,
+                    OnRefreshCompleted = success =>
+                    {
+                        try
+                        {
+                            onCompleted?.Invoke(success);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.Debug(ex, "Refresh completion callback failed.");
+                        }
+                    }
+                });
+        }
+
+        private static string GetLocalizedRefreshFailureMessage(RefreshModeType mode)
+        {
+            var modeName = ResourceProvider.GetString(mode.GetResourceKey());
+            var format = ResourceProvider.GetString("LOCPlayAch_Error_RefreshFailed");
+            if (!string.IsNullOrWhiteSpace(format) && !string.IsNullOrWhiteSpace(modeName))
+            {
+                return string.Format(format, modeName);
+            }
+
+            return ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed");
         }
 
         private void RunAchievementRefreshWithProgressWindow(
@@ -740,8 +800,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 _logger?.Info("PopulateAllGamesDataSync: Starting to populate all-games achievement data.");
 
-                var allData = _achievementDataService.GetAllGameAchievementData() ?? new List<GameAchievementData>();
-                allData = FilterExcludedFromSummaries(allData);
+                var allData = _achievementDataService.GetAllVisibleGameAchievementDataForTheme() ?? new List<GameAchievementData>();
                 _logger?.Info($"PopulateAllGamesDataSync: Found {allData.Count} total game data entries.");
 
                 var state = LibraryRuntimeStateBuilder.Build(
@@ -752,6 +811,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                 _logger?.Info($"PopulateAllGamesDataSync: State created - TotalTrophies={state.TotalTrophies}, PlatinumTrophies={state.PlatinumTrophies}, GoldTrophies={state.GoldTrophies}, Rank={state.Rank}");
 
+                _hasLoadedLibraryState = true;
+                _lastLibraryRefreshIncludedHeavyAchievementLists = includeHeavyAchievementLists;
                 ApplyLibraryState(state);
 
                 _logger?.Info($"PopulateAllGamesDataSync: Applied snapshot. AllGamesWithAchievements count={_settings.LegacyTheme.AllGamesWithAchievements?.Count ?? 0}");
@@ -760,21 +821,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 _logger?.Error(ex, "Failed to populate all-games data synchronously.");
             }
-        }
-
-        private List<GameAchievementData> FilterExcludedFromSummaries(List<GameAchievementData> allData)
-        {
-            allData ??= new List<GameAchievementData>();
-
-            var excludedIds = GameCustomDataLookup.GetExcludedSummaryGameIds(_settings?.Persisted, _gameCustomDataStore);
-            if (excludedIds == null || excludedIds.Count == 0)
-            {
-                return allData;
-            }
-
-            return allData
-                .Where(data => data?.PlayniteGameId == null || !excludedIds.Contains(data.PlayniteGameId.Value))
-                .ToList();
         }
 
         /// <summary>
@@ -787,7 +833,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             try
             {
-                var gameData = _achievementDataService.GetGameAchievementData(gameId);
+                var gameData = _achievementDataService.GetVisibleGameAchievementData(gameId);
                 var state = SelectedGameRuntimeStateBuilder.Build(
                     gameId,
                     gameData);
@@ -841,8 +887,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 {
                     await Task.Delay(500, token).ConfigureAwait(false);
 
-                    var allData = _achievementDataService.GetAllGameAchievementData() ?? new List<GameAchievementData>();
-                    allData = FilterExcludedFromSummaries(allData);
+                    var allData = _achievementDataService.GetAllVisibleGameAchievementDataForTheme() ?? new List<GameAchievementData>();
 
                     token.ThrowIfCancellationRequested();
 
@@ -853,7 +898,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         shouldBuildHeavyAchievementLists);
 
                     var uiDispatcher = _api.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
-                    uiDispatcher?.InvokeIfNeeded(() => ApplyLibraryState(state), DispatcherPriority.Background);
+                    uiDispatcher?.InvokeIfNeeded(() =>
+                    {
+                        _hasLoadedLibraryState = true;
+                        _lastLibraryRefreshIncludedHeavyAchievementLists = shouldBuildHeavyAchievementLists;
+                        ApplyLibraryState(state);
+                    }, DispatcherPriority.Background);
                 }
                 catch (OperationCanceledException)
                 {
@@ -888,6 +938,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.XboxGames = ProjectGameSummaries(library.XboxGames);
             _settings.ModernTheme.PSNGames = ProjectGameSummaries(library.PSNGames);
             _settings.ModernTheme.RetroAchievementsGames = ProjectGameSummaries(library.RetroAchievementsGames);
+            _settings.ModernTheme.AppleGames = ProjectGameSummaries(library.AppleGames);
+            _settings.ModernTheme.GooglePlayGames = ProjectGameSummaries(library.GooglePlayGames);
+            _settings.ModernTheme.UbisoftGames = ProjectGameSummaries(library.UbisoftGames);
             _settings.ModernTheme.RPCS3Games = ProjectGameSummaries(library.RPCS3Games);
             _settings.ModernTheme.XeniaGames = ProjectGameSummaries(library.XeniaGames);
             _settings.ModernTheme.ShadPS4Games = ProjectGameSummaries(library.ShadPS4Games);
@@ -975,6 +1028,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.Rare = state.Rare;
             _settings.ModernTheme.UltraRare = state.UltraRare;
             _settings.ModernTheme.RareAndUltraRare = state.RareAndUltraRare;
+            _settings.ModernTheme.AchievementDefaultOrder = state.AchievementDefaultOrder;
             _settings.ModernTheme.AllAchievements = state.AllAchievements;
             _settings.ModernTheme.AchievementsNewestFirst = state.AchievementsNewestFirst;
             _settings.ModernTheme.AchievementsOldestFirst = state.AchievementsOldestFirst;
@@ -1013,6 +1067,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.LockedCount = 0;
             _settings.ModernTheme.ProgressPercentage = 0;
 
+            _settings.ModernTheme.AchievementDefaultOrder = EmptyAchievementList;
             _settings.ModernTheme.AllAchievements = EmptyAchievementList;
             _settings.ModernTheme.AchievementsNewestFirst = EmptyAchievementList;
             _settings.ModernTheme.AchievementsOldestFirst = EmptyAchievementList;
@@ -1236,36 +1291,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             SelectedGameRuntimeState state,
             SelectedGameAchievementViewState viewState)
         {
-            switch (viewState?.SortKey)
-            {
-                case DynamicThemeViewKeys.UnlockTime:
-                    return string.Equals(viewState.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal)
-                        ? state.AchievementsOldestFirst
-                        : state.AchievementsNewestFirst;
-                case DynamicThemeViewKeys.Rarity:
-                    return string.Equals(viewState.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal)
-                        ? state.AchievementsRarityAsc
-                        : state.AchievementsRarityDesc;
-                default:
-                    return state.AllAchievements;
-            }
+            return AchievementSortHelper.ResolveSelectedGameAchievements(
+                state,
+                viewState?.SortKey,
+                viewState?.SortDirectionKey);
         }
 
         private static IEnumerable<AchievementDetail> SelectLibraryAchievementSource(
             LibraryRuntimeState state,
             LibraryAchievementViewState viewState)
         {
-            switch (viewState?.SortKey)
-            {
-                case DynamicThemeViewKeys.Rarity:
-                    return string.Equals(viewState.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal)
-                        ? state.AllAchievementsRarityAsc
-                        : state.AllAchievementsRarityDesc;
-                default:
-                    return string.Equals(viewState?.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal)
-                        ? state.AllAchievementsUnlockAsc
-                        : state.AllAchievementsUnlockDesc;
-            }
+            return AchievementSortHelper.ResolveLibraryAchievements(
+                state,
+                viewState?.SortKey,
+                viewState?.SortDirectionKey);
         }
 
         private static IEnumerable<AchievementDetail> ApplyAchievementUnlockFilter(
@@ -1531,6 +1570,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         }
     }
 }
+
 
 
 

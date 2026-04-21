@@ -87,6 +87,7 @@ namespace PlayniteAchievements.Providers.Local
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly LocalSettings _localSettings;
+        private readonly ImportedGameMetadataApplier _metadataApplier;
         private readonly Dictionary<int, SteamAppImportabilityInfo> _steamAppImportabilityCache = new Dictionary<int, SteamAppImportabilityInfo>();
         private string _steamAppCacheUserIdOverride;
 
@@ -106,6 +107,7 @@ namespace PlayniteAchievements.Providers.Local
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
             _localSettings = ProviderRegistry.Settings<LocalSettings>();
+            _metadataApplier = new ImportedGameMetadataApplier(_api, _logger, "LocalImport");
         }
 
         public async Task<ImportResult> ImportFromRootsAsync(
@@ -114,6 +116,7 @@ namespace PlayniteAchievements.Providers.Local
             string customSourceNameOverride = null,
             string metadataSourceIdOverride = null,
             LocalExistingGameImportBehavior? existingGameBehaviorOverride = null,
+            bool includeFoldersWithoutAchievementFiles = false,
             CancellationToken cancellationToken = default(CancellationToken),
             IProgress<LocalImportProgressInfo> progress = null,
             string steamAppCacheUserIdOverride = null)
@@ -138,129 +141,136 @@ namespace PlayniteAchievements.Providers.Local
 
             ReportProgress(progress, 0d, "Scanning Local roots...", "Searching for achievement evidence in default and configured Local folders.");
 
-            var candidates = await Task.Run(() => DiscoverCandidates(normalizedRoots, cancellationToken, progress), cancellationToken).ConfigureAwait(true);
+            var candidates = await Task.Run(() => DiscoverCandidates(normalizedRoots, includeFoldersWithoutAchievementFiles, cancellationToken, progress), cancellationToken).ConfigureAwait(true);
             result.CandidateFolderCount = candidates.Sum(pair => pair.Value.Count(candidate => !string.IsNullOrWhiteSpace(candidate.FolderPath)));
             result.UniqueAppIdCount = candidates.Count;
 
             var importTarget = importTargetOverride ?? (_localSettings?.ImportedGameLibraryTarget ?? LocalImportedGameLibraryTarget.None);
             var customSourceName = (customSourceNameOverride ?? _localSettings?.ImportedGameCustomSourceName ?? string.Empty).Trim();
-            var metadataSourceId = (metadataSourceIdOverride ?? _localSettings?.ImportedGameMetadataSourceId ?? string.Empty).Trim();
+            var metadataSourceId = ImportedGameMetadataSourceCatalog.NormalizeMetadataSourceId(
+                _api,
+                _logger,
+                metadataSourceIdOverride ?? _localSettings?.ImportedGameMetadataSourceId ?? string.Empty);
             var existingGameBehavior = existingGameBehaviorOverride ?? (_localSettings?.ExistingGameImportBehavior ?? LocalExistingGameImportBehavior.OverwriteExisting);
             var usesBuiltInMetadata = ImportedGameMetadataSourceCatalog.IsBuiltInSource(metadataSourceId);
-            var selectedMetadataPlugin = usesBuiltInMetadata
-                ? null
-                : ResolveMetadataPlugin(metadataSourceId) ?? ResolveAutomaticMetadataPlugin();
+            var selectedMetadataPlugin = ResolveSelectedMetadataPlugin(metadataSourceId);
+            var fastMetadataLibraryPlugin = ImportedGameMetadataSourceCatalog.IsFastMethodSource(metadataSourceId)
+                ? ResolveSteamLibraryPlugin()
+                : null;
             _logger?.Info($"[LocalImport] Selected metadata provider id='{metadataSourceId}', resolved='{selectedMetadataPlugin?.Name ?? (usesBuiltInMetadata ? metadataSourceId : "<none>")}'.");
             var orderedCandidates = candidates.OrderBy(pair => pair.Key).ToList();
             var totalCandidates = orderedCandidates.Count;
             var processedCandidates = 0;
             var settingsDirty = false;
 
-            _api.Database.Games.BeginBufferUpdate();
-            try
+            using (var fastMetadataDownloader = fastMetadataLibraryPlugin?.GetMetadataDownloader())
             {
-                foreach (var candidate in orderedCandidates)
+                _api.Database.Games.BeginBufferUpdate();
+                try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var appId = candidate.Key;
-                    var folderPath = ChooseBestLocalFolderCandidate(candidate.Value);
-                    var chosenCandidate = ChooseBestImportCandidate(candidate.Value);
-                    if (chosenCandidate == null)
+                    foreach (var candidate in orderedCandidates)
                     {
-                        result.SkippedCount++;
-                        continue;
-                    }
+                        cancellationToken.ThrowIfCancellationRequested();
 
-                    try
-                    {
-                        processedCandidates++;
-                        var gameLabel = string.IsNullOrWhiteSpace(folderPath)
-                            ? $"App {appId}"
-                            : Path.GetFileName(folderPath.TrimEnd(Path.DirectorySeparatorChar));
-                        ReportProgress(
-                            progress,
-                            40d + (processedCandidates / (double)Math.Max(1, totalCandidates) * 60d),
-                            $"Importing {gameLabel} ({processedCandidates}/{Math.Max(1, totalCandidates)})...",
-                            BuildCandidateDetail(chosenCandidate, processedCandidates, totalCandidates));
-
-                        if (candidate.Value.Count > 1)
-                        {
-                            _logger?.Info($"[LocalImport] appId={appId} has {candidate.Value.Count} candidate folders/files. Using {DescribeCandidate(chosenCandidate)}. All candidates: {string.Join(" | ", candidate.Value.Select(DescribeCandidate))}");
-                        }
-
-                        if (!ShouldImportCandidate(appId, chosenCandidate, out var skipReason))
+                        var appId = candidate.Key;
+                        var folderPath = ChooseBestLocalFolderCandidate(candidate.Value);
+                        var chosenCandidate = ChooseBestImportCandidate(candidate.Value);
+                        if (chosenCandidate == null)
                         {
                             result.SkippedCount++;
-                            _logger?.Info($"[LocalImport] Skipping appId={appId}: {skipReason}");
                             continue;
                         }
 
-                        var game = FindExistingGame(appId, importTarget, customSourceName);
-                        GameMetadata pendingMetadata = null;
-                        if (game == null)
+                        try
                         {
-                            pendingMetadata = BuildMetadata(appId, importTarget, customSourceName, selectedMetadataPlugin);
-                            game = FindExistingGameByName(pendingMetadata?.Name, importTarget, customSourceName);
-                            if (game != null)
-                            {
-                                _logger?.Info($"[LocalImport] Reusing existing game by title match for appId={appId}: {DescribeGame(game)}.");
-                            }
-                        }
+                            processedCandidates++;
+                            var gameLabel = string.IsNullOrWhiteSpace(folderPath)
+                                ? $"App {appId}"
+                                : Path.GetFileName(folderPath.TrimEnd(Path.DirectorySeparatorChar));
+                            ReportProgress(
+                                progress,
+                                40d + (processedCandidates / (double)Math.Max(1, totalCandidates) * 60d),
+                                $"Importing {gameLabel} ({processedCandidates}/{Math.Max(1, totalCandidates)})...",
+                                BuildCandidateDetail(chosenCandidate, processedCandidates, totalCandidates));
 
-                        if (game == null)
-                        {
-                            game = ImportGame(appId, importTarget, customSourceName, selectedMetadataPlugin, pendingMetadata);
-                            if (game == null)
+                            if (candidate.Value.Count > 1)
                             {
-                                result.FailedCount++;
-                                continue;
+                                _logger?.Info($"[LocalImport] appId={appId} has {candidate.Value.Count} candidate folders/files. Using {DescribeCandidate(chosenCandidate)}. All candidates: {string.Join(" | ", candidate.Value.Select(DescribeCandidate))}");
                             }
 
-                            ApplyImportTarget(game, importTarget, customSourceName);
-                            ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin);
-                            _logger?.Info($"[LocalImport] Imported new game for appId={appId}: {DescribeGame(game)}.");
-                            result.ImportedCount++;
-                        }
-                        else
-                        {
-                            if (existingGameBehavior == LocalExistingGameImportBehavior.SkipExisting)
+                            if (!ShouldImportCandidate(appId, chosenCandidate, out var skipReason))
                             {
                                 result.SkippedCount++;
-                                _logger?.Info($"[LocalImport] Skipping appId={appId} because a matching existing game was found and existing-game behavior is set to skip.");
+                                _logger?.Info($"[LocalImport] Skipping appId={appId}: {skipReason}");
                                 continue;
                             }
 
-                            ApplyImportTarget(game, importTarget, customSourceName);
-                            ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin);
-                            _logger?.Info($"[LocalImport] Linked existing game for appId={appId}: {DescribeGame(game)}.");
-                            result.LinkedExistingCount++;
+                            var game = FindExistingGame(appId, importTarget, customSourceName);
+                            GameMetadata pendingMetadata = null;
+                            if (game == null)
+                            {
+                                pendingMetadata = BuildMetadata(appId, importTarget, customSourceName, selectedMetadataPlugin);
+                                game = FindExistingGameByName(pendingMetadata?.Name, importTarget, customSourceName);
+                                if (game != null)
+                                {
+                                    _logger?.Info($"[LocalImport] Reusing existing game by title match for appId={appId}: {DescribeGame(game)}.");
+                                }
+                            }
+
+                            if (game == null)
+                            {
+                                game = ImportGame(appId, importTarget, customSourceName, selectedMetadataPlugin, pendingMetadata);
+                                if (game == null)
+                                {
+                                    result.FailedCount++;
+                                    continue;
+                                }
+
+                                ApplyImportTarget(game, importTarget, customSourceName);
+                                ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
+                                _logger?.Info($"[LocalImport] Imported new game for appId={appId}: {DescribeGame(game)}.");
+                                result.ImportedCount++;
+                            }
+                            else
+                            {
+                                if (existingGameBehavior == LocalExistingGameImportBehavior.SkipExisting)
+                                {
+                                    result.SkippedCount++;
+                                    _logger?.Info($"[LocalImport] Skipping appId={appId} because a matching existing game was found and existing-game behavior is set to skip.");
+                                    continue;
+                                }
+
+                                ApplyImportTarget(game, importTarget, customSourceName);
+                                ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
+                                _logger?.Info($"[LocalImport] Linked existing game for appId={appId}: {DescribeGame(game)}.");
+                                result.LinkedExistingCount++;
+                            }
+
+                            game.InstallDirectory = null;
+                            _api.Database.Games.Update(game);
+
+                            settingsDirty |= PersistLocalBinding(game, appId, folderPath);
+
+                            if (processedCandidates % 5 == 0)
+                            {
+                                await Task.Yield();
+                            }
                         }
-
-                        game.InstallDirectory = null;
-                        _api.Database.Games.Update(game);
-
-                        settingsDirty |= PersistLocalBinding(game, appId, folderPath);
-
-                        if (processedCandidates % 5 == 0)
+                        catch (OperationCanceledException)
                         {
-                            await Task.Yield();
+                            throw;
                         }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        result.FailedCount++;
-                        _logger?.Warn(ex, $"Failed importing Local folder candidate appId={appId} from '{folderPath}'.");
+                        catch (Exception ex)
+                        {
+                            result.FailedCount++;
+                            _logger?.Warn(ex, $"Failed importing Local folder candidate appId={appId} from '{folderPath}'.");
+                        }
                     }
                 }
-            }
-            finally
-            {
-                _api.Database.Games.EndBufferUpdate();
+                finally
+                {
+                    _api.Database.Games.EndBufferUpdate();
+                }
 
                 if (settingsDirty)
                 {
@@ -461,6 +471,7 @@ namespace PlayniteAchievements.Providers.Local
 
         private Dictionary<int, List<ImportCandidate>> DiscoverCandidates(
             IReadOnlyCollection<string> roots,
+            bool includeFoldersWithoutAchievementFiles,
             CancellationToken cancellationToken,
             IProgress<LocalImportProgressInfo> progress)
         {
@@ -491,7 +502,7 @@ namespace PlayniteAchievements.Providers.Local
                             continue;
                         }
 
-                        var candidate = TryCreateFolderCandidate(appId, directory);
+                        var candidate = TryCreateFolderCandidate(appId, directory, includeFoldersWithoutAchievementFiles);
                         if (candidate == null)
                         {
                             continue;
@@ -553,13 +564,17 @@ namespace PlayniteAchievements.Providers.Local
             existing.LastWriteUtc = existing.LastWriteUtc > candidate.LastWriteUtc ? existing.LastWriteUtc : candidate.LastWriteUtc;
         }
 
-        private ImportCandidate TryCreateFolderCandidate(int appId, string directory)
+        private ImportCandidate TryCreateFolderCandidate(int appId, string directory, bool includeFoldersWithoutAchievementFiles)
         {
             var iniPath = ResolveAchievementFilePath(directory, "achievements.ini");
             var jsonPath = ResolveAchievementFilePath(directory, "achievements.json");
-            if (string.IsNullOrWhiteSpace(iniPath) && string.IsNullOrWhiteSpace(jsonPath))
+            var hasAchievementFile = !string.IsNullOrWhiteSpace(iniPath) || !string.IsNullOrWhiteSpace(jsonPath);
+            if (!hasAchievementFile)
             {
-                return null;
+                if (!includeFoldersWithoutAchievementFiles || !CanImportSchemaOnlyFolderCandidate(directory))
+                {
+                    return null;
+                }
             }
 
             return new ImportCandidate
@@ -570,6 +585,19 @@ namespace PlayniteAchievements.Providers.Local
                 HasAchievementJson = !string.IsNullOrWhiteSpace(jsonPath),
                 LastWriteUtc = GetLatestAchievementFileWriteTime(directory)
             };
+        }
+
+        private static bool CanImportSchemaOnlyFolderCandidate(string directory)
+        {
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                return false;
+            }
+
+            var normalizedPath = directory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            return normalizedPath.IndexOf($"{Path.DirectorySeparatorChar}userdata{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) < 0 &&
+                normalizedPath.IndexOf($"{Path.DirectorySeparatorChar}appcache{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) < 0 &&
+                normalizedPath.IndexOf($"{Path.DirectorySeparatorChar}librarycache{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) < 0;
         }
 
         private void DiscoverSteamAppCacheCandidates(
@@ -984,6 +1012,11 @@ namespace PlayniteAchievements.Providers.Local
                 }
             }
 
+            if (latest == DateTime.MinValue && !string.IsNullOrWhiteSpace(folderPath) && Directory.Exists(folderPath))
+            {
+                latest = Directory.GetLastWriteTimeUtc(folderPath);
+            }
+
             return latest;
         }
 
@@ -1042,7 +1075,7 @@ namespace PlayniteAchievements.Providers.Local
                 evidence.Add("userdata/config/librarycache/<appid>.json");
             }
 
-            var evidenceText = evidence.Count > 0 ? string.Join(", ", evidence) : "unknown achievement evidence";
+            var evidenceText = evidence.Count > 0 ? string.Join(", ", evidence) : "folder-only schema lookup";
             return $"Processing item {index} of {total}. Evidence: {evidenceText}.";
         }
 
@@ -1079,7 +1112,7 @@ namespace PlayniteAchievements.Providers.Local
                 evidence.Add("library-cache");
             }
 
-            var evidenceText = evidence.Count > 0 ? string.Join(",", evidence) : "none";
+            var evidenceText = evidence.Count > 0 ? string.Join(",", evidence) : "folder-only";
             var folderText = string.IsNullOrWhiteSpace(candidate.FolderPath) ? "<no folder>" : candidate.FolderPath;
             return $"folder='{folderText}', evidence={evidenceText}, lastWriteUtc={candidate.LastWriteUtc:O}";
         }
@@ -1099,7 +1132,8 @@ namespace PlayniteAchievements.Providers.Local
             Game importedGame,
             int appId,
             string metadataSourceId,
-            MetadataPlugin selectedMetadataPlugin)
+            MetadataPlugin selectedMetadataPlugin,
+            LibraryMetadataProvider fastMetadataDownloader)
         {
             if (importedGame == null)
             {
@@ -1108,22 +1142,7 @@ namespace PlayniteAchievements.Providers.Local
 
             try
             {
-                if (ImportedGameMetadataSourceCatalog.IsBuiltInSource(metadataSourceId))
-                {
-                    ApplyBuiltInMetadata(importedGame, appId, metadataSourceId);
-                    NormalizeImportedGameMetadata(importedGame, appId);
-                    _api.Database.Games.Update(importedGame);
-                    return;
-                }
-
-                if (selectedMetadataPlugin != null)
-                {
-                    ApplyMetadataPlugin(importedGame, appId, selectedMetadataPlugin);
-                    NormalizeImportedGameMetadata(importedGame, appId);
-                    _api.Database.Games.Update(importedGame);
-                    return;
-                }
-                _logger?.Info($"[LocalImport] No metadata plugin resolved for appId={appId}; skipping metadata download.");
+                _metadataApplier.ApplyToGame(importedGame, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
                 NormalizeImportedGameMetadata(importedGame, appId);
                 _api.Database.Games.Update(importedGame);
             }
@@ -1131,6 +1150,27 @@ namespace PlayniteAchievements.Providers.Local
             {
                 _logger?.Debug(ex, $"[LocalAch] Failed applying downloaded Steam metadata for imported game '{importedGame?.Name}'.");
             }
+        }
+
+        private MetadataPlugin ResolveSelectedMetadataPlugin(string metadataSourceId)
+        {
+            var normalizedSourceId = ImportedGameMetadataSourceCatalog.NormalizeMetadataSourceId(_api, _logger, metadataSourceId);
+            if (string.IsNullOrWhiteSpace(normalizedSourceId))
+            {
+                return ResolveAutomaticMetadataPlugin();
+            }
+
+            if (ImportedGameMetadataSourceCatalog.IsUniversalSteamMetadataSource(normalizedSourceId))
+            {
+                return ImportedGameMetadataSourceCatalog.ResolveUniversalSteamMetadataPlugin(_api, _logger);
+            }
+
+            if (ImportedGameMetadataSourceCatalog.IsBuiltInSource(normalizedSourceId))
+            {
+                return null;
+            }
+
+            return ResolveMetadataPlugin(normalizedSourceId);
         }
 
         private void ApplyBuiltInMetadata(Game importedGame, int appId, string metadataSourceId)

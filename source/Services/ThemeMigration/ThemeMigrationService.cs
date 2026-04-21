@@ -17,6 +17,7 @@ namespace PlayniteAchievements.Services.ThemeMigration
     /// </summary>
     public sealed class ThemeMigrationService
     {
+        internal const string FullscreenThemesLimitedOnlyMessage = "Fullscreen themes only support Limited migration.";
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Action _saveSettings;
@@ -83,6 +84,18 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 {
                     Success = false,
                     Message = $"Theme directory does not exist: {themePath}"
+                };
+            }
+
+            if (mode != MigrationMode.Limited && IsFullscreenThemePath(themePath))
+            {
+                _logger.Warn($"Blocked {mode} migration for fullscreen theme: {themePath}");
+
+                return new MigrationResult
+                {
+                    Success = false,
+                    Message = FullscreenThemesLimitedOnlyMessage,
+                    Mode = mode
                 };
             }
 
@@ -210,6 +223,26 @@ namespace PlayniteAchievements.Services.ThemeMigration
             catch
             {
                 return Path.GetFileName(themePath);
+            }
+        }
+
+        internal static bool IsFullscreenThemePath(string themePath)
+        {
+            if (string.IsNullOrWhiteSpace(themePath))
+            {
+                return false;
+            }
+
+            try
+            {
+                return string.Equals(
+                    new DirectoryInfo(themePath).Parent?.Name,
+                    "Fullscreen",
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
             }
         }
 

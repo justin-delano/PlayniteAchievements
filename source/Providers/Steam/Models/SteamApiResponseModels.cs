@@ -3,10 +3,6 @@ using System.Runtime.Serialization;
 
 namespace PlayniteAchievements.Providers.Steam.Models
 {
-    /// <summary>
-    /// Shared Steam Web API response models used by both SteamHttpClient and SteamApiClient.
-    /// Consolidates duplicate model definitions to reduce code duplication.
-    /// </summary>
     [DataContract]
     internal sealed class OwnedGamesEnvelope
     {
@@ -40,31 +36,20 @@ namespace PlayniteAchievements.Providers.Steam.Models
     }
 
     [DataContract]
-    internal sealed class SchemaRoot
+    internal sealed class SteamAsyncConfigResponse
     {
-        [DataMember(Name = "response")]
-        public SchemaResponse Response { get; set; }
+        [DataMember(Name = "success")]
+        public int? Success { get; set; }
+
+        [DataMember(Name = "data")]
+        public SteamAsyncConfigData Data { get; set; }
     }
 
     [DataContract]
-    internal sealed class SchemaResponse
+    internal sealed class SteamAsyncConfigData
     {
-        [DataMember(Name = "game")]
-        public SchemaGame Game { get; set; }
-    }
-
-    [DataContract]
-    internal sealed class SchemaGame
-    {
-        [DataMember(Name = "availableGameStats")]
-        public SchemaAvailableGameStats AvailableGameStats { get; set; }
-    }
-
-    [DataContract]
-    internal sealed class SchemaAvailableGameStats
-    {
-        [DataMember(Name = "achievements")]
-        public SchemaAchievement[] Achievements { get; set; }
+        [DataMember(Name = "webapi_token")]
+        public string WebApiToken { get; set; }
     }
 
     [DataContract]
@@ -90,39 +75,6 @@ namespace PlayniteAchievements.Providers.Steam.Models
 
         [DataMember(Name = "globalPercent")]
         public double? GlobalPercent { get; set; }
-    }
-
-    [DataContract]
-    internal sealed class PlayerSummariesRoot
-    {
-        [DataMember(Name = "response")]
-        public PlayerSummariesResponse Response { get; set; }
-    }
-
-    [DataContract]
-    internal sealed class PlayerSummariesResponse
-    {
-        [DataMember(Name = "players")]
-        public List<PlayerSummaryDto> Players { get; set; }
-    }
-
-    [DataContract]
-    internal sealed class PlayerSummaryDto
-    {
-        [DataMember(Name = "steamid")]
-        public string SteamId { get; set; }
-
-        [DataMember(Name = "personaname")]
-        public string PersonaName { get; set; }
-
-        [DataMember(Name = "avatar")]
-        public string Avatar { get; set; }
-
-        [DataMember(Name = "avatarmedium")]
-        public string AvatarMedium { get; set; }
-
-        [DataMember(Name = "avatarfull")]
-        public string AvatarFull { get; set; }
     }
 
     [DataContract]

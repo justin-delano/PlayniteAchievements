@@ -484,6 +484,7 @@
                                 </Button.ToolTip>
                             </Button>
                             <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationFull}"
+                                    x:Name="ThemeMigrationFullButton"
                                     Command="{Binding MigrateThemeFullCommand}"
                                     Padding="12,6"
                                     MinWidth="100"
@@ -501,6 +502,7 @@
 
                         <!-- Custom Migration Expander -->
                         <Border Background="#12000000"
+                                x:Name="ThemeMigrationCustomContainer"
                                 BorderBrush="{DynamicResource NormalBorderBrush}"
                                 BorderThickness="1"
                                 CornerRadius="6"

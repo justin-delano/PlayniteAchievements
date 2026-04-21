@@ -43,6 +43,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     new List<AchievementDetail>(),
                     new List<AchievementDetail>(),
                     new List<AchievementDetail>(),
+                    new List<AchievementDetail>(),
                     new AchievementRarityStats(),
                     new AchievementRarityStats(),
                     new AchievementRarityStats(),
@@ -75,25 +76,28 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var locked = total - unlocked;
             var percent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(unlocked, total);
             var hasCustomOrder = data.AchievementOrder != null && data.AchievementOrder.Count > 0;
-            var all = hasCustomOrder
+            var defaultOrder = hasCustomOrder
                 ? AchievementOrderHelper.ApplyOrder(
                     achievements,
                     achievement => achievement?.ApiName,
                     data.AchievementOrder)
-                : AchievementGridSortHelper.CreateDefaultSortedDetailList(achievements);
-            var oldestFirst = AchievementGridSortHelper.CreateSortedDetailList(
+                : achievements.ToList();
+            var all = hasCustomOrder
+                ? defaultOrder
+                : AchievementSortHelper.CreateDefaultSortedDetailList(achievements);
+            var oldestFirst = AchievementSortHelper.CreateSortedDetailList(
                 all,
                 nameof(AchievementDisplayItem.UnlockTime),
                 ListSortDirection.Ascending);
-            var newestFirst = AchievementGridSortHelper.CreateSortedDetailList(
+            var newestFirst = AchievementSortHelper.CreateSortedDetailList(
                 all,
                 nameof(AchievementDisplayItem.UnlockTime),
                 ListSortDirection.Descending);
-            var rarityAsc = AchievementGridSortHelper.CreateSortedDetailList(
+            var rarityAsc = AchievementSortHelper.CreateSortedDetailList(
                 all,
                 nameof(AchievementDisplayItem.RaritySortValue),
                 ListSortDirection.Ascending);
-            var rarityDesc = AchievementGridSortHelper.CreateSortedDetailList(
+            var rarityDesc = AchievementSortHelper.CreateSortedDetailList(
                 all,
                 nameof(AchievementDisplayItem.RaritySortValue),
                 ListSortDirection.Descending);
@@ -142,6 +146,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 percent,
                 data.IsCompleted,
                 hasCustomOrder,
+                defaultOrder,
                 all,
                 oldestFirst,
                 newestFirst,
@@ -156,3 +161,4 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
     }
 }
+

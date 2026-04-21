@@ -7,6 +7,8 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Steam;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -21,22 +23,65 @@ namespace PlayniteAchievements.Manual.Tests
     public class ManualSourceTests
     {
         [TestMethod]
-        public void SteamManualSource_IsAuthenticated_OnlyWhenApiKeyConfigured()
+        public void SteamManualSource_ExposesSteamAuthSession()
         {
             using var httpClient = new HttpClient(new StubHttpMessageHandler(_ => throw new InvalidOperationException("Should not send requests.")));
+            var sessionManager = new FakeSessionManager
+            {
+                ProbeResult = AuthProbeResult.AlreadyAuthenticated("76561198000000000")
+            };
+            var source = CreateSteamSource(
+                httpClient,
+                sessionManager,
+                _ => Task.FromResult("store-token"));
 
-            var missingKeySource = new SteamManualSource(httpClient, logger: null, getApiKey: () => " ");
-            var configuredSource = new SteamManualSource(httpClient, logger: null, getApiKey: () => "steam-api-key");
+            Assert.AreSame(sessionManager, source.AuthSession);
+            Assert.IsFalse(source.IsAuthenticated);
+        }
 
-            Assert.IsFalse(missingKeySource.IsAuthenticated);
-            Assert.IsTrue(configuredSource.IsAuthenticated);
-            Assert.IsNull(configuredSource.AuthSession);
+        [TestMethod]
+        public async Task SteamManualSource_SearchGamesAsync_DoesNotRequireSteamAuth()
+        {
+            var sessionManager = new FakeSessionManager
+            {
+                ProbeResult = AuthProbeResult.NotAuthenticated()
+            };
+
+            using var httpClient = new HttpClient(new StubHttpMessageHandler(_ =>
+            {
+                if (_.RequestUri.AbsoluteUri.IndexOf("appdetails", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    throw new HttpRequestException("AppDetails unavailable");
+                }
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        "{ \"items\": [ { \"id\": 400, \"name\": \"Portal\", \"tiny_image\": \"tiny\", \"header_image\": \"hdr\" } ], \"total\": 1 }",
+                        Encoding.UTF8,
+                        "application/json")
+                };
+            }));
+
+            var source = CreateSteamSource(
+                httpClient,
+                sessionManager,
+                _ => Task.FromResult("unused-token"));
+
+            var results = await source.SearchGamesAsync("portal", "english", CancellationToken.None).ConfigureAwait(false);
+
+            Assert.AreEqual(1, results.Count);
+            Assert.AreEqual(0, sessionManager.ProbeCallCount);
         }
 
         [TestMethod]
         public async Task SteamManualSource_GetAchievementsAsync_UsesKoreanaLanguage()
         {
             Uri capturedUri = null;
+            var sessionManager = new FakeSessionManager
+            {
+                ProbeResult = AuthProbeResult.AlreadyAuthenticated("76561198000000000")
+            };
             var handler = new StubHttpMessageHandler(request =>
             {
                 capturedUri = request.RequestUri;
@@ -50,25 +95,58 @@ namespace PlayniteAchievements.Manual.Tests
             });
 
             using var httpClient = new HttpClient(handler);
-            var source = new SteamManualSource(httpClient, logger: null, getApiKey: () => "steam-api-key");
+            var source = CreateSteamSource(
+                httpClient,
+                sessionManager,
+                _ => Task.FromResult("store-token"));
 
             var achievements = await source.GetAchievementsAsync("123", "ko", CancellationToken.None).ConfigureAwait(false);
 
             Assert.IsNotNull(capturedUri);
+            StringAssert.Contains(capturedUri.Query, "key=store-token");
             StringAssert.Contains(capturedUri.Query, "language=koreana");
+            Assert.IsNotNull(achievements);
         }
 
         [TestMethod]
-        public async Task ManualSourceAuthentication_UsesSteamApiKeyAuthForSteamSource()
+        public async Task SteamManualSource_GetAchievementsAsync_ThrowsWhenTokenCannotBeResolved()
         {
             using var httpClient = new HttpClient(new StubHttpMessageHandler(_ => throw new InvalidOperationException("Should not send requests.")));
-            var source = new SteamManualSource(httpClient, logger: null, getApiKey: () => string.Empty);
+            var sessionManager = new FakeSessionManager
+            {
+                ProbeResult = AuthProbeResult.AlreadyAuthenticated("76561198000000000")
+            };
+            var source = CreateSteamSource(
+                httpClient,
+                sessionManager,
+                _ => Task.FromResult<string>(null));
+
+            var ex = await Assert.ThrowsExceptionAsync<ManualSourceAuthenticationException>(
+                () => source.GetAchievementsAsync("123", "english", CancellationToken.None)).ConfigureAwait(false);
+
+            Assert.AreEqual("Steam", ex.SourceKey);
+            Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired", ex.MessageKey);
+        }
+
+        [TestMethod]
+        public async Task ManualSourceAuthentication_UsesSteamSessionAuthForSteamSource()
+        {
+            using var httpClient = new HttpClient(new StubHttpMessageHandler(_ => throw new InvalidOperationException("Should not send requests.")));
+            var sessionManager = new FakeSessionManager
+            {
+                ProbeResult = AuthProbeResult.NotAuthenticated()
+            };
+            var source = CreateSteamSource(
+                httpClient,
+                sessionManager,
+                _ => Task.FromResult("store-token"));
 
             var ex = await Assert.ThrowsExceptionAsync<ManualSourceAuthenticationException>(
                 () => ManualSourceAuthentication.EnsureAuthenticatedAsync(source, CancellationToken.None)).ConfigureAwait(false);
 
             Assert.AreEqual("Steam", ex.SourceKey);
-            Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_ApiKeyRequired", ex.MessageKey);
+            Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired", ex.MessageKey);
+            Assert.AreEqual(1, sessionManager.ProbeCallCount);
         }
 
         [TestMethod]
@@ -181,7 +259,10 @@ namespace PlayniteAchievements.Manual.Tests
         public async Task ManualSourceAuthentication_StillRequiresSteamWhenExophaseRequirementDisabled()
         {
             using var httpClient = new HttpClient(new StubHttpMessageHandler(_ => throw new InvalidOperationException("Should not send requests.")));
-            var source = new SteamManualSource(httpClient, logger: null, getApiKey: () => string.Empty);
+            var source = CreateSteamSource(
+                httpClient,
+                new FakeSessionManager { ProbeResult = AuthProbeResult.NotAuthenticated() },
+                _ => Task.FromResult("store-token"));
 
             var ex = await Assert.ThrowsExceptionAsync<ManualSourceAuthenticationException>(
                 () => ManualSourceAuthentication.EnsureAuthenticatedIfRequiredAsync(
@@ -190,7 +271,7 @@ namespace PlayniteAchievements.Manual.Tests
                     CancellationToken.None)).ConfigureAwait(false);
 
             Assert.AreEqual("Steam", ex.SourceKey);
-            Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_ApiKeyRequired", ex.MessageKey);
+            Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired", ex.MessageKey);
         }
 
         [TestMethod]
@@ -209,6 +290,17 @@ namespace PlayniteAchievements.Manual.Tests
                 ExophaseApiClient.NormalizeLegacyManualApiName("a-fateful sausage"));
 
             Assert.IsNull(ExophaseApiClient.NormalizeLegacyManualApiName("   "));
+        }
+
+        private static SteamManualSource CreateSteamSource(
+            HttpClient httpClient,
+            ISessionManager sessionManager,
+            Func<CancellationToken, Task<string>> resolveTokenAsync)
+        {
+            return new SteamManualSource(
+                httpClient,
+                logger: null,
+                new SteamWebApiTokenResolver(sessionManager, resolveTokenAsync, logger: null));
         }
 
         private sealed class FakePlayniteApi : IPlayniteAPI
@@ -278,6 +370,30 @@ namespace PlayniteAchievements.Manual.Tests
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 return Task.FromResult(_responseFactory(request));
+            }
+        }
+
+        private sealed class FakeSessionManager : ISessionManager
+        {
+            public string ProviderKey => "Steam";
+
+            public int ProbeCallCount { get; private set; }
+
+            public AuthProbeResult ProbeResult { get; set; } = AuthProbeResult.NotAuthenticated();
+
+            public Task<AuthProbeResult> ProbeAuthStateAsync(CancellationToken ct)
+            {
+                ProbeCallCount++;
+                return Task.FromResult(ProbeResult);
+            }
+
+            public Task<AuthProbeResult> AuthenticateInteractiveAsync(bool forceInteractive, CancellationToken ct, IProgress<AuthProgressStep> progress = null)
+            {
+                return Task.FromResult(ProbeResult);
+            }
+
+            public void ClearSession()
+            {
             }
         }
     }

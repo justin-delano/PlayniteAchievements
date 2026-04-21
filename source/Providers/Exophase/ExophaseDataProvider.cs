@@ -31,7 +31,7 @@ namespace PlayniteAchievements.Providers.Exophase
         private static readonly TimeSpan SlugCacheTtl = TimeSpan.FromHours(1);
         private static readonly string[] KnownExophasePlatformTokens =
         {
-            "steam", "gog", "epic", "blizzard", "origin", "psn", "xbox", "retro", "android", "ubisoft", "uplay"
+            "steam", "gog", "epic", "blizzard", "origin", "psn", "xbox", "retro", "android", "apple", "ubisoft", "uplay"
         };
         private readonly Dictionary<Guid, DateTime> _slugCacheTimestamps = new Dictionary<Guid, DateTime>();
         private ExophaseSettings _providerSettings;
@@ -138,27 +138,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 return payload;
             }
 
-            _logger?.Debug($"[Exophase] Probing auth state...");
-            var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
-            var exophaseUserId = probeResult?.UserId?.Trim();
-            var missingVerifiedUser = string.IsNullOrWhiteSpace(exophaseUserId);
+            var exophaseUserId = _sessionManager?.Username?.Trim();
+            var isAuthenticated = _sessionManager?.IsAuthenticated == true;
 
-            _logger?.Info($"[Exophase] Auth probe result: IsSuccess={probeResult?.IsSuccess}, " +
-                $"Outcome={probeResult?.Outcome}, UserId='{exophaseUserId ?? "null"}'");
-
-            if (probeResult?.IsSuccess != true || missingVerifiedUser)
+            if (!isAuthenticated || string.IsNullOrWhiteSpace(exophaseUserId))
             {
-                if (probeResult?.Outcome == AuthOutcome.NotAuthenticated ||
-                    probeResult?.Outcome == AuthOutcome.Cancelled ||
-                    probeResult?.Outcome == AuthOutcome.TimedOut ||
-                    (probeResult?.IsSuccess == true && missingVerifiedUser))
-                {
-                    _logger?.Warn("[Exophase] Exophase not authenticated - live /account probe failed. Refresh aborted.");
-                    payload.AuthRequired = true;
-                    return payload;
-                }
-
-                _logger?.Warn($"[Exophase] Exophase auth probe failed with outcome={probeResult?.Outcome}. Refresh aborted.");
+                _logger?.Warn("[Exophase] Exophase session is not authenticated at refresh start. Refresh aborted.");
+                payload.AuthRequired = true;
                 return payload;
             }
 
@@ -874,6 +860,7 @@ namespace PlayniteAchievements.Providers.Exophase
             if (name.Contains("battle.net") || name.Contains("battlenet") || ContainsDelimitedToken(name, "blizzard")) return "blizzard";
             if (name.Contains("origin") || name.Contains("electronic arts") || name.Contains("ea app") || ContainsDelimitedToken(name, "ea")) return "origin";
             if (name.Contains("google play") || name.Contains("googleplay") || name.Contains("android") || ContainsDelimitedToken(name, "android")) return "android";
+            if (name.Contains("apple arcade") || name.Contains("app store") || ContainsDelimitedToken(name, "ios") || ContainsDelimitedToken(name, "apple")) return "apple";
             if (name.Contains("ubisoft") || name.Contains("uplay") || name.Contains("ubisoft connect")) return "ubisoft";
 
             return null;
@@ -938,6 +925,9 @@ namespace PlayniteAchievements.Providers.Exophase
             // Android / Google Play
             if (name.Contains("android") || name.Contains("google play") || name.Contains("googleplay")) return "android";
 
+            // Apple / App Store
+            if (name.Contains("apple arcade") || name.Contains("app store") || name.Contains("ios") || ContainsDelimitedToken(name, "apple")) return "apple";
+
             return null;
         }
 
@@ -959,6 +949,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 case "psn": return "PSN";
                 case "retro": return "RetroAchievements";
                 case "android": return "GooglePlay";
+                case "apple": return "Apple";
                 case "ubisoft": return "Ubisoft";
                 case "uplay": return "Ubisoft";
                 default:

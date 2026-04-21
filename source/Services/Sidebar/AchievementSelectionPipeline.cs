@@ -84,7 +84,7 @@ namespace PlayniteAchievements.Services.Sidebar
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var gameData = _achievementDataService.GetGameAchievementData(gameId);
+                var gameData = _achievementDataService.GetVisibleGameAchievementData(gameId);
                 if (gameData?.Achievements == null)
                 {
                     return EmptyResult;
@@ -119,9 +119,7 @@ namespace PlayniteAchievements.Services.Sidebar
                         achievements,
                         a => a.ApiName,
                         gameData.AchievementOrder)
-                    : AchievementGridSortHelper.CreateDefaultSortedList(
-                        achievements,
-                        AchievementGridSortScope.GameAchievements);
+                    : achievements;
 
                 return (orderedItems, hasCustomOrder);
             }, cancellationToken).ConfigureAwait(false);

@@ -18,6 +18,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
@@ -127,7 +128,23 @@
                       MinHeight="30" />
         </Grid>
 
-        <StackPanel Grid.Row="6"
+        <Grid Grid.Row="6" Margin="0,2,0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="170" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="Schema-only folders"
+                       Foreground="{DynamicResource TextBrush}"
+                       VerticalAlignment="Center" />
+            <CheckBox Grid.Column="1"
+                      IsChecked="{Binding IncludeFoldersWithoutAchievementFiles, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      VerticalAlignment="Center"
+                      Content="Also import numbered Local folders without achievements.ini or achievements.json" />
+        </Grid>
+
+        <StackPanel Grid.Row="7"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,14,0,0">

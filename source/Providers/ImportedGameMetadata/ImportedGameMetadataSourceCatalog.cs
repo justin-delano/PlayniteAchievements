@@ -37,8 +37,11 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
     internal static class ImportedGameMetadataSourceCatalog
     {
         public const string AutomaticId = "";
+        public const string FastMethodId = "builtin:fastmethod";
+        public const string UniversalSteamMetadataId = "builtin:universal-steam-metadata";
         public const string SteamHuntersId = "builtin:steamhunters";
         public const string CompletionistId = "builtin:completionist";
+        public const string FastMethodDisplayName = "Fast method";
         public const string UniversalSteamMetadataPluginName = "Universal Steam Metadata";
         public const string UniversalSteamMetadataManifestId = "Universal_Steam_Metadata";
 
@@ -47,6 +50,8 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
             var options = new List<ImportedGameMetadataSourceOption>
             {
                 new ImportedGameMetadataSourceOption(AutomaticId, "Automatic"),
+                new ImportedGameMetadataSourceOption(FastMethodId, FastMethodDisplayName),
+                new ImportedGameMetadataSourceOption(UniversalSteamMetadataId, UniversalSteamMetadataPluginName),
                 new ImportedGameMetadataSourceOption(SteamHuntersId, "SteamHunters"),
                 new ImportedGameMetadataSourceOption(CompletionistId, "Completionist.me")
             };
@@ -68,8 +73,53 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
         public static bool IsBuiltInSource(string metadataSourceId)
         {
             var normalizedId = metadataSourceId?.Trim() ?? string.Empty;
-            return string.Equals(normalizedId, SteamHuntersId, StringComparison.OrdinalIgnoreCase)
+            return string.Equals(normalizedId, FastMethodId, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalizedId, UniversalSteamMetadataId, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalizedId, SteamHuntersId, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(normalizedId, CompletionistId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsFastMethodSource(string metadataSourceId)
+        {
+            return string.Equals(metadataSourceId?.Trim(), FastMethodId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsUniversalSteamMetadataSource(string metadataSourceId)
+        {
+            return string.Equals(metadataSourceId?.Trim(), UniversalSteamMetadataId, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string NormalizeMetadataSourceId(IPlayniteAPI api, ILogger logger, string metadataSourceId)
+        {
+            var normalizedId = (metadataSourceId ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalizedId))
+            {
+                return AutomaticId;
+            }
+
+            if (IsBuiltInSource(normalizedId))
+            {
+                return normalizedId;
+            }
+
+            if (string.Equals(normalizedId, UniversalSteamMetadataPluginName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalizedId, UniversalSteamMetadataManifestId, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalizedId, $"name:{UniversalSteamMetadataPluginName}", StringComparison.OrdinalIgnoreCase))
+            {
+                return UniversalSteamMetadataId;
+            }
+
+            if (Guid.TryParse(normalizedId, out var pluginId))
+            {
+                var matchedPlugin = GetMetadataPluginIdentities(api, logger)
+                    .FirstOrDefault(plugin => plugin.Plugin?.Id == pluginId);
+                if (IsUniversalSteamMetadataPlugin(matchedPlugin))
+                {
+                    return UniversalSteamMetadataId;
+                }
+            }
+
+            return normalizedId;
         }
 
         public static MetadataPlugin ResolveMetadataPlugin(IPlayniteAPI api, ILogger logger, string metadataSourceId)
@@ -115,6 +165,19 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
         }
 
         public static MetadataPlugin ResolveAutomaticMetadataPlugin(IPlayniteAPI api, ILogger logger)
+        {
+            try
+            {
+                return ResolveUniversalSteamMetadataPlugin(api, logger);
+            }
+            catch (Exception ex)
+            {
+                logger?.Debug(ex, "[ImportMetadata] Failed resolving Universal Steam Metadata plugin instance.");
+                return null;
+            }
+        }
+
+        public static MetadataPlugin ResolveUniversalSteamMetadataPlugin(IPlayniteAPI api, ILogger logger)
         {
             try
             {
@@ -168,6 +231,7 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
 
                         if (string.Equals(type, "MetadataProvider", StringComparison.OrdinalIgnoreCase)
                             && !string.IsNullOrWhiteSpace(name)
+                            && !string.Equals(name.Trim(), UniversalSteamMetadataPluginName, StringComparison.OrdinalIgnoreCase)
                             && names.Add(name.Trim()))
                         {
                             options.Add(new ImportedGameMetadataSourceOption($"name:{name.Trim()}", name.Trim()));

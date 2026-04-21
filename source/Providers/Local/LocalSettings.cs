@@ -74,6 +74,7 @@ namespace PlayniteAchievements.Providers.Local
         private string _importedGameCustomSourceName = string.Empty;
         private string _importedGameMetadataSourceId = string.Empty;
         private LocalExistingGameImportBehavior _existingGameImportBehavior = LocalExistingGameImportBehavior.OverwriteExisting;
+        private bool _includeFoldersWithoutAchievementFilesOnImport;
         private string _steamAppCacheUserId = string.Empty;
         private string _customProviderIconPath = string.Empty;
 
@@ -186,6 +187,12 @@ namespace PlayniteAchievements.Providers.Local
         {
             get => _existingGameImportBehavior;
             set => SetValue(ref _existingGameImportBehavior, value);
+        }
+
+        public bool IncludeFoldersWithoutAchievementFilesOnImport
+        {
+            get => _includeFoldersWithoutAchievementFilesOnImport;
+            set => SetValue(ref _includeFoldersWithoutAchievementFilesOnImport, value);
         }
 
         public string SteamAppCacheUserId

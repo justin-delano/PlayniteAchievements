@@ -258,6 +258,9 @@ namespace PlayniteAchievements.Models
         public List<AchievementDetail> Achievements => ModernTheme.AllAchievements ?? EmptyAchievementList;
 
         [DontSerialize]
+        public List<AchievementDetail> AchievementDefaultOrder => ModernTheme.AchievementDefaultOrder ?? EmptyAchievementList;
+
+        [DontSerialize]
         public List<AchievementDetail> AchievementsNewestFirst => ModernTheme.AchievementsNewestFirst ?? EmptyAchievementList;
 
         [DontSerialize]
@@ -526,6 +529,27 @@ namespace PlayniteAchievements.Models
         {
             get => ModernTheme.RetroAchievementsGames;
             set => ModernTheme.RetroAchievementsGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> AppleGames
+        {
+            get => ModernTheme.AppleGames;
+            set => ModernTheme.AppleGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> GooglePlayGames
+        {
+            get => ModernTheme.GooglePlayGames;
+            set => ModernTheme.GooglePlayGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> UbisoftGames
+        {
+            get => ModernTheme.UbisoftGames;
+            set => ModernTheme.UbisoftGames = value;
         }
 
         [DontSerialize]

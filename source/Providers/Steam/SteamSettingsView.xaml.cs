@@ -1,20 +1,16 @@
 using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Navigation;
-using System.Diagnostics;
 using Playnite.SDK;
+using PlayniteAchievements.Providers.ImportedGameMetadata;
+using PlayniteAchievements.Providers.Local;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Providers.Local;
-using PlayniteAchievements.Providers.ImportedGameMetadata;
 using PlayniteAchievements.Views.Helpers;
-using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Steam
 {
@@ -74,32 +70,6 @@ namespace PlayniteAchievements.Providers.Steam
             set => SetValue(WebAuthenticatedProperty, value);
         }
 
-        public static readonly DependencyProperty ApiAuthenticatedProperty =
-            DependencyProperty.Register(
-                nameof(ApiAuthenticated),
-                typeof(bool),
-                typeof(SteamSettingsView),
-                new PropertyMetadata(false));
-
-        public bool ApiAuthenticated
-        {
-            get => (bool)GetValue(ApiAuthenticatedProperty);
-            set => SetValue(ApiAuthenticatedProperty, value);
-        }
-
-        public static readonly DependencyProperty AnyAuthenticatedProperty =
-            DependencyProperty.Register(
-                nameof(AnyAuthenticated),
-                typeof(bool),
-                typeof(SteamSettingsView),
-                new PropertyMetadata(false));
-
-        public bool AnyAuthenticated
-        {
-            get => (bool)GetValue(AnyAuthenticatedProperty);
-            set => SetValue(AnyAuthenticatedProperty, value);
-        }
-
         public static readonly DependencyProperty WebAuthStatusProperty =
             DependencyProperty.Register(
                 nameof(WebAuthStatus),
@@ -135,13 +105,6 @@ namespace PlayniteAchievements.Providers.Steam
             base.Initialize(settings);
             ImportedGameMetadataSourceComboBox.ItemsSource = AvailableMetadataSources;
             RefreshAvailableMetadataSources();
-
-            if (_steamSettings is INotifyPropertyChanged notify)
-            {
-                notify.PropertyChanged -= SteamSettings_PropertyChanged;
-                notify.PropertyChanged += SteamSettings_PropertyChanged;
-            }
-
             _ = RefreshAuthStatusAsync();
         }
 
@@ -153,35 +116,47 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 AvailableMetadataSources.Add(option);
             }
+
+            if (_steamSettings == null)
+            {
+                return;
+            }
+
+            var normalizedSelectedId = ImportedGameMetadataSourceCatalog.NormalizeMetadataSourceId(
+                _api,
+                Logger,
+                _steamSettings.ImportedGameMetadataSourceId);
+            if (!string.Equals(_steamSettings.ImportedGameMetadataSourceId, normalizedSelectedId, StringComparison.OrdinalIgnoreCase))
+            {
+                _steamSettings.ImportedGameMetadataSourceId = normalizedSelectedId;
+            }
+
+            if (!AvailableMetadataSources.Any(option => string.Equals(option.Id, _steamSettings.ImportedGameMetadataSourceId, StringComparison.OrdinalIgnoreCase)))
+            {
+                _steamSettings.ImportedGameMetadataSourceId = string.Empty;
+            }
         }
 
         public async Task RefreshAuthStatusAsync()
         {
             try
             {
-                var apiResult = await _sessionManager.ProbeApiKeyAuthStateAsync(CancellationToken.None);
-                var webResult = await _sessionManager.ProbeWebAuthStateAsync(CancellationToken.None);
-                UpdateAuthStatusFromResult(apiResult, webResult);
+                var result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
+                UpdateAuthStatusFromResult(result);
             }
             catch (Exception ex)
             {
                 Logger.Debug(ex, "Steam auth probe failed during settings refresh.");
-                UpdateAuthStatusFromResult(AuthProbeResult.ProbeFailed(), AuthProbeResult.ProbeFailed());
+                UpdateAuthStatusFromResult(AuthProbeResult.ProbeFailed());
             }
         }
 
-        private void UpdateAuthStatusFromResult(AuthProbeResult apiResult, AuthProbeResult webResult)
+        private void UpdateAuthStatusFromResult(AuthProbeResult result)
         {
-            var hasWebAuth = webResult?.IsSuccess == true;
-            var hasApiAuth = apiResult?.IsSuccess == true;
-            var hasApiKey = !string.IsNullOrWhiteSpace(_steamSettings?.SteamApiKey);
-            var apiSteamUserId = !string.IsNullOrWhiteSpace(apiResult?.UserId)
-                ? apiResult.UserId.Trim()
+            var hasWebAuth = result.IsSuccess;
+            var probedSteamUserId = hasWebAuth && !string.IsNullOrWhiteSpace(result.UserId)
+                ? result.UserId.Trim()
                 : null;
-            var webSteamUserId = hasWebAuth && !string.IsNullOrWhiteSpace(webResult?.UserId)
-                ? webResult.UserId.Trim()
-                : null;
-            var probedSteamUserId = webSteamUserId ?? apiSteamUserId;
 
             if (_steamSettings != null && !string.Equals(_steamSettings.SteamUserId, probedSteamUserId, StringComparison.Ordinal))
             {
@@ -189,27 +164,16 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             WebAuthenticated = hasWebAuth;
-            ApiAuthenticated = hasApiKey && hasApiAuth;
-            AnyAuthenticated = hasApiAuth || hasWebAuth;
-            FullyConfigured = hasApiKey && hasApiAuth;
+            FullyConfigured = hasWebAuth;
 
-            if (hasApiKey && hasApiAuth)
+            if (hasWebAuth)
             {
-                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Steam_ApiAuthenticated");
-            }
-            else if (hasWebAuth)
-            {
-                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Steam_WebAuthOnly");
-            }
-            else if (hasApiKey && string.IsNullOrWhiteSpace(probedSteamUserId))
-            {
-                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Steam_ApiNeedsUserId");
+                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated");
             }
             else
             {
-                var messageKey = apiResult?.MessageKey ?? webResult?.MessageKey;
-                var localized = ResourceProvider.GetString(messageKey);
-                WebAuthStatus = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, messageKey, StringComparison.Ordinal)
+                var localized = ResourceProvider.GetString(result.MessageKey);
+                WebAuthStatus = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, result.MessageKey, StringComparison.Ordinal)
                     ? ResourceProvider.GetString("LOCPlayAch_Common_NotAuthenticated")
                     : localized;
             }
@@ -224,12 +188,11 @@ namespace PlayniteAchievements.Providers.Steam
                 if (result.IsSuccess)
                 {
                     await RefreshAuthStatusAsync();
-                    await ImportOwnedGamesAsync(showDialog: true, ct: CancellationToken.None);
                     PlayniteAchievementsPlugin.NotifySettingsSaved();
                 }
                 else
                 {
-                    UpdateAuthStatusFromResult(result, AuthProbeResult.NotAuthenticated());
+                    UpdateAuthStatusFromResult(result);
                 }
             }
             catch (Exception ex)
@@ -281,55 +244,6 @@ namespace PlayniteAchievements.Providers.Steam
         private async void ImportOwnedGames_Click(object sender, RoutedEventArgs e)
         {
             await ImportOwnedGamesAsync(showDialog: true, ct: CancellationToken.None);
-        }
-
-        private void SteamSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e?.PropertyName == nameof(SteamSettings.SteamApiKey))
-            {
-                UpdateConfiguredState();
-            }
-        }
-
-        private void UpdateConfiguredState()
-        {
-            var hasApiKey = !string.IsNullOrWhiteSpace(_steamSettings?.SteamApiKey);
-            var apiAuthenticated = hasApiKey && ApiAuthenticated;
-            ApiAuthenticated = apiAuthenticated;
-            FullyConfigured = hasApiKey && apiAuthenticated;
-
-            if (hasApiKey && apiAuthenticated)
-            {
-                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Steam_ApiAuthenticated");
-            }
-            else if (WebAuthenticated)
-            {
-                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Steam_WebAuthOnly");
-            }
-            else if (hasApiKey && string.IsNullOrWhiteSpace(_steamSettings?.SteamUserId))
-            {
-                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_Steam_ApiNeedsUserId");
-            }
-            else
-            {
-                WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Common_NotAuthenticated");
-            }
-        }
-
-        private async void SteamApiKey_LostFocus(object sender, RoutedEventArgs e)
-        {
-            await RefreshAuthStatusAsync();
-        }
-
-        private async void SteamApiKey_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                e.Handled = true;
-                (sender as TextBox)?.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-                await RefreshAuthStatusAsync();
-                MoveFocusFrom((TextBox)sender);
-            }
         }
 
         private async Task ImportOwnedGamesAsync(bool showDialog, CancellationToken ct)
@@ -521,12 +435,6 @@ namespace PlayniteAchievements.Providers.Steam
                     result.FailedCount);
         }
 
-        private static void MoveFocusFrom(TextBox textBox)
-        {
-            var parent = textBox?.Parent as FrameworkElement;
-            parent?.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
-        }
-
         private void SetAuthBusy(bool busy)
         {
             if (Dispatcher.CheckAccess())
@@ -537,12 +445,6 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 Dispatcher.BeginInvoke(new Action(() => AuthBusy = busy));
             }
-        }
-
-        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
-        {
-            Process.Start(e.Uri.AbsoluteUri);
-            e.Handled = true;
         }
     }
 }

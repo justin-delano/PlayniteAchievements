@@ -14,7 +14,6 @@ namespace PlayniteAchievements.Providers.Steam
     public class SteamSettings : ProviderSettingsBase
     {
         private string _steamUserId;
-        private string _steamApiKey;
         private bool _includeFamilySharedGames = true;
         private string _importedGameMetadataSourceId = string.Empty;
         private SteamExistingGameImportBehavior _existingGameImportBehavior = SteamExistingGameImportBehavior.OverwriteExisting;
@@ -30,15 +29,6 @@ namespace PlayniteAchievements.Providers.Steam
         {
             get => _steamUserId;
             set => SetValue(ref _steamUserId, value);
-        }
-
-        /// <summary>
-        /// Gets or sets the Steam Web API key.
-        /// </summary>
-        public string SteamApiKey
-        {
-            get => _steamApiKey;
-            set => SetValue(ref _steamApiKey, value);
         }
 
         public bool IncludeFamilySharedGames

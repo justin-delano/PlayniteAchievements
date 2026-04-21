@@ -24,6 +24,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public List<GameAchievementSummary> XboxGames { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> PSNGames { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> RetroAchievementsGames { get; set; } = new List<GameAchievementSummary>();
+        public List<GameAchievementSummary> AppleGames { get; set; } = new List<GameAchievementSummary>();
+        public List<GameAchievementSummary> GooglePlayGames { get; set; } = new List<GameAchievementSummary>();
+        public List<GameAchievementSummary> UbisoftGames { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> RPCS3Games { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> XeniaGames { get; set; } = new List<GameAchievementSummary>();
         public List<GameAchievementSummary> ShadPS4Games { get; set; } = new List<GameAchievementSummary>();

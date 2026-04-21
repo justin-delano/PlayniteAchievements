@@ -1,24 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
-using PlayniteAchievements.Models;
+using Newtonsoft.Json;
 using PlayniteAchievements.Providers.Steam.Models;
 using Playnite.SDK;
-using Playnite.SDK.Data;
 
 namespace PlayniteAchievements.Providers.Steam
 {
     internal sealed class SteamApiClient
     {
-        private const string DefaultUserAgent = 
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
-        private const int PlayerSummariesBatchSize = 100;
-
         private readonly HttpClient _apiHttp;
         private readonly ILogger _logger;
 
@@ -28,408 +20,64 @@ namespace PlayniteAchievements.Providers.Steam
             _logger = logger;
         }
 
-        public async Task<Dictionary<int, int>> GetOwnedGamesAsync(string apiKey, string steamId64, bool includePlayedFreeGames)
+        public async Task<SchemaAndPercentages> GetSchemaForGameDetailedAsync(string accessToken, int appId, string language, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(steamId64))
-                return new Dictionary<int, int>();
-
-            var url = $"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/" +
-                      $"?key={Uri.EscapeDataString(apiKey)}" +
-                      $"&steamid={Uri.EscapeDataString(steamId64)}" +
-                      $"&include_appinfo=0" +
-                      $"&include_played_free_games={(includePlayedFreeGames ? "1" : "0")}" +
-                      "&skip_unvetted_apps=false";
-            try
+            var result = await GetSchemaForGameDetailedInternalAsync(accessToken, appId, language, ct).ConfigureAwait(false);
+            if (result == null && !string.Equals(language, "english", StringComparison.OrdinalIgnoreCase))
             {
-                var json = await _apiHttp.GetStringAsync(url).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(json)) return new Dictionary<int, int>();
-
-                var env = Serialization.FromJson<OwnedGamesEnvelope>(json);
-                var games = env?.Response?.Games;
-
-                if (games == null) return new Dictionary<int, int>();
-
-                var result = new Dictionary<int, int>();
-                foreach (var g in games)
-                {
-                    if (!g.AppId.HasValue || g.AppId.Value <= 0) continue;
-                    var mins = Math.Max(0, g.PlaytimeForever ?? 0);
-
-                    if (!result.ContainsKey(g.AppId.Value) || mins > result[g.AppId.Value])
-                        result[g.AppId.Value] = mins;
-                }
-                return result;
+                _logger?.Info($"Schema fetch failed for '{language}', retrying with 'english' for appId={appId}");
+                result = await GetSchemaForGameDetailedInternalAsync(accessToken, appId, "english", ct).ConfigureAwait(false);
             }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "OwnedGames API request failed steamId={steamId64}");
-                return new Dictionary<int, int>();
-            }
+            return result;
         }
 
-        public async Task<bool> ValidateApiKeyAsync(string apiKey, string steamId64, CancellationToken ct)
+        public async Task<bool?> GetGameHasAchievementsAsync(string accessToken, int appId, string language, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(steamId64) || !ulong.TryParse(steamId64.Trim(), out var steamId) || steamId <= 0)
+            if (string.IsNullOrWhiteSpace(accessToken) || appId <= 0)
             {
                 return false;
             }
 
             try
             {
-                var players = await GetPlayerSummariesAsync(apiKey, new[] { steamId }, ct).ConfigureAwait(false);
-                return players.Any(player => string.Equals(player?.SteamId, steamId64.Trim(), StringComparison.Ordinal));
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "Steam Web API key validation failed.");
-                return false;
-            }
-        }
+                language = string.IsNullOrWhiteSpace(language) ? "english" : language;
+                var url = $"https://api.steampowered.com/IPlayerService/GetGameAchievements/v1/" +
+                          $"?key={Uri.EscapeDataString(accessToken)}" +
+                          $"&appid={appId}" +
+                          $"&language={Uri.EscapeDataString(language)}";
 
-        public async Task<UserUnlockedAchievements> GetPlayerAchievementsAsync(string apiKey, string steamId64, int appId, CancellationToken ct)
-        {
-            var result = new UserUnlockedAchievements
-            {
-                AppId = appId,
-                LastUpdatedUtc = DateTime.UtcNow
-            };
-
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(steamId64) || appId <= 0)
-            {
-                return result;
-            }
-
-            try
-            {
-                var url = "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/" +
-                          $"?key={Uri.EscapeDataString(apiKey.Trim())}" +
-                          $"&steamid={Uri.EscapeDataString(steamId64.Trim())}" +
-                          $"&appid={appId}";
-
-                using (var resp = await _apiHttp.GetAsync(url, ct).ConfigureAwait(false))
+                using (var req = new HttpRequestMessage(HttpMethod.Get, url))
+                using (var resp = await _apiHttp.SendAsync(req, ct).ConfigureAwait(false))
                 {
                     if (!resp.IsSuccessStatusCode)
                     {
-                        return result;
+                        return null;
                     }
 
                     var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
                     if (string.IsNullOrWhiteSpace(json))
                     {
-                        return result;
+                        return null;
                     }
 
-                    var root = JObject.Parse(json);
-                    var playerStats = root["playerstats"] as JObject;
-                    var success = playerStats?["success"]?.Value<bool?>();
-                    if (success == false)
-                    {
-                        return result;
-                    }
-
-                    var achievements = playerStats?["achievements"] as JArray;
-                    if (achievements == null || achievements.Count == 0)
-                    {
-                        return result;
-                    }
-
-                    foreach (var token in achievements.OfType<JObject>())
-                    {
-                        var apiName = token["apiname"]?.Value<string>()?.Trim();
-                        if (string.IsNullOrWhiteSpace(apiName))
-                        {
-                            continue;
-                        }
-
-                        if (token["achieved"]?.Value<int?>() != 1)
-                        {
-                            continue;
-                        }
-
-                        result.UnlockedApiNames.Add(apiName);
-
-                        var unlockTimeUnix = token["unlocktime"]?.Value<long?>();
-                        if (unlockTimeUnix.HasValue && unlockTimeUnix.Value > 0)
-                        {
-                            result.UnlockTimesUtc[apiName] = DateTimeOffset.FromUnixTimeSeconds(unlockTimeUnix.Value).UtcDateTime;
-                        }
-                    }
-
-                    result.LastUpdatedUtc = DateTime.UtcNow;
-                    return result;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"GetPlayerAchievements API request failed for appId={appId}");
-                return result;
-            }
-        }
-
-        /// <summary>
-        /// Fetches owned games with full details including last played timestamps.
-        /// Useful for quick refresh mode to sort games by recency.
-        /// </summary>
-        public async Task<List<OwnedGame>> GetOwnedGamesDetailedAsync(string apiKey, string steamId64, bool includePlayedFreeGames, CancellationToken ct)
-        {
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(steamId64))
-                return new List<OwnedGame>();
-
-            try
-            {
-                var url = $"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/" +
-                          $"?key={Uri.EscapeDataString(apiKey)}" +
-                          $"&steamid={Uri.EscapeDataString(steamId64)}" +
-                          $"&include_appinfo=1" +
-                          $"&include_played_free_games={(includePlayedFreeGames ? "1" : "0")}" +
-                          "&skip_unvetted_apps=false";
-
-                using (var resp = await _apiHttp.GetAsync(url, ct).ConfigureAwait(false))
-                {
-                    if (!resp.IsSuccessStatusCode)
-                    {
-                        _logger?.Debug("GetOwnedGamesDetailed API non-success: {(int)resp.StatusCode} {resp.ReasonPhrase}");
-                        return new List<OwnedGame>();
-                    }
-
-                    var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    if (string.IsNullOrWhiteSpace(json))
-                        return new List<OwnedGame>();
-
-                    var env = Serialization.FromJson<OwnedGamesEnvelope>(json);
-                    var games = env?.Response?.Games;
-
-                    return games ?? new List<OwnedGame>();
+                    var root = JsonConvert.DeserializeObject<GetGameAchievementsRoot>(json);
+                    var achievements = root?.Response?.Achievements;
+                    return achievements != null && achievements.Count > 0;
                 }
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "GetOwnedGamesDetailed API request failed steamId={steamId64}");
-                return new List<OwnedGame>();
-            }
-        }
-
-        public async Task<HashSet<int>> GetFamilySharedAppIdsAsync(string apiKey, string steamId64, CancellationToken ct)
-        {
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(steamId64))
-            {
-                return new HashSet<int>();
-            }
-
-            try
-            {
-                var familyGroupId = await GetFamilyGroupIdAsync(apiKey, steamId64, ct).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(familyGroupId))
-                {
-                    return new HashSet<int>();
-                }
-
-                var url = "https://api.steampowered.com/IFamilyGroupsService/GetSharedLibraryApps/v1/"
-                    + $"?key={Uri.EscapeDataString(apiKey)}"
-                    + $"&family_groupid={Uri.EscapeDataString(familyGroupId)}"
-                    + $"&steamid={Uri.EscapeDataString(steamId64)}"
-                    + "&include_own=0"
-                    + "&include_excluded=1"
-                    + "&include_free=1"
-                    + "&include_non_games=1"
-                    + "&language=english";
-
-                using (var resp = await _apiHttp.GetAsync(url, ct).ConfigureAwait(false))
-                {
-                    if (!resp.IsSuccessStatusCode)
-                    {
-                        _logger?.Debug($"Steam Family Groups shared-library API non-success: {(int)resp.StatusCode} {resp.ReasonPhrase}");
-                        return new HashSet<int>();
-                    }
-
-                    var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    return ExtractFamilySharedAppIds(json);
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "Steam Family Groups shared-library API request failed.");
-                return new HashSet<int>();
-            }
-        }
-
-        private async Task<string> GetFamilyGroupIdAsync(string apiKey, string steamId64, CancellationToken ct)
-        {
-            var requestUrls = new[]
-            {
-                "https://api.steampowered.com/IFamilyGroupsService/GetFamilyGroupForUser/v1/"
-                    + $"?key={Uri.EscapeDataString(apiKey)}"
-                    + "&include_family_group_response=1",
-                "https://api.steampowered.com/IFamilyGroupsService/GetFamilyGroupForUser/v1/"
-                    + $"?key={Uri.EscapeDataString(apiKey)}"
-                    + $"&steamid={Uri.EscapeDataString(steamId64)}"
-                    + "&include_family_group_response=1"
-            };
-
-            foreach (var url in requestUrls)
-            {
-                using (var resp = await _apiHttp.GetAsync(url, ct).ConfigureAwait(false))
-                {
-                    if (!resp.IsSuccessStatusCode)
-                    {
-                        continue;
-                    }
-
-                    var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    var familyGroupId = ExtractFamilyGroupId(json);
-                    if (!string.IsNullOrWhiteSpace(familyGroupId))
-                    {
-                        return familyGroupId;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private static string ExtractFamilyGroupId(string json)
-        {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return null;
-            }
-
-            try
-            {
-                var root = JObject.Parse(json);
-                var token = root.SelectTokens("$..family_groupid").FirstOrDefault();
-                if (token == null)
-                {
-                    return null;
-                }
-
-                var value = token.Value<string>()?.Trim();
-                return string.IsNullOrWhiteSpace(value) ? null : value;
-            }
-            catch
-            {
+                _logger?.Debug(ex, "GetGameAchievements API availability check failed for appId={appId}");
                 return null;
             }
         }
 
-        private static HashSet<int> ExtractFamilySharedAppIds(string json)
+        private async Task<SchemaAndPercentages> GetSchemaForGameDetailedInternalAsync(string accessToken, int appId, string language, CancellationToken ct)
         {
-            var result = new HashSet<int>();
-            if (string.IsNullOrWhiteSpace(json))
+            if (string.IsNullOrWhiteSpace(accessToken) || appId <= 0)
             {
-                return result;
-            }
-
-            try
-            {
-                var root = JObject.Parse(json);
-                var appTokens = root.SelectTokens("$..apps[*]")
-                    .Concat(root.SelectTokens("$..shared_library_apps[*]"));
-
-                foreach (var token in appTokens)
-                {
-                    var appId = TryExtractAppId(token);
-                    if (appId > 0)
-                    {
-                        result.Add(appId);
-                    }
-                }
-            }
-            catch
-            {
-            }
-
-            return result;
-        }
-
-        private static int TryExtractAppId(JToken token)
-        {
-            if (token == null)
-            {
-                return 0;
-            }
-
-            if (token.Type == JTokenType.Integer)
-            {
-                var rawValue = token.Value<long>();
-                return rawValue > 0 && rawValue <= int.MaxValue ? (int)rawValue : 0;
-            }
-
-            if (token.Type == JTokenType.Object)
-            {
-                var appIdToken = token["appid"] ?? token["app_id"] ?? token["steam_appid"] ?? token["id"];
-                if (appIdToken == null)
-                {
-                    return 0;
-                }
-
-                if (appIdToken.Type == JTokenType.Integer)
-                {
-                    var rawValue = appIdToken.Value<long>();
-                    return rawValue > 0 && rawValue <= int.MaxValue ? (int)rawValue : 0;
-                }
-
-                if (int.TryParse(appIdToken.Value<string>(), out var parsedAppId) && parsedAppId > 0)
-                {
-                    return parsedAppId;
-                }
-            }
-
-            return 0;
-        }
-
-        /// <summary>
-        /// Checks if a game has achievements (simple boolean check).
-        /// </summary>
-        public async Task<bool> GetSchemaForGameAsync(string apiKey, int appId, string language = "english")
-        {
-            try
-            {
-                var url = $"https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key={apiKey}&appid={appId}&l={language ?? "english"}";
-                var json = await _apiHttp.GetStringAsync(url).ConfigureAwait(false);
-                var root = Serialization.FromJson<SchemaRoot>(json);
-                var ach = root?.Response?.Game?.AvailableGameStats?.Achievements;
-                return (ach != null && ach.Length > 0);
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Fetches full achievement schema for a game (names, descriptions, icons, hidden flags).
-        /// Returns null if the API call fails or the game has no achievements.
-        /// </summary>
-        public async Task<SchemaAndPercentages> GetSchemaForGameDetailedAsync(string apiKey, int appId, string language, CancellationToken ct)
-        {
-            var result = await GetSchemaForGameDetailedInternalAsync(apiKey, appId, language, ct).ConfigureAwait(false);
-            if (result == null && !string.Equals(language, "english", StringComparison.OrdinalIgnoreCase))
-            {
-                _logger?.Info($"Schema fetch failed for '{language}', retrying with 'english' for appId={appId}");
-                result = await GetSchemaForGameDetailedInternalAsync(apiKey, appId, "english", ct).ConfigureAwait(false);
-            }
-            return result;
-        }
-
-        private async Task<SchemaAndPercentages> GetSchemaForGameDetailedInternalAsync(string apiKey, int appId, string language, CancellationToken ct)
-        {
-            if (string.IsNullOrWhiteSpace(apiKey) || appId <= 0)
-            {
-                _logger?.Warn("GetSchemaForGameDetailedInternalAsync: Invalid apiKey or appId={appId}");
+                _logger?.Warn("GetSchemaForGameDetailedInternalAsync: Invalid accessToken or appId={appId}");
                 return null;
             }
 
@@ -437,41 +85,28 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 language = string.IsNullOrWhiteSpace(language) ? "english" : language;
                 var url = $"https://api.steampowered.com/IPlayerService/GetGameAchievements/v1/" +
-                          $"?key={Uri.EscapeDataString(apiKey)}" +
+                          $"?key={Uri.EscapeDataString(accessToken)}" +
                           $"&appid={appId}" +
                           $"&language={Uri.EscapeDataString(language)}";
 
-                // _logger?.Info("GetSchemaForGameDetailedAsync: Calling {url.Replace(apiKey, "***")}");
-
-                using (var resp = await _apiHttp.GetAsync(url, ct).ConfigureAwait(false))
+                using (var req = new HttpRequestMessage(HttpMethod.Get, url))
+                using (var resp = await _apiHttp.SendAsync(req, ct).ConfigureAwait(false))
                 {
-                    // _logger?.Info("GetSchemaForGameDetailedAsync: HTTP {(int)resp.StatusCode} {resp.ReasonPhrase}");
-
                     if (!resp.IsSuccessStatusCode)
                     {
-                        // _logger?.Warn("GetGameAchievements API non-success: {(int)resp.StatusCode} {resp.ReasonPhrase} for appId={appId}");
                         return null;
                     }
 
                     var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    // _logger?.Info("GetSchemaForGameDetailedAsync: Response length={json?.Length ?? 0}");
-                    // _logger?.Info("GetSchemaForGameDetailedAsync: Response JSON={json}");
-
                     if (string.IsNullOrWhiteSpace(json))
                     {
-                        // _logger?.Warn("GetSchemaForGameDetailedAsync: JSON is null or empty");
                         return null;
                     }
 
-                    var root = Serialization.FromJson<GetGameAchievementsRoot>(json);
-                    // _logger?.Info("GetSchemaForGameDetailedAsync: Deserialized root={root != null}, response={root?.Response != null}");
-
+                    var root = JsonConvert.DeserializeObject<GetGameAchievementsRoot>(json);
                     var achievements = root?.Response?.Achievements;
-                    // _logger?.Info("GetSchemaForGameDetailedAsync: achievements={achievements != null}, count={achievements?.Count ?? 0}");
-
                     if (achievements == null || achievements.Count == 0)
                     {
-                        // _logger?.Info("GetSchemaForGameDetailedAsync: No achievements found for appId={appId}");
                         return null;
                     }
 
@@ -490,7 +125,12 @@ namespace PlayniteAchievements.Providers.Steam
                             Hidden = ach.Hidden ? 1 : 0
                         });
 
-                        if (!string.IsNullOrWhiteSpace(ach.InternalName) && double.TryParse(ach.PlayerPercentUnlocked, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var percent))
+                        if (!string.IsNullOrWhiteSpace(ach.InternalName) &&
+                            double.TryParse(
+                                ach.PlayerPercentUnlocked,
+                                System.Globalization.NumberStyles.Any,
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                out var percent))
                         {
                             globalPercentages[ach.InternalName] = percent;
                         }
@@ -508,99 +148,6 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 _logger?.Debug(ex, "GetGameAchievements API request failed for appId={appId}");
                 return null;
-            }
-        }
-
-        public async Task<List<SteamPlayerSummaries>> GetPlayerSummariesAsync(string apiKey, IEnumerable<ulong> steamIds, CancellationToken ct)
-        {
-            var ids = steamIds?
-                .Where(x => x > 0)
-                .Distinct()
-                .ToList() ?? new List<ulong>();
-
-            if (ids.Count == 0)
-                return new List<SteamPlayerSummaries>();
-
-            if (string.IsNullOrWhiteSpace(apiKey))
-                return new List<SteamPlayerSummaries>(); // Caller should handle fallback
-
-            var byId = new Dictionary<ulong, SteamPlayerSummaries>();
-
-            foreach (var batch in Batch(ids, PlayerSummariesBatchSize))
-            {
-                ct.ThrowIfCancellationRequested();
-
-                var idParam = string.Join(",", batch);
-                var url =
-                    "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/" +
-                    $"?key={Uri.EscapeDataString(apiKey.Trim())}" +
-                    $"&steamids={Uri.EscapeDataString(idParam)}";
-
-                try
-                {
-                    using (var req = new HttpRequestMessage(HttpMethod.Get, url))
-                    {
-                        req.Headers.TryAddWithoutValidation("User-Agent", DefaultUserAgent);
-                        req.Headers.TryAddWithoutValidation("Accept", "application/json");
-
-                        using (var resp = await _apiHttp.SendAsync(req, ct).ConfigureAwait(false))
-                        {
-                            if (!resp.IsSuccessStatusCode)
-                                continue;
-
-                            var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            if (string.IsNullOrWhiteSpace(json))
-                                continue;
-
-                            var root = Serialization.FromJson<PlayerSummariesRoot>(json);
-                            var players = root?.Response?.Players;
-                            if (players == null || players.Count == 0)
-                                continue;
-
-                            foreach (var p in players)
-                            {
-                                if (p == null) continue;
-                                if (!ulong.TryParse(p.SteamId, out var sid) || sid <= 0) continue;
-
-                                byId[sid] = new SteamPlayerSummaries
-                                {
-                                    SteamId = p.SteamId,
-                                    PersonaName = p.PersonaName,
-                                    Avatar = p.Avatar,
-                                    AvatarMedium = p.AvatarMedium,
-                                    AvatarFull = p.AvatarFull
-                                };
-                            }
-                        }
-                    }
-                }
-                catch (OperationCanceledException) { throw; }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "GetPlayerSummaries API request failed (batch).");
-                }
-            }
-
-            // Preserve original order where possible.
-            var ordered = new List<SteamPlayerSummaries>(ids.Count);
-            foreach (var id in ids)
-            {
-                if (byId.TryGetValue(id, out var s) && s != null)
-                    ordered.Add(s);
-            }
-
-            return ordered;
-        }
-
-        private static IEnumerable<List<ulong>> Batch(IReadOnlyList<ulong> ids, int batchSize)
-        {
-            for (int i = 0; i < ids.Count; i += batchSize)
-            {
-                var size = Math.Min(batchSize, ids.Count - i);
-                var chunk = new List<ulong>(size);
-                for (int j = 0; j < size; j++)
-                    chunk.Add(ids[i + j]);
-                yield return chunk;
             }
         }
     }

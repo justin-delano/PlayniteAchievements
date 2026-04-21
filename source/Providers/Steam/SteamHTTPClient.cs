@@ -1,4 +1,5 @@
 using HtmlAgilityPack;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers.Steam.Models;
@@ -20,13 +21,6 @@ namespace PlayniteAchievements.Providers.Steam
 {
     public sealed class SteamHttpClient : IDisposable
     {
-        private sealed class FamilyManagementPageState
-        {
-            public string AccessToken { get; set; }
-
-            public HashSet<int> SharedAppIds { get; } = new HashSet<int>();
-        }
-
         internal sealed class OwnedGamesResolutionResult
         {
             public List<OwnedGame> Games { get; } = new List<OwnedGame>();
@@ -47,13 +41,11 @@ namespace PlayniteAchievements.Providers.Steam
         private static readonly Uri StoreBase = new Uri("https://store.steampowered.com/");
         private const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
         private const int MaxAttempts = 3;
-        private const int OwnedGameAppDetailsDelayMs = 1250;
-        private static readonly TimeSpan OwnedGameAppDetails429Cooldown = TimeSpan.FromMinutes(3);
+        private const int OwnedGameAppDetailsDelayMs = 500;
 
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly SteamSessionManager _sessionManager;
-        private readonly SteamApiClient _steamApiClient;
         private readonly string _failedSteamDateTimesCsvPath;
         private readonly object _failedSteamDateTimesLock = new object();
         private readonly ConcurrentQueue<SteamDatetimeParseFailureEntry> _pendingSteamDatetimeParseFailures =
@@ -85,9 +77,6 @@ namespace PlayniteAchievements.Providers.Steam
 
         public HttpClient ApiHttpClient => _apiHttp;
 
-        private readonly ConcurrentDictionary<int, Lazy<Task<bool?>>> _hasAchievementsCache =
-            new ConcurrentDictionary<int, Lazy<Task<bool?>>>();
-
         public SteamHttpClient(IPlayniteAPI api, ILogger logger, SteamSessionManager sessionManager, string pluginUserDataPath)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
@@ -98,7 +87,6 @@ namespace PlayniteAchievements.Providers.Steam
                 : Path.Combine(pluginUserDataPath, FailedSteamDateTimesFileName);
 
             BuildHttpClientsOnce();
-            _steamApiClient = new SteamApiClient(_apiHttp, _logger);
 
             LoadCookiesFromCefIntoJar();
         }
@@ -196,21 +184,61 @@ namespace PlayniteAchievements.Providers.Steam
         // Steam Web API
         // ---------------------------------------------------------------------
 
-        public Task<Dictionary<int, int>> GetPlaytimesAsync(
-            string apiKey, string steamId64, bool includePlayedFreeGames = true)
+        public async Task<string> GetWebApiTokenAsync(CancellationToken ct)
         {
-            return _steamApiClient.GetOwnedGamesAsync(apiKey, steamId64, includePlayedFreeGames);
+            const string url = "https://store.steampowered.com/pointssummary/ajaxgetasyncconfig";
+
+            if (!await EnsureSessionAsync(ct).ConfigureAwait(false))
+            {
+                _logger?.Warn("[SteamAch] Steam session is not available; cannot resolve store web API token.");
+                return null;
+            }
+
+            try
+            {
+                using (var req = new HttpRequestMessage(HttpMethod.Get, url))
+                {
+                    req.Headers.TryAddWithoutValidation("User-Agent", DefaultUserAgent);
+                    req.Headers.TryAddWithoutValidation("Accept", "application/json, text/plain, */*");
+                    req.Headers.Referrer = StoreBase;
+
+                    using (var resp = await _http.SendAsync(req, ct).ConfigureAwait(false))
+                    {
+                        if (!resp.IsSuccessStatusCode)
+                        {
+                            _logger?.Debug($"[SteamAch] Store token request failed: {(int)resp.StatusCode} {resp.ReasonPhrase}");
+                            return null;
+                        }
+
+                        var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(json))
+                        {
+                            return null;
+                        }
+
+                        var root = JsonConvert.DeserializeObject<SteamAsyncConfigResponse>(json);
+                        var token = root?.Data?.WebApiToken?.Trim();
+                        if (string.IsNullOrWhiteSpace(token))
+                        {
+                            _logger?.Debug($"[SteamAch] Store token response did not include a usable token (success={root?.Success?.ToString() ?? "null"}).");
+                            return null;
+                        }
+
+                        return token;
+                    }
+                }
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[SteamAch] Store token request failed.");
+                return null;
+            }
         }
 
-        internal async Task<HashSet<int>> GetOwnedAppIdsFromSessionAsync(CancellationToken ct)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            var ownedAppIds = await GetOwnedAppIdsFromDynamicStoreAsync(ct).ConfigureAwait(false);
-            return new HashSet<int>(ownedAppIds.Where(appId => appId > 0));
-        }
-
-        internal async Task<OwnedGamesResolutionResult> GetOwnedGamesFromSessionAsync(CancellationToken ct, IProgress<OwnedGamesResolutionProgressInfo> progress = null)
+        internal async Task<OwnedGamesResolutionResult> GetOwnedGamesFromSessionAsync(
+            CancellationToken ct,
+            IProgress<OwnedGamesResolutionProgressInfo> progress = null)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -222,6 +250,14 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             return await GetAppDetailsForOwnedGamesAsync(ownedAppIds, "owned Steam games", ct, progress).ConfigureAwait(false);
+        }
+
+        internal async Task<HashSet<int>> GetOwnedAppIdsFromSessionAsync(CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var ownedAppIds = await GetOwnedAppIdsFromDynamicStoreAsync(ct).ConfigureAwait(false);
+            return new HashSet<int>(ownedAppIds.Where(appId => appId > 0));
         }
 
         internal async Task<OwnedGamesResolutionResult> ResolveOwnedGamesFromAppIdsAsync(
@@ -256,14 +292,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             _logger?.Info("[SteamAch] Loading family-shared Steam games from authenticated store session.");
 
-            var familyPageState = await GetFamilyManagementPageStateAsync(ct).ConfigureAwait(false);
-            if (familyPageState.SharedAppIds.Count > 0)
-            {
-                _logger?.Info($"[SteamAch] Family-management page state returned {familyPageState.SharedAppIds.Count} family-shared Steam app ids.");
-                return await ResolveOwnedGamesFromAppIdsAsync(familyPageState.SharedAppIds, "Steam Family Sharing", ct, progress).ConfigureAwait(false);
-            }
-
-            var accessToken = familyPageState.AccessToken;
+            var accessToken = await GetWebApiTokenAsync(ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(accessToken))
             {
                 _logger?.Warn("[SteamAch] Unable to locate a Steam web API access token from the authenticated store session. Family-shared imports will be skipped.");
@@ -295,25 +324,6 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             return GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64}/stats/{statsKey.Trim()}/?tab=achievements&l={language ?? "english"}", true, ct);
-        }
-
-        // ---------------------------------------------------------------------
-        // Player Summaries
-        // ---------------------------------------------------------------------
-
-        public async Task<List<SteamPlayerSummaries>> GetPlayerSummariesAsync(string apiKey, IEnumerable<ulong> steamIds, CancellationToken ct)
-        {
-            var ids = steamIds?.Where(x => x > 0).Distinct().ToList() ?? new List<ulong>();
-            if (ids.Count == 0) return new List<SteamPlayerSummaries>();
-
-            if (string.IsNullOrWhiteSpace(apiKey))
-            {
-                _logger?.Warn("[SteamAch] An API key is required to fetch Steam friend data.");
-                return new List<SteamPlayerSummaries>();
-            }
-
-            var apiResults = await _steamApiClient.GetPlayerSummariesAsync(apiKey, ids, ct).ConfigureAwait(false);
-            return apiResults ?? new List<SteamPlayerSummaries>();
         }
 
         // ---------------------------------------------------------------------
@@ -349,6 +359,177 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             return new List<ScrapedAchievement>();
+        }
+
+        private async Task<List<int>> GetOwnedAppIdsFromDynamicStoreAsync(CancellationToken ct)
+        {
+            var url = $"https://store.steampowered.com/dynamicstore/userdata/?t={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
+            var page = await GetSteamPageAsync(url, true, ct).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(page?.Html))
+            {
+                _logger?.Warn("[SteamAch] Steam owned-games lookup returned an empty dynamic store payload.");
+                return new List<int>();
+            }
+
+            try
+            {
+                var root = JObject.Parse(page.Html);
+                var ownedApps = root["rgOwnedApps"] as JArray;
+                var appIds = ownedApps?
+                    .Values<int>()
+                    .Where(appId => appId > 0)
+                    .Distinct()
+                    .ToList() ?? new List<int>();
+
+                _logger?.Info($"[SteamAch] Dynamic store returned {appIds.Count} owned Steam app ids.");
+                return appIds;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "[SteamAch] Failed parsing Steam dynamic store owned-games payload.");
+                return new List<int>();
+            }
+        }
+
+        private async Task<OwnedGamesResolutionResult> GetAppDetailsForOwnedGamesAsync(
+            IEnumerable<int> ownedAppIds,
+            string progressLabel,
+            CancellationToken ct,
+            IProgress<OwnedGamesResolutionProgressInfo> progress = null)
+        {
+            var appIds = ownedAppIds?
+                .Where(appId => appId > 0)
+                .Distinct()
+                .ToList() ?? new List<int>();
+            var result = new OwnedGamesResolutionResult();
+            if (appIds.Count == 0)
+            {
+                return result;
+            }
+
+            for (var index = 0; index < appIds.Count; index++)
+            {
+                if (ct.IsCancellationRequested)
+                {
+                    result.WasCanceled = true;
+                    break;
+                }
+
+                progress?.Report(new OwnedGamesResolutionProgressInfo
+                {
+                    Text = $"Loading {progressLabel} ({index + 1}/{appIds.Count})...",
+                    Current = index + 1,
+                    Max = appIds.Count
+                });
+
+                if (index > 0)
+                {
+                    await Task.Delay(OwnedGameAppDetailsDelayMs, ct).ConfigureAwait(false);
+                }
+
+                var appId = appIds[index];
+                var requestUrl = $"https://store.steampowered.com/api/appdetails?appids={appId}&filters=basic";
+
+                try
+                {
+                    var page = await GetSteamPageAsync(requestUrl, true, ct).ConfigureAwait(false);
+                    if (string.IsNullOrWhiteSpace(page?.Html))
+                    {
+                        continue;
+                    }
+
+                    var root = JObject.Parse(page.Html);
+                    var appNode = root[appId.ToString(CultureInfo.InvariantCulture)] as JObject;
+                    if (appNode?["success"]?.Value<bool>() != true)
+                    {
+                        continue;
+                    }
+
+                    var data = appNode["data"] as JObject;
+                    var name = data?["name"]?.Value<string>()?.Trim();
+                    if (string.IsNullOrWhiteSpace(name))
+                    {
+                        continue;
+                    }
+
+                    result.Games.Add(new OwnedGame
+                    {
+                        AppId = appId,
+                        Name = name,
+                        LibrarySourceName = "Steam"
+                    });
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"[SteamAch] Failed resolving app details for Steam appId={appId}.");
+                }
+            }
+
+            return result;
+        }
+
+        private async Task<HashSet<int>> GetFamilySharedAppIdsFromAccessTokenAsync(string accessToken, string steamUserId, CancellationToken ct)
+        {
+            var requestUrls = new[]
+            {
+                "https://api.steampowered.com/IFamilyGroupsService/GetSharedLibraryApps/v1/"
+                    + $"?access_token={Uri.EscapeDataString(accessToken)}"
+                    + "&family_groupid=0"
+                    + $"&steamid={Uri.EscapeDataString(steamUserId)}"
+                    + "&include_own=0"
+                    + "&include_excluded=1"
+                    + "&include_free=1"
+                    + "&include_non_games=1"
+                    + "&language=english",
+                "https://api.steampowered.com/IFamilyGroupsService/GetSharedLibraryApps/v1/"
+                    + $"?access_token={Uri.EscapeDataString(accessToken)}"
+                    + "&family_groupid=0"
+                    + "&include_own=0"
+                    + "&include_excluded=1"
+                    + "&include_free=1"
+                    + "&include_non_games=1"
+                    + "&language=english"
+            };
+
+            foreach (var url in requestUrls)
+            {
+                try
+                {
+                    using (var response = await _apiHttp.GetAsync(url, ct).ConfigureAwait(false))
+                    {
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            continue;
+                        }
+
+                        var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                        var root = JObject.Parse(json);
+                        var appIds = root.SelectTokens("$..appid")
+                            .Select(token => token.Value<int?>())
+                            .Where(appId => appId.HasValue && appId.Value > 0)
+                            .Select(appId => appId.Value)
+                            .ToHashSet();
+                        if (appIds.Count > 0)
+                        {
+                            return appIds;
+                        }
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "[SteamAch] Failed resolving Steam Family Groups shared app ids from access token.");
+                }
+            }
+
+            return new HashSet<int>();
         }
 
         private List<ScrapedAchievement> ParseAchievementRows(
@@ -619,676 +800,6 @@ namespace PlayniteAchievements.Providers.Steam
                 .FirstOrDefault(line => !string.IsNullOrWhiteSpace(line));
 
             return firstLine ?? raw.Trim();
-        }
-
-        public Task<bool?> GetAppHasAchievementsAsync(string apiKey, int appId, CancellationToken ct)
-        {
-            if (appId <= 0 || string.IsNullOrWhiteSpace(apiKey)) return Task.FromResult<bool?>(false);
-
-            return _hasAchievementsCache.GetOrAdd(appId,
-                new Lazy<Task<bool?>>(() => FetchAppHasAchievementsAsync(apiKey, appId))).Value;
-        }
-
-        private async Task<bool?> FetchAppHasAchievementsAsync(string apiKey, int appId)
-        {
-            return await _steamApiClient.GetSchemaForGameAsync(apiKey, appId).ConfigureAwait(false);
-        }
-
-        private async Task<List<int>> GetOwnedAppIdsFromDynamicStoreAsync(CancellationToken ct)
-        {
-            var url = $"https://store.steampowered.com/dynamicstore/userdata/?t={DateTimeOffset.UtcNow.ToUnixTimeSeconds()}";
-            var page = await GetSteamPageAsync(url, true, ct).ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(page?.Html))
-            {
-                _logger?.Warn("[SteamAch] Steam owned-games lookup returned an empty dynamic store payload.");
-                return new List<int>();
-            }
-
-            try
-            {
-                var root = JObject.Parse(page.Html);
-                var ownedApps = root["rgOwnedApps"] as JArray;
-                var appIds = ownedApps?
-                    .Values<int>()
-                    .Where(appId => appId > 0)
-                    .Distinct()
-                    .ToList() ?? new List<int>();
-
-                _logger?.Info($"[SteamAch] Dynamic store returned {appIds.Count} owned Steam app ids.");
-                return appIds;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "[SteamAch] Failed parsing Steam dynamic store owned-games payload.");
-                return new List<int>();
-            }
-        }
-
-        private async Task<OwnedGamesResolutionResult> GetAppDetailsForOwnedGamesAsync(
-            IEnumerable<int> ownedAppIds,
-            string progressLabel,
-            CancellationToken ct,
-            IProgress<OwnedGamesResolutionProgressInfo> progress = null)
-        {
-            var appIds = ownedAppIds?
-                .Where(appId => appId > 0)
-                .Distinct()
-                .ToList() ?? new List<int>();
-            var result = new OwnedGamesResolutionResult();
-            if (appIds.Count == 0)
-            {
-                return result;
-            }
-
-            for (var index = 0; index < appIds.Count; index++)
-            {
-                if (ct.IsCancellationRequested)
-                {
-                    result.WasCanceled = true;
-                    _logger?.Info($"[SteamAch] Steam game details resolution canceled after {result.Games.Count} resolved game(s) out of {appIds.Count} requested for {progressLabel}.");
-                    break;
-                }
-
-                progress?.Report(new OwnedGamesResolutionProgressInfo
-                {
-                    Text = $"Loading {progressLabel} ({index + 1}/{appIds.Count})...",
-                    Current = index + 1,
-                    Max = appIds.Count
-                });
-
-                if (index > 0)
-                {
-                    try
-                    {
-                        await Task.Delay(OwnedGameAppDetailsDelayMs, ct).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        result.WasCanceled = true;
-                        _logger?.Info($"[SteamAch] Steam game details resolution canceled after {result.Games.Count} resolved game(s) out of {appIds.Count} requested for {progressLabel}.");
-                        return result;
-                    }
-                }
-
-                var appId = appIds[index];
-                var requestUrl = $"https://store.steampowered.com/api/appdetails?appids={appId}&filters=basic";
-                var retriedAfterRateLimit = false;
-
-                while (true)
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    try
-                    {
-                        using (var response = await _apiHttp.GetAsync(requestUrl, ct).ConfigureAwait(false))
-                        {
-                            if (response.StatusCode == (HttpStatusCode)429)
-                            {
-                                var retryDelay = GetOwnedGameAppDetailsRetryDelay(response);
-                                if (retriedAfterRateLimit)
-                                {
-                                    _logger?.Warn($"[SteamAch] App details request hit 429 again after cooldown. Aborting remaining owned-games import requests. appId={appId}");
-                                    return result;
-                                }
-
-                                retriedAfterRateLimit = true;
-                                _logger?.Warn($"[SteamAch] App details request hit 429 Too Many Requests. Pausing owned-games import for {(int)retryDelay.TotalMinutes} minute(s) before retrying. appId={appId}");
-                                await Task.Delay(retryDelay, ct).ConfigureAwait(false);
-                                continue;
-                            }
-
-                            if (response.StatusCode == HttpStatusCode.Forbidden)
-                            {
-                                _logger?.Warn($"[SteamAch] App details request returned 403 Forbidden. Aborting remaining owned-games import requests to avoid hammering Steam. appId={appId}");
-                                return result;
-                            }
-
-                            if (!response.IsSuccessStatusCode)
-                            {
-                                _logger?.Warn($"[SteamAch] App details request failed for owned game appId={appId}: {(int)response.StatusCode} {response.ReasonPhrase}");
-                                break;
-                            }
-
-                            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            if (!string.IsNullOrWhiteSpace(json))
-                            {
-                                result.Games.AddRange(ParseOwnedGameAppDetails(json));
-                            }
-
-                            break;
-                        }
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        result.WasCanceled = true;
-                        _logger?.Info($"[SteamAch] Steam game details resolution canceled after {result.Games.Count} resolved game(s) out of {appIds.Count} requested for {progressLabel}.");
-                        return result;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Warn(ex, $"[SteamAch] Failed loading public app details for owned game appId={appId}.");
-                        break;
-                    }
-                }
-            }
-
-            _logger?.Info($"[SteamAch] Resolved {result.Games.Count} Steam games with public app details for {progressLabel}.");
-            return result;
-        }
-
-        private static TimeSpan GetOwnedGameAppDetailsRetryDelay(HttpResponseMessage response)
-        {
-            try
-            {
-                var retryAfter = response?.Headers?.RetryAfter;
-                if (retryAfter?.Delta.HasValue == true && retryAfter.Delta.Value > TimeSpan.Zero)
-                {
-                    return retryAfter.Delta.Value;
-                }
-
-                if (retryAfter?.Date.HasValue == true)
-                {
-                    var delay = retryAfter.Date.Value.UtcDateTime - DateTime.UtcNow;
-                    if (delay > TimeSpan.Zero)
-                    {
-                        return delay;
-                    }
-                }
-            }
-            catch
-            {
-            }
-
-            return OwnedGameAppDetails429Cooldown;
-        }
-
-        private static IEnumerable<OwnedGame> ParseOwnedGameAppDetails(string json)
-        {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                yield break;
-            }
-
-            JObject root;
-            try
-            {
-                root = JObject.Parse(json);
-            }
-            catch
-            {
-                yield break;
-            }
-
-            foreach (var property in root.Properties())
-            {
-                if (!int.TryParse(property.Name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var appId) || appId <= 0)
-                {
-                    continue;
-                }
-
-                var envelope = property.Value as JObject;
-                if (envelope?["success"]?.Value<bool>() != true)
-                {
-                    continue;
-                }
-
-                var data = envelope["data"] as JObject;
-                if (data == null)
-                {
-                    continue;
-                }
-
-                var type = data["type"]?.Value<string>()?.Trim();
-                if (!IsImportableOwnedGameType(type))
-                {
-                    continue;
-                }
-
-                var name = data["name"]?.Value<string>()?.Trim();
-                if (string.IsNullOrWhiteSpace(name))
-                {
-                    continue;
-                }
-
-                yield return new OwnedGame
-                {
-                    AppId = appId,
-                    Name = name
-                };
-            }
-        }
-
-        private async Task<FamilyManagementPageState> GetFamilyManagementPageStateAsync(CancellationToken ct)
-        {
-            var state = new FamilyManagementPageState();
-            var candidateUrls = new[]
-            {
-                "https://store.steampowered.com/account/familymanagement",
-                "https://store.steampowered.com/points/shop/",
-                "https://store.steampowered.com/"
-            };
-
-            foreach (var url in candidateUrls)
-            {
-                var page = await GetSteamPageAsync(url, true, ct).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(state.AccessToken))
-                {
-                    state.AccessToken = TryExtractSteamWebApiAccessToken(page?.Html);
-                }
-
-                if (state.SharedAppIds.Count == 0)
-                {
-                    state.SharedAppIds.UnionWith(ExtractFamilySharedAppIdsFromHtml(page?.Html));
-                }
-
-                if (!string.IsNullOrWhiteSpace(state.AccessToken) && state.SharedAppIds.Count > 0)
-                {
-                    return state;
-                }
-            }
-
-            var dynamicState = await TryExtractFamilyManagementPageStateFromScriptAsync(ct).ConfigureAwait(false);
-            if (dynamicState != null)
-            {
-                if (string.IsNullOrWhiteSpace(state.AccessToken))
-                {
-                    state.AccessToken = dynamicState.AccessToken;
-                }
-
-                state.SharedAppIds.UnionWith(dynamicState.SharedAppIds);
-            }
-
-            return state;
-        }
-
-        private async Task<FamilyManagementPageState> TryExtractFamilyManagementPageStateFromScriptAsync(CancellationToken ct)
-        {
-            var tcs = new TaskCompletionSource<FamilyManagementPageState>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            await _api.MainView.UIDispatcher.InvokeAsync(async () =>
-            {
-                try
-                {
-                    ct.ThrowIfCancellationRequested();
-
-                    using (var view = _api.WebViews.CreateOffscreenView())
-                    {
-                        await view.NavigateAndWaitAsync("https://store.steampowered.com/account/familymanagement", timeoutMs: 15000).ConfigureAwait(false);
-                        await Task.Delay(1500, ct).ConfigureAwait(false);
-
-                        if (!view.CanExecuteJavascriptInMainFrame)
-                        {
-                            tcs.TrySetResult(new FamilyManagementPageState());
-                            return;
-                        }
-
-                        var script = @"(() => {
-                            const seenTokens = new Set();
-                            const tokens = [];
-                            const seenAppIds = new Set();
-                            const appIds = [];
-                            const pushToken = (value) => {
-                                if (typeof value !== 'string') return;
-                                const trimmed = value.trim();
-                                if (!trimmed || trimmed.length < 20) return;
-                                if (seenTokens.has(trimmed)) return;
-                                seenTokens.add(trimmed);
-                                tokens.push(trimmed);
-                            };
-                            const pushAppId = (value) => {
-                                const parsed = typeof value === 'number'
-                                    ? value
-                                    : parseInt(String(value || '').trim(), 10);
-                                if (!Number.isInteger(parsed) || parsed <= 0) return;
-                                if (seenAppIds.has(parsed)) return;
-                                seenAppIds.add(parsed);
-                                appIds.push(parsed);
-                            };
-                            const inspect = (obj, depth = 0) => {
-                                if (!obj || depth > 3) return;
-                                if (typeof obj === 'string') {
-                                    pushToken(obj);
-                                    return;
-                                }
-                                if (Array.isArray(obj)) {
-                                    for (const item of obj) inspect(item, depth + 1);
-                                    return;
-                                }
-                                if (typeof obj !== 'object') return;
-                                for (const key of Object.keys(obj)) {
-                                    let value;
-                                    try { value = obj[key]; } catch { continue; }
-                                    if (typeof key === 'string' && /token/i.test(key)) {
-                                        pushToken(value);
-                                    }
-                                    if (typeof key === 'string' && /(?:^|_)(appid|app_id|steam_appid|id)$|shared_library_apps|excluded_appids|apps/i.test(key)) {
-                                        if (Array.isArray(value)) {
-                                            for (const item of value) inspect(item, depth + 1);
-                                        } else {
-                                            pushAppId(value);
-                                        }
-                                    }
-                                    inspect(value, depth + 1);
-                                }
-                            };
-                            const inspectScriptText = (text) => {
-                                if (typeof text !== 'string' || !text) return;
-                                const matches = text.match(/(?:appid|app_id|steam_appid)[""']?\s*[:=]\s*[""']?(\d{2,10})/gi) || [];
-                                for (const match of matches) {
-                                    const appIdMatch = match.match(/(\d{2,10})/);
-                                    if (appIdMatch) pushAppId(appIdMatch[1]);
-                                }
-                                const hrefMatches = text.match(/\/app\/(\d{2,10})/gi) || [];
-                                for (const match of hrefMatches) {
-                                    const appIdMatch = match.match(/(\d{2,10})/);
-                                    if (appIdMatch) pushAppId(appIdMatch[1]);
-                                }
-                            };
-                            try {
-                                inspect(window.application_config || null);
-                                inspect(window.ApplicationConfig || null);
-                                inspect(window.g_rgProfileData || null);
-                                inspect(window.g_rgAccountData || null);
-                                inspect(window.g_AccountData || null);
-                                inspect(window.g_rgWalletInfo || null);
-                                inspect(window.g_rgFamilyGroup || null);
-                                inspect(window.family_group || null);
-                                pushToken(window.webapi_token);
-                                pushToken(window.loyalty_webapi_token);
-                                pushToken(localStorage.getItem('webapi_token'));
-                                pushToken(localStorage.getItem('loyalty_webapi_token'));
-                                pushToken(sessionStorage.getItem('webapi_token'));
-                                pushToken(sessionStorage.getItem('loyalty_webapi_token'));
-                                for (const scriptElement of Array.from(document.scripts || [])) {
-                                    inspectScriptText(scriptElement.textContent || '');
-                                }
-                                inspectScriptText(document.documentElement ? document.documentElement.innerHTML : '');
-                            } catch {}
-                            return JSON.stringify({ tokens, appIds });
-                        })();";
-
-                        var evaluationResult = await view.EvaluateScriptAsync(script).ConfigureAwait(false);
-                        if (evaluationResult == null || !evaluationResult.Success)
-                        {
-                            if (evaluationResult != null && !string.IsNullOrWhiteSpace(evaluationResult.Message))
-                            {
-                                _logger?.Debug($"[SteamAch] Steam web API token script probe failed: {evaluationResult.Message}");
-                            }
-
-                            tcs.TrySetResult(new FamilyManagementPageState());
-                            return;
-                        }
-
-                        var state = ExtractFamilyManagementPageStateFromEvaluateScriptResult(evaluationResult);
-                        tcs.TrySetResult(state ?? new FamilyManagementPageState());
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    tcs.TrySetResult(new FamilyManagementPageState());
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "[SteamAch] Failed extracting family-management page state from script.");
-                    tcs.TrySetResult(new FamilyManagementPageState());
-                }
-            });
-
-            return await tcs.Task.ConfigureAwait(false);
-        }
-
-        private async Task<HashSet<int>> GetFamilySharedAppIdsFromAccessTokenAsync(string accessToken, string steamUserId, CancellationToken ct)
-        {
-            var requestUrls = new[]
-            {
-                "https://api.steampowered.com/IFamilyGroupsService/GetSharedLibraryApps/v1/"
-                    + $"?access_token={Uri.EscapeDataString(accessToken)}"
-                    + "&family_groupid=0"
-                    + $"&steamid={Uri.EscapeDataString(steamUserId)}"
-                    + "&include_own=0"
-                    + "&include_excluded=1"
-                    + "&include_free=1"
-                    + "&include_non_games=1"
-                    + "&language=english",
-                "https://api.steampowered.com/IFamilyGroupsService/GetSharedLibraryApps/v1/"
-                    + $"?access_token={Uri.EscapeDataString(accessToken)}"
-                    + "&family_groupid=0"
-                    + "&include_own=0"
-                    + "&include_excluded=1"
-                    + "&include_free=1"
-                    + "&include_non_games=1"
-                    + "&language=english"
-            };
-
-            foreach (var url in requestUrls)
-            {
-                using (var response = await _apiHttp.GetAsync(url, ct).ConfigureAwait(false))
-                {
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        continue;
-                    }
-
-                    var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    var sharedAppIds = ExtractFamilySharedAppIds(json);
-                    if (sharedAppIds.Count > 0)
-                    {
-                        return sharedAppIds;
-                    }
-                }
-            }
-
-            return new HashSet<int>();
-        }
-
-        private static string TryExtractSteamWebApiAccessToken(string html)
-        {
-            if (string.IsNullOrWhiteSpace(html))
-            {
-                return null;
-            }
-
-            var patterns = new[]
-            {
-                "(?:\\\"|')(?<key>webapi_token|webapiToken|loyalty_webapi_token|loyaltyWebapiToken)(?:\\\"|')\\s*[:=]\\s*(?:\\\"|')(?<token>[^\\\"']+)(?:\\\"|')",
-                "(?:data-webapi-token|data-loyalty-webapi-token|data-loyalty_webapi_token)\\s*=\\s*(?:\\\"|')(?<token>[^\\\"']+)(?:\\\"|')"
-            };
-
-            foreach (var pattern in patterns)
-            {
-                var match = Regex.Match(html, pattern, RegexOptions.IgnoreCase);
-                if (!match.Success)
-                {
-                    continue;
-                }
-
-                var token = match.Groups["token"].Value?.Trim();
-                if (string.IsNullOrWhiteSpace(token))
-                {
-                    continue;
-                }
-
-                token = token.Replace("\\/", "/");
-                try
-                {
-                    token = Regex.Unescape(token);
-                }
-                catch
-                {
-                }
-
-                if (!string.IsNullOrWhiteSpace(token))
-                {
-                    return token;
-                }
-            }
-
-            return null;
-        }
-
-        private static FamilyManagementPageState ExtractFamilyManagementPageStateFromEvaluateScriptResult(JavaScriptEvaluationResult evaluationResult)
-        {
-            var rawResult = evaluationResult?.Result?.ToString();
-            if (string.IsNullOrWhiteSpace(rawResult))
-            {
-                return null;
-            }
-
-            var normalized = rawResult.Trim();
-            if (normalized.Length >= 2 && normalized[0] == '"' && normalized[normalized.Length - 1] == '"')
-            {
-                try
-                {
-                    normalized = JToken.Parse(normalized).Value<string>() ?? normalized;
-                }
-                catch
-                {
-                }
-            }
-
-            try
-            {
-                var parsed = JObject.Parse(normalized);
-                var state = new FamilyManagementPageState();
-
-                foreach (var token in parsed["tokens"]?.Values<string>() ?? Enumerable.Empty<string>())
-                {
-                    var candidate = token?.Trim();
-                    if (string.IsNullOrWhiteSpace(candidate))
-                    {
-                        continue;
-                    }
-
-                    if (candidate.Length >= 20)
-                    {
-                        state.AccessToken = candidate;
-                        break;
-                    }
-                }
-
-                foreach (var token in parsed["appIds"] ?? Enumerable.Empty<JToken>())
-                {
-                    var appId = TryExtractFamilySharedAppId(token);
-                    if (appId > 0)
-                    {
-                        state.SharedAppIds.Add(appId);
-                    }
-                }
-
-                return state;
-            }
-            catch
-            {
-            }
-
-            return new FamilyManagementPageState();
-        }
-
-        private static HashSet<int> ExtractFamilySharedAppIdsFromHtml(string html)
-        {
-            var result = new HashSet<int>();
-            if (string.IsNullOrWhiteSpace(html))
-            {
-                return result;
-            }
-
-            var matches = Regex.Matches(
-                html,
-                "(?:appid|app_id|steam_appid)[\\\"']?\\s*[:=]\\s*[\\\"']?(?<appId>\\d{2,10})|/app/(?<hrefAppId>\\d{2,10})",
-                RegexOptions.IgnoreCase);
-
-            foreach (Match match in matches)
-            {
-                var raw = match.Groups["appId"].Success
-                    ? match.Groups["appId"].Value
-                    : match.Groups["hrefAppId"].Value;
-
-                if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var appId) && appId > 0)
-                {
-                    result.Add(appId);
-                }
-            }
-
-            return result;
-        }
-
-        private static HashSet<int> ExtractFamilySharedAppIds(string json)
-        {
-            var result = new HashSet<int>();
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return result;
-            }
-
-            try
-            {
-                var root = JObject.Parse(json);
-                var appTokens = root.SelectTokens("$..apps[*]")
-                    .Concat(root.SelectTokens("$..shared_library_apps[*]"));
-
-                foreach (var token in appTokens)
-                {
-                    var appId = TryExtractFamilySharedAppId(token);
-                    if (appId > 0)
-                    {
-                        result.Add(appId);
-                    }
-                }
-            }
-            catch
-            {
-            }
-
-            return result;
-        }
-
-        private static int TryExtractFamilySharedAppId(JToken token)
-        {
-            if (token == null)
-            {
-                return 0;
-            }
-
-            if (token.Type == JTokenType.Integer)
-            {
-                var rawValue = token.Value<long>();
-                return rawValue > 0 && rawValue <= int.MaxValue ? (int)rawValue : 0;
-            }
-
-            if (token.Type == JTokenType.Object)
-            {
-                var appIdToken = token["appid"] ?? token["app_id"] ?? token["steam_appid"] ?? token["id"];
-                if (appIdToken == null)
-                {
-                    return 0;
-                }
-
-                if (appIdToken.Type == JTokenType.Integer)
-                {
-                    var rawValue = appIdToken.Value<long>();
-                    return rawValue > 0 && rawValue <= int.MaxValue ? (int)rawValue : 0;
-                }
-
-                if (int.TryParse(appIdToken.Value<string>(), out var parsedAppId) && parsedAppId > 0)
-                {
-                    return parsedAppId;
-                }
-            }
-
-            return 0;
-        }
-
-        private static bool IsImportableOwnedGameType(string type)
-        {
-            if (string.IsNullOrWhiteSpace(type))
-            {
-                return true;
-            }
-
-            return string.Equals(type, "game", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(type, "demo", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(type, "mod", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(type, "episode", StringComparison.OrdinalIgnoreCase);
         }
 
         // ---------------------------------------------------------------------
