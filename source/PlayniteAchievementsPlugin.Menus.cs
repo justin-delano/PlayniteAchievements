@@ -381,6 +381,40 @@ namespace PlayniteAchievements
                 };
             }
 
+            var currentLocalSteamUserOverride = LocalSavesProvider.TryGetSteamAppCacheUserOverride(game.Id, out var localSteamUserOverride)
+                ? localSteamUserOverride
+                : string.Empty;
+            var steamUserMenuSection = PluginLocalGameMenuSection + "|" + ResourceProvider.GetString("LOCPlayAch_Menu_LocalSteamUser_Change");
+            yield return new GameMenuItem
+            {
+                Description = FormatProviderMenuLabel(
+                    ResourceProvider.GetString("LOCPlayAch_Menu_LocalSteamUser_Automatic"),
+                    string.IsNullOrWhiteSpace(currentLocalSteamUserOverride)),
+                MenuSection = steamUserMenuSection,
+                Action = (a) =>
+                {
+                    ChangeLocalSteamUserOverride(game, null);
+                }
+            };
+
+            var localProvider = Providers?.OfType<LocalSavesProvider>().FirstOrDefault();
+            foreach (var user in localProvider?.GetAvailableSteamAppCacheUsers() ?? Enumerable.Empty<LocalSteamAppCacheUserOption>())
+            {
+                var capturedUserId = user.UserId;
+                var capturedLabel = string.IsNullOrWhiteSpace(user.DisplayName) ? user.UserId : user.DisplayName;
+                yield return new GameMenuItem
+                {
+                    Description = FormatProviderMenuLabel(
+                        capturedLabel,
+                        string.Equals(currentLocalSteamUserOverride, capturedUserId, StringComparison.OrdinalIgnoreCase)),
+                    MenuSection = steamUserMenuSection,
+                    Action = (a) =>
+                    {
+                        ChangeLocalSteamUserOverride(game, capturedUserId);
+                    }
+                };
+            }
+
             var hasLocalFolderOverride = LocalSavesProvider.TryGetFolderOverride(game.Id, out _);
             yield return new GameMenuItem
             {
@@ -910,6 +944,40 @@ namespace PlayniteAchievements
             {
                 PlayniteApi?.Dialogs?.ShowMessage(
                     ResourceProvider.GetString("LOCPlayAch_Menu_LocalAppId_ClearFailed"),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
+            _achievementOverridesService?.ClearGameData(game.Id, game.Name);
+            _ = _refreshCoordinator.ExecuteAsync(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.Single,
+                    SingleGameId = game.Id
+                },
+                RefreshExecutionPolicy.ProgressWindow(game.Id));
+        }
+
+        private void ChangeLocalSteamUserOverride(Game game, string userId)
+        {
+            if (game == null || game.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            var normalizedUserId = userId?.Trim() ?? string.Empty;
+            var success = string.IsNullOrWhiteSpace(normalizedUserId)
+                ? LocalSavesProvider.TryClearSteamAppCacheUserOverride(game.Id, game.Name, PersistSettingsForUi, _logger)
+                : LocalSavesProvider.TrySetSteamAppCacheUserOverride(game.Id, normalizedUserId, game.Name, PersistSettingsForUi, _logger);
+
+            if (!success)
+            {
+                PlayniteApi?.Dialogs?.ShowMessage(
+                    ResourceProvider.GetString(string.IsNullOrWhiteSpace(normalizedUserId)
+                        ? "LOCPlayAch_Menu_LocalSteamUser_ClearFailed"
+                        : "LOCPlayAch_Menu_LocalSteamUser_SetFailed"),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Warning);

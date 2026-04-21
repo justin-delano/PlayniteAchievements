@@ -57,6 +57,10 @@ namespace PlayniteAchievements.ViewModels
         private bool _hasLocalSteamAppIdOverride;
         private string _localSteamAppIdOverrideValue;
         private string _localSteamAppIdOverrideInput;
+        private bool _hasLocalSteamAppCacheUserOverride;
+        private string _localSteamAppCacheUserOverrideValue;
+        private string _localSteamAppCacheUserOverrideInput;
+        private IReadOnlyList<LocalSteamAppCacheUserOption> _availableLocalSteamAppCacheUsers = Array.Empty<LocalSteamAppCacheUserOption>();
         private bool _hasLocalFolderOverride;
         private string _localFolderOverrideValue;
         private string _localFolderOverrideInput;
@@ -99,6 +103,8 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand ClearRaOverrideCommand { get; }
         public RelayCommand ApplyLocalSteamAppIdOverrideCommand { get; }
         public RelayCommand ClearLocalSteamAppIdOverrideCommand { get; }
+        public RelayCommand ApplyLocalSteamAppCacheUserOverrideCommand { get; }
+        public RelayCommand ClearLocalSteamAppCacheUserOverrideCommand { get; }
         public RelayCommand ApplyLocalFolderOverrideCommand { get; }
         public RelayCommand ClearLocalFolderOverrideCommand { get; }
         public RelayCommand BrowseLocalFolderOverrideCommand { get; }
@@ -147,6 +153,8 @@ namespace PlayniteAchievements.ViewModels
             ClearRaOverrideCommand = new RelayCommand(_ => ClearRaOverride(), _ => HasGame && IsRaCapable && HasRaOverride);
             ApplyLocalSteamAppIdOverrideCommand = new RelayCommand(_ => ApplyLocalSteamAppIdOverride(), _ => HasGame);
             ClearLocalSteamAppIdOverrideCommand = new RelayCommand(_ => ClearLocalSteamAppIdOverride(), _ => HasGame && HasLocalSteamAppIdOverride);
+            ApplyLocalSteamAppCacheUserOverrideCommand = new RelayCommand(_ => ApplyLocalSteamAppCacheUserOverride(), _ => HasGame);
+            ClearLocalSteamAppCacheUserOverrideCommand = new RelayCommand(_ => ClearLocalSteamAppCacheUserOverride(), _ => HasGame && HasLocalSteamAppCacheUserOverride);
             ApplyLocalFolderOverrideCommand = new RelayCommand(_ => ApplyLocalFolderOverride(), _ => HasGame);
             ClearLocalFolderOverrideCommand = new RelayCommand(_ => ClearLocalFolderOverride(), _ => HasGame && HasLocalFolderOverride);
             BrowseLocalFolderOverrideCommand = new RelayCommand(_ => BrowseLocalFolderOverride(), _ => HasGame);
@@ -626,6 +634,59 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public IReadOnlyList<LocalSteamAppCacheUserOption> AvailableLocalSteamAppCacheUsers
+        {
+            get => _availableLocalSteamAppCacheUsers;
+            private set => SetValue(ref _availableLocalSteamAppCacheUsers, value ?? Array.Empty<LocalSteamAppCacheUserOption>());
+        }
+
+        public bool HasLocalSteamAppCacheUserOverride
+        {
+            get => _hasLocalSteamAppCacheUserOverride;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasLocalSteamAppCacheUserOverride, value))
+                {
+                    OnPropertyChanged(nameof(LocalSteamAppCacheUserStatusText));
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public string LocalSteamAppCacheUserOverrideValue
+        {
+            get => _localSteamAppCacheUserOverrideValue;
+            private set => SetValue(ref _localSteamAppCacheUserOverrideValue, value);
+        }
+
+        public string LocalSteamAppCacheUserOverrideInput
+        {
+            get => _localSteamAppCacheUserOverrideInput;
+            set
+            {
+                if (SetValueAndReturn(ref _localSteamAppCacheUserOverrideInput, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(LocalSteamAppCacheUserStatusText));
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public string LocalSteamAppCacheUserStatusText
+        {
+            get
+            {
+                if (!HasLocalSteamAppCacheUserOverride)
+                {
+                    return L("LOCPlayAch_GameOptions_Status_LocalSteamUserOverrideNone", "Automatic Steam user detection");
+                }
+
+                return string.Format(
+                    L("LOCPlayAch_GameOptions_Status_LocalSteamUserOverrideValue", "Forced Steam user: {0}"),
+                    GetSteamUserDisplayName(LocalSteamAppCacheUserOverrideValue));
+            }
+        }
+
         public bool HasLocalFolderOverride
         {
             get => _hasLocalFolderOverride;
@@ -993,6 +1054,36 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 var localProvider = _refreshService?.Providers?.OfType<LocalSavesProvider>().FirstOrDefault();
+                var availableSteamUsers = new List<LocalSteamAppCacheUserOption>
+                {
+                    new LocalSteamAppCacheUserOption(string.Empty, L("LOCPlayAch_GameOptions_LocalSteamUser_Automatic", "Automatic (all detected users)"))
+                };
+                if (localProvider != null)
+                {
+                    availableSteamUsers.AddRange(localProvider.GetAvailableSteamAppCacheUsers());
+                }
+                AvailableLocalSteamAppCacheUsers = availableSteamUsers;
+
+                if (LocalSavesProvider.TryGetSteamAppCacheUserOverride(_gameId, out var localSteamUserOverride))
+                {
+                    if (!AvailableLocalSteamAppCacheUsers.Any(option => string.Equals(option.UserId, localSteamUserOverride, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        AvailableLocalSteamAppCacheUsers = AvailableLocalSteamAppCacheUsers
+                            .Concat(new[] { new LocalSteamAppCacheUserOption(localSteamUserOverride, localSteamUserOverride) })
+                            .ToList();
+                    }
+
+                    HasLocalSteamAppCacheUserOverride = true;
+                    LocalSteamAppCacheUserOverrideValue = localSteamUserOverride;
+                    LocalSteamAppCacheUserOverrideInput = localSteamUserOverride;
+                }
+                else
+                {
+                    HasLocalSteamAppCacheUserOverride = false;
+                    LocalSteamAppCacheUserOverrideValue = string.Empty;
+                    LocalSteamAppCacheUserOverrideInput = string.Empty;
+                }
+
                 if (localProvider != null && localProvider.TryGetResolvedFolderInfo(game, out var selectedFolder, out var candidateFolders, out var isFolderOverridden, out var isAmbiguousFolder))
                 {
                     HasLocalFolderOverride = isFolderOverridden;
@@ -1169,6 +1260,33 @@ namespace PlayniteAchievements.ViewModels
         private void ClearLocalSteamAppIdOverride()
         {
             if (TryClearLocalSteamAppIdOverride())
+            {
+                Reload();
+            }
+        }
+
+        private void ApplyLocalSteamAppCacheUserOverride()
+        {
+            var selectedUserId = (LocalSteamAppCacheUserOverrideInput ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(selectedUserId))
+            {
+                if (TryClearLocalSteamAppCacheUserOverride())
+                {
+                    Reload();
+                }
+
+                return;
+            }
+
+            if (TrySetLocalSteamAppCacheUserOverride(selectedUserId))
+            {
+                Reload();
+            }
+        }
+
+        private void ClearLocalSteamAppCacheUserOverride()
+        {
+            if (TryClearLocalSteamAppCacheUserOverride())
             {
                 Reload();
             }
@@ -1589,6 +1707,55 @@ namespace PlayniteAchievements.ViewModels
             return true;
         }
 
+        private bool TrySetLocalSteamAppCacheUserOverride(string userId)
+        {
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            if (game == null || string.IsNullOrWhiteSpace(userId))
+            {
+                return false;
+            }
+
+            if (!LocalSavesProvider.TrySetSteamAppCacheUserOverride(_gameId, userId, game.Name, _persistSettingsForUi, _logger))
+            {
+                return false;
+            }
+
+            _achievementOverridesService?.ClearGameData(_gameId, game.Name);
+            TriggerRefresh();
+            return true;
+        }
+
+        private bool TryClearLocalSteamAppCacheUserOverride()
+        {
+            var game = _playniteApi?.Database?.Games?.Get(_gameId);
+            if (game == null)
+            {
+                return false;
+            }
+
+            if (!LocalSavesProvider.TryClearSteamAppCacheUserOverride(_gameId, game.Name, _persistSettingsForUi, _logger))
+            {
+                return false;
+            }
+
+            _achievementOverridesService?.ClearGameData(_gameId, game.Name);
+            TriggerRefresh();
+            return true;
+        }
+
+        private string GetSteamUserDisplayName(string userId)
+        {
+            var normalizedUserId = (userId ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalizedUserId))
+            {
+                return L("LOCPlayAch_GameOptions_LocalSteamUser_Automatic", "Automatic (all detected users)");
+            }
+
+            return AvailableLocalSteamAppCacheUsers
+                ?.FirstOrDefault(option => string.Equals(option.UserId, normalizedUserId, StringComparison.OrdinalIgnoreCase))
+                ?.DisplayName ?? normalizedUserId;
+        }
+
         private bool TrySetXeniaTitleIdOverride(string titleId)
         {
             var game = _playniteApi?.Database?.Games?.Get(_gameId);
@@ -1892,6 +2059,8 @@ namespace PlayniteAchievements.ViewModels
             ClearRaOverrideCommand?.RaiseCanExecuteChanged();
             ApplyLocalSteamAppIdOverrideCommand?.RaiseCanExecuteChanged();
             ClearLocalSteamAppIdOverrideCommand?.RaiseCanExecuteChanged();
+            ApplyLocalSteamAppCacheUserOverrideCommand?.RaiseCanExecuteChanged();
+            ClearLocalSteamAppCacheUserOverrideCommand?.RaiseCanExecuteChanged();
             ApplyLocalFolderOverrideCommand?.RaiseCanExecuteChanged();
             ClearLocalFolderOverrideCommand?.RaiseCanExecuteChanged();
             BrowseLocalFolderOverrideCommand?.RaiseCanExecuteChanged();

@@ -148,17 +148,19 @@ namespace PlayniteAchievements.Services
 
         public void ShowLocalAchievementUnlocked(string gameName, IReadOnlyList<string> unlockedAchievementNames, string customSoundPath)
         {
-            if (_settings?.Persisted?.EnableNotifications != true)
-            {
-                return;
-            }
-
             var names = unlockedAchievementNames?
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList() ?? new List<string>();
             var unlockCount = Math.Max(unlockedAchievementNames?.Count ?? 0, names.Count);
             if (unlockCount <= 0)
+            {
+                return;
+            }
+
+            PlayCustomSound(customSoundPath);
+
+            if (_settings?.Persisted?.EnableNotifications != true)
             {
                 return;
             }
@@ -206,8 +208,6 @@ namespace PlayniteAchievements.Services
                     $"PlayniteAchievements-LocalUnlock-{Guid.NewGuid()}",
                     $"{title}\n{message}",
                     NotificationType.Info)));
-
-                PlayCustomSound(customSoundPath);
             }
             catch (Exception ex)
             {

@@ -20,6 +20,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0"
@@ -70,6 +71,35 @@
         </Border>
 
         <Border Grid.Row="2"
+                Background="{DynamicResource ControlBackgroundBrush}"
+                BorderBrush="{DynamicResource NormalBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,12"
+                Visibility="{Binding ShowCopyableReport, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel>
+                <DockPanel Margin="0,0,0,8">
+                    <TextBlock Text="Rejected Steam App IDs"
+                               Style="{DynamicResource BaseTextBlockStyle}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextBrush}"/>
+                    <Button Content="Copy"
+                            Click="CopyReportButton_Click"
+                            Style="{StaticResource ProgressDialogButtonStyle}"
+                            HorizontalAlignment="Right"
+                            DockPanel.Dock="Right"/>
+                </DockPanel>
+
+                <TextBox Text="{Binding CopyableReportText}"
+                         IsReadOnly="True"
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto"
+                         MinHeight="90"
+                         MaxHeight="150"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="3"
                 Background="{DynamicResource ControlBackgroundBrush}"
                 Padding="16,12">
             <StackPanel Orientation="Horizontal"

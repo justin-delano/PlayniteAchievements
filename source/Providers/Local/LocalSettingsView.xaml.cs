@@ -88,11 +88,13 @@ namespace PlayniteAchievements.Providers.Local
             }
 
             if (e.PropertyName == nameof(LocalSettings.EnableActiveGameMonitoring) ||
+                e.PropertyName == nameof(LocalSettings.EnableUnlockScreenshots) ||
                 e.PropertyName == nameof(LocalSettings.BundledUnlockSoundPath) ||
                 e.PropertyName == nameof(LocalSettings.EffectiveBundledUnlockSoundPath) ||
                 e.PropertyName == nameof(LocalSettings.CustomUnlockSoundPath) ||
                 e.PropertyName == nameof(LocalSettings.UnlockSoundPath) ||
-                e.PropertyName == nameof(LocalSettings.ActiveGameMonitoringIntervalSeconds))
+                e.PropertyName == nameof(LocalSettings.ActiveGameMonitoringIntervalSeconds) ||
+                e.PropertyName == nameof(LocalSettings.ScreenshotDelayMilliseconds))
             {
                 RefreshRealtimeMonitoringControls();
             }
@@ -154,6 +156,17 @@ namespace PlayniteAchievements.Providers.Local
 
             _localSettings.CustomUnlockSoundPath = selectedPath;
             RefreshRealtimeMonitoringControls();
+        }
+
+        private void BrowseScreenshotSaveFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var selectedPath = _playniteApi?.Dialogs?.SelectFolder();
+            if (string.IsNullOrWhiteSpace(selectedPath) || _localSettings == null)
+            {
+                return;
+            }
+
+            _localSettings.ScreenshotSaveFolder = selectedPath;
         }
 
         private async void BrowseLocalProviderIcon_Click(object sender, RoutedEventArgs e)
@@ -235,6 +248,16 @@ namespace PlayniteAchievements.Providers.Local
         private void PollingIntervalSecondsTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             ApplyPollingIntervalFromTextBox(updateTextBox: true);
+        }
+
+        private void ScreenshotDelayMillisecondsTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplyScreenshotDelayFromTextBox(updateTextBox: false);
+        }
+
+        private void ScreenshotDelayMillisecondsTextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            ApplyScreenshotDelayFromTextBox(updateTextBox: true);
         }
 
         private void RealtimeMonitoringSettingChanged(object sender, RoutedEventArgs e)
@@ -968,9 +991,14 @@ namespace PlayniteAchievements.Providers.Local
                     var existingBehaviorLabel = existingGameBehavior == LocalExistingGameImportBehavior.SkipExisting ? "skip existing" : "overwrite existing";
                     var folderModeLabel = includeFoldersWithoutAchievementFiles ? "including schema-only folders" : "achievement files required";
                     var summary = $"Imported {result.ImportedCount} new games, reused {result.LinkedExistingCount} existing games, skipped {result.SkippedCount}, failed {result.FailedCount} across {result.UniqueAppIdCount} detected App IDs for {targetLabel} using metadata source '{metadataLabel}' with existing-game behavior '{existingBehaviorLabel}' and folder mode '{folderModeLabel}'.";
+                    if (result.RejectedSteamAppCount > 0)
+                    {
+                        summary += $" Rejected {result.RejectedSteamAppCount} non-importable Steam App IDs.";
+                    }
 
                     Dispatcher.Invoke(() =>
                     {
+                        progressControl.SetCopyableReport(result.RejectedSteamAppReport);
                         progressControl.MarkCompleted(summary);
                         UpdateImportStatus(summary);
                     });
@@ -1047,6 +1075,15 @@ namespace PlayniteAchievements.Providers.Local
                 }
             }
 
+            if (ScreenshotDelayMillisecondsTextBox != null)
+            {
+                var normalizedDelay = _localSettings.ScreenshotDelayMilliseconds.ToString();
+                if (!string.Equals(ScreenshotDelayMillisecondsTextBox.Text, normalizedDelay, StringComparison.Ordinal))
+                {
+                    ScreenshotDelayMillisecondsTextBox.Text = normalizedDelay;
+                }
+            }
+
             RefreshBundledUnlockSoundSelection();
             UpdateUnlockSoundStatus();
         }
@@ -1108,6 +1145,25 @@ namespace PlayniteAchievements.Providers.Local
             if (updateTextBox && PollingIntervalSecondsTextBox != null)
             {
                 PollingIntervalSecondsTextBox.Text = _localSettings.ActiveGameMonitoringIntervalSeconds.ToString();
+            }
+        }
+
+        private void ApplyScreenshotDelayFromTextBox(bool updateTextBox)
+        {
+            if (_localSettings == null)
+            {
+                return;
+            }
+
+            var rawValue = ScreenshotDelayMillisecondsTextBox?.Text?.Trim();
+            if (int.TryParse(rawValue, out var parsedValue))
+            {
+                _localSettings.ScreenshotDelayMilliseconds = parsedValue;
+            }
+
+            if (updateTextBox && ScreenshotDelayMillisecondsTextBox != null)
+            {
+                ScreenshotDelayMillisecondsTextBox.Text = _localSettings.ScreenshotDelayMilliseconds.ToString();
             }
         }
 

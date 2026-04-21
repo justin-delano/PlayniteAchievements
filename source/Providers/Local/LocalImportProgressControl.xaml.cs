@@ -11,6 +11,7 @@ namespace PlayniteAchievements.Providers.Local
         private string _dialogTitle = "Importing Games";
         private string _progressMessage = "Preparing Local import...";
         private string _detailMessage = "";
+        private string _copyableReportText = "";
         private double _progressPercent;
         private bool _showCancelButton = true;
         private bool _showCloseButton;
@@ -79,6 +80,24 @@ namespace PlayniteAchievements.Providers.Local
             }
         }
 
+        public string CopyableReportText
+        {
+            get => _copyableReportText;
+            set
+            {
+                if (string.Equals(_copyableReportText, value, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _copyableReportText = value ?? string.Empty;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowCopyableReport));
+            }
+        }
+
+        public bool ShowCopyableReport => !string.IsNullOrWhiteSpace(CopyableReportText);
+
         public bool ShowCancelButton
         {
             get => _showCancelButton;
@@ -146,6 +165,11 @@ namespace PlayniteAchievements.Providers.Local
             ShowCloseButton = true;
         }
 
+        public void SetCopyableReport(string reportText)
+        {
+            CopyableReportText = reportText ?? string.Empty;
+        }
+
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             CancelRequested?.Invoke(this, EventArgs.Empty);
@@ -154,6 +178,22 @@ namespace PlayniteAchievements.Providers.Local
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             RequestClose?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void CopyReportButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(CopyableReportText))
+            {
+                return;
+            }
+
+            try
+            {
+                Clipboard.SetText(CopyableReportText);
+            }
+            catch
+            {
+            }
         }
 
         private void OnPropertyChanged([CallerMemberName] string propertyName = null)

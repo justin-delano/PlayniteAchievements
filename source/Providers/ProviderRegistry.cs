@@ -255,6 +255,17 @@ namespace PlayniteAchievements.Providers
         public ProviderSettingsViewBase CreateSettingsView(string providerKey)
             => _settingsViewFactories.TryGetValue(providerKey, out var factory) ? factory() : null;
 
+        public IDataProvider GetProvider(string providerKey)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return null;
+            }
+
+            _providersByKey.TryGetValue(providerKey.Trim(), out var provider);
+            return provider;
+        }
+
         // ===================== PROVIDER CREATION =====================
 
         public List<IDataProvider> CreateProviders(PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath)

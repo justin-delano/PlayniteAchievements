@@ -151,6 +151,10 @@
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Veuillez entrer un ID de jeu entier positif valide.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_ClearConfirm">Effacer le remplacement d'ID RetroAchievements pour "{0}" ?</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_Cleared">Remplacement d'ID RetroAchievements effacé.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_LocalSteamUser_Change">Changer l'utilisateur Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_LocalSteamUser_Automatic">Automatique</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_LocalSteamUser_SetFailed">L'utilisateur Steam local forcé n'a pas pu être enregistré.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_LocalSteamUser_ClearFailed">Aucun utilisateur Steam local forcé n'était défini pour ce jeu.</sys:String>
 
     <!-- ================================================================= -->
     <!-- FENÊTRE OPTIONS DU JEU                                             -->
@@ -178,6 +182,8 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_RaOverrideValue">Remplacement défini : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_LocalSteamAppIdOverrideNone">Aucun App ID Steam forcé défini</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_LocalSteamAppIdOverrideValue">App ID Steam forcé : {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Status_LocalSteamUserOverrideNone">Détection automatique de l'utilisateur Steam</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Status_LocalSteamUserOverrideValue">Utilisateur Steam forcé : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_LocalFolderNone">Aucun dossier local détecté</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_LocalFolderAuto">Dossier détecté automatiquement : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_LocalFolderAmbiguous">Plusieurs dossiers locaux trouvés. Utilisation de : {0}</sys:String>
@@ -207,6 +213,9 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_RaHint">Saisissez l'ID du jeu RetroAchievements pour remplacer la détection automatique de ce jeu.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LocalSteamAppIdHeader">App ID Steam local forcé</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LocalSteamAppIdHint">Saisissez l'App ID Steam que le fournisseur Local doit utiliser pour ce jeu. C'est utile lorsqu'un jeu possède plusieurs App IDs Steam.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LocalSteamUserHeader">Utilisateur Steam local forcé</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LocalSteamUserHint">Choisissez l'utilisateur Steam local dont les fichiers appcache et userdata doivent être utilisés pour ce jeu. Laissez automatique pour rechercher tous les utilisateurs détectés.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_LocalSteamUser_Automatic">Automatique (tous les utilisateurs détectés)</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LocalFolderHeader">Remplacement du dossier de sauvegarde local</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LocalFolderHint">Si plusieurs dossiers d'émulateur existent pour le même App ID Steam, choisissez le dossier qui contient les bonnes données de sauvegarde pour ce jeu.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_LocalFolder_Invalid">Veuillez saisir un chemin de dossier local valide.</sys:String>

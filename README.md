@@ -56,18 +56,23 @@ From the PlayniteAchivements menu inside the game
 This was a request from a user to have a sound playing when an achivement is unlocked while playing a game.<br>
 Extra sounds in the [Resources/AdditionalSounds](source/Resources/AdditionalSounds)
 
-<img src="Images/LocalAchivementsNotification.png" alt="Sidebar single-game view" width="900">.
-
+<img src="Images/LocalAchivementsNotification.png" alt="Sidebar single-game view" width="900">
 
 ### Local Achivements' Games import
 
 This is a way of adding all of those achievements that are in the folders ina  way that it isn't needed to go through the foldrs and adding one by one
 
-<img src="Images/LocalAchivementsGamesImport.png" alt="Sidebar single-game view" width="900">.
+<img src="Images/LocalAchivementsGamesImport.png" alt="Sidebar single-game view" width="900">
 
 ## Fork Changelog
 
 The entries below are fork-side changes, grouped by date. When a date includes an upstream sync, only the fork-specific additions are called out here.
+
+## 2026-04-21 - v2.1.2.2
+
+- Fixed the local steam achievements not having rarity
+- Added the option to change the steam user for local steam achivements detection
+- Added the option to do take a screenshot when a new achievemnt is unlocked with the `Real-time Local unlock checks`
 
 ## 2026-04-21 - v2.1.2.1
 
@@ -76,7 +81,7 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 - Corrected the steam import without API key
 - Added the possibility to import Steam family-shared games and achievements
 - Corrected the steam import not going through the Universal Steam Metadata when selected
-- Added an icon for the local provider and a way of changing to your own icon
+- Added an icon for the `Local` provider and a way of changing to your own icon
 - Import achievements metadata even when there is no achievements file locally
 - Added a list of target games in the custom refresh
 - Added Steam Family Sharing as a separate entry in the custom refresh platform list

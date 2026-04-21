@@ -186,6 +186,8 @@ namespace PlayniteAchievements.Services
             var resolvedOptions = options?.Clone() ?? new CustomRefreshOptions();
             var providers = ResolveCustomProviders(resolvedOptions, authenticatedProviders);
             var runProvidersInParallel = resolvedOptions.RunProvidersInParallelOverride ?? (_settings?.Persisted?.EnableParallelProviderRefresh ?? true);
+            var hasExplicitProviderSelection = resolvedOptions.ProviderKeys?.Count > 0;
+            var forceSingleExplicitProvider = hasExplicitProviderSelection && providers.Count == 1;
 
             if (providers.Count == 0)
             {
@@ -268,7 +270,9 @@ namespace PlayniteAchievements.Services
                 .Select(game => new
                 {
                     Game = game,
-                    Provider = _targetSelectionResolver.ResolveProviderForGame(game, providers)
+                    Provider = forceSingleExplicitProvider
+                        ? providers[0]
+                        : _targetSelectionResolver.ResolveProviderForGame(game, providers)
                 })
                 .Where(entry => entry.Provider != null)
                 .Where(entry => CustomRefreshGameMatcher.MatchesProviderSelection(

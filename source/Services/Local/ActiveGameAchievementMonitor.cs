@@ -14,10 +14,10 @@ namespace PlayniteAchievements.Services.Local
 {
     internal sealed class ActiveGameAchievementMonitor : IDisposable
     {
-        private readonly RefreshEntryPoint _refreshCoordinator;
         private readonly ICacheManager _cacheManager;
         private readonly ProviderRegistry _providerRegistry;
         private readonly NotificationPublisher _notifications;
+        private readonly LocalAchievementScreenshotService _screenshotService;
         private readonly ILogger _logger;
 
         private readonly object _sync = new object();
@@ -26,16 +26,16 @@ namespace PlayniteAchievements.Services.Local
         private Guid? _activeGameId;
 
         public ActiveGameAchievementMonitor(
-            RefreshEntryPoint refreshCoordinator,
             ICacheManager cacheManager,
             ProviderRegistry providerRegistry,
             NotificationPublisher notifications,
+            LocalAchievementScreenshotService screenshotService,
             ILogger logger)
         {
-            _refreshCoordinator = refreshCoordinator ?? throw new ArgumentNullException(nameof(refreshCoordinator));
             _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
             _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
             _notifications = notifications ?? throw new ArgumentNullException(nameof(notifications));
+            _screenshotService = screenshotService ?? throw new ArgumentNullException(nameof(screenshotService));
             _logger = logger;
         }
 
@@ -99,7 +99,23 @@ namespace PlayniteAchievements.Services.Local
 
         private async Task RunAsync(Game game, CancellationToken cancellationToken)
         {
-            var previousSnapshot = CaptureSnapshot(game.Id);
+            AchievementSnapshot previousSnapshot = null;
+
+            try
+            {
+                previousSnapshot = await RefreshLocalGameAsync(game, cancellationToken).ConfigureAwait(false);
+                _logger?.Info(previousSnapshot != null
+                    ? $"Initialized active Local achievement monitor baseline for '{game.Name}' with {previousSnapshot.UnlockedCount} unlocked achievements."
+                    : $"Initialized active Local achievement monitor baseline for '{game.Name}' without cached Local achievements yet.");
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to initialize active Local achievement monitor baseline for '{game.Name}'.");
+            }
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -120,7 +136,25 @@ namespace PlayniteAchievements.Services.Local
 
                 try
                 {
-                    await RefreshLocalGameAsync(game.Id, cancellationToken).ConfigureAwait(false);
+                    var currentSnapshot = await RefreshLocalGameAsync(game, cancellationToken).ConfigureAwait(false);
+
+                    var newlyUnlocked = FindNewlyUnlockedAchievements(previousSnapshot, currentSnapshot);
+                    if (previousSnapshot != null && newlyUnlocked.Count > 0)
+                    {
+                        var localSettings = ProviderRegistry.Settings<LocalSettings>();
+                        var soundPath = localSettings?.UnlockSoundPath;
+
+                        _logger?.Info($"Detected {newlyUnlocked.Count} newly unlocked Local achievement(s) for '{game.Name}'.");
+
+                        _ = _screenshotService.TryCaptureUnlockScreenshotsAsync(game, newlyUnlocked, cancellationToken);
+                        _notifications.ShowLocalAchievementUnlocked(game.Name, newlyUnlocked, soundPath);
+                    }
+                    else if (previousSnapshot == null && currentSnapshot != null)
+                    {
+                        _logger?.Info($"Active Local achievement monitor established a delayed baseline for '{game.Name}' with {currentSnapshot.UnlockedCount} unlocked achievements.");
+                    }
+
+                    previousSnapshot = currentSnapshot ?? previousSnapshot;
                 }
                 catch (OperationCanceledException)
                 {
@@ -131,18 +165,6 @@ namespace PlayniteAchievements.Services.Local
                     _logger?.Warn(ex, $"Active Local achievement refresh failed for '{game.Name}'.");
                     continue;
                 }
-
-                var currentSnapshot = CaptureSnapshot(game.Id);
-                var newlyUnlocked = FindNewlyUnlockedAchievements(previousSnapshot, currentSnapshot);
-                if (previousSnapshot != null && newlyUnlocked.Count > 0)
-                {
-                    var localSettings = ProviderRegistry.Settings<LocalSettings>();
-                    var soundPath = localSettings?.UnlockSoundPath;
-
-                    _notifications.ShowLocalAchievementUnlocked(game.Name, newlyUnlocked, soundPath);
-                }
-
-                previousSnapshot = currentSnapshot ?? previousSnapshot;
             }
         }
 
@@ -167,34 +189,57 @@ namespace PlayniteAchievements.Services.Local
             return TimeSpan.FromSeconds(seconds);
         }
 
-        private async Task RefreshLocalGameAsync(Guid gameId, CancellationToken cancellationToken)
+        private async Task<AchievementSnapshot> RefreshLocalGameAsync(Game game, CancellationToken cancellationToken)
         {
-            await _refreshCoordinator.ExecuteAsync(
-                new RefreshRequest
-                {
-                    Mode = RefreshModeType.Custom,
-                    SuppressUserMessages = true,
-                    CustomOptions = new CustomRefreshOptions
-                    {
-                        Scope = CustomGameScope.Explicit,
-                        ProviderKeys = new[] { "Local" },
-                        IncludeGameIds = new[] { gameId },
-                        RespectUserExclusions = false,
-                        RunProvidersInParallelOverride = false
-                    }
-                },
-                new RefreshExecutionPolicy
-                {
-                    SwallowExceptions = false,
-                    ExternalCancellationToken = cancellationToken,
-                    ErrorLogMessage = "Active Local achievement refresh failed."
-                }).ConfigureAwait(false);
+            if (game == null || game.Id == Guid.Empty)
+            {
+                return null;
+            }
+
+            var cachedBefore = CaptureSnapshot(game.Id);
+            var localProvider = _providerRegistry.GetProvider("Local") as LocalSavesProvider;
+            if (localProvider == null)
+            {
+                _logger?.Warn("Active Local achievement monitor could not resolve the Local provider.");
+                return cachedBefore;
+            }
+
+            var data = await localProvider.GetAchievementsAsync(game, null).ConfigureAwait(false);
+            if (data == null)
+            {
+                return cachedBefore;
+            }
+
+            if (string.IsNullOrWhiteSpace(data.ProviderKey))
+            {
+                data.ProviderKey = "Local";
+            }
+
+            var writeResult = _cacheManager.SaveGameData(game.Id.ToString(), data);
+            if (writeResult?.Success != true)
+            {
+                var errorMessage = writeResult?.ErrorMessage ?? "Unknown cache persistence failure.";
+                throw new InvalidOperationException($"Active Local achievement monitor failed to persist cache for '{game.Name}': {errorMessage}");
+            }
+
+            var currentSnapshot = BuildSnapshot(data);
+            if (!SnapshotsEqual(cachedBefore, currentSnapshot))
+            {
+                _cacheManager.NotifyCacheInvalidated();
+            }
+
+            return currentSnapshot;
         }
 
         private AchievementSnapshot CaptureSnapshot(Guid gameId)
         {
             var cacheManager = _cacheManager as CacheManager;
             var data = cacheManager?.LoadGameData(gameId.ToString(), "Local");
+            return BuildSnapshot(data);
+        }
+
+        private AchievementSnapshot BuildSnapshot(GameAchievementData data)
+        {
             if (data == null)
             {
                 return null;
@@ -220,6 +265,34 @@ namespace PlayniteAchievements.Services.Local
             }
 
             return new AchievementSnapshot(data.UnlockedCount, unlocked);
+        }
+
+        private static bool SnapshotsEqual(AchievementSnapshot left, AchievementSnapshot right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            if (left.UnlockedCount != right.UnlockedCount || left.UnlockedAchievements.Count != right.UnlockedAchievements.Count)
+            {
+                return false;
+            }
+
+            foreach (var achievementKey in left.UnlockedAchievements.Keys)
+            {
+                if (!right.UnlockedAchievements.ContainsKey(achievementKey))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static List<string> FindNewlyUnlockedAchievements(AchievementSnapshot previous, AchievementSnapshot current)

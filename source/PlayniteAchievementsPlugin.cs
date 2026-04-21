@@ -332,11 +332,12 @@ namespace PlayniteAchievements
                         _refreshService,
                         _logger,
                         runWithProgressWindow: ShowRefreshProgressControlAndRun);
+                    var localAchievementScreenshotService = new LocalAchievementScreenshotService(_logger);
                     _activeGameAchievementMonitor = new ActiveGameAchievementMonitor(
-                        _refreshCoordinator,
                         _cacheManager,
                         _providerRegistry,
                         _notifications,
+                        localAchievementScreenshotService,
                         _logger);
                     _backgroundUpdates = new BackgroundUpdater(_refreshCoordinator, _refreshService, _cacheManager, settings, _logger, _notifications, null);
 

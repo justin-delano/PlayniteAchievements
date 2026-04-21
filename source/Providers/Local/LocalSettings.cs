@@ -28,6 +28,18 @@ namespace PlayniteAchievements.Providers.Local
         SkipExisting = 1
     }
 
+    public enum LocalUnlockScreenshotCaptureMode
+    {
+        FullDesktop = 0,
+        ActiveWindow = 1
+    }
+
+    public enum LocalUnlockScreenshotImageFormat
+    {
+        Png = 0,
+        Jpeg = 1
+    }
+
     public sealed class LocalMetadataSourceOption
     {
         public LocalMetadataSourceOption(string id, string displayName)
@@ -58,15 +70,25 @@ namespace PlayniteAchievements.Providers.Local
     {
         public const int MinActiveGameMonitoringIntervalSeconds = 2;
         public const int MaxActiveGameMonitoringIntervalSeconds = 60;
+        public const int MinScreenshotDelayMilliseconds = 0;
+        public const int MaxScreenshotDelayMilliseconds = 10000;
         public const int ProviderIconMaxPixelSize = 64;
         public const string DefaultBundledUnlockSoundPath = @"Resources\Sounds\Steam.wav";
+        public const string DefaultScreenshotFilenameTemplate = "<dateTime>_<gameName>_<achievementName>";
         public const string SteamAppCacheUserNone = "<none>";
 
         private Dictionary<Guid, int> _steamAppIdOverrides = new Dictionary<Guid, int>();
         private Dictionary<Guid, string> _localFolderOverrides = new Dictionary<Guid, string>();
+        private Dictionary<Guid, string> _steamAppCacheUserOverrides = new Dictionary<Guid, string>();
         private string _steamUserdataPath = string.Empty;
         private bool _enableActiveGameMonitoring;
         private int _activeGameMonitoringIntervalSeconds = 5;
+        private bool _enableUnlockScreenshots;
+        private string _screenshotSaveFolder = string.Empty;
+        private string _screenshotFilenameTemplate = DefaultScreenshotFilenameTemplate;
+        private int _screenshotDelayMilliseconds = 750;
+        private LocalUnlockScreenshotCaptureMode _screenshotCaptureMode = LocalUnlockScreenshotCaptureMode.FullDesktop;
+        private LocalUnlockScreenshotImageFormat _screenshotImageFormat = LocalUnlockScreenshotImageFormat.Png;
         private string _bundledUnlockSoundPath = string.Empty;
         private string _customUnlockSoundPath = string.Empty;
         private LocalSteamSchemaPreference _steamSchemaPreference = LocalSteamSchemaPreference.PreferSteam;
@@ -94,6 +116,55 @@ namespace PlayniteAchievements.Providers.Local
             set => SetValue(
                 ref _activeGameMonitoringIntervalSeconds,
                 Math.Max(MinActiveGameMonitoringIntervalSeconds, Math.Min(MaxActiveGameMonitoringIntervalSeconds, value)));
+        }
+
+        public bool EnableUnlockScreenshots
+        {
+            get => _enableUnlockScreenshots;
+            set => SetValue(ref _enableUnlockScreenshots, value);
+        }
+
+        public string ScreenshotSaveFolder
+        {
+            get => _screenshotSaveFolder;
+            set
+            {
+                if (SetValue(ref _screenshotSaveFolder, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(EffectiveScreenshotSaveFolder));
+                }
+            }
+        }
+
+        [JsonIgnore]
+        public string EffectiveScreenshotSaveFolder => GetEffectiveScreenshotSaveFolder();
+
+        public string ScreenshotFilenameTemplate
+        {
+            get => _screenshotFilenameTemplate;
+            set => SetValue(
+                ref _screenshotFilenameTemplate,
+                string.IsNullOrWhiteSpace(value) ? DefaultScreenshotFilenameTemplate : value);
+        }
+
+        public int ScreenshotDelayMilliseconds
+        {
+            get => _screenshotDelayMilliseconds;
+            set => SetValue(
+                ref _screenshotDelayMilliseconds,
+                Math.Max(MinScreenshotDelayMilliseconds, Math.Min(MaxScreenshotDelayMilliseconds, value)));
+        }
+
+        public LocalUnlockScreenshotCaptureMode ScreenshotCaptureMode
+        {
+            get => _screenshotCaptureMode;
+            set => SetValue(ref _screenshotCaptureMode, value);
+        }
+
+        public LocalUnlockScreenshotImageFormat ScreenshotImageFormat
+        {
+            get => _screenshotImageFormat;
+            set => SetValue(ref _screenshotImageFormat, value);
         }
 
         public string BundledUnlockSoundPath
@@ -157,6 +228,12 @@ namespace PlayniteAchievements.Providers.Local
         {
             get => _steamUserdataPath;
             set => SetValue(ref _steamUserdataPath, value ?? string.Empty);
+        }
+
+        public Dictionary<Guid, string> SteamAppCacheUserOverrides
+        {
+            get => _steamAppCacheUserOverrides;
+            set => SetValue(ref _steamAppCacheUserOverrides, value ?? new Dictionary<Guid, string>());
         }
 
         public LocalSteamSchemaPreference SteamSchemaPreference
@@ -274,6 +351,19 @@ namespace PlayniteAchievements.Providers.Local
             return string.IsNullOrWhiteSpace(BundledUnlockSoundPath)
                 ? DefaultBundledUnlockSoundPath
                 : BundledUnlockSoundPath;
+        }
+
+        private string GetEffectiveScreenshotSaveFolder()
+        {
+            if (!string.IsNullOrWhiteSpace(ScreenshotSaveFolder))
+            {
+                return ScreenshotSaveFolder;
+            }
+
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+                "PlayniteAchievements",
+                "UnlockScreenshots");
         }
     }
 }

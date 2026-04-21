@@ -51,6 +51,8 @@ namespace PlayniteAchievements.Providers.Local
             public int LinkedExistingCount { get; set; }
             public int SkippedCount { get; set; }
             public int FailedCount { get; set; }
+            public int RejectedSteamAppCount { get; set; }
+            public string RejectedSteamAppReport { get; set; }
         }
 
         private sealed class ImportCandidate
@@ -89,6 +91,7 @@ namespace PlayniteAchievements.Providers.Local
         private readonly LocalSettings _localSettings;
         private readonly ImportedGameMetadataApplier _metadataApplier;
         private readonly Dictionary<int, SteamAppImportabilityInfo> _steamAppImportabilityCache = new Dictionary<int, SteamAppImportabilityInfo>();
+        private readonly Dictionary<int, string> _rejectedSteamAppReports = new Dictionary<int, string>();
         private string _steamAppCacheUserIdOverride;
 
         private sealed class SteamAppImportabilityInfo
@@ -138,6 +141,8 @@ namespace PlayniteAchievements.Providers.Local
             {
                 return result;
             }
+
+            _rejectedSteamAppReports.Clear();
 
             ReportProgress(progress, 0d, "Scanning Local roots...", "Searching for achievement evidence in default and configured Local folders.");
 
@@ -278,6 +283,11 @@ namespace PlayniteAchievements.Providers.Local
                     PersistSettingsForUi();
                 }
             }
+
+            result.RejectedSteamAppCount = _rejectedSteamAppReports.Count;
+            result.RejectedSteamAppReport = _rejectedSteamAppReports.Count > 0
+                ? string.Join(Environment.NewLine, _rejectedSteamAppReports.OrderBy(pair => pair.Key).Select(pair => pair.Value))
+                : string.Empty;
 
             return result;
         }
@@ -492,10 +502,8 @@ namespace PlayniteAchievements.Providers.Local
 
                 try
                 {
-                    foreach (var directory in Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories))
+                    foreach (var directory in EnumerateCandidateDirectories(root, cancellationToken))
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-
                         var folderName = Path.GetFileName(directory)?.Trim();
                         if (!int.TryParse(folderName, NumberStyles.None, CultureInfo.InvariantCulture, out var appId) || appId <= 0)
                         {
@@ -533,6 +541,60 @@ namespace PlayniteAchievements.Providers.Local
             }
 
             return candidates;
+        }
+
+        private static IEnumerable<string> EnumerateCandidateDirectories(string root, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+            {
+                yield break;
+            }
+
+            var pending = new Stack<string>();
+            pending.Push(root);
+
+            while (pending.Count > 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var current = pending.Pop();
+                IEnumerable<string> childDirectories;
+                try
+                {
+                    childDirectories = Directory.EnumerateDirectories(current);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (var child in childDirectories)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (ShouldSkipDirectorySubtree(child))
+                    {
+                        continue;
+                    }
+
+                    yield return child;
+                    pending.Push(child);
+                }
+            }
+        }
+
+        private static bool ShouldSkipDirectorySubtree(string directory)
+        {
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                return true;
+            }
+
+            var normalized = directory.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+            return normalized.IndexOf($"{Path.DirectorySeparatorChar}steamapps{Path.DirectorySeparatorChar}workshop{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                normalized.IndexOf($"{Path.DirectorySeparatorChar}steamapps{Path.DirectorySeparatorChar}common{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                normalized.IndexOf($"{Path.DirectorySeparatorChar}appcache{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                normalized.IndexOf($"{Path.DirectorySeparatorChar}userdata{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static void AddCandidate(Dictionary<int, List<ImportCandidate>> candidates, ImportCandidate candidate)
@@ -640,6 +702,11 @@ namespace PlayniteAchievements.Providers.Local
                     continue;
                 }
 
+                if (IsExcludedSteamAppId(appId))
+                {
+                    continue;
+                }
+
                 allowedAppIdsFromSelectedUser.Add(appId);
                 AddCandidate(candidates, new ImportCandidate
                 {
@@ -656,6 +723,11 @@ namespace PlayniteAchievements.Providers.Local
                 var fileName = Path.GetFileNameWithoutExtension(schemaPath);
                 var appIdText = fileName?.Replace("UserGameStatsSchema_", string.Empty);
                 if (!int.TryParse(appIdText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var appId) || appId <= 0)
+                {
+                    continue;
+                }
+
+                if (IsExcludedSteamAppId(appId))
                 {
                     continue;
                 }
@@ -699,6 +771,11 @@ namespace PlayniteAchievements.Providers.Local
 
                     var fileName = Path.GetFileNameWithoutExtension(cachePath);
                     if (!int.TryParse(fileName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var appId) || appId <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (IsExcludedSteamAppId(appId) || !HasSteamLibraryCacheAchievements(cachePath))
                     {
                         continue;
                     }
@@ -759,6 +836,56 @@ namespace PlayniteAchievements.Providers.Local
             {
                 yield return Path.Combine(userDir, "config", "librarycache");
             }
+        }
+
+        private static bool HasSteamLibraryCacheAchievements(string cachePath)
+        {
+            if (string.IsNullOrWhiteSpace(cachePath) || !File.Exists(cachePath))
+            {
+                return false;
+            }
+
+            try
+            {
+                var json = File.ReadAllText(cachePath);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return false;
+                }
+
+                var sections = JArray.Parse(json);
+                for (var i = 0; i < sections.Count; i++)
+                {
+                    if (!(sections[i] is JArray section) || section.Count < 2)
+                    {
+                        continue;
+                    }
+
+                    var sectionName = section[0]?.Value<string>();
+                    if (!string.Equals(sectionName, "achievements", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var payload = section[1]?["data"] as JObject;
+                    if (payload == null)
+                    {
+                        continue;
+                    }
+
+                    if ((payload["vecHighlight"] as JArray)?.Count > 0 ||
+                        (payload["vecUnachieved"] as JArray)?.Count > 0 ||
+                        (payload["vecAchievedHidden"] as JArray)?.Count > 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
         }
 
         private bool PersistLocalBinding(Game game, int appId, string folderPath)
@@ -1752,6 +1879,7 @@ namespace PlayniteAchievements.Providers.Local
                             ? string.Empty
                             : $" (type '{importability.Type}')";
                         reason = $"Steam app{namePart} is not an importable game{typePart}.";
+                        RecordRejectedSteamApp(appId, candidate, reason);
                         return false;
                     }
 
@@ -1799,6 +1927,11 @@ namespace PlayniteAchievements.Providers.Local
                                                 !IsExcludedSteamAppName(info.Name);
                                         }
                                     }
+                                    else
+                                    {
+                                        info.IsImportable = false;
+                                        info.Type = "missing";
+                                    }
                                 }
                             }
                         }
@@ -1831,7 +1964,23 @@ namespace PlayniteAchievements.Providers.Local
 
                     private static bool IsExcludedSteamAppId(int appId)
                     {
-                        return appId == 228980 || appId == 2371090;
+                        return appId == 241100 || appId == 228980 || appId == 2371090;
+                    }
+
+                    private void RecordRejectedSteamApp(int appId, ImportCandidate candidate, string reason)
+                    {
+                        if (appId <= 0 || _rejectedSteamAppReports.ContainsKey(appId))
+                        {
+                            return;
+                        }
+
+                        var origin = !string.IsNullOrWhiteSpace(candidate?.FolderPath)
+                            ? candidate.FolderPath
+                            : (candidate?.HasSteamAppCacheUserStats == true || candidate?.HasSteamAppCacheSchema == true
+                                ? "Steam appcache stats"
+                                : (candidate?.HasSteamLibraryCache == true ? "Steam library cache" : "Unknown source"));
+
+                        _rejectedSteamAppReports[appId] = $"{appId} | {origin} | {reason}";
                     }
 
         private static string BuildUniversalSteamMetadataLookupName(string currentName, int appId)
