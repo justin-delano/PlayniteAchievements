@@ -77,6 +77,7 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 - Added a setting in the `Display` tab to have the text in the grid as wrap
 - Correct the Steam game import importing DLCs to the library addiitonally to the main game
 - Changed the method to import steam games to be quicker
+- Stop detecting all the achievements with the description `Local achievement from Local`
 
 ## 2026-04-21 - v2.1.2.1
 

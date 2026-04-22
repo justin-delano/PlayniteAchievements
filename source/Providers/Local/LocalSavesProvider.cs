@@ -283,9 +283,17 @@ namespace PlayniteAchievements.Providers.Local
                             }
                         }
 
-                        PreserveCachedLocalMetadata(data);
-                        Log($"SUCCESS: {game.Name} - Found {data.Achievements.Count} achievements from local save data. schemaSource={steamSchemaSource ?? "none"}");
-                        return data;
+                        FilterPlaceholderLocalAchievements(data);
+                        if (data.Achievements.Count == 0)
+                        {
+                            Log($"INFO: {game.Name} - Ignored local achievements with placeholder descriptions.");
+                        }
+                        else
+                        {
+                            PreserveCachedLocalMetadata(data);
+                            Log($"SUCCESS: {game.Name} - Found {data.Achievements.Count} achievements from local save data. schemaSource={steamSchemaSource ?? "none"}");
+                            return data;
+                        }
                     }
                 }
 
@@ -300,9 +308,17 @@ namespace PlayniteAchievements.Providers.Local
                         added.Add(kv.Key);
                     }
 
-                    PreserveCachedLocalMetadata(data);
-                    Log($"SUCCESS: {game.Name} - Found {data.Achievements.Count} achievements from Steam appcache stats.");
-                    return data;
+                    FilterPlaceholderLocalAchievements(data);
+                    if (data.Achievements.Count == 0)
+                    {
+                        Log($"INFO: {game.Name} - Ignored Steam appcache achievements with placeholder descriptions.");
+                    }
+                    else
+                    {
+                        PreserveCachedLocalMetadata(data);
+                        Log($"SUCCESS: {game.Name} - Found {data.Achievements.Count} achievements from Steam appcache stats.");
+                        return data;
+                    }
                 }
 
                 if (steamLibraryCacheEntries != null && steamLibraryCacheEntries.Count > 0)
@@ -316,9 +332,17 @@ namespace PlayniteAchievements.Providers.Local
                         added.Add(kv.Key);
                     }
 
-                    PreserveCachedLocalMetadata(data);
-                    Log($"SUCCESS: {game.Name} - Found {data.Achievements.Count} achievements from Steam local library cache.");
-                    return data;
+                    FilterPlaceholderLocalAchievements(data);
+                    if (data.Achievements.Count == 0)
+                    {
+                        Log($"INFO: {game.Name} - Ignored Steam library cache achievements with placeholder descriptions.");
+                    }
+                    else
+                    {
+                        PreserveCachedLocalMetadata(data);
+                        Log($"SUCCESS: {game.Name} - Found {data.Achievements.Count} achievements from Steam local library cache.");
+                        return data;
+                    }
                 }
 
                 if (steamLocalProgress != null && steamLocalProgress.TotalCount > 0)
@@ -363,9 +387,17 @@ namespace PlayniteAchievements.Providers.Local
                         data.Achievements.Add(detail);
                     }
 
-                    PreserveCachedLocalMetadata(data);
-                    Log($"INFO: {game.Name} - Local folder found, loaded {data.Achievements.Count} achievement definitions from Steam schema.");
-                    return data;
+                    FilterPlaceholderLocalAchievements(data);
+                    if (data.Achievements.Count == 0)
+                    {
+                        Log($"INFO: {game.Name} - Steam schema achievements were ignored due to placeholder descriptions.");
+                    }
+                    else
+                    {
+                        PreserveCachedLocalMetadata(data);
+                        Log($"INFO: {game.Name} - Local folder found, loaded {data.Achievements.Count} achievement definitions from Steam schema.");
+                        return data;
+                    }
                 }
 
                 Log($"INFO: {game.Name} - Local folder found, but no achievements.json and no Steam schema available.");
@@ -1931,6 +1963,23 @@ namespace PlayniteAchievements.Providers.Local
             description = description?.Trim();
             return string.IsNullOrWhiteSpace(description) ||
                    string.Equals(description, "Local achievement from Local", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsPlaceholderLocalDescription(string description)
+        {
+            return string.Equals(description?.Trim(), "Local achievement from Local", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void FilterPlaceholderLocalAchievements(GameAchievementData data)
+        {
+            if (data?.Achievements == null || data.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            data.Achievements = data.Achievements
+                .Where(achievement => achievement != null && !IsPlaceholderLocalDescription(achievement.Description))
+                .ToList();
         }
 
         private static Dictionary<string, LocalEntry> RemapGenericAchievementEntries(
