@@ -44,7 +44,7 @@ namespace PlayniteAchievements.Providers.Steam
             RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.CultureInvariant);
         private const string DefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
         private const int MaxAttempts = 3;
-        private const int OwnedGameAppDetailsDelayMs = 500;
+        private const int OwnedGameAppDetailsDelayMs = 75;
 
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
@@ -241,12 +241,14 @@ namespace PlayniteAchievements.Providers.Steam
 
         internal async Task<OwnedGamesResolutionResult> GetOwnedGamesFromSessionAsync(
             CancellationToken ct,
-            IProgress<OwnedGamesResolutionProgressInfo> progress = null)
+            IProgress<OwnedGamesResolutionProgressInfo> progress = null,
+            ISet<int> excludedAppIds = null)
         {
             ct.ThrowIfCancellationRequested();
 
             _logger?.Info("[SteamAch] Loading owned Steam games from authenticated store session.");
             var ownedAppIds = await GetOwnedAppIdsFromDynamicStoreAsync(ct).ConfigureAwait(false);
+            ownedAppIds = FilterExcludedOwnedAppIds(ownedAppIds, excludedAppIds, "owned Steam games");
             if (ownedAppIds.Count == 0)
             {
                 return new OwnedGamesResolutionResult();
@@ -267,9 +269,11 @@ namespace PlayniteAchievements.Providers.Steam
             IEnumerable<int> appIds,
             string librarySourceName,
             CancellationToken ct,
-            IProgress<OwnedGamesResolutionProgressInfo> progress = null)
+            IProgress<OwnedGamesResolutionProgressInfo> progress = null,
+            ISet<int> excludedAppIds = null)
         {
-            var resolvedGames = await GetAppDetailsForOwnedGamesAsync(appIds, librarySourceName, ct, progress).ConfigureAwait(false);
+            var filteredAppIds = FilterExcludedOwnedAppIds(appIds, excludedAppIds, librarySourceName);
+            var resolvedGames = await GetAppDetailsForOwnedGamesAsync(filteredAppIds, librarySourceName, ct, progress).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(librarySourceName))
             {
                 foreach (var game in resolvedGames.Games)
@@ -284,7 +288,8 @@ namespace PlayniteAchievements.Providers.Steam
         internal async Task<OwnedGamesResolutionResult> GetFamilySharedGamesFromSessionAsync(
             string steamUserId,
             CancellationToken ct,
-            IProgress<OwnedGamesResolutionProgressInfo> progress = null)
+            IProgress<OwnedGamesResolutionProgressInfo> progress = null,
+            ISet<int> excludedAppIds = null)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -309,7 +314,7 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             _logger?.Info($"[SteamAch] Steam Family Groups session returned {sharedAppIds.Count} family-shared Steam app ids.");
-            return await ResolveOwnedGamesFromAppIdsAsync(sharedAppIds, "Steam Family Sharing", ct, progress).ConfigureAwait(false);
+            return await ResolveOwnedGamesFromAppIdsAsync(sharedAppIds, "Steam Family Sharing", ct, progress, excludedAppIds).ConfigureAwait(false);
         }
 
         // ---------------------------------------------------------------------
@@ -439,59 +444,14 @@ namespace PlayniteAchievements.Providers.Steam
                 }
 
                 var appId = appIds[index];
-                var requestUrl = $"https://store.steampowered.com/api/appdetails?appids={appId}&filters=basic";
-
                 try
                 {
-                    var page = await GetSteamPageAsync(requestUrl, true, ct).ConfigureAwait(false);
-                    if (string.IsNullOrWhiteSpace(page?.Html))
-                    {
-                        continue;
-                    }
-
-                    var root = JObject.Parse(page.Html);
-                    var appNode = root[appId.ToString(CultureInfo.InvariantCulture)] as JObject;
-                    if (appNode?["success"]?.Value<bool>() != true)
-                    {
-                        continue;
-                    }
-
-                    var data = appNode["data"] as JObject;
-                    var name = data?["name"]?.Value<string>()?.Trim();
-                    if (string.IsNullOrWhiteSpace(name))
-                    {
-                        continue;
-                    }
-
-                    var appType = data?["type"]?.Value<string>()?.Trim();
-                    if (!IsImportableOwnedGameType(appType))
-                    {
-                        _logger?.Info($"[SteamAch] Skipping Steam owned appId={appId} name='{name}' type='{appType ?? "unknown"}' because it is not a base-game import candidate.");
-                        continue;
-                    }
-
-                    if (LooksLikeNonBaseOwnedGameName(name))
-                    {
-                        _logger?.Info($"[SteamAch] Skipping Steam owned appId={appId} name='{name}' because its store name looks like DLC or supplemental content.");
-                        continue;
-                    }
-
-                    result.Games.Add(new OwnedGame
-                    {
-                        AppId = appId,
-                        Name = name,
-                        AppType = appType,
-                        LibrarySourceName = "Steam"
-                    });
+                    await TryResolveOwnedGameFromSingleAppRequestAsync(appId, result, ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
                     result.WasCanceled = true;
                     break;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, $"[SteamAch] Failed resolving app details for Steam appId={appId}.");
                 }
             }
 
@@ -516,6 +476,147 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             return NonBaseOwnedGameNameRegex.IsMatch(name);
+        }
+
+        private async Task<string> GetStoreAppDetailsJsonAsync(string requestUrl, CancellationToken ct)
+        {
+            using (var request = new HttpRequestMessage(HttpMethod.Get, requestUrl))
+            {
+                request.Headers.TryAddWithoutValidation("User-Agent", DefaultUserAgent);
+                request.Headers.TryAddWithoutValidation("Accept", "application/json, text/plain, */*");
+                request.Headers.Referrer = StoreBase;
+
+                using (var response = await _apiHttp.SendAsync(request, ct).ConfigureAwait(false))
+                {
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        return null;
+                    }
+
+                    return await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                }
+            }
+        }
+
+        private static bool TryParseStoreAppDetailsRoot(string json, out JObject root)
+        {
+            root = null;
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return false;
+            }
+
+            var trimmed = json.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed) ||
+                string.Equals(trimmed, "null", StringComparison.OrdinalIgnoreCase) ||
+                trimmed[0] != '{')
+            {
+                return false;
+            }
+
+            try
+            {
+                root = JObject.Parse(trimmed);
+                return root != null;
+            }
+            catch
+            {
+                root = null;
+                return false;
+            }
+        }
+
+        private async Task TryResolveOwnedGameFromSingleAppRequestAsync(int appId, OwnedGamesResolutionResult result, CancellationToken ct)
+        {
+            if (appId <= 0 || result == null)
+            {
+                return;
+            }
+
+            var requestUrl = $"https://store.steampowered.com/api/appdetails?appids={appId}&filters=basic";
+            try
+            {
+                var page = await GetSteamPageAsync(requestUrl, true, ct).ConfigureAwait(false);
+                if (!TryParseStoreAppDetailsRoot(page?.Html, out var root))
+                {
+                    return;
+                }
+
+                TryAddResolvedOwnedGame(root, appId, result);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[SteamAch] Failed resolving fallback appdetails for Steam appId={appId}.");
+            }
+        }
+
+        private void TryAddResolvedOwnedGame(JObject root, int appId, OwnedGamesResolutionResult result)
+        {
+            if (root == null || result == null || appId <= 0)
+            {
+                return;
+            }
+
+            var appNode = root[appId.ToString(CultureInfo.InvariantCulture)] as JObject;
+            if (appNode?["success"]?.Value<bool>() != true)
+            {
+                return;
+            }
+
+            var data = appNode["data"] as JObject;
+            var name = data?["name"]?.Value<string>()?.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return;
+            }
+
+            var appType = data?["type"]?.Value<string>()?.Trim();
+            if (!IsImportableOwnedGameType(appType))
+            {
+                _logger?.Info($"[SteamAch] Skipping Steam owned appId={appId} name='{name}' type='{appType ?? "unknown"}' because it is not a base-game import candidate.");
+                return;
+            }
+
+            if (LooksLikeNonBaseOwnedGameName(name))
+            {
+                _logger?.Info($"[SteamAch] Skipping Steam owned appId={appId} name='{name}' because its store name looks like DLC or supplemental content.");
+                return;
+            }
+
+            result.Games.Add(new OwnedGame
+            {
+                AppId = appId,
+                Name = name,
+                AppType = appType,
+                LibrarySourceName = "Steam"
+            });
+        }
+
+        private List<int> FilterExcludedOwnedAppIds(IEnumerable<int> appIds, ISet<int> excludedAppIds, string label)
+        {
+            var filtered = appIds?
+                .Where(appId => appId > 0)
+                .Distinct()
+                .ToList() ?? new List<int>();
+
+            if (excludedAppIds == null || excludedAppIds.Count == 0)
+            {
+                return filtered;
+            }
+
+            var originalCount = filtered.Count;
+            filtered = filtered.Where(appId => !excludedAppIds.Contains(appId)).ToList();
+            var skippedCount = originalCount - filtered.Count;
+            if (skippedCount > 0)
+            {
+                _logger?.Info($"[SteamAch] Skipping {skippedCount} existing {label} app ids before resolving store appdetails.");
+            }
+
+            return filtered;
         }
 
         private async Task<HashSet<int>> GetFamilySharedAppIdsFromAccessTokenAsync(string accessToken, string steamUserId, CancellationToken ct)

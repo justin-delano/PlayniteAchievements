@@ -167,6 +167,7 @@ namespace PlayniteAchievements.Providers.Local
             var totalCandidates = orderedCandidates.Count;
             var processedCandidates = 0;
             var settingsDirty = false;
+            var existingGamesByResolvedAppId = BuildExistingGamesByResolvedAppId();
 
             using (var fastMetadataDownloader = fastMetadataLibraryPlugin?.GetMetadataDownloader())
             {
@@ -203,6 +204,14 @@ namespace PlayniteAchievements.Providers.Local
                                 _logger?.Info($"[LocalImport] appId={appId} has {candidate.Value.Count} candidate folders/files. Using {DescribeCandidate(chosenCandidate)}. All candidates: {string.Join(" | ", candidate.Value.Select(DescribeCandidate))}");
                             }
 
+                            var game = FindExistingGame(appId, importTarget, customSourceName, existingGamesByResolvedAppId);
+                            if (game != null && existingGameBehavior == LocalExistingGameImportBehavior.SkipExisting)
+                            {
+                                result.SkippedCount++;
+                                _logger?.Info($"[LocalImport] Skipping appId={appId} because a matching existing game was found and existing-game behavior is set to skip.");
+                                continue;
+                            }
+
                             if (!ShouldImportCandidate(appId, chosenCandidate, out var skipReason))
                             {
                                 result.SkippedCount++;
@@ -210,7 +219,6 @@ namespace PlayniteAchievements.Providers.Local
                                 continue;
                             }
 
-                            var game = FindExistingGame(appId, importTarget, customSourceName);
                             GameMetadata pendingMetadata = null;
                             if (game == null)
                             {
@@ -235,16 +243,10 @@ namespace PlayniteAchievements.Providers.Local
                                 ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
                                 _logger?.Info($"[LocalImport] Imported new game for appId={appId}: {DescribeGame(game)}.");
                                 result.ImportedCount++;
+                                CacheExistingGameByResolvedAppId(existingGamesByResolvedAppId, appId, game);
                             }
                             else
                             {
-                                if (existingGameBehavior == LocalExistingGameImportBehavior.SkipExisting)
-                                {
-                                    result.SkippedCount++;
-                                    _logger?.Info($"[LocalImport] Skipping appId={appId} because a matching existing game was found and existing-game behavior is set to skip.");
-                                    continue;
-                                }
-
                                 ApplyImportTarget(game, importTarget, customSourceName);
                                 ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
                                 _logger?.Info($"[LocalImport] Linked existing game for appId={appId}: {DescribeGame(game)}.");
@@ -938,13 +940,59 @@ namespace PlayniteAchievements.Providers.Local
             PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi();
         }
 
-        private Game FindExistingGame(int appId, LocalImportedGameLibraryTarget importTarget, string customSourceName)
+        private Dictionary<int, List<Game>> BuildExistingGamesByResolvedAppId()
         {
-            var matchingGames = _api.Database.Games
-                .Where(game => MatchesResolvedAppId(game, appId))
-                .ToList();
+            var map = new Dictionary<int, List<Game>>();
+            foreach (var game in _api.Database.Games.Where(game => game != null && game.Id != Guid.Empty))
+            {
+                if (!TryGetResolvedAppId(game, out var appId) || appId <= 0)
+                {
+                    continue;
+                }
 
-            if (matchingGames.Count == 0)
+                CacheExistingGameByResolvedAppId(map, appId, game);
+            }
+
+            return map;
+        }
+
+        private static void CacheExistingGameByResolvedAppId(Dictionary<int, List<Game>> map, int appId, Game game)
+        {
+            if (map == null || appId <= 0 || game == null || game.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            if (!map.TryGetValue(appId, out var games))
+            {
+                games = new List<Game>();
+                map[appId] = games;
+            }
+
+            if (!games.Any(existing => existing?.Id == game.Id))
+            {
+                games.Add(game);
+            }
+        }
+
+        private Game FindExistingGame(int appId, LocalImportedGameLibraryTarget importTarget, string customSourceName, Dictionary<int, List<Game>> cachedGamesByResolvedAppId = null)
+        {
+            List<Game> matchingGames;
+            if (cachedGamesByResolvedAppId != null)
+            {
+                if (!cachedGamesByResolvedAppId.TryGetValue(appId, out matchingGames))
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                matchingGames = _api.Database.Games
+                    .Where(game => MatchesResolvedAppId(game, appId))
+                    .ToList();
+            }
+
+            if (matchingGames == null || matchingGames.Count == 0)
             {
                 return null;
             }
@@ -984,9 +1032,24 @@ namespace PlayniteAchievements.Providers.Local
                 return false;
             }
 
-            var appIdText = appId.ToString(CultureInfo.InvariantCulture);
-            return string.Equals(game.GameId, appIdText, StringComparison.OrdinalIgnoreCase) ||
-                (LocalSavesProvider.TryResolveAppId(game, out var resolvedAppId, out _) && resolvedAppId == appId);
+            return TryGetResolvedAppId(game, out var resolvedAppId) && resolvedAppId == appId;
+        }
+
+        private bool TryGetResolvedAppId(Game game, out int resolvedAppId)
+        {
+            resolvedAppId = 0;
+            if (game == null || game.Id == Guid.Empty)
+            {
+                return false;
+            }
+
+            if (int.TryParse(game.GameId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedAppId) && parsedAppId > 0)
+            {
+                resolvedAppId = parsedAppId;
+                return true;
+            }
+
+            return LocalSavesProvider.TryResolveAppId(game, out resolvedAppId, out _) && resolvedAppId > 0;
         }
 
         private static bool MatchesNormalizedGameTitle(Game game, string normalizedName)

@@ -76,6 +76,7 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 - The grid's column width will now maintain their size when moving out and then in the extension's page
 - Added a setting in the `Display` tab to have the text in the grid as wrap
 - Correct the Steam game import importing DLCs to the library addiitonally to the main game
+- Changed the method to import steam games to be quicker
 
 ## 2026-04-21 - v2.1.2.1
 

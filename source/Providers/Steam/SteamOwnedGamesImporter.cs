@@ -129,16 +129,6 @@ namespace PlayniteAchievements.Providers.Steam
             using (var steamClient = new SteamHttpClient(_api, _logger, _sessionManager, pluginUserDataPath: null))
             {
                 ReportProgress(progress, "Resolving Steam library games...", isIndeterminate: true);
-                var resolveResult = await ResolveOwnedGamesAsync(steamClient, steamUserId, ct, progress, steamSettings).ConfigureAwait(false);
-                var ownedGames = resolveResult.Games;
-                result.WasCanceled = resolveResult.WasCanceled;
-                result.OwnedCount = ownedGames.Count;
-                result.FamilySharedCount = ownedGames.Count(game => string.Equals(game?.LibrarySourceName, "Steam Family Sharing", StringComparison.OrdinalIgnoreCase));
-                if (ownedGames.Count == 0)
-                {
-                    return result;
-                }
-
                 var existingSteamGamesByAppId = _api.Database.Games
                     .Where(game => game != null && game.PluginId == SteamDataProvider.SteamPluginId)
                     .Select(game => new { Game = game, AppId = TryParseSteamAppId(game) })
@@ -147,6 +137,21 @@ namespace PlayniteAchievements.Providers.Steam
                     .ToDictionary(group => group.Key, group => group.First().Game);
 
                 var existingSteamAppIds = new HashSet<int>(existingSteamGamesByAppId.Keys);
+
+                var resolveResult = await ResolveOwnedGamesAsync(
+                    steamClient,
+                    steamUserId,
+                    ct,
+                    progress,
+                    steamSettings).ConfigureAwait(false);
+                var ownedGames = resolveResult.Games;
+                result.WasCanceled = resolveResult.WasCanceled;
+                result.OwnedCount = ownedGames.Count;
+                result.FamilySharedCount = ownedGames.Count(game => string.Equals(game?.LibrarySourceName, "Steam Family Sharing", StringComparison.OrdinalIgnoreCase));
+                if (ownedGames.Count == 0)
+                {
+                    return result;
+                }
 
                 var importGames = ownedGames
                     .Where(game => game?.AppId > 0)
@@ -294,19 +299,38 @@ namespace PlayniteAchievements.Providers.Steam
         {
             var resolvedGames = new ResolveOwnedGamesResult();
 
-            var ownedResolution = await steamClient
-                .GetOwnedGamesFromSessionAsync(ct, CreateResolutionProgress(progress, "owned Steam games"))
-                .ConfigureAwait(false);
+            SteamHttpClient.OwnedGamesResolutionResult ownedResolution;
+            try
+            {
+                ownedResolution = await steamClient
+                    .GetOwnedGamesFromSessionAsync(ct, CreateResolutionProgress(progress, "owned Steam games"))
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                resolvedGames.WasCanceled = true;
+                _logger?.Info("[SteamAch] Steam import canceled while resolving owned games. Importing any already resolved games.");
+                return resolvedGames;
+            }
+
             resolvedGames.Games.AddRange(ownedResolution.Games);
             resolvedGames.WasCanceled = ownedResolution.WasCanceled;
 
             if (!resolvedGames.WasCanceled && steamSettings?.IncludeFamilySharedGames == true)
             {
-                var familyResolution = await steamClient
-                    .GetFamilySharedGamesFromSessionAsync(steamUserId, ct, CreateResolutionProgress(progress, "Steam Family Sharing games"))
-                    .ConfigureAwait(false);
-                resolvedGames.Games.AddRange(familyResolution.Games);
-                resolvedGames.WasCanceled = familyResolution.WasCanceled;
+                try
+                {
+                    var familyResolution = await steamClient
+                        .GetFamilySharedGamesFromSessionAsync(steamUserId, ct, CreateResolutionProgress(progress, "Steam Family Sharing games"))
+                        .ConfigureAwait(false);
+                    resolvedGames.Games.AddRange(familyResolution.Games);
+                    resolvedGames.WasCanceled = familyResolution.WasCanceled;
+                }
+                catch (OperationCanceledException)
+                {
+                    resolvedGames.WasCanceled = true;
+                    _logger?.Info($"[SteamAch] Steam import canceled while resolving family-shared games. Importing the already resolved {resolvedGames.Games.Count} game(s).");
+                }
             }
 
             var deduplicatedResolvedGames = DeduplicateGamesByAppId(resolvedGames.Games);
