@@ -961,6 +961,9 @@
                                                   IsChecked="{Binding Persisted.ShowCompletionBorder}"
                                                   Margin="0,0,0,12"/>
 
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SelectedGameGridSort}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="0,0,0,10"/>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                    Style="{StaticResource SubSectionHeaderStyle}"
                                                    Margin="0,0,0,8"/>
@@ -982,6 +985,45 @@
                                                             <Setter Property="Text" Value="&#xea65;"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding Persisted.SidebarSelectedGameGridSortDescending}" Value="True">
+                                                                    <Setter Property="Text" Value="&#xea66;"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Button>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource SettingGroupCardStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GamesOverviewGridSort}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="0,0,0,10"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="0,0,0,8"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <ComboBox SelectedValue="{Binding Persisted.GamesOverviewGridSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      SelectedValuePath="Tag"
+                                                      MinWidth="180">
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_LastUnlock}" Tag="{x:Static settings:GamesOverviewSortMode.RecentUnlock}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_LastPlayed}" Tag="{x:Static settings:GamesOverviewSortMode.LastPlayed}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Total}" Tag="{x:Static settings:GamesOverviewSortMode.TotalAchievements}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Progress}" Tag="{x:Static settings:GamesOverviewSortMode.Progress}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Name}" Tag="{x:Static settings:GamesOverviewSortMode.Alphabetical}"/>
+                                            </ComboBox>
+                                            <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
+                                                    Margin="4,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Click="ToggleGamesOverviewGridSortDescending">
+                                                <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="&#xea65;"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Persisted.GamesOverviewGridSortDescending}" Value="True">
                                                                     <Setter Property="Text" Value="&#xea66;"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>

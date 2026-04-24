@@ -411,6 +411,13 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowRightAchievementFilters => IsGameSelected || IsAllAchievementsTabSelected;
 
+        public string OverviewSortPath => _overviewSortPath;
+
+        public ListSortDirection? OverviewSortDirection =>
+            string.IsNullOrWhiteSpace(_overviewSortPath)
+                ? (ListSortDirection?)null
+                : _overviewSortDirection;
+
         private ObservableCollection<string> _providerFilterOptions;
         public ObservableCollection<string> ProviderFilterOptions
         {
@@ -1953,6 +1960,15 @@ namespace PlayniteAchievements.ViewModels
                 ApplySidebarPieSmallSliceMode();
                 UpdateAggregatePieCharts();
             }
+            else if (GamesOverviewSortHelper.IsConfiguredDefaultSortPropertyName(propertyName))
+            {
+                if (string.IsNullOrWhiteSpace(_overviewSortPath))
+                {
+                    ApplyLeftFilters();
+                    OnPropertyChanged(nameof(OverviewSortPath));
+                    OnPropertyChanged(nameof(OverviewSortDirection));
+                }
+            }
             else if (AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
                 propertyName,
                 AchievementSortSurface.SidebarSelectedGame))
@@ -2180,9 +2196,7 @@ namespace PlayniteAchievements.ViewModels
 
             if (string.IsNullOrEmpty(_overviewSortPath))
             {
-                _allGamesOverview = _allGamesOverview
-                    .OrderByDescending(g => g.LastPlayed ?? DateTime.MinValue)
-                    .ToList();
+                GamesOverviewSortHelper.SortByConfiguredDefault(_allGamesOverview, _settings?.Persisted);
             }
 
             if (string.IsNullOrEmpty(_recentSortPath))
@@ -2476,6 +2490,7 @@ namespace PlayniteAchievements.ViewModels
             }
             else
             {
+                GamesOverviewSortHelper.SortByConfiguredDefault(_filteredGamesOverview, _settings?.Persisted);
                 if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulk)
                 {
                     bulk.ReplaceAll(_filteredGamesOverview);
@@ -3367,49 +3382,14 @@ namespace PlayniteAchievements.ViewModels
 
         private void SortGamesOverview(string sortMemberPath, ListSortDirection direction)
         {
-            // Quick reverse if same column
-            if (_overviewSortPath == sortMemberPath && _overviewSortDirection == ListSortDirection.Ascending &&
-                direction == ListSortDirection.Descending)
+            if (!GamesOverviewSortHelper.TrySortItems(
+                    _filteredGamesOverview,
+                    sortMemberPath,
+                    direction,
+                    ref _overviewSortPath,
+                    ref _overviewSortDirection))
             {
-                _filteredGamesOverview.Reverse();
-                _overviewSortDirection = direction;
-                if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulkOverview)
-                {
-                    bulkOverview.ReplaceAll(_filteredGamesOverview);
-                }
-                else
-                {
-                    CollectionHelper.SynchronizeCollection(GamesOverview, _filteredGamesOverview);
-                }
                 return;
-            }
-
-            _overviewSortPath = sortMemberPath;
-            _overviewSortDirection = direction;
-
-            Comparison<GameOverviewItem> comparison = sortMemberPath switch
-            {
-                "SortingName" => (a, b) => string.Compare(a.SortingName, b.SortingName, StringComparison.OrdinalIgnoreCase),
-                nameof(GameOverviewItem.GameName) => (a, b) => string.Compare(a.GameName, b.GameName, StringComparison.OrdinalIgnoreCase),
-                nameof(GameOverviewItem.LastPlayed) => (a, b) => (a.LastPlayed ?? DateTime.MinValue).CompareTo(b.LastPlayed ?? DateTime.MinValue),
-                nameof(GameOverviewItem.PlaytimeSeconds) => (a, b) => a.PlaytimeSeconds.CompareTo(b.PlaytimeSeconds),
-                nameof(GameOverviewItem.Progression) => (a, b) => a.Progression.CompareTo(b.Progression),
-                nameof(GameOverviewItem.TotalAchievements) => (a, b) => a.TotalAchievements.CompareTo(b.TotalAchievements),
-                nameof(GameOverviewItem.UnlockedAchievements) => (a, b) => a.UnlockedAchievements.CompareTo(b.UnlockedAchievements),
-                "TrophyType" => CompareGameOverviewByTrophyType,
-                _ => null
-            };
-
-            if (comparison != null)
-            {
-                if (direction == ListSortDirection.Descending)
-                {
-                    _filteredGamesOverview.Sort((a, b) => comparison(b, a));
-                }
-                else
-                {
-                    _filteredGamesOverview.Sort(comparison);
-                }
             }
 
             if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulkOverview2)
@@ -3546,24 +3526,6 @@ namespace PlayniteAchievements.ViewModels
                 CollectionHelper.SynchronizeCollection(SidebarAllAchievements, _filteredSidebarAllAchievements);
             }
         }
-
-        private static int GetTrophyRank(string trophyType)
-        {
-            return AchievementSortHelper.GetTrophyRank(trophyType);
-        }
-
-        private static int CompareGameOverviewByTrophyType(GameOverviewItem a, GameOverviewItem b)
-        {
-            return GetTrophyRank(a.TrophyPlatinumCount > 0 ? "platinum" :
-                                  a.TrophyGoldCount > 0 ? "gold" :
-                                  a.TrophySilverCount > 0 ? "silver" :
-                                  a.TrophyBronzeCount > 0 ? "bronze" : null)
-                   .CompareTo(GetTrophyRank(b.TrophyPlatinumCount > 0 ? "platinum" :
-                                            b.TrophyGoldCount > 0 ? "gold" :
-                                            b.TrophySilverCount > 0 ? "silver" :
-                                            b.TrophyBronzeCount > 0 ? "bronze" : null));
-        }
-
         private static string L(string key, string fallback)
         {
             var value = ResourceProvider.GetString(key);

@@ -173,12 +173,14 @@ namespace PlayniteAchievements.Views
             // GameAchievementsGrid uses AchievementDataGridControl with built-in persistence
             ApplyVisibilityToGrids();
             ApplyWidthsToGrids();
+            ResetOverviewSortDirection();
             ResetAchievementsSortDirection();
             UpdatePieChartLayout();
         }
 
         private void Plugin_SettingsSaved(object sender, EventArgs e)
         {
+            ResetOverviewSortDirection();
             ResetAchievementsSortDirection();
         }
 
@@ -189,6 +191,13 @@ namespace PlayniteAchievements.Views
             if (e.PropertyName == nameof(SidebarViewModel.SelectedGameHasCustomAchievementOrder))
             {
                 ResetAchievementsSortDirection();
+                return;
+            }
+
+            if (e.PropertyName == nameof(SidebarViewModel.OverviewSortPath) ||
+                e.PropertyName == nameof(SidebarViewModel.OverviewSortDirection))
+            {
+                ResetOverviewSortDirection();
                 return;
             }
 
@@ -1473,6 +1482,38 @@ namespace PlayniteAchievements.Views
                 _settings?.Persisted,
                 AchievementSortSurface.SidebarSelectedGame,
                 (sortPath, sortDirection) => GameAchievementsGrid?.SetSortIndicator(sortPath, sortDirection));
+        }
+
+        private void ResetOverviewSortDirection()
+        {
+            var grid = GamesOverviewDataGrid;
+            if (grid?.Columns == null)
+            {
+                return;
+            }
+
+            foreach (var column in grid.Columns)
+            {
+                column.SortDirection = null;
+            }
+
+            GamesOverviewSortHelper.ApplySortIndicator(
+                _viewModel?.OverviewSortPath,
+                _viewModel?.OverviewSortDirection,
+                _settings?.Persisted,
+                (sortPath, sortDirection) =>
+                {
+                    if (string.IsNullOrWhiteSpace(sortPath) || !sortDirection.HasValue)
+                    {
+                        return;
+                    }
+
+                    var targetColumn = grid.Columns.FirstOrDefault(column => column?.SortMemberPath == sortPath);
+                    if (targetColumn != null)
+                    {
+                        targetColumn.SortDirection = sortDirection;
+                    }
+                });
         }
 
         private void ResetRecentAchievementsSortDirection()
