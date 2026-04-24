@@ -466,6 +466,7 @@ namespace PlayniteAchievements.Services.Sidebar
             int gameTrophyGoldTotal = 0;
             int gameTrophySilverTotal = 0;
             int gameTrophyBronzeTotal = 0;
+            DateTime? lastUnlockUtc = null;
 
             for (var i = 0; i < achievements.Count; i++)
             {
@@ -508,8 +509,13 @@ namespace PlayniteAchievements.Services.Sidebar
 
                     if (ach.UnlockTimeUtc.HasValue)
                     {
-                        var unlockDate = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value).Date;
+                        var unlockUtc = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value);
+                        var unlockDate = unlockUtc.Date;
                         Increment(fragment.UnlockCountsByDate, unlockDate);
+                        if (!lastUnlockUtc.HasValue || unlockUtc > lastUnlockUtc.Value)
+                        {
+                            lastUnlockUtc = unlockUtc;
+                        }
 
                         if (gameData.PlayniteGameId.HasValue)
                         {
@@ -581,6 +587,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 TrophyGoldTotal = gameTrophyGoldTotal,
                 TrophySilverTotal = gameTrophySilverTotal,
                 TrophyBronzeTotal = gameTrophyBronzeTotal,
+                LastUnlockUtc = lastUnlockUtc,
                 LastPlayed = presentation.LastPlayed,
                 IsCompleted = gameData.IsCompleted,
                 Provider = providerName,

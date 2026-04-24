@@ -159,6 +159,13 @@ namespace PlayniteAchievements.ViewModels
             } 
         }
 
+        private DateTime? _lastUnlockUtc;
+        public DateTime? LastUnlockUtc
+        {
+            get => _lastUnlockUtc;
+            set => SetValue(ref _lastUnlockUtc, value);
+        }
+
         private bool _isCompleted;
         public bool IsCompleted { get => _isCompleted; set => SetValue(ref _isCompleted, value); }
 

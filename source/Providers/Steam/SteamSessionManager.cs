@@ -343,6 +343,53 @@ namespace PlayniteAchievements.Providers.Steam
             return await tcs.Task;
         }
 
+        internal async Task<bool> WarmStoreSessionAsync(CancellationToken ct)
+        {
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await _api.MainView.UIDispatcher.InvokeAsync(async () =>
+            {
+                try
+                {
+                    ct.ThrowIfCancellationRequested();
+                    using (var view = _api.WebViews.CreateOffscreenView())
+                    {
+                        const string targetUrl = "https://store.steampowered.com/";
+
+                        await view.NavigateAndWaitAsync(targetUrl, timeoutMs: 15000);
+
+                        // Give the browser a moment to commit cookies and any store-side session state.
+                        await Task.Delay(1000, ct);
+
+                        var cookies = view.GetCookies();
+                        var hasStoreCookies = cookies?.Any(c =>
+                            c != null &&
+                            !string.IsNullOrWhiteSpace(c.Domain) &&
+                            IsSteamDomain(c.Domain) &&
+                            c.Domain.IndexOf("steampowered.com", StringComparison.OrdinalIgnoreCase) >= 0) == true;
+
+                        tcs.TrySetResult(hasStoreCookies);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    tcs.TrySetCanceled();
+                }
+                catch (TimeoutException ex)
+                {
+                    _logger?.Warn(ex, "[SteamAuth] Store warmup navigation timed out.");
+                    tcs.TrySetResult(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Warn(ex, "[SteamAuth] Store warmup navigation failed.");
+                    tcs.TrySetResult(false);
+                }
+            });
+
+            return await tcs.Task.ConfigureAwait(false);
+        }
+
         /// <summary>
         /// Synchronous login method matching Steam library plugin pattern.
         /// </summary>

@@ -99,6 +99,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _compactUnlockedListSortDescending = false;
         private CompactListSortMode _compactLockedListSortMode = CompactListSortMode.None;
         private bool _compactLockedListSortDescending = false;
+        private GamesOverviewSortMode _gamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock;
+        private bool _gamesOverviewGridSortDescending = true;
         private CompactListSortMode _sidebarSelectedGameGridSortMode = CompactListSortMode.UnlockTime;
         private bool _sidebarSelectedGameGridSortDescending = true;
         private CompactListSortMode _singleGameGridSortMode = CompactListSortMode.UnlockTime;
@@ -643,6 +645,24 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Sort mode for the sidebar games overview grid.
+        /// </summary>
+        public GamesOverviewSortMode GamesOverviewGridSortMode
+        {
+            get => _gamesOverviewGridSortMode;
+            set => SetValue(ref _gamesOverviewGridSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the configured sort direction for the sidebar games overview grid.
+        /// </summary>
+        public bool GamesOverviewGridSortDescending
+        {
+            get => _gamesOverviewGridSortDescending;
+            set => SetValue(ref _gamesOverviewGridSortDescending, value);
+        }
+
+        /// <summary>
         /// Sort mode for the sidebar selected-game grid.
         /// None preserves custom order when configured, otherwise provider order.
         /// </summary>
@@ -1165,6 +1185,8 @@ namespace PlayniteAchievements.Models.Settings
                 CompactUnlockedListSortDescending = this.CompactUnlockedListSortDescending,
                 CompactLockedListSortMode = this.CompactLockedListSortMode,
                 CompactLockedListSortDescending = this.CompactLockedListSortDescending,
+                GamesOverviewGridSortMode = this.GamesOverviewGridSortMode,
+                GamesOverviewGridSortDescending = this.GamesOverviewGridSortDescending,
                 SidebarSelectedGameGridSortMode = this.SidebarSelectedGameGridSortMode,
                 SidebarSelectedGameGridSortDescending = this.SidebarSelectedGameGridSortDescending,
                 SingleGameGridSortMode = this.SingleGameGridSortMode,

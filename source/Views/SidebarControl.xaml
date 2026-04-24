@@ -929,7 +929,7 @@
                             </DataGridTemplateColumn>
 
                             <!-- Last Played (slightly larger) -->
-                            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_LastPlayed}" SortMemberPath="LastPlayed" SortDirection="Descending" helpers:ColumnVisibilityHelper.ColumnKey="OverviewLastPlayed">
+                            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_LastPlayed}" SortMemberPath="LastPlayed" helpers:ColumnVisibilityHelper.ColumnKey="OverviewLastPlayed">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>

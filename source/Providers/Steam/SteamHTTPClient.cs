@@ -1,5 +1,4 @@
 using HtmlAgilityPack;
-using Newtonsoft.Json;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers.Steam.Models;
 using Playnite.SDK;
@@ -168,13 +167,32 @@ namespace PlayniteAchievements.Providers.Steam
 
         public async Task<string> GetWebApiTokenAsync(CancellationToken ct)
         {
-            const string url = "https://store.steampowered.com/pointssummary/ajaxgetasyncconfig";
-
             if (!await EnsureSessionAsync(ct).ConfigureAwait(false))
             {
                 _logger?.Warn("[SteamAch] Steam session is not available; cannot resolve store web API token.");
                 return null;
             }
+
+            try
+            {
+                return await SteamAsyncConfigTokenHelper.ResolveTokenAsync(
+                    RequestStoreAsyncConfigAsync,
+                    _sessionManager.WarmStoreSessionAsync,
+                    () => SyncCookieJarFromCefIfNeeded(force: true),
+                    _logger,
+                    ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[SteamAch] Store token request failed.");
+                return null;
+            }
+        }
+
+        private async Task<SteamAsyncConfigRequestResult> RequestStoreAsyncConfigAsync(CancellationToken ct)
+        {
+            const string url = "https://store.steampowered.com/pointssummary/ajaxgetasyncconfig";
 
             try
             {
@@ -186,35 +204,23 @@ namespace PlayniteAchievements.Providers.Steam
 
                     using (var resp = await _http.SendAsync(req, ct).ConfigureAwait(false))
                     {
+                        var content = resp.Content == null
+                            ? null
+                            : await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+
                         if (!resp.IsSuccessStatusCode)
                         {
-                            _logger?.Debug($"[SteamAch] Store token request failed: {(int)resp.StatusCode} {resp.ReasonPhrase}");
-                            return null;
+                            return SteamAsyncConfigRequestResult.HttpFailure((int)resp.StatusCode, resp.ReasonPhrase, content);
                         }
 
-                        var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        if (string.IsNullOrWhiteSpace(json))
-                        {
-                            return null;
-                        }
-
-                        var root = JsonConvert.DeserializeObject<SteamAsyncConfigResponse>(json);
-                        var token = root?.Data?.WebApiToken?.Trim();
-                        if (string.IsNullOrWhiteSpace(token))
-                        {
-                            _logger?.Debug($"[SteamAch] Store token response did not include a usable token (success={root?.Success?.ToString() ?? "null"}).");
-                            return null;
-                        }
-
-                        return token;
+                        return SteamAsyncConfigRequestResult.Success((int)resp.StatusCode, resp.ReasonPhrase, content);
                     }
                 }
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "[SteamAch] Store token request failed.");
-                return null;
+                return SteamAsyncConfigRequestResult.RequestFailure(ex);
             }
         }
 

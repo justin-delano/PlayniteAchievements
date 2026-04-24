@@ -425,6 +425,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">Preserve full-resolution achievement icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">Saves cached icons at their original resolution instead of the optimized 128px cache mode. This uses more disk space.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Progress Bar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GamesOverviewGridSort">Sidebar Games Overview Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Sidebar Selected Game Grid</sys:String>
 
     <!-- Provider: Shared -->
