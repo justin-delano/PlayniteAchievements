@@ -165,7 +165,8 @@ namespace PlayniteAchievements.Services
             try
             {
                 return ProjectVisibleGameAchievementData(
-                    GetMergedGameAchievementData(playniteGameId.ToString(), includeAchievementOverlays: false));
+                    GetMergedGameAchievementData(playniteGameId.ToString(), includeAchievementOverlays: false),
+                    excludeSummaryIgnored: true);
             }
             catch (Exception ex)
             {
@@ -212,7 +213,7 @@ namespace PlayniteAchievements.Services
             {
                 var result = LoadAllCachedGameData();
                 HydrateAll(result, includeAchievementOverlays: false);
-                return ProjectVisibleGameAchievementData(result);
+                return ProjectVisibleGameAchievementData(result, excludeSummaryIgnored: true);
             }
             catch (Exception ex)
             {
@@ -240,7 +241,7 @@ namespace PlayniteAchievements.Services
             try
             {
                 var allData = GetAllGameAchievementData();
-                return ExcludeSummaryGames(ProjectVisibleGameAchievementData(allData));
+                return ExcludeSummaryGames(ProjectVisibleGameAchievementData(allData, excludeSummaryIgnored: true));
             }
             catch (Exception ex)
             {
@@ -563,15 +564,19 @@ namespace PlayniteAchievements.Services
                 .ToList();
         }
 
-        private List<GameAchievementData> ProjectVisibleGameAchievementData(IEnumerable<GameAchievementData> source)
+        private List<GameAchievementData> ProjectVisibleGameAchievementData(
+            IEnumerable<GameAchievementData> source,
+            bool excludeSummaryIgnored = false)
         {
             return (source ?? Enumerable.Empty<GameAchievementData>())
-                .Select(ProjectVisibleGameAchievementData)
+                .Select(gameData => ProjectVisibleGameAchievementData(gameData, excludeSummaryIgnored))
                 .Where(gameData => gameData != null)
                 .ToList();
         }
 
-        private GameAchievementData ProjectVisibleGameAchievementData(GameAchievementData source)
+        private GameAchievementData ProjectVisibleGameAchievementData(
+            GameAchievementData source,
+            bool excludeSummaryIgnored = false)
         {
             if (source == null)
             {
@@ -579,7 +584,7 @@ namespace PlayniteAchievements.Services
             }
 
             var sourceAchievements = source.Achievements ?? new List<AchievementDetail>();
-            var visibleAchievements = FilterVisibleAchievements(sourceAchievements);
+            var visibleAchievements = FilterVisibleAchievements(sourceAchievements, excludeSummaryIgnored);
             if (visibleAchievements.Count == sourceAchievements.Count)
             {
                 return source;
@@ -607,15 +612,30 @@ namespace PlayniteAchievements.Services
             };
         }
 
-        private static List<AchievementDetail> FilterVisibleAchievements(IEnumerable<AchievementDetail> achievements)
+        private static List<AchievementDetail> FilterVisibleAchievements(
+            IEnumerable<AchievementDetail> achievements,
+            bool excludeSummaryIgnored = false)
         {
             var visibleAchievements = new List<AchievementDetail>();
             foreach (var achievement in achievements ?? Enumerable.Empty<AchievementDetail>())
             {
-                if (achievement == null || !AchievementCategoryTypeHelper.IsIgnored(achievement.CategoryType))
+                if (achievement == null)
                 {
-                    visibleAchievements.Add(achievement);
+                    continue;
                 }
+
+                if (AchievementCategoryTypeHelper.IsIgnored(achievement.CategoryType))
+                {
+                    continue;
+                }
+
+                if (excludeSummaryIgnored &&
+                    AchievementCategoryTypeHelper.IsSummaryIgnored(achievement.CategoryType))
+                {
+                    continue;
+                }
+
+                visibleAchievements.Add(achievement);
             }
 
             return visibleAchievements;
@@ -679,7 +699,7 @@ namespace PlayniteAchievements.Services
                 return false;
             }
 
-            return overrides.Values.Any(AchievementCategoryTypeHelper.IsIgnored);
+            return overrides.Values.Any(AchievementCategoryTypeHelper.IsExcludedFromSummary);
         }
 
         private void ApplyGameSummaryCustomization(
