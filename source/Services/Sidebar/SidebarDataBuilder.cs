@@ -14,8 +14,6 @@ namespace PlayniteAchievements.Services.Sidebar
 {
     public sealed class SidebarDataBuilder
     {
-        private const int InitialRecentAchievementMaterializationLimit = 250;
-
         private sealed class GamePresentation
         {
             public string SortingName { get; set; }
@@ -61,7 +59,7 @@ namespace PlayniteAchievements.Services.Sidebar
             revealedKeys ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var providerLookup = BuildProviderLookup();
-            var queryData = _achievementDataService.GetCachedSummaryDataForSidebar(InitialRecentAchievementMaterializationLimit);
+            var queryData = _achievementDataService.GetCachedSummaryDataForSidebar(0);
             if (queryData != null)
             {
                 return BuildFromCachedSummaryData(settings, queryData, providerLookup, cancel);
@@ -223,7 +221,6 @@ namespace PlayniteAchievements.Services.Sidebar
                 UnlockCountsByDateByGame = CloneCountsByGame(queryData.UnlockCountsByDateByGame),
                 UnlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 TotalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                HasDeferredRecentAchievements = queryData.HasMoreRecentUnlocks
             };
 
             var games = queryData.Games ?? new List<CachedGameSummaryData>();
@@ -339,53 +336,6 @@ namespace PlayniteAchievements.Services.Sidebar
                 : 0;
 
             return snapshot;
-        }
-
-        public List<AchievementDisplayItem> BuildDeferredRecentAchievements(
-            PlayniteAchievementsSettings settings,
-            CancellationToken cancel)
-        {
-            settings ??= new PlayniteAchievementsSettings();
-
-            var recentAchievements = _achievementDataService.GetCachedRecentUnlocksForSidebar();
-            if (recentAchievements != null)
-            {
-                var presentationByGameId = BuildGamePresentationCache(
-                    recentAchievements
-                        .Where(r => r?.PlayniteGameId.HasValue == true)
-                        .Select(r => r.PlayniteGameId.Value));
-
-                return MaterializeRecentAchievements(
-                    settings,
-                    recentAchievements,
-                    presentationByGameId,
-                    cancel);
-            }
-
-            var hydratedRecent = new List<AchievementDisplayItem>();
-            var providerLookup = BuildProviderLookup();
-            var allGameData = _achievementDataService.GetAllVisibleGameAchievementDataForSidebar() ?? new List<GameAchievementData>();
-            var revealedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            for (var i = 0; i < allGameData.Count; i++)
-            {
-                cancel.ThrowIfCancellationRequested();
-
-                var fragment = BuildGameFragment(
-                    settings,
-                    revealedKeys,
-                    allGameData[i],
-                    providerLookup,
-                    includeAchievementItems: false);
-                if (fragment?.RecentAchievements != null && fragment.RecentAchievements.Count > 0)
-                {
-                    hydratedRecent.AddRange(fragment.RecentAchievements);
-                }
-            }
-
-            return AchievementSortHelper.CreateDefaultSortedList(
-                hydratedRecent,
-                AchievementSortScope.RecentAchievements);
         }
 
         public SidebarGameFragment BuildGameFragment(
