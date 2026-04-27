@@ -2714,7 +2714,7 @@ namespace PlayniteAchievements.ViewModels
             return string.Join(", ", orderedDisplayNames);
         }
 
-        private void ApplyRightFilters()
+        private void ApplyRightFilters(bool skipDefaultSort = false)
         {
             // Contextually filter based on IsGameSelected
             if (IsGameSelected)
@@ -2732,7 +2732,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     SortSelectedGameAchievements(_selectedGameSortPath, _selectedGameSortDirection);
                 }
-                else
+                else if (!skipDefaultSort)
                 {
                     AchievementSortHelper.ApplyConfiguredDefaultSort(
                         _filteredSelectedGameAchievements,
@@ -2741,6 +2741,17 @@ namespace PlayniteAchievements.ViewModels
                         AchievementSortScope.GameAchievements,
                         stableOrder: AchievementSortHelper.CreateStableOrderMap(_filteredSelectedGameAchievements));
 
+                    if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+                    {
+                        bulk.ReplaceAll(_filteredSelectedGameAchievements);
+                    }
+                    else
+                    {
+                        CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+                    }
+                }
+                else
+                {
                     if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
                     {
                         bulk.ReplaceAll(_filteredSelectedGameAchievements);
@@ -2882,7 +2893,7 @@ namespace PlayniteAchievements.ViewModels
 
             if (IsGameSelected)
             {
-                ApplyRightFilters();
+                ApplyRightFilters(skipDefaultSort: true);
             }
         }
 

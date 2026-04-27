@@ -611,6 +611,8 @@ namespace PlayniteAchievements.Views
             if (sortAction.Kind == AchievementGridSortActionKind.ResetToDefault)
             {
                 _viewModel.ApplyDefaultSelectedGameSort();
+                ClearAchievementsSortIndicators();
+                return;
             }
             else if (sortAction.Direction.HasValue)
             {
@@ -1446,6 +1448,17 @@ namespace PlayniteAchievements.Views
                 if (VisualTreeHelpers.FindVisualChild<ScrollViewer>(g) is ScrollViewer sv)
                     sv.ScrollToTop();
             }), DispatcherPriority.Loaded);
+        }
+
+        private void ClearAchievementsSortIndicators()
+        {
+            var grid = GameAchievementsGrid?.InternalDataGrid;
+            if (grid != null)
+            {
+                foreach (var c in grid.Columns) c.SortDirection = null;
+            }
+
+            GameAchievementsGrid?.SetSortIndicator(null, null);
         }
 
         private void ResetAchievementsSortDirection()
