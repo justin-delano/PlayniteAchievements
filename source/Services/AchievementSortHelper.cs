@@ -184,12 +184,7 @@ namespace PlayniteAchievements.Services
                 return AchievementGridSortAction.None();
             }
 
-            var configuredSort = GetConfiguredDefaultSort(settings, surface);
-            var cycleDirections = GetCycleDirections(clickedSortMemberPath, configuredSort);
-            if (cycleDirections.Count == 0)
-            {
-                return AchievementGridSortAction.ResetToDefault();
-            }
+            var cycleDirections = GetCycleDirections();
 
             if (!currentSortDirection.HasValue ||
                 !string.Equals(currentSortPath, clickedSortMemberPath, StringComparison.Ordinal))
@@ -610,22 +605,13 @@ namespace PlayniteAchievements.Services
             return sorted.Select(entry => entry.Detail).ToList();
         }
 
-        private static List<ListSortDirection> GetCycleDirections(
-            string clickedSortMemberPath,
-            AchievementSortSpec configuredSort)
+        private static List<ListSortDirection> GetCycleDirections()
         {
-            var directions = new List<ListSortDirection>
+            return new List<ListSortDirection>
             {
                 ListSortDirection.Ascending,
                 ListSortDirection.Descending
             };
-
-            if (string.Equals(configuredSort.SortMemberPath, clickedSortMemberPath, StringComparison.Ordinal))
-            {
-                directions.Remove(configuredSort.Direction);
-            }
-
-            return directions;
         }
 
         public static int GetTrophyRank(string trophyType)
