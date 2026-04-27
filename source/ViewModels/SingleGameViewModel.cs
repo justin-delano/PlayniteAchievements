@@ -907,10 +907,10 @@ namespace PlayniteAchievements.ViewModels
             _currentSortDirection = AchievementSortHelper.GetConfiguredDefaultSort(
                 _settings?.Persisted,
                 AchievementSortSurface.SingleGame).Direction;
-            ApplySearchFilter();
+            ApplySearchFilter(skipDefaultSort: true);
         }
 
-        private void ApplySearchFilter()
+        private void ApplySearchFilter(bool skipDefaultSort = false)
         {
             IEnumerable<AchievementDisplayItem> filtered = _allAchievements;
 
@@ -967,7 +967,7 @@ namespace PlayniteAchievements.ViewModels
                         ref _currentSortPath,
                         ref currentSortDirection);
                 }
-                else
+                else if (!skipDefaultSort)
                 {
                     AchievementSortHelper.ApplyConfiguredDefaultSort(
                         filteredItems,

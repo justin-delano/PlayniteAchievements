@@ -129,6 +129,8 @@ namespace PlayniteAchievements.Views
             if (sortAction.Kind == AchievementGridSortActionKind.ResetToDefault)
             {
                 ViewModel.ResetSortToDefault();
+                AchievementsDataGridControl?.SetSortIndicator(null, null);
+                return;
             }
             else if (sortAction.Direction.HasValue)
             {
