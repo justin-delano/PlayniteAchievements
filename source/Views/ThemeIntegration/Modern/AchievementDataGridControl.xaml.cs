@@ -158,15 +158,17 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
         }
 
-        private void LoadData()
+        private void LoadData(bool useSourceOrder = false)
         {
             var theme = EffectiveTheme;
             var sourceItems = theme?.AllAchievementDisplayItems;
             var settings = EffectiveSettings?.Persisted;
-            var orderedAchievements = AchievementSortHelper.ResolveSelectedGameAchievements(
-                theme,
-                settings,
-                AchievementSortSurface.AchievementDataGrid);
+            var orderedAchievements = useSourceOrder
+                ? theme?.AchievementDefaultOrder ?? new List<AchievementDetail>()
+                : AchievementSortHelper.ResolveSelectedGameAchievements(
+                    theme,
+                    settings,
+                    AchievementSortSurface.AchievementDataGrid);
             if (sourceItems == null)
             {
                 _lastSourceItems = null;
@@ -227,7 +229,14 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 CollectionHelper.SynchronizeCollection(DisplayItems, clonedItems);
             }
 
-            ApplyCurrentSortIndicator(theme);
+            if (useSourceOrder)
+            {
+                AchievementsGrid?.SetSortIndicator(null, null);
+            }
+            else
+            {
+                ApplyCurrentSortIndicator(theme);
+            }
         }
 
         /// <summary>
@@ -329,7 +338,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private void ResetToDefaultSort()
         {
             ResetSortState();
-            LoadData();
+            LoadData(useSourceOrder: true);
         }
 
         private void ApplyCurrentSortIndicator(ModernThemeBindings theme)
