@@ -45,7 +45,6 @@ namespace PlayniteAchievements.ViewModels
 
         private readonly SemaphoreSlim _refreshLock = new SemaphoreSlim(1, 1);
         private CancellationTokenSource _refreshCts;
-        private CancellationTokenSource _deferredRecentHydrationCts;
         private volatile bool _isActive;
         private int _refreshVersion;
         private bool _disposed;
@@ -980,7 +979,6 @@ namespace PlayniteAchievements.ViewModels
             await Task.Yield();
 
             var version = Interlocked.Increment(ref _refreshVersion);
-            CancelDeferredRecentHydration();
 
             var newCts = new CancellationTokenSource();
             var oldCts = Interlocked.Exchange(ref _refreshCts, newCts);
@@ -1029,10 +1027,6 @@ namespace PlayniteAchievements.ViewModels
                         }
 
                         ApplySnapshot(snapshot);
-                        if (snapshot.HasDeferredRecentAchievements)
-                        {
-                            StartDeferredRecentHydration(version);
-                        }
                     });
                 }
                 finally
@@ -1280,83 +1274,9 @@ namespace PlayniteAchievements.ViewModels
 
         private void CancelPendingRefresh()
         {
-            CancelDeferredRecentHydration();
             var cts = Interlocked.Exchange(ref _refreshCts, null);
             try { cts?.Cancel(); } catch { }
             try { cts?.Dispose(); } catch { }
-        }
-
-        private void CancelDeferredRecentHydration()
-        {
-            var cts = Interlocked.Exchange(ref _deferredRecentHydrationCts, null);
-            try { cts?.Cancel(); } catch { }
-            try { cts?.Dispose(); } catch { }
-        }
-
-        private void StartDeferredRecentHydration(int version)
-        {
-            CancelDeferredRecentHydration();
-
-            var cts = new CancellationTokenSource();
-            var previous = Interlocked.Exchange(ref _deferredRecentHydrationCts, cts);
-            try { previous?.Cancel(); } catch { }
-            try { previous?.Dispose(); } catch { }
-
-            _ = HydrateDeferredRecentAchievementsAsync(version, cts);
-        }
-
-        private async Task HydrateDeferredRecentAchievementsAsync(int version, CancellationTokenSource cts)
-        {
-            var cancel = cts?.Token ?? CancellationToken.None;
-
-            try
-            {
-                await Task.Delay(200, cancel).ConfigureAwait(false);
-
-                var recentAchievements = await Task.Run(
-                    () => _dataBuilder.BuildDeferredRecentAchievements(_settings, cancel),
-                    cancel).ConfigureAwait(false);
-
-                System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
-                {
-                    if (_disposed || !_isActive || cancel.IsCancellationRequested)
-                    {
-                        return;
-                    }
-
-                    if (version != _refreshVersion ||
-                        !ReferenceEquals(_deferredRecentHydrationCts, cts))
-                    {
-                        return;
-                    }
-
-                    SetRecentAchievementsSource(recentAchievements, hasDeferredRecentAchievements: false);
-
-                    if (!IsGameSelected)
-                    {
-                        ApplyRightFilters();
-                    }
-                });
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception ex)
-            {
-                if (!cancel.IsCancellationRequested)
-                {
-                    _logger?.Warn(ex, "Deferred sidebar recent achievement hydration failed.");
-                }
-            }
-            finally
-            {
-                if (ReferenceEquals(_deferredRecentHydrationCts, cts))
-                {
-                    Interlocked.CompareExchange(ref _deferredRecentHydrationCts, null, cts);
-                }
-
-                try { cts?.Dispose(); } catch { }
-            }
         }
 
         private void ApplySnapshot(SidebarDataSnapshot snapshot)
@@ -1382,8 +1302,7 @@ namespace PlayniteAchievements.ViewModels
 
             _allGamesOverview = snapshot.GamesOverview ?? new List<GameOverviewItem>();
             SetRecentAchievementsSource(
-                snapshot.RecentAchievements,
-                snapshot.HasDeferredRecentAchievements);
+                snapshot.RecentAchievements);
 
             UpdateProviderFilterOptions(_allGamesOverview);
             UpdateCompletenessFilterOptions();
@@ -1412,16 +1331,10 @@ namespace PlayniteAchievements.ViewModels
         }
 
         private void SetRecentAchievementsSource(
-            List<AchievementDisplayItem> recentAchievements,
-            bool hasDeferredRecentAchievements)
+            List<AchievementDisplayItem> recentAchievements)
         {
             _allRecentAchievements = recentAchievements ?? new List<AchievementDisplayItem>();
             _filteredRecentAchievements = new List<AchievementDisplayItem>(_allRecentAchievements);
-
-            if (_latestSnapshot != null)
-            {
-                _latestSnapshot.HasDeferredRecentAchievements = hasDeferredRecentAchievements;
-            }
         }
 
         private bool ApplyFragmentDelta(string key, SidebarGameFragment fragment)
@@ -1965,12 +1878,6 @@ namespace PlayniteAchievements.ViewModels
 
             if (keys.Count == 0)
             {
-                return;
-            }
-
-            if (_latestSnapshot?.HasDeferredRecentAchievements == true)
-            {
-                await RefreshViewAsync();
                 return;
             }
 
