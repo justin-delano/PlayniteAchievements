@@ -52,8 +52,6 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                TextWrapping="Wrap"
-                               MaxHeight="44"
-                               TextTrimming="CharacterEllipsis"
                                Margin="0,3,0,0">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -292,11 +290,9 @@
 
                 <DataGridTextColumn Width="160" Header="{DynamicResource LOCPlayAch_Common_Label_Type}" Binding="{Binding CategoryTypeDisplay}">
                     <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedCenteredDataGridTextStyle}">
                             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                             <Setter Property="Opacity" Value="0.85" />
-                            <Setter Property="HorizontalAlignment" Value="Center" />
-                            <Setter Property="TextAlignment" Value="Center" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                     <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}" />
@@ -310,11 +306,9 @@
 
                 <DataGridTextColumn Width="190" Header="{DynamicResource LOCPlayAch_Common_Label_Category}" Binding="{Binding CategoryDisplay}">
                     <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedCenteredDataGridTextStyle}">
                             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                             <Setter Property="Opacity" Value="0.85" />
-                            <Setter Property="HorizontalAlignment" Value="Center" />
-                            <Setter Property="TextAlignment" Value="Center" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsSelected}" Value="True">
                                     <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}" />

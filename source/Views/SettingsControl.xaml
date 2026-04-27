@@ -946,6 +946,10 @@
                                                 </TextBlock>
                                             </Button>
                                         </StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortResetHint}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,8,0,0"/>
                                     </StackPanel>
                                 </Border>
 
@@ -985,6 +989,10 @@
                                                 </TextBlock>
                                             </Button>
                                         </StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortResetHint}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,8,0,0"/>
                                     </StackPanel>
                                 </Border>
 
@@ -1022,6 +1030,10 @@
                                                 </TextBlock>
                                             </Button>
                                         </StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortResetHint}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,8,0,0"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -1203,6 +1215,10 @@
                                                 </TextBlock>
                                             </Button>
                                         </StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortResetHint}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,8,0,0"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>

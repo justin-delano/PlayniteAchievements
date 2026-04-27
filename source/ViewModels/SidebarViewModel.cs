@@ -72,6 +72,7 @@ namespace PlayniteAchievements.ViewModels
         private List<AchievementDisplayItem> _filteredRecentAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
+        private List<AchievementDisplayItem> _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>();
         private List<string> _availableProviders = new List<string>();
         private readonly HashSet<string> _selectedProviderFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedCompletenessFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -383,6 +384,13 @@ namespace PlayniteAchievements.ViewModels
             string.IsNullOrWhiteSpace(_overviewSortPath)
                 ? (ListSortDirection?)null
                 : _overviewSortDirection;
+
+        public string RecentSortPath => _recentSortPath;
+
+        public ListSortDirection? RecentSortDirection =>
+            string.IsNullOrWhiteSpace(_recentSortPath)
+                ? (ListSortDirection?)null
+                : _recentSortDirection;
 
         private ObservableCollection<string> _providerFilterOptions;
         public ObservableCollection<string> ProviderFilterOptions
@@ -2934,10 +2942,57 @@ namespace PlayniteAchievements.ViewModels
 
         private void ResetSelectedGameSortToDefault()
         {
+            _allSelectedGameAchievements = _selectedGameDefaultOrderedAchievements != null
+                ? new List<AchievementDisplayItem>(_selectedGameDefaultOrderedAchievements)
+                : new List<AchievementDisplayItem>();
             _selectedGameSortPath = null;
             _selectedGameSortDirection = AchievementSortHelper.GetConfiguredDefaultSort(
                 _settings?.Persisted,
                 AchievementSortSurface.SidebarSelectedGame).Direction;
+        }
+
+        private void ResetOverviewSortToDefault()
+        {
+            GamesOverviewSortHelper.SortByConfiguredDefault(_allGamesOverview, _settings?.Persisted);
+            _overviewSortPath = null;
+            _overviewSortDirection = GamesOverviewSortHelper.GetConfiguredDefaultSort(_settings?.Persisted).Direction;
+        }
+
+        private void ResetRecentSortToDefault()
+        {
+            _allRecentAchievements = AchievementSortHelper.CreateDefaultSortedList(
+                _allRecentAchievements,
+                AchievementSortScope.RecentAchievements);
+            _recentSortPath = null;
+            _recentSortDirection = AchievementSortHelper.GetConfiguredDefaultSort(
+                _settings?.Persisted,
+                AchievementSortSurface.SidebarRecentAchievements).Direction;
+        }
+
+        public void ApplyDefaultSelectedGameSort()
+        {
+            ResetSelectedGameSortToDefault();
+
+            if (IsGameSelected)
+            {
+                ApplyRightFilters();
+            }
+        }
+
+        public void ApplyDefaultOverviewSort()
+        {
+            ResetOverviewSortToDefault();
+            ApplyLeftFilters();
+        }
+
+        public void ApplyDefaultRecentSort()
+        {
+            ResetRecentSortToDefault();
+
+            if (!IsGameSelected)
+            {
+                ApplyRightFilters();
+            }
         }
 
         /// <summary>
@@ -2976,6 +3031,7 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 _allSelectedGameAchievements = new List<AchievementDisplayItem>();
+                _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>();
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
                 UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
@@ -3031,6 +3087,7 @@ namespace PlayniteAchievements.ViewModels
                 SelectedGameHasCustomAchievementOrder = hasCustomOrder;
 
                 _allSelectedGameAchievements = items;
+                _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>(items);
                 UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
                 ApplyRightFilters();
 
@@ -3052,6 +3109,7 @@ namespace PlayniteAchievements.ViewModels
 
                 UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
+                _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>();
                 _logger?.Warn(ex, $"Failed to load achievements for game {SelectedGame?.AppId}");
                 RefreshSelectedGameHeaderCounts();
                 return false;

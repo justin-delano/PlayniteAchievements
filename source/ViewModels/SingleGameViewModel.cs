@@ -901,6 +901,15 @@ namespace PlayniteAchievements.ViewModels
             CollectionHelper.SynchronizeCollection(Achievements, items);
         }
 
+        public void ResetSortToDefault()
+        {
+            _currentSortPath = null;
+            _currentSortDirection = AchievementSortHelper.GetConfiguredDefaultSort(
+                _settings?.Persisted,
+                AchievementSortSurface.SingleGame).Direction;
+            ApplySearchFilter();
+        }
+
         private void ApplySearchFilter()
         {
             IEnumerable<AchievementDisplayItem> filtered = _allAchievements;

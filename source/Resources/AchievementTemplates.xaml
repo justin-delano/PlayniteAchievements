@@ -105,7 +105,8 @@
                 <ControlTemplate TargetType="DataGridCell">
                     <Border Background="{TemplateBinding Background}"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter VerticalAlignment="Center"/>
+                        <ContentPresenter VerticalAlignment="Stretch"
+                                          HorizontalAlignment="Stretch"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -160,6 +161,21 @@
                 <Setter Property="MinHeight" Value="50"/>
             </DataTrigger>
         </Style.Triggers>
+    </Style>
+
+    <Style x:Key="WrappedDataGridTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="TextTrimming" Value="None"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="WrappedCenteredDataGridTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource WrappedDataGridTextStyle}">
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="TextAlignment" Value="Center"/>
     </Style>
 
     <!-- Shared selector button + menu item styles (sidebar/single-game/game-options) -->
@@ -625,19 +641,16 @@
                        FontSize="{DynamicResource FontSizeSmall}"
                        Foreground="{DynamicResource TextBrush}"
                        Opacity="0.7"
-                       TextWrapping="Wrap"
-                       TextTrimming="CharacterEllipsis">
+                       TextWrapping="Wrap">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="Margin" Value="0,3,0,0"/>
-                        <Setter Property="MaxHeight" Value="44"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
                                 <Setter Property="FontStyle" Value="Italic"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
                                 <Setter Property="Margin" Value="0,1,0,0"/>
-                                <Setter Property="MaxHeight" Value="32"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -655,6 +668,8 @@
                        Style="{DynamicResource BaseTextBlockStyle}"
                        Foreground="{DynamicResource TextBrush}"
                        Opacity="0.7"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
                        Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
             <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}" Margin="4,0">
                 <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"

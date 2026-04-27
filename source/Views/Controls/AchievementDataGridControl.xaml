@@ -102,12 +102,9 @@
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding CategoryTypeDisplay}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Style="{StaticResource WrappedCenteredDataGridTextStyle}"
                                    Foreground="{DynamicResource TextBrush}"
-                                   Opacity="0.7"
-                                   TextTrimming="CharacterEllipsis"/>
+                                   Opacity="0.7"/>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
@@ -116,12 +113,9 @@
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding CategoryLabel}"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Style="{StaticResource WrappedCenteredDataGridTextStyle}"
                                    Foreground="{DynamicResource TextBrush}"
-                                   Opacity="0.7"
-                                   TextTrimming="CharacterEllipsis"/>
+                                   Opacity="0.7"/>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>

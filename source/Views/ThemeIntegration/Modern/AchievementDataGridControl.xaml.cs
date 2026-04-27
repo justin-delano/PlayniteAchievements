@@ -278,15 +278,27 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
         private void AchievementsGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
-            // Handle sort indicators
-            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e, AchievementsGrid?.InternalDataGrid);
-            if (sortDirection == null) return;
-
-            // Perform the actual sorting
-            ApplySorting(e.Column.SortMemberPath, sortDirection.Value);
-
-            // Mark as handled to prevent DataGrid's default sorting
             e.Handled = true;
+
+            var sortAction = AchievementSortHelper.ResolveGridSortAction(
+                e.Column?.SortMemberPath,
+                _currentSortPath,
+                _currentSortDirection,
+                EffectiveSettings?.Persisted,
+                AchievementSortSurface.AchievementDataGrid);
+            if (sortAction.Kind == AchievementGridSortActionKind.None)
+            {
+                return;
+            }
+
+            if (sortAction.Kind == AchievementGridSortActionKind.ResetToDefault)
+            {
+                ResetToDefaultSort();
+            }
+            else if (sortAction.Direction.HasValue)
+            {
+                ApplySorting(sortAction.SortMemberPath, sortAction.Direction.Value);
+            }
         }
 
         private void ApplySorting(string sortMemberPath, ListSortDirection direction)
@@ -312,6 +324,12 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         {
             _currentSortPath = null;
             _currentSortDirection = null;
+        }
+
+        private void ResetToDefaultSort()
+        {
+            ResetSortState();
+            LoadData();
         }
 
         private void ApplyCurrentSortIndicator(ModernThemeBindings theme)

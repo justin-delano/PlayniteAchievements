@@ -293,12 +293,12 @@
                 <Setter Property="BorderThickness" Value="0,0,0,1"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                 <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Height" Value="112"/>
+                <Setter Property="MinHeight" Value="112"/>
                 <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
                 <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Height" Value="80"/>
+                        <Setter Property="MinHeight" Value="80"/>
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
@@ -307,6 +307,7 @@
                 <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
                         <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
@@ -319,6 +320,7 @@
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="Opacity" Value="0.6"/>
                 <Setter Property="Margin" Value="0,4,0,0"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
                         <Setter Property="Margin" Value="0,2,0,0"/>
@@ -871,11 +873,9 @@
                                                         Margin="0,0,8,0">
                                                 <TextBlock Text="{Binding GameName}"
                                                            HorizontalAlignment="Left"
-                                                           TextTrimming="CharacterEllipsis"
                                                            Style="{StaticResource OverviewGameNameTextStyle}"/>
                                                 <TextBlock Text="{Binding SecondaryMetadataText}"
                                                            HorizontalAlignment="Left"
-                                                           TextTrimming="CharacterEllipsis"
                                                            Style="{StaticResource OverviewGameMetadataTextStyle}"
                                                            Visibility="{Binding DataContext.ShowSidebarGameMetadata, RelativeSource={RelativeSource AncestorType=DataGrid}, Converter={StaticResource BoolToVis}}"/>
                                             </StackPanel>
@@ -954,7 +954,9 @@
                                                     HorizontalAlignment="Center"
                                                     Style="{DynamicResource BaseTextBlockStyle}"
                                                     Foreground="{DynamicResource TextBrush}"
-                                                    Opacity="0.7"/>
+                                                    Opacity="0.7"
+                                                    TextWrapping="Wrap"
+                                                    TextAlignment="Center"/>
                                         </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -986,7 +988,9 @@
                                                        HorizontalAlignment="Center"
                                                        Style="{DynamicResource BaseTextBlockStyle}"
                                                        Foreground="{DynamicResource TextBrush}"
-                                                       Opacity="0.7"/>
+                                                       Opacity="0.7"
+                                                       TextWrapping="Wrap"
+                                                       TextAlignment="Center"/>
                                         </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -1145,7 +1149,12 @@
                                                         </Style>
                                                     </Border.Style>
                                                 </Border>
-                                                <TextBlock VerticalAlignment="Center" HorizontalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" Foreground="{DynamicResource TextBrush}">
+                                                <TextBlock VerticalAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center">
                                                     <Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/>
                                                     <Run Text="/" Foreground="{DynamicResource TextBrush}"/>
                                                     <Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>

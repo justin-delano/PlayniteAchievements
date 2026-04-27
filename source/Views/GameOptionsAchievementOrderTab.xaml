@@ -51,8 +51,6 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                TextWrapping="Wrap"
-                               TextTrimming="CharacterEllipsis"
-                               MaxHeight="44"
                                Margin="0,3,0,0">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
