@@ -40,7 +40,6 @@ namespace PlayniteAchievements.Services
         private readonly object _sidebarProjectionCacheSync = new object();
         private readonly Dictionary<int, CachedSummaryData> _sidebarSummaryCacheByLimit =
             new Dictionary<int, CachedSummaryData>();
-        private List<CachedRecentUnlockData> _sidebarRecentUnlocksCache;
         private bool? _sidebarHasIgnoredCategoryTypeOverrides;
 
         public AchievementDataService(
@@ -303,45 +302,6 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        internal List<CachedRecentUnlockData> GetCachedRecentUnlocksForSidebar()
-        {
-            if (HasIgnoredCategoryTypeOverridesConfigured())
-            {
-                return null;
-            }
-
-            lock (_sidebarProjectionCacheSync)
-            {
-                if (_sidebarRecentUnlocksCache != null)
-                {
-                    return _sidebarRecentUnlocksCache;
-                }
-            }
-
-            var summaryData = GetCachedSummaryData();
-            if (summaryData == null)
-            {
-                return null;
-            }
-
-            List<CachedRecentUnlockData> hydratedRecentUnlocks;
-            try
-            {
-                hydratedRecentUnlocks = ApplySidebarRecentUnlockHydration(summaryData);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed to hydrate cached recent unlock data for sidebar");
-                hydratedRecentUnlocks = summaryData.RecentUnlocks ?? new List<CachedRecentUnlockData>();
-            }
-
-            lock (_sidebarProjectionCacheSync)
-            {
-                _sidebarRecentUnlocksCache = hydratedRecentUnlocks;
-                return _sidebarRecentUnlocksCache;
-            }
-        }
-
         private CachedSummaryData ApplySidebarSummaryHydration(CachedSummaryData summaryData)
         {
             summaryData ??= new CachedSummaryData();
@@ -388,34 +348,6 @@ namespace PlayniteAchievements.Services
             ApplyRecentSummaryCustomization(summaryData.RecentUnlocks, customizationByGameId);
 
             return summaryData;
-        }
-
-        private List<CachedRecentUnlockData> ApplySidebarRecentUnlockHydration(CachedSummaryData summaryData)
-        {
-            summaryData ??= new CachedSummaryData();
-            summaryData.RecentUnlocks ??= new List<CachedRecentUnlockData>();
-
-            var recentUnlocks = summaryData.RecentUnlocks;
-            var (customDataByGameId, excludedSummaryIds) = BuildSidebarCustomDataContext();
-            if (excludedSummaryIds != null && excludedSummaryIds.Count > 0)
-            {
-                recentUnlocks = recentUnlocks
-                    .Where(recent => recent?.PlayniteGameId.HasValue != true || !excludedSummaryIds.Contains(recent.PlayniteGameId.Value))
-                    .ToList();
-            }
-
-            var recentGameIds = new HashSet<Guid>(
-                recentUnlocks
-                    .Where(recent => recent?.PlayniteGameId.HasValue == true)
-                    .Select(recent => recent.PlayniteGameId.Value)
-                    .Where(gameId => gameId != Guid.Empty));
-            var customizationByGameId = BuildSummaryCustomizationByGameId(
-                recentGameIds,
-                recentGameIds,
-                customDataByGameId);
-
-            ApplyRecentSummaryCustomization(recentUnlocks, customizationByGameId);
-            return recentUnlocks;
         }
 
         private Dictionary<Guid, SummaryCustomizationData> BuildSummaryCustomizationByGameId(
@@ -958,7 +890,6 @@ namespace PlayniteAchievements.Services
             lock (_sidebarProjectionCacheSync)
             {
                 _sidebarSummaryCacheByLimit.Clear();
-                _sidebarRecentUnlocksCache = null;
                 _sidebarHasIgnoredCategoryTypeOverrides = null;
             }
         }
