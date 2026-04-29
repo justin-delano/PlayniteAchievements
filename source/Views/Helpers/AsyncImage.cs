@@ -71,18 +71,6 @@ namespace PlayniteAchievements.Views.Helpers
         private static void SetLastRequestedDecodePixel(DependencyObject element, int value) =>
             element.SetValue(LastRequestedDecodePixelProperty, value);
 
-        private static readonly DependencyProperty LastEffectiveSourceIdentityProperty = DependencyProperty.RegisterAttached(
-            "LastEffectiveSourceIdentity",
-            typeof(object),
-            typeof(AsyncImage),
-            new PropertyMetadata(null));
-
-        private static object GetLastEffectiveSourceIdentity(DependencyObject element) =>
-            element.GetValue(LastEffectiveSourceIdentityProperty);
-
-        private static void SetLastEffectiveSourceIdentity(DependencyObject element, object value) =>
-            element.SetValue(LastEffectiveSourceIdentityProperty, value);
-
         private static readonly DependencyProperty ActiveAnimatedGifSourceProperty = DependencyProperty.RegisterAttached(
             "ActiveAnimatedGifSource",
             typeof(string),
@@ -102,13 +90,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            var previousIdentity = GetLastEffectiveSourceIdentity(d);
-            var nextIdentity = GetEffectiveSourceIdentity(d);
-            var sourceIdentityChanged = !Equals(previousIdentity, nextIdentity);
-
             CancelExisting(d);
-            SetLastRequestedDecodePixel(d, 0);
-            SetLastEffectiveSourceIdentity(d, nextIdentity);
 
             if (d is FrameworkElement fe)
             {
@@ -122,24 +104,12 @@ namespace PlayniteAchievements.Views.Helpers
                 fe.IsVisibleChanged += OnIsVisibleChanged;
             }
 
-            // If the current value is already an ImageSource, apply it directly.
-            if (GetUri(d) is ImageSource imageSource)
+            // If the new value is already an ImageSource, apply it directly
+            if (e.NewValue is ImageSource imageSource)
             {
+                SetLastRequestedDecodePixel(d, 0);
                 ApplySource(d, imageSource);
                 return;
-            }
-
-            if (nextIdentity == null)
-            {
-                ApplySource(d, null);
-                return;
-            }
-
-            if (sourceIdentityChanged)
-            {
-                // The logical source changed (for example a recycled row bound to a different icon),
-                // so clear the old visual immediately instead of leaving stale artwork on screen.
-                ApplySource(d, null);
             }
 
             if (d is FrameworkElement loadedElement)
@@ -275,7 +245,6 @@ namespace PlayniteAchievements.Views.Helpers
             if (string.IsNullOrWhiteSpace(uriString))
             {
                 SetLastRequestedDecodePixel(d, 0);
-                SetLastEffectiveSourceIdentity(d, null);
                 ApplySource(d, null);
                 return;
             }
@@ -287,9 +256,8 @@ namespace PlayniteAchievements.Views.Helpers
                 uriString = GrayPrefix + uriString;
             }
 
-            // OnUriChanged clears the visual when the logical source changes.
-            // For same-source reloads (visibility/decode changes), keep the current
-            // image visible until the refreshed bitmap is ready to avoid flash.
+            // Don't clear existing source while loading - keep current image visible
+            // until the new one is ready. This prevents flash during visibility toggles.
 
             var cts = new CancellationTokenSource();
             SetLoadCts(d, cts);
@@ -421,38 +389,6 @@ namespace PlayniteAchievements.Views.Helpers
                 brush.ImageSource = source;
                 return;
             }
-        }
-
-        private static object GetEffectiveSourceIdentity(DependencyObject d)
-        {
-            var uri = GetUri(d);
-            if (uri is ImageSource imageSource)
-            {
-                return imageSource;
-            }
-
-            if (!(uri is string uriString))
-            {
-                return null;
-            }
-
-            return NormalizeEffectiveUriIdentity(uriString, GetGray(d));
-        }
-
-        private static string NormalizeEffectiveUriIdentity(string uri, bool applyGray)
-        {
-            var normalized = (uri ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                return null;
-            }
-
-            if (applyGray && !normalized.StartsWith(GrayPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                normalized = GrayPrefix + normalized;
-            }
-
-            return normalized;
         }
 
         private static int ResolveDecodePixel(DependencyObject d)

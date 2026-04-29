@@ -1697,6 +1697,10 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(ShowCompletionBorder));
             }
+            else if (propertyName == nameof(PersistedSettings.UseUniformRarityBadges))
+            {
+                UpdateAggregatePieCharts();
+            }
             else if (propertyName == nameof(PersistedSettings.SidebarPieSmallSliceMode))
             {
                 ApplySidebarPieSmallSliceMode();
@@ -2428,6 +2432,7 @@ namespace PlayniteAchievements.ViewModels
             var selectedGame = ResolveSelectedGameForChartContext(snapshot);
             var useSelectedRarity = selectedGame?.HasRarityPieChartData == true;
             var useSelectedTrophy = selectedGame?.HasTrophyPieChartData == true;
+            var useUniformRarityBadges = _settings?.Persisted?.UseUniformRarityBadges ?? false;
 
             if (useSelectedRarity)
             {
@@ -2445,7 +2450,8 @@ namespace PlayniteAchievements.ViewModels
                     uncommonLabel,
                     rareLabel,
                     ultraRareLabel,
-                    lockedLabel);
+                    lockedLabel,
+                    useUniformRarityBadges);
             }
             else
             {
@@ -2463,7 +2469,8 @@ namespace PlayniteAchievements.ViewModels
                     uncommonLabel,
                     rareLabel,
                     ultraRareLabel,
-                    lockedLabel);
+                    lockedLabel,
+                    useUniformRarityBadges);
             }
 
             if (useSelectedTrophy)

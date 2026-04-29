@@ -512,6 +512,13 @@ namespace PlayniteAchievements
             {
                 RestartBackgroundUpdater();
             }
+
+            if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges))
+            {
+                PercentRarityHelper.ApplyBadgeApplicationResources(
+                    _settingsViewModel?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
+            }
+
             _tagSyncService?.HandlePersistedSettingsPropertyChanged(e);
         }
 

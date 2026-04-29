@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.ComponentModel;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
@@ -1497,8 +1498,15 @@ namespace PlayniteAchievements.Views
                 nameof(Models.Settings.PersistedSettings.ShowHiddenDescription),
                 nameof(Models.Settings.PersistedSettings.ShowHiddenSuffix),
                 nameof(Models.Settings.PersistedSettings.ShowLockedIcon),
-                nameof(Models.Settings.PersistedSettings.UseSeparateLockedIconsWhenAvailable)
+                nameof(Models.Settings.PersistedSettings.UseSeparateLockedIconsWhenAvailable),
+                nameof(Models.Settings.PersistedSettings.UseUniformRarityBadges)
             };
+
+            if (e.PropertyName == nameof(Models.Settings.PersistedSettings.UseUniformRarityBadges))
+            {
+                PercentRarityHelper.ApplyBadgeApplicationResources(
+                    _settingsViewModel?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
+            }
 
             if (refreshProperties.Contains(e.PropertyName))
             {

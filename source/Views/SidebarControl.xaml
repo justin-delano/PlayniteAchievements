@@ -1047,7 +1047,7 @@
                                                             <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}"
                                                                         Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}"
                                                                         ToolTip="Ultra Rare">
-                                                                <Image Source="{StaticResource BadgePlatinumHexagon}"
+                                                                <Image Source="{DynamicResource BadgeRarityUltraRare}"
                                                                        Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                                                                 <TextBlock Text="{Binding UltraRareCount}"
                                                                            Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
@@ -1056,7 +1056,7 @@
                                                             <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}"
                                                                         Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}"
                                                                         ToolTip="Rare">
-                                                                <Image Source="{StaticResource BadgeGoldPentagon}"
+                                                                <Image Source="{DynamicResource BadgeRarityRare}"
                                                                        Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                                                                 <TextBlock Text="{Binding RareCount}"
                                                                            Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
@@ -1065,7 +1065,7 @@
                                                             <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}"
                                                                         Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}"
                                                                         ToolTip="Uncommon">
-                                                                <Image Source="{StaticResource BadgeSilverSquare}"
+                                                                <Image Source="{DynamicResource BadgeRarityUncommon}"
                                                                        Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                                                                 <TextBlock Text="{Binding UncommonCount}"
                                                                            Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
@@ -1074,7 +1074,7 @@
                                                             <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}"
                                                                         Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}"
                                                                         ToolTip="Common">
-                                                                <Image Source="{StaticResource BadgeBronzeTriangle}"
+                                                                <Image Source="{DynamicResource BadgeRarityCommon}"
                                                                        Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                                                                 <TextBlock Text="{Binding CommonCount}"
                                                                            Style="{StaticResource OverviewMiniBadgeTextStyle}"/>

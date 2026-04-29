@@ -42,6 +42,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _useSeparateLockedIconsWhenAvailable = false;
         private HashSet<Guid> _separateLockedIconEnabledGameIds = new HashSet<Guid>();
         private bool _showRarityGlow = true;
+        private bool _useUniformRarityBadges = false;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
         private bool _showSidebarPieCharts = true;
@@ -328,6 +329,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showRarityGlow;
             set => SetValue(ref _showRarityGlow, value);
+        }
+
+        /// <summary>
+        /// When true, all rarity badges use the hexagon shape while keeping rarity colors.
+        /// </summary>
+        public bool UseUniformRarityBadges
+        {
+            get => _useUniformRarityBadges;
+            set => SetValue(ref _useUniformRarityBadges, value);
         }
 
         /// <summary>
@@ -1154,6 +1164,7 @@ namespace PlayniteAchievements.Models.Settings
                 PreserveAchievementIconResolution = this.PreserveAchievementIconResolution,
                 UseSeparateLockedIconsWhenAvailable = this.UseSeparateLockedIconsWhenAvailable,
                 ShowRarityGlow = this.ShowRarityGlow,
+                UseUniformRarityBadges = this.UseUniformRarityBadges,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowSidebarPieCharts = this.ShowSidebarPieCharts,

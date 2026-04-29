@@ -404,16 +404,16 @@
                         <Setter Property="Visibility" Value="Visible"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.UltraRare}">
-                                <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
+                                <Setter Property="Source" Value="{DynamicResource BadgeRarityUltraRare}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Rare}">
-                                <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
+                                <Setter Property="Source" Value="{DynamicResource BadgeRarityRare}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Uncommon}">
-                                <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
+                                <Setter Property="Source" Value="{DynamicResource BadgeRarityUncommon}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Common}">
-                                <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
+                                <Setter Property="Source" Value="{DynamicResource BadgeRarityCommon}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>

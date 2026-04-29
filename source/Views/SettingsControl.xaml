@@ -831,13 +831,16 @@
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Common_General}"
                                                    Style="{StaticResource SubSectionHeaderStyle}"
                                                    Margin="0,0,0,10"/>
-                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableCompactGridMode}"
-                                                  IsChecked="{Binding Persisted.EnableCompactGridMode}"
-                                                  Margin="0,0,0,8"/>
-                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
-                                                  IsChecked="{Binding Persisted.ShowTopMenuBarButton}"/>
-                                    </StackPanel>
-                                </Border>
+                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableCompactGridMode}"
+                                                   IsChecked="{Binding Persisted.EnableCompactGridMode}"
+                                                   Margin="0,0,0,8"/>
+                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
+                                                   IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
+                                                   Margin="0,0,0,8"/>
+                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseUniformRarityBadges}"
+                                                   IsChecked="{Binding Persisted.UseUniformRarityBadges}"/>
+                                     </StackPanel>
+                                 </Border>
 
                                 <Border Style="{StaticResource SettingGroupCardStyle}">
                                     <StackPanel>
