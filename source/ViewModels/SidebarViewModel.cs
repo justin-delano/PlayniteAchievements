@@ -117,6 +117,18 @@ namespace PlayniteAchievements.ViewModels
             _playniteApi = playniteApi;
             _logger = logger;
             _settings = settings;
+            _overviewSortPath = _settings?.Persisted?.GamesOverviewCustomSortPath;
+            _overviewSortDirection = (_settings?.Persisted?.GamesOverviewCustomSortDescending ?? true)
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
+            _recentSortPath = _settings?.Persisted?.RecentAchievementsCustomSortPath;
+            _recentSortDirection = (_settings?.Persisted?.RecentAchievementsCustomSortDescending ?? true)
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
+            _sidebarAllSortPath = _settings?.Persisted?.SidebarAllAchievementsCustomSortPath;
+            _sidebarAllSortDirection = (_settings?.Persisted?.SidebarAllAchievementsCustomSortDescending ?? true)
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
             _dataBuilder = new SidebarDataBuilder(
                 _achievementDataService,
                 _refreshService.Providers,
@@ -3183,10 +3195,21 @@ namespace PlayniteAchievements.ViewModels
 
         private void ResetSelectedGameSortToDefault()
         {
-            _selectedGameSortPath = null;
-            _selectedGameSortDirection = AchievementSortHelper.GetConfiguredDefaultSort(
+            var defaultSort = AchievementSortHelper.GetConfiguredDefaultSort(
                 _settings?.Persisted,
-                AchievementSortSurface.SidebarSelectedGame).Direction;
+                AchievementSortSurface.SidebarSelectedGame);
+
+            if (defaultSort.Mode == CompactListSortMode.Custom && !string.IsNullOrWhiteSpace(defaultSort.SortMemberPath))
+            {
+                // Custom mode: restore the persisted user sort rather than clearing it
+                _selectedGameSortPath = defaultSort.SortMemberPath;
+                _selectedGameSortDirection = defaultSort.Direction;
+            }
+            else
+            {
+                _selectedGameSortPath = null;
+                _selectedGameSortDirection = defaultSort.Direction;
+            }
         }
 
         /// <summary>
@@ -3479,6 +3502,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 CollectionHelper.SynchronizeCollection(GamesOverview, _filteredGamesOverview);
             }
+
+            PersistOverviewSortState();
         }
 
         private void SortRecentAchievements(string sortMemberPath, ListSortDirection direction, bool isAdditive = false)
@@ -3525,6 +3550,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
             }
+
+            PersistRecentSortState();
         }
 
         private void SortSelectedGameAchievements(string sortMemberPath, ListSortDirection direction, bool isAdditive = false)
@@ -3565,6 +3592,17 @@ namespace PlayniteAchievements.ViewModels
             if (selectedSortDirection.HasValue)
                 _selectedGameSortDirection = selectedSortDirection.Value;
 
+            // Persist the user's sort choice when Custom mode is active
+            var persisted = _settings?.Persisted;
+            if (persisted != null && (
+                persisted.DefaultAchievementSortMode == CompactListSortMode.Custom ||
+                persisted.SidebarSelectedGameGridSortMode == CompactListSortMode.Custom))
+            {
+                persisted.CustomSortPath = _selectedGameSortPath;
+                persisted.CustomSortDescending = _selectedGameSortDirection == ListSortDirection.Descending;
+                _persistSettingsForUi?.Invoke();
+            }
+
             var sortedAllOrder = _allSelectedGameAchievements
                 .Select((item, index) => new { item, index })
                 .ToDictionary(x => x.item, x => x.index);
@@ -3588,6 +3626,46 @@ namespace PlayniteAchievements.ViewModels
             else
             {
                 CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
+            }
+        }
+
+        private void PersistOverviewSortState()
+        {
+            var persisted = _settings?.Persisted;
+            if (persisted == null || string.IsNullOrWhiteSpace(_overviewSortPath))
+            {
+                return;
+            }
+
+            var changed = !string.Equals(persisted.GamesOverviewCustomSortPath, _overviewSortPath, StringComparison.Ordinal) ||
+                persisted.GamesOverviewCustomSortDescending != (_overviewSortDirection == ListSortDirection.Descending);
+
+            persisted.GamesOverviewCustomSortPath = _overviewSortPath;
+            persisted.GamesOverviewCustomSortDescending = _overviewSortDirection == ListSortDirection.Descending;
+
+            if (changed)
+            {
+                _persistSettingsForUi?.Invoke();
+            }
+        }
+
+        private void PersistRecentSortState()
+        {
+            var persisted = _settings?.Persisted;
+            if (persisted == null || string.IsNullOrWhiteSpace(_recentSortPath))
+            {
+                return;
+            }
+
+            var changed = !string.Equals(persisted.RecentAchievementsCustomSortPath, _recentSortPath, StringComparison.Ordinal) ||
+                persisted.RecentAchievementsCustomSortDescending != (_recentSortDirection == ListSortDirection.Descending);
+
+            persisted.RecentAchievementsCustomSortPath = _recentSortPath;
+            persisted.RecentAchievementsCustomSortDescending = _recentSortDirection == ListSortDirection.Descending;
+
+            if (changed)
+            {
+                _persistSettingsForUi?.Invoke();
             }
         }
 
@@ -3652,6 +3730,28 @@ namespace PlayniteAchievements.ViewModels
             else
             {
                 CollectionHelper.SynchronizeCollection(SidebarAllAchievements, _filteredSidebarAllAchievements);
+            }
+
+            PersistSidebarAllSortState();
+        }
+
+        private void PersistSidebarAllSortState()
+        {
+            var persisted = _settings?.Persisted;
+            if (persisted == null || string.IsNullOrWhiteSpace(_sidebarAllSortPath))
+            {
+                return;
+            }
+
+            var changed = !string.Equals(persisted.SidebarAllAchievementsCustomSortPath, _sidebarAllSortPath, StringComparison.Ordinal) ||
+                persisted.SidebarAllAchievementsCustomSortDescending != (_sidebarAllSortDirection == ListSortDirection.Descending);
+
+            persisted.SidebarAllAchievementsCustomSortPath = _sidebarAllSortPath;
+            persisted.SidebarAllAchievementsCustomSortDescending = _sidebarAllSortDirection == ListSortDirection.Descending;
+
+            if (changed)
+            {
+                _persistSettingsForUi?.Invoke();
             }
         }
 

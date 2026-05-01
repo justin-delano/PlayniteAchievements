@@ -873,6 +873,34 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         internal PlayniteAchievementsPlugin _plugin;
 
+        private void AttachThemeHandlers()
+        {
+            if (ModernTheme != null)
+            {
+                ModernTheme.PropertyChanged -= ModernTheme_PropertyChanged;
+                ModernTheme.PropertyChanged += ModernTheme_PropertyChanged;
+            }
+
+            if (LegacyTheme != null)
+            {
+                LegacyTheme.PropertyChanged -= LegacyTheme_PropertyChanged;
+                LegacyTheme.PropertyChanged += LegacyTheme_PropertyChanged;
+            }
+        }
+
+        private void DetachThemeHandlers()
+        {
+            if (_modernTheme != null)
+            {
+                _modernTheme.PropertyChanged -= ModernTheme_PropertyChanged;
+            }
+
+            if (_legacyTheme != null)
+            {
+                _legacyTheme.PropertyChanged -= LegacyTheme_PropertyChanged;
+            }
+        }
+
         private void AttachPersistedHandlers()
         {
             if (Persisted == null)
@@ -906,6 +934,57 @@ namespace PlayniteAchievements.Models
             if (!string.IsNullOrWhiteSpace(propertyName))
             {
                 OnPropertyChanged($"Persisted.{propertyName}");
+            }
+        }
+
+        private void ModernTheme_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var propertyName = e?.PropertyName;
+            if (string.IsNullOrWhiteSpace(propertyName))
+            {
+                return;
+            }
+
+            switch (propertyName)
+            {
+                case nameof(ModernThemeBindings.HasAchievements):
+                    OnPropertyChanged(nameof(HasAchievements));
+                    OnPropertyChanged(nameof(HasData));
+                    break;
+                case nameof(ModernThemeBindings.AchievementCount):
+                    OnPropertyChanged(nameof(AchievementCount));
+                    break;
+                case nameof(ModernThemeBindings.UnlockedCount):
+                    OnPropertyChanged(nameof(UnlockedCount));
+                    break;
+                case nameof(ModernThemeBindings.ProgressPercentage):
+                    OnPropertyChanged(nameof(ProgressPercentage));
+                    break;
+            }
+        }
+
+        private void LegacyTheme_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var propertyName = e?.PropertyName;
+            if (string.IsNullOrWhiteSpace(propertyName))
+            {
+                return;
+            }
+
+            switch (propertyName)
+            {
+                case nameof(LegacyThemeBindings.HasData):
+                    OnPropertyChanged(nameof(HasDataLegacy));
+                    break;
+                case nameof(LegacyThemeBindings.Total):
+                    OnPropertyChanged(nameof(Total));
+                    break;
+                case nameof(LegacyThemeBindings.Unlocked):
+                    OnPropertyChanged(nameof(Unlocked));
+                    break;
+                case nameof(LegacyThemeBindings.Percent):
+                    OnPropertyChanged(nameof(Percent));
+                    break;
             }
         }
 
@@ -963,6 +1042,7 @@ namespace PlayniteAchievements.Models
                 LegacyTheme = new LegacyThemeBindings();
             }
 
+            AttachThemeHandlers();
             AttachPersistedHandlers();
             RefreshThemeDisplayItemsFromPersisted();
         }
@@ -980,6 +1060,7 @@ namespace PlayniteAchievements.Models
             Persisted = new PersistedSettings();
             ModernTheme = new ModernThemeBindings();
             LegacyTheme = new LegacyThemeBindings();
+            AttachThemeHandlers();
             AttachPersistedHandlers();
             RefreshThemeDisplayItemsFromPersisted();
         }

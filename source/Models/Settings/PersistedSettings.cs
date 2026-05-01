@@ -84,10 +84,12 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _sidebarAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _sidebarGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _sidebarAllAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _singleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _sidebarAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _sidebarGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _sidebarAllAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _singleGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _desktopThemeColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -115,8 +117,16 @@ namespace PlayniteAchievements.Models.Settings
         private bool _compactLockedListSortDescending = false;
         private GamesOverviewSortMode _gamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock;
         private bool _gamesOverviewGridSortDescending = true;
+        private string _gamesOverviewCustomSortPath;
+        private bool _gamesOverviewCustomSortDescending = true;
+        private string _recentAchievementsCustomSortPath;
+        private bool _recentAchievementsCustomSortDescending = true;
+        private string _sidebarAllAchievementsCustomSortPath;
+        private bool _sidebarAllAchievementsCustomSortDescending = true;
         private CompactListSortMode _defaultAchievementSortMode = CompactListSortMode.None;
         private bool _defaultAchievementSortDescending = true;
+        private string _customSortPath;
+        private bool _customSortDescending = true;
         private CompactListSortMode _sidebarSelectedGameGridSortMode = CompactListSortMode.UnlockTime;
         private bool _sidebarSelectedGameGridSortDescending = true;
         private CompactListSortMode _singleGameGridSortMode = CompactListSortMode.UnlockTime;
@@ -773,6 +783,80 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _defaultAchievementSortDescending, value);
         }
 
+        /// <summary>
+        /// The last manual sort column used in the Games Overview grid.
+        /// Persisted so sidebar navigation does not reset the user's chosen ordering.
+        /// </summary>
+        public string GamesOverviewCustomSortPath
+        {
+            get => _gamesOverviewCustomSortPath;
+            set => SetValue(ref _gamesOverviewCustomSortPath, value);
+        }
+
+        /// <summary>
+        /// The last manual sort direction used in the Games Overview grid.
+        /// </summary>
+        public bool GamesOverviewCustomSortDescending
+        {
+            get => _gamesOverviewCustomSortDescending;
+            set => SetValue(ref _gamesOverviewCustomSortDescending, value);
+        }
+
+        /// <summary>
+        /// The last manual sort column used in the Recent Achievements tab.
+        /// </summary>
+        public string RecentAchievementsCustomSortPath
+        {
+            get => _recentAchievementsCustomSortPath;
+            set => SetValue(ref _recentAchievementsCustomSortPath, value);
+        }
+
+        /// <summary>
+        /// The last manual sort direction used in the Recent Achievements tab.
+        /// </summary>
+        public bool RecentAchievementsCustomSortDescending
+        {
+            get => _recentAchievementsCustomSortDescending;
+            set => SetValue(ref _recentAchievementsCustomSortDescending, value);
+        }
+
+        /// <summary>
+        /// The last manual sort column used in the All Achievements tab.
+        /// </summary>
+        public string SidebarAllAchievementsCustomSortPath
+        {
+            get => _sidebarAllAchievementsCustomSortPath;
+            set => SetValue(ref _sidebarAllAchievementsCustomSortPath, value);
+        }
+
+        /// <summary>
+        /// The last manual sort direction used in the All Achievements tab.
+        /// </summary>
+        public bool SidebarAllAchievementsCustomSortDescending
+        {
+            get => _sidebarAllAchievementsCustomSortDescending;
+            set => SetValue(ref _sidebarAllAchievementsCustomSortDescending, value);
+        }
+
+        /// <summary>
+        /// The sort column path last chosen by the user when DefaultAchievementSortMode is Custom.
+        /// Persisted so it survives navigation and restarts.
+        /// </summary>
+        public string CustomSortPath
+        {
+            get => _customSortPath;
+            set => SetValue(ref _customSortPath, value);
+        }
+
+        /// <summary>
+        /// Sort direction last chosen by the user when DefaultAchievementSortMode is Custom.
+        /// </summary>
+        public bool CustomSortDescending
+        {
+            get => _customSortDescending;
+            set => SetValue(ref _customSortDescending, value);
+        }
+
         /// None preserves custom order when configured, otherwise provider order.
         /// </summary>
         public CompactListSortMode SidebarSelectedGameGridSortMode
@@ -980,6 +1064,34 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted widths for the sidebar all-achievements tab columns.
+        /// Key is a stable column identifier, value is pixel width.
+        /// </summary>
+        public Dictionary<string, double> SidebarAllAchievementColumnWidths
+        {
+            get => _sidebarAllAchievementColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _sidebarAllAchievementColumnWidths, normalized);
+            }
+        }
+
+        /// <summary>
         /// Persisted widths for the single-game achievement columns.
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
@@ -1056,6 +1168,19 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _sidebarGameColumnOrder;
             set => SetValue(ref _sidebarGameColumnOrder,
+                value != null
+                    ? new Dictionary<string, int>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Persisted column order for sidebar all-achievements columns.
+        /// Key is a stable column identifier, value is the DisplayIndex (0-based).
+        /// </summary>
+        public Dictionary<string, int> SidebarAllAchievementColumnOrder
+        {
+            get => _sidebarAllAchievementColumnOrder;
+            set => SetValue(ref _sidebarAllAchievementColumnOrder,
                 value != null
                     ? new Dictionary<string, int>(value, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase));
@@ -1390,8 +1515,16 @@ namespace PlayniteAchievements.Models.Settings
                 CompactLockedListSortDescending = this.CompactLockedListSortDescending,
                 GamesOverviewGridSortMode = this.GamesOverviewGridSortMode,
                 GamesOverviewGridSortDescending = this.GamesOverviewGridSortDescending,
+                GamesOverviewCustomSortPath = this.GamesOverviewCustomSortPath,
+                GamesOverviewCustomSortDescending = this.GamesOverviewCustomSortDescending,
+                RecentAchievementsCustomSortPath = this.RecentAchievementsCustomSortPath,
+                RecentAchievementsCustomSortDescending = this.RecentAchievementsCustomSortDescending,
+                SidebarAllAchievementsCustomSortPath = this.SidebarAllAchievementsCustomSortPath,
+                SidebarAllAchievementsCustomSortDescending = this.SidebarAllAchievementsCustomSortDescending,
                 DefaultAchievementSortMode = this.DefaultAchievementSortMode,
                 DefaultAchievementSortDescending = this.DefaultAchievementSortDescending,
+                CustomSortPath = this.CustomSortPath,
+                CustomSortDescending = this.CustomSortDescending,
                 SidebarSelectedGameGridSortMode = this.SidebarSelectedGameGridSortMode,
                 SidebarSelectedGameGridSortDescending = this.SidebarSelectedGameGridSortDescending,
                 SingleGameGridSortMode = this.SingleGameGridSortMode,
@@ -1416,6 +1549,9 @@ namespace PlayniteAchievements.Models.Settings
                 SidebarGameColumnWidths = this.SidebarGameColumnWidths != null
                     ? new Dictionary<string, double>(this.SidebarGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SidebarAllAchievementColumnWidths = this.SidebarAllAchievementColumnWidths != null
+                    ? new Dictionary<string, double>(this.SidebarAllAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
                 SingleGameColumnWidths = this.SingleGameColumnWidths != null
                     ? new Dictionary<string, double>(this.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
@@ -1427,6 +1563,9 @@ namespace PlayniteAchievements.Models.Settings
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 SidebarGameColumnOrder = this.SidebarGameColumnOrder != null
                     ? new Dictionary<string, int>(this.SidebarGameColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                SidebarAllAchievementColumnOrder = this.SidebarAllAchievementColumnOrder != null
+                    ? new Dictionary<string, int>(this.SidebarAllAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 SingleGameColumnOrder = this.SingleGameColumnOrder != null
                     ? new Dictionary<string, int>(this.SingleGameColumnOrder, StringComparer.OrdinalIgnoreCase)

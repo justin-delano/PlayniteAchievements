@@ -27,21 +27,28 @@ namespace PlayniteAchievements.Services
 
     public struct AchievementSortSpec
     {
-        public AchievementSortSpec(CompactListSortMode mode, ListSortDirection direction)
+        public AchievementSortSpec(CompactListSortMode mode, ListSortDirection direction, string customPath = null)
         {
             Mode = mode;
             Direction = direction;
+            CustomPath = customPath;
         }
 
         public CompactListSortMode Mode { get; }
 
         public ListSortDirection Direction { get; }
 
+        /// <summary>
+        /// When Mode is Custom, contains the persisted sort column path. Null otherwise.
+        /// </summary>
+        public string CustomPath { get; }
+
         public string SortMemberPath => Mode switch
         {
             CompactListSortMode.UnlockTime => nameof(AchievementDisplayItem.UnlockTime),
             CompactListSortMode.Rarity => nameof(AchievementDisplayItem.RaritySortValue),
             CompactListSortMode.DisplayOrder => nameof(AchievementDisplayItem.DisplayOrder),
+            CompactListSortMode.Custom => CustomPath,
             _ => null
         };
 
@@ -79,29 +86,47 @@ namespace PlayniteAchievements.Services
                 AchievementSortSurface.CompactLockedList => new AchievementSortSpec(
                     settings.CompactLockedListSortMode,
                     settings.CompactLockedListSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
-                AchievementSortSurface.SidebarSelectedGame => new AchievementSortSpec(
-                    settings.SidebarSelectedGameGridSortMode != CompactListSortMode.None
-                        ? settings.SidebarSelectedGameGridSortMode
-                        : settings.DefaultAchievementSortMode,
-                    (settings.SidebarSelectedGameGridSortMode != CompactListSortMode.None
-                        ? settings.SidebarSelectedGameGridSortDescending
-                        : settings.DefaultAchievementSortDescending) ? ListSortDirection.Descending : ListSortDirection.Ascending),
-                AchievementSortSurface.SingleGame => new AchievementSortSpec(
-                    settings.SingleGameGridSortMode != CompactListSortMode.None
-                        ? settings.SingleGameGridSortMode
-                        : settings.DefaultAchievementSortMode,
-                    (settings.SingleGameGridSortMode != CompactListSortMode.None
-                        ? settings.SingleGameGridSortDescending
-                        : settings.DefaultAchievementSortDescending) ? ListSortDirection.Descending : ListSortDirection.Ascending),
-                AchievementSortSurface.AchievementDataGrid => new AchievementSortSpec(
-                    settings.AchievementDataGridSortMode != CompactListSortMode.None
-                        ? settings.AchievementDataGridSortMode
-                        : settings.DefaultAchievementSortMode,
-                    (settings.AchievementDataGridSortMode != CompactListSortMode.None
-                        ? settings.AchievementDataGridSortDescending
-                        : settings.DefaultAchievementSortDescending) ? ListSortDirection.Descending : ListSortDirection.Ascending),
+                // When a global override mode is selected (non-None), it takes full precedence
+                // over any per-grid setting.  Per-grid settings only apply when the global
+                // mode is None ("Default" — follow per-grid choices).
+                AchievementSortSurface.SidebarSelectedGame => BuildSortSpec(
+                    settings.DefaultAchievementSortMode, settings.DefaultAchievementSortDescending,
+                    settings.SidebarSelectedGameGridSortMode, settings.SidebarSelectedGameGridSortDescending,
+                    settings.CustomSortPath),
+                AchievementSortSurface.SingleGame => BuildSortSpec(
+                    settings.DefaultAchievementSortMode, settings.DefaultAchievementSortDescending,
+                    settings.SingleGameGridSortMode, settings.SingleGameGridSortDescending,
+                    settings.CustomSortPath),
+                AchievementSortSurface.AchievementDataGrid => BuildSortSpec(
+                    settings.DefaultAchievementSortMode, settings.DefaultAchievementSortDescending,
+                    settings.AchievementDataGridSortMode, settings.AchievementDataGridSortDescending,
+                    settings.CustomSortPath),
                 _ => new AchievementSortSpec(CompactListSortMode.None, ListSortDirection.Ascending)
             };
+        }
+
+        /// <summary>
+        /// Resolves the effective sort spec for a surface.
+        /// When a global override (Custom or RA) is active it wins; otherwise the per-grid setting is used.
+        /// </summary>
+        private static AchievementSortSpec BuildSortSpec(
+            CompactListSortMode globalMode, bool globalDesc,
+            CompactListSortMode perGridMode, bool perGridDesc,
+            string customPath)
+        {
+            CompactListSortMode mode;
+            bool desc;
+            if (globalMode != CompactListSortMode.None)
+            {
+                mode = globalMode;
+                desc = globalDesc;
+            }
+            else
+            {
+                mode = perGridMode;
+                desc = perGridDesc;
+            }
+            return new AchievementSortSpec(mode, desc ? ListSortDirection.Descending : ListSortDirection.Ascending, customPath);
         }
 
         public static void ApplySortIndicator(

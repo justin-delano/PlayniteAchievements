@@ -554,6 +554,7 @@ namespace PlayniteAchievements.Views.Controls
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnWidths,
                 "SingleGame" => settings.Persisted.SingleGameColumnWidths,
                 "Sidebar" => settings.Persisted.SidebarAchievementColumnWidths,
+                "SidebarAll" => settings.Persisted.SidebarAllAchievementColumnWidths,
                 "SidebarGame" => settings.Persisted.SidebarGameColumnWidths,
                 _ => settings.Persisted.SingleGameColumnWidths
             };
@@ -577,6 +578,9 @@ namespace PlayniteAchievements.Views.Controls
                 case "Sidebar":
                     settings.Persisted.SidebarAchievementColumnWidths = map;
                     break;
+                case "SidebarAll":
+                    settings.Persisted.SidebarAllAchievementColumnWidths = map;
+                    break;
                 case "SidebarGame":
                     settings.Persisted.SidebarGameColumnWidths = map;
                     break;
@@ -599,6 +603,7 @@ namespace PlayniteAchievements.Views.Controls
                 case "DesktopTheme": return settings.Persisted.DesktopThemeColumnOrder;
                 case "SingleGame":   return settings.Persisted.SingleGameColumnOrder;
                 case "Sidebar":      return settings.Persisted.SidebarAchievementColumnOrder;
+                case "SidebarAll":   return settings.Persisted.SidebarAllAchievementColumnOrder;
                 case "SidebarGame":  return settings.Persisted.SidebarGameColumnOrder;
                 default:             return settings.Persisted.SingleGameColumnOrder;
             }
@@ -612,6 +617,7 @@ namespace PlayniteAchievements.Views.Controls
                 case "DesktopTheme": settings.Persisted.DesktopThemeColumnOrder = map; break;
                 case "SingleGame":   settings.Persisted.SingleGameColumnOrder = map;   break;
                 case "Sidebar":      settings.Persisted.SidebarAchievementColumnOrder = map; break;
+                case "SidebarAll":   settings.Persisted.SidebarAllAchievementColumnOrder = map; break;
                 case "SidebarGame":  settings.Persisted.SidebarGameColumnOrder = map;  break;
                 default:             settings.Persisted.SingleGameColumnOrder = map;   break;
             }
