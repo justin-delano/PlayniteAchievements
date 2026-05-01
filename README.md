@@ -81,7 +81,7 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 
 ## Next Version Planned changes
 
-- Getting the RetroAchievement web sort integrated
+- Nothing at this point
 
 ## TBD - v2.1.3.1
 
