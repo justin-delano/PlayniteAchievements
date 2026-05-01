@@ -172,6 +172,7 @@ namespace PlayniteAchievements.Providers.Local
         private bool _includeFoldersWithoutAchievementFilesOnImport;
         private string _steamAppCacheUserId = string.Empty;
         private string _customProviderIconPath = string.Empty;
+        private bool _warnOnAmbiguousLocalFolder = true;
 
         public override string ProviderKey => "Local";
 
@@ -435,7 +436,7 @@ namespace PlayniteAchievements.Providers.Local
         public int SelectedCustomStyleSlot
         {
             get => _selectedCustomStyleSlot;
-            set => SetValue(ref _selectedCustomStyleSlot, Math.Max(1, Math.Min(10, value)));
+            set => SetValue(ref _selectedCustomStyleSlot, Math.Max(1, value));
         }
 
         public List<LocalCustomOverlayStyleSlot> CustomOverlayStyleSlots
@@ -579,6 +580,16 @@ namespace PlayniteAchievements.Providers.Local
             set => SetValue(ref _customProviderIconPath, value ?? string.Empty);
         }
 
+        /// <summary>
+        /// When true, shows a notification when multiple local folders are detected for the same
+        /// game so the user can set a folder override to resolve the ambiguity.
+        /// </summary>
+        public bool WarnOnAmbiguousLocalFolder
+        {
+            get => _warnOnAmbiguousLocalFolder;
+            set => SetValue(ref _warnOnAmbiguousLocalFolder, value);
+        }
+
         public Dictionary<Guid, int> SteamAppIdOverrides
         {
             get => _steamAppIdOverrides;
@@ -714,32 +725,26 @@ namespace PlayniteAchievements.Providers.Local
 
         private static List<LocalCustomOverlayStyleSlot> CreateDefaultCustomOverlayStyleSlots()
         {
-            var slots = new List<LocalCustomOverlayStyleSlot>(10);
-            for (var index = 1; index <= 10; index++)
+            return new List<LocalCustomOverlayStyleSlot>(1)
             {
-                slots.Add(new LocalCustomOverlayStyleSlot
-                {
-                    Name = $"Slot {index}",
-                    IconSize = 58
-                });
-            }
-
-            return slots;
+                new LocalCustomOverlayStyleSlot { Name = "Slot 1", IconSize = 58 }
+            };
         }
 
         private static List<LocalCustomOverlayStyleSlot> NormalizeCustomOverlayStyleSlots(IEnumerable<LocalCustomOverlayStyleSlot> slots)
         {
-            var normalized = CreateDefaultCustomOverlayStyleSlots();
             if (slots == null)
-            {
-                return normalized;
-            }
+                return CreateDefaultCustomOverlayStyleSlots();
 
             var source = slots.ToList();
-            for (var index = 0; index < normalized.Count && index < source.Count; index++)
+            if (source.Count == 0)
+                return CreateDefaultCustomOverlayStyleSlots();
+
+            var normalized = new List<LocalCustomOverlayStyleSlot>(source.Count);
+            for (var index = 0; index < source.Count; index++)
             {
                 var slot = source[index] ?? new LocalCustomOverlayStyleSlot();
-                normalized[index] = new LocalCustomOverlayStyleSlot
+                normalized.Add(new LocalCustomOverlayStyleSlot
                 {
                     Name = string.IsNullOrWhiteSpace(slot.Name) ? $"Slot {index + 1}" : slot.Name.Trim(),
                     AutoResizeToContent = slot.AutoResizeToContent,
@@ -758,7 +763,7 @@ namespace PlayniteAchievements.Providers.Local
                     DetailColor = NormalizeColorSetting(slot.DetailColor, "#E7EEF7"),
                     MetaColor = NormalizeColorSetting(slot.MetaColor, "#BCD0E5"),
                     BackgroundImagePath = slot.BackgroundImagePath ?? string.Empty
-                };
+                });
             }
 
             return normalized;

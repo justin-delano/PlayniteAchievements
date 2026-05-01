@@ -139,7 +139,22 @@ namespace PlayniteAchievements.Providers
                 if (live == null)
                     continue;
 
-                var merged = MergeProviderSettings(original, edited, live);
+                ProviderSettingsBase merged;
+                try
+                {
+                    merged = MergeProviderSettings(original, edited, live);
+                }
+                catch (Exception mergeEx)
+                {
+                    // MergeProviderSettings can fail with OutOfMemoryException if the live settings
+                    // have accumulated bloated collections (e.g. CustomOverlayStyleSlots growing on
+                    // every save due to a prior PopulateObject Reuse bug).  Fall back to using the
+                    // edited copy directly.  With DeserializeFromJson now using Replace semantics,
+                    // the live object will be normalized on the next CopyFrom call below.
+                    _logger?.Warn($"[ProviderRegistry] MergeProviderSettings failed for '{providerKey}' ({mergeEx.GetType().Name}), applying edited settings directly.");
+                    merged = edited;
+                }
+
                 live.CopyFrom(merged);
                 _settingsCache[providerKey] = live;
                 _enabledState[providerKey] = live.IsEnabled;

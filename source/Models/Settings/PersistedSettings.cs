@@ -86,8 +86,13 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, double> _sidebarGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _singleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _sidebarAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _sidebarGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _singleGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _desktopThemeColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _gamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _gamesOverviewColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private bool _firstTimeSetupCompleted = false;
         private bool _seenThemeMigration = false;
         private HashSet<Guid> _excludedGameIds = new HashSet<Guid>();
@@ -110,6 +115,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _compactLockedListSortDescending = false;
         private GamesOverviewSortMode _gamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock;
         private bool _gamesOverviewGridSortDescending = true;
+        private CompactListSortMode _defaultAchievementSortMode = CompactListSortMode.None;
+        private bool _defaultAchievementSortDescending = true;
         private CompactListSortMode _sidebarSelectedGameGridSortMode = CompactListSortMode.UnlockTime;
         private bool _sidebarSelectedGameGridSortDescending = true;
         private CompactListSortMode _singleGameGridSortMode = CompactListSortMode.UnlockTime;
@@ -746,6 +753,26 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// Sort mode for the sidebar selected-game grid.
+        /// <summary>
+        /// Global default sort mode for all achievement grids.
+        /// Per-grid sort settings override this when set to a value other than None.
+        /// </summary>
+        public CompactListSortMode DefaultAchievementSortMode
+        {
+            get => _defaultAchievementSortMode;
+            set => SetValue(ref _defaultAchievementSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the global default sort direction.
+        /// Ignored when DefaultAchievementSortMode is None.
+        /// </summary>
+        public bool DefaultAchievementSortDescending
+        {
+            get => _defaultAchievementSortDescending;
+            set => SetValue(ref _defaultAchievementSortDescending, value);
+        }
+
         /// None preserves custom order when configured, otherwise provider order.
         /// </summary>
         public CompactListSortMode SidebarSelectedGameGridSortMode
@@ -1009,6 +1036,58 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted column order for sidebar all-achievements columns.
+        /// Key is a stable column identifier, value is the DisplayIndex (0-based).
+        /// </summary>
+        public Dictionary<string, int> SidebarAchievementColumnOrder
+        {
+            get => _sidebarAchievementColumnOrder;
+            set => SetValue(ref _sidebarAchievementColumnOrder,
+                value != null
+                    ? new Dictionary<string, int>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Persisted column order for sidebar selected-game achievement columns.
+        /// Key is a stable column identifier, value is the DisplayIndex (0-based).
+        /// </summary>
+        public Dictionary<string, int> SidebarGameColumnOrder
+        {
+            get => _sidebarGameColumnOrder;
+            set => SetValue(ref _sidebarGameColumnOrder,
+                value != null
+                    ? new Dictionary<string, int>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Persisted column order for single-game achievement columns.
+        /// Key is a stable column identifier, value is the DisplayIndex (0-based).
+        /// </summary>
+        public Dictionary<string, int> SingleGameColumnOrder
+        {
+            get => _singleGameColumnOrder;
+            set => SetValue(ref _singleGameColumnOrder,
+                value != null
+                    ? new Dictionary<string, int>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Persisted column order for desktop theme integration achievement columns.
+        /// Key is a stable column identifier, value is the DisplayIndex (0-based).
+        /// </summary>
+        public Dictionary<string, int> DesktopThemeColumnOrder
+        {
+            get => _desktopThemeColumnOrder;
+            set => SetValue(ref _desktopThemeColumnOrder,
+                value != null
+                    ? new Dictionary<string, int>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
         /// Persisted visibility state for games overview columns in the sidebar.
         /// Key is a stable column identifier, value indicates whether the column is visible.
         /// </summary>
@@ -1050,6 +1129,19 @@ namespace PlayniteAchievements.Models.Settings
 
                 SetValue(ref _gamesOverviewColumnWidths, normalized);
             }
+        }
+
+        /// <summary>
+        /// Persisted column order for the Games Overview DataGrid in the sidebar.
+        /// Key is a stable column identifier, value is the DisplayIndex (0-based).
+        /// </summary>
+        public Dictionary<string, int> GamesOverviewColumnOrder
+        {
+            get => _gamesOverviewColumnOrder;
+            set => SetValue(ref _gamesOverviewColumnOrder,
+                value != null
+                    ? new Dictionary<string, int>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase));
         }
 
         #endregion
@@ -1298,6 +1390,8 @@ namespace PlayniteAchievements.Models.Settings
                 CompactLockedListSortDescending = this.CompactLockedListSortDescending,
                 GamesOverviewGridSortMode = this.GamesOverviewGridSortMode,
                 GamesOverviewGridSortDescending = this.GamesOverviewGridSortDescending,
+                DefaultAchievementSortMode = this.DefaultAchievementSortMode,
+                DefaultAchievementSortDescending = this.DefaultAchievementSortDescending,
                 SidebarSelectedGameGridSortMode = this.SidebarSelectedGameGridSortMode,
                 SidebarSelectedGameGridSortDescending = this.SidebarSelectedGameGridSortDescending,
                 SingleGameGridSortMode = this.SingleGameGridSortMode,
@@ -1328,12 +1422,27 @@ namespace PlayniteAchievements.Models.Settings
                 DesktopThemeColumnWidths = this.DesktopThemeColumnWidths != null
                     ? new Dictionary<string, double>(this.DesktopThemeColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SidebarAchievementColumnOrder = this.SidebarAchievementColumnOrder != null
+                    ? new Dictionary<string, int>(this.SidebarAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                SidebarGameColumnOrder = this.SidebarGameColumnOrder != null
+                    ? new Dictionary<string, int>(this.SidebarGameColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                SingleGameColumnOrder = this.SingleGameColumnOrder != null
+                    ? new Dictionary<string, int>(this.SingleGameColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                DesktopThemeColumnOrder = this.DesktopThemeColumnOrder != null
+                    ? new Dictionary<string, int>(this.DesktopThemeColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 GamesOverviewColumnVisibility = this.GamesOverviewColumnVisibility != null
                     ? new Dictionary<string, bool>(this.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
                 GamesOverviewColumnWidths = this.GamesOverviewColumnWidths != null
                     ? new Dictionary<string, double>(this.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                GamesOverviewColumnOrder = this.GamesOverviewColumnOrder != null
+                    ? new Dictionary<string, int>(this.GamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
 
                 // General Settings
                 FirstTimeSetupCompleted = this.FirstTimeSetupCompleted,

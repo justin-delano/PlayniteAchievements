@@ -81,11 +81,30 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 
 ## Next Version Planned changes
 
-- Corrected some sentence and button sizes in the `Achievement Notification` tab
-- When renaming a slot in the `Achievement Notification` custom style, it is going back to the default name after restarting playnite
-- Try to make the local Steam achievements with a better mechanic
-- Correct some UI aligments in the `Local` tab
+- Fixed the compatibility with the new Solaris theme
+- Fixed the `Theme Miggration` to theme using the original fork
+- Getting the RetroAchievement web sort integrated
+
+## TBD - v2.1.3.1
+
+- Merge from original v2.1.3 - https://github.com/justin-delano/PlayniteAchievements/releases/tag/v2.1.3
 - The default icon will now appear in the `Local` under the `Local provider Icon` when no custom icon was selected
+- Corrected some sentence and button sizes in the `Achievement Notification` tab
+- Fix the renaming a slot in the `Achievement Notification` custom style not saving
+- Fix some settings not been saved in the `Achievement Notification`
+- Changed the list of custom style in `Achievement Notification` to only show the saved slots
+  - You will have a big list in the dropdown which you can delete and maintain only the one that you want
+- Added Exophase to `Achievement Notification`
+  - Exophase can apply a rate limit, to be honest, I wouldn't recommend it using it
+- Change the default sort on the first click to Descending instead of ascending
+  - Text will be A to Z and dates will be newest to latest
+- Added the possibility to sort for more than one column by pressing CTRL+MOUSE in the columns
+- Correct some UI aligments in the `Local` tab
+- Correct an Out Of Memory error when saving the settings
+- Added a setting to stop receiving the notificaitons when is detected more than one save location for the game
+- Remove the notification for the upstream fork updates
+- Fixed the compatibility with the new Aniki-Remake theme
+- Fixed the compatibility with the PS5Reborn theme
 
 ## 2026-04-22 - v2.1.2.2
 

@@ -84,12 +84,21 @@ namespace PlayniteAchievements.ViewModels
         // Sort state tracking for quick reverse
         private string _overviewSortPath;
         private ListSortDirection _overviewSortDirection;
+        // Secondary sort columns added via Ctrl+Click (ordered: first added = highest priority secondary)
+        private readonly List<(string Path, ListSortDirection Direction)> _overviewSecondarySorts
+            = new List<(string Path, ListSortDirection Direction)>();
         private string _recentSortPath;
         private ListSortDirection _recentSortDirection;
+        private readonly List<(string Path, ListSortDirection Direction)> _recentSecondarySorts
+            = new List<(string Path, ListSortDirection Direction)>();
         private string _selectedGameSortPath;
         private ListSortDirection _selectedGameSortDirection;
+        private readonly List<(string Path, ListSortDirection Direction)> _selectedGameSecondarySorts
+            = new List<(string Path, ListSortDirection Direction)>();
         private string _sidebarAllSortPath;
         private ListSortDirection _sidebarAllSortDirection;
+        private readonly List<(string Path, ListSortDirection Direction)> _sidebarAllSecondarySorts
+            = new List<(string Path, ListSortDirection Direction)>();
 
 
         public SidebarViewModel(
@@ -383,12 +392,28 @@ namespace PlayniteAchievements.ViewModels
                 ? (ListSortDirection?)null
                 : _selectedGameSortDirection;
 
+        public IReadOnlyList<(string Path, ListSortDirection Direction)> SelectedGameSecondarySorts
+            => _selectedGameSecondarySorts;
+
+        public string RecentSortPath => _recentSortPath;
+
+        public ListSortDirection? RecentSortDirection =>
+            string.IsNullOrWhiteSpace(_recentSortPath)
+                ? (ListSortDirection?)null
+                : _recentSortDirection;
+
+        public IReadOnlyList<(string Path, ListSortDirection Direction)> RecentSecondarySorts
+            => _recentSecondarySorts;
+
         public string SidebarAllSortPath => _sidebarAllSortPath;
 
         public ListSortDirection? SidebarAllSortDirection =>
             string.IsNullOrWhiteSpace(_sidebarAllSortPath)
                 ? (ListSortDirection?)null
                 : _sidebarAllSortDirection;
+
+        public IReadOnlyList<(string Path, ListSortDirection Direction)> SidebarAllSecondarySorts
+            => _sidebarAllSecondarySorts;
 
         private int _selectedRightTabIndex;
         public int SelectedRightTabIndex
@@ -417,6 +442,13 @@ namespace PlayniteAchievements.ViewModels
             string.IsNullOrWhiteSpace(_overviewSortPath)
                 ? (ListSortDirection?)null
                 : _overviewSortDirection;
+
+        /// <summary>
+        /// Returns a snapshot of the current secondary sort columns so the view can update
+        /// column header sort indicators for all active columns.
+        /// </summary>
+        public IReadOnlyList<(string Path, ListSortDirection Direction)> OverviewSecondarySorts
+            => _overviewSecondarySorts;
 
         private ObservableCollection<string> _providerFilterOptions;
         public ObservableCollection<string> ProviderFilterOptions
@@ -3356,6 +3388,9 @@ namespace PlayniteAchievements.ViewModels
         #endregion
 
         public void SortDataGrid(DataGrid dataGrid, string sortMemberPath, ListSortDirection direction)
+            => SortDataGrid(dataGrid, sortMemberPath, direction, isAdditive: false);
+
+        public void SortDataGrid(DataGrid dataGrid, string sortMemberPath, ListSortDirection direction, bool isAdditive)
         {
             if (dataGrid == null || string.IsNullOrEmpty(sortMemberPath)) return;
 
@@ -3364,32 +3399,76 @@ namespace PlayniteAchievements.ViewModels
 
             if (itemsSource == GamesOverview)
             {
-                SortGamesOverview(sortMemberPath, direction);
+                SortGamesOverview(sortMemberPath, direction, isAdditive);
             }
             else if (itemsSource == RecentAchievements)
             {
-                SortRecentAchievements(sortMemberPath, direction);
+                SortRecentAchievements(sortMemberPath, direction, isAdditive);
             }
             else if (itemsSource == SidebarAllAchievements)
             {
-                SortSidebarAllAchievements(sortMemberPath, direction);
+                SortSidebarAllAchievements(sortMemberPath, direction, isAdditive);
             }
             else if (itemsSource == SelectedGameAchievements)
             {
-                SortSelectedGameAchievements(sortMemberPath, direction);
+                SortSelectedGameAchievements(sortMemberPath, direction, isAdditive);
             }
         }
 
         private void SortGamesOverview(string sortMemberPath, ListSortDirection direction)
+            => SortGamesOverview(sortMemberPath, direction, isAdditive: false);
+
+        private void SortGamesOverview(string sortMemberPath, ListSortDirection direction, bool isAdditive)
         {
-            if (!GamesOverviewSortHelper.TrySortItems(
-                    _filteredGamesOverview,
-                    sortMemberPath,
-                    direction,
-                    ref _overviewSortPath,
-                    ref _overviewSortDirection))
+            if (isAdditive && !string.IsNullOrEmpty(_overviewSortPath))
             {
-                return;
+                // Ctrl+Click: add/update/toggle secondary sort column.
+                // Primary stays as _overviewSortPath — the new column is a tiebreaker.
+                var existing = _overviewSecondarySorts.FindIndex(s =>
+                    string.Equals(s.Path, sortMemberPath, StringComparison.Ordinal));
+
+                if (existing >= 0)
+                {
+                    var (path, dir) = _overviewSecondarySorts[existing];
+                    _overviewSecondarySorts[existing] = (path,
+                        dir == ListSortDirection.Descending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+                }
+                else if (!string.Equals(sortMemberPath, _overviewSortPath, StringComparison.Ordinal))
+                {
+                    _overviewSecondarySorts.Add((sortMemberPath, direction));
+                }
+
+                // Re-sort using EXISTING primary, with accumulated secondaries as tiebreakers
+                var secondaries = _overviewSecondarySorts.Count > 0
+                    ? (IReadOnlyList<(string, ListSortDirection)>)_overviewSecondarySorts
+                    : null;
+
+                if (!GamesOverviewSortHelper.TrySortItems(
+                        _filteredGamesOverview,
+                        _overviewSortPath,        // keep EXISTING primary
+                        _overviewSortDirection,   // keep EXISTING direction
+                        secondaries,
+                        ref _overviewSortPath,
+                        ref _overviewSortDirection))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                // Normal click: new column becomes the primary, clear all secondaries
+                _overviewSecondarySorts.Clear();
+
+                if (!GamesOverviewSortHelper.TrySortItems(
+                        _filteredGamesOverview,
+                        sortMemberPath,
+                        direction,
+                        null,
+                        ref _overviewSortPath,
+                        ref _overviewSortDirection))
+                {
+                    return;
+                }
             }
 
             if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulkOverview2)
@@ -3402,13 +3481,30 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void SortRecentAchievements(string sortMemberPath, ListSortDirection direction)
+        private void SortRecentAchievements(string sortMemberPath, ListSortDirection direction, bool isAdditive = false)
         {
-            var recentSortDirection = (ListSortDirection?)_recentSortDirection;
+            string primaryPath;
+            ListSortDirection primaryDirection;
+
+            if (isAdditive && !string.IsNullOrEmpty(_recentSortPath))
+            {
+                // Ctrl+Click: add to secondaries, keep existing primary
+                UpdateSecondarySorts(_recentSecondarySorts, _recentSortPath, sortMemberPath, direction, isAdditive: true);
+                primaryPath = _recentSortPath;
+                primaryDirection = _recentSortDirection;
+            }
+            else
+            {
+                UpdateSecondarySorts(_recentSecondarySorts, _recentSortPath, sortMemberPath, direction, isAdditive: false);
+                primaryPath = sortMemberPath;
+                primaryDirection = direction;
+            }
+
+            var recentSortDirection = (ListSortDirection?)primaryDirection;
             if (!AchievementSortHelper.TrySortItems(
                     _filteredRecentAchievements,
-                    sortMemberPath,
-                    direction,
+                    primaryPath,
+                    primaryDirection,
                     AchievementSortScope.RecentAchievements,
                     ref _recentSortPath,
                     ref recentSortDirection))
@@ -3417,9 +3513,9 @@ namespace PlayniteAchievements.ViewModels
             }
 
             if (recentSortDirection.HasValue)
-            {
                 _recentSortDirection = recentSortDirection.Value;
-            }
+
+            ApplySecondarySorts(_filteredRecentAchievements, _recentSecondarySorts, AchievementSortScope.RecentAchievements, _recentSortPath, _recentSortDirection);
 
             if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulkRecent2)
             {
@@ -3431,17 +3527,33 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void SortSelectedGameAchievements(string sortMemberPath, ListSortDirection direction)
+        private void SortSelectedGameAchievements(string sortMemberPath, ListSortDirection direction, bool isAdditive = false)
         {
+            string primaryPath;
+            ListSortDirection primaryDirection;
+
+            if (isAdditive && !string.IsNullOrEmpty(_selectedGameSortPath))
+            {
+                UpdateSecondarySorts(_selectedGameSecondarySorts, _selectedGameSortPath, sortMemberPath, direction, isAdditive: true);
+                primaryPath = _selectedGameSortPath;
+                primaryDirection = _selectedGameSortDirection;
+            }
+            else
+            {
+                UpdateSecondarySorts(_selectedGameSecondarySorts, _selectedGameSortPath, sortMemberPath, direction, isAdditive: false);
+                primaryPath = sortMemberPath;
+                primaryDirection = direction;
+            }
+
             var existingAllOrder = _allSelectedGameAchievements
                 .Select((item, index) => new { item, index })
                 .ToDictionary(x => x.item, x => x.index);
 
-            var selectedSortDirection = (ListSortDirection?)_selectedGameSortDirection;
+            var selectedSortDirection = (ListSortDirection?)primaryDirection;
             if (!AchievementSortHelper.TrySortItems(
                     _allSelectedGameAchievements,
-                    sortMemberPath,
-                    direction,
+                    primaryPath,
+                    primaryDirection,
                     AchievementSortScope.GameAchievements,
                     ref _selectedGameSortPath,
                     ref selectedSortDirection,
@@ -3451,9 +3563,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             if (selectedSortDirection.HasValue)
-            {
                 _selectedGameSortDirection = selectedSortDirection.Value;
-            }
 
             var sortedAllOrder = _allSelectedGameAchievements
                 .Select((item, index) => new { item, index })
@@ -3462,12 +3572,14 @@ namespace PlayniteAchievements.ViewModels
             selectedSortDirection = _selectedGameSortDirection;
             AchievementSortHelper.TrySortItems(
                 _filteredSelectedGameAchievements,
-                sortMemberPath,
-                direction,
+                primaryPath,
+                primaryDirection,
                 AchievementSortScope.GameAchievements,
                 ref _selectedGameSortPath,
                 ref selectedSortDirection,
                 sortedAllOrder);
+
+            ApplySecondarySorts(_filteredSelectedGameAchievements, _selectedGameSecondarySorts, AchievementSortScope.GameAchievements, _selectedGameSortPath, _selectedGameSortDirection);
 
             if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulkSelected2)
             {
@@ -3479,17 +3591,33 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void SortSidebarAllAchievements(string sortMemberPath, ListSortDirection direction)
+        private void SortSidebarAllAchievements(string sortMemberPath, ListSortDirection direction, bool isAdditive = false)
         {
+            string primaryPath;
+            ListSortDirection primaryDirection;
+
+            if (isAdditive && !string.IsNullOrEmpty(_sidebarAllSortPath))
+            {
+                UpdateSecondarySorts(_sidebarAllSecondarySorts, _sidebarAllSortPath, sortMemberPath, direction, isAdditive: true);
+                primaryPath = _sidebarAllSortPath;
+                primaryDirection = _sidebarAllSortDirection;
+            }
+            else
+            {
+                UpdateSecondarySorts(_sidebarAllSecondarySorts, _sidebarAllSortPath, sortMemberPath, direction, isAdditive: false);
+                primaryPath = sortMemberPath;
+                primaryDirection = direction;
+            }
+
             var existingAllOrder = _allAchievements
                 .Select((item, index) => new { item, index })
                 .ToDictionary(x => x.item, x => x.index);
 
-            var sidebarAllSortDirection = (ListSortDirection?)_sidebarAllSortDirection;
+            var sidebarAllSortDirection = (ListSortDirection?)primaryDirection;
             if (!AchievementSortHelper.TrySortItems(
                     _allAchievements,
-                    sortMemberPath,
-                    direction,
+                    primaryPath,
+                    primaryDirection,
                     AchievementSortScope.GameAchievements,
                     ref _sidebarAllSortPath,
                     ref sidebarAllSortDirection,
@@ -3499,9 +3627,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             if (sidebarAllSortDirection.HasValue)
-            {
                 _sidebarAllSortDirection = sidebarAllSortDirection.Value;
-            }
 
             var sortedAllOrder = _allAchievements
                 .Select((item, index) => new { item, index })
@@ -3510,12 +3636,14 @@ namespace PlayniteAchievements.ViewModels
             sidebarAllSortDirection = _sidebarAllSortDirection;
             AchievementSortHelper.TrySortItems(
                 _filteredSidebarAllAchievements,
-                sortMemberPath,
-                direction,
+                primaryPath,
+                primaryDirection,
                 AchievementSortScope.GameAchievements,
                 ref _sidebarAllSortPath,
                 ref sidebarAllSortDirection,
                 sortedAllOrder);
+
+            ApplySecondarySorts(_filteredSidebarAllAchievements, _sidebarAllSecondarySorts, AchievementSortScope.GameAchievements, _sidebarAllSortPath, _sidebarAllSortDirection);
 
             if (SidebarAllAchievements is BulkObservableCollection<AchievementDisplayItem> bulkSidebarAll)
             {
@@ -3526,6 +3654,86 @@ namespace PlayniteAchievements.ViewModels
                 CollectionHelper.SynchronizeCollection(SidebarAllAchievements, _filteredSidebarAllAchievements);
             }
         }
+
+        /// <summary>Updates secondary sort list when Ctrl+Click is used.</summary>
+        private static void UpdateSecondarySorts(
+            List<(string Path, ListSortDirection Direction)> secondaries,
+            string currentPrimaryPath,
+            string newSortPath,
+            ListSortDirection newDirection,
+            bool isAdditive)
+        {
+            if (!isAdditive)
+            {
+                secondaries.Clear();
+                return;
+            }
+
+            // Ctrl+Click: add/update/toggle secondary
+            var existing = secondaries.FindIndex(s =>
+                string.Equals(s.Path, newSortPath, StringComparison.Ordinal));
+
+            if (existing >= 0)
+            {
+                var (path, dir) = secondaries[existing];
+                secondaries[existing] = (path,
+                    dir == ListSortDirection.Descending ? ListSortDirection.Ascending : ListSortDirection.Descending);
+            }
+            else if (!string.Equals(newSortPath, currentPrimaryPath, StringComparison.Ordinal))
+            {
+                secondaries.Add((newSortPath, newDirection));
+            }
+        }
+
+        /// <summary>
+        /// Applies secondary sort criteria as tiebreakers under the primary sort.
+        /// The primary sort always takes precedence; secondaries are only used when
+        /// primary values are equal.
+        /// </summary>
+        private static void ApplySecondarySorts(
+            List<AchievementDisplayItem> items,
+            List<(string Path, ListSortDirection Direction)> secondaries,
+            AchievementSortScope scope,
+            string primaryPath,
+            ListSortDirection primaryDirection)
+        {
+            if (items == null || items.Count == 0 || secondaries == null || secondaries.Count == 0)
+                return;
+
+            var secondaryComparisons = secondaries
+                .Select(s => AchievementSortHelper.GetComparison(s.Path, s.Direction, scope))
+                .Where(c => c != null)
+                .ToList();
+
+            if (secondaryComparisons.Count == 0) return;
+
+            // Primary comparison: ensures primary sort order is always respected first.
+            var primaryComparison = AchievementSortHelper.GetComparison(primaryPath, primaryDirection, scope);
+
+            // Multi-column sort: compare by primary first, then by each secondary as tiebreaker.
+            var indexed = items.Select((item, i) => (item, i)).ToList();
+            indexed.Sort((x, y) =>
+            {
+                // Primary takes full precedence
+                if (primaryComparison != null)
+                {
+                    var pr = primaryComparison(x.item, y.item);
+                    if (pr != 0) return pr;
+                }
+
+                // Secondaries are tiebreakers, applied in order
+                foreach (var comp in secondaryComparisons)
+                {
+                    var result = comp(x.item, y.item);
+                    if (result != 0) return result;
+                }
+                return x.i.CompareTo(y.i); // stable fallback
+            });
+            var sorted = indexed.Select(t => t.item).ToList();
+            items.Clear();
+            items.AddRange(sorted);
+        }
+
         private static string L(string key, string fallback)
         {
             var value = ResourceProvider.GetString(key);

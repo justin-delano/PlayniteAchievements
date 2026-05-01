@@ -883,6 +883,36 @@
                                                   Margin="0,0,0,8"/>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
                                                   IsChecked="{Binding Persisted.ShowTopMenuBarButton}"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_DefaultAchievementSort}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="0,12,0,8"/>
+                                        <StackPanel Orientation="Horizontal">
+                                            <ComboBox SelectedValue="{Binding Persisted.DefaultAchievementSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      SelectedValuePath="Tag"
+                                                      MinWidth="180">
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Default}" Tag="{x:Static settings:CompactListSortMode.None}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_DisplayOrder}" Tag="{x:Static settings:CompactListSortMode.DisplayOrder}"/>
+                                            </ComboBox>
+                                            <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
+                                                    Margin="4,0,0,0"
+                                                    VerticalAlignment="Center"
+                                                    Click="ToggleDefaultAchievementSortDescending">
+                                                <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="&#xea65;"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Persisted.DefaultAchievementSortDescending}" Value="True">
+                                                                    <Setter Property="Text" Value="&#xea66;"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Button>
+                                        </StackPanel>
                                     </StackPanel>
                                 </Border>
 
@@ -974,6 +1004,7 @@
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Default}" Tag="{x:Static settings:CompactListSortMode.None}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_DisplayOrder}" Tag="{x:Static settings:CompactListSortMode.DisplayOrder}"/>
                                             </ComboBox>
                                             <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
                                                     Margin="4,0,0,0"
@@ -1050,6 +1081,7 @@
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Default}" Tag="{x:Static settings:CompactListSortMode.None}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_DisplayOrder}" Tag="{x:Static settings:CompactListSortMode.DisplayOrder}"/>
                                             </ComboBox>
                                             <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
                                                     Margin="4,0,0,0"
@@ -1231,6 +1263,7 @@
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Default}" Tag="{x:Static settings:CompactListSortMode.None}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_UnlockTime}" Tag="{x:Static settings:CompactListSortMode.UnlockTime}"/>
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_DisplayOrder}" Tag="{x:Static settings:CompactListSortMode.DisplayOrder}"/>
                                             </ComboBox>
                                             <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
                                                     Margin="4,0,0,0"
@@ -1686,9 +1719,41 @@
                                            TextWrapping="Wrap"/>
 
                                 <!-- Enable Monitoring -->
-                                <CheckBox Content="Enable real-time monitoring for running game"
+                                <CheckBox Content="Enable real-time monitoring for running game (Local provider)"
                                           IsChecked="{Binding EnableActiveGameMonitoring, Mode=TwoWay}"
-                                          Margin="0,0,0,12"/>
+                                          Margin="0,0,0,4"/>
+
+                                <!-- Exophase Monitoring -->
+                                <CheckBox Content="Enable real-time monitoring for running game (Exophase provider)"
+                                          IsChecked="{Binding Path=ExophaseEditSettings.EnableActiveMonitoring,
+                                                      ElementName=SettingsControlRoot, Mode=TwoWay}"
+                                          Margin="0,0,0,4"/>
+                                <TextBlock Text="Polls the Exophase API at regular intervals to detect newly unlocked achievements. Minimum 5-minute interval."
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="18,0,0,8"
+                                           TextWrapping="Wrap"/>
+
+                                <!-- Exophase Polling Interval -->
+                                <Grid Style="{StaticResource SettingRowStyle}"
+                                      IsEnabled="{Binding Path=ExophaseEditSettings.EnableActiveMonitoring, ElementName=SettingsControlRoot}"
+                                      Margin="18,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Exophase polling interval (seconds):"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               FontWeight="SemiBold"/>
+                                    <TextBox Grid.Column="1"
+                                             Width="55"
+                                             VerticalContentAlignment="Center"
+                                             Text="{Binding Path=ExophaseEditSettings.MonitoringIntervalSeconds,
+                                                    ElementName=SettingsControlRoot, Mode=TwoWay,
+                                                    UpdateSourceTrigger=LostFocus}"/>
+                                </Grid>
 
                                 <!-- Polling Interval -->
                                 <Grid Style="{StaticResource SettingRowStyle}"
@@ -1773,8 +1838,10 @@
                                                     TickFrequency="500"
                                                     IsSnapToTickEnabled="True"
                                                     Width="220"
+                                                    Value="{Binding UnlockOverlayDurationMilliseconds, Mode=TwoWay}"
                                                     ValueChanged="NotificationsOverlayDurationSlider_ValueChanged"/>
                                             <TextBlock x:Name="NotificationsOverlayDurationValueTextBlock"
+                                                       Text="{Binding UnlockOverlayDurationMilliseconds, StringFormat='{}{0} ms'}"
                                                        Margin="8,0,0,0"
                                                        VerticalAlignment="Center"
                                                        Style="{StaticResource MutedTextStyle}"/>
@@ -1958,12 +2025,15 @@
                                                          <ColumnDefinition Width="Auto"/>
                                                          <ColumnDefinition Width="140"/>
                                                          <ColumnDefinition Width="8"/>
+                                                         <ColumnDefinition Width="130"/>
+                                                         <ColumnDefinition Width="8"/>
                                                          <ColumnDefinition Width="90"/>
                                                          <ColumnDefinition Width="8"/>
                                                          <ColumnDefinition Width="90"/>
-                                                         <ColumnDefinition Width="12"/>
+                                                         <ColumnDefinition Width="8"/>
                                                          <ColumnDefinition Width="Auto"/>
-                                                         <ColumnDefinition Width="220"/>
+                                                         <ColumnDefinition Width="8"/>
+                                                         <ColumnDefinition Width="Auto"/>
                                                      </Grid.ColumnDefinitions>
                                                      <TextBlock Text="Custom style slot:"
                                                                 VerticalAlignment="Center"
@@ -1971,23 +2041,26 @@
                                                                 FontWeight="SemiBold"/>
                                                      <ComboBox Grid.Column="1"
                                                                x:Name="NotificationsCustomStyleSlotComboBox"
+                                                               IsEditable="True"
                                                                DisplayMemberPath="DisplayName"
-                                                               SelectionChanged="NotificationsCustomStyleSlotComboBox_SelectionChanged"/>
+                                                               SelectionChanged="NotificationsCustomStyleSlotComboBox_SelectionChanged"
+                                                               LostFocus="NotificationsCustomStyleSlotComboBox_LostFocus"/>
                                                      <Button Grid.Column="3"
                                                              Content="Save Slot"
                                                              Click="NotificationsSaveCustomStyleSlot_Click"/>
                                                      <Button Grid.Column="5"
                                                              Content="Load Slot"
                                                              Click="NotificationsLoadCustomStyleSlot_Click"/>
-                                                     <TextBlock Grid.Column="7"
-                                                                Text="Slot name:"
-                                                                VerticalAlignment="Center"
-                                                                Margin="0,0,8,0"
-                                                                FontWeight="SemiBold"/>
-                                                     <TextBox Grid.Column="8"
-                                                              x:Name="NotificationsCustomStyleSlotNameTextBox"
-                                                              TextChanged="NotificationsCustomStyleSlotNameTextBox_TextChanged"
-                                                              LostFocus="NotificationsCustomStyleSlotNameTextBox_LostFocus"/>
+                                                     <Button Grid.Column="7"
+                                                             Content="+"
+                                                             ToolTip="Add slot"
+                                                             MinWidth="28"
+                                                             Click="NotificationsAddCustomStyleSlot_Click"/>
+                                                     <Button Grid.Column="9"
+                                                             Content="−"
+                                                             ToolTip="Remove current slot"
+                                                             MinWidth="28"
+                                                             Click="NotificationsRemoveCustomStyleSlot_Click"/>
                                                  </Grid>
 
                                                  <Grid Margin="0,0,0,8">

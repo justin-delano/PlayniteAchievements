@@ -145,7 +145,8 @@ namespace PlayniteAchievements.Providers.Local
             var appId = GetAppId(game, out var isAppIdOverridden);
             if (string.IsNullOrEmpty(appId)) return null;
 
-            var hasResolvedLocalFolder = TryResolveLocalFolder(game, appId, out var localFolderPath, out _, out _, out _);
+            string localFolderPath = null;
+            var hasResolvedLocalFolder = TryResolveLocalFolder(game, appId, out localFolderPath, out _, out _, out _);
 
             string jsonPath = null;
             if (hasResolvedLocalFolder && !string.IsNullOrWhiteSpace(localFolderPath))
@@ -299,6 +300,29 @@ namespace PlayniteAchievements.Providers.Local
 
                 if (steamAppCacheEntries != null && steamAppCacheEntries.Count > 0)
                 {
+                    // The local binary schema can be stale (missing achievements added since the
+                    // last client sync).  When the online schema has more entries, add the missing
+                    // ones as unearned so the count matches Steam.
+                    if (steamSchema?.Achievements != null)
+                    {
+                        foreach (var schemaAch in steamSchema.Achievements)
+                        {
+                            if (string.IsNullOrWhiteSpace(schemaAch?.Name) || steamAppCacheEntries.ContainsKey(schemaAch.Name))
+                                continue;
+
+                            steamAppCacheEntries[schemaAch.Name] = new LocalEntry
+                            {
+                                earned = false,
+                                earned_time = 0,
+                                displayName = schemaAch.DisplayName ?? schemaAch.Name,
+                                description = schemaAch.Description ?? string.Empty,
+                                icon = schemaAch.Icon ?? string.Empty,
+                                iconGray = schemaAch.IconGray ?? string.Empty,
+                                hidden = schemaAch.Hidden == 1
+                            };
+                        }
+                    }
+
                     var added = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                     foreach (var kv in steamAppCacheEntries)
@@ -695,30 +719,237 @@ namespace PlayniteAchievements.Providers.Local
             }
 
             var schema = TryGetSteamAppCacheSchema(appId);
-            if (schema == null || schema.Count == 0)
+            if (schema != null && schema.Count > 0)
             {
-                return null;
-            }
+                var unlockTimes = TryGetSteamAppCacheUnlockTimes(appId, game);
+                var entries = new Dictionary<string, LocalEntry>(StringComparer.OrdinalIgnoreCase);
 
-            var unlockTimes = TryGetSteamAppCacheUnlockTimes(appId, game);
-            var entries = new Dictionary<string, LocalEntry>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var schemaEntry in schema)
-            {
-                unlockTimes.TryGetValue(schemaEntry.Index, out var timestamp);
-                entries[schemaEntry.ApiName] = new LocalEntry
+                foreach (var schemaEntry in schema)
                 {
-                    earned = timestamp > 0,
-                    earned_time = timestamp,
-                    displayName = string.IsNullOrWhiteSpace(schemaEntry.DisplayName) ? schemaEntry.ApiName : schemaEntry.DisplayName,
-                    description = schemaEntry.Description ?? string.Empty,
-                    icon = BuildSteamAchievementIconUrl(appId, schemaEntry.IconHash),
-                    iconGray = BuildSteamAchievementIconUrl(appId, schemaEntry.IconGrayHash),
-                    hidden = schemaEntry.Hidden
-                };
+                    unlockTimes.TryGetValue(schemaEntry.Index, out var timestamp);
+                    entries[schemaEntry.ApiName] = new LocalEntry
+                    {
+                        earned = timestamp > 0,
+                        earned_time = timestamp,
+                        displayName = string.IsNullOrWhiteSpace(schemaEntry.DisplayName) ? schemaEntry.ApiName : schemaEntry.DisplayName,
+                        description = schemaEntry.Description ?? string.Empty,
+                        icon = BuildSteamAchievementIconUrl(appId, schemaEntry.IconHash),
+                        iconGray = BuildSteamAchievementIconUrl(appId, schemaEntry.IconGrayHash),
+                        hidden = schemaEntry.Hidden
+                    };
+                }
+
+                return entries.Count > 0 ? entries : null;
             }
 
-            return entries.Count > 0 ? entries : null;
+            // No local schema .bin — try reading earned status directly from user stats .bin.
+            // The UserGameStats_*.bin file stores achievement entries as:
+            //   <apiName>\0<1-byte-type>\0<4-byte-int-value>  (type 0x01 = int32)
+            // We scan for null-delimited tokens and look for pairs where the value byte is 1 (earned).
+            var directEntries = TryGetSteamUserStatsDirectEntries(appId, game);
+            return directEntries != null && directEntries.Count > 0 ? directEntries : null;
+        }
+
+        /// <summary>
+        /// Reads earned achievement status directly from UserGameStats_*.bin without needing the schema file.
+        /// Uses the Steam binary VDF format where achievements are stored as nested objects:
+        ///   \x00 "achievements" \x00
+        ///     \x00 [API_NAME] \x00
+        ///       \x02 "achieved" \x00 [int32_LE: 0=locked, 1=earned]
+        ///       ...
+        ///     \x08
+        ///   \x08
+        /// </summary>
+        private Dictionary<string, LocalEntry> TryGetSteamUserStatsDirectEntries(int appId, Game game = null)
+        {
+            var result = new Dictionary<string, LocalEntry>(StringComparer.OrdinalIgnoreCase);
+            var unlockTimes = TryGetSteamAppCacheUnlockTimes(appId, game);
+
+            foreach (var userStatsPath in GetSteamAppCacheUserStatsFilePaths(appId, game))
+            {
+                try
+                {
+                    if (!File.Exists(userStatsPath))
+                        continue;
+
+                    var bytes = File.ReadAllBytes(userStatsPath);
+                    ParseVdfAchievements(bytes, result, unlockTimes);
+
+                    if (result.Count > 0)
+                        break; // use first successful file
+                }
+                catch (Exception ex)
+                {
+                    Log($"STEAM USERSTATS DIRECT ERROR: path={userStatsPath} msg={ex.Message}");
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Parses Steam binary VDF to extract achievement earned status.
+        /// Scans for the "achievements" section and reads nested objects with "achieved" int32 fields.
+        /// </summary>
+        private static void ParseVdfAchievements(byte[] bytes, Dictionary<string, LocalEntry> result, Dictionary<int, long> unlockTimes)
+        {
+            if (bytes == null || bytes.Length == 0) return;
+
+            // Find "achievements" key in the binary VDF (preceded by object-type 0x00)
+            var achievementsKey = System.Text.Encoding.ASCII.GetBytes("achievements\x00");
+            var sectionStart = -1;
+            for (var i = 0; i <= bytes.Length - achievementsKey.Length; i++)
+            {
+                if (!ByteSequenceEquals(bytes, i, achievementsKey)) continue;
+                // Preceded by 0x00 (object type byte) or at start of file
+                if (i == 0 || bytes[i - 1] == 0x00 || bytes[i - 1] == 0x08)
+                {
+                    sectionStart = i + achievementsKey.Length; // position after "achievements\0"
+                    break;
+                }
+            }
+
+            if (sectionStart < 0) return;
+
+            var pos = sectionStart;
+
+            // Parse each achievement: \x00 [api_name] \x00 { fields } \x08
+            while (pos < bytes.Length)
+            {
+                var typeByte = bytes[pos++];
+                if (typeByte == 0x08) break; // end of achievements section
+                if (typeByte != 0x00)
+                {
+                    // Non-object entry: skip key string then value to stay aligned
+                    while (pos < bytes.Length && bytes[pos] != 0x00) pos++;
+                    if (pos < bytes.Length) pos++; // skip null terminator
+                    pos = SkipVdfValue(bytes, pos, typeByte);
+                    continue;
+                }
+
+                // Read achievement API name
+                var nameStart = pos;
+                while (pos < bytes.Length && bytes[pos] != 0x00) pos++;
+                if (pos >= bytes.Length) break;
+
+                var nameLen = pos - nameStart;
+                pos++; // skip null terminator
+
+                if (nameLen < 2 || nameLen > 128) { SkipVdfObjectContents(bytes, ref pos); continue; }
+
+                var apiName = System.Text.Encoding.ASCII.GetString(bytes, nameStart, nameLen);
+                if (!System.Text.RegularExpressions.Regex.IsMatch(apiName, @"^[A-Za-z0-9_.\-]+$") ||
+                    string.Equals(apiName, "achievements", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(apiName, "stats", StringComparison.OrdinalIgnoreCase))
+                {
+                    SkipVdfObjectContents(bytes, ref pos);
+                    continue;
+                }
+
+                // Parse fields inside this achievement object to find "achieved"
+                var earnedValue = ReadVdfAchievementEarned(bytes, ref pos);
+
+                if (earnedValue < 0) continue; // couldn't find "achieved" field
+
+                unlockTimes.TryGetValue(result.Count, out var timestamp);
+                if (!result.ContainsKey(apiName))
+                {
+                    result[apiName] = new LocalEntry
+                    {
+                        earned = earnedValue == 1,
+                        earned_time = earnedValue == 1 ? timestamp : 0,
+                        displayName = apiName,
+                        description = string.Empty
+                    };
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reads fields inside an achievement VDF object, looking for the "achieved" int32 field.
+        /// Advances pos past the end of the object (\x08). Returns the achieved value or -1 if not found.
+        /// </summary>
+        private static int ReadVdfAchievementEarned(byte[] bytes, ref int pos)
+        {
+            var achieved = -1;
+            while (pos < bytes.Length)
+            {
+                var typeByte = bytes[pos++];
+                if (typeByte == 0x08) break; // end of object
+
+                // Read key
+                var keyStart = pos;
+                while (pos < bytes.Length && bytes[pos] != 0x00) pos++;
+                if (pos >= bytes.Length) break;
+                var keyLen = pos - keyStart;
+                var isAchievedKey = keyLen == 8 && // "achieved" = 8 chars
+                    bytes[keyStart + 0] == 'a' && bytes[keyStart + 1] == 'c' &&
+                    bytes[keyStart + 2] == 'h' && bytes[keyStart + 3] == 'i' &&
+                    bytes[keyStart + 4] == 'e' && bytes[keyStart + 5] == 'v' &&
+                    bytes[keyStart + 6] == 'e' && bytes[keyStart + 7] == 'd';
+                pos++; // skip null terminator
+
+                pos = SkipVdfValue(bytes, pos, typeByte, isAchievedKey ? (int?)null : 0,
+                    isAchievedKey ? (Action<int>)(v => { if (achieved < 0) achieved = v; }) : null);
+            }
+            return achieved;
+        }
+
+        /// <summary>
+        /// Skips a VDF value based on its type byte. Returns the new position after the value.
+        /// If typeByte is 0x02 (int32) and onInt is provided, calls onInt with the value before skipping.
+        /// </summary>
+        private static int SkipVdfValue(byte[] bytes, int pos, byte typeByte, int? unused = null, Action<int> onInt = null)
+        {
+            switch (typeByte)
+            {
+                case 0x01: // string: read until null
+                    while (pos < bytes.Length && bytes[pos] != 0x00) pos++;
+                    if (pos < bytes.Length) pos++; // skip null
+                    break;
+                case 0x02: // int32
+                    if (pos + 4 <= bytes.Length)
+                    {
+                        onInt?.Invoke(BitConverter.ToInt32(bytes, pos));
+                        pos += 4;
+                    }
+                    break;
+                case 0x03: // float32
+                    pos += 4;
+                    break;
+                case 0x04: // pointer (same as int32)
+                    pos += 4;
+                    break;
+                case 0x05: // wstring: skip until double-null
+                    while (pos + 1 < bytes.Length && !(bytes[pos] == 0x00 && bytes[pos + 1] == 0x00)) pos++;
+                    if (pos + 1 < bytes.Length) pos += 2;
+                    break;
+                case 0x06: // color (4 bytes)
+                    pos += 4;
+                    break;
+                case 0x07: // uint64 (8 bytes)
+                    pos += 8;
+                    break;
+                case 0x00: // nested object
+                    SkipVdfObjectContents(bytes, ref pos);
+                    break;
+            }
+            return pos;
+        }
+
+        /// <summary>Skips all contents of a VDF object until \x08 end marker. Advances pos past \x08.</summary>
+        private static void SkipVdfObjectContents(byte[] bytes, ref int pos)
+        {
+            while (pos < bytes.Length)
+            {
+                var typeByte = bytes[pos++];
+                if (typeByte == 0x08) return;
+                // Skip key
+                while (pos < bytes.Length && bytes[pos] != 0x00) pos++;
+                if (pos < bytes.Length) pos++;
+                // Skip value
+                pos = SkipVdfValue(bytes, pos, typeByte);
+            }
         }
 
         private List<SteamAppCacheSchemaEntry> TryGetSteamAppCacheSchema(int appId)
@@ -747,6 +978,7 @@ namespace PlayniteAchievements.Providers.Local
 
                     var entries = new List<SteamAppCacheSchemaEntry>();
                     var index = bitsIndex + 1;
+                    var lastEntryIndex = -1;
 
                     while (index < tokens.Count)
                     {
@@ -757,6 +989,16 @@ namespace PlayniteAchievements.Providers.Local
                             index++;
                             continue;
                         }
+
+                        // A non-increasing integer index signals a section restart (e.g., the
+                        // "stats" section also starts at 0).  Stop here to avoid counting stat
+                        // entries as achievements.
+                        if (entryIndex <= lastEntryIndex)
+                        {
+                            break;
+                        }
+
+                        lastEntryIndex = entryIndex;
 
                         var entry = new SteamAppCacheSchemaEntry { Index = entryIndex };
                         index += 2;
@@ -1137,8 +1379,13 @@ namespace PlayniteAchievements.Providers.Local
 
             var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var suffix = "_" + appId.ToString(CultureInfo.InvariantCulture) + ".bin";
-            var preferredAccountIds = GetPreferredSteamAccountIds(game).ToList();
-            var hasPreferredAccountIds = preferredAccountIds.Count > 0;
+
+            // When a specific user is explicitly configured use exact-match lookup only.
+            // In auto mode (no explicit selection) always scan all UserGameStats_*_{appId}.bin
+            // files so that any account ID present in the stats folder is found, regardless
+            // of whether that account also has a userdata directory.
+            var selectedUserId = GetSelectedSteamAppCacheUserId(game);
+            var isExplicitUser = !string.IsNullOrWhiteSpace(selectedUserId);
 
             foreach (var statsRoot in GetSteamAppCacheStatsRoots())
             {
@@ -1149,19 +1396,21 @@ namespace PlayniteAchievements.Providers.Local
 
                 try
                 {
-                    foreach (var accountId in preferredAccountIds)
+                    if (isExplicitUser)
                     {
-                        var exactPath = Path.Combine(
-                            statsRoot,
-                            $"UserGameStats_{accountId}_{appId.ToString(CultureInfo.InvariantCulture)}.bin");
-
-                        if (File.Exists(exactPath))
+                        foreach (var accountId in ExpandSteamAccountIdCandidates(selectedUserId))
                         {
-                            candidates.Add(exactPath);
+                            var exactPath = Path.Combine(
+                                statsRoot,
+                                $"UserGameStats_{accountId}_{appId.ToString(CultureInfo.InvariantCulture)}.bin");
+
+                            if (File.Exists(exactPath))
+                            {
+                                candidates.Add(exactPath);
+                            }
                         }
                     }
-
-                    if (!hasPreferredAccountIds)
+                    else
                     {
                         foreach (var path in Directory.EnumerateFiles(statsRoot, "UserGameStats_*" + suffix, SearchOption.TopDirectoryOnly))
                         {
@@ -1429,6 +1678,21 @@ namespace PlayniteAchievements.Providers.Local
                 if (Directory.Exists(statsRoot))
                 {
                     roots.Add(statsRoot);
+                }
+            }
+
+            // Also accept a configured path that IS the stats directory directly
+            // (e.g. user typed E:\Programs\Steam\appcache\stats)
+            var settings = ProviderRegistry.Settings<LocalSettings>();
+            var rawPath = settings?.SteamUserdataPath?.Trim();
+            if (!string.IsNullOrWhiteSpace(rawPath))
+            {
+                var expanded = Environment.ExpandEnvironmentVariables(rawPath);
+                if (!string.IsNullOrWhiteSpace(expanded) &&
+                    string.Equals(Path.GetFileName(expanded), "stats", StringComparison.OrdinalIgnoreCase) &&
+                    Directory.Exists(expanded))
+                {
+                    roots.Add(expanded);
                 }
             }
 
@@ -2701,6 +2965,12 @@ namespace PlayniteAchievements.Providers.Local
                 return;
             }
 
+            var settings = ProviderRegistry.Settings<LocalSettings>();
+            if (settings?.WarnOnAmbiguousLocalFolder == false)
+            {
+                return;
+            }
+
             lock (ReportedAmbiguousFolderGames)
             {
                 if (!ReportedAmbiguousFolderGames.Add(game.Id))
@@ -3212,7 +3482,25 @@ namespace PlayniteAchievements.Providers.Local
                 return null;
             }
 
+            // "...\userdata" → go up one level to Steam root
             if (string.Equals(Path.GetFileName(expanded), "userdata", StringComparison.OrdinalIgnoreCase))
+            {
+                var parent = Directory.GetParent(expanded);
+                return parent?.FullName;
+            }
+
+            // "...\appcache\stats" → go up two levels to Steam root
+            if (string.Equals(Path.GetFileName(expanded), "stats", StringComparison.OrdinalIgnoreCase))
+            {
+                var appcachePath = Directory.GetParent(expanded);
+                if (string.Equals(appcachePath?.Name, "appcache", StringComparison.OrdinalIgnoreCase))
+                {
+                    return appcachePath?.Parent?.FullName;
+                }
+            }
+
+            // "...\appcache" → go up one level to Steam root
+            if (string.Equals(Path.GetFileName(expanded), "appcache", StringComparison.OrdinalIgnoreCase))
             {
                 var parent = Directory.GetParent(expanded);
                 return parent?.FullName;
@@ -3323,6 +3611,22 @@ namespace PlayniteAchievements.Providers.Local
                 if (mergedAnonymousSchema?.Achievements?.Count > 0)
                 {
                     MergeSchemaMetadata(appCacheSchema.Achievements, mergedAnonymousSchema.Achievements);
+
+                    // The local binary can be stale — add achievements present in the online schema
+                    // but missing from the binary so the final schema count matches Steam.
+                    var existingNames = new HashSet<string>(
+                        appCacheSchema.Achievements
+                            .Where(a => a != null && !string.IsNullOrWhiteSpace(a.Name))
+                            .Select(a => a.Name),
+                        StringComparer.OrdinalIgnoreCase);
+                    foreach (var onlineAch in mergedAnonymousSchema.Achievements)
+                    {
+                        if (onlineAch == null || string.IsNullOrWhiteSpace(onlineAch.Name))
+                            continue;
+                        if (!existingNames.Contains(onlineAch.Name))
+                            appCacheSchema.Achievements.Add(onlineAch);
+                    }
+
                     if (mergedAnonymousSchema.GlobalPercentages?.Count > 0)
                     {
                         appCacheSchema.GlobalPercentages = new Dictionary<string, double>(mergedAnonymousSchema.GlobalPercentages, StringComparer.OrdinalIgnoreCase);
@@ -4616,6 +4920,16 @@ namespace PlayniteAchievements.Providers.Local
                 if (_pluginSettings?.Persisted != null)
                 {
                     _pluginSettings.Persisted.ExtraLocalPaths = localSettings.ExtraLocalPaths ?? string.Empty;
+                }
+
+                // Clear path-discovery caches so updated Steam paths take effect immediately.
+                lock (_discoveryCacheLock)
+                {
+                    _steamInstallRootsCache = null;
+                    _steamUserdataRootsCache = null;
+                    _steamLocalProgressAppIdsCache = null;
+                    _steamAppCacheSchemaFilePathsCache.Clear();
+                    _localFolderCandidatesCache.Clear();
                 }
             }
         }

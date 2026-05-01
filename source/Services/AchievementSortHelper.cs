@@ -41,6 +41,7 @@ namespace PlayniteAchievements.Services
         {
             CompactListSortMode.UnlockTime => nameof(AchievementDisplayItem.UnlockTime),
             CompactListSortMode.Rarity => nameof(AchievementDisplayItem.RaritySortValue),
+            CompactListSortMode.DisplayOrder => nameof(AchievementDisplayItem.DisplayOrder),
             _ => null
         };
 
@@ -79,14 +80,26 @@ namespace PlayniteAchievements.Services
                     settings.CompactLockedListSortMode,
                     settings.CompactLockedListSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
                 AchievementSortSurface.SidebarSelectedGame => new AchievementSortSpec(
-                    settings.SidebarSelectedGameGridSortMode,
-                    settings.SidebarSelectedGameGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
+                    settings.SidebarSelectedGameGridSortMode != CompactListSortMode.None
+                        ? settings.SidebarSelectedGameGridSortMode
+                        : settings.DefaultAchievementSortMode,
+                    (settings.SidebarSelectedGameGridSortMode != CompactListSortMode.None
+                        ? settings.SidebarSelectedGameGridSortDescending
+                        : settings.DefaultAchievementSortDescending) ? ListSortDirection.Descending : ListSortDirection.Ascending),
                 AchievementSortSurface.SingleGame => new AchievementSortSpec(
-                    settings.SingleGameGridSortMode,
-                    settings.SingleGameGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
+                    settings.SingleGameGridSortMode != CompactListSortMode.None
+                        ? settings.SingleGameGridSortMode
+                        : settings.DefaultAchievementSortMode,
+                    (settings.SingleGameGridSortMode != CompactListSortMode.None
+                        ? settings.SingleGameGridSortDescending
+                        : settings.DefaultAchievementSortDescending) ? ListSortDirection.Descending : ListSortDirection.Ascending),
                 AchievementSortSurface.AchievementDataGrid => new AchievementSortSpec(
-                    settings.AchievementDataGridSortMode,
-                    settings.AchievementDataGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
+                    settings.AchievementDataGridSortMode != CompactListSortMode.None
+                        ? settings.AchievementDataGridSortMode
+                        : settings.DefaultAchievementSortMode,
+                    (settings.AchievementDataGridSortMode != CompactListSortMode.None
+                        ? settings.AchievementDataGridSortDescending
+                        : settings.DefaultAchievementSortDescending) ? ListSortDirection.Descending : ListSortDirection.Ascending),
                 _ => new AchievementSortSpec(CompactListSortMode.None, ListSortDirection.Ascending)
             };
         }
@@ -260,13 +273,19 @@ namespace PlayniteAchievements.Services
                     propertyName == nameof(PersistedSettings.CompactLockedListSortDescending),
                 AchievementSortSurface.SidebarSelectedGame =>
                     propertyName == nameof(PersistedSettings.SidebarSelectedGameGridSortMode) ||
-                    propertyName == nameof(PersistedSettings.SidebarSelectedGameGridSortDescending),
+                    propertyName == nameof(PersistedSettings.SidebarSelectedGameGridSortDescending) ||
+                    propertyName == nameof(PersistedSettings.DefaultAchievementSortMode) ||
+                    propertyName == nameof(PersistedSettings.DefaultAchievementSortDescending),
                 AchievementSortSurface.SingleGame =>
                     propertyName == nameof(PersistedSettings.SingleGameGridSortMode) ||
-                    propertyName == nameof(PersistedSettings.SingleGameGridSortDescending),
+                    propertyName == nameof(PersistedSettings.SingleGameGridSortDescending) ||
+                    propertyName == nameof(PersistedSettings.DefaultAchievementSortMode) ||
+                    propertyName == nameof(PersistedSettings.DefaultAchievementSortDescending),
                 AchievementSortSurface.AchievementDataGrid =>
                     propertyName == nameof(PersistedSettings.AchievementDataGridSortMode) ||
-                    propertyName == nameof(PersistedSettings.AchievementDataGridSortDescending),
+                    propertyName == nameof(PersistedSettings.AchievementDataGridSortDescending) ||
+                    propertyName == nameof(PersistedSettings.DefaultAchievementSortMode) ||
+                    propertyName == nameof(PersistedSettings.DefaultAchievementSortDescending),
                 _ => false
             };
         }
@@ -412,8 +431,7 @@ namespace PlayniteAchievements.Services
             return sortMemberPath switch
             {
                 "DisplayName" => ApplyDirection(CompareByDisplayName, direction),
-                "SortingName" when scope == AchievementSortScope.RecentAchievements
-                    => ApplyDirection(CompareBySortingName, direction),
+                "SortingName" => ApplyDirection(CompareBySortingName, direction),
                 "CategoryType" => ApplyDirection(
                     (a, b) => CompareByCategoryTypeThenUnlock(a, b, scope),
                     direction),
@@ -429,6 +447,9 @@ namespace PlayniteAchievements.Services
                     direction),
                 "Points" => ApplyDirection(
                     (a, b) => a.Points.CompareTo(b.Points),
+                    direction),
+                "DisplayOrder" => ApplyDirection(
+                    (a, b) => a.DisplayOrder.CompareTo(b.DisplayOrder),
                     direction),
                 "TrophyType" => (a, b) => CompareByTrophyType(a, b, direction),
                 _ => null

@@ -24,10 +24,13 @@ namespace PlayniteAchievements.Views.Helpers
         private readonly Action<Dictionary<string, bool>> _setVisibility;
         private readonly Action _saveSettings;
         private readonly IReadOnlyDictionary<string, double> _defaultWidthSeeds;
+        private readonly Func<Dictionary<string, int>> _getColumnOrder;
+        private readonly Action<Dictionary<string, int>> _setColumnOrder;
         private readonly Dictionary<DataGridColumn, EventHandler> _columnWidthChangedHandlers = new Dictionary<DataGridColumn, EventHandler>();
         private readonly Dictionary<string, double> _pendingWidthUpdates = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private DispatcherTimer _saveTimer;
         private bool _isApplyingWidths;
+        private bool _isApplyingColumnOrder;
         private bool _isResizeInProgress;
         private string _lastResizedColumnKey;
         private bool _shouldRescaleAllOnInitialLoad;
@@ -68,7 +71,9 @@ namespace PlayniteAchievements.Views.Helpers
             Func<Dictionary<string, bool>> getVisibility,
             Action<Dictionary<string, bool>> setVisibility,
             Action saveSettings,
-            IReadOnlyDictionary<string, double> defaultWidthSeeds = null)
+            IReadOnlyDictionary<string, double> defaultWidthSeeds = null,
+            Func<Dictionary<string, int>> getColumnOrder = null,
+            Action<Dictionary<string, int>> setColumnOrder = null)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _logger = logger;
@@ -78,6 +83,8 @@ namespace PlayniteAchievements.Views.Helpers
             _setVisibility = setVisibility;
             _saveSettings = saveSettings;
             _defaultWidthSeeds = defaultWidthSeeds ?? new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            _getColumnOrder = getColumnOrder;
+            _setColumnOrder = setColumnOrder;
         }
 
         /// <summary>
@@ -95,8 +102,10 @@ namespace PlayniteAchievements.Views.Helpers
             EnsureDefaultSeeds();
             AttachWidthChangeHandlers();
             AttachNormalizationHandlers();
+            AttachColumnReorderHandler();
             ApplyPersistedVisibility();
             ApplyPersistedWidths();
+            ApplyPersistedColumnOrder();
         }
 
         /// <summary>
@@ -119,6 +128,7 @@ namespace PlayniteAchievements.Views.Helpers
             _columnWidthChangedHandlers.Clear();
             _pendingWidthUpdates.Clear();
             DetachNormalizationHandlers();
+            DetachColumnReorderHandler();
 
             if (_saveTimer != null)
             {
@@ -142,6 +152,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             ApplyPersistedVisibility();
             ApplyPersistedWidths();
+            ApplyPersistedColumnOrder();
         }
 
         public void FlushPendingChanges()
@@ -239,6 +250,83 @@ namespace PlayniteAchievements.Views.Helpers
             _grid.PreviewMouseLeftButtonDown -= Grid_PreviewMouseLeftButtonDown;
             _grid.PreviewMouseLeftButtonUp -= Grid_PreviewMouseLeftButtonUp;
             _grid.LostMouseCapture -= Grid_LostMouseCapture;
+        }
+
+        private void AttachColumnReorderHandler()
+        {
+            if (_grid == null || _getColumnOrder == null || _setColumnOrder == null) return;
+            _grid.ColumnReordered -= Grid_ColumnReordered;
+            _grid.ColumnReordered += Grid_ColumnReordered;
+        }
+
+        private void DetachColumnReorderHandler()
+        {
+            if (_grid == null) return;
+            _grid.ColumnReordered -= Grid_ColumnReordered;
+        }
+
+        private void Grid_ColumnReordered(object sender, DataGridColumnEventArgs e)
+        {
+            if (_isApplyingColumnOrder || _getColumnOrder == null || _setColumnOrder == null) return;
+            SaveColumnOrder();
+        }
+
+        private void ApplyPersistedColumnOrder()
+        {
+            if (_grid == null || _getColumnOrder == null) return;
+
+            var map = _getColumnOrder();
+            if (map == null || map.Count == 0) return;
+
+            // Build a list of (column, desiredIndex) for columns that have a saved order
+            var assignments = new List<(DataGridColumn Column, int DesiredIndex)>();
+            foreach (var column in _grid.Columns)
+            {
+                var key = GetColumnKey(column);
+                if (string.IsNullOrWhiteSpace(key)) continue;
+                if (map.TryGetValue(key, out var index))
+                    assignments.Add((column, index));
+            }
+
+            if (assignments.Count == 0) return;
+
+            _isApplyingColumnOrder = true;
+            try
+            {
+                // Sort by desired index and apply
+                foreach (var (column, desiredIndex) in assignments.OrderBy(a => a.DesiredIndex))
+                {
+                    var clampedIndex = Math.Max(0, Math.Min(desiredIndex, _grid.Columns.Count - 1));
+                    if (column.DisplayIndex != clampedIndex)
+                    {
+                        column.DisplayIndex = clampedIndex;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to apply persisted column order.");
+            }
+            finally
+            {
+                _isApplyingColumnOrder = false;
+            }
+        }
+
+        private void SaveColumnOrder()
+        {
+            if (_grid == null || _setColumnOrder == null) return;
+
+            var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var column in _grid.Columns)
+            {
+                var key = GetColumnKey(column);
+                if (!string.IsNullOrWhiteSpace(key))
+                    map[key] = column.DisplayIndex;
+            }
+
+            _setColumnOrder(map);
+            _saveSettings?.Invoke();
         }
 
         private void Grid_Loaded(object sender, RoutedEventArgs e)

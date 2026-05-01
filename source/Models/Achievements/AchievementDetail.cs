@@ -45,6 +45,12 @@ namespace PlayniteAchievements.Models.Achievements
         public string TrophyType { get; set; }
 
         /// <summary>
+        /// Developer-assigned display sequence index (RetroAchievements DisplayOrder).
+        /// 0 for providers that don't supply an explicit order.
+        /// </summary>
+        public int DisplayOrder { get; set; }
+
+        /// <summary>
         /// Indicates this achievement marks game completion.
         /// Auto-set to true for platinum trophies; can be manually configured via Capstone control.
         /// </summary>
@@ -164,17 +170,29 @@ namespace PlayniteAchievements.Models.Achievements
         {
             get
             {
-                // Use values Aniki expects in its triggers (10/25/50/90/180).
-                // - UltraRare -> 180 (platinum-ish)
-                // - Rare -> 90 (gold-ish)
-                // - Uncommon -> 50 (silver-ish)
-                // - Common -> 25 (bronze-ish)
-                // - Unknown/0 -> 10 (fallback)
+                // Both Aniki and PS5Reborn themes share the same GamerScore trigger values:
+                //   Gold:   180, 90  (90=Gold, 180=Platinum/UltraRare shown as Gold)
+                //   Silver: 30       (30=Silver)
+                //   Bronze: anything else (e.g. 15 — no trigger → default Bronze state)
+                //
+                // When TrophyType is set (PSN games), use standard PSN point values so
+                // the trophy icon and rarity label match the actual trophy type.
+                if (!string.IsNullOrEmpty(TrophyType))
+                {
+                    return TrophyType.ToLowerInvariant() switch
+                    {
+                        "platinum" => 180,
+                        "gold"     => 90,
+                        "silver"   => 30,
+                        _          => 15   // bronze and unrecognised → Bronze default
+                    };
+                }
+
+                // For non-PSN providers: map rarity tier to compatible values.
                 if (Rarity == RarityTier.UltraRare) return 180;
                 if (Rarity == RarityTier.Rare) return 90;
-                if (Rarity == RarityTier.Uncommon) return 50;
-                if (Rarity == RarityTier.Common) return 25;
-                return 10;
+                if (Rarity == RarityTier.Uncommon) return 30;
+                return 15;  // Common and fallback → Bronze default
             }
         }
     }

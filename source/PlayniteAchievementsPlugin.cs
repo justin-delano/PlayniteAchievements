@@ -98,8 +98,8 @@ namespace PlayniteAchievements
         private readonly PluginWindowService _windowService;
         private readonly ThemeAutoMigrationService _themeAutoMigrationService;
         private readonly ForkReleaseMonitor _forkReleaseMonitor;
-        private readonly UpstreamReleaseMonitor _upstreamReleaseMonitor;
         private readonly ActiveGameAchievementMonitor _activeGameAchievementMonitor;
+        private readonly Services.Exophase.ExophaseGameAchievementMonitor _exophaseGameAchievementMonitor;
 
         // Tagging
         private TagSyncService _tagSyncService;
@@ -322,12 +322,6 @@ namespace PlayniteAchievements
                         _notifications,
                         () => SavePluginSettings(_settingsViewModel.Settings),
                         _logger);
-                    _upstreamReleaseMonitor = new UpstreamReleaseMonitor(
-                        api,
-                        settings,
-                        _notifications,
-                        () => SavePluginSettings(_settingsViewModel.Settings),
-                        _logger);
                     _refreshCoordinator = new RefreshEntryPoint(
                         _refreshService,
                         _logger,
@@ -338,6 +332,12 @@ namespace PlayniteAchievements
                         _providerRegistry,
                         _notifications,
                         localAchievementScreenshotService,
+                        IsRealtimeNotificationDisabledForGame,
+                        _logger);
+                    _exophaseGameAchievementMonitor = new Services.Exophase.ExophaseGameAchievementMonitor(
+                        _cacheManager,
+                        _providerRegistry,
+                        _notifications,
                         IsRealtimeNotificationDisabledForGame,
                         _logger);
                     _backgroundUpdates = new BackgroundUpdater(_refreshCoordinator, _refreshService, _cacheManager, settings, _logger, _notifications, null);
@@ -506,6 +506,7 @@ namespace PlayniteAchievements
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
             _activeGameAchievementMonitor?.Stop();
+            _exophaseGameAchievementMonitor?.Stop();
             _ = _activeGameAchievementMonitor?.TryDetectMissedUnlocksAfterStopAsync(args.Game);
             _logger.Info($"Game stopped: {args.Game.Name}. Triggering refresh.");
             _ = _refreshCoordinator.ExecuteAsync(new RefreshRequest
@@ -523,6 +524,7 @@ namespace PlayniteAchievements
             }
 
             _activeGameAchievementMonitor?.Start(args.Game);
+            _exophaseGameAchievementMonitor?.Start(args.Game);
         }
 
         // === Lifecycle ===
@@ -586,7 +588,6 @@ namespace PlayniteAchievements
                 _themeAutoMigrationService?.ScheduleAutoMigration();
 
                 _ = _forkReleaseMonitor?.CheckForForkReleaseAsync();
-                _ = _upstreamReleaseMonitor?.CheckForUpstreamReleaseAsync();
 
                 RestartBackgroundUpdater();
             }
@@ -725,6 +726,7 @@ namespace PlayniteAchievements
 
             _backgroundUpdates.Stop();
             _activeGameAchievementMonitor?.Dispose();
+            _exophaseGameAchievementMonitor?.Dispose();
 
             try { _imageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose imageService"); }
             try { _diskImageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose diskImageService"); }

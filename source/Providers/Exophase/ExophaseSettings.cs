@@ -14,6 +14,8 @@ namespace PlayniteAchievements.Providers.Exophase
         private HashSet<string> _managedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private HashSet<Guid> _includedGames = new HashSet<Guid>();
         private Dictionary<Guid, string> _slugOverrides = new Dictionary<Guid, string>();
+        private bool _enableActiveMonitoring = false;
+        private int _monitoringIntervalSeconds = 300;
 
         /// <inheritdoc />
         public override string ProviderKey => "Exophase";
@@ -59,6 +61,27 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             get => _slugOverrides;
             set => SetValue(ref _slugOverrides, value ?? new Dictionary<Guid, string>());
+        }
+
+        /// <summary>
+        /// When true, polls the Exophase API during gameplay to detect newly unlocked achievements
+        /// and shows in-app overlay notifications (uses the same notification style configured on
+        /// the Achievement Notifications tab).
+        /// </summary>
+        public bool EnableActiveMonitoring
+        {
+            get => _enableActiveMonitoring;
+            set => SetValue(ref _enableActiveMonitoring, value);
+        }
+
+        /// <summary>
+        /// How often (in minutes) to poll the Exophase API while a monitored game is running.
+        /// Minimum 5 minutes to avoid hitting Exophase rate limits.
+        /// </summary>
+        public int MonitoringIntervalSeconds
+        {
+            get => _monitoringIntervalSeconds;
+            set => SetValue(ref _monitoringIntervalSeconds, Math.Max(30, Math.Min(3600, value)));
         }
     }
 }

@@ -443,6 +443,7 @@ namespace PlayniteAchievements.ViewModels
                     nameof(TrophyType)))
                 {
                     OnPropertyChanged(nameof(HasTrophyType));
+                    OnPropertyChanged(nameof(GamerScore));
                 }
             }
         }
@@ -745,6 +746,12 @@ namespace PlayniteAchievements.ViewModels
 
         public double RaritySortValue => AchievementRarityResolver.GetSortValue(GlobalPercentUnlocked, Rarity);
 
+        /// <summary>
+        /// Developer-assigned display sequence index. 0 for providers without explicit ordering.
+        /// Used by the DisplayOrder sort mode.
+        /// </summary>
+        public int DisplayOrder => _source?.DisplayOrder ?? 0;
+
         // --- Theme integration compatibility (SuccessStory-style bindings) ---
 
         /// <summary>
@@ -774,21 +781,11 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Theme-facing score used by some themes to select trophy visuals.
-        /// This intentionally maps rarity tiers to a small set of expected values.
+        /// Both Aniki and PS5Reborn themes share the same trigger mapping:
+        ///   Gold: 180, 90 | Silver: 30 | Bronze: anything else (e.g. 15).
+        /// Delegates to the source model which applies TrophyType (PSN) or rarity-based mapping.
         /// </summary>
-        public int GamerScore
-        {
-            get
-            {
-                return Rarity switch
-                {
-                    RarityTier.UltraRare => 180,
-                    RarityTier.Rare => 90,
-                    RarityTier.Uncommon => 50,
-                    _ => 25
-                };
-            }
-        }
+        public int GamerScore => _source?.GamerScore ?? 15;
 
         /// <summary>
         /// Alias for themes expecting ImageUnlocked field (SuccessStory compatibility).

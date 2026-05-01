@@ -401,6 +401,14 @@ namespace PlayniteAchievements.Views
         private readonly ThemeDiscoveryService _themeDiscovery;
         private readonly ThemeMigrationService _themeMigration;
         private readonly ProviderRegistry _providerRegistry;
+
+        /// <summary>
+        /// Exposes the Exophase provider settings edit copy so XAML can bind to it via
+        /// <c>ElementName=SettingsControlRoot</c>.  Populated lazily when the Achievement
+        /// Notifications tab is first initialised; may be null if Exophase is not configured.
+        /// </summary>
+        public Providers.Exophase.ExophaseSettings ExophaseEditSettings { get; private set; }
+
         private readonly Dictionary<string, ProviderSettingsViewBase> _providerViewsByKey = new Dictionary<string, ProviderSettingsViewBase>(StringComparer.OrdinalIgnoreCase);
         private readonly ObservableCollection<NotificationSoundOption> _notificationSoundOptions = new ObservableCollection<NotificationSoundOption>();
         private readonly ObservableCollection<NotificationStyleOption> _notificationStyleOptions = new ObservableCollection<NotificationStyleOption>();
@@ -412,7 +420,6 @@ namespace PlayniteAchievements.Views
         private bool _isRefreshingNotificationStyleSelection;
         private bool _isRefreshingOverlayPresetControls;
         private bool _isRefreshingCustomStyleSlotSelection;
-        private bool _isUpdatingSlotNameTextBox;
         private const string SuccessStoryExtensionId = "cebe6d32-8c46-4459-b993-5a5189d60788";
         private const string SuccessStoryFolderName = "SuccessStory";
         private const string DefaultSteamSoundPath = @"Resources\Sounds\Steam.wav";
@@ -542,6 +549,9 @@ namespace PlayniteAchievements.Views
                 if (achievementNotificationsTab != null)
                 {
                     achievementNotificationsTab.DataContext = localSettings;
+
+                    // Populate ExophaseEditSettings so the XAML Exophase checkbox can bind via ElementName.
+                    ExophaseEditSettings = _providerRegistry?.GetSettingsForEdit("Exophase") as Providers.Exophase.ExophaseSettings;
 
                     if (!ReferenceEquals(_notificationPreviewSettings, localSettings))
                     {
@@ -1432,34 +1442,13 @@ namespace PlayniteAchievements.Views
 
         private void RefreshOverlayRuntimeControls(Providers.Local.LocalSettings localSettings)
         {
-            if (localSettings == null)
-            {
-                return;
-            }
-
-            if (NotificationsOverlayDurationSlider != null)
-            {
-                NotificationsOverlayDurationSlider.Value = localSettings.UnlockOverlayDurationMilliseconds;
-                if (NotificationsOverlayDurationValueTextBlock != null)
-                {
-                    NotificationsOverlayDurationValueTextBlock.Text = $"{localSettings.UnlockOverlayDurationMilliseconds} ms";
-                }
-            }
+            // Slider value and text block are now bound via TwoWay XAML binding.
+            // This method remains for any future runtime-only overlay controls.
         }
 
         private void NotificationsOverlayDurationSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            var localSettings = _providerRegistry?.GetSettingsForEdit("Local") as Providers.Local.LocalSettings;
-            if (localSettings == null || NotificationsOverlayDurationSlider == null)
-            {
-                return;
-            }
-
-            localSettings.UnlockOverlayDurationMilliseconds = (int)Math.Round(NotificationsOverlayDurationSlider.Value);
-            if (NotificationsOverlayDurationValueTextBlock != null)
-            {
-                NotificationsOverlayDurationValueTextBlock.Text = $"{localSettings.UnlockOverlayDurationMilliseconds} ms";
-            }
+            // Text block is now bound via XAML StringFormat binding; nothing to do here.
         }
 
         private void NotificationsOverlayPresetStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1740,52 +1729,33 @@ namespace PlayniteAchievements.Views
         private void RefreshCustomStyleSlotControls(Providers.Local.LocalSettings localSettings)
         {
             if (localSettings == null || NotificationsCustomStyleSlotComboBox == null)
-            {
                 return;
-            }
 
             _isRefreshingCustomStyleSlotSelection = true;
             try
             {
                 var slots = EnsureCustomStyleSlots(localSettings);
                 _customStyleSlotOptions.Clear();
-                for (var index = 0; index < 10; index++)
+                for (var index = 0; index < slots.Count; index++)
                 {
                     var slot = slots[index];
-                    var displayName = string.IsNullOrWhiteSpace(slot?.Name)
-                        ? $"Slot {index + 1}"
-                        : slot.Name.Trim();
-
+                    var name = string.IsNullOrWhiteSpace(slot?.Name) ? $"Slot {index + 1}" : slot.Name.Trim();
                     _customStyleSlotOptions.Add(new CustomStyleSlotOption
                     {
                         SlotNumber = index + 1,
-                        DisplayName = displayName
+                        DisplayName = name
                     });
                 }
 
                 NotificationsCustomStyleSlotComboBox.ItemsSource = _customStyleSlotOptions;
-                NotificationsCustomStyleSlotComboBox.SelectedItem = _customStyleSlotOptions
-                    .FirstOrDefault(option => option.SlotNumber == localSettings.SelectedCustomStyleSlot)
+                var selectedOption = _customStyleSlotOptions
+                    .FirstOrDefault(o => o.SlotNumber == localSettings.SelectedCustomStyleSlot)
                     ?? _customStyleSlotOptions.FirstOrDefault();
+                NotificationsCustomStyleSlotComboBox.SelectedItem = selectedOption;
 
-                if (NotificationsCustomStyleSlotComboBox.SelectedItem is CustomStyleSlotOption selected)
-                {
-                    var selectedSlot = slots[Math.Max(0, Math.Min(9, selected.SlotNumber - 1))];
-                    _isUpdatingSlotNameTextBox = true;
-                    try
-                    {
-                        if (NotificationsCustomStyleSlotNameTextBox != null)
-                        {
-                            NotificationsCustomStyleSlotNameTextBox.Text = string.IsNullOrWhiteSpace(selectedSlot?.Name)
-                                ? $"Slot {selected.SlotNumber}"
-                                : selectedSlot.Name;
-                        }
-                    }
-                    finally
-                    {
-                        _isUpdatingSlotNameTextBox = false;
-                    }
-                }
+                // Update the editable text to match selected slot name
+                if (selectedOption != null)
+                    NotificationsCustomStyleSlotComboBox.Text = selectedOption.DisplayName;
             }
             finally
             {
@@ -1796,87 +1766,76 @@ namespace PlayniteAchievements.Views
         private static List<LocalCustomOverlayStyleSlot> EnsureCustomStyleSlots(Providers.Local.LocalSettings localSettings)
         {
             var slots = localSettings.CustomOverlayStyleSlots;
-            var changed = false;
-
-            if (slots == null)
+            if (slots == null || slots.Count == 0)
             {
-                slots = new List<LocalCustomOverlayStyleSlot>();
-                changed = true;
+                localSettings.CustomOverlayStyleSlots = new List<LocalCustomOverlayStyleSlot>
+                {
+                    new LocalCustomOverlayStyleSlot { Name = "Slot 1" }
+                };
             }
-
-            while (slots.Count < 10)
-            {
-                slots.Add(new LocalCustomOverlayStyleSlot { Name = $"Slot {slots.Count + 1}" });
-                changed = true;
-            }
-
-            if (changed)
-            {
-                localSettings.CustomOverlayStyleSlots = slots;
-            }
-
             return localSettings.CustomOverlayStyleSlots;
         }
 
         private void NotificationsCustomStyleSlotComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isRefreshingCustomStyleSlotSelection)
-            {
                 return;
-            }
 
             var localSettings = _providerRegistry?.GetSettingsForEdit("Local") as Providers.Local.LocalSettings;
             if (localSettings == null || !(NotificationsCustomStyleSlotComboBox?.SelectedItem is CustomStyleSlotOption selectedSlot))
-            {
                 return;
-            }
 
             localSettings.SelectedCustomStyleSlot = selectedSlot.SlotNumber;
-            RefreshCustomStyleSlotControls(localSettings);
+            NotificationsCustomStyleSlotComboBox.Text = selectedSlot.DisplayName;
         }
 
-        private void NotificationsCustomStyleSlotNameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void NotificationsCustomStyleSlotComboBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            ApplySelectedCustomStyleSlotName(updateTextBox: false);
-        }
-
-        private void NotificationsCustomStyleSlotNameTextBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            ApplySelectedCustomStyleSlotName(updateTextBox: true);
-        }
-
-        private void ApplySelectedCustomStyleSlotName(bool updateTextBox)
-        {
-            if (_isUpdatingSlotNameTextBox || NotificationsCustomStyleSlotNameTextBox == null)
-            {
+            if (_isRefreshingCustomStyleSlotSelection)
                 return;
-            }
 
             var localSettings = _providerRegistry?.GetSettingsForEdit("Local") as Providers.Local.LocalSettings;
             if (localSettings == null)
-            {
                 return;
-            }
 
             var slots = EnsureCustomStyleSlots(localSettings);
-            var slotIndex = Math.Max(0, Math.Min(9, localSettings.SelectedCustomStyleSlot - 1));
-            var rawName = NotificationsCustomStyleSlotNameTextBox.Text;
-            slots[slotIndex].Name = string.IsNullOrWhiteSpace(rawName) ? $"Slot {slotIndex + 1}" : rawName.Trim();
+            var slotIndex = Math.Max(0, Math.Min(slots.Count - 1, localSettings.SelectedCustomStyleSlot - 1));
+            var newName = NotificationsCustomStyleSlotComboBox?.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(newName))
+                newName = $"Slot {slotIndex + 1}";
+            slots[slotIndex].Name = newName;
             localSettings.CustomOverlayStyleSlots = slots;
+            RefreshCustomStyleSlotControls(localSettings);
+        }
 
-            if (updateTextBox)
-            {
-                _isUpdatingSlotNameTextBox = true;
-                try
-                {
-                    NotificationsCustomStyleSlotNameTextBox.Text = slots[slotIndex].Name;
-                }
-                finally
-                {
-                    _isUpdatingSlotNameTextBox = false;
-                }
-            }
+        private void NotificationsAddCustomStyleSlot_Click(object sender, RoutedEventArgs e)
+        {
+            var localSettings = _providerRegistry?.GetSettingsForEdit("Local") as Providers.Local.LocalSettings;
+            if (localSettings == null)
+                return;
 
+            var slots = EnsureCustomStyleSlots(localSettings);
+            var newSlot = new LocalCustomOverlayStyleSlot { Name = $"Slot {slots.Count + 1}" };
+            slots.Add(newSlot);
+            localSettings.CustomOverlayStyleSlots = slots;
+            localSettings.SelectedCustomStyleSlot = slots.Count;
+            RefreshCustomStyleSlotControls(localSettings);
+        }
+
+        private void NotificationsRemoveCustomStyleSlot_Click(object sender, RoutedEventArgs e)
+        {
+            var localSettings = _providerRegistry?.GetSettingsForEdit("Local") as Providers.Local.LocalSettings;
+            if (localSettings == null)
+                return;
+
+            var slots = EnsureCustomStyleSlots(localSettings);
+            if (slots.Count <= 1)
+                return; // Cannot remove the last slot
+
+            var removeIndex = Math.Max(0, Math.Min(slots.Count - 1, localSettings.SelectedCustomStyleSlot - 1));
+            slots.RemoveAt(removeIndex);
+            localSettings.CustomOverlayStyleSlots = slots;
+            localSettings.SelectedCustomStyleSlot = Math.Max(1, Math.Min(slots.Count, localSettings.SelectedCustomStyleSlot));
             RefreshCustomStyleSlotControls(localSettings);
         }
 
@@ -1890,12 +1849,13 @@ namespace PlayniteAchievements.Views
 
             var slots = EnsureCustomStyleSlots(localSettings);
 
-            var slotIndex = Math.Max(0, Math.Min(9, localSettings.SelectedCustomStyleSlot - 1));
+            var slotIndex = Math.Max(0, Math.Min(slots.Count - 1, localSettings.SelectedCustomStyleSlot - 1));
+            var currentName = NotificationsCustomStyleSlotComboBox?.Text?.Trim();
             slots[slotIndex] = new LocalCustomOverlayStyleSlot
             {
-                Name = string.IsNullOrWhiteSpace(NotificationsCustomStyleSlotNameTextBox?.Text)
+                Name = string.IsNullOrWhiteSpace(currentName)
                     ? (string.IsNullOrWhiteSpace(slots[slotIndex]?.Name) ? $"Slot {slotIndex + 1}" : slots[slotIndex].Name)
-                    : NotificationsCustomStyleSlotNameTextBox.Text.Trim(),
+                    : currentName,
                 AutoResizeToContent = localSettings.OverlayCustomAutoResizeToContent,
                 WrapAllText = localSettings.OverlayCustomWrapAllText,
                 IconSize = localSettings.OverlayCustomIconSize,
@@ -2972,6 +2932,15 @@ namespace PlayniteAchievements.Views
             if (persisted != null)
             {
                 persisted.SidebarSelectedGameGridSortDescending = !persisted.SidebarSelectedGameGridSortDescending;
+            }
+        }
+
+        private void ToggleDefaultAchievementSortDescending(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted != null)
+            {
+                persisted.DefaultAchievementSortDescending = !persisted.DefaultAchievementSortDescending;
             }
         }
 

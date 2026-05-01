@@ -99,6 +99,15 @@
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="0,0,0,6"/>
 
+                    <!-- Multiple folder detection warning -->
+                    <CheckBox Content="Warn when multiple folders are detected for the same game"
+                              IsChecked="{Binding Settings.WarnOnAmbiguousLocalFolder, Mode=TwoWay}"
+                              Margin="0,0,0,4"/>
+                    <TextBlock Text="When enabled, a notification appears if more than one matching local folder is found for a game. Use Game Options &gt; Local Overrides to pick the correct folder and silence the warning."
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="18,0,0,12"
+                               TextWrapping="Wrap"/>
+
                     <!-- REAL-TIME UNLOCK CHECKS MOVED TO ACHIEVEMENT NOTIFICATIONS TAB -->
                     <!--<TextBlock Text="Achievement notification and monitoring settings have been moved to the Achievement Notifications tab in the main settings."
                                Style="{StaticResource MutedTextStyle}"

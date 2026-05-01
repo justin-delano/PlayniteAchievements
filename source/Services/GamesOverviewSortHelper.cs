@@ -101,17 +101,47 @@ namespace PlayniteAchievements.Services
             ref string currentSortPath,
             ref ListSortDirection currentSortDirection)
         {
+            return TrySortItems(items, sortMemberPath, direction, null, ref currentSortPath, ref currentSortDirection);
+        }
+
+        /// <summary>
+        /// Sorts items by a primary column plus optional secondary columns (Ctrl+Click multi-sort).
+        /// When secondarySorts is provided the primary comparison no longer bakes in automatic
+        /// tie-breakers; instead the caller-supplied secondary columns are tried in order, and
+        /// automatic tie-breakers are applied only after all explicit columns tie.
+        /// </summary>
+        public static bool TrySortItems(
+            List<GameOverviewItem> items,
+            string sortMemberPath,
+            ListSortDirection direction,
+            IReadOnlyList<(string Path, ListSortDirection Direction)> secondarySorts,
+            ref string currentSortPath,
+            ref ListSortDirection currentSortDirection)
+        {
             if (items == null || string.IsNullOrWhiteSpace(sortMemberPath))
             {
                 return false;
             }
 
-            if (TryReverse(items, sortMemberPath, direction, ref currentSortPath, ref currentSortDirection))
+            var hasSecondarySorts = secondarySorts != null && secondarySorts.Count > 0;
+
+            // Optimise: if no secondary sorts and the direction is just a flip of the same column, reverse in-place
+            if (!hasSecondarySorts && TryReverse(items, sortMemberPath, direction, ref currentSortPath, ref currentSortDirection))
             {
                 return true;
             }
 
-            var comparison = CreateComparison(sortMemberPath, direction);
+            Comparison<GameOverviewItem> comparison;
+            if (hasSecondarySorts)
+            {
+                // Build raw comparers for primary + secondaries, then apply automatic tie-breakers last
+                comparison = CreateMultiColumnComparison(sortMemberPath, direction, secondarySorts);
+            }
+            else
+            {
+                comparison = CreateComparison(sortMemberPath, direction);
+            }
+
             if (comparison == null)
             {
                 return false;
@@ -372,6 +402,115 @@ namespace PlayniteAchievements.Services
             }
 
             items.Sort(comparison);
+        }
+
+        /// <summary>
+        /// Builds a chained comparison that evaluates primary then secondary columns, finally
+        /// falling back to the automatic tie-breakers after all explicit columns tie.
+        /// </summary>
+        private static Comparison<GameOverviewItem> CreateMultiColumnComparison(
+            string primaryPath,
+            ListSortDirection primaryDirection,
+            IReadOnlyList<(string Path, ListSortDirection Direction)> secondarySorts)
+        {
+            return (a, b) =>
+            {
+                if (ReferenceEquals(a, b)) return 0;
+                if (a == null) return 1;
+                if (b == null) return -1;
+
+                // Primary column (raw, no built-in tie-breakers)
+                var result = CompareRaw(a, b, primaryPath, primaryDirection);
+                if (result != 0) return result;
+
+                // Explicit secondary columns
+                foreach (var (path, dir) in secondarySorts)
+                {
+                    result = CompareRaw(a, b, path, dir);
+                    if (result != 0) return result;
+                }
+
+                // Automatic tie-breakers after all explicit columns tie
+                return ApplyAutomaticTieBreakers(a, b, primaryPath);
+            };
+        }
+
+        /// <summary>
+        /// Returns the raw sort value for a single column without any tie-breaker chaining.
+        /// </summary>
+        private static int CompareRaw(GameOverviewItem a, GameOverviewItem b, string sortMemberPath, ListSortDirection direction)
+        {
+            return sortMemberPath switch
+            {
+                nameof(GameOverviewItem.LastUnlockUtc)    => CompareDateTime(a?.LastUnlockUtc, b?.LastUnlockUtc, direction),
+                nameof(GameOverviewItem.LastPlayed)       => CompareDateTime(a?.LastPlayed, b?.LastPlayed, direction),
+                nameof(GameOverviewItem.TotalAchievements)=> CompareInt(a?.TotalAchievements ?? 0, b?.TotalAchievements ?? 0, direction),
+                nameof(GameOverviewItem.Progression)      => CompareInt(a?.Progression ?? 0, b?.Progression ?? 0, direction),
+                nameof(GameOverviewItem.PlaytimeSeconds)  => CompareULong(a?.PlaytimeSeconds ?? 0, b?.PlaytimeSeconds ?? 0, direction),
+                nameof(GameOverviewItem.UnlockedAchievements) => CompareInt(a?.UnlockedAchievements ?? 0, b?.UnlockedAchievements ?? 0, direction),
+                "SortingName"                             => CompareString(GetSortingName(a), GetSortingName(b), direction),
+                nameof(GameOverviewItem.GameName)         => CompareString(a?.GameName, b?.GameName, direction),
+                "TrophyType"                              => CompareInt(
+                    AchievementSortHelper.GetTrophyRank(GetPrimaryTrophyType(a)),
+                    AchievementSortHelper.GetTrophyRank(GetPrimaryTrophyType(b)),
+                    direction),
+                _ => 0
+            };
+        }
+
+        /// <summary>
+        /// Applies the fixed automatic tie-breakers that are independent of user column choices.
+        /// Skips any tie-breaker that duplicates the column the user explicitly sorted by.
+        /// </summary>
+        private static int ApplyAutomaticTieBreakers(GameOverviewItem a, GameOverviewItem b, string primarySortMemberPath)
+        {
+            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.LastUnlockUtc), StringComparison.Ordinal))
+            {
+                var c = CompareDateTime(a.LastUnlockUtc, b.LastUnlockUtc, ListSortDirection.Descending);
+                if (c != 0) return c;
+            }
+
+            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.LastPlayed), StringComparison.Ordinal))
+            {
+                var c = CompareDateTime(a.LastPlayed, b.LastPlayed, ListSortDirection.Descending);
+                if (c != 0) return c;
+            }
+
+            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.Progression), StringComparison.Ordinal))
+            {
+                var c = CompareInt(a.Progression, b.Progression, ListSortDirection.Descending);
+                if (c != 0) return c;
+            }
+
+            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.TotalAchievements), StringComparison.Ordinal))
+            {
+                var c = CompareInt(a.TotalAchievements, b.TotalAchievements, ListSortDirection.Descending);
+                if (c != 0) return c;
+            }
+
+            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.PlaytimeSeconds), StringComparison.Ordinal))
+            {
+                var c = CompareULong(a.PlaytimeSeconds, b.PlaytimeSeconds, ListSortDirection.Descending);
+                if (c != 0) return c;
+            }
+
+            if (!string.Equals(primarySortMemberPath, "SortingName", StringComparison.Ordinal) &&
+                !string.Equals(primarySortMemberPath, nameof(GameOverviewItem.GameName), StringComparison.Ordinal))
+            {
+                var c = CompareString(GetSortingName(a), GetSortingName(b), ListSortDirection.Ascending);
+                if (c != 0) return c;
+            }
+
+            var gameNameC = CompareString(a.GameName, b.GameName, ListSortDirection.Ascending);
+            if (gameNameC != 0) return gameNameC;
+
+            var appIdC = CompareInt(a.AppId, b.AppId, ListSortDirection.Ascending);
+            if (appIdC != 0) return appIdC;
+
+            return CompareString(
+                a.PlayniteGameId?.ToString("D"),
+                b.PlayniteGameId?.ToString("D"),
+                ListSortDirection.Ascending);
         }
     }
 }

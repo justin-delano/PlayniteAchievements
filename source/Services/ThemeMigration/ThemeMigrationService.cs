@@ -299,6 +299,14 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 }
             }
 
+            // After all content replacements are done, create PlayniteAchievements-named copies
+            // of any SuccessStory-named or SSHelper-named XAML files.  The migration rewrites
+            // filename references inside other files (e.g. the Source attribute in Main.xaml goes
+            // from SuccessStoryMainView.xaml to PlayniteAchievementsMainView.xaml) but the actual
+            // files on disk keep their original names.  Without the copies those rewritten Source
+            // references resolve to empty URIs at load time and crash the theme.
+            CreateRenamedFileCopies(themePath, backupPath);
+
             // Only create backup folder and manifest if we actually backed up files
             if (backedUpFiles.Count > 0)
             {
@@ -319,6 +327,37 @@ namespace PlayniteAchievements.Services.ThemeMigration
                 ControlReplacementsMade = controlReplacementsMade,
                 BindingReplacementsMade = bindingReplacementsMade
             };
+        }
+
+        /// <summary>
+        /// After content migration, creates PlayniteAchievements-named copies of any
+        /// SuccessStory-named or SSHelper-named XAML files so that file references rewritten
+        /// by the migration (e.g. SuccessStoryMainView.xaml → PlayniteAchievementsMainView.xaml)
+        /// resolve correctly when Playnite loads the theme.
+        /// </summary>
+        private void CreateRenamedFileCopies(string themePath, string backupPath)
+        {
+            var themeDir = new DirectoryInfo(themePath);
+            foreach (var file in themeDir.GetFiles("*.xaml", SearchOption.AllDirectories))
+            {
+                if (file.FullName.StartsWith(backupPath, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                string newName = file.Name;
+                newName = newName.Replace("SuccessStory", ThemeSourceName);
+                newName = newName.Replace("SSHelper", ThemeSourceName);
+
+                // Only proceed if the name actually changed
+                if (string.Equals(newName, file.Name, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var newPath = Path.Combine(file.DirectoryName, newName);
+                if (!File.Exists(newPath))
+                {
+                    File.Copy(file.FullName, newPath);
+                    _logger.Info($"Created renamed copy for migrated reference: {newName} (from {file.Name})");
+                }
+            }
         }
 
         /// <summary>

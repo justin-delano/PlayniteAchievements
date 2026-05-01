@@ -124,6 +124,10 @@ namespace PlayniteAchievements.Views
                 RecentAchievementsDataGrid?.Refresh();
                 SidebarAllAchievementsDataGrid?.Refresh();
                 GameAchievementsGrid?.Refresh();
+                ResetOverviewSortDirection();
+                ResetAchievementsSortDirection();
+                ResetRecentAchievementsSortDirection();
+                ResetSidebarAllAchievementsSortDirection();
             }), DispatcherPriority.Loaded);
         }
 
@@ -175,6 +179,8 @@ namespace PlayniteAchievements.Views
             ApplyWidthsToGrids();
             ResetOverviewSortDirection();
             ResetAchievementsSortDirection();
+            ResetRecentAchievementsSortDirection();
+            ResetSidebarAllAchievementsSortDirection();
             UpdatePieChartLayout();
         }
 
@@ -182,6 +188,8 @@ namespace PlayniteAchievements.Views
         {
             ResetOverviewSortDirection();
             ResetAchievementsSortDirection();
+            ResetRecentAchievementsSortDirection();
+            ResetSidebarAllAchievementsSortDirection();
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -218,11 +226,6 @@ namespace PlayniteAchievements.Views
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 ResetAchievementsSortDirection();
-
-                if (!_viewModel.IsGameSelected)
-                {
-                    ResetRecentAchievementsToDefaultSort();
-                }
 
                 if (TryApplyPendingToggleWidths()) return;
                 QueueActiveGridNormalization(rescaleAll: false);
@@ -615,52 +618,53 @@ namespace PlayniteAchievements.Views
         private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
             if (_viewModel == null) return;
-            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e);
+            var isAdditive = System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.LeftCtrl)
+                          || System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.RightCtrl);
+            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e, clearOtherColumns: !isAdditive);
             if (sortDirection == null) return;
-            _viewModel.SortDataGrid((sender as DataGrid), e.Column.SortMemberPath, sortDirection.Value);
+            _viewModel.SortDataGrid((sender as DataGrid), e.Column.SortMemberPath, sortDirection.Value, isAdditive);
+            ResetOverviewSortDirection();
         }
 
         private void GameAchievementsGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
             if (_viewModel == null) return;
-            e.Handled = true;
 
             var grid = GameAchievementsGrid?.InternalDataGrid;
             if (grid == null) return;
 
-            // Toggle sort direction
-            var currentDirection = e.Column.SortDirection;
-            var newDirection = currentDirection == ListSortDirection.Ascending
-                ? ListSortDirection.Descending
-                : ListSortDirection.Ascending;
+            var isAdditive = System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.LeftCtrl)
+                          || System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.RightCtrl);
 
-            // Update sort indicator via the control
-            GameAchievementsGrid?.SetSortIndicator(e.Column.SortMemberPath, newDirection);
+            // Use HandleSorting for uniform A-Z / Z-A first-click logic
+            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e, grid, clearOtherColumns: !isAdditive);
+            if (sortDirection == null) return;
 
-            // Perform the actual sorting
-            _viewModel.SortDataGrid(grid, e.Column.SortMemberPath, newDirection);
+            _viewModel.SortDataGrid(grid, e.Column.SortMemberPath, sortDirection.Value, isAdditive);
         }
 
         private void AchievementDataGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
             if (_viewModel == null) return;
-            e.Handled = true;
 
             var control = sender as Controls.AchievementDataGridControl;
             var grid = control?.InternalDataGrid;
             if (grid == null) return;
 
-            // Toggle sort direction
-            var currentDirection = e.Column.SortDirection;
-            var newDirection = currentDirection == ListSortDirection.Ascending
-                ? ListSortDirection.Descending
-                : ListSortDirection.Ascending;
+            var isAdditive = System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.LeftCtrl)
+                          || System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.RightCtrl);
 
-            // Update sort indicator via the control
-            control?.SetSortIndicator(e.Column.SortMemberPath, newDirection);
+            // Use HandleSorting for uniform A-Z / Z-A first-click logic
+            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e, grid, clearOtherColumns: !isAdditive);
+            if (sortDirection == null) return;
 
-            // Perform the actual sorting
-            _viewModel.SortDataGrid(grid, e.Column.SortMemberPath, newDirection);
+            _viewModel.SortDataGrid(grid, e.Column.SortMemberPath, sortDirection.Value, isAdditive);
+
+            // Update sort level badges to reflect the new multi-column sort state
+            if (control == RecentAchievementsDataGrid)
+                ResetRecentAchievementsSortDirection();
+            else if (control == SidebarAllAchievementsDataGrid)
+                ResetSidebarAllAchievementsSortDirection();
         }
 
         private void OnProviderPieChartSliceClick(object sender, string providerName)
@@ -748,6 +752,7 @@ namespace PlayniteAchievements.Views
             grid.PreviewMouseLeftButtonDown += Grid_PreviewMouseLeftButtonDown;
             grid.PreviewMouseLeftButtonUp += Grid_PreviewMouseLeftButtonUp;
             grid.LostMouseCapture += Grid_LostMouseCapture;
+            grid.ColumnDisplayIndexChanged += GamesOverviewDataGrid_ColumnDisplayIndexChanged;
         }
 
         private void DetachAllHandlers()
@@ -780,6 +785,7 @@ namespace PlayniteAchievements.Views
             grid.PreviewMouseLeftButtonDown -= Grid_PreviewMouseLeftButtonDown;
             grid.PreviewMouseLeftButtonUp -= Grid_PreviewMouseLeftButtonUp;
             grid.LostMouseCapture -= Grid_LostMouseCapture;
+            grid.ColumnDisplayIndexChanged -= GamesOverviewDataGrid_ColumnDisplayIndexChanged;
         }
 
         private void AttachWidthHandler(DataGrid grid, DataGridColumn column)
@@ -1037,6 +1043,60 @@ namespace PlayniteAchievements.Views
             EnsureDefaultSeeds();
             ApplyWidths(GamesOverviewDataGrid, GetOverviewWidths());
             NormalizeGridColumns(GamesOverviewDataGrid);
+            ApplyColumnOrderToGrid(GamesOverviewDataGrid, _settings?.Persisted?.GamesOverviewColumnOrder);
+        }
+
+        private void ApplyColumnOrderToGrid(DataGrid grid, Dictionary<string, int> orderMap)
+        {
+            if (grid == null || orderMap == null || orderMap.Count == 0) return;
+
+            // Build a list of (column, desired displayIndex) pairs
+            var assignments = new List<(DataGridColumn Column, int DesiredIndex)>();
+            foreach (var column in grid.Columns)
+            {
+                var key = ColumnWidthNormalization.GetColumnKey(column);
+                if (!string.IsNullOrWhiteSpace(key) && orderMap.TryGetValue(key, out var idx))
+                {
+                    assignments.Add((column, Math.Min(idx, grid.Columns.Count - 1)));
+                }
+            }
+
+            if (assignments.Count == 0) return;
+
+            // Apply display indices in ascending order to avoid conflicts
+            foreach (var (column, desiredIndex) in assignments.OrderBy(a => a.DesiredIndex))
+            {
+                try
+                {
+                    if (column.DisplayIndex != desiredIndex)
+                    {
+                        column.DisplayIndex = desiredIndex;
+                    }
+                }
+                catch { /* ignore invalid index transitions */ }
+            }
+        }
+
+        private void GamesOverviewDataGrid_ColumnDisplayIndexChanged(object sender, DataGridColumnEventArgs e)
+        {
+            if (_isApplyingWidths) return;
+
+            var persisted = _settings?.Persisted;
+            if (persisted == null || GamesOverviewDataGrid == null) return;
+
+            var orderMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var column in GamesOverviewDataGrid.Columns)
+            {
+                var key = ColumnWidthNormalization.GetColumnKey(column);
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    orderMap[key] = column.DisplayIndex;
+                }
+            }
+
+            persisted.GamesOverviewColumnOrder = orderMap;
+            _saveTimer?.Stop();
+            _saveTimer?.Start();
         }
 
         private void ApplyWidths(DataGrid grid, Dictionary<string, double> map)
@@ -1468,7 +1528,7 @@ namespace PlayniteAchievements.Views
         {
             var grid = GameAchievementsGrid?.InternalDataGrid;
             if (grid == null) return;
-            foreach (var c in grid.Columns) c.SortDirection = null;
+            foreach (var c in grid.Columns) { c.SortDirection = null; SetColumnSortLevel(grid, c, null); }
 
             if (_viewModel?.IsGameSelected != true)
             {
@@ -1481,7 +1541,52 @@ namespace PlayniteAchievements.Views
                 _viewModel.SelectedGameSortDirection,
                 _settings?.Persisted,
                 AchievementSortSurface.SidebarSelectedGame,
-                (sortPath, sortDirection) => GameAchievementsGrid?.SetSortIndicator(sortPath, sortDirection));
+                (sortPath, sortDirection) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(sortPath))
+                    {
+                        var primary = grid.Columns.FirstOrDefault(c => c?.SortMemberPath == sortPath);
+                        if (primary != null) { primary.SortDirection = sortDirection; SetColumnSortLevel(grid, primary, "1"); }
+                    }
+                    GameAchievementsGrid?.SetSortIndicator(sortPath, sortDirection);
+                });
+
+            var secondaries = _viewModel?.SelectedGameSecondarySorts;
+            if (secondaries != null)
+            {
+                for (var i = 0; i < secondaries.Count; i++)
+                {
+                    var (path, dir) = secondaries[i];
+                    var col = grid.Columns.FirstOrDefault(c => c?.SortMemberPath == path);
+                    if (col != null) { col.SortDirection = dir; SetColumnSortLevel(grid, col, (i + 2).ToString()); }
+                }
+            }
+        }
+
+        private static DataGridColumnHeader GetColumnHeader(DataGrid grid, DataGridColumn column)
+        {
+            if (grid == null || column == null) return null;
+            return FindVisualChildren<DataGridColumnHeader>(grid)
+                .FirstOrDefault(h => h.Column == column);
+        }
+
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null) yield break;
+            var count = VisualTreeHelper.GetChildrenCount(parent);
+            for (var i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T t) yield return t;
+                foreach (var grandchild in FindVisualChildren<T>(child))
+                    yield return grandchild;
+            }
+        }
+
+        private void SetColumnSortLevel(DataGrid grid, DataGridColumn column, string level)
+        {
+            var header = GetColumnHeader(grid, column);
+            if (header != null) header.Tag = level;
         }
 
         private void ResetOverviewSortDirection()
@@ -1495,6 +1600,7 @@ namespace PlayniteAchievements.Views
             foreach (var column in grid.Columns)
             {
                 column.SortDirection = null;
+                SetColumnSortLevel(grid, column, null);
             }
 
             GamesOverviewSortHelper.ApplySortIndicator(
@@ -1512,16 +1618,93 @@ namespace PlayniteAchievements.Views
                     if (targetColumn != null)
                     {
                         targetColumn.SortDirection = sortDirection;
+                        SetColumnSortLevel(grid, targetColumn, "1");
                     }
                 });
+
+            // Also show sort indicators for any active secondary sort columns
+            if (_viewModel?.OverviewSecondarySorts != null)
+            {
+                var secondaries = _viewModel.OverviewSecondarySorts;
+                for (var i = 0; i < secondaries.Count; i++)
+                {
+                    var (path, dir) = secondaries[i];
+                    var col = grid.Columns.FirstOrDefault(c => c?.SortMemberPath == path);
+                    if (col != null)
+                    {
+                        col.SortDirection = dir;
+                        SetColumnSortLevel(grid, col, (i + 2).ToString()); // primary=1, secondaries start at 2
+                    }
+                }
+            }
         }
 
         private void ResetRecentAchievementsSortDirection()
         {
             if (RecentAchievementsDataGrid == null) return;
-            foreach (var c in RecentAchievementsDataGrid.InternalDataGrid.Columns) c.SortDirection = null;
-            var unlockCol = RecentAchievementsDataGrid.InternalDataGrid.Columns.FirstOrDefault(c => c.SortMemberPath == "UnlockTime");
-            if (unlockCol != null) unlockCol.SortDirection = ListSortDirection.Descending;
+            var grid = RecentAchievementsDataGrid.InternalDataGrid;
+            if (grid == null) return;
+
+            foreach (var c in grid.Columns) { c.SortDirection = null; SetColumnSortLevel(grid, c, null); }
+
+            AchievementSortHelper.ApplySortIndicator(
+                _viewModel?.RecentSortPath,
+                _viewModel?.RecentSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.AchievementDataGrid,
+                (sortPath, sortDirection) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(sortPath))
+                    {
+                        var primary = grid.Columns.FirstOrDefault(c => c?.SortMemberPath == sortPath);
+                        if (primary != null) { primary.SortDirection = sortDirection; SetColumnSortLevel(grid, primary, "1"); }
+                    }
+                });
+
+            var secondaries = _viewModel?.RecentSecondarySorts;
+            if (secondaries != null)
+            {
+                for (var i = 0; i < secondaries.Count; i++)
+                {
+                    var (path, dir) = secondaries[i];
+                    var col = grid.Columns.FirstOrDefault(c => c?.SortMemberPath == path);
+                    if (col != null) { col.SortDirection = dir; SetColumnSortLevel(grid, col, (i + 2).ToString()); }
+                }
+            }
+        }
+
+        private void ResetSidebarAllAchievementsSortDirection()
+        {
+            if (SidebarAllAchievementsDataGrid == null) return;
+            var grid = SidebarAllAchievementsDataGrid.InternalDataGrid;
+            if (grid == null) return;
+
+            foreach (var c in grid.Columns) { c.SortDirection = null; SetColumnSortLevel(grid, c, null); }
+
+            AchievementSortHelper.ApplySortIndicator(
+                _viewModel?.SidebarAllSortPath,
+                _viewModel?.SidebarAllSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.AchievementDataGrid,
+                (sortPath, sortDirection) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(sortPath))
+                    {
+                        var primary = grid.Columns.FirstOrDefault(c => c?.SortMemberPath == sortPath);
+                        if (primary != null) { primary.SortDirection = sortDirection; SetColumnSortLevel(grid, primary, "1"); }
+                    }
+                });
+
+            var secondaries = _viewModel?.SidebarAllSecondarySorts;
+            if (secondaries != null)
+            {
+                for (var i = 0; i < secondaries.Count; i++)
+                {
+                    var (path, dir) = secondaries[i];
+                    var col = grid.Columns.FirstOrDefault(c => c?.SortMemberPath == path);
+                    if (col != null) { col.SortDirection = dir; SetColumnSortLevel(grid, col, (i + 2).ToString()); }
+                }
+            }
         }
 
         private void ResetRecentAchievementsToDefaultSort()

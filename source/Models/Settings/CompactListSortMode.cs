@@ -9,6 +9,11 @@ namespace PlayniteAchievements.Models.Settings
     {
         None = 0,
         UnlockTime = 1,
-        Rarity = 2
+        Rarity = 2,
+        /// <summary>
+        /// Preserves the developer-assigned display order (e.g. RetroAchievements DisplayOrder field).
+        /// Falls back to source order (0) for providers that don't supply an explicit index.
+        /// </summary>
+        DisplayOrder = 3
     }
 }

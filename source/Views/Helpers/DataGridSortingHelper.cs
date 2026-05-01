@@ -9,6 +9,19 @@ namespace PlayniteAchievements.Views.Helpers
     public static class DataGridSortingHelper
     {
         /// <summary>
+        /// Sort member paths for columns that should default to Ascending (A→Z) on first click
+        /// rather than the global default of Descending.
+        /// </summary>
+        private static readonly System.Collections.Generic.HashSet<string> AscendingDefaultPaths =
+            new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase)
+            {
+                "SortingName",   // Game name column in GamesOverview
+                "DisplayName",   // Achievement display name
+                "Name",          // Generic name fallback
+                "ApiName",       // Achievement API name
+            };
+
+        /// <summary>
         /// Handles the DataGrid.Sorting event with uniform sort direction toggling.
         /// Sets e.Handled to true, toggles the sort direction, clears other columns' sort indicators,
         /// and returns the computed sort direction for the caller to apply.
@@ -17,8 +30,10 @@ namespace PlayniteAchievements.Views.Helpers
         /// <param name="e">The DataGridSortingEventArgs.</param>
         /// <param name="dataGrid">Optional DataGrid to use for clearing other columns' sort indicators.
         /// Required when sender is not a DataGrid (e.g., when using wrapper controls with external sorting).</param>
+        /// <param name="clearOtherColumns">When false (Ctrl+Click multi-sort), other columns' sort indicators
+        /// are preserved so all active sort columns remain visible.</param>
         /// <returns>The new sort direction, or null if the column is invalid.</returns>
-        public static ListSortDirection? HandleSorting(object sender, DataGridSortingEventArgs e, DataGrid dataGrid = null)
+        public static ListSortDirection? HandleSorting(object sender, DataGridSortingEventArgs e, DataGrid dataGrid = null, bool clearOtherColumns = true)
         {
             e.Handled = true;
 
@@ -28,19 +43,30 @@ namespace PlayniteAchievements.Views.Helpers
                 return null;
             }
 
-            var sortDirection = ListSortDirection.Ascending;
-            if (column.SortDirection == ListSortDirection.Ascending)
+            // Name columns default Ascending on first click; all others default Descending.
+            var isNameColumn = AscendingDefaultPaths.Contains(column.SortMemberPath);
+            ListSortDirection sortDirection;
+            if (column.SortDirection == null)
             {
-                sortDirection = ListSortDirection.Descending;
+                sortDirection = isNameColumn ? ListSortDirection.Ascending : ListSortDirection.Descending;
+            }
+            else
+            {
+                sortDirection = column.SortDirection == ListSortDirection.Descending
+                    ? ListSortDirection.Ascending
+                    : ListSortDirection.Descending;
             }
 
-            // Clear all columns' sort direction on the DataGrid if provided
-            var targetGrid = dataGrid ?? (sender as DataGrid);
-            if (targetGrid != null)
+            // Clear all columns' sort direction on the DataGrid when not in additive mode
+            if (clearOtherColumns)
             {
-                foreach (var c in targetGrid.Columns)
+                var targetGrid = dataGrid ?? (sender as DataGrid);
+                if (targetGrid != null)
                 {
-                    c.SortDirection = null;
+                    foreach (var c in targetGrid.Columns)
+                    {
+                        c.SortDirection = null;
+                    }
                 }
             }
 

@@ -38,16 +38,28 @@
                                           VerticalAlignment="Center"
                                           Margin="{TemplateBinding Padding}"
                                           TextElement.Foreground="{TemplateBinding Foreground}"/>
-                        <Path x:Name="SortArrow"
-                              HorizontalAlignment="Right"
-                              Fill="{DynamicResource TextBrush}"
-                              Width="8"
-                              Height="6"
-                              Data="M 0,0 L 4,6 L 8,0"
-                              VerticalAlignment="Center"
-                              Margin="0,0,10,0"
-                              RenderTransformOrigin="0.5,0.5"
-                              Visibility="Collapsed"/>
+                        <StackPanel HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal"
+                                    Margin="0,0,10,0">
+                            <!-- Sort level number badge (shown for secondary+ sorts when Tag is > 1) -->
+                            <TextBlock x:Name="SortLevelBadge"
+                                       Text="{Binding Tag, RelativeSource={RelativeSource AncestorType=DataGridColumnHeader}}"
+                                       FontSize="9"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextBrush}"
+                                       Opacity="0.75"
+                                       Margin="0,0,2,0"
+                                       Visibility="Collapsed"/>
+                            <Path x:Name="SortArrow"
+                                  Fill="{DynamicResource TextBrush}"
+                                  Width="8"
+                                  Height="6"
+                                  Data="M 0,0 L 4,6 L 8,0"
+                                  VerticalAlignment="Center"
+                                  RenderTransformOrigin="0.5,0.5"
+                                  Visibility="Collapsed"/>
+                        </StackPanel>
                         <Thumb x:Name="PART_LeftHeaderGripper"
                                Width="0"
                                Background="Transparent"
@@ -65,6 +77,7 @@
                         </Trigger>
                         <Trigger Property="SortDirection" Value="Ascending">
                             <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="SortLevelBadge" Property="Visibility" Value="Visible"/>
                             <Setter TargetName="SortArrow" Property="RenderTransform">
                                 <Setter.Value>
                                     <ScaleTransform ScaleY="-1"/>
@@ -73,6 +86,7 @@
                         </Trigger>
                         <Trigger Property="SortDirection" Value="Descending">
                             <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="SortLevelBadge" Property="Visibility" Value="Visible"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

@@ -69,6 +69,7 @@
     <sys:String x:Key="LOCPlayAch_Trophy_Platinum">Platinum</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Silver">Silver</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockTime">Unlock Time</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_DisplayOrder">Display Order</sys:String>
 
     <!-- ================================================================= -->
     <!-- 03 Columns -->
@@ -604,6 +605,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">Show Platform Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarRarityPieChart">Show Rarity Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarTrophyPieChart">Show Trophy Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_DefaultAchievementSort">Default Achievement Sort</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Show Top Menu Bar Button</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">Single Game View Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">View Achievements Window</sys:String>

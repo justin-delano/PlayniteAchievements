@@ -275,6 +275,8 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowHiddenSuffix { get; set; }
 
+        public int DisplayOrder { get; set; }
+
         public static AchievementDisplayItem Create(
             PlayniteAchievements.Models.Achievements.GameAchievementData gameData,
             PlayniteAchievements.Models.Achievements.AchievementDetail achievement,

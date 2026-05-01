@@ -470,7 +470,15 @@ namespace PlayniteAchievements.Views.Controls
                         SavePluginSettings(settings);
                     }
                 },
-                DefaultColumnWidthSeeds);
+                DefaultColumnWidthSeeds,
+                () => GetColumnOrderByKey(settings),
+                map =>
+                {
+                    if (AllowLayoutPersistence)
+                    {
+                        SetColumnOrderByKey(settings, map);
+                    }
+                });
 
             // Force collapse Game column when not shown (prevents flicker by applying during persistence)
             // Also exclude from visibility toggle menu
@@ -581,6 +589,32 @@ namespace PlayniteAchievements.Views.Controls
         private static bool IsValidWidth(double width)
         {
             return !double.IsNaN(width) && !double.IsInfinity(width) && width > 0;
+        }
+
+        private Dictionary<string, int> GetColumnOrderByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null) return null;
+            switch (ColumnSettingsKey)
+            {
+                case "DesktopTheme": return settings.Persisted.DesktopThemeColumnOrder;
+                case "SingleGame":   return settings.Persisted.SingleGameColumnOrder;
+                case "Sidebar":      return settings.Persisted.SidebarAchievementColumnOrder;
+                case "SidebarGame":  return settings.Persisted.SidebarGameColumnOrder;
+                default:             return settings.Persisted.SingleGameColumnOrder;
+            }
+        }
+
+        private void SetColumnOrderByKey(PlayniteAchievementsSettings settings, Dictionary<string, int> map)
+        {
+            if (settings?.Persisted == null) return;
+            switch (ColumnSettingsKey)
+            {
+                case "DesktopTheme": settings.Persisted.DesktopThemeColumnOrder = map; break;
+                case "SingleGame":   settings.Persisted.SingleGameColumnOrder = map;   break;
+                case "Sidebar":      settings.Persisted.SidebarAchievementColumnOrder = map; break;
+                case "SidebarGame":  settings.Persisted.SidebarGameColumnOrder = map;  break;
+                default:             settings.Persisted.SingleGameColumnOrder = map;   break;
+            }
         }
 
         private static void SavePluginSettings(PlayniteAchievementsSettings settings)
