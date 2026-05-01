@@ -93,6 +93,8 @@ namespace PlayniteAchievements.Models.Achievements
 
         public string Category { get; set; }
 
+        public int DisplayOrder { get; set; }
+
         public string ProviderKey { get; set; }
 
         public Game Game { get; set; }

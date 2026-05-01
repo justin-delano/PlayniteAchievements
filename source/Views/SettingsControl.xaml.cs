@@ -2150,7 +2150,10 @@ namespace PlayniteAchievements.Views
                 RevertableThemes.Clear();
 
                 var cache = _settingsViewModel?.Settings?.Persisted?.ThemeMigrationVersionCache;
-                var themes = _themeDiscovery.DiscoverDefaultThemes(cache);
+                var themes = _themeDiscovery
+                    .DiscoverDefaultThemes(cache)
+                    .Where(theme => !IsExcludedTheme(theme))
+                    .ToList();
                 if (themes.Count == 0)
                 {
                     _logger.Info("No themes path found for theme migration.");
@@ -2158,16 +2161,38 @@ namespace PlayniteAchievements.Views
                     return;
                 }
 
-                // Themes that need migration (no backup, has SuccessStory)
-                foreach (var theme in themes.Where(t => t.NeedsMigration))
+                // Show all discovered themes in both dropdowns so users can
+                // re-run migration/revert on any theme without hunting in separate lists.
+                foreach (var theme in themes)
                 {
                     AvailableThemes.Add(theme);
                 }
 
-                // Themes that can be reverted (has backup)
-                foreach (var theme in themes.Where(t => t.HasBackup))
+                foreach (var theme in themes)
                 {
                     RevertableThemes.Add(theme);
+                }
+
+                if (!string.IsNullOrWhiteSpace(SelectedThemePath) &&
+                    !AvailableThemes.Any(t => string.Equals(t.Path, SelectedThemePath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    SelectedThemePath = string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(SelectedThemePath))
+                {
+                    SelectedThemePath = AvailableThemes.FirstOrDefault()?.Path ?? string.Empty;
+                }
+
+                if (!string.IsNullOrWhiteSpace(SelectedRevertThemePath) &&
+                    !RevertableThemes.Any(t => string.Equals(t.Path, SelectedRevertThemePath, StringComparison.OrdinalIgnoreCase)))
+                {
+                    SelectedRevertThemePath = string.Empty;
+                }
+
+                if (string.IsNullOrWhiteSpace(SelectedRevertThemePath))
+                {
+                    SelectedRevertThemePath = RevertableThemes.FirstOrDefault()?.Path ?? string.Empty;
                 }
 
                 UpdateThemeMigrationState();
@@ -2183,7 +2208,7 @@ namespace PlayniteAchievements.Views
         private void UpdateThemeMigrationState()
         {
             var hasThemes = AvailableThemes.Count > 0;
-            var hasRevertable = RevertableThemes.Count > 0;
+            var hasRevertable = RevertableThemes.Any(theme => theme?.HasBackup == true);
 
             HasThemesToMigrate = hasThemes;
             HasRevertableThemes = hasRevertable;
@@ -2239,14 +2264,32 @@ namespace PlayniteAchievements.Views
 
             try
             {
+                var selectedThemeHasBackup = _themeMigration.HasBackup(SelectedThemePath);
+                if (selectedThemeHasBackup)
+                {
+                    _logger.Info($"Selected theme already has backup. Reverting before migration: {SelectedThemePath}");
+
+                    var revertResult = await _themeMigration.RevertThemeAsync(SelectedThemePath);
+                    if (!revertResult.Success)
+                    {
+                        _logger.Warn($"Pre-migration revert failed: {revertResult.Message}");
+                        _plugin.PlayniteApi.Dialogs.ShowMessage(
+                            revertResult.Message,
+                            L("LOCPlayAch_ThemeMigration_Title", "Theme Migration"),
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                        return;
+                    }
+                }
+
                 var result = await _themeMigration.MigrateThemeAsync(SelectedThemePath, mode, customSelection);
 
                 if (result.Success)
                 {
                     _logger.Info($"Theme migration ({mode}) successful: {SelectedThemePath}");
 
-                    // Only show restart dialog if files were actually modified
-                    if (result.FilesBackedUp > 0)
+                    // Show restart notice whenever files were modified.
+                    if (result.FilesProcessed > 0)
                     {
                         _plugin.PlayniteApi.Dialogs.ShowMessage(
                             $"{result.Message}{Environment.NewLine}{Environment.NewLine}{L("LOCPlayAch_ThemeMigration_RestartRequired", "Please restart Playnite to apply the theme changes.")}",
@@ -2293,6 +2336,16 @@ namespace PlayniteAchievements.Views
             if (string.IsNullOrWhiteSpace(SelectedRevertThemePath))
             {
                 _logger.Warn("Revert clicked but no theme selected.");
+                return;
+            }
+
+            if (!_themeMigration.HasBackup(SelectedRevertThemePath))
+            {
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    L("LOCPlayAch_ThemeMigration_NoRevertableThemes", "No themes with backups to revert."),
+                    L("LOCPlayAch_ThemeMigration_Revert", "Revert Theme"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
                 return;
             }
 
@@ -3171,6 +3224,16 @@ namespace PlayniteAchievements.Views
 
         private void OnSettingsPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted != null &&
+                e.PropertyName == nameof(Models.Settings.PersistedSettings.DefaultAchievementSortMode) &&
+                persisted.DefaultAchievementSortMode == Models.Settings.CompactListSortMode.DisplayOrder &&
+                persisted.DefaultAchievementSortDescending)
+            {
+                // RetroAchievements progression order should default to the API sequence (ascending DisplayOrder).
+                persisted.DefaultAchievementSortDescending = false;
+            }
+
             // Refresh mock previews when display-affecting settings change
             var refreshProperties = new[]
             {
@@ -3218,6 +3281,33 @@ namespace PlayniteAchievements.Views
         private static string LF(string key, string fallbackFormat, params object[] args)
         {
             return string.Format(L(key, fallbackFormat), args);
+        }
+
+        private static bool IsExcludedTheme(ThemeDiscoveryService.ThemeInfo theme)
+        {
+            if (theme == null)
+            {
+                return true;
+            }
+
+            if (string.Equals(theme.DisplayName, "Default", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (string.Equals(theme.Name, "Default", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(theme.Name) &&
+                (theme.Name.EndsWith("/Default", StringComparison.OrdinalIgnoreCase) ||
+                 theme.Name.EndsWith("\\Default", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            return false;
         }
         
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)

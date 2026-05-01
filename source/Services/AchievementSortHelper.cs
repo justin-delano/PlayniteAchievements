@@ -350,6 +350,9 @@ namespace PlayniteAchievements.Services
                 CompactListSortMode.Rarity => configuredSort.Direction == ListSortDirection.Descending
                     ? GetAvailableAchievements(theme.AchievementsRarityDesc, GetDefaultSelectedGameAchievements(theme))
                     : GetAvailableAchievements(theme.AchievementsRarityAsc, GetDefaultSelectedGameAchievements(theme)),
+                CompactListSortMode.DisplayOrder => CreateDisplayOrderSortedDetailList(
+                    GetDefaultSelectedGameAchievements(theme),
+                    configuredSort.Direction),
                 _ => GetDefaultSelectedGameAchievements(theme)
             };
         }
@@ -371,6 +374,9 @@ namespace PlayniteAchievements.Services
                 CompactListSortMode.Rarity => configuredSort.Direction == ListSortDirection.Descending
                     ? GetAvailableAchievements(state.AchievementsRarityDesc, GetDefaultSelectedGameAchievements(state))
                     : GetAvailableAchievements(state.AchievementsRarityAsc, GetDefaultSelectedGameAchievements(state)),
+                CompactListSortMode.DisplayOrder => CreateDisplayOrderSortedDetailList(
+                    GetDefaultSelectedGameAchievements(state),
+                    configuredSort.Direction),
                 _ => GetDefaultSelectedGameAchievements(state)
             };
         }
@@ -498,8 +504,26 @@ namespace PlayniteAchievements.Services
                 "UnlockTime" => CreateDetailUnlockSortedList(list, direction, includeGameNameTieBreak),
                 "GlobalPercent" => CreateDetailRaritySortedList(list, direction, includeGameNameTieBreak),
                 "RaritySortValue" => CreateDetailRaritySortedList(list, direction, includeGameNameTieBreak),
+                "DisplayOrder" => CreateDisplayOrderSortedDetailList(list, direction),
                 _ => list
             };
+        }
+
+        private static List<AchievementDetail> CreateDisplayOrderSortedDetailList(
+            IEnumerable<AchievementDetail> items,
+            ListSortDirection direction)
+        {
+            var list = items?.ToList() ?? new List<AchievementDetail>();
+            if (list.Count == 0)
+            {
+                return list;
+            }
+
+            var sorted = direction == ListSortDirection.Descending
+                ? list.OrderByDescending(item => item?.DisplayOrder ?? 0)
+                : list.OrderBy(item => item?.DisplayOrder ?? 0);
+
+            return sorted.ToList();
         }
 
         public static Comparison<AchievementDisplayItem> WithStableOrder(

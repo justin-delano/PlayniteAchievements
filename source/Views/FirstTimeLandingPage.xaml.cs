@@ -830,7 +830,10 @@ namespace PlayniteAchievements.Views
                 _revertableThemes.Clear();
 
                 var cache = _settings?.Persisted?.ThemeMigrationVersionCache;
-                var themes = _themeDiscovery.DiscoverDefaultThemes(cache);
+                var themes = _themeDiscovery
+                    .DiscoverDefaultThemes(cache)
+                    .Where(theme => !IsExcludedTheme(theme))
+                    .ToList();
                 if (themes.Count == 0)
                 {
                     _logger.Info("No themes path found, skipping theme discovery.");
@@ -868,6 +871,33 @@ namespace PlayniteAchievements.Views
             {
                 _logger.Error(ex, "Failed to load available themes.");
             }
+        }
+
+        private static bool IsExcludedTheme(ThemeDiscoveryService.ThemeInfo theme)
+        {
+            if (theme == null)
+            {
+                return true;
+            }
+
+            if (string.Equals(theme.DisplayName, "Default", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (string.Equals(theme.Name, "Default", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(theme.Name) &&
+                (theme.Name.EndsWith("/Default", StringComparison.OrdinalIgnoreCase) ||
+                 theme.Name.EndsWith("\\Default", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
