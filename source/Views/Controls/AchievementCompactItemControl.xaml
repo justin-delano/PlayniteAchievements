@@ -102,12 +102,12 @@
               Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
               ClipToBounds="False">
             <Image Stretch="Uniform"
-                   RenderOptions.BitmapScalingMode="Fant"
+                   RenderOptions.BitmapScalingMode="HighQuality"
                    Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                    Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                    IsHitTestVisible="False"
                    helpers:AsyncImage.Uri="{Binding DisplayIcon, Mode=OneWay}"
-                   helpers:AsyncImage.DecodePixel="64">
+                   helpers:AsyncImage.DecodePixel="256">
                 <Image.Style>
                     <Style TargetType="Image">
                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -126,11 +126,11 @@
                 </Image.Style>
             </Image>
             <Image Stretch="Uniform"
-                   RenderOptions.BitmapScalingMode="Fant"
+                   RenderOptions.BitmapScalingMode="HighQuality"
                    Width="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                    Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                    helpers:AsyncImage.Uri="{Binding DisplayIcon, Mode=OneWay}"
-                   helpers:AsyncImage.DecodePixel="64"/>
+                   helpers:AsyncImage.DecodePixel="256"/>
         </Grid>
 
         <!-- Rarity bar overlay at bottom - shows global unlock percentage -->

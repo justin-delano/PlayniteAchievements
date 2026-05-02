@@ -712,7 +712,7 @@
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center"
                                 Margin="8,0,0,0"
-                                Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
+                                Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
                             <Button x:Name="SelectedGameTypeFilterSelectionButton"
                                     Style="{StaticResource AchievementSelectorButtonStyle}"
                                     Content="{Binding SelectedGameTypeFilterText}"
@@ -1176,7 +1176,7 @@
                                 Height="38"
                                 BorderBrush="{DynamicResource NormalBorderBrush}"
                                 BorderThickness="0,0,0,1"
-                                Visibility="{Binding IsGameSelected, Converter={StaticResource InverseBoolToVis}}">
+                                Visibility="{Binding ShowRecentAchievementsPanel, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
                                        Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="Bold"
@@ -1190,7 +1190,7 @@
                                 Height="38"
                                 BorderBrush="{DynamicResource NormalBorderBrush}"
                                 BorderThickness="0,0,0,1"
-                                Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
+                                Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
                             <Grid Margin="16,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -1198,7 +1198,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding SelectedGame.GameName}"
+                                    <TextBlock Text="{Binding DisplayedSelectedGame.GameName}"
                                                FontSize="{DynamicResource FontSize}"
                                                FontWeight="Bold"
                                                Foreground="{DynamicResource TextBrush}"
@@ -1241,7 +1241,7 @@
                         <!-- Content Area: Recent List OR Game Details -->
                         <Grid Grid.Row="0" ClipToBounds="False">
                             <!-- Default Panel: When no game selected -->
-                            <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource InverseBoolToVis}}">
+                            <Grid Visibility="{Binding ShowRecentAchievementsPanel, Converter={StaticResource BoolToVis}}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
@@ -1261,7 +1261,7 @@
                         </Grid>
 
                         <!-- Game Detail Panel: When a game is selected -->
-                        <Grid Visibility="{Binding IsGameSelected, Converter={StaticResource BoolToVis}}">
+                        <Grid Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>

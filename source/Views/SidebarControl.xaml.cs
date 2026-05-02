@@ -199,7 +199,8 @@ namespace PlayniteAchievements.Views
                 UpdatePieChartLayout();
             }
 
-            if (e.PropertyName != nameof(SidebarViewModel.IsGameSelected)) return;
+            if (e.PropertyName != nameof(SidebarViewModel.IsGameSelected) &&
+                e.PropertyName != nameof(SidebarViewModel.IsSelectedGameContentReady)) return;
 
             // Defer grid operations to Render priority to batch with visibility change
             // This prevents flicker by ensuring all layout happens in one render pass
@@ -975,7 +976,7 @@ namespace PlayniteAchievements.Views
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 if (_viewModel == null) return;
-                if (_viewModel.IsGameSelected) return; // GameAchievementsGrid manages itself
+                if (_viewModel.IsSelectedGameContentReady) return; // GameAchievementsGrid manages itself
 
                 if (RecentAchievementsDataGrid.InternalDataGrid == null || !RecentAchievementsDataGrid.InternalDataGrid.IsLoaded ||
                     !RecentAchievementsDataGrid.InternalDataGrid.IsVisible || RecentAchievementsDataGrid.InternalDataGrid.ActualWidth <= 1) return;

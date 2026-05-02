@@ -148,6 +148,22 @@
         </Setter>
     </Style>
 
+    <Style x:Key="AchievementStatusCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            Padding="0"
+                            ClipToBounds="True"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- DataGrid Row Style -->
     <Style x:Key="AchievementRowStyle" TargetType="DataGridRow">
         <Setter Property="Background" Value="Transparent"/>
@@ -356,7 +372,11 @@
 
     <!-- Achievement Status Template: Checkmark (unlocked) or Padlock (locked) -->
     <DataTemplate x:Key="AchievementStatusTemplate">
-        <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Grid Width="36"
+              Height="36"
+              VerticalAlignment="Center"
+              HorizontalAlignment="Center"
+              ClipToBounds="True">
             <TextBlock Text="&#x2713;"
                        FontSize="16"
                        FontWeight="Bold"
@@ -569,34 +589,30 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Stretch="Uniform"
-                       IsHitTestVisible="False"
-                       RenderOptions.BitmapScalingMode="Fant"
+                       RenderOptions.BitmapScalingMode="HighQuality"
                        helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                       helpers:AsyncImage.DecodePixel="128">
+                       helpers:AsyncImage.DecodePixel="256">
                     <Image.Style>
                         <Style TargetType="Image">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Setter Property="Effect" Value="{x:Null}"/>
+                            <!-- Minimal invisible shadow ensures clean edge rendering when no rarity glow -->
+                            <Setter Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect BlurRadius="1" ShadowDepth="0" Opacity="0.001" Color="White"/>
+                                </Setter.Value>
+                            </Setter>
                             <Style.Triggers>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
                                         <Condition Binding="{Binding Unlocked}" Value="True"/>
                                         <Condition Binding="{Binding ShowRarityGlow}" Value="True"/>
                                     </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <!-- Rarity glow overrides invisible shadow -->
                                     <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
                                 </MultiDataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Image.Style>
                 </Image>
-                <Image Width="52" Height="52"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Stretch="Uniform"
-                       RenderOptions.BitmapScalingMode="Fant"
-                       helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                       helpers:AsyncImage.DecodePixel="128"/>
             </Grid>
         </Grid>
     </DataTemplate>

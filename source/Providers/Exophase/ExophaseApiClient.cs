@@ -115,7 +115,7 @@ namespace PlayniteAchievements.Providers.Exophase
         /// Searches for games on Exophase with optional platform filter.
         /// </summary>
         /// <param name="query">Game name to search for.</param>
-        /// <param name="platformSlug">Optional platform slug to filter by (e.g., "steam", "psn", "xbox").</param>
+        /// <param name="platformSlug">Optional platform slug to filter by (e.g., "steam", "ps4", "ps3", "xbox", "xbox-one", "xbox-360").</param>
         /// <param name="ct">Cancellation token.</param>
         public async Task<List<ExophaseGame>> SearchGamesAsync(string query, string platformSlug, CancellationToken ct)
         {

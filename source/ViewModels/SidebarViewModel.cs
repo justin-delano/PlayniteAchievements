@@ -62,6 +62,7 @@ namespace PlayniteAchievements.ViewModels
         private bool _showCompletedProgress;
         private bool _refreshInitiated;
         private bool _selectedGameLoadInProgress;
+        private bool _selectedGameContentReady;
         private CancellationTokenSource _selectedGameLoadCts;
         private static readonly TimeSpan ProgressHideDelay = TimeSpan.FromSeconds(3);
         private readonly object _deltaSync = new object();
@@ -698,6 +699,17 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _globalProgression, value);
         }
 
+        private GameOverviewItem _displayedSelectedGame;
+        public GameOverviewItem DisplayedSelectedGame => _displayedSelectedGame;
+
+        private void SetDisplayedSelectedGame(GameOverviewItem value)
+        {
+            if (SetValueAndReturn(ref _displayedSelectedGame, value, nameof(DisplayedSelectedGame)))
+            {
+                OnPropertyChanged(nameof(TimelineSectionTitle));
+            }
+        }
+
         private GameOverviewItem _selectedGame;
         public GameOverviewItem SelectedGame
         {
@@ -706,6 +718,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 var previousGameId = _selectedGame?.PlayniteGameId;
                 var newGameId = value?.PlayniteGameId;
+                var keepDisplayedContent = newGameId.HasValue && IsSelectedGameContentReady;
 
                 if (SetValueAndReturn(ref _selectedGame, value))
                 {
@@ -716,10 +729,16 @@ namespace PlayniteAchievements.ViewModels
 
                     ResetSelectedGameAchievementVisibilityFilters();
                     RefreshSelectedGameHeaderCounts();
-                    OnPropertyChanged(nameof(IsGameSelected));
-                    OnPropertyChanged(nameof(TimelineSectionTitle));
                     (RefreshCommand as AsyncCommand)?.RaiseCanExecuteChanged();
-                    _selectedGameLoadInProgress = true;
+                    _selectedGameContentReady = keepDisplayedContent;
+                    if (!newGameId.HasValue)
+                    {
+                        SetDisplayedSelectedGame(null);
+                    }
+
+                    _selectedGameLoadInProgress = newGameId.HasValue;
+                    NotifySelectedGameViewStateChanged();
+                    OnPropertyChanged(nameof(TimelineSectionTitle));
                     CancelSelectedGameLoad();
                     _selectedGameLoadCts = new CancellationTokenSource();
 
@@ -730,6 +749,16 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool IsGameSelected => SelectedGame != null;
+        public bool IsSelectedGameContentReady => DisplayedSelectedGame != null && _selectedGameContentReady;
+        public bool ShowRecentAchievementsPanel =>
+            SelectedGame == null || (!IsSelectedGameContentReady && DisplayedSelectedGame == null);
+
+        private void NotifySelectedGameViewStateChanged()
+        {
+            OnPropertyChanged(nameof(IsGameSelected));
+            OnPropertyChanged(nameof(IsSelectedGameContentReady));
+            OnPropertyChanged(nameof(ShowRecentAchievementsPanel));
+        }
 
         private int _selectedGameHeaderUnlockedCount;
         public int SelectedGameHeaderUnlockedCount
@@ -787,7 +816,7 @@ namespace PlayniteAchievements.ViewModels
             get
             {
                 var title = L("LOCPlayAch_Section_Timeline", "Achievements Over Time");
-                var selectedGameName = SelectedGame?.GameName;
+                var selectedGameName = IsSelectedGameContentReady ? DisplayedSelectedGame?.GameName : null;
                 return string.IsNullOrWhiteSpace(selectedGameName)
                     ? title
                     : $"{title} ({selectedGameName})";
@@ -2304,7 +2333,7 @@ namespace PlayniteAchievements.ViewModels
                 providerDisplayNames);
 
             UpdateOverviewPieChartSelectionStates();
-            if (_selectedGameLoadInProgress && SelectedGame?.PlayniteGameId.HasValue == true)
+            if (SelectedGame?.PlayniteGameId.HasValue == true && _selectedGameLoadInProgress)
             {
                 return;
             }
@@ -2816,7 +2845,7 @@ namespace PlayniteAchievements.ViewModels
             var unlocked = 0;
             var total = 0;
 
-            if (IsGameSelected)
+            if (IsSelectedGameContentReady)
             {
                 if (isFiltered)
                 {
@@ -2826,8 +2855,8 @@ namespace PlayniteAchievements.ViewModels
                 }
                 else
                 {
-                    total = SelectedGame?.TotalAchievements ?? 0;
-                    unlocked = SelectedGame?.UnlockedAchievements ?? 0;
+                    total = DisplayedSelectedGame?.TotalAchievements ?? 0;
+                    unlocked = DisplayedSelectedGame?.UnlockedAchievements ?? 0;
                 }
             }
 
@@ -2927,19 +2956,41 @@ namespace PlayniteAchievements.ViewModels
         private async Task LoadSelectedGameAchievementsAndNotifyAsync(Guid? targetGameId, CancellationToken cancellationToken)
         {
             var loadApplied = await LoadSelectedGameAchievementsAsync(targetGameId, cancellationToken).ConfigureAwait(true);
-            if (!cancellationToken.IsCancellationRequested)
+            if (cancellationToken.IsCancellationRequested)
             {
-                _selectedGameLoadInProgress = false;
+                return;
             }
+
+            _selectedGameLoadInProgress = false;
+            var isCurrentLoad = IsSelectedGameLoadCurrent(targetGameId, cancellationToken);
+            _selectedGameContentReady = loadApplied && targetGameId.HasValue && isCurrentLoad;
+
+            if (!loadApplied && !isCurrentLoad)
+            {
+                return;
+            }
+
+            if (_selectedGameContentReady)
+            {
+                SetDisplayedSelectedGame(SelectedGame);
+            }
+            else if (!targetGameId.HasValue && isCurrentLoad)
+            {
+                SetDisplayedSelectedGame(null);
+            }
+
+            RefreshSelectedGameHeaderCounts();
+
+            // Fire visibility notifications after the current selection load has settled so the
+            // selected-game grid is not realized with empty rows during game-to-game switches.
+            NotifySelectedGameViewStateChanged();
+            OnPropertyChanged(nameof(TimelineSectionTitle));
 
             if (!loadApplied)
             {
                 return;
             }
 
-            // Fire notifications after data is ready
-            OnPropertyChanged(nameof(IsGameSelected));
-            OnPropertyChanged(nameof(TimelineSectionTitle));
             UpdateContextualPieCharts(BuildPieChartSnapshotFromCurrentState());
         }
 
@@ -2979,19 +3030,6 @@ namespace PlayniteAchievements.ViewModels
                 if (!IsSelectedGameLoadCurrent(targetGameId, cancellationToken))
                 {
                     return false;
-                }
-
-                // Clear previous game's rows immediately so panel can render without waiting
-                // for heavy hydration/ordering work.
-                _allSelectedGameAchievements = new List<AchievementDisplayItem>();
-                _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
-                if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> preBulk)
-                {
-                    preBulk.ReplaceAll(_filteredSelectedGameAchievements);
-                }
-                else
-                {
-                    CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
                 }
 
                 var gameId = targetGameId.Value;

@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -20,6 +21,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private readonly ShadPS4Settings _providerSettings;
         private readonly ShadPS4DataProvider _provider;
         private readonly IPlayniteAPI _playniteApi;
+        private readonly string _pluginUserDataPath;
 
         // PS4's RTC epoch is January 1, 2008 00:00:00 UTC
         private static readonly DateTime Ps4Epoch = new DateTime(2008, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -40,6 +42,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             _providerSettings = providerSettings ?? throw new ArgumentNullException(nameof(providerSettings));
             _provider = provider;
             _playniteApi = playniteApi;
+            _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -78,12 +81,15 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (hasNewData)
                 _logger?.Info($"[ShadPS4] Found {npCommIdCache.Count} titles in new AppData format.");
 
+            var rarityEnricher = await CreateRarityEnricherAsync(cancel).ConfigureAwait(false);
+
             return await ProviderRefreshExecutor.RunProviderGamesAsync(
                 gamesToRefresh,
                 onGameStarting,
                 async (game, token) =>
                 {
                     var data = await FetchGameDataAsync(game, titleCache, npCommIdCache, token).ConfigureAwait(false);
+                    await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
                     return new ProviderRefreshExecutor.ProviderGameResult { Data = data };
                 },
                 onGameCompleted,
@@ -93,6 +99,32 @@ namespace PlayniteAchievements.Providers.ShadPS4
                 delayBetweenGamesAsync: null,
                 delayAfterErrorAsync: null,
                 cancel).ConfigureAwait(false);
+        }
+
+        private async Task<ExophaseRarityEnricher> CreateRarityEnricherAsync(CancellationToken cancel)
+        {
+            if (_providerSettings?.UseExophaseForRarity != true)
+            {
+                return null;
+            }
+
+            var enricher = new ExophaseRarityEnricher(_playniteApi, _logger, _settings, _pluginUserDataPath);
+            await enricher.InitializeAsync(cancel).ConfigureAwait(false);
+            return enricher;
+        }
+
+        private static async Task EnrichRarityAsync(
+            Game game,
+            GameAchievementData data,
+            ExophaseRarityEnricher rarityEnricher,
+            CancellationToken cancel)
+        {
+            if (rarityEnricher == null || data?.Achievements == null || data.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            await rarityEnricher.EnrichAsync(game, data.Achievements, "ps4", "PSN", cancel).ConfigureAwait(false);
         }
 
         private async Task<Dictionary<string, string>> BuildTitleIdCacheAsync(CancellationToken cancel)

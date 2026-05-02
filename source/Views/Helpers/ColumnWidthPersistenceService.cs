@@ -422,12 +422,6 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            if (map == null || map.Count == 0)
-            {
-                NormalizeColumnsToContainer();
-                return;
-            }
-
             foreach (var column in _grid.Columns)
             {
                 var key = GetColumnKey(column);
@@ -440,6 +434,9 @@ namespace PlayniteAchievements.Views.Helpers
                 if (ForcedCollapsedKeys.Contains(key))
                 {
                     column.Visibility = Visibility.Collapsed;
+                    column.MinWidth = 0;
+                    column.MaxWidth = 0;
+                    column.Width = new DataGridLength(0, DataGridLengthUnitType.Pixel);
                     continue;
                 }
 
@@ -449,7 +446,7 @@ namespace PlayniteAchievements.Views.Helpers
                     continue;
                 }
 
-                if (map.TryGetValue(key, out var isVisible))
+                if (map != null && map.TryGetValue(key, out var isVisible))
                 {
                     column.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
                 }
