@@ -337,6 +337,8 @@ namespace PlayniteAchievements.Providers.Steam
 
                         var authCookie = cookies?.FirstOrDefault(c =>
                             c != null &&
+                            !string.IsNullOrWhiteSpace(c.Domain) &&
+                            IsSteamDomain(c.Domain) &&
                             !IsExpiredCookie(c) &&
                             c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
 
@@ -671,13 +673,34 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 api.MainView.UIDispatcher.Invoke(() =>
                 {
-                    using (var view = api.WebViews.CreateOffscreenView(new WebViewSettings()))
+                    using (var view = api.WebViews.CreateOffscreenView())
                     {
+                        // Use both regex and explicit host deletion because CEF host/path handling
+                        // can vary across Playnite/WebView versions.
                         view.DeleteDomainCookiesRegex(@"(^|\.)steamcommunity\.com$");
                         view.DeleteDomainCookiesRegex(@"(^|\.)steampowered\.com$");
+                        view.DeleteDomainCookies("steamcommunity.com");
+                        view.DeleteDomainCookies(".steamcommunity.com");
+                        view.DeleteDomainCookies("steampowered.com");
+                        view.DeleteDomainCookies(".steampowered.com");
                         view.DeleteDomainCookies("store.steampowered.com");
+                        view.DeleteDomainCookies(".store.steampowered.com");
                         view.DeleteDomainCookies("login.steampowered.com");
+                        view.DeleteDomainCookies(".login.steampowered.com");
                         view.DeleteDomainCookies("help.steampowered.com");
+                        view.DeleteDomainCookies(".help.steampowered.com");
+                        view.DeleteDomainCookies("api.steampowered.com");
+                        view.DeleteDomainCookies(".api.steampowered.com");
+
+                        var remainingSessionCookies = view.GetCookies()?.Count(c =>
+                            c != null &&
+                            !string.IsNullOrWhiteSpace(c.Domain) &&
+                            IsSteamDomain(c.Domain) &&
+                            SteamSessionCookieNames.Any(n => string.Equals(c.Name, n, StringComparison.OrdinalIgnoreCase))) ?? 0;
+                        if (remainingSessionCookies > 0)
+                        {
+                            logger?.Warn($"[SteamAuth] Clear requested but {remainingSessionCookies} Steam session cookie(s) are still present in CEF.");
+                        }
                     }
                 });
             }
