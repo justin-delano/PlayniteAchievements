@@ -559,56 +559,92 @@
         </Grid>
     </DataTemplate>
 
-    <!-- Achievement Icon Template - Image with conditional glow -->
+    <!-- Achievement Icon Template - glow is isolated behind an unaffected front icon -->
     <!-- Fits in 78px column with 10px cell padding each side = 58px available -->
     <DataTemplate x:Key="AchievementIconTemplate">
-        <Grid Width="56" Height="72" VerticalAlignment="Center" HorizontalAlignment="Center" ClipToBounds="False">
+        <Grid VerticalAlignment="Center"
+              HorizontalAlignment="Center"
+              ClipToBounds="False"
+              UseLayoutRounding="True"
+              SnapsToDevicePixels="True">
             <Grid.Style>
                 <Style TargetType="Grid">
-                    <Setter Property="LayoutTransform">
-                        <Setter.Value>
-                            <ScaleTransform ScaleX="1" ScaleY="1"/>
-                        </Setter.Value>
-                    </Setter>
+                    <Setter Property="Width" Value="56"/>
+                    <Setter Property="Height" Value="72"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                            <Setter Property="LayoutTransform">
-                                <Setter.Value>
-                                    <ScaleTransform ScaleX="0.75" ScaleY="0.75"/>
-                                </Setter.Value>
-                            </Setter>
+                            <Setter Property="Width" Value="42"/>
+                            <Setter Property="Height" Value="54"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </Grid.Style>
-            <Grid Width="52" Height="52"
-                  HorizontalAlignment="Center"
+            <Grid HorizontalAlignment="Center"
                   VerticalAlignment="Center"
-                  ClipToBounds="False">
-                <Image Width="52" Height="52"
-                       HorizontalAlignment="Center"
+                  ClipToBounds="False"
+                  UseLayoutRounding="True"
+                  SnapsToDevicePixels="True">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Width" Value="52"/>
+                        <Setter Property="Height" Value="52"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                                <Setter Property="Width" Value="39"/>
+                                <Setter Property="Height" Value="39"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <Image HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        Stretch="Uniform"
                        RenderOptions.BitmapScalingMode="HighQuality"
+                       SnapsToDevicePixels="True"
+                       IsHitTestVisible="False"
                        helpers:AsyncImage.Uri="{Binding DisplayIcon}"
                        helpers:AsyncImage.DecodePixel="256">
                     <Image.Style>
                         <Style TargetType="Image">
-                            <!-- Minimal invisible shadow ensures clean edge rendering when no rarity glow -->
-                            <Setter Property="Effect">
-                                <Setter.Value>
-                                    <DropShadowEffect BlurRadius="1" ShadowDepth="0" Opacity="0.001" Color="White"/>
-                                </Setter.Value>
-                            </Setter>
+                            <Setter Property="Width" Value="52"/>
+                            <Setter Property="Height" Value="52"/>
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="Effect" Value="{x:Null}"/>
                             <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                                    <Setter Property="Width" Value="39"/>
+                                    <Setter Property="Height" Value="39"/>
+                                </DataTrigger>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
                                         <Condition Binding="{Binding Unlocked}" Value="True"/>
                                         <Condition Binding="{Binding ShowRarityGlow}" Value="True"/>
                                     </MultiDataTrigger.Conditions>
-                                    <!-- Rarity glow overrides invisible shadow -->
+                                    <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
                                 </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Image.Style>
+                </Image>
+
+                <Image HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       SnapsToDevicePixels="True"
+                       helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                       helpers:AsyncImage.DecodePixel="256">
+                    <Image.Style>
+                        <Style TargetType="Image">
+                            <Setter Property="Width" Value="52"/>
+                            <Setter Property="Height" Value="52"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                                    <Setter Property="Width" Value="39"/>
+                                    <Setter Property="Height" Value="39"/>
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Image.Style>

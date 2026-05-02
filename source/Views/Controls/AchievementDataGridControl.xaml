@@ -9,6 +9,8 @@
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="600"
              d:DataContext="{d:DesignInstance vm:AchievementDisplayItem}"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
              Loaded="OnLoaded">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -46,6 +48,8 @@
               ScrollViewer.IsDeferredScrollingEnabled="False"
               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
               Padding="0"
+              UseLayoutRounding="False"
+              SnapsToDevicePixels="False"
               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
               PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 

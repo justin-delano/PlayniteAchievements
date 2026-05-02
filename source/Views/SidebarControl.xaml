@@ -11,6 +11,8 @@
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="900"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
              Loaded="OnLoaded">
 
     <UserControl.Resources>
@@ -28,7 +30,9 @@
             <!-- Shared LegendItem DataTemplate for all pie charts -->
             <DataTemplate x:Key="LegendItemTemplate">
                 <StackPanel Orientation="Horizontal" Margin="0,2">
-                    <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center">
+                    <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"
+                          UseLayoutRounding="True"
+                          SnapsToDevicePixels="True">
                         <!-- Badge icons: complex DrawingImages from AchievementResources.xaml -->
                         <Image Source="{Binding IconKey, Converter={StaticResource ResourceKeyToImage}}"
                                Effect="{StaticResource BadgeShadow}"
@@ -224,6 +228,8 @@
             <!-- Style for Game Icon/Cover in Grid -->
             <Style x:Key="GameImageBorderStyle" TargetType="Border">
                 <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+                <Setter Property="UseLayoutRounding" Value="True"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
                 <Setter Property="Width" Value="64"/>
                 <Setter Property="Height" Value="64"/>
                 <Setter Property="Margin" Value="6,8"/>
@@ -333,6 +339,7 @@
                 <Setter Property="Height" Value="32"/>
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="UseLayoutRounding" Value="True"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
                 <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
                 <Style.Triggers>
@@ -809,6 +816,8 @@
                             ScrollViewer.VerticalScrollBarVisibility="Visible"
                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                             ScrollViewer.IsDeferredScrollingEnabled="False"
+                            UseLayoutRounding="False"
+                            SnapsToDevicePixels="False"
                             PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell"

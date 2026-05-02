@@ -7,7 +7,9 @@
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             mc:Ignorable="d" d:DesignHeight="48" d:DesignWidth="48">
+             mc:Ignorable="d" d:DesignHeight="48" d:DesignWidth="48"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -22,7 +24,9 @@
 
     <Grid Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Height}"
           Width="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Width}"
-          ClipToBounds="False">
+          ClipToBounds="False"
+          UseLayoutRounding="True"
+          SnapsToDevicePixels="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="auto" />
@@ -30,10 +34,49 @@
 
         <!-- Border for image container -->
         <Border>
-            <Grid ClipToBounds="False">
+            <Grid ClipToBounds="False"
+                  UseLayoutRounding="True"
+                  SnapsToDevicePixels="True">
                 <Image Stretch="Uniform"
                        RenderOptions.BitmapScalingMode="HighQuality"
                        helpers:AsyncImage.DecodePixel="256"
+                       SnapsToDevicePixels="True"
+                       IsHitTestVisible="False"
+                       Width="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Width}"
+                       Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Height}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <helpers:AsyncImage.Uri>
+                        <MultiBinding Converter="{StaticResource LockedIconSelectorConverter}">
+                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IsLocked" />
+                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="IconCustom" />
+                            <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Icon" />
+                        </MultiBinding>
+                    </helpers:AsyncImage.Uri>
+                    <Image.Style>
+                        <Style TargetType="{x:Type Image}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="Effect" Value="{x:Null}"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=EnableRaretyIndicator}" Value="True"/>
+                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsLocked}" Value="False"/>
+                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowRarityGlow}" Value="True"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Effect" Value="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Rarity, Converter={StaticResource PercentToRarityGlowConverter}}"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Image.Style>
+                </Image>
+
+                <Image Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       helpers:AsyncImage.DecodePixel="256"
+                       SnapsToDevicePixels="True"
+                       Width="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Width}"
+                       Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Height}"
                        x:Name="PART_Image"
                        HorizontalAlignment="Center" VerticalAlignment="Center"
                        Loaded="Image_Loaded" ImageFailed="Image_ImageFailed">
@@ -44,25 +87,6 @@
                             <Binding RelativeSource="{RelativeSource AncestorType=UserControl}" Path="Icon" />
                         </MultiBinding>
                     </helpers:AsyncImage.Uri>
-                    <Image.Style>
-                        <Style TargetType="{x:Type Image}">
-                            <Setter Property="Effect">
-                                <Setter.Value>
-                                    <DropShadowEffect BlurRadius="1" ShadowDepth="0" Opacity="0.001" Color="White"/>
-                                </Setter.Value>
-                            </Setter>
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=EnableRaretyIndicator}" Value="True"/>
-                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IsLocked}" Value="False"/>
-                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=ShowRarityGlow}" Value="True"/>
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Effect" Value="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Rarity, Converter={StaticResource PercentToRarityGlowConverter}}"/>
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Image.Style>
                 </Image>
             </Grid>
         </Border>
