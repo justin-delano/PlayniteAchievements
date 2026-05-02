@@ -51,6 +51,21 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
 
             var normalizedSourceId = ImportedGameMetadataSourceCatalog.NormalizeMetadataSourceId(_api, _logger, metadataSourceId);
 
+            if (string.IsNullOrWhiteSpace(normalizedSourceId))
+            {
+                if (selectedMetadataPlugin != null && ApplyMetadataPlugin(importedGame, appId, selectedMetadataPlugin))
+                {
+                    return true;
+                }
+
+                if (fastMetadataDownloader != null && ApplyFastMetadata(importedGame, appId, fastMetadataDownloader))
+                {
+                    return true;
+                }
+
+                return ApplyBuiltInMetadata(importedGame, appId, ImportedGameMetadataSourceCatalog.SteamHuntersId);
+            }
+
             if (ImportedGameMetadataSourceCatalog.IsFastMethodSource(normalizedSourceId))
             {
                 return ApplyFastMetadata(importedGame, appId, fastMetadataDownloader);
@@ -63,8 +78,7 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
 
             if (ImportedGameMetadataSourceCatalog.IsBuiltInSource(normalizedSourceId))
             {
-                ApplyBuiltInMetadata(importedGame, appId, normalizedSourceId);
-                return true;
+                return ApplyBuiltInMetadata(importedGame, appId, normalizedSourceId);
             }
 
             if (selectedMetadataPlugin != null)
@@ -81,22 +95,28 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
             return false;
         }
 
-        private void ApplyBuiltInMetadata(Game importedGame, int appId, string metadataSourceId)
+        private bool ApplyBuiltInMetadata(Game importedGame, int appId, string metadataSourceId)
         {
+            var isSteamHuntersSource = string.Equals(metadataSourceId, ImportedGameMetadataSourceCatalog.SteamHuntersId, StringComparison.OrdinalIgnoreCase);
+            var isCompletionistSource = string.Equals(metadataSourceId, ImportedGameMetadataSourceCatalog.CompletionistId, StringComparison.OrdinalIgnoreCase);
             var applied = false;
-            if (string.Equals(metadataSourceId, ImportedGameMetadataSourceCatalog.SteamHuntersId, StringComparison.OrdinalIgnoreCase))
+            if (isSteamHuntersSource)
             {
                 applied = ApplySteamHuntersMetadata(importedGame, appId);
             }
-            else if (string.Equals(metadataSourceId, ImportedGameMetadataSourceCatalog.CompletionistId, StringComparison.OrdinalIgnoreCase))
+            else if (isCompletionistSource)
             {
                 applied = ApplyCompletionistMetadata(importedGame, appId);
             }
 
+            var storeApplied = false;
             if (applied || ShouldApplySteamStoreFallback(importedGame, appId))
             {
-                ApplySteamStoreFallbackMetadata(importedGame, appId);
+                var includeMedia = !(isSteamHuntersSource || isCompletionistSource);
+                storeApplied = ApplySteamStoreFallbackMetadata(importedGame, appId, includeMedia);
             }
+
+            return applied || storeApplied;
         }
 
         private bool ApplyFastMetadata(Game importedGame, int appId, LibraryMetadataProvider metadataDownloader)
@@ -510,15 +530,16 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
             return applied;
         }
 
-        private void ApplySteamStoreFallbackMetadata(Game importedGame, int appId)
+        private bool ApplySteamStoreFallbackMetadata(Game importedGame, int appId, bool includeMedia)
         {
             if (importedGame == null || appId <= 0)
             {
-                return;
+                return false;
             }
 
             try
             {
+                var applied = false;
                 var requestUrl = $"https://store.steampowered.com/api/appdetails?appids={appId}";
                 using (var webClient = new WebClient())
                 {
@@ -530,25 +551,26 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
                     var json = webClient.DownloadString(requestUrl);
                     if (string.IsNullOrWhiteSpace(json))
                     {
-                        return;
+                        return false;
                     }
 
                     var root = JObject.Parse(json);
                     var envelope = root[appId.ToString(CultureInfo.InvariantCulture)] as JObject;
                     if (envelope?["success"]?.Value<bool>() != true)
                     {
-                        return;
+                        return false;
                     }
 
                     var data = envelope["data"] as JObject;
                     if (data == null)
                     {
-                        return;
+                        return false;
                     }
 
                     var resolvedName = data["name"]?.Value<string>()?.Trim();
                     if (!string.IsNullOrWhiteSpace(resolvedName))
                     {
+                        applied = applied || !string.Equals(importedGame.Name, resolvedName, StringComparison.Ordinal);
                         importedGame.Name = resolvedName;
                         importedGame.SortingName = resolvedName;
                     }
@@ -566,38 +588,50 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
                             description = data["short_description"]?.Value<string>()?.Trim();
                         }
 
-                        importedGame.Description = NormalizeMetadataDescription(description);
+                        var normalizedDescription = NormalizeMetadataDescription(description);
+                        if (!string.Equals(importedGame.Description, normalizedDescription, StringComparison.Ordinal))
+                        {
+                            applied = true;
+                        }
+
+                        importedGame.Description = normalizedDescription;
                     }
 
-                    var iconUrl = data["capsule_image"]?.Value<string>()?.Trim();
-                    if (string.IsNullOrWhiteSpace(iconUrl))
+                    if (includeMedia)
                     {
-                        iconUrl = data["header_image"]?.Value<string>()?.Trim();
-                    }
+                        var iconUrl = data["capsule_image"]?.Value<string>()?.Trim();
+                        if (string.IsNullOrWhiteSpace(iconUrl))
+                        {
+                            iconUrl = data["header_image"]?.Value<string>()?.Trim();
+                        }
 
-                    var coverUrl = data["header_image"]?.Value<string>()?.Trim();
-                    var backgroundUrl = data["background_raw"]?.Value<string>()?.Trim();
-                    if (string.IsNullOrWhiteSpace(backgroundUrl))
-                    {
-                        backgroundUrl = data["background"]?.Value<string>()?.Trim();
-                    }
+                        var coverUrl = data["header_image"]?.Value<string>()?.Trim();
+                        var backgroundUrl = data["background_raw"]?.Value<string>()?.Trim();
+                        if (string.IsNullOrWhiteSpace(backgroundUrl))
+                        {
+                            backgroundUrl = data["background"]?.Value<string>()?.Trim();
+                        }
 
-                    var iconId = PersistMetadataFile(importedGame.Id, string.IsNullOrWhiteSpace(iconUrl) || !string.IsNullOrWhiteSpace(importedGame.Icon) ? null : new MetadataFile(iconUrl));
-                    if (!string.IsNullOrWhiteSpace(iconId))
-                    {
-                        importedGame.Icon = iconId;
-                    }
+                        var iconId = PersistMetadataFile(importedGame.Id, string.IsNullOrWhiteSpace(iconUrl) || !string.IsNullOrWhiteSpace(importedGame.Icon) ? null : new MetadataFile(iconUrl));
+                        if (!string.IsNullOrWhiteSpace(iconId))
+                        {
+                            importedGame.Icon = iconId;
+                            applied = true;
+                        }
 
-                    var coverId = PersistMetadataFile(importedGame.Id, string.IsNullOrWhiteSpace(coverUrl) || !string.IsNullOrWhiteSpace(importedGame.CoverImage) ? null : new MetadataFile(coverUrl));
-                    if (!string.IsNullOrWhiteSpace(coverId))
-                    {
-                        importedGame.CoverImage = coverId;
-                    }
+                        var coverId = PersistMetadataFile(importedGame.Id, string.IsNullOrWhiteSpace(coverUrl) || !string.IsNullOrWhiteSpace(importedGame.CoverImage) ? null : new MetadataFile(coverUrl));
+                        if (!string.IsNullOrWhiteSpace(coverId))
+                        {
+                            importedGame.CoverImage = coverId;
+                            applied = true;
+                        }
 
-                    var backgroundId = PersistMetadataFile(importedGame.Id, string.IsNullOrWhiteSpace(backgroundUrl) || !string.IsNullOrWhiteSpace(importedGame.BackgroundImage) ? null : new MetadataFile(backgroundUrl));
-                    if (!string.IsNullOrWhiteSpace(backgroundId))
-                    {
-                        importedGame.BackgroundImage = backgroundId;
+                        var backgroundId = PersistMetadataFile(importedGame.Id, string.IsNullOrWhiteSpace(backgroundUrl) || !string.IsNullOrWhiteSpace(importedGame.BackgroundImage) ? null : new MetadataFile(backgroundUrl));
+                        if (!string.IsNullOrWhiteSpace(backgroundId))
+                        {
+                            importedGame.BackgroundImage = backgroundId;
+                            applied = true;
+                        }
                     }
 
                     var websiteUrl = data["website"]?.Value<string>()?.Trim();
@@ -630,13 +664,17 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
 
                     if (links.Count > 0)
                     {
+                        applied = applied || importedGame.Links == null || importedGame.Links.Count != links.Count;
                         ReplaceCollection(importedGame.Links, links);
                     }
+
+                    return applied;
                 }
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"[{_logPrefix}] Failed applying Steam Store fallback metadata for appId={appId}.");
+                return false;
             }
         }
 

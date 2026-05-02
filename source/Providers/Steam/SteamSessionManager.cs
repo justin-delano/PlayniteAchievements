@@ -268,10 +268,22 @@ namespace PlayniteAchievements.Providers.Steam
                         return null;
                     }
 
+                    var hasSessionCookie = cookies.Any(c =>
+                        c != null &&
+                        !string.IsNullOrWhiteSpace(c.Domain) &&
+                        IsSteamDomain(c.Domain) &&
+                        !IsExpiredCookie(c) &&
+                        c.Name.Equals("sessionid", StringComparison.OrdinalIgnoreCase));
+                    if (!hasSessionCookie)
+                    {
+                        return null;
+                    }
+
                     var authCookie = cookies.FirstOrDefault(c =>
                         c != null &&
                         !string.IsNullOrWhiteSpace(c.Domain) &&
                         IsSteamDomain(c.Domain) &&
+                        !IsExpiredCookie(c) &&
                         c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
                     if (authCookie == null)
                     {
@@ -311,7 +323,21 @@ namespace PlayniteAchievements.Providers.Steam
                         await Task.Delay(1000, ct);
 
                         var cookies = view.GetCookies();
+                        var hasSessionCookie = cookies?.Any(c =>
+                            c != null &&
+                            !string.IsNullOrWhiteSpace(c.Domain) &&
+                            IsSteamDomain(c.Domain) &&
+                            !IsExpiredCookie(c) &&
+                            c.Name.Equals("sessionid", StringComparison.OrdinalIgnoreCase)) == true;
+                        if (!hasSessionCookie)
+                        {
+                            tcs.TrySetResult(null);
+                            return;
+                        }
+
                         var authCookie = cookies?.FirstOrDefault(c =>
+                            c != null &&
+                            !IsExpiredCookie(c) &&
                             c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
 
                         if (authCookie != null)
@@ -472,6 +498,24 @@ namespace PlayniteAchievements.Providers.Steam
             var d = domain.Trim().TrimStart('.');
             return d.EndsWith("steamcommunity.com", StringComparison.OrdinalIgnoreCase) ||
                    d.EndsWith("steampowered.com", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsExpiredCookie(dynamic cookie)
+        {
+            try
+            {
+                DateTime? expires = cookie?.Expires;
+                if (!expires.HasValue || expires.Value == DateTime.MinValue)
+                {
+                    return false;
+                }
+
+                return expires.Value.ToUniversalTime() <= DateTime.UtcNow;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static string TryExtractSteamId64FromSteamLoginSecure(string value)

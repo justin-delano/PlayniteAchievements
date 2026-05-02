@@ -60,6 +60,7 @@ namespace PlayniteAchievements.Providers.Local
         // private readonly string debugPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Local_Debug.txt");
         private readonly Dictionary<int, SchemaAndPercentages> _steamSchemaCache = new Dictionary<int, SchemaAndPercentages>();
         private readonly Dictionary<int, string> _steamSchemaSourceCache = new Dictionary<int, string>();
+        private readonly Dictionary<int, string> _steamSchemaLanguageCache = new Dictionary<int, string>();
         private readonly object _discoveryCacheLock = new object();
         private readonly Dictionary<string, IReadOnlyList<string>> _localFolderCandidatesCache = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<int, IReadOnlyList<string>> _steamAppCacheSchemaFilePathsCache = new Dictionary<int, IReadOnlyList<string>>();
@@ -161,6 +162,7 @@ namespace PlayniteAchievements.Providers.Local
             }
 
             var hasAchievementsFile = !string.IsNullOrWhiteSpace(jsonPath) || !string.IsNullOrWhiteSpace(iniPath);
+            var preferLocalizedSchemaText = ShouldPreferLocalizedSteamText();
 
             SchemaAndPercentages steamSchema = null;
             string steamSchemaSource = null;
@@ -253,7 +255,7 @@ namespace PlayniteAchievements.Providers.Local
                                 }
 
                                 raw.TryGetValue(schemaAch.Name, out var entry);
-                                data.Achievements.Add(CreateAchievementDetail(schemaAch.Name, entry, schemaAch, steamSchema));
+                                data.Achievements.Add(CreateAchievementDetail(schemaAch.Name, entry, schemaAch, steamSchema, preferLocalizedSchemaText));
                                 added.Add(schemaAch.Name);
                             }
                         }
@@ -272,7 +274,7 @@ namespace PlayniteAchievements.Providers.Local
                                 correlatedCount++;
                             }
 
-                            data.Achievements.Add(CreateAchievementDetail(kv.Key, kv.Value, schemaAch, steamSchema));
+                            data.Achievements.Add(CreateAchievementDetail(kv.Key, kv.Value, schemaAch, steamSchema, preferLocalizedSchemaText));
                         }
 
                         if (!shouldExpandSchemaFirst && steamSchema?.Achievements?.Count > 0)
@@ -328,7 +330,7 @@ namespace PlayniteAchievements.Providers.Local
                     foreach (var kv in steamAppCacheEntries)
                     {
                         var schemaAch = ResolveSchemaAchievement(kv.Key, kv.Value, apiNameMap, schemaLookupByText, schemaLookupByTitle);
-                        data.Achievements.Add(CreateAchievementDetail(kv.Key, kv.Value, schemaAch, steamSchema));
+                        data.Achievements.Add(CreateAchievementDetail(kv.Key, kv.Value, schemaAch, steamSchema, preferLocalizedSchemaText));
                         added.Add(kv.Key);
                     }
 
@@ -352,7 +354,7 @@ namespace PlayniteAchievements.Providers.Local
                     foreach (var kv in steamLibraryCacheEntries)
                     {
                         var schemaAch = ResolveSchemaAchievement(kv.Key, kv.Value, apiNameMap, schemaLookupByText, schemaLookupByTitle);
-                        data.Achievements.Add(CreateAchievementDetail(kv.Key, kv.Value, schemaAch, steamSchema));
+                        data.Achievements.Add(CreateAchievementDetail(kv.Key, kv.Value, schemaAch, steamSchema, preferLocalizedSchemaText));
                         added.Add(kv.Key);
                     }
 
@@ -1827,11 +1829,12 @@ namespace PlayniteAchievements.Providers.Local
             string apiName,
             LocalEntry entry,
             SchemaAchievement schemaAch,
-            SchemaAndPercentages steamSchema)
+            SchemaAndPercentages steamSchema,
+            bool preferLocalizedSchemaText)
         {
             var localDisplayName = entry.displayName?.Trim();
             var schemaDisplayName = schemaAch?.DisplayName?.Trim();
-            var displayName = !string.IsNullOrWhiteSpace(schemaDisplayName) && IsLowQualityDisplayName(localDisplayName, apiName)
+            var displayName = ShouldPreferSchemaDisplayName(localDisplayName, schemaDisplayName, apiName, preferLocalizedSchemaText)
                 ? schemaDisplayName
                 : (!string.IsNullOrWhiteSpace(localDisplayName)
                     ? localDisplayName
@@ -1839,7 +1842,7 @@ namespace PlayniteAchievements.Providers.Local
 
             var localDescription = entry.description?.Trim();
             var schemaDescription = schemaAch?.Description?.Trim();
-            var description = !string.IsNullOrWhiteSpace(schemaDescription) && IsLowQualityDescription(localDescription)
+            var description = ShouldPreferSchemaDescription(localDescription, schemaDescription, preferLocalizedSchemaText)
                 ? schemaDescription
                 : (!string.IsNullOrWhiteSpace(localDescription)
                     ? localDescription
@@ -1894,6 +1897,38 @@ namespace PlayniteAchievements.Providers.Local
             }
 
             return detail;
+        }
+
+        private static bool ShouldPreferSchemaDisplayName(string existingDisplayName, string incomingDisplayName, string apiName, bool preferLocalizedSchemaText)
+        {
+            incomingDisplayName = incomingDisplayName?.Trim();
+            if (string.IsNullOrWhiteSpace(incomingDisplayName) || IsLowQualityDisplayName(incomingDisplayName, apiName))
+            {
+                return false;
+            }
+
+            if (preferLocalizedSchemaText)
+            {
+                return !string.Equals(existingDisplayName?.Trim(), incomingDisplayName, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return IsLowQualityDisplayName(existingDisplayName, apiName);
+        }
+
+        private static bool ShouldPreferSchemaDescription(string existingDescription, string incomingDescription, bool preferLocalizedSchemaText)
+        {
+            incomingDescription = incomingDescription?.Trim();
+            if (string.IsNullOrWhiteSpace(incomingDescription) || IsLowQualityDescription(incomingDescription))
+            {
+                return false;
+            }
+
+            if (preferLocalizedSchemaText)
+            {
+                return !string.Equals(existingDescription?.Trim(), incomingDescription, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return IsLowQualityDescription(existingDescription);
         }
 
         private static SchemaAchievement ResolveSchemaAchievement(
@@ -1987,13 +2022,83 @@ namespace PlayniteAchievements.Providers.Local
                 .ToDictionary(group => group.Key, group => group.Value[0], StringComparer.OrdinalIgnoreCase);
         }
 
+        private static Dictionary<string, SchemaAchievement> BuildSchemaLookupByIcon(IReadOnlyList<SchemaAchievement> achievements, bool useLockedIcon)
+        {
+            var lookup = new Dictionary<string, SchemaAchievement>(StringComparer.OrdinalIgnoreCase);
+            if (achievements == null || achievements.Count == 0)
+            {
+                return lookup;
+            }
+
+            foreach (var achievement in achievements)
+            {
+                var iconValue = useLockedIcon ? achievement?.IconGray : achievement?.Icon;
+                var iconHash = ExtractAchievementIconHash(iconValue);
+                if (string.IsNullOrWhiteSpace(iconHash))
+                {
+                    continue;
+                }
+
+                if (!lookup.TryGetValue(iconHash, out var existing))
+                {
+                    lookup[iconHash] = achievement;
+                    continue;
+                }
+
+                if (existing != null && !ReferenceEquals(existing, achievement))
+                {
+                    // Colliding icon hash cannot be used as a unique join key.
+                    lookup[iconHash] = null;
+                }
+            }
+
+            return lookup;
+        }
+
+        private static string ExtractAchievementIconHash(string iconValue)
+        {
+            iconValue = iconValue?.Trim();
+            if (string.IsNullOrWhiteSpace(iconValue))
+            {
+                return null;
+            }
+
+            if (Uri.TryCreate(iconValue, UriKind.Absolute, out var absoluteUri))
+            {
+                iconValue = absoluteUri.AbsolutePath;
+            }
+
+            var querySeparator = iconValue.IndexOf('?');
+            if (querySeparator >= 0)
+            {
+                iconValue = iconValue.Substring(0, querySeparator);
+            }
+
+            var fragmentSeparator = iconValue.IndexOf('#');
+            if (fragmentSeparator >= 0)
+            {
+                iconValue = iconValue.Substring(0, fragmentSeparator);
+            }
+
+            var lastSlash = iconValue.LastIndexOf('/');
+            if (lastSlash >= 0 && lastSlash < iconValue.Length - 1)
+            {
+                iconValue = iconValue.Substring(lastSlash + 1);
+            }
+
+            iconValue = iconValue.Trim();
+            return string.IsNullOrWhiteSpace(iconValue)
+                ? null
+                : iconValue.ToLowerInvariant();
+        }
+
         private static bool ShouldExpandSchemaAchievementsForLocalEntries(string schemaSource)
         {
             return !string.Equals(schemaSource, "steam-community", StringComparison.OrdinalIgnoreCase) &&
                    !string.Equals(schemaSource, "completionist", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static void MergeSchemaMetadata(IReadOnlyList<SchemaAchievement> targetAchievements, IReadOnlyList<SchemaAchievement> sourceAchievements)
+        private static void MergeSchemaMetadata(IReadOnlyList<SchemaAchievement> targetAchievements, IReadOnlyList<SchemaAchievement> sourceAchievements, bool preferSourceText = false)
         {
             if (targetAchievements == null || sourceAchievements == null || targetAchievements.Count == 0 || sourceAchievements.Count == 0)
             {
@@ -2006,6 +2111,8 @@ namespace PlayniteAchievements.Providers.Local
                 .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
             var sourceByText = BuildSchemaLookupByText(sourceAchievements);
             var sourceByTitle = BuildSchemaLookupByTitle(sourceAchievements);
+            var sourceByIcon = BuildSchemaLookupByIcon(sourceAchievements, useLockedIcon: false);
+            var sourceByLockedIcon = BuildSchemaLookupByIcon(sourceAchievements, useLockedIcon: true);
 
             foreach (var target in targetAchievements)
             {
@@ -2040,15 +2147,37 @@ namespace PlayniteAchievements.Providers.Local
 
                 if (source == null)
                 {
+                    var iconHash = ExtractAchievementIconHash(target.Icon);
+                    if (!string.IsNullOrWhiteSpace(iconHash) &&
+                        sourceByIcon.TryGetValue(iconHash, out var byIcon) &&
+                        byIcon != null)
+                    {
+                        source = byIcon;
+                    }
+                }
+
+                if (source == null)
+                {
+                    var iconGrayHash = ExtractAchievementIconHash(target.IconGray);
+                    if (!string.IsNullOrWhiteSpace(iconGrayHash) &&
+                        sourceByLockedIcon.TryGetValue(iconGrayHash, out var byLockedIcon) &&
+                        byLockedIcon != null)
+                    {
+                        source = byLockedIcon;
+                    }
+                }
+
+                if (source == null)
+                {
                     continue;
                 }
 
-                if (IsLowQualityDisplayName(target.DisplayName, target.Name) && !IsLowQualityDisplayName(source.DisplayName, source.Name))
+                if (ShouldPreferSchemaDisplayName(target.DisplayName, source.DisplayName, target.Name, preferSourceText))
                 {
                     target.DisplayName = source.DisplayName;
                 }
 
-                if (IsLowQualityDescription(target.Description) && !IsLowQualityDescription(source.Description))
+                if (ShouldPreferSchemaDescription(target.Description, source.Description, preferSourceText))
                 {
                     target.Description = source.Description;
                 }
@@ -3568,16 +3697,33 @@ namespace PlayniteAchievements.Providers.Local
         private async Task<SchemaAndPercentages> TryGetSteamSchemaAsync(int appId)
         {
             var schemaPreference = GetSteamSchemaPreference();
+            var schemaLanguage = GetSteamLanguage();
+
+            void CacheSchema(SchemaAndPercentages schema, string source)
+            {
+                _steamSchemaCache[appId] = schema;
+                _steamSchemaSourceCache[appId] = source;
+                _steamSchemaLanguageCache[appId] = schemaLanguage;
+            }
+
+            void RemoveCachedSchema()
+            {
+                _steamSchemaCache.Remove(appId);
+                _steamSchemaSourceCache.Remove(appId);
+                _steamSchemaLanguageCache.Remove(appId);
+            }
+
             if (_steamSchemaCache.TryGetValue(appId, out var cached) && cached != null)
             {
                 var cachedSource = _steamSchemaSourceCache.TryGetValue(appId, out var source) ? source : null;
-                if (IsSchemaSourceCompatibleWithPreference(cachedSource, schemaPreference))
+                var cachedLanguage = _steamSchemaLanguageCache.TryGetValue(appId, out var language) ? language : "english";
+                if (IsSchemaSourceCompatibleWithPreference(cachedSource, schemaPreference) &&
+                    string.Equals(cachedLanguage, schemaLanguage, StringComparison.OrdinalIgnoreCase))
                 {
                     return cached;
                 }
 
-                _steamSchemaCache.Remove(appId);
-                _steamSchemaSourceCache.Remove(appId);
+                RemoveCachedSchema();
             }
 
             var steamSettings = ProviderRegistry.Settings<SteamSettings>();
@@ -3610,7 +3756,7 @@ namespace PlayniteAchievements.Providers.Local
                 var mergedAnonymousSchema = await TryPreferredAnonymousSchemaAsync().ConfigureAwait(false);
                 if (mergedAnonymousSchema?.Achievements?.Count > 0)
                 {
-                    MergeSchemaMetadata(appCacheSchema.Achievements, mergedAnonymousSchema.Achievements);
+                    MergeSchemaMetadata(appCacheSchema.Achievements, mergedAnonymousSchema.Achievements, ShouldPreferLocalizedSteamText());
 
                     // The local binary can be stale — add achievements present in the online schema
                     // but missing from the binary so the final schema count matches Steam.
@@ -3632,22 +3778,20 @@ namespace PlayniteAchievements.Providers.Local
                         appCacheSchema.GlobalPercentages = new Dictionary<string, double>(mergedAnonymousSchema.GlobalPercentages, StringComparer.OrdinalIgnoreCase);
                     }
 
-                    _steamSchemaSourceCache[appId] = $"steam-appcache+{GetPreferredAnonymousSchemaSourceName(schemaPreference)}";
+                    CacheSchema(appCacheSchema, $"steam-appcache+{GetPreferredAnonymousSchemaSourceName(schemaPreference)}");
                 }
                 else
                 {
-                    _steamSchemaSourceCache[appId] = "steam-appcache";
+                    CacheSchema(appCacheSchema, "steam-appcache");
                 }
 
-                _steamSchemaCache[appId] = appCacheSchema;
                 return appCacheSchema;
             }
 
             var preferredAnonymousSchema = await TryPreferredAnonymousSchemaAsync().ConfigureAwait(false);
             if (preferredAnonymousSchema?.Achievements?.Count > 0)
             {
-                _steamSchemaCache[appId] = preferredAnonymousSchema;
-                _steamSchemaSourceCache[appId] = GetPreferredAnonymousSchemaSourceName(schemaPreference);
+                CacheSchema(preferredAnonymousSchema, GetPreferredAnonymousSchemaSourceName(schemaPreference));
                 Log($"SCHEMA SOURCE SELECTED: appId={appId} preference={schemaPreference} source={_steamSchemaSourceCache[appId]}");
                 return preferredAnonymousSchema;
             }
@@ -3659,8 +3803,7 @@ namespace PlayniteAchievements.Providers.Local
                 var steamHuntersSchema = await TryGetSteamHuntersSchemaAsync(appId).ConfigureAwait(false);
                 if (steamHuntersSchema?.Achievements?.Count > 0)
                 {
-                    _steamSchemaCache[appId] = steamHuntersSchema;
-                    _steamSchemaSourceCache[appId] = "steamhunters";
+                    CacheSchema(steamHuntersSchema, "steamhunters");
                     Log($"SCHEMA SOURCE FALLBACK: appId={appId} preference={schemaPreference} source=steamhunters");
                     return steamHuntersSchema;
                 }
@@ -3673,8 +3816,7 @@ namespace PlayniteAchievements.Providers.Local
                 var steamCommunitySchema = await TryGetSteamCommunityStatsSchemaAsync(communityClient, appId).ConfigureAwait(false);
                 if (steamCommunitySchema?.Achievements?.Count > 0)
                 {
-                    _steamSchemaCache[appId] = steamCommunitySchema;
-                    _steamSchemaSourceCache[appId] = "steam-community";
+                    CacheSchema(steamCommunitySchema, "steam-community");
                     Log($"SCHEMA SOURCE FALLBACK: appId={appId} preference={schemaPreference} source=steam-community");
                     return steamCommunitySchema;
                 }
@@ -3683,21 +3825,18 @@ namespace PlayniteAchievements.Providers.Local
             var installSchema = TryGetInstallSchema(appId);
             if (installSchema?.Achievements?.Count > 0)
             {
-                _steamSchemaCache[appId] = installSchema;
-                _steamSchemaSourceCache[appId] = "install-schema";
+                CacheSchema(installSchema, "install-schema");
                 return installSchema;
             }
 
             var publicSchema = await TryGetPublicSteamSchemaAsync(appId).ConfigureAwait(false);
             if (publicSchema?.Achievements?.Count > 0)
             {
-                _steamSchemaCache[appId] = publicSchema;
-                _steamSchemaSourceCache[appId] = "steam-public-profile";
+                CacheSchema(publicSchema, "steam-public-profile");
                 return publicSchema;
             }
 
-            _steamSchemaCache.Remove(appId);
-            _steamSchemaSourceCache.Remove(appId);
+            RemoveCachedSchema();
             return null;
         }
 
@@ -3750,9 +3889,68 @@ namespace PlayniteAchievements.Providers.Local
 
         private string GetSteamLanguage()
         {
-            return string.IsNullOrWhiteSpace(_pluginSettings?.Persisted?.GlobalLanguage)
-                ? "english"
-                : _pluginSettings.Persisted.GlobalLanguage.Trim();
+            return NormalizeSteamLanguage(_pluginSettings?.Persisted?.GlobalLanguage);
+        }
+
+        private static string NormalizeSteamLanguage(string language)
+        {
+            if (string.IsNullOrWhiteSpace(language))
+            {
+                return "english";
+            }
+
+            var normalized = language.Trim().ToLowerInvariant();
+            return normalized switch
+            {
+                "english" or "en" or "en-us" or "en-gb" => "english",
+                "german" or "deutsch" or "de" => "german",
+                "french" or "francais" or "français" or "fr" => "french",
+                "spanish" or "espanol" or "español" or "es" => "spanish",
+                "italian" or "italiano" or "it" => "italian",
+                "portuguese" or "pt" => "portuguese",
+                "brazilian" or "pt-br" or "brazilian portuguese" => "brazilian",
+                "russian" or "ru" => "russian",
+                "polish" or "pl" => "polish",
+                "dutch" or "nl" => "dutch",
+                "swedish" or "sv" => "swedish",
+                "finnish" or "fi" => "finnish",
+                "danish" or "da" => "danish",
+                "norwegian" or "no" => "norwegian",
+                "hungarian" or "hu" => "hungarian",
+                "czech" or "cs" => "czech",
+                "romanian" or "ro" => "romanian",
+                "turkish" or "tr" => "turkish",
+                "greek" or "el" => "greek",
+                "bulgarian" or "bg" => "bulgarian",
+                "ukrainian" or "uk" => "ukrainian",
+                "thai" or "th" => "thai",
+                "vietnamese" or "vi" => "vietnamese",
+                "japanese" or "ja" => "japanese",
+                "koreana" or "korean" or "ko" => "koreana",
+                "schinese" or "simplified chinese" or "zh-cn" => "schinese",
+                "tchinese" or "traditional chinese" or "zh-tw" => "tchinese",
+                "arabic" or "ar" => "arabic",
+                _ => "english"
+            };
+        }
+
+        private bool ShouldPreferLocalizedSteamText()
+        {
+            return !IsEnglishSteamLanguage(GetSteamLanguage());
+        }
+
+        private static bool IsEnglishSteamLanguage(string language)
+        {
+            language = language?.Trim();
+            if (string.IsNullOrWhiteSpace(language))
+            {
+                return true;
+            }
+
+            return string.Equals(language, "english", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(language, "en", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(language, "en-us", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(language, "en-gb", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<SchemaAndPercentages> TryGetPublicSteamSchemaAsync(int appId)
@@ -3795,7 +3993,7 @@ namespace PlayniteAchievements.Providers.Local
             }
         }
 
-        private async Task<SchemaAndPercentages> TryGetSteamCommunityStatsSchemaAsync(HttpClient httpClient, int appId)
+        private async Task<SchemaAndPercentages> TryGetSteamCommunityStatsSchemaAsync(HttpClient httpClient, int appId, string languageOverride = null)
         {
             if (httpClient == null || appId <= 0)
             {
@@ -3804,7 +4002,8 @@ namespace PlayniteAchievements.Providers.Local
 
             try
             {
-                var url = $"https://steamcommunity.com/stats/{appId}/achievements?l={GetSteamLanguage()}";
+                var language = NormalizeSteamLanguage(languageOverride ?? GetSteamLanguage());
+                var url = $"https://steamcommunity.com/stats/{appId}/achievements?l={language}";
                 var html = await httpClient.GetStringAsync(url).ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(html))
                 {
@@ -4059,7 +4258,16 @@ namespace PlayniteAchievements.Providers.Local
                 }
 
                 var steamCommunitySchema = await TryGetSteamCommunityStatsSchemaAsync(httpClient, appId).ConfigureAwait(false);
-                MergeSchemaMetadata(achievements, steamCommunitySchema?.Achievements);
+                if (ShouldPreferLocalizedSteamText())
+                {
+                    var steamCommunityEnglishSchema = await TryGetSteamCommunityStatsSchemaAsync(httpClient, appId, "english").ConfigureAwait(false);
+                    var localizedBridge = BuildCommunityLocalizedBridge(
+                        steamCommunityEnglishSchema?.Achievements,
+                        steamCommunitySchema?.Achievements);
+                    ApplyLocalizedCommunityTextToSteamHuntersAchievements(achievements, localizedBridge);
+                }
+
+                MergeSchemaMetadata(achievements, steamCommunitySchema?.Achievements, ShouldPreferLocalizedSteamText());
 
                 Log($"STEAMHUNTERS SCHEMA: appId={appId} count={achievements.Count} hidden={achievements.Count(achievement => achievement.Hidden == 1)}");
                 return new SchemaAndPercentages
@@ -4072,6 +4280,126 @@ namespace PlayniteAchievements.Providers.Local
             {
                 Log($"STEAMHUNTERS SCHEMA ERROR: appId={appId} msg={ex.Message}");
                 return null;
+            }
+        }
+
+        private static IReadOnlyList<SchemaAchievement> BuildCommunityLocalizedBridge(
+            IReadOnlyList<SchemaAchievement> englishAchievements,
+            IReadOnlyList<SchemaAchievement> localizedAchievements)
+        {
+            if (englishAchievements == null || localizedAchievements == null ||
+                englishAchievements.Count == 0 || localizedAchievements.Count == 0)
+            {
+                return Array.Empty<SchemaAchievement>();
+            }
+
+            var localizedByIcon = BuildSchemaLookupByIcon(localizedAchievements, useLockedIcon: false);
+            var localizedByLockedIcon = BuildSchemaLookupByIcon(localizedAchievements, useLockedIcon: true);
+            var bridge = new List<SchemaAchievement>();
+
+            foreach (var englishAchievement in englishAchievements)
+            {
+                if (englishAchievement == null || string.IsNullOrWhiteSpace(englishAchievement.DisplayName))
+                {
+                    continue;
+                }
+
+                SchemaAchievement localizedAchievement = null;
+
+                var iconHash = ExtractAchievementIconHash(englishAchievement.Icon);
+                if (!string.IsNullOrWhiteSpace(iconHash) &&
+                    localizedByIcon.TryGetValue(iconHash, out var byIcon) &&
+                    byIcon != null)
+                {
+                    localizedAchievement = byIcon;
+                }
+
+                if (localizedAchievement == null)
+                {
+                    var lockedIconHash = ExtractAchievementIconHash(englishAchievement.IconGray);
+                    if (!string.IsNullOrWhiteSpace(lockedIconHash) &&
+                        localizedByLockedIcon.TryGetValue(lockedIconHash, out var byLockedIcon) &&
+                        byLockedIcon != null)
+                    {
+                        localizedAchievement = byLockedIcon;
+                    }
+                }
+
+                if (localizedAchievement == null)
+                {
+                    continue;
+                }
+
+                bridge.Add(new SchemaAchievement
+                {
+                    // Preserve English title/description as match keys and carry localized text separately.
+                    Name = englishAchievement.Name,
+                    DisplayName = englishAchievement.DisplayName,
+                    Description = englishAchievement.Description,
+                    LocalizedDisplayName = localizedAchievement.DisplayName,
+                    LocalizedDescription = localizedAchievement.Description,
+                    Icon = localizedAchievement.Icon,
+                    IconGray = localizedAchievement.IconGray,
+                    Hidden = localizedAchievement.Hidden,
+                    GlobalPercent = localizedAchievement.GlobalPercent
+                });
+            }
+
+            return bridge;
+        }
+
+        private static void ApplyLocalizedCommunityTextToSteamHuntersAchievements(
+            IReadOnlyList<SchemaAchievement> targetAchievements,
+            IReadOnlyList<SchemaAchievement> localizedBridge)
+        {
+            if (targetAchievements == null || localizedBridge == null ||
+                targetAchievements.Count == 0 || localizedBridge.Count == 0)
+            {
+                return;
+            }
+
+            var bridgeByText = BuildSchemaLookupByText(localizedBridge);
+            var bridgeByTitle = BuildSchemaLookupByTitle(localizedBridge);
+
+            foreach (var target in targetAchievements)
+            {
+                if (target == null)
+                {
+                    continue;
+                }
+
+                SchemaAchievement bridgeMatch = null;
+                var textLookupKey = BuildAchievementLookupKey(target.DisplayName, target.Description);
+                if (!string.IsNullOrWhiteSpace(textLookupKey) &&
+                    bridgeByText.TryGetValue(textLookupKey, out var byText))
+                {
+                    bridgeMatch = byText;
+                }
+
+                if (bridgeMatch == null)
+                {
+                    var titleLookupKey = BuildAchievementTitleLookupKey(target.DisplayName);
+                    if (!string.IsNullOrWhiteSpace(titleLookupKey) &&
+                        bridgeByTitle.TryGetValue(titleLookupKey, out var byTitle))
+                    {
+                        bridgeMatch = byTitle;
+                    }
+                }
+
+                if (bridgeMatch == null)
+                {
+                    continue;
+                }
+
+                if (ShouldPreferSchemaDisplayName(target.DisplayName, bridgeMatch.LocalizedDisplayName, target.Name, preferLocalizedSchemaText: true))
+                {
+                    target.DisplayName = bridgeMatch.LocalizedDisplayName;
+                }
+
+                if (ShouldPreferSchemaDescription(target.Description, bridgeMatch.LocalizedDescription, preferLocalizedSchemaText: true))
+                {
+                    target.Description = bridgeMatch.LocalizedDescription;
+                }
             }
         }
 

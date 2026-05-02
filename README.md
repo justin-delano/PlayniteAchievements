@@ -82,8 +82,14 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 ## Next Version Planned changes
 
 - Try to add LumaPLay into the achievements detection
+- The `Automatic` metadata fetch is fetching if there is no Steam authentication
+- Fix the `Theme Migration`
 
 ## TBD - v2.1.3.1
+
+- Fixed the `Local` achievements not respecting the language setting
+
+## 2026-05-01 - v2.1.3.1
 
 - Merge from original v2.1.3 - https://github.com/justin-delano/PlayniteAchievements/releases/tag/v2.1.3
 - The default icon will now appear in the `Local` under the `Local provider Icon` when no custom icon was selected
