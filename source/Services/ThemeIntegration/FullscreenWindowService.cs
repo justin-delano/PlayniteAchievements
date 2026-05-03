@@ -106,6 +106,23 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
+        /// <summary>
+        /// Returns true when there is an active window that is an owned/modal child
+        /// of the overlay achievements window. This helps callers decide whether
+        /// to ignore global close/back actions.
+        /// </summary>
+        public bool HasActiveOwnedModal()
+        {
+            var windows = System.Windows.Application.Current?.Windows;
+            if (windows == null)
+            {
+                return false;
+            }
+
+            var active = windows.OfType<System.Windows.Window>().FirstOrDefault(w => w.IsActive);
+            return active != null && active.Owner != null && ReferenceEquals(active.Owner, _achievementsWindow);
+        }
+
         private void SelectGame(Guid gameId)
         {
             try
