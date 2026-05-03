@@ -19,6 +19,8 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
@@ -144,7 +146,48 @@
                       Content="Also import numbered Local folders without achievements.ini or achievements.json" />
         </Grid>
 
-        <StackPanel Grid.Row="7"
+        <Grid Grid.Row="7" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="170" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="429 Icon retry mode"
+                       Foreground="{DynamicResource TextBrush}"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1"
+                      SelectedValue="{Binding IconRateLimitRetryMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                      SelectedValuePath="Tag"
+                      SelectionChanged="IconRetryModeComboBox_SelectionChanged"
+                      MinHeight="30">
+                <ComboBoxItem Content="None"
+                              Tag="{x:Static local:LocalIconRateLimitRetryMode.None}" />
+                <ComboBoxItem Content="Fixed rounds"
+                              Tag="{x:Static local:LocalIconRateLimitRetryMode.FixedRounds}" />
+                <ComboBoxItem Content="Infinite (until done/cancel)"
+                              Tag="{x:Static local:LocalIconRateLimitRetryMode.Infinite}" />
+            </ComboBox>
+        </Grid>
+
+        <Grid x:Name="IconRetryRoundsRow" Grid.Row="8" Margin="0,0,0,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="170" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="Retry rounds"
+                       Foreground="{DynamicResource TextBrush}"
+                       VerticalAlignment="Center" />
+            <TextBox Grid.Column="1"
+                     Text="{Binding IconRateLimitRetryRounds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     MinHeight="30"
+                     VerticalContentAlignment="Center"
+                     ToolTip="Used when mode is Fixed rounds (1-20)." />
+        </Grid>
+
+        <StackPanel Grid.Row="9"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,14,0,0">

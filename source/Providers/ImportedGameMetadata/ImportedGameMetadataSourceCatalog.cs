@@ -177,6 +177,33 @@ namespace PlayniteAchievements.Providers.ImportedGameMetadata
             }
         }
 
+        public static MetadataPlugin ResolveIgdbMetadataPlugin(IPlayniteAPI api, ILogger logger)
+        {
+            try
+            {
+                var metadataPlugins = GetMetadataPluginIdentities(api, logger);
+                var directMatch = metadataPlugins.FirstOrDefault(plugin =>
+                    MatchesPluginIdentity(plugin, "IGDB")
+                    || MatchesPluginIdentity(plugin, "IGDB Metadata")
+                    || MatchesPluginIdentity(plugin, "name:IGDB"));
+                if (directMatch != null)
+                {
+                    return directMatch.Plugin;
+                }
+
+                var containsMatch = metadataPlugins.FirstOrDefault(plugin =>
+                    (plugin.RuntimeName?.IndexOf("IGDB", StringComparison.OrdinalIgnoreCase) ?? -1) >= 0
+                    || (plugin.ManifestName?.IndexOf("IGDB", StringComparison.OrdinalIgnoreCase) ?? -1) >= 0
+                    || (plugin.ManifestId?.IndexOf("IGDB", StringComparison.OrdinalIgnoreCase) ?? -1) >= 0);
+                return containsMatch?.Plugin;
+            }
+            catch (Exception ex)
+            {
+                logger?.Debug(ex, "[ImportMetadata] Failed resolving IGDB metadata plugin instance.");
+                return null;
+            }
+        }
+
         public static MetadataPlugin ResolveUniversalSteamMetadataPlugin(IPlayniteAPI api, ILogger logger)
         {
             try

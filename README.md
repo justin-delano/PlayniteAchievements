@@ -84,10 +84,15 @@ The entries below are fork-side changes, grouped by date. When a date includes a
 - Try to add LumaPLay into the achievements detection
 - The `Automatic` metadata fetch is fetching if there is no Steam authentication
 - Fix the `Theme Migration`
+- Fix local `Steam` achievements, still with some issues
 
 ## TBD - v2.1.3.1
 
 - Fixed the `Local` achievements not respecting the language setting
+- Fix the extension not clearing the `Steam` authentication
+- Added `SteamGridDB` as a icon fetcher for `SteamHunters` and `Completionist` metadata providers
+  - If no icon found, will add the cover image as icon
+
 
 ## 2026-05-01 - v2.1.3.1
 

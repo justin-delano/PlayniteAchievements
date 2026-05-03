@@ -205,7 +205,12 @@ namespace PlayniteAchievements.Providers.Steam
                                 continue;
                             }
 
-                            ApplyImportedMetadata(imported, ownedGame.AppId ?? 0, metadataSourceId, selectedMetadataPlugin, metadataDownloader);
+                            ApplyImportedMetadata(
+                                imported,
+                                ownedGame.AppId ?? 0,
+                                metadataSourceId,
+                                selectedMetadataPlugin,
+                                metadataDownloader);
 
                             if (isExistingGame)
                             {
@@ -384,7 +389,12 @@ namespace PlayniteAchievements.Providers.Steam
 
             try
             {
-                _metadataApplier.ApplyToGame(importedGame, appId, metadataSourceId, selectedMetadataPlugin, metadataDownloader);
+                _metadataApplier.ApplyToGame(
+                    importedGame,
+                    appId,
+                    metadataSourceId,
+                    selectedMetadataPlugin,
+                    metadataDownloader);
                 NormalizeImportedGameMetadata(importedGame, appId);
                 _api.Database.Games.Update(importedGame);
             }

@@ -361,7 +361,15 @@ namespace PlayniteAchievements.Providers.Local
                 return;
             }
 
-            if (!TryShowImportTargetDialog(out var selectedTarget, out var customSourceName, out var metadataSourceId, out var steamAppCacheUserId, out var existingGameBehavior, out var includeFoldersWithoutAchievementFiles))
+            if (!TryShowImportTargetDialog(
+                out var selectedTarget,
+                out var customSourceName,
+                out var metadataSourceId,
+                out var steamAppCacheUserId,
+                out var existingGameBehavior,
+                out var includeFoldersWithoutAchievementFiles,
+                out var iconRateLimitRetryMode,
+                out var iconRateLimitRetryRounds))
             {
                 return;
             }
@@ -374,6 +382,8 @@ namespace PlayniteAchievements.Providers.Local
                 _localSettings.SteamAppCacheUserId = steamAppCacheUserId ?? string.Empty;
                 _localSettings.ExistingGameImportBehavior = existingGameBehavior;
                 _localSettings.IncludeFoldersWithoutAchievementFilesOnImport = includeFoldersWithoutAchievementFiles;
+                _localSettings.IconRateLimitRetryMode = iconRateLimitRetryMode;
+                _localSettings.IconRateLimitRetryRounds = iconRateLimitRetryRounds;
                 RefreshImportedGameTargetControls();
             }
 
@@ -382,7 +392,16 @@ namespace PlayniteAchievements.Providers.Local
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            StartLocalImport(roots, selectedTarget, customSourceName, metadataSourceId, existingGameBehavior, steamAppCacheUserId, includeFoldersWithoutAchievementFiles);
+            StartLocalImport(
+                roots,
+                selectedTarget,
+                customSourceName,
+                metadataSourceId,
+                existingGameBehavior,
+                steamAppCacheUserId,
+                includeFoldersWithoutAchievementFiles,
+                iconRateLimitRetryMode,
+                iconRateLimitRetryRounds);
         }
 
         private void PendingExtraLocalPathTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -771,7 +790,9 @@ namespace PlayniteAchievements.Providers.Local
             out string metadataSourceId,
             out string steamAppCacheUserId,
             out LocalExistingGameImportBehavior existingGameBehavior,
-            out bool includeFoldersWithoutAchievementFiles)
+            out bool includeFoldersWithoutAchievementFiles,
+            out LocalIconRateLimitRetryMode iconRateLimitRetryMode,
+            out int iconRateLimitRetryRounds)
         {
             selectedTarget = _localSettings?.ImportedGameLibraryTarget ?? LocalImportedGameLibraryTarget.None;
             customSourceName = _localSettings?.ImportedGameCustomSourceName ?? string.Empty;
@@ -779,8 +800,21 @@ namespace PlayniteAchievements.Providers.Local
             steamAppCacheUserId = _localSettings?.SteamAppCacheUserId ?? string.Empty;
             existingGameBehavior = _localSettings?.ExistingGameImportBehavior ?? LocalExistingGameImportBehavior.OverwriteExisting;
             includeFoldersWithoutAchievementFiles = _localSettings?.IncludeFoldersWithoutAchievementFilesOnImport == true;
+            iconRateLimitRetryMode = _localSettings?.IconRateLimitRetryMode ?? LocalIconRateLimitRetryMode.FixedRounds;
+            iconRateLimitRetryRounds = Math.Max(1, _localSettings?.IconRateLimitRetryRounds ?? 2);
 
-            var dialog = new LocalImportTargetDialog(selectedTarget, customSourceName, metadataSourceId, steamAppCacheUserId, includeFoldersWithoutAchievementFiles, existingGameBehavior, AvailableSourceNames, AvailableMetadataSources, AvailableSteamAppCacheUsers);
+            var dialog = new LocalImportTargetDialog(
+                selectedTarget,
+                customSourceName,
+                metadataSourceId,
+                steamAppCacheUserId,
+                includeFoldersWithoutAchievementFiles,
+                existingGameBehavior,
+                iconRateLimitRetryMode,
+                iconRateLimitRetryRounds,
+                AvailableSourceNames,
+                AvailableMetadataSources,
+                AvailableSteamAppCacheUsers);
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 "Import Local Games",
                 dialog,
@@ -808,6 +842,8 @@ namespace PlayniteAchievements.Providers.Local
             steamAppCacheUserId = dialog.SteamAppCacheUserId?.Trim() ?? string.Empty;
             existingGameBehavior = dialog.ExistingGameBehavior;
             includeFoldersWithoutAchievementFiles = dialog.IncludeFoldersWithoutAchievementFiles;
+            iconRateLimitRetryMode = dialog.IconRateLimitRetryMode;
+            iconRateLimitRetryRounds = Math.Max(1, dialog.IconRateLimitRetryRounds);
             return true;
         }
 
@@ -818,7 +854,9 @@ namespace PlayniteAchievements.Providers.Local
             string metadataSourceId,
             LocalExistingGameImportBehavior existingGameBehavior,
             string steamAppCacheUserId = null,
-            bool includeFoldersWithoutAchievementFiles = false)
+            bool includeFoldersWithoutAchievementFiles = false,
+            LocalIconRateLimitRetryMode iconRateLimitRetryMode = LocalIconRateLimitRetryMode.FixedRounds,
+            int iconRateLimitRetryRounds = 2)
         {
             _localImportCts?.Dispose();
             _localImportCts = new CancellationTokenSource();
@@ -882,11 +920,99 @@ namespace PlayniteAchievements.Providers.Local
                     var metadataLabel = AvailableMetadataSources.FirstOrDefault(option => string.Equals(option.Id, metadataSourceId ?? string.Empty, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? "Automatic";
                     var existingBehaviorLabel = existingGameBehavior == LocalExistingGameImportBehavior.SkipExisting ? "skip existing" : "overwrite existing";
                     var folderModeLabel = includeFoldersWithoutAchievementFiles ? "including schema-only folders" : "achievement files required";
+
+                    var pendingRateLimitedIconAppIds = new HashSet<int>(result.RateLimitedMissingIconAppIds ?? new List<int>());
+                    var recoveredOnRetryCount = 0;
+
+                    var retryRoundsPerformed = 0;
+                    var maxRetryRounds = iconRateLimitRetryMode == LocalIconRateLimitRetryMode.FixedRounds
+                        ? Math.Max(1, iconRateLimitRetryRounds)
+                        : int.MaxValue;
+
+                    while (pendingRateLimitedIconAppIds.Count > 0 && retryRoundsPerformed < maxRetryRounds)
+                    {
+                        if (iconRateLimitRetryMode == LocalIconRateLimitRetryMode.None)
+                        {
+                            break;
+                        }
+
+                        retryRoundsPerformed++;
+
+                        Dispatcher.Invoke(() =>
+                        {
+                            progressControl.Update(
+                                0d,
+                                $"Retrying missing icons - round {retryRoundsPerformed}",
+                                $"Retry queue contains {pendingRateLimitedIconAppIds.Count} game(s). Cancel to stop retries.");
+                            UpdateImportStatus($"Retrying missing icons - round {retryRoundsPerformed}");
+                        });
+
+                        var retryProgress = new Progress<LocalFolderGamesImporter.LocalImportProgressInfo>(report =>
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                progressControl.Update(report?.Percent ?? 0d, report?.Message, report?.Detail);
+                                UpdateImportStatus(report?.Message);
+                            });
+                        });
+
+                        var retryResult = await importer.RetryMissingIconsFromRateLimitAsync(
+                            pendingRateLimitedIconAppIds,
+                            selectedTarget,
+                            customSourceName,
+                            maxAttemptsPerApp: 3,
+                            waitDuringBackoff: true,
+                            _localImportCts.Token,
+                            retryProgress).ConfigureAwait(false);
+
+                        recoveredOnRetryCount += retryResult.RecoveredCount;
+                        pendingRateLimitedIconAppIds = new HashSet<int>(retryResult.RemainingRateLimitedAppIds ?? new List<int>());
+                    }
+
                     var summary = $"Imported {result.ImportedCount} new games, reused {result.LinkedExistingCount} existing games, skipped {result.SkippedCount}, failed {result.FailedCount} across {result.UniqueAppIdCount} detected App IDs for {targetLabel} using metadata source '{metadataLabel}' with existing-game behavior '{existingBehaviorLabel}' and folder mode '{folderModeLabel}'.";
                     if (result.RejectedSteamAppCount > 0)
                     {
                         summary += $" Rejected {result.RejectedSteamAppCount} non-importable Steam App IDs.";
                     }
+
+                    if (result.RateLimitedMissingIconAppIds.Count > 0)
+                    {
+                        summary += $" Steam rate-limited icon requests left {result.RateLimitedMissingIconAppIds.Count} icon(s) missing during the initial import.";
+                    }
+
+                    if (recoveredOnRetryCount > 0)
+                    {
+                        summary += $" Recovered {recoveredOnRetryCount} icon(s) via retry.";
+                    }
+
+                    if (pendingRateLimitedIconAppIds.Count > 0)
+                    {
+                        summary += $" {pendingRateLimitedIconAppIds.Count} icon(s) are still pending rate-limit recovery.";
+                    }
+
+                    var finalMissingIconCount = _playniteApi.Database.Games
+                        .Where(game => game != null && game.PluginId == Guid.Empty && !string.IsNullOrWhiteSpace(game.GameId) && int.TryParse(game.GameId, out _))
+                        .Count(game => string.IsNullOrWhiteSpace(game.Icon));
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (result.RateLimitedMissingIconAppIds.Count > 0)
+                        {
+                            var retryModeLabel = iconRateLimitRetryMode == LocalIconRateLimitRetryMode.None
+                                ? "None"
+                                : (iconRateLimitRetryMode == LocalIconRateLimitRetryMode.Infinite ? "Infinite" : $"Fixed ({Math.Max(1, iconRateLimitRetryRounds)})");
+                            _playniteApi.Dialogs.ShowMessage(
+                                $"Rate-limit icon summary:{Environment.NewLine}" +
+                                $"- Missed in initial import: {result.RateLimitedMissingIconAppIds.Count}{Environment.NewLine}" +
+                                $"- Recovered by retry: {recoveredOnRetryCount}{Environment.NewLine}" +
+                                $"- Still missing from rate-limit list: {pendingRateLimitedIconAppIds.Count}{Environment.NewLine}" +
+                                $"- Total imported games still without icon: {finalMissingIconCount}{Environment.NewLine}" +
+                                $"- Retry mode used: {retryModeLabel}",
+                                "Local Import Icon Summary",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
+                    });
 
                     Dispatcher.Invoke(() =>
                     {

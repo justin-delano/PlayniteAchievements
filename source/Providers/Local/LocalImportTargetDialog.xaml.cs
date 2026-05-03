@@ -92,6 +92,32 @@ namespace PlayniteAchievements.Providers.Local
                 typeof(LocalImportTargetDialog),
                 new PropertyMetadata(false));
 
+        public LocalIconRateLimitRetryMode IconRateLimitRetryMode
+        {
+            get => (LocalIconRateLimitRetryMode)GetValue(IconRateLimitRetryModeProperty);
+            set => SetValue(IconRateLimitRetryModeProperty, value);
+        }
+
+        public static readonly DependencyProperty IconRateLimitRetryModeProperty =
+            DependencyProperty.Register(
+                nameof(IconRateLimitRetryMode),
+                typeof(LocalIconRateLimitRetryMode),
+                typeof(LocalImportTargetDialog),
+                new PropertyMetadata(LocalIconRateLimitRetryMode.FixedRounds));
+
+        public int IconRateLimitRetryRounds
+        {
+            get => (int)GetValue(IconRateLimitRetryRoundsProperty);
+            set => SetValue(IconRateLimitRetryRoundsProperty, value);
+        }
+
+        public static readonly DependencyProperty IconRateLimitRetryRoundsProperty =
+            DependencyProperty.Register(
+                nameof(IconRateLimitRetryRounds),
+                typeof(int),
+                typeof(LocalImportTargetDialog),
+                new PropertyMetadata(2));
+
         public bool? DialogResult { get; private set; }
 
         public event EventHandler RequestClose;
@@ -103,6 +129,8 @@ namespace PlayniteAchievements.Providers.Local
             string steamAppCacheUserId,
             bool includeFoldersWithoutAchievementFiles,
             LocalExistingGameImportBehavior existingGameBehavior,
+            LocalIconRateLimitRetryMode iconRateLimitRetryMode,
+            int iconRateLimitRetryRounds,
             IEnumerable<string> sourceOptions,
             IEnumerable<ImportedGameMetadataSourceOption> metadataSourceOptions,
             IEnumerable<LocalSteamAppCacheUserOption> steamAppCacheUserOptions)
@@ -143,6 +171,8 @@ namespace PlayniteAchievements.Providers.Local
             SteamAppCacheUserId = ResolveSelectedSteamAppCacheUserId(steamAppCacheUserId);
             IncludeFoldersWithoutAchievementFiles = includeFoldersWithoutAchievementFiles;
             ExistingGameBehavior = existingGameBehavior;
+            IconRateLimitRetryMode = iconRateLimitRetryMode;
+            IconRateLimitRetryRounds = Math.Max(1, Math.Min(20, iconRateLimitRetryRounds));
             DataContext = this;
             RefreshControlState();
         }
@@ -160,6 +190,8 @@ namespace PlayniteAchievements.Providers.Local
                 return;
             }
 
+            IconRateLimitRetryRounds = Math.Max(1, Math.Min(20, IconRateLimitRetryRounds));
+
             DialogResult = true;
             RequestClose?.Invoke(this, EventArgs.Empty);
         }
@@ -175,6 +207,11 @@ namespace PlayniteAchievements.Providers.Local
             RefreshControlState();
         }
 
+        private void IconRetryModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshControlState();
+        }
+
         private void RefreshControlState()
         {
             if (CustomSourceRow == null)
@@ -185,6 +222,13 @@ namespace PlayniteAchievements.Providers.Local
             CustomSourceRow.Visibility = SelectedTarget == LocalImportedGameLibraryTarget.CustomSource
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+
+            if (IconRetryRoundsRow != null)
+            {
+                IconRetryRoundsRow.Visibility = IconRateLimitRetryMode == LocalIconRateLimitRetryMode.FixedRounds
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
         }
 
         private string ResolveSelectedSource(string preferredSource)
@@ -216,6 +260,11 @@ namespace PlayniteAchievements.Providers.Local
         {
             var normalizedId = preferredSteamAppCacheUserId?.Trim() ?? string.Empty;
             if (SteamAppCacheUserOptions.Any(option => string.Equals(option.UserId, normalizedId, StringComparison.OrdinalIgnoreCase)))
+            {
+                return normalizedId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalizedId))
             {
                 return normalizedId;
             }

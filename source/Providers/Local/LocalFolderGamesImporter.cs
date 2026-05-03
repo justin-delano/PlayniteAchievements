@@ -53,6 +53,20 @@ namespace PlayniteAchievements.Providers.Local
             public int FailedCount { get; set; }
             public int RejectedSteamAppCount { get; set; }
             public string RejectedSteamAppReport { get; set; }
+            public List<int> RateLimitedMissingIconAppIds { get; set; } = new List<int>();
+        }
+
+        internal sealed class IconRetryResult
+        {
+            public int AttemptedCount { get; set; }
+            public int RecoveredCount { get; set; }
+            public List<int> RemainingRateLimitedAppIds { get; set; } = new List<int>();
+        }
+
+        private sealed class MetadataApplyOutcome
+        {
+            public bool IconPresent { get; set; }
+            public IReadOnlyCollection<int> RateLimitedIconMissAppIds { get; set; } = Array.Empty<int>();
         }
 
         private sealed class ImportCandidate
@@ -167,7 +181,11 @@ namespace PlayniteAchievements.Providers.Local
             var totalCandidates = orderedCandidates.Count;
             var processedCandidates = 0;
             var settingsDirty = false;
+            var rateLimitedMissingIconAppIds = new HashSet<int>();
             var existingGamesByResolvedAppId = BuildExistingGamesByResolvedAppId();
+
+            // Keep main import responsive: do not block on Steam icon backoff during bulk pass.
+            _metadataApplier.ConfigureSteamCommunityIconLookupPolicy(maxAttempts: 1, waitDuringBackoff: false);
 
             using (var fastMetadataDownloader = fastMetadataLibraryPlugin?.GetMetadataDownloader())
             {
@@ -207,8 +225,19 @@ namespace PlayniteAchievements.Providers.Local
                             var game = FindExistingGame(appId, importTarget, customSourceName, existingGamesByResolvedAppId);
                             if (game != null && existingGameBehavior == LocalExistingGameImportBehavior.SkipExisting)
                             {
-                                result.SkippedCount++;
-                                _logger?.Info($"[LocalImport] Skipping appId={appId} because a matching existing game was found and existing-game behavior is set to skip.");
+                                var linked = PersistLocalBinding(game, appId, folderPath);
+                                settingsDirty |= linked;
+                                if (linked)
+                                {
+                                    result.LinkedExistingCount++;
+                                    _logger?.Info($"[LocalImport] Linked existing game for appId={appId} without metadata changes because existing-game behavior is set to skip.");
+                                }
+                                else
+                                {
+                                    result.SkippedCount++;
+                                    _logger?.Info($"[LocalImport] Skipping appId={appId} because a matching existing game was found, existing-game behavior is set to skip, and no Local binding changes were required.");
+                                }
+
                                 continue;
                             }
 
@@ -240,7 +269,11 @@ namespace PlayniteAchievements.Providers.Local
                                 }
 
                                 ApplyImportTarget(game, importTarget, customSourceName);
-                                ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
+                                var applyOutcome = ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
+                                if (!applyOutcome.IconPresent && applyOutcome.RateLimitedIconMissAppIds.Contains(appId))
+                                {
+                                    rateLimitedMissingIconAppIds.Add(appId);
+                                }
                                 _logger?.Info($"[LocalImport] Imported new game for appId={appId}: {DescribeGame(game)}.");
                                 result.ImportedCount++;
                                 CacheExistingGameByResolvedAppId(existingGamesByResolvedAppId, appId, game);
@@ -248,7 +281,11 @@ namespace PlayniteAchievements.Providers.Local
                             else
                             {
                                 ApplyImportTarget(game, importTarget, customSourceName);
-                                ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
+                                var applyOutcome = ApplyDownloadedMetadata(game, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
+                                if (!applyOutcome.IconPresent && applyOutcome.RateLimitedIconMissAppIds.Contains(appId))
+                                {
+                                    rateLimitedMissingIconAppIds.Add(appId);
+                                }
                                 _logger?.Info($"[LocalImport] Linked existing game for appId={appId}: {DescribeGame(game)}.");
                                 result.LinkedExistingCount++;
                             }
@@ -290,7 +327,102 @@ namespace PlayniteAchievements.Providers.Local
             result.RejectedSteamAppReport = _rejectedSteamAppReports.Count > 0
                 ? string.Join(Environment.NewLine, _rejectedSteamAppReports.OrderBy(pair => pair.Key).Select(pair => pair.Value))
                 : string.Empty;
+            result.RateLimitedMissingIconAppIds = rateLimitedMissingIconAppIds.OrderBy(id => id).ToList();
 
+            return result;
+        }
+
+        public async Task<IconRetryResult> RetryMissingIconsFromRateLimitAsync(
+            IEnumerable<int> appIds,
+            LocalImportedGameLibraryTarget importTarget,
+            string customSourceName,
+            int maxAttemptsPerApp,
+            bool waitDuringBackoff,
+            CancellationToken cancellationToken = default(CancellationToken),
+            IProgress<LocalImportProgressInfo> progress = null)
+        {
+            var targetAppIds = appIds?
+                .Where(appId => appId > 0)
+                .Distinct()
+                .OrderBy(appId => appId)
+                .ToList() ?? new List<int>();
+
+            var result = new IconRetryResult();
+            if (targetAppIds.Count == 0)
+            {
+                return result;
+            }
+
+            _metadataApplier.ConfigureSteamCommunityIconLookupPolicy(maxAttemptsPerApp, waitDuringBackoff);
+
+            var existingGamesByResolvedAppId = BuildExistingGamesByResolvedAppId();
+            var processed = 0;
+
+            _api.Database.Games.BeginBufferUpdate();
+            try
+            {
+                foreach (var appId in targetAppIds)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    processed++;
+                    result.AttemptedCount++;
+
+                    ReportProgress(
+                        progress,
+                        0d,
+                        $"Retrying missing icons ({processed}/{targetAppIds.Count})...",
+                        $"Retrying icon download for appId={appId}.");
+
+                    var game = FindExistingGame(appId, importTarget, customSourceName, existingGamesByResolvedAppId);
+                    if (game == null)
+                    {
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(game.Icon))
+                    {
+                        result.RecoveredCount++;
+                        continue;
+                    }
+
+                    var iconApplied = false;
+                    try
+                    {
+                        iconApplied = _metadataApplier.TryApplyIconFallbackOnly(game, appId);
+                        _api.Database.Games.Update(game);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, $"[LocalImport] Failed retrying missing icon for appId={appId}.");
+                    }
+
+                    var rateLimitedMissAppIds = _metadataApplier.ConsumeRateLimitedIconMissAppIds();
+                    if (iconApplied && !string.IsNullOrWhiteSpace(game.Icon))
+                    {
+                        result.RecoveredCount++;
+                    }
+                    else if (string.IsNullOrWhiteSpace(game.Icon))
+                    {
+                        result.RemainingRateLimitedAppIds.Add(appId);
+
+                        if (rateLimitedMissAppIds.Contains(appId))
+                        {
+                            _logger?.Debug($"[LocalImport] Icon retry still rate-limited for appId={appId}; keeping it in the retry queue.");
+                        }
+                    }
+
+                    if (processed % 5 == 0)
+                    {
+                        await Task.Yield();
+                    }
+                }
+            }
+            finally
+            {
+                _api.Database.Games.EndBufferUpdate();
+            }
+
+            result.RemainingRateLimitedAppIds = result.RemainingRateLimitedAppIds.Distinct().OrderBy(id => id).ToList();
             return result;
         }
 
@@ -382,6 +514,13 @@ namespace PlayniteAchievements.Providers.Local
         {
             var selectedSteamAppCacheUserId = (_steamAppCacheUserIdOverride ?? _localSettings?.SteamAppCacheUserId ?? string.Empty).Trim();
             return string.Equals(selectedSteamAppCacheUserId, LocalSettings.SteamAppCacheUserNone, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsSteamStatsOnlyImportModeEnabled()
+        {
+            var selectedSteamAppCacheUserId = (_steamAppCacheUserIdOverride ?? _localSettings?.SteamAppCacheUserId ?? string.Empty).Trim();
+            return !string.IsNullOrWhiteSpace(selectedSteamAppCacheUserId) &&
+                !string.Equals(selectedSteamAppCacheUserId, LocalSettings.SteamAppCacheUserNone, StringComparison.OrdinalIgnoreCase);
         }
 
         private IEnumerable<string> GetConfiguredSteamImportRoots()
@@ -490,6 +629,7 @@ namespace PlayniteAchievements.Providers.Local
             var candidates = new Dictionary<int, List<ImportCandidate>>();
             var rootList = roots?.ToList() ?? new List<string>();
             var processedRoots = 0;
+            var steamStatsOnlyMode = IsSteamStatsOnlyImportModeEnabled();
 
             foreach (var root in rootList)
             {
@@ -529,10 +669,13 @@ namespace PlayniteAchievements.Providers.Local
                             DiscoverSteamAppCacheCandidates(candidates, steamStatsRoot, cancellationToken);
                         }
 
-                        foreach (var steamUserdataRoot in GetSteamUserdataRoots(root))
+                        if (!steamStatsOnlyMode)
                         {
-                            cancellationToken.ThrowIfCancellationRequested();
-                            DiscoverSteamLibraryCacheCandidates(candidates, steamUserdataRoot, cancellationToken);
+                            foreach (var steamUserdataRoot in GetSteamUserdataRoots(root))
+                            {
+                                cancellationToken.ThrowIfCancellationRequested();
+                                DiscoverSteamLibraryCacheCandidates(candidates, steamUserdataRoot, cancellationToken);
+                            }
                         }
                     }
                 }
@@ -680,6 +823,8 @@ namespace PlayniteAchievements.Providers.Local
                 return;
             }
 
+            var selectedSteamAppCacheUserIds = ExpandSteamAccountIdCandidates(selectedSteamAppCacheUserId);
+
             var allowedAppIdsFromSelectedUser = new HashSet<int>();
 
             foreach (var userStatsPath in Directory.EnumerateFiles(statsRoot, "UserGameStats_*_*.bin", SearchOption.TopDirectoryOnly))
@@ -693,8 +838,8 @@ namespace PlayniteAchievements.Providers.Local
                 }
 
                 var userId = parts[1]?.Trim();
-                if (!string.IsNullOrWhiteSpace(selectedSteamAppCacheUserId) &&
-                    !string.Equals(userId, selectedSteamAppCacheUserId, StringComparison.OrdinalIgnoreCase))
+                if (selectedSteamAppCacheUserIds.Count > 0 &&
+                    !selectedSteamAppCacheUserIds.Contains(userId ?? string.Empty))
                 {
                     continue;
                 }
@@ -734,7 +879,7 @@ namespace PlayniteAchievements.Providers.Local
                     continue;
                 }
 
-                if (!string.IsNullOrWhiteSpace(selectedSteamAppCacheUserId) && !allowedAppIdsFromSelectedUser.Contains(appId))
+                if (selectedSteamAppCacheUserIds.Count > 0 && !allowedAppIdsFromSelectedUser.Contains(appId))
                 {
                     continue;
                 }
@@ -746,6 +891,35 @@ namespace PlayniteAchievements.Providers.Local
                     LastWriteUtc = File.GetLastWriteTimeUtc(schemaPath)
                 });
             }
+        }
+
+        private static HashSet<string> ExpandSteamAccountIdCandidates(string steamUserId)
+        {
+            var candidates = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(steamUserId))
+            {
+                return candidates;
+            }
+
+            var trimmed = steamUserId.Trim();
+            candidates.Add(trimmed);
+
+            if (!Regex.IsMatch(trimmed, @"^\d+$"))
+            {
+                return candidates;
+            }
+
+            if (ulong.TryParse(trimmed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var steamIdValue) &&
+                steamIdValue >= 76561197960265728UL)
+            {
+                var accountId = steamIdValue - 76561197960265728UL;
+                if (accountId <= uint.MaxValue)
+                {
+                    candidates.Add(accountId.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            return candidates;
         }
 
         private void DiscoverSteamLibraryCacheCandidates(
@@ -1318,28 +1492,38 @@ namespace PlayniteAchievements.Providers.Local
             return $"name='{game.Name}', id={game.Id}, gameId='{game.GameId}', pluginId={game.PluginId}, source='{sourceName}'";
         }
 
-        private void ApplyDownloadedMetadata(
+        private MetadataApplyOutcome ApplyDownloadedMetadata(
             Game importedGame,
             int appId,
             string metadataSourceId,
             MetadataPlugin selectedMetadataPlugin,
             LibraryMetadataProvider fastMetadataDownloader)
         {
+            var outcome = new MetadataApplyOutcome();
             if (importedGame == null)
             {
-                return;
+                return outcome;
             }
 
             try
             {
-                _metadataApplier.ApplyToGame(importedGame, appId, metadataSourceId, selectedMetadataPlugin, fastMetadataDownloader);
+                _metadataApplier.ApplyToGame(
+                    importedGame,
+                    appId,
+                    metadataSourceId,
+                    selectedMetadataPlugin,
+                    fastMetadataDownloader);
+                outcome.RateLimitedIconMissAppIds = _metadataApplier.ConsumeRateLimitedIconMissAppIds();
                 NormalizeImportedGameMetadata(importedGame, appId);
                 _api.Database.Games.Update(importedGame);
+                outcome.IconPresent = !string.IsNullOrWhiteSpace(importedGame.Icon);
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"[LocalAch] Failed applying downloaded Steam metadata for imported game '{importedGame?.Name}'.");
             }
+
+            return outcome;
         }
 
         private MetadataPlugin ResolveSelectedMetadataPlugin(string metadataSourceId)

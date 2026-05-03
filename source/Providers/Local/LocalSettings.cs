@@ -28,6 +28,13 @@ namespace PlayniteAchievements.Providers.Local
         SkipExisting = 1
     }
 
+    public enum LocalIconRateLimitRetryMode
+    {
+        None = 0,
+        FixedRounds = 1,
+        Infinite = 2
+    }
+
     public enum LocalUnlockScreenshotCaptureMode
     {
         FullDesktop = 0,
@@ -170,6 +177,8 @@ namespace PlayniteAchievements.Providers.Local
         private string _importedGameMetadataSourceId = string.Empty;
         private LocalExistingGameImportBehavior _existingGameImportBehavior = LocalExistingGameImportBehavior.OverwriteExisting;
         private bool _includeFoldersWithoutAchievementFilesOnImport;
+        private LocalIconRateLimitRetryMode _iconRateLimitRetryMode = LocalIconRateLimitRetryMode.FixedRounds;
+        private int _iconRateLimitRetryRounds = 2;
         private string _steamAppCacheUserId = string.Empty;
         private string _customProviderIconPath = string.Empty;
         private bool _warnOnAmbiguousLocalFolder = true;
@@ -566,6 +575,18 @@ namespace PlayniteAchievements.Providers.Local
         {
             get => _includeFoldersWithoutAchievementFilesOnImport;
             set => SetValue(ref _includeFoldersWithoutAchievementFilesOnImport, value);
+        }
+
+        public LocalIconRateLimitRetryMode IconRateLimitRetryMode
+        {
+            get => _iconRateLimitRetryMode;
+            set => SetValue(ref _iconRateLimitRetryMode, value);
+        }
+
+        public int IconRateLimitRetryRounds
+        {
+            get => _iconRateLimitRetryRounds;
+            set => SetValue(ref _iconRateLimitRetryRounds, Math.Max(1, Math.Min(20, value)));
         }
 
         public string SteamAppCacheUserId
