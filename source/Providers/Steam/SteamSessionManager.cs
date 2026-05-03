@@ -27,6 +27,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         // Temporary state for interactive login dialog coordination
         private (bool Success, string SteamId) _authResult;
+        private Func<CancellationToken, Task<string>> _resolveWebApiTokenAsync;
 
         public string ProviderKey => "Steam";
 
@@ -43,6 +44,11 @@ namespace PlayniteAchievements.Providers.Steam
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        internal void SetWebApiTokenResolver(Func<CancellationToken, Task<string>> resolveWebApiTokenAsync)
+        {
+            _resolveWebApiTokenAsync = resolveWebApiTokenAsync;
         }
 
         private void PersistSteamUserId(string steamId)
@@ -77,6 +83,12 @@ namespace PlayniteAchievements.Providers.Steam
                     var steamId = ProbeSteamIdFromCefCookies();
                     if (!string.IsNullOrWhiteSpace(steamId))
                     {
+                        if (!await HasResolvableWebApiTokenAsync(ct).ConfigureAwait(false))
+                        {
+                            PersistSteamUserId(null);
+                            return AuthProbeResult.NotAuthenticated();
+                        }
+
                         PersistSteamUserId(steamId);
                         return AuthProbeResult.AlreadyAuthenticated(steamId);
                     }
@@ -85,6 +97,12 @@ namespace PlayniteAchievements.Providers.Steam
                     steamId = await RefreshCookiesHeadlessAsync(ct).ConfigureAwait(false);
                     if (!string.IsNullOrWhiteSpace(steamId))
                     {
+                        if (!await HasResolvableWebApiTokenAsync(ct).ConfigureAwait(false))
+                        {
+                            PersistSteamUserId(null);
+                            return AuthProbeResult.NotAuthenticated();
+                        }
+
                         PersistSteamUserId(steamId);
                         return AuthProbeResult.AlreadyAuthenticated(steamId);
                     }
@@ -101,6 +119,30 @@ namespace PlayniteAchievements.Providers.Steam
                     _logger?.Error(ex, "[SteamAuth] Probe failed with exception.");
                     return AuthProbeResult.ProbeFailed();
                 }
+            }
+        }
+
+        private async Task<bool> HasResolvableWebApiTokenAsync(CancellationToken ct)
+        {
+            if (_resolveWebApiTokenAsync == null)
+            {
+                _logger?.Warn("[SteamAuth] WebAPI token resolver is not configured; treating Steam auth as unavailable.");
+                return false;
+            }
+
+            try
+            {
+                var token = await _resolveWebApiTokenAsync(ct).ConfigureAwait(false);
+                return !string.IsNullOrWhiteSpace(token);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "[SteamAuth] WebAPI token resolution failed.");
+                return false;
             }
         }
 
