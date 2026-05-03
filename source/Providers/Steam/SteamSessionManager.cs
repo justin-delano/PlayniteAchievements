@@ -28,6 +28,7 @@ namespace PlayniteAchievements.Providers.Steam
         // Temporary state for interactive login dialog coordination
         private (bool Success, string SteamId) _authResult;
         private Func<CancellationToken, Task<string>> _resolveWebApiTokenAsync;
+        private Action _clearInMemoryAuthState;
 
         public string ProviderKey => "Steam";
 
@@ -49,6 +50,11 @@ namespace PlayniteAchievements.Providers.Steam
         internal void SetWebApiTokenResolver(Func<CancellationToken, Task<string>> resolveWebApiTokenAsync)
         {
             _resolveWebApiTokenAsync = resolveWebApiTokenAsync;
+        }
+
+        internal void SetClearInMemoryAuthState(Action clearInMemoryAuthState)
+        {
+            _clearInMemoryAuthState = clearInMemoryAuthState;
         }
 
         private void PersistSteamUserId(string steamId)
@@ -242,6 +248,8 @@ namespace PlayniteAchievements.Providers.Steam
         /// </summary>
         public void ClearSession()
         {
+            _authResult = (false, null);
+            _clearInMemoryAuthState?.Invoke();
             ClearSteamCookiesFromCef(_api, _logger);
             PersistSteamUserId(null);
         }
@@ -669,12 +677,18 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 api.MainView.UIDispatcher.Invoke(() =>
                 {
-                    using (var view = api.WebViews.CreateOffscreenView(new WebViewSettings()))
+                    using (var view = api.WebViews.CreateOffscreenView())
                     {
-                        view.DeleteDomainCookiesRegex(@"(^|\.)steamcommunity\.com$");
-                        view.DeleteDomainCookiesRegex(@"(^|\.)steampowered\.com$");
+                        // Explicit host and dotted-domain clears are more reliable across CEF cookie stores.
+                        view.DeleteDomainCookies(".steamcommunity.com");
+                        view.DeleteDomainCookies("steamcommunity.com");
+                        view.DeleteDomainCookies(".store.steampowered.com");
                         view.DeleteDomainCookies("store.steampowered.com");
+                        view.DeleteDomainCookies(".steampowered.com");
+                        view.DeleteDomainCookies("steampowered.com");
+                        view.DeleteDomainCookies(".login.steampowered.com");
                         view.DeleteDomainCookies("login.steampowered.com");
+                        view.DeleteDomainCookies(".help.steampowered.com");
                         view.DeleteDomainCookies("help.steampowered.com");
                     }
                 });

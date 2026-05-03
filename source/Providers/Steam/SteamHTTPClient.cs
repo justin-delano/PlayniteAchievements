@@ -31,7 +31,7 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly object _failedSteamDateTimesLock = new object();
         private readonly ConcurrentQueue<SteamDatetimeParseFailureEntry> _pendingSteamDatetimeParseFailures =
             new ConcurrentQueue<SteamDatetimeParseFailureEntry>();
-        private readonly CookieContainer _cookieJar = new CookieContainer();
+        private CookieContainer _cookieJar = new CookieContainer();
         private readonly object _cookieLock = new object();
         private readonly object _cookieSyncStateLock = new object();
         private DateTime _lastCefCookieSyncUtc = DateTime.MinValue;
@@ -78,6 +78,19 @@ namespace PlayniteAchievements.Providers.Steam
             _handler?.Dispose();
             _apiHttp?.Dispose();
             _apiHandler?.Dispose();
+        }
+
+        public void ClearInMemoryAuthState()
+        {
+            lock (_cookieLock)
+            {
+                _cookieJar = new CookieContainer();
+            }
+
+            lock (_cookieSyncStateLock)
+            {
+                _lastCefCookieSyncUtc = DateTime.MinValue;
+            }
         }
 
         // ---------------------------------------------------------------------
@@ -172,6 +185,12 @@ namespace PlayniteAchievements.Providers.Steam
                 _logger?.Warn("[SteamAch] Steam session is not available; cannot resolve store web API token.");
                 return null;
             }
+
+            return await ResolveWebApiTokenWithoutSessionProbeAsync(ct).ConfigureAwait(false);
+        }
+
+        public async Task<string> ResolveWebApiTokenWithoutSessionProbeAsync(CancellationToken ct)
+        {
 
             try
             {
