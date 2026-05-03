@@ -338,7 +338,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            _pendingWidthUpdates[key] = Math.Round(width, 2);
+            _pendingWidthUpdates[key] = ColumnWidthNormalization.RoundPixelWidth(width);
             _saveTimer?.Stop();
             _saveTimer?.Start();
         }
@@ -490,7 +490,7 @@ namespace PlayniteAchievements.Views.Helpers
 
                     if (map.TryGetValue(key, out var width) && IsValidWidth(width))
                     {
-                        column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                        column.Width = new DataGridLength(ColumnWidthNormalization.RoundPixelWidth(width), DataGridLengthUnitType.Pixel);
                     }
                 }
             }
@@ -596,7 +596,9 @@ namespace PlayniteAchievements.Views.Helpers
             normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < keys.Count; i++)
             {
-                normalized[keys[i]] = Math.Max(floorWidths[i], widths[i]);
+                normalized[keys[i]] = Math.Max(
+                    ColumnWidthNormalization.RoundPixelWidth(floorWidths[i]),
+                    ColumnWidthNormalization.RoundPixelWidth(widths[i]));
             }
 
             return true;
@@ -635,7 +637,7 @@ namespace PlayniteAchievements.Views.Helpers
                         continue;
                     }
 
-                    column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                    column.Width = new DataGridLength(ColumnWidthNormalization.RoundPixelWidth(width), DataGridLengthUnitType.Pixel);
                 }
             }
             finally
@@ -701,7 +703,7 @@ namespace PlayniteAchievements.Views.Helpers
 
         private double ResolveMinimumColumnWidth(IReadOnlyList<DataGridColumn> columns, double availableWidth)
         {
-            var preferred = Math.Max(1, Math.Round(availableWidth * MinimumColumnWidthRatio, 2));
+            var preferred = ColumnWidthNormalization.RoundPixelWidth(availableWidth * MinimumColumnWidthRatio);
 
             if (!IsValidWidth(availableWidth) || columns == null || columns.Count == 0)
             {

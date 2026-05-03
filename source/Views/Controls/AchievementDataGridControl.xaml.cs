@@ -312,9 +312,10 @@ namespace PlayniteAchievements.Views.Controls
 
             if (isVisible)
             {
-                column.MinWidth = width;
-                column.MaxWidth = width;
-                column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                var roundedWidth = ColumnWidthNormalization.RoundPixelWidth(width);
+                column.MinWidth = roundedWidth;
+                column.MaxWidth = roundedWidth;
+                column.Width = new DataGridLength(roundedWidth, DataGridLengthUnitType.Pixel);
                 column.Visibility = Visibility.Visible;
                 return;
             }

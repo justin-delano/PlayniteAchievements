@@ -27,6 +27,8 @@
     <!-- Column Header Style with Sort Arrow and Resize Grippers -->
     <Style x:Key="AchievementColumnHeaderStyle" TargetType="DataGridColumnHeader">
         <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Padding" Value="10,6"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -99,12 +101,15 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Padding" Value="10,0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridCell">
                     <Border Background="{TemplateBinding Background}"
-                            Padding="{TemplateBinding Padding}">
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
                         <ContentPresenter VerticalAlignment="Stretch"
                                           HorizontalAlignment="Stretch"/>
                     </Border>
@@ -140,7 +145,8 @@
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridCell">
                     <Border Background="{TemplateBinding Background}"
-                            Padding="{TemplateBinding Padding}">
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
@@ -155,7 +161,7 @@
                 <ControlTemplate TargetType="DataGridCell">
                     <Border Background="{TemplateBinding Background}"
                             Padding="0"
-                            ClipToBounds="True"
+                            ClipToBounds="False"
                             SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
@@ -378,7 +384,9 @@
               Height="36"
               VerticalAlignment="Center"
               HorizontalAlignment="Center"
-              ClipToBounds="True">
+              ClipToBounds="False"
+              UseLayoutRounding="True"
+              SnapsToDevicePixels="True">
             <TextBlock Text="&#x2713;"
                        FontSize="16"
                        FontWeight="Bold"
@@ -512,10 +520,15 @@
 
     <!-- Achievement Game Column Template - Icon or Cover with toggle support -->
     <DataTemplate x:Key="AchievementGameColumnTemplate">
-        <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Grid VerticalAlignment="Center"
+              HorizontalAlignment="Center"
+              UseLayoutRounding="True"
+              SnapsToDevicePixels="True">
             <Border x:Name="GameImageBorder"
                     CornerRadius="6"
                     RenderOptions.BitmapScalingMode="HighQuality"
+                    UseLayoutRounding="True"
+                    SnapsToDevicePixels="True"
                     ToolTip="{Binding GameName}">
                 <Border.Style>
                     <Style TargetType="Border">

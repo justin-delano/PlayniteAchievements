@@ -48,8 +48,8 @@
               ScrollViewer.IsDeferredScrollingEnabled="False"
               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
               Padding="0"
-              UseLayoutRounding="False"
-              SnapsToDevicePixels="False"
+              UseLayoutRounding="True"
+              SnapsToDevicePixels="True"
               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
               PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 

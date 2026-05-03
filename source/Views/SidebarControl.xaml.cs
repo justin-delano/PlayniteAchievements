@@ -807,7 +807,7 @@ namespace PlayniteAchievements.Views
 
         private void QueueWidthUpdate(Dictionary<string, double> map, string key, double width)
         {
-            map[key] = Math.Round(width, 2);
+            map[key] = ColumnWidthNormalization.RoundPixelWidth(width);
             _saveTimer?.Stop();
             _saveTimer?.Start();
         }
@@ -1045,7 +1045,7 @@ namespace PlayniteAchievements.Views
                     if (string.IsNullOrWhiteSpace(key)) continue;
                     if (map.TryGetValue(key, out var width) && ColumnWidthNormalization.IsValidWidth(width))
                     {
-                        column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                        column.Width = new DataGridLength(ColumnWidthNormalization.RoundPixelWidth(width), DataGridLengthUnitType.Pixel);
                     }
                 }
             }
@@ -1066,9 +1066,10 @@ namespace PlayniteAchievements.Views
                 {
                     if (column == null || !column.CanUserResize) continue;
                     var colKey = ColumnWidthNormalization.GetColumnKey(column);
-                    if (ColumnWidthNormalization.KeysEqual(colKey, key) && Math.Abs(column.ActualWidth - width) > 0.1)
+                    var roundedWidth = ColumnWidthNormalization.RoundPixelWidth(width);
+                    if (ColumnWidthNormalization.KeysEqual(colKey, key) && Math.Abs(column.ActualWidth - roundedWidth) > 0.1)
                     {
-                        column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                        column.Width = new DataGridLength(roundedWidth, DataGridLengthUnitType.Pixel);
                     }
                 }
             }
