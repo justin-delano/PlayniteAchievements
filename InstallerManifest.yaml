@@ -1,12 +1,30 @@
 AddonId: PlayniteAchievements
 Packages:
 
+  - Version: 2.1.4
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-05-16
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.4/PlayniteAchievements_2_1_4.pext
+    Changelog:
+    - "Added three-way clicking to datagrids, to allow for easier sorting and filtering. Clicking on a column header will now cycle between ascending, descending, and unsorted states."
+    - "Added SummaryIgnored category type. Now, Ignored achievements will be excluded from all UI, and SummaryIgnored achievements will be excluded from sidebar summaries and pie charts. Full games can still be excluded from refreshes or summaries, and this allows for more granular control."
+    - "Added display option for Uniform Rarity badges, which will use the same badge shape for each rarity tier, but with the existing color schemes."
+    - "Added experimental support for Exophase to supply rarity data for platforms that don't provide it themselves. This is still a work in progress, please provide feedback if you have any issues."
+    - "ShadPS4 will now show achievement data for games without any unlocked achievements."
+    - "Fixed text wrapping in some datagrid columns."
+    - "Fixed many pixel rounding issues in the sidebar, and improved icon quality."
+    - "Fixed integration with fullscreen child windows."
+    - "More legacy manual tracking import fixes."
+    - "Fixed some Steam achievements not showing up when they contained whitespace in the Steam API."
+    - "Added Chinese localization! Thanks to @hugsyf for the contribution!"
+    - "Additional bug fixes and optimizations throughout."
+
   - Version: 2.1.3
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-04-24
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.3/PlayniteAchievements_2_1_3.pext
     Changelog:
-    - "Steam authentication fixes"
+    - "Steam authentication fixes."
     - "Sidebar Games Overview sort options added"
     - "RetroAchievements subset fix for when multiple games share a subset"
 
