@@ -619,7 +619,7 @@
                        SnapsToDevicePixels="True"
                        IsHitTestVisible="False"
                        helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                       helpers:AsyncImage.DecodePixel="256">
+                       helpers:AsyncImage.DecodePixel="128">
                     <Image.Style>
                         <Style TargetType="Image">
                             <Setter Property="Width" Value="52"/>
@@ -650,7 +650,7 @@
                        RenderOptions.BitmapScalingMode="HighQuality"
                        SnapsToDevicePixels="True"
                        helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                       helpers:AsyncImage.DecodePixel="256">
+                       helpers:AsyncImage.DecodePixel="128">
                     <Image.Style>
                         <Style TargetType="Image">
                             <Setter Property="Width" Value="52"/>
@@ -708,16 +708,19 @@
                        FontSize="{DynamicResource FontSizeSmall}"
                        Foreground="{DynamicResource TextBrush}"
                        Opacity="0.7"
-                       TextWrapping="Wrap">
+                       TextWrapping="Wrap"
+                       TextTrimming="CharacterEllipsis">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="Margin" Value="0,3,0,0"/>
+                        <Setter Property="MaxHeight" Value="44"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
                                 <Setter Property="FontStyle" Value="Italic"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
                                 <Setter Property="Margin" Value="0,1,0,0"/>
+                                <Setter Property="MaxHeight" Value="32"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>

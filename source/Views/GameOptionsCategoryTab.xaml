@@ -52,6 +52,8 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                TextWrapping="Wrap"
+                               MaxHeight="44"
+                               TextTrimming="CharacterEllipsis"
                                Margin="0,3,0,0">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -246,6 +248,7 @@
                   CanUserResizeColumns="True"
                   CanUserReorderColumns="False"
                   CanUserSortColumns="False"
+                  RowHeight="112"
                   EnableRowVirtualization="True"
                   EnableColumnVirtualization="True"
                   VirtualizingStackPanel.VirtualizationMode="Recycling"
@@ -262,6 +265,7 @@
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow" BasedOn="{StaticResource AchievementRowStyle}">
                     <Setter Property="MinHeight" Value="76" />
+                    <Setter Property="ClipToBounds" Value="True" />
                     <EventSetter Event="PreviewMouseRightButtonDown" Handler="CategoryDataGridRow_PreviewMouseRightButtonDown" />
                     <EventSetter Event="PreviewMouseRightButtonUp" Handler="CategoryDataGridRow_PreviewMouseRightButtonUp" />
                 </Style>

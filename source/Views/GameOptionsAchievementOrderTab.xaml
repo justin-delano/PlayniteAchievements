@@ -51,6 +51,8 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                TextWrapping="Wrap"
+                               TextTrimming="CharacterEllipsis"
+                               MaxHeight="44"
                                Margin="0,3,0,0">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
@@ -138,6 +140,7 @@
                   CanUserResizeColumns="True"
                   CanUserReorderColumns="False"
                   CanUserSortColumns="False"
+                  RowHeight="112"
                   EnableRowVirtualization="True"
                   EnableColumnVirtualization="True"
                   VirtualizingStackPanel.VirtualizationMode="Recycling"
@@ -162,6 +165,7 @@
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow" BasedOn="{StaticResource AchievementRowStyle}">
                     <Setter Property="MinHeight" Value="76" />
+                    <Setter Property="ClipToBounds" Value="True" />
                     <Setter Property="Cursor" Value="Arrow" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding CanReveal}" Value="True">

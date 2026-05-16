@@ -18,6 +18,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     /// </summary>
     public sealed class FullscreenWindowService : IDisposable
     {
+        private static readonly TimeSpan ControllerBackReactivationIgnoreWindow = TimeSpan.FromMilliseconds(500);
+
         private readonly IPlayniteAPI _api;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly Action<Guid?> _requestSingleGameThemeUpdate;
@@ -26,6 +28,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private Window _achievementsWindow;
         private Guid? _originalSelectedGameId;
         private bool _isTransitioning;
+        private bool _overlayWasDeactivated;
+        private DateTimeOffset? _ignoreControllerBackUntilUtc;
         public bool IsOverlayWindowOpen => _achievementsWindow?.IsVisible == true;
 
         public FullscreenWindowService(
@@ -106,21 +110,50 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
-        /// <summary>
-        /// Returns true when there is an active window that is an owned/modal child
-        /// of the overlay achievements window. This helps callers decide whether
-        /// to ignore global close/back actions.
-        /// </summary>
-        public bool HasActiveOwnedModal()
+        public void HandleControllerBackPressed()
         {
-            var windows = System.Windows.Application.Current?.Windows;
-            if (windows == null)
+            try
             {
-                return false;
+                var dispatcher = UiDispatcher;
+                if (dispatcher == null || dispatcher.CheckAccess())
+                {
+                    TryCloseOverlayForControllerBackOnUiThread();
+                }
+                else
+                {
+                    dispatcher.BeginInvoke(new Action(TryCloseOverlayForControllerBackOnUiThread), DispatcherPriority.Background);
+                }
+            }
+            catch
+            {
+                // Ignore errors when handling global controller input.
+            }
+        }
+
+        private void TryCloseOverlayForControllerBackOnUiThread()
+        {
+            if (_achievementsWindow?.IsVisible != true)
+            {
+                return;
             }
 
-            var active = windows.OfType<System.Windows.Window>().FirstOrDefault(w => w.IsActive);
-            return active != null && active.Owner != null && ReferenceEquals(active.Owner, _achievementsWindow);
+            var activeWindow = Application.Current?.Windows?
+                .OfType<Window>()
+                .FirstOrDefault(w => w.IsActive);
+
+            if (!ReferenceEquals(activeWindow, _achievementsWindow))
+            {
+                return;
+            }
+
+            if (_ignoreControllerBackUntilUtc.HasValue &&
+                DateTimeOffset.UtcNow < _ignoreControllerBackUntilUtc.Value)
+            {
+                return;
+            }
+
+            _ignoreControllerBackUntilUtc = null;
+            try { _achievementsWindow.Close(); } catch { }
         }
 
         private void SelectGame(Guid gameId)
@@ -256,11 +289,31 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
             };
 
+            window.Activated += (_, __) =>
+            {
+                if (ReferenceEquals(_achievementsWindow, window) && _overlayWasDeactivated)
+                {
+                    _ignoreControllerBackUntilUtc = DateTimeOffset.UtcNow.Add(
+                        ControllerBackReactivationIgnoreWindow);
+                    _overlayWasDeactivated = false;
+                }
+            };
+
+            window.Deactivated += (_, __) =>
+            {
+                if (ReferenceEquals(_achievementsWindow, window) && window.IsVisible)
+                {
+                    _overlayWasDeactivated = true;
+                }
+            };
+
             window.Closed += (_, __) =>
             {
                 if (ReferenceEquals(_achievementsWindow, window))
                 {
                     _achievementsWindow = null;
+                    _overlayWasDeactivated = false;
+                    _ignoreControllerBackUntilUtc = null;
                 }
 
                 // Restore original selection when window closes (but not during transitions)

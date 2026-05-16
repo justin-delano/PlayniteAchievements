@@ -612,12 +612,7 @@ namespace PlayniteAchievements
             {
                 if (args?.Button == ControllerInput.B && args.State == ControllerInputState.Pressed)
                 {
-                    if (_fullscreenWindowService?.HasActiveOwnedModal() == true)
-                    {
-                        return;
-                    }
-
-                    _fullscreenWindowService?.CloseOverlayWindowIfOpen();
+                    _fullscreenWindowService?.HandleControllerBackPressed();
                 }
             }
             catch (Exception ex)
