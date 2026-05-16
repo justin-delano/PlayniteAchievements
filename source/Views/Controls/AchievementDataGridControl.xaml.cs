@@ -292,21 +292,45 @@ namespace PlayniteAchievements.Views.Controls
             var statusColumn = AchievementsDataGrid.Columns.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "StatusColumn") as DataGridTemplateColumn;
             if (statusColumn != null)
             {
-                statusColumn.Visibility = HideStatusColumn ? Visibility.Collapsed : Visibility.Visible;
+                SetFixedColumnVisibility(statusColumn, !HideStatusColumn, 36);
             }
 
             // Update Game column visibility - force collapsed when ShowGameColumn is false
             var gameColumn = AchievementsDataGrid.Columns.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "GameColumn") as DataGridTemplateColumn;
             if (gameColumn != null)
             {
-                gameColumn.Visibility = ShowGameColumn ? Visibility.Visible : Visibility.Collapsed;
+                SetFixedColumnVisibility(gameColumn, ShowGameColumn, 64);
             }
+        }
+
+        private static void SetFixedColumnVisibility(DataGridColumn column, bool isVisible, double width)
+        {
+            if (column == null)
+            {
+                return;
+            }
+
+            if (isVisible)
+            {
+                var roundedWidth = ColumnWidthNormalization.RoundPixelWidth(width);
+                column.MinWidth = roundedWidth;
+                column.MaxWidth = roundedWidth;
+                column.Width = new DataGridLength(roundedWidth, DataGridLengthUnitType.Pixel);
+                column.Visibility = Visibility.Visible;
+                return;
+            }
+
+            column.Visibility = Visibility.Collapsed;
+            column.MinWidth = 0;
+            column.MaxWidth = 0;
+            column.Width = new DataGridLength(0, DataGridLengthUnitType.Pixel);
         }
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             AttachSettingsSubscriptions();
             UpdateCompactMode();
+            UpdateColumnVisibility();
 
             if (_isAttached)
             {
@@ -602,11 +626,11 @@ namespace PlayniteAchievements.Views.Controls
 
             var currentSortPath = string.Empty;
             ListSortDirection? currentSortDirection = null;
-            if (!AchievementGridSortHelper.TrySortItems(
+            if (!AchievementSortHelper.TrySortItems(
                     items,
                     e.Column.SortMemberPath,
                     sortDirection.Value,
-                    AchievementGridSortScope.GameAchievements,
+                    AchievementSortScope.GameAchievements,
                     ref currentSortPath,
                     ref currentSortDirection))
             {
@@ -748,3 +772,4 @@ namespace PlayniteAchievements.Views.Controls
         }
     }
 }
+

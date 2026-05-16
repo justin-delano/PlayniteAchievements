@@ -24,7 +24,6 @@ namespace PlayniteAchievements.Services.Tagging
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly PersistedSettings _settings;
-        private readonly ICacheManager _cacheManager;
         private TaggingSettings _subscribedTaggingSettings;
 
         // Cache of tag IDs by tag type to avoid repeated database lookups
@@ -33,13 +32,11 @@ namespace PlayniteAchievements.Services.Tagging
         public TagSyncService(
             IPlayniteAPI api,
             ILogger logger,
-            PersistedSettings settings,
-            ICacheManager cacheManager)
+            PersistedSettings settings)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
         }
 
         /// <summary>
@@ -97,6 +94,8 @@ namespace PlayniteAchievements.Services.Tagging
                     TagType.InProgress => ResourceProvider.GetString("LOCPlayAch_Tag_InProgress"),
                     TagType.Completed => ResourceProvider.GetString("LOCPlayAch_Tag_Completed"),
                     TagType.NoAchievements => ResourceProvider.GetString("LOCPlayAch_Tag_NoAchievements"),
+                    TagType.Customized => ResourceProvider.GetString("LOCPlayAch_Tag_Customized"),
+                    TagType.NotCustomized => ResourceProvider.GetString("LOCPlayAch_Tag_NotCustomized"),
                     TagType.Excluded => ResourceProvider.GetString("LOCPlayAch_Tag_Excluded"),
                     TagType.ExcludedFromSummaries => ResourceProvider.GetString("LOCPlayAch_Tag_ExcludedFromSummaries"),
                     _ => TaggingSettings.GetDefaultDisplayName(tagType)
@@ -549,6 +548,10 @@ namespace PlayniteAchievements.Services.Tagging
             }
 
             var gameId = game.Id;
+            types.Add(
+                GameCustomDataLookup.HasVisibleCustomization(gameId, _settings)
+                    ? TagType.Customized
+                    : TagType.NotCustomized);
 
             // Full exclusion is exclusive - no other tags
             if (GameCustomDataLookup.IsExcludedFromRefreshes(gameId, _settings))
@@ -564,8 +567,9 @@ namespace PlayniteAchievements.Services.Tagging
                 types.Add(TagType.ExcludedFromSummaries);
             }
 
-            // Load the cached achievement data
-            var data = _cacheManager?.LoadGameData(gameId.ToString());
+            // Load achievement data through the central data service when available.
+            var achievementDataService = PlayniteAchievementsPlugin.Instance?.AchievementDataService;
+            var data = achievementDataService?.GetGameAchievementData(gameId);
             if (data == null || !data.HasAchievements)
             {
                 types.Add(TagType.NoAchievements);

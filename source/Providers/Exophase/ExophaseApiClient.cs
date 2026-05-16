@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Providers.Exophase
     {
         private const string SearchUrl = "https://api.exophase.com/public/archive/games";
         private const string AchievementPageBaseUrl = "https://www.exophase.com/game/{0}/achievements/";
+        internal const string ExophaseApiNamePrefix = "exophase_";
         private const int AchievementDomReadyPollDelayMs = 250;
         private const int AchievementDomReadyPollAttempts = 8;
 
@@ -38,10 +39,11 @@ namespace PlayniteAchievements.Providers.Exophase
         }
 
         /// <summary>
-        /// Extracts the game slug from an Exophase achievement/trophy URL.
+        /// Extracts the game slug from an Exophase achievement/trophy/challenges URL.
         /// Examples:
         /// - https://www.exophase.com/game/shogun-showdown-steam/achievements/ -> shogun-showdown-steam
         /// - https://www.exophase.com/game/shogun-showdown-psn/trophies/ -> shogun-showdown-psn
+        /// - https://www.exophase.com/game/prince-of-persia-the-lost-crown-uplay/challenges/ -> prince-of-persia-the-lost-crown-uplay
         /// </summary>
         public static string ExtractSlugFromUrl(string url)
         {
@@ -50,8 +52,8 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
-            // Match pattern: /game/{slug}/ followed by achievements, trophies, or end of URL
-            var match = System.Text.RegularExpressions.Regex.Match(url, @"/game/([^/]+)(?:/(?:achievements|trophies))?/?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            // Match pattern: /game/{slug}/ followed by achievements, trophies, challenges, or end of URL
+            var match = System.Text.RegularExpressions.Regex.Match(url, @"/game/([^/]+)(?:/(?:achievements|trophies|challenges))?/?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (match.Success && match.Groups.Count > 1)
             {
                 return match.Groups[1].Value;
@@ -63,7 +65,7 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>
         /// Builds the achievement page URL from a game slug or full URL.
         /// Supports both new format (slug only) and legacy format (full URL) for backward compatibility.
-        /// PlayStation games use /trophies/, others use /achievements/
+        /// PlayStation games use /trophies/, Ubisoft/Uplay uses /challenges/, others use /achievements/
         /// </summary>
         public static string BuildUrlFromSlug(string slugOrUrl)
         {
@@ -78,9 +80,11 @@ namespace PlayniteAchievements.Providers.Exophase
                 var extractedSlug = ExtractSlugFromUrl(slugOrUrl);
                 if (!string.IsNullOrWhiteSpace(extractedSlug))
                 {
-                    // Check if original URL was for trophies (PlayStation) to preserve the endpoint type
+                    // Preserve original endpoint type when a full URL is provided.
                     var wasTrophies = slugOrUrl.IndexOf("/trophies", StringComparison.OrdinalIgnoreCase) >= 0;
-                    return $"https://www.exophase.com/game/{extractedSlug}/{(wasTrophies ? "trophies" : "achievements")}/";
+                    var wasChallenges = slugOrUrl.IndexOf("/challenges", StringComparison.OrdinalIgnoreCase) >= 0;
+                    var endpoint = wasTrophies ? "trophies" : (wasChallenges ? "challenges" : "achievements");
+                    return $"https://www.exophase.com/game/{extractedSlug}/{endpoint}/";
                 }
                 // If we can't extract, return as-is (legacy fallback)
                 return slugOrUrl;
@@ -92,8 +96,11 @@ namespace PlayniteAchievements.Providers.Exophase
                                slugOrUrl.IndexOf("-ps5", StringComparison.OrdinalIgnoreCase) >= 0 ||
                                slugOrUrl.IndexOf("-vita", StringComparison.OrdinalIgnoreCase) >= 0 ||
                                slugOrUrl.IndexOf("-ps3", StringComparison.OrdinalIgnoreCase) >= 0;
+            var isUbisoft = slugOrUrl.IndexOf("-uplay", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            slugOrUrl.IndexOf("-ubisoft", StringComparison.OrdinalIgnoreCase) >= 0;
 
-            return $"https://www.exophase.com/game/{slugOrUrl}/{(isPlayStation ? "trophies" : "achievements")}/";
+            var endpointType = isPlayStation ? "trophies" : (isUbisoft ? "challenges" : "achievements");
+            return $"https://www.exophase.com/game/{slugOrUrl}/{endpointType}/";
         }
 
         /// <summary>
@@ -108,7 +115,7 @@ namespace PlayniteAchievements.Providers.Exophase
         /// Searches for games on Exophase with optional platform filter.
         /// </summary>
         /// <param name="query">Game name to search for.</param>
-        /// <param name="platformSlug">Optional platform slug to filter by (e.g., "steam", "psn", "xbox").</param>
+        /// <param name="platformSlug">Optional platform slug to filter by (e.g., "steam", "ps4", "ps3", "xbox", "xbox-one", "xbox-360").</param>
         /// <param name="ct">Cancellation token.</param>
         public async Task<List<ExophaseGame>> SearchGamesAsync(string query, string platformSlug, CancellationToken ct)
         {
@@ -789,18 +796,47 @@ namespace PlayniteAchievements.Providers.Exophase
             return null;
         }
 
+        internal static string NormalizeLegacyManualApiName(string apiName)
+        {
+            if (string.IsNullOrWhiteSpace(apiName))
+            {
+                return null;
+            }
+
+            var candidate = apiName.Trim();
+            if (candidate.StartsWith(ExophaseApiNamePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                candidate = candidate.Substring(ExophaseApiNamePrefix.Length);
+            }
+
+            var normalized = NormalizeApiNameCore(candidate);
+            return string.IsNullOrWhiteSpace(normalized)
+                ? null
+                : $"{ExophaseApiNamePrefix}{normalized}";
+        }
+
         /// <summary>
         /// Generates a stable API name from the display name for tracking purposes.
         /// </summary>
-        private static string GenerateApiName(string displayName)
+        internal static string GenerateApiName(string displayName)
         {
-            if (string.IsNullOrWhiteSpace(displayName))
+            var normalized = NormalizeApiNameCore(displayName);
+            if (string.IsNullOrWhiteSpace(normalized))
             {
-                return $"exophase_{Guid.NewGuid():N}";
+                return $"{ExophaseApiNamePrefix}{Guid.NewGuid():N}";
             }
 
-            // Create a stable identifier from the display name
-            var normalized = displayName.ToLowerInvariant();
+            return $"{ExophaseApiNamePrefix}{normalized}";
+        }
+
+        private static string NormalizeApiNameCore(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var normalized = value.ToLowerInvariant();
             var safeChars = new char[normalized.Length];
             var pos = 0;
 
@@ -816,8 +852,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
             }
 
-            var result = new string(safeChars, 0, pos).Trim('_');
-            return string.IsNullOrWhiteSpace(result) ? $"exophase_{Guid.NewGuid():N}" : $"exophase_{result}";
+            return new string(safeChars, 0, pos).Trim('_');
         }
 
         /// <summary>

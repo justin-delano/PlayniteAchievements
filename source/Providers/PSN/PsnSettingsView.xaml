@@ -149,8 +149,7 @@
                                                  TextWrapping="Wrap"
                                                  AcceptsReturn="False"
                                                  VerticalScrollBarVisibility="Auto"
-                                                 KeyDown="PsnNpsso_KeyDown"
-                                                 LostFocus="PsnNpsso_LostFocus"/>
+                                                 KeyDown="PsnNpsso_KeyDown"/>
 
                                         <TextBlock Style="{StaticResource MutedTextStyle}"
                                                    Margin="0,8,0,0"

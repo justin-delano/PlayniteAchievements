@@ -118,8 +118,7 @@ namespace PlayniteAchievements.Models.Settings
             var settings = new SteamSettings
             {
                 IsEnabled = persisted["SteamEnabled"]?.Value<bool>() ?? true,
-                SteamUserId = persisted["SteamUserId"]?.ToString(),
-                SteamApiKey = persisted["SteamApiKey"]?.ToString()
+                SteamUserId = persisted["SteamUserId"]?.ToString()
             };
             providerSettings["Steam"] = JObject.Parse(settings.SerializeToJson());
         }
@@ -210,6 +209,7 @@ namespace PlayniteAchievements.Models.Settings
                 EnableArchiveScanning = persisted["EnableArchiveScanning"]?.Value<bool>() ?? true,
                 EnableDiscHashing = persisted["EnableDiscHashing"]?.Value<bool>() ?? true,
                 EnableRaNameFallback = persisted["EnableRaNameFallback"]?.Value<bool>() ?? true,
+                EnableFuzzyNameMatching = persisted["EnableFuzzyNameMatching"]?.Value<bool>() ?? true,
                 RaGameIdOverrides = gameIdOverrides
             };
             providerSettings["RetroAchievements"] = JObject.Parse(settings.SerializeToJson());
@@ -371,6 +371,7 @@ namespace PlayniteAchievements.Models.Settings
             persisted.Remove("EnableArchiveScanning");
             persisted.Remove("EnableDiscHashing");
             persisted.Remove("EnableRaNameFallback");
+            persisted.Remove("EnableFuzzyNameMatching");
             persisted.Remove("RaGameIdOverrides");
 
             // Exophase

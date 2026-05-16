@@ -16,6 +16,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public int LockedCount { get; }
         public double ProgressPercentage { get; }
         public bool IsCompleted { get; }
+        public bool HasCustomAchievementOrder { get; }
+        public List<AchievementDetail> AchievementDefaultOrder { get; }
         public List<AchievementDetail> AllAchievements { get; }
         public List<AchievementDetail> AchievementsOldestFirst { get; }
         public List<AchievementDetail> AchievementsNewestFirst { get; }
@@ -37,6 +39,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 0,
                 0,
                 false,
+                false,
+                new List<AchievementDetail>(),
                 new List<AchievementDetail>(),
                 new List<AchievementDetail>(),
                 new List<AchievementDetail>(),
@@ -59,6 +63,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             int lockedCount,
             double progressPercentage,
             bool isCompleted,
+            bool hasCustomAchievementOrder,
+            List<AchievementDetail> achievementDefaultOrder,
             List<AchievementDetail> allAchievements,
             List<AchievementDetail> achievementsOldestFirst,
             List<AchievementDetail> achievementsNewestFirst,
@@ -78,6 +84,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             LockedCount = lockedCount;
             ProgressPercentage = progressPercentage;
             IsCompleted = isCompleted;
+            HasCustomAchievementOrder = hasCustomAchievementOrder;
+            AchievementDefaultOrder = achievementDefaultOrder ?? new List<AchievementDetail>();
             AllAchievements = allAchievements ?? new List<AchievementDetail>();
             AchievementsOldestFirst = achievementsOldestFirst ?? new List<AchievementDetail>();
             AchievementsNewestFirst = achievementsNewestFirst ?? new List<AchievementDetail>();

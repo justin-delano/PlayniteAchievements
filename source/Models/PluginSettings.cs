@@ -90,6 +90,24 @@ namespace PlayniteAchievements.Models
         private ICommand _openAchievementWindow;
         [DontSerialize]
         private ICommand _openGameAchievementWindow;
+        [DontSerialize]
+        private ICommand _setDynamicAchievementsFilterCommand;
+        [DontSerialize]
+        private ICommand _sortDynamicAchievementsCommand;
+        [DontSerialize]
+        private ICommand _setDynamicAchievementsSortDirectionCommand;
+        [DontSerialize]
+        private ICommand _filterDynamicLibraryAchievementsByProviderCommand;
+        [DontSerialize]
+        private ICommand _sortDynamicLibraryAchievementsCommand;
+        [DontSerialize]
+        private ICommand _setDynamicLibraryAchievementsSortDirectionCommand;
+        [DontSerialize]
+        private ICommand _filterDynamicGameSummariesByProviderCommand;
+        [DontSerialize]
+        private ICommand _sortDynamicGameSummariesCommand;
+        [DontSerialize]
+        private ICommand _setDynamicGameSummariesSortDirectionCommand;
 
         [DontSerialize]
         public ICommand OpenFullscreenAchievementWindow
@@ -147,6 +165,69 @@ namespace PlayniteAchievements.Models
             set => SetValue(ref _openGameAchievementWindow, value);
         }
 
+        [DontSerialize]
+        public ICommand SetDynamicAchievementsFilterCommand
+        {
+            get => _setDynamicAchievementsFilterCommand;
+            set => SetValue(ref _setDynamicAchievementsFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SortDynamicAchievementsCommand
+        {
+            get => _sortDynamicAchievementsCommand;
+            set => SetValue(ref _sortDynamicAchievementsCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicAchievementsSortDirectionCommand
+        {
+            get => _setDynamicAchievementsSortDirectionCommand;
+            set => SetValue(ref _setDynamicAchievementsSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand FilterDynamicLibraryAchievementsByProviderCommand
+        {
+            get => _filterDynamicLibraryAchievementsByProviderCommand;
+            set => SetValue(ref _filterDynamicLibraryAchievementsByProviderCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SortDynamicLibraryAchievementsCommand
+        {
+            get => _sortDynamicLibraryAchievementsCommand;
+            set => SetValue(ref _sortDynamicLibraryAchievementsCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicLibraryAchievementsSortDirectionCommand
+        {
+            get => _setDynamicLibraryAchievementsSortDirectionCommand;
+            set => SetValue(ref _setDynamicLibraryAchievementsSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand FilterDynamicGameSummariesByProviderCommand
+        {
+            get => _filterDynamicGameSummariesByProviderCommand;
+            set => SetValue(ref _filterDynamicGameSummariesByProviderCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SortDynamicGameSummariesCommand
+        {
+            get => _sortDynamicGameSummariesCommand;
+            set => SetValue(ref _sortDynamicGameSummariesCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicGameSummariesSortDirectionCommand
+        {
+            get => _setDynamicGameSummariesSortDirectionCommand;
+            set => SetValue(ref _setDynamicGameSummariesSortDirectionCommand, value);
+        }
+
 
 
         #endregion
@@ -177,6 +258,9 @@ namespace PlayniteAchievements.Models
         public List<AchievementDetail> Achievements => ModernTheme.AllAchievements ?? EmptyAchievementList;
 
         [DontSerialize]
+        public List<AchievementDetail> AchievementDefaultOrder => ModernTheme.AchievementDefaultOrder ?? EmptyAchievementList;
+
+        [DontSerialize]
         public List<AchievementDetail> AchievementsNewestFirst => ModernTheme.AchievementsNewestFirst ?? EmptyAchievementList;
 
         [DontSerialize]
@@ -202,6 +286,27 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         public AchievementRarityStats RareAndUltraRare => ModernTheme.RareAndUltraRare ?? EmptyRarityStats;
+
+        [DontSerialize]
+        public List<AchievementDetail> DynamicAchievements => ModernTheme.DynamicAchievements ?? EmptyAchievementList;
+
+        [DontSerialize]
+        public string DynamicAchievementsFilterKey => ModernTheme.DynamicAchievementsFilterKey ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicAchievementsFilterLabel => ModernTheme.DynamicAchievementsFilterLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicAchievementsSortKey => ModernTheme.DynamicAchievementsSortKey ?? DynamicThemeViewKeys.Default;
+
+        [DontSerialize]
+        public string DynamicAchievementsSortLabel => ModernTheme.DynamicAchievementsSortLabel ?? DynamicThemeViewKeys.Default;
+
+        [DontSerialize]
+        public string DynamicAchievementsSortDirectionKey => ModernTheme.DynamicAchievementsSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+
+        [DontSerialize]
+        public string DynamicAchievementsSortDirectionLabel => ModernTheme.DynamicAchievementsSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
 
         // === All-Games Overview Data ===
 
@@ -234,6 +339,31 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> DynamicGameSummaries
+        {
+            get => ModernTheme.DynamicGameSummaries;
+            set => ModernTheme.DynamicGameSummaries = value;
+        }
+
+        [DontSerialize]
+        public string DynamicGameSummariesProviderKey => ModernTheme.DynamicGameSummariesProviderKey ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicGameSummariesProviderLabel => ModernTheme.DynamicGameSummariesProviderLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicGameSummariesSortKey => ModernTheme.DynamicGameSummariesSortKey ?? DynamicThemeViewKeys.LastUnlock;
+
+        [DontSerialize]
+        public string DynamicGameSummariesSortLabel => ModernTheme.DynamicGameSummariesSortLabel ?? DynamicThemeViewKeys.LastUnlock;
+
+        [DontSerialize]
+        public string DynamicGameSummariesSortDirectionKey => ModernTheme.DynamicGameSummariesSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+
+        [DontSerialize]
+        public string DynamicGameSummariesSortDirectionLabel => ModernTheme.DynamicGameSummariesSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
+
+        [DontSerialize]
         public List<AchievementDetail> AllAchievementsUnlockAsc
         {
             get => ModernTheme.AllAchievementsUnlockAsc ?? EmptyAchievementList;
@@ -260,6 +390,31 @@ namespace PlayniteAchievements.Models
             get => ModernTheme.AllAchievementsRarityDesc ?? EmptyAchievementList;
             set => ModernTheme.AllAchievementsRarityDesc = value;
         }
+
+        [DontSerialize]
+        public List<AchievementDetail> DynamicLibraryAchievements
+        {
+            get => ModernTheme.DynamicLibraryAchievements ?? EmptyAchievementList;
+            set => ModernTheme.DynamicLibraryAchievements = value;
+        }
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsProviderKey => ModernTheme.DynamicLibraryAchievementsProviderKey ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsProviderLabel => ModernTheme.DynamicLibraryAchievementsProviderLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsSortKey => ModernTheme.DynamicLibraryAchievementsSortKey ?? DynamicThemeViewKeys.UnlockTime;
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsSortLabel => ModernTheme.DynamicLibraryAchievementsSortLabel ?? DynamicThemeViewKeys.UnlockTime;
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsSortDirectionKey => ModernTheme.DynamicLibraryAchievementsSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsSortDirectionLabel => ModernTheme.DynamicLibraryAchievementsSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
 
         // All recent unlocks across all games (newest first).
         [DontSerialize]
@@ -374,6 +529,27 @@ namespace PlayniteAchievements.Models
         {
             get => ModernTheme.RetroAchievementsGames;
             set => ModernTheme.RetroAchievementsGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> AppleGames
+        {
+            get => ModernTheme.AppleGames;
+            set => ModernTheme.AppleGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> GooglePlayGames
+        {
+            get => ModernTheme.GooglePlayGames;
+            set => ModernTheme.GooglePlayGames = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<GameAchievementSummary> UbisoftGames
+        {
+            get => ModernTheme.UbisoftGames;
+            set => ModernTheme.UbisoftGames = value;
         }
 
         [DontSerialize]

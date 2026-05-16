@@ -42,7 +42,7 @@ namespace PlayniteAchievements.Models.Settings
 
             // Update and Refresh Settings
             target.EnablePeriodicUpdates = source.EnablePeriodicUpdates;
-            target.AutoExcludeHiddenGames = source.AutoExcludeHiddenGames;
+            target.IncludeHiddenGamesInBulkScans = source.IncludeHiddenGamesInBulkScans;
             target.PeriodicUpdateHours = source.PeriodicUpdateHours;
             target.RecentRefreshGamesCount = source.RecentRefreshGamesCount;
             target.CustomRefreshPresets = source.CustomRefreshPresets != null
@@ -66,6 +66,7 @@ namespace PlayniteAchievements.Models.Settings
                 ? new HashSet<Guid>(source.SeparateLockedIconEnabledGameIds)
                 : new HashSet<Guid>();
             target.ShowRarityGlow = source.ShowRarityGlow;
+            target.UseUniformRarityBadges = source.UseUniformRarityBadges;
             target.UseCoverImages = source.UseCoverImages;
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
             target.ShowSidebarPieCharts = source.ShowSidebarPieCharts;
@@ -76,9 +77,22 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowSidebarPiePercentages = source.ShowSidebarPiePercentages;
             target.SidebarPieSmallSliceMode = source.SidebarPieSmallSliceMode;
             target.ShowSidebarBarCharts = source.ShowSidebarBarCharts;
+            target.ShowSidebarGameMetadata = source.ShowSidebarGameMetadata;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
             target.ShowCompactListRarityBar = source.ShowCompactListRarityBar;
             target.EnableCompactGridMode = source.EnableCompactGridMode;
+            target.CompactListSortMode = source.CompactListSortMode;
+            target.CompactListSortDescending = source.CompactListSortDescending;
+            target.CompactUnlockedListSortMode = source.CompactUnlockedListSortMode;
+            target.CompactUnlockedListSortDescending = source.CompactUnlockedListSortDescending;
+            target.CompactLockedListSortMode = source.CompactLockedListSortMode;
+            target.CompactLockedListSortDescending = source.CompactLockedListSortDescending;
+            target.SidebarSelectedGameGridSortMode = source.SidebarSelectedGameGridSortMode;
+            target.SidebarSelectedGameGridSortDescending = source.SidebarSelectedGameGridSortDescending;
+            target.SingleGameGridSortMode = source.SingleGameGridSortMode;
+            target.SingleGameGridSortDescending = source.SingleGameGridSortDescending;
+            target.AchievementDataGridSortMode = source.AchievementDataGridSortMode;
+            target.AchievementDataGridSortDescending = source.AchievementDataGridSortDescending;
             target.AchievementDataGridMaxHeight = source.AchievementDataGridMaxHeight;
             target.EnableParallelProviderRefresh = source.EnableParallelProviderRefresh;
             target.ScanDelayMs = source.ScanDelayMs;
@@ -176,3 +190,4 @@ namespace PlayniteAchievements.Models.Settings
         }
     }
 }
+

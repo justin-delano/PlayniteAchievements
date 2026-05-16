@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
@@ -81,16 +85,16 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private List<AchievementDetail> _lastAllAchievements;
         private List<AchievementDetail> _lastSourceAchievements;
 
-        private List<AchievementDisplayItem> _displayItems = new List<AchievementDisplayItem>();
+        private ObservableCollection<AchievementDisplayItem> _displayItems = new ObservableCollection<AchievementDisplayItem>();
         /// <summary>
         /// Gets or sets the display items for the list.
         /// </summary>
-        public List<AchievementDisplayItem> DisplayItems
+        public ObservableCollection<AchievementDisplayItem> DisplayItems
         {
             get => _displayItems;
             protected set
             {
-                _displayItems = value ?? new List<AchievementDisplayItem>();
+                _displayItems = value ?? new ObservableCollection<AchievementDisplayItem>();
             }
         }
 
@@ -177,21 +181,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         /// </summary>
         protected virtual bool FilterAchievement(AchievementDetail achievement) => true;
 
+        protected virtual AchievementSortSurface SortSurface => AchievementSortSurface.CompactList;
+
         /// <summary>
         /// Gets the ordered achievement source that should drive the compact list.
         /// Defaults to the provider/source order list.
         /// </summary>
         protected virtual List<AchievementDetail> GetOrderedAchievements(ModernThemeBindings theme)
         {
-            return theme?.AllAchievements ?? new List<AchievementDetail>();
-        }
-
-        /// <summary>
-        /// Gets the modern theme property name that backs <see cref="GetOrderedAchievements"/>.
-        /// </summary>
-        protected virtual string GetOrderedAchievementsPropertyName()
-        {
-            return nameof(ModernThemeBindings.AllAchievements);
+            return AchievementSortHelper.ResolveSelectedGameAchievements(
+                theme,
+                EffectiveSettings?.Persisted,
+                SortSurface);
         }
 
         /// <summary>
@@ -200,6 +201,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected virtual void LoadData()
         {
             var theme = EffectiveTheme;
+            if (!IsEffectiveModernThemeCurrentForContext())
+            {
+                return;
+            }
+
             if (theme == null || !theme.HasAchievements)
             {
                 _lastAllItems = null;
@@ -256,13 +262,13 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             // Apply VisibleCount limit
             if (VisibleCount > 0 && displayItems.Count > VisibleCount)
             {
-                DisplayItems = displayItems.Take(VisibleCount).ToList();
+                SynchronizeDisplayItems(displayItems.Take(VisibleCount).ToList());
                 OverflowCount = displayItems.Count - VisibleCount;
                 HasOverflow = true;
             }
             else
             {
-                DisplayItems = displayItems;
+                SynchronizeDisplayItems(displayItems);
                 OverflowCount = 0;
                 HasOverflow = false;
             }
@@ -279,7 +285,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             _lastAllItems = null;
             _lastAllAchievements = null;
             _lastSourceAchievements = null;
-            DisplayItems = new List<AchievementDisplayItem>();
+            DisplayItems.Clear();
             OverflowCount = 0;
             HasOverflow = false;
             RefreshItemsSource();
@@ -393,9 +399,28 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
             // Refresh when achievement data changes
-            return propertyName == nameof(ModernThemeBindings.AllAchievementDisplayItems) ||
+            return propertyName == nameof(ModernThemeBindings.SelectedGameId) ||
+                   propertyName == nameof(ModernThemeBindings.HasAchievements) ||
+                   propertyName == nameof(ModernThemeBindings.AllAchievementDisplayItems) ||
                    propertyName == nameof(ModernThemeBindings.AllAchievements) ||
-                   propertyName == GetOrderedAchievementsPropertyName();
+                   AchievementSortHelper.IsSelectedGameAchievementsPropertyName(propertyName);
+        }
+
+        /// <summary>
+        /// Determines whether a settings change should trigger a refresh.
+        /// Responds to sort mode and direction changes so the list reorders live.
+        /// </summary>
+        protected override bool ShouldHandleSettingsDataChange(string propertyName)
+        {
+            return AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.CompactList) ||
+                   AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.CompactUnlockedList) ||
+                   AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.CompactLockedList);
         }
 
         /// <summary>
@@ -411,13 +436,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         /// </summary>
         public override void GameContextChanged(Game oldContext, Game newContext)
         {
-            // Modern theme bindings are already populated by OnGameSelected in the plugin
-            if (_isLoaded)
-            {
-                LoadData();
-            }
+            UpdateCurrentGameContext(newContext);
+        }
+
+        private void SynchronizeDisplayItems(IList<AchievementDisplayItem> source)
+        {
+            CollectionHelper.SynchronizeReferenceCollectionByPosition(
+                DisplayItems,
+                source,
+                (target, item) => target.UpdateFrom(item));
         }
     }
 }
+
 
 

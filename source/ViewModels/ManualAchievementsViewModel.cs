@@ -481,11 +481,6 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
-                await ManualSourceAuthentication.EnsureAuthenticatedIfRequiredAsync(
-                    _source,
-                    RequireExophaseAuthentication,
-                    ct);
-
                 var results = await _source.SearchGamesAsync(SearchText.Trim(), _language, ct);
 
                 if (ct.IsCancellationRequested)
@@ -588,6 +583,7 @@ namespace PlayniteAchievements.ViewModels
                 SourceGameId = selectedResult.SourceGameId,
                 UnlockTimes = new Dictionary<string, DateTime?>(),
                 UnlockStates = new Dictionary<string, bool>(),
+                AllowUnauthenticatedSchemaFetch = ResolveAllowUnauthenticatedSchemaFetch(_source?.SourceKey),
                 CreatedUtc = DateTime.UtcNow,
                 LastModifiedUtc = DateTime.UtcNow
             };
@@ -595,12 +591,13 @@ namespace PlayniteAchievements.ViewModels
 
             var hadExistingLink = ManualAchievementsProvider.TryGetManualLink(_playniteGame.Id, out var existingLink);
             var rollbackLink = existingLink?.Clone();
-            var rollbackCacheData = _cacheManager?.LoadGameData(_playniteGame.Id.ToString());
+            var rollbackCacheData = _achievementDataService?.GetRawGameAchievementData(_playniteGame.Id);
             var rollbackPending = true;
 
             SetLinkInMemory(link);
 
-            _refreshCts = new CancellationTokenSource();
+            var refreshCts = new CancellationTokenSource();
+            _refreshCts = refreshCts;
 
             try
             {
@@ -608,9 +605,9 @@ namespace PlayniteAchievements.ViewModels
 
                 await ExecuteRefreshRequestAsync(
                     BuildManualProviderRefreshRequest(),
-                    _refreshCts.Token);
+                    refreshCts.Token);
 
-                if (_refreshCts.Token.IsCancellationRequested)
+                if (refreshCts.IsCancellationRequested)
                 {
                     RollbackTransientLink(hadExistingLink, rollbackLink, rollbackCacheData, persist: false);
                     rollbackPending = false;
@@ -667,8 +664,11 @@ namespace PlayniteAchievements.ViewModels
             finally
             {
                 _refreshService.RebuildProgress -= OnRebuildProgress;
-                _refreshCts?.Dispose();
-                _refreshCts = null;
+                refreshCts.Dispose();
+                if (ReferenceEquals(_refreshCts, refreshCts))
+                {
+                    _refreshCts = null;
+                }
             }
         }
 
@@ -758,22 +758,24 @@ namespace PlayniteAchievements.ViewModels
             ProgressPercent = 0;
             CanCancelRefresh = true;
 
-            _refreshCts = new CancellationTokenSource();
+            var refreshCts = new CancellationTokenSource();
+            _refreshCts = refreshCts;
 
             try
             {
                 await ManualSourceAuthentication.EnsureAuthenticatedIfRequiredAsync(
                     _source,
                     RequireExophaseAuthentication,
-                    _refreshCts.Token);
+                    _existingLink,
+                    refreshCts.Token);
 
                 _refreshService.RebuildProgress += OnRebuildProgress;
 
                 await ExecuteRefreshRequestAsync(
                     BuildManualProviderRefreshRequest(),
-                    _refreshCts.Token);
+                    refreshCts.Token);
 
-                if (_refreshCts.Token.IsCancellationRequested)
+                if (refreshCts.IsCancellationRequested)
                 {
                     ResetToSearchStage();
                     return;
@@ -805,8 +807,11 @@ namespace PlayniteAchievements.ViewModels
             finally
             {
                 _refreshService.RebuildProgress -= OnRebuildProgress;
-                _refreshCts?.Dispose();
-                _refreshCts = null;
+                refreshCts.Dispose();
+                if (ReferenceEquals(_refreshCts, refreshCts))
+                {
+                    _refreshCts = null;
+                }
             }
         }
 
@@ -816,7 +821,7 @@ namespace PlayniteAchievements.ViewModels
 
         private bool TransitionToEditing(ManualAchievementLink link, bool requireManualProviderData = false)
         {
-            var cachedData = _cacheManager.LoadGameData(_playniteGame.Id.ToString());
+            var cachedData = _achievementDataService.GetRawGameAchievementData(_playniteGame.Id);
             var hydratedData = _achievementDataService.GetGameAchievementData(_playniteGame.Id);
             string providerKey = cachedData?.ProviderKey;
             var achievements = cachedData?.Achievements?
@@ -1132,6 +1137,16 @@ namespace PlayniteAchievements.ViewModels
             return string.IsNullOrWhiteSpace(_source.SourceName) ? _source.SourceKey : _source.SourceName;
         }
 
+        private bool? ResolveAllowUnauthenticatedSchemaFetch(string sourceKey)
+        {
+            if (string.Equals(sourceKey, "Exophase", StringComparison.OrdinalIgnoreCase))
+            {
+                return !RequireExophaseAuthentication;
+            }
+
+            return null;
+        }
+
         private void EnsureManualProviderEnabledForLinking()
         {
             try
@@ -1383,6 +1398,8 @@ namespace PlayniteAchievements.ViewModels
                 SourceGameId = SourceGameId,
                 UnlockTimes = new Dictionary<string, DateTime?>(),
                 UnlockStates = new Dictionary<string, bool>(),
+                AllowUnauthenticatedSchemaFetch = _existingLink?.AllowUnauthenticatedSchemaFetch
+                    ?? ResolveAllowUnauthenticatedSchemaFetch(_source?.SourceKey),
                 CreatedUtc = _existingLink?.CreatedUtc ?? now,
                 LastModifiedUtc = now
             };
@@ -1422,7 +1439,7 @@ namespace PlayniteAchievements.ViewModels
                 var link = BuildLink();
                 SaveLink(link);
 
-                var cachedData = _cacheManager.LoadGameData(_playniteGame.Id.ToString());
+                var cachedData = _achievementDataService.GetRawGameAchievementData(_playniteGame.Id);
                 if (cachedData?.Achievements != null)
                 {
                     var nowUtc = DateTime.UtcNow;

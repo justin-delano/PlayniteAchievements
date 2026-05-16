@@ -711,8 +711,9 @@ namespace PlayniteAchievements.Views
         {
             try
             {
+                var dataService = PlayniteAchievementsPlugin.Instance?.AchievementDataService;
                 return new HashSet<string>(
-                    _refreshService?.Cache?.GetCachedGameIds() ?? new List<string>(),
+                    dataService?.GetCachedGameIds() ?? new List<string>(),
                     StringComparer.OrdinalIgnoreCase);
             }
             catch (Exception ex)
@@ -808,7 +809,7 @@ namespace PlayniteAchievements.Views
                     break;
 
                 case CustomGameScope.Installed:
-                    scopedGames = _gamesById.Values.Where(game => game.IsInstalled);
+                    scopedGames = _gamesById.Values.Where(IsInstalledOrHasOverride);
                     if (!includeUnplayed)
                     {
                         scopedGames = scopedGames.Where(game => game.Playtime > 0);
@@ -852,6 +853,11 @@ namespace PlayniteAchievements.Views
                 default:
                     scopedGames = _gamesById.Values;
                     break;
+            }
+
+            if (ShouldApplyHiddenFilter(SelectedScope))
+            {
+                scopedGames = BulkRefreshGameFilter.ApplyHiddenFilter(scopedGames, _settings?.Persisted);
             }
 
             var includeIds = GameOptions
@@ -960,6 +966,29 @@ namespace PlayniteAchievements.Views
             }
 
             return false;
+        }
+
+        private static bool ShouldApplyHiddenFilter(CustomGameScope scope)
+        {
+            switch (scope)
+            {
+                case CustomGameScope.All:
+                case CustomGameScope.Installed:
+                case CustomGameScope.Favorites:
+                case CustomGameScope.Recent:
+                case CustomGameScope.Missing:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsInstalledOrHasOverride(Game game)
+        {
+            return game != null &&
+                   (game.IsInstalled ||
+                    GameCustomDataLookup.TryGetXeniaTitleIdOverride(game.Id, out _) ||
+                    GameCustomDataLookup.TryGetShadPS4MatchIdOverride(game.Id, out _));
         }
 
         private void RecalculateSummary()

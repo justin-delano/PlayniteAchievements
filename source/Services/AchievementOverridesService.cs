@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Manual;
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
@@ -13,20 +14,17 @@ namespace PlayniteAchievements.Services
         private readonly ICacheManager _cacheService;
         private readonly ILogger _logger;
         private readonly Action<bool> _notifyCacheInvalidated;
-        private readonly Action<List<Guid>> _raiseGameDataChanged;
 
         public AchievementOverridesService(
             GameCustomDataStore gameCustomDataStore,
             ICacheManager cacheService,
             ILogger logger,
-            Action<bool> notifyCacheInvalidated,
-            Action<List<Guid>> raiseGameDataChanged)
+            Action<bool> notifyCacheInvalidated)
         {
             _gameCustomDataStore = gameCustomDataStore ?? throw new ArgumentNullException(nameof(gameCustomDataStore));
             _cacheService = cacheService ?? throw new ArgumentNullException(nameof(cacheService));
             _logger = logger;
             _notifyCacheInvalidated = notifyCacheInvalidated ?? throw new ArgumentNullException(nameof(notifyCacheInvalidated));
-            _raiseGameDataChanged = raiseGameDataChanged;
         }
 
         public CacheWriteResult SetCapstone(Guid playniteGameId, string capstoneApiName)
@@ -47,7 +45,6 @@ namespace PlayniteAchievements.Services
                 });
 
                 _notifyCacheInvalidated(true);
-                _raiseGameDataChanged?.Invoke(new List<Guid> { playniteGameId });
 
                 return CacheWriteResult.CreateSuccess(playniteGameId.ToString(), DateTime.UtcNow);
             }
@@ -153,24 +150,6 @@ namespace PlayniteAchievements.Services
             }
 
             _notifyCacheInvalidated(true);
-            _raiseGameDataChanged?.Invoke(new List<Guid> { playniteGameId });
-        }
-
-        public void SetExcludedFromHiddenState(Guid playniteGameId, bool hidden)
-        {
-            if (playniteGameId == Guid.Empty)
-            {
-                return;
-            }
-
-            SetRefreshExclusion(playniteGameId, hidden);
-            if (hidden)
-            {
-                ClearGameData(playniteGameId, clearIconCache: false, persistAfter: false);
-            }
-
-            _notifyCacheInvalidated(true);
-            _raiseGameDataChanged?.Invoke(new List<Guid> { playniteGameId });
         }
 
         public void SetExcludedFromSummaries(Guid playniteGameId, bool excluded)
@@ -186,7 +165,6 @@ namespace PlayniteAchievements.Services
             });
 
             _notifyCacheInvalidated(true);
-            _raiseGameDataChanged?.Invoke(new List<Guid> { playniteGameId });
         }
 
         public void ClearGameData(Guid playniteGameId, string gameName = null, bool clearIconCache = true, bool persistAfter = true)
@@ -209,16 +187,31 @@ namespace PlayniteAchievements.Services
 
         private bool RemoveManualTrackingLink(Guid playniteGameId, string gameName)
         {
-            if (!_gameCustomDataStore.TryLoad(playniteGameId, out var customData) ||
-                customData.ManualLink == null)
+            var removedFromStore = false;
+            if (_gameCustomDataStore.TryLoad(playniteGameId, out var customData) &&
+                customData?.ManualLink != null)
+            {
+                _gameCustomDataStore.Update(playniteGameId, data =>
+                {
+                    data.ManualLink = null;
+                });
+
+                removedFromStore = true;
+            }
+
+            var removedFromSettings = false;
+            var manualSettings = ProviderRegistry.Settings<ManualSettings>();
+            if (manualSettings?.AchievementLinks != null &&
+                manualSettings.AchievementLinks.Remove(playniteGameId))
+            {
+                removedFromSettings = true;
+                ProviderRegistry.Write(manualSettings);
+            }
+
+            if (!removedFromStore && !removedFromSettings)
             {
                 return false;
             }
-
-            _gameCustomDataStore.Update(playniteGameId, data =>
-            {
-                data.ManualLink = null;
-            });
 
             if (string.IsNullOrWhiteSpace(gameName))
             {

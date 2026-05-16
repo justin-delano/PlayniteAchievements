@@ -1,6 +1,5 @@
-using System.Collections.Generic;
-using System.Windows.Controls;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
@@ -22,17 +21,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override bool FilterAchievement(AchievementDetail achievement) => achievement.Unlocked;
 
         /// <summary>
-        /// Mirrors legacy PluginCompactUnlocked behavior: newest unlocked achievements first.
+        /// Uses the shared selected-game sort source, then filters to unlocked achievements.
         /// </summary>
-        protected override List<AchievementDetail> GetOrderedAchievements(Models.ThemeIntegration.ModernThemeBindings theme)
-        {
-            return theme?.AchievementsNewestFirst ?? base.GetOrderedAchievements(theme);
-        }
-
-        protected override string GetOrderedAchievementsPropertyName()
-        {
-            return nameof(Models.ThemeIntegration.ModernThemeBindings.AchievementsNewestFirst);
-        }
+        protected override AchievementSortSurface SortSurface => AchievementSortSurface.CompactUnlockedList;
 
         /// <summary>
         /// Refreshes the ItemsControl ItemsSource binding.
@@ -41,11 +32,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         {
             if (AchievementsList != null)
             {
-                // Direct reassignment without null first - WPF detects collection changes
-                // and only updates what's needed rather than rebuilding entire visual tree
                 AchievementsList.ItemsSource = DisplayItems;
             }
         }
     }
 }
+
 

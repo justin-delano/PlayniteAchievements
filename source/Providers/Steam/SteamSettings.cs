@@ -8,7 +8,6 @@ namespace PlayniteAchievements.Providers.Steam
     public class SteamSettings : ProviderSettingsBase
     {
         private string _steamUserId;
-        private string _steamApiKey;
 
         /// <inheritdoc />
         public override string ProviderKey => "Steam";
@@ -21,15 +20,6 @@ namespace PlayniteAchievements.Providers.Steam
         {
             get => _steamUserId;
             set => SetValue(ref _steamUserId, value);
-        }
-
-        /// <summary>
-        /// Gets or sets the Steam Web API key.
-        /// </summary>
-        public string SteamApiKey
-        {
-            get => _steamApiKey;
-            set => SetValue(ref _steamApiKey, value);
         }
     }
 }

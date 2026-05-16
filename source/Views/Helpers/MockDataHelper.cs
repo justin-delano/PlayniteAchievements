@@ -327,6 +327,8 @@ namespace PlayniteAchievements.Views.Helpers
         {
             var all = themeData?.AllAchievements ?? new List<AchievementDetail>();
 
+            themeData.AchievementDefaultOrder = new List<AchievementDetail>(all);
+
             // Keep the preview deterministic: source order is newest-first by default.
             themeData.AchievementsNewestFirst = new List<AchievementDetail>(all);
 

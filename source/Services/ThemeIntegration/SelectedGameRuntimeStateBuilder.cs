@@ -1,7 +1,10 @@
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace PlayniteAchievements.Services.ThemeIntegration
@@ -29,6 +32,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     0,
                     0,
                     false,
+                    false,
+                    new List<AchievementDetail>(),
                     new List<AchievementDetail>(),
                     new List<AchievementDetail>(),
                     new List<AchievementDetail>(),
@@ -50,6 +55,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     // Modern compact lists resolve tooltip game name from AchievementDetail.Game.
                     // Ensure selected-game snapshots always carry this context.
                     achievements[i].Game = game;
+                    achievements[i].ProviderKey = data.EffectiveProviderKey;
                 }
             }
 
@@ -64,25 +70,32 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             var locked = total - unlocked;
             var percent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(unlocked, total);
-            var all = achievements.ToList();
-            var oldestFirst = all
-                .OrderBy(a => a?.UnlockTimeUtc)
-                .ThenBy(a => a?.DisplayName)
-                .ToList();
-            var newestFirst = all
-                .OrderByDescending(a => a?.UnlockTimeUtc)
-                .ThenBy(a => a?.DisplayName)
-                .ToList();
-            var rarityAsc = all
-                .OrderBy(a => a?.RaritySortValue ?? double.MaxValue)
-                .ThenByDescending(a => a?.Points ?? 0)
-                .ThenBy(a => a?.DisplayName)
-                .ToList();
-            var rarityDesc = all
-                .OrderByDescending(a => a?.RaritySortValue ?? double.MinValue)
-                .ThenByDescending(a => a?.Points ?? 0)
-                .ThenBy(a => a?.DisplayName)
-                .ToList();
+            var hasCustomOrder = data.AchievementOrder != null && data.AchievementOrder.Count > 0;
+            var defaultOrder = hasCustomOrder
+                ? AchievementOrderHelper.ApplyOrder(
+                    achievements,
+                    achievement => achievement?.ApiName,
+                    data.AchievementOrder)
+                : achievements.ToList();
+            var all = hasCustomOrder
+                ? defaultOrder
+                : AchievementSortHelper.CreateDefaultSortedDetailList(achievements);
+            var oldestFirst = AchievementSortHelper.CreateSortedDetailList(
+                all,
+                nameof(AchievementDisplayItem.UnlockTime),
+                ListSortDirection.Ascending);
+            var newestFirst = AchievementSortHelper.CreateSortedDetailList(
+                all,
+                nameof(AchievementDisplayItem.UnlockTime),
+                ListSortDirection.Descending);
+            var rarityAsc = AchievementSortHelper.CreateSortedDetailList(
+                all,
+                nameof(AchievementDisplayItem.RaritySortValue),
+                ListSortDirection.Ascending);
+            var rarityDesc = AchievementSortHelper.CreateSortedDetailList(
+                all,
+                nameof(AchievementDisplayItem.RaritySortValue),
+                ListSortDirection.Descending);
 
             var common = new AchievementRarityStats();
             var uncommon = new AchievementRarityStats();
@@ -127,6 +140,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 locked,
                 percent,
                 data.IsCompleted,
+                hasCustomOrder,
+                defaultOrder,
                 all,
                 oldestFirst,
                 newestFirst,
@@ -141,3 +156,4 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
     }
 }
+

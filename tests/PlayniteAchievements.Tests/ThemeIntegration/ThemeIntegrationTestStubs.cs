@@ -14,6 +14,8 @@ namespace PlayniteAchievements
 
         public PlayniteAchievementsSettings Settings { get; set; }
 
+        public Services.AchievementDataService AchievementDataService { get; set; }
+
         public Services.GameCustomDataStore GameCustomDataStore { get; set; }
 
         public IPlayniteAPI PlayniteApi { get; set; }
@@ -143,6 +145,8 @@ namespace PlayniteAchievements.Models.Achievements
 
         public Game Game { get; set; }
 
+        public List<string> AchievementOrder { get; set; }
+
         public List<AchievementDetail> Achievements { get; set; } = new List<AchievementDetail>();
 
         public bool IsCompleted =>
@@ -212,6 +216,51 @@ namespace PlayniteAchievements.ViewModels
 {
     public class AchievementDisplayItem
     {
+        public string DisplayName { get; set; }
+
+        public string Name => DisplayName;
+
+        public string Description { get; set; }
+
+        public string SortingName { get; set; }
+
+        public string GameName { get; set; }
+
+        public Guid? PlayniteGameId { get; set; }
+
+        public string ApiName { get; set; }
+
+        public string TrophyType { get; set; }
+
+        public string CategoryType { get; set; }
+
+        public string CategoryLabel { get; set; }
+
+        public bool Hidden { get; set; }
+
+        public bool Unlocked { get; set; }
+
+        public DateTime? UnlockTimeUtc { get; set; }
+
+        public DateTime UnlockTime => UnlockTimeUtc ?? DateTime.MinValue;
+
+        public double? GlobalPercentUnlocked { get; set; }
+
+        public double GlobalPercent => GlobalPercentUnlocked ?? 0;
+
+        public PlayniteAchievements.Models.Achievements.RarityTier Rarity { get; set; }
+            = PlayniteAchievements.Models.Achievements.RarityTier.Common;
+
+        public double RaritySortValue { get; set; }
+
+        public int? PointsValue { get; set; }
+
+        public int Points => PointsValue ?? 0;
+
+        public int? ProgressNum { get; set; }
+
+        public int? ProgressDenom { get; set; }
+
         public bool ShowHiddenSuffix { get; set; }
 
         public static AchievementDisplayItem Create(
@@ -241,7 +290,8 @@ namespace PlayniteAchievements.ViewModels
 
         public static string MakeRevealKey(Guid? playniteGameId, string apiName, string gameName)
         {
-            return string.Empty;
+            var gamePart = playniteGameId?.ToString() ?? (gameName ?? string.Empty);
+            return $"{gamePart}\u001f{apiName ?? string.Empty}";
         }
 
         public static void AccumulateRarity(

@@ -1,4 +1,6 @@
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.ShadPS4;
+using PlayniteAchievements.Providers.Xenia;
 using System;
 using System.Collections.Generic;
 
@@ -28,6 +30,8 @@ namespace PlayniteAchievements.Services
             normalized.ForceUseExophase = normalized.ForceUseExophase == true ? true : (bool?)null;
             normalized.ManualCapstoneApiName = NormalizeString(normalized.ManualCapstoneApiName);
             normalized.ExophaseSlugOverride = NormalizeString(normalized.ExophaseSlugOverride);
+            normalized.XeniaTitleIdOverride = XeniaTitleIdHelper.Normalize(normalized.XeniaTitleIdOverride);
+            normalized.ShadPS4MatchIdOverride = ShadPS4MatchIdHelper.Normalize(normalized.ShadPS4MatchIdOverride);
             normalized.RetroAchievementsGameIdOverride =
                 normalized.RetroAchievementsGameIdOverride.HasValue && normalized.RetroAchievementsGameIdOverride.Value > 0
                     ? normalized.RetroAchievementsGameIdOverride
@@ -50,6 +54,8 @@ namespace PlayniteAchievements.Services
             normalized.ForceUseExophase = normalized.ForceUseExophase == true ? true : (bool?)null;
             normalized.ManualCapstoneApiName = NormalizeString(normalized.ManualCapstoneApiName);
             normalized.ExophaseSlugOverride = NormalizeString(normalized.ExophaseSlugOverride);
+            normalized.XeniaTitleIdOverride = XeniaTitleIdHelper.Normalize(normalized.XeniaTitleIdOverride);
+            normalized.ShadPS4MatchIdOverride = ShadPS4MatchIdHelper.Normalize(normalized.ShadPS4MatchIdOverride);
             normalized.RetroAchievementsGameIdOverride =
                 normalized.RetroAchievementsGameIdOverride.HasValue && normalized.RetroAchievementsGameIdOverride.Value > 0
                     ? normalized.RetroAchievementsGameIdOverride
@@ -80,29 +86,16 @@ namespace PlayniteAchievements.Services
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
                    (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
                    (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
+                   !string.IsNullOrWhiteSpace(data.XeniaTitleIdOverride) ||
+                   !string.IsNullOrWhiteSpace(data.ShadPS4MatchIdOverride) ||
                    data.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
-                   data.ManualLink != null;
+                    data.ManualLink != null;
         }
 
         public static bool HasPortableData(GameCustomDataFile data)
         {
-            if (data == null)
-            {
-                return false;
-            }
-
-            return data.UseSeparateLockedIconsOverride == true ||
-                   !string.IsNullOrWhiteSpace(data.ManualCapstoneApiName) ||
-                   (data.AchievementOrder != null && data.AchievementOrder.Count > 0) ||
-                   (data.AchievementCategoryOverrides != null && data.AchievementCategoryOverrides.Count > 0) ||
-                   (data.AchievementCategoryTypeOverrides != null && data.AchievementCategoryTypeOverrides.Count > 0) ||
-                   (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
-                   (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
-                   (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
-                   data.ForceUseExophase == true ||
-                   !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
-                   data.ManualLink != null;
+            return HasVisibleCustomization(data);
         }
 
         public static bool HasPortableData(GameCustomDataPortableFile data)
@@ -120,9 +113,33 @@ namespace PlayniteAchievements.Services
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
                    (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
                    (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
+                   !string.IsNullOrWhiteSpace(data.XeniaTitleIdOverride) ||
+                   !string.IsNullOrWhiteSpace(data.ShadPS4MatchIdOverride) ||
                    data.ForceUseExophase == true ||
                    !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
-                   data.ManualLink != null;
+                    data.ManualLink != null;
+        }
+
+        public static bool HasVisibleCustomization(GameCustomDataFile data)
+        {
+            if (data == null)
+            {
+                return false;
+            }
+
+            return data.UseSeparateLockedIconsOverride == true ||
+                   !string.IsNullOrWhiteSpace(data.ManualCapstoneApiName) ||
+                   (data.AchievementOrder != null && data.AchievementOrder.Count > 0) ||
+                   (data.AchievementCategoryOverrides != null && data.AchievementCategoryOverrides.Count > 0) ||
+                   (data.AchievementCategoryTypeOverrides != null && data.AchievementCategoryTypeOverrides.Count > 0) ||
+                   (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
+                   (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
+                   (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
+                   !string.IsNullOrWhiteSpace(data.XeniaTitleIdOverride) ||
+                   !string.IsNullOrWhiteSpace(data.ShadPS4MatchIdOverride) ||
+                   data.ForceUseExophase == true ||
+                   !string.IsNullOrWhiteSpace(data.ExophaseSlugOverride) ||
+                    data.ManualLink != null;
         }
 
         public static GameCustomDataFile MergePreferExisting(GameCustomDataFile existing, GameCustomDataFile legacy)
@@ -173,6 +190,12 @@ namespace PlayniteAchievements.Services
                         ? new Dictionary<string, string>(legacy.AchievementLockedIconOverrides, StringComparer.OrdinalIgnoreCase)
                         : null,
                 RetroAchievementsGameIdOverride = existing.RetroAchievementsGameIdOverride ?? legacy.RetroAchievementsGameIdOverride,
+                XeniaTitleIdOverride = !string.IsNullOrWhiteSpace(existing.XeniaTitleIdOverride)
+                    ? existing.XeniaTitleIdOverride
+                    : legacy.XeniaTitleIdOverride,
+                ShadPS4MatchIdOverride = !string.IsNullOrWhiteSpace(existing.ShadPS4MatchIdOverride)
+                    ? existing.ShadPS4MatchIdOverride
+                    : legacy.ShadPS4MatchIdOverride,
                 ForceUseExophase = existing.ForceUseExophase ?? legacy.ForceUseExophase,
                 ExophaseSlugOverride = !string.IsNullOrWhiteSpace(existing.ExophaseSlugOverride)
                     ? existing.ExophaseSlugOverride
@@ -309,13 +332,13 @@ namespace PlayniteAchievements.Services
 
             var createdUtc = link.CreatedUtc == default ? DateTime.UtcNow : link.CreatedUtc;
             var lastModifiedUtc = link.LastModifiedUtc == default ? createdUtc : link.LastModifiedUtc;
-
             return new ManualAchievementLink
             {
                 SourceKey = normalizedSourceKey,
                 SourceGameId = normalizedSourceGameId,
                 UnlockStates = compactStates,
                 UnlockTimes = compactTimes,
+                AllowUnauthenticatedSchemaFetch = link.AllowUnauthenticatedSchemaFetch,
                 CreatedUtc = createdUtc,
                 LastModifiedUtc = lastModifiedUtc
             };

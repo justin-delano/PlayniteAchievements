@@ -57,6 +57,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.XboxGames),
             nameof(PlayniteAchievementsSettings.PSNGames),
             nameof(PlayniteAchievementsSettings.RetroAchievementsGames),
+            nameof(PlayniteAchievementsSettings.AppleGames),
+            nameof(PlayniteAchievementsSettings.GooglePlayGames),
+            nameof(PlayniteAchievementsSettings.UbisoftGames),
             nameof(PlayniteAchievementsSettings.RPCS3Games),
             nameof(PlayniteAchievementsSettings.XeniaGames),
             nameof(PlayniteAchievementsSettings.ShadPS4Games),
@@ -73,6 +76,24 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.RarestRecentUnlocks)
         };
 
+        public static readonly string[] DynamicAllGames =
+        {
+            nameof(PlayniteAchievementsSettings.DynamicLibraryAchievements),
+            nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsProviderKey),
+            nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsProviderLabel),
+            nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsSortKey),
+            nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsSortLabel),
+            nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsSortDirectionKey),
+            nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsSortDirectionLabel),
+            nameof(PlayniteAchievementsSettings.DynamicGameSummaries),
+            nameof(PlayniteAchievementsSettings.DynamicGameSummariesProviderKey),
+            nameof(PlayniteAchievementsSettings.DynamicGameSummariesProviderLabel),
+            nameof(PlayniteAchievementsSettings.DynamicGameSummariesSortKey),
+            nameof(PlayniteAchievementsSettings.DynamicGameSummariesSortLabel),
+            nameof(PlayniteAchievementsSettings.DynamicGameSummariesSortDirectionKey),
+            nameof(PlayniteAchievementsSettings.DynamicGameSummariesSortDirectionLabel)
+        };
+
         public static readonly string[] SingleGameTheme =
         {
             nameof(PlayniteAchievementsSettings.HasData),
@@ -83,10 +104,18 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.ProgressPercentage),
             nameof(PlayniteAchievementsSettings.IsCompleted),
             nameof(PlayniteAchievementsSettings.Achievements),
+            nameof(PlayniteAchievementsSettings.AchievementDefaultOrder),
             nameof(PlayniteAchievementsSettings.AchievementsNewestFirst),
             nameof(PlayniteAchievementsSettings.AchievementsOldestFirst),
             nameof(PlayniteAchievementsSettings.AchievementsRarityAsc),
-            nameof(PlayniteAchievementsSettings.AchievementsRarityDesc)
+            nameof(PlayniteAchievementsSettings.AchievementsRarityDesc),
+            nameof(PlayniteAchievementsSettings.DynamicAchievements),
+            nameof(PlayniteAchievementsSettings.DynamicAchievementsFilterKey),
+            nameof(PlayniteAchievementsSettings.DynamicAchievementsFilterLabel),
+            nameof(PlayniteAchievementsSettings.DynamicAchievementsSortKey),
+            nameof(PlayniteAchievementsSettings.DynamicAchievementsSortLabel),
+            nameof(PlayniteAchievementsSettings.DynamicAchievementsSortDirectionKey),
+            nameof(PlayniteAchievementsSettings.DynamicAchievementsSortDirectionLabel)
         };
 
         public static readonly string[] SingleGameLegacy =

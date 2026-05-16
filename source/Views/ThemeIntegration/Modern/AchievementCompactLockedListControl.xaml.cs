@@ -1,5 +1,5 @@
-using System.Windows.Controls;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 {
@@ -21,17 +21,21 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override bool FilterAchievement(AchievementDetail achievement) => !achievement.Unlocked;
 
         /// <summary>
+        /// Uses the shared selected-game sort source, then filters to locked achievements.
+        /// </summary>
+        protected override AchievementSortSurface SortSurface => AchievementSortSurface.CompactLockedList;
+
+        /// <summary>
         /// Refreshes the ItemsControl ItemsSource binding.
         /// </summary>
         protected override void RefreshItemsSource()
         {
             if (AchievementsList != null)
             {
-                // Direct reassignment without null first - WPF detects collection changes
-                // and only updates what's needed rather than rebuilding entire visual tree
                 AchievementsList.ItemsSource = DisplayItems;
             }
         }
     }
 }
+
 

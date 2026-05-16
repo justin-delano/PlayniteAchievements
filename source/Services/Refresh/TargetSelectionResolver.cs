@@ -45,6 +45,12 @@ namespace PlayniteAchievements.Services
                 return null;
             }
 
+            var forcedProvider = ResolveForcedProviderForGame(game, providers);
+            if (forcedProvider != null || HasForcedProviderOverride(game.Id))
+            {
+                return forcedProvider;
+            }
+
             foreach (var provider in OrderProvidersForRefresh(providers))
             {
                 try
@@ -63,6 +69,36 @@ namespace PlayniteAchievements.Services
             }
 
             return null;
+        }
+
+        private IDataProvider ResolveForcedProviderForGame(Game game, IReadOnlyList<IDataProvider> providers)
+        {
+            if (game == null || providers == null || providers.Count == 0)
+            {
+                return null;
+            }
+
+            if (GameCustomDataLookup.TryGetXeniaTitleIdOverride(game.Id, out _))
+            {
+                return providers.FirstOrDefault(provider =>
+                    provider != null &&
+                    string.Equals(provider.ProviderKey, "Xenia", StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (GameCustomDataLookup.TryGetShadPS4MatchIdOverride(game.Id, out _))
+            {
+                return providers.FirstOrDefault(provider =>
+                    provider != null &&
+                    string.Equals(provider.ProviderKey, "ShadPS4", StringComparison.OrdinalIgnoreCase));
+            }
+
+            return null;
+        }
+
+        private static bool HasForcedProviderOverride(Guid gameId)
+        {
+            return GameCustomDataLookup.TryGetXeniaTitleIdOverride(gameId, out _) ||
+                   GameCustomDataLookup.TryGetShadPS4MatchIdOverride(gameId, out _);
         }
 
         public IReadOnlyList<IDataProvider> OrderProvidersForRefresh(IEnumerable<IDataProvider> providers)
@@ -115,11 +151,19 @@ namespace PlayniteAchievements.Services
             var recentLimit = Math.Max(1, options.RecentRefreshGamesCount);
             var skippedNoProvider = 0;
             var skippedNoAchievements = 0;
+            var skippedHiddenGames = 0;
+            var applyBulkHiddenFilter = options.PlayniteGameIds == null || options.PlayniteGameIds.Count == 0;
 
             foreach (var game in candidates)
             {
                 if (game == null || !seenGameIds.Add(game.Id))
                 {
+                    continue;
+                }
+
+                if (applyBulkHiddenFilter && !BulkRefreshGameFilter.ShouldIncludeGame(game, _settings?.Persisted))
+                {
+                    skippedHiddenGames++;
                     continue;
                 }
 
@@ -154,6 +198,11 @@ namespace PlayniteAchievements.Services
                 _logger?.Debug($"Skipped {skippedNoAchievements} games with HasAchievements=false or ExcludedByUser=true.");
             }
 
+            if (skippedHiddenGames > 0)
+            {
+                _logger?.Debug($"Skipped {skippedHiddenGames} hidden games during bulk refresh targeting.");
+            }
+
             return targets;
         }
 
@@ -168,13 +217,21 @@ namespace PlayniteAchievements.Services
                 return new List<Guid>();
             }
 
-            var cachedGameIds = new HashSet<string>(_cacheService.GetCachedGameIds(), StringComparer.OrdinalIgnoreCase);
+            var cachedGameIds = new HashSet<string>(
+                PlayniteAchievementsPlugin.Instance?.AchievementDataService?.GetCachedGameIds()
+                    ?? new List<string>(),
+                StringComparer.OrdinalIgnoreCase);
             var allGames = _api.Database.Games.ToList();
 
             var missingGameIds = new List<Guid>();
             foreach (var game in allGames)
             {
                 if (game == null)
+                {
+                    continue;
+                }
+
+                if (!BulkRefreshGameFilter.ShouldIncludeGame(game, _settings?.Persisted))
                 {
                     continue;
                 }

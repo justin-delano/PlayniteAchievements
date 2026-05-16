@@ -27,7 +27,7 @@ namespace PlayniteAchievements.Models.Settings
 
         private string _globalLanguage = "english";
         private bool _enablePeriodicUpdates = true;
-        private bool _autoExcludeHiddenGames = false;
+        private bool _includeHiddenGamesInBulkScans = true;
         private int _periodicUpdateHours = 6;
         private bool _enableNotifications = true;
         private bool _notifyPeriodicUpdates = true;
@@ -42,6 +42,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _useSeparateLockedIconsWhenAvailable = false;
         private HashSet<Guid> _separateLockedIconEnabledGameIds = new HashSet<Guid>();
         private bool _showRarityGlow = true;
+        private bool _useUniformRarityBadges = false;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
         private bool _showSidebarPieCharts = true;
@@ -53,6 +54,7 @@ namespace PlayniteAchievements.Models.Settings
         private SidebarPieSmallSliceMode _sidebarPieSmallSliceMode = SidebarPieSmallSliceMode.Round;
         private bool _sidebarPieChartVisibilityInitializedFromIndividualSettings;
         private bool _showSidebarBarCharts = true;
+        private bool _showSidebarGameMetadata = true;
         private bool _showTopMenuBarButton = true;
         private bool _showCompactListRarityBar = true;
         private bool _showCompletionBorder = true;
@@ -92,6 +94,20 @@ namespace PlayniteAchievements.Models.Settings
             new Dictionary<Guid, Dictionary<string, string>>();
         private Dictionary<string, ThemeMigrationCacheEntry> _themeMigrationVersionCache =
             new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase);
+        private CompactListSortMode _compactListSortMode = CompactListSortMode.None;
+        private bool _compactListSortDescending = false;
+        private CompactListSortMode _compactUnlockedListSortMode = CompactListSortMode.None;
+        private bool _compactUnlockedListSortDescending = false;
+        private CompactListSortMode _compactLockedListSortMode = CompactListSortMode.None;
+        private bool _compactLockedListSortDescending = false;
+        private GamesOverviewSortMode _gamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock;
+        private bool _gamesOverviewGridSortDescending = true;
+        private CompactListSortMode _sidebarSelectedGameGridSortMode = CompactListSortMode.UnlockTime;
+        private bool _sidebarSelectedGameGridSortDescending = true;
+        private CompactListSortMode _singleGameGridSortMode = CompactListSortMode.UnlockTime;
+        private bool _singleGameGridSortDescending = true;
+        private CompactListSortMode _achievementDataGridSortMode = CompactListSortMode.UnlockTime;
+        private bool _achievementDataGridSortDescending = true;
         private TaggingSettings _taggingSettings;
         private Dictionary<string, JObject> _providerSettings = new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
 
@@ -136,13 +152,13 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, Playnite hide/unhide actions automatically exclude/include games from tracking.
-        /// Hiding also clears cached data for the game.
+        /// When true, bulk refreshes include games marked hidden in Playnite.
+        /// Explicit user-targeted refreshes ignore this setting.
         /// </summary>
-        public bool AutoExcludeHiddenGames
+        public bool IncludeHiddenGamesInBulkScans
         {
-            get => _autoExcludeHiddenGames;
-            set => SetValue(ref _autoExcludeHiddenGames, value);
+            get => _includeHiddenGamesInBulkScans;
+            set => SetValue(ref _includeHiddenGamesInBulkScans, value);
         }
 
         /// <summary>
@@ -316,6 +332,15 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// When true, all rarity badges use the hexagon shape while keeping rarity colors.
+        /// </summary>
+        public bool UseUniformRarityBadges
+        {
+            get => _useUniformRarityBadges;
+            set => SetValue(ref _useUniformRarityBadges, value);
+        }
+
+        /// <summary>
         /// When true, use Playnite cover images instead of icons/logos in the games list.
         /// </summary>
         public bool UseCoverImages
@@ -435,6 +460,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showSidebarBarCharts;
             set => SetValue(ref _showSidebarBarCharts, value);
+        }
+
+        /// <summary>
+        /// When true, shows platform/playtime/region metadata under game names in the sidebar games overview.
+        /// </summary>
+        public bool ShowSidebarGameMetadata
+        {
+            get => _showSidebarGameMetadata;
+            set => SetValue(ref _showSidebarGameMetadata, value);
         }
 
         /// <summary>
@@ -561,6 +595,141 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _enableCompactGridMode;
             set => SetValue(ref _enableCompactGridMode, value);
+        }
+
+        /// <summary>
+        /// Sort mode for the compact list (all achievements) control.
+        /// None preserves provider order.
+        /// </summary>
+        public CompactListSortMode CompactListSortMode
+        {
+            get => _compactListSortMode;
+            set => SetValue(ref _compactListSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the sort direction for the compact list (all achievements) control.
+        /// </summary>
+        public bool CompactListSortDescending
+        {
+            get => _compactListSortDescending;
+            set => SetValue(ref _compactListSortDescending, value);
+        }
+
+        /// <summary>
+        /// Sort mode for the compact unlocked list control.
+        /// None preserves newest-first ordering.
+        /// </summary>
+        public CompactListSortMode CompactUnlockedListSortMode
+        {
+            get => _compactUnlockedListSortMode;
+            set => SetValue(ref _compactUnlockedListSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the sort direction for the compact unlocked list control.
+        /// </summary>
+        public bool CompactUnlockedListSortDescending
+        {
+            get => _compactUnlockedListSortDescending;
+            set => SetValue(ref _compactUnlockedListSortDescending, value);
+        }
+
+        /// <summary>
+        /// Sort mode for the compact locked list control.
+        /// None preserves provider order.
+        /// </summary>
+        public CompactListSortMode CompactLockedListSortMode
+        {
+            get => _compactLockedListSortMode;
+            set => SetValue(ref _compactLockedListSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the sort direction for the compact locked list control.
+        /// </summary>
+        public bool CompactLockedListSortDescending
+        {
+            get => _compactLockedListSortDescending;
+            set => SetValue(ref _compactLockedListSortDescending, value);
+        }
+
+        /// <summary>
+        /// Sort mode for the sidebar games overview grid.
+        /// </summary>
+        public GamesOverviewSortMode GamesOverviewGridSortMode
+        {
+            get => _gamesOverviewGridSortMode;
+            set => SetValue(ref _gamesOverviewGridSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the configured sort direction for the sidebar games overview grid.
+        /// </summary>
+        public bool GamesOverviewGridSortDescending
+        {
+            get => _gamesOverviewGridSortDescending;
+            set => SetValue(ref _gamesOverviewGridSortDescending, value);
+        }
+
+        /// <summary>
+        /// Sort mode for the sidebar selected-game grid.
+        /// None preserves custom order when configured, otherwise provider order.
+        /// </summary>
+        public CompactListSortMode SidebarSelectedGameGridSortMode
+        {
+            get => _sidebarSelectedGameGridSortMode;
+            set => SetValue(ref _sidebarSelectedGameGridSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the configured sort direction for the sidebar selected-game grid.
+        /// Ignored when SidebarSelectedGameGridSortMode is None.
+        /// </summary>
+        public bool SidebarSelectedGameGridSortDescending
+        {
+            get => _sidebarSelectedGameGridSortDescending;
+            set => SetValue(ref _sidebarSelectedGameGridSortDescending, value);
+        }
+
+        /// <summary>
+        /// Sort mode for the single-game achievement grid.
+        /// None preserves custom order when configured, otherwise provider order.
+        /// </summary>
+        public CompactListSortMode SingleGameGridSortMode
+        {
+            get => _singleGameGridSortMode;
+            set => SetValue(ref _singleGameGridSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the configured sort direction for the single-game grid.
+        /// Ignored when SingleGameGridSortMode is None.
+        /// </summary>
+        public bool SingleGameGridSortDescending
+        {
+            get => _singleGameGridSortDescending;
+            set => SetValue(ref _singleGameGridSortDescending, value);
+        }
+
+        /// <summary>
+        /// Sort mode for the shared modern AchievementDataGrid control.
+        /// None preserves custom order when configured, otherwise provider order.
+        /// </summary>
+        public CompactListSortMode AchievementDataGridSortMode
+        {
+            get => _achievementDataGridSortMode;
+            set => SetValue(ref _achievementDataGridSortMode, value);
+        }
+
+        /// <summary>
+        /// When true, reverses the configured sort direction for the shared modern AchievementDataGrid control.
+        /// Ignored when AchievementDataGridSortMode is None.
+        /// </summary>
+        public bool AchievementDataGridSortDescending
+        {
+            get => _achievementDataGridSortDescending;
+            set => SetValue(ref _achievementDataGridSortDescending, value);
         }
 
         /// <summary>
@@ -974,7 +1143,7 @@ namespace PlayniteAchievements.Models.Settings
 
                 // Update and Refresh Settings
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
-                AutoExcludeHiddenGames = this.AutoExcludeHiddenGames,
+                IncludeHiddenGamesInBulkScans = this.IncludeHiddenGamesInBulkScans,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 RecentRefreshGamesCount = this.RecentRefreshGamesCount,
                 CustomRefreshPresets = this.CustomRefreshPresets != null
@@ -995,6 +1164,7 @@ namespace PlayniteAchievements.Models.Settings
                 PreserveAchievementIconResolution = this.PreserveAchievementIconResolution,
                 UseSeparateLockedIconsWhenAvailable = this.UseSeparateLockedIconsWhenAvailable,
                 ShowRarityGlow = this.ShowRarityGlow,
+                UseUniformRarityBadges = this.UseUniformRarityBadges,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowSidebarPieCharts = this.ShowSidebarPieCharts,
@@ -1005,6 +1175,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowSidebarPiePercentages = this.ShowSidebarPiePercentages,
                 SidebarPieSmallSliceMode = this.SidebarPieSmallSliceMode,
                 ShowSidebarBarCharts = this.ShowSidebarBarCharts,
+                ShowSidebarGameMetadata = this.ShowSidebarGameMetadata,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
                 ShowCompletionBorder = this.ShowCompletionBorder,
@@ -1019,6 +1190,20 @@ namespace PlayniteAchievements.Models.Settings
                 EnableAchievementPieChartControl = this.EnableAchievementPieChartControl,
                 EnableAchievementBarChartControl = this.EnableAchievementBarChartControl,
                 EnableCompactGridMode = this.EnableCompactGridMode,
+                CompactListSortMode = this.CompactListSortMode,
+                CompactListSortDescending = this.CompactListSortDescending,
+                CompactUnlockedListSortMode = this.CompactUnlockedListSortMode,
+                CompactUnlockedListSortDescending = this.CompactUnlockedListSortDescending,
+                CompactLockedListSortMode = this.CompactLockedListSortMode,
+                CompactLockedListSortDescending = this.CompactLockedListSortDescending,
+                GamesOverviewGridSortMode = this.GamesOverviewGridSortMode,
+                GamesOverviewGridSortDescending = this.GamesOverviewGridSortDescending,
+                SidebarSelectedGameGridSortMode = this.SidebarSelectedGameGridSortMode,
+                SidebarSelectedGameGridSortDescending = this.SidebarSelectedGameGridSortDescending,
+                SingleGameGridSortMode = this.SingleGameGridSortMode,
+                SingleGameGridSortDescending = this.SingleGameGridSortDescending,
+                AchievementDataGridSortMode = this.AchievementDataGridSortMode,
+                AchievementDataGridSortDescending = this.AchievementDataGridSortDescending,
                 AchievementDataGridMaxHeight = this.AchievementDataGridMaxHeight,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
@@ -1209,4 +1394,5 @@ namespace PlayniteAchievements.Models.Settings
         #endregion
     }
 }
+
 

@@ -92,13 +92,18 @@ namespace PlayniteAchievements.Views
 
         private void UpdateDefaultSortIndicator()
         {
-            if (ViewModel?.HasCustomAchievementOrder == true)
+            if (ViewModel == null)
             {
                 AchievementsDataGridControl?.SetSortIndicator(null, null);
                 return;
             }
 
-            AchievementsDataGridControl?.SetSortIndicator("UnlockTime", ListSortDirection.Descending);
+            AchievementSortHelper.ApplySortIndicator(
+                ViewModel.CurrentSortPath,
+                ViewModel.CurrentSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.SingleGame,
+                (sortPath, sortDirection) => AchievementsDataGridControl?.SetSortIndicator(sortPath, sortDirection));
         }
 
         private void OnGridSorting(object sender, DataGridSortingEventArgs e)
@@ -108,14 +113,31 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e);
-            if (sortDirection == null)
+            var sortAction = AchievementSortHelper.ResolveGridSortAction(
+                e.Column?.SortMemberPath,
+                ViewModel.CurrentSortPath,
+                ViewModel.CurrentSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.SingleGame);
+            if (sortAction.Kind == AchievementGridSortActionKind.None)
             {
                 return;
             }
 
-            ViewModel.SortDataGrid(e.Column.SortMemberPath, sortDirection.Value);
             e.Handled = true;
+
+            if (sortAction.Kind == AchievementGridSortActionKind.ResetToDefault)
+            {
+                ViewModel.ResetSortToDefault();
+                AchievementsDataGridControl?.SetSortIndicator(null, null);
+                return;
+            }
+            else if (sortAction.Direction.HasValue)
+            {
+                ViewModel.SortDataGrid(sortAction.SortMemberPath, sortAction.Direction.Value);
+            }
+
+            UpdateDefaultSortIndicator();
         }
 
         private void ClearSearch_Click(object sender, RoutedEventArgs e)
@@ -225,4 +247,5 @@ namespace PlayniteAchievements.Views
         }
     }
 }
+
 

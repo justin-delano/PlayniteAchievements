@@ -17,7 +17,8 @@ namespace PlayniteAchievements.Providers.Manual
     /// </summary>
     public sealed class ManualSourceRegistry : IDisposable
     {
-        private readonly HttpClient _steamHttpClient;
+        private readonly HttpClient _steamSearchHttpClient;
+        private readonly SteamHttpClient _steamAuthClient;
         private readonly IReadOnlyList<IManualSource> _sources;
         private readonly Dictionary<string, IManualSource> _sourcesByKey;
         private bool _disposed;
@@ -32,6 +33,9 @@ namespace PlayniteAchievements.Providers.Manual
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
 
             var exophaseSessionManager = new ExophaseSessionManager(playniteApi, logger, pluginUserDataPath);
+            var steamSessionManager = new SteamSessionManager(playniteApi, logger);
+            _steamAuthClient = new SteamHttpClient(playniteApi, logger, steamSessionManager, pluginUserDataPath);
+            var steamTokenResolver = new SteamWebApiTokenResolver(steamSessionManager, _steamAuthClient.GetWebApiTokenAsync, logger);
 
             var handler = new HttpClientHandler
             {
@@ -39,19 +43,19 @@ namespace PlayniteAchievements.Providers.Manual
                 AllowAutoRedirect = true
             };
 
-            _steamHttpClient = new HttpClient(handler)
+            _steamSearchHttpClient = new HttpClient(handler)
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
-            _steamHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+            _steamSearchHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
 
             _sources = new List<IManualSource>
             {
                 new SteamManualSource(
-                    _steamHttpClient,
+                    _steamSearchHttpClient,
                     logger,
-                    () => ProviderRegistry.Settings<SteamSettings>().SteamApiKey),
+                    steamTokenResolver),
                 new ExophaseManualSource(
                     playniteApi,
                     exophaseSessionManager,
@@ -101,7 +105,8 @@ namespace PlayniteAchievements.Providers.Manual
             }
 
             _disposed = true;
-            _steamHttpClient?.Dispose();
+            _steamSearchHttpClient?.Dispose();
+            _steamAuthClient?.Dispose();
         }
     }
 }

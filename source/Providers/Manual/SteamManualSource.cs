@@ -5,10 +5,12 @@ using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using PlayniteAchievements.Models;
 using Playnite.SDK;
-using Playnite.SDK.Data;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.Steam.Models;
 
 namespace PlayniteAchievements.Providers.Manual
@@ -33,18 +35,18 @@ namespace PlayniteAchievements.Providers.Manual
 
         private readonly HttpClient _httpClient;
         private readonly ILogger _logger;
-        private readonly Func<string> _getApiKey;
+        private readonly SteamWebApiTokenResolver _tokenResolver;
 
         public string SourceKey => "Steam";
         public string SourceName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
-        public bool IsAuthenticated => !string.IsNullOrWhiteSpace(_getApiKey?.Invoke());
-        public ISessionManager AuthSession => null;
+        public bool IsAuthenticated => false;
+        public ISessionManager AuthSession => _tokenResolver?.SessionManager;
 
-        public SteamManualSource(HttpClient httpClient, ILogger logger, Func<string> getApiKey)
+        public SteamManualSource(HttpClient httpClient, ILogger logger, SteamWebApiTokenResolver tokenResolver)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _logger = logger;
-            _getApiKey = getApiKey ?? throw new ArgumentNullException(nameof(getApiKey));
+            _tokenResolver = tokenResolver ?? throw new ArgumentNullException(nameof(tokenResolver));
         }
 
         public async Task<List<ManualGameSearchResult>> SearchGamesAsync(string query, string language, CancellationToken ct)
@@ -56,8 +58,6 @@ namespace PlayniteAchievements.Providers.Manual
 
             try
             {
-                await ManualSourceAuthentication.EnsureAuthenticatedAsync(this, ct).ConfigureAwait(false);
-
                 // Map language to Steam Store language code
                 var steamLanguage = MapLanguageToSteam(language);
                 var cc = "US";
@@ -83,7 +83,7 @@ namespace PlayniteAchievements.Providers.Manual
                             return new List<ManualGameSearchResult>();
                         }
 
-                        var envelope = Serialization.FromJson<StoreSearchEnvelope>(json);
+                        var envelope = JsonConvert.DeserializeObject<StoreSearchEnvelope>(json);
                         if (envelope == null)
                         {
                             _logger?.Warn($"Steam Store search returned unparseable JSON for query: {query}");
@@ -150,30 +150,31 @@ namespace PlayniteAchievements.Providers.Manual
                 return null;
             }
 
-            var apiKey = _getApiKey();
-            if (string.IsNullOrWhiteSpace(apiKey))
-            {
-                _logger?.Warn("Steam API key not configured; cannot fetch manual achievements");
-                return null;
-            }
-
             try
             {
-                await ManualSourceAuthentication.EnsureAuthenticatedAsync(this, ct).ConfigureAwait(false);
+                var tokenResolution = await _tokenResolver.ResolveAsync(ct).ConfigureAwait(false);
+                if (!tokenResolution.IsSuccess)
+                {
+                    throw ManualSourceAuthentication.CreateException(this, tokenResolution.ProbeResult ?? AuthProbeResult.NotAuthenticated());
+                }
 
                 var steamLanguage = MapLanguageToSteam(language);
-                var result = await FetchAchievementsAsync(apiKey, appId, steamLanguage, ct).ConfigureAwait(false);
+                var result = await FetchAchievementsAsync(tokenResolution.Token, appId, steamLanguage, ct).ConfigureAwait(false);
 
                 if ((result == null || result.Count == 0) &&
                     !string.Equals(steamLanguage, "english", StringComparison.OrdinalIgnoreCase))
                 {
                     _logger?.Info($"Steam manual schema fetch returned no localized achievements for '{steamLanguage}', retrying with 'english' for appId={appId}");
-                    result = await FetchAchievementsAsync(apiKey, appId, "english", ct).ConfigureAwait(false);
+                    result = await FetchAchievementsAsync(tokenResolution.Token, appId, "english", ct).ConfigureAwait(false);
                 }
 
                 return result;
             }
             catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (ManualSourceAuthenticationException)
             {
                 throw;
             }
@@ -185,17 +186,18 @@ namespace PlayniteAchievements.Providers.Manual
         }
 
         private async Task<List<AchievementDetail>> FetchAchievementsAsync(
-            string apiKey,
+            string accessToken,
             int appId,
             string steamLanguage,
             CancellationToken ct)
         {
             var url = $"https://api.steampowered.com/IPlayerService/GetGameAchievements/v1/" +
-                      $"?key={Uri.EscapeDataString(apiKey)}" +
+                      $"?key={Uri.EscapeDataString(accessToken)}" +
                       $"&appid={appId}" +
                       $"&language={Uri.EscapeDataString(steamLanguage)}";
 
-            using (var response = await _httpClient.GetAsync(url, ct).ConfigureAwait(false))
+            using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+            using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
             {
                 if (!response.IsSuccessStatusCode)
                 {
@@ -209,7 +211,7 @@ namespace PlayniteAchievements.Providers.Manual
                     return null;
                 }
 
-                var root = Serialization.FromJson<GetGameAchievementsRoot>(json);
+                var root = JsonConvert.DeserializeObject<GetGameAchievementsRoot>(json);
                 var achievements = root?.Response?.Achievements;
 
                 if (achievements == null || achievements.Count == 0)
@@ -350,7 +352,7 @@ namespace PlayniteAchievements.Providers.Manual
 
                             try
                             {
-                                var details = Serialization.FromJson<Dictionary<string, AppDetailsEnvelope>>(json);
+                                var details = JsonConvert.DeserializeObject<Dictionary<string, AppDetailsEnvelope>>(json);
 
                                 if (details?.TryGetValue(appId.ToString(), out var envelope) == true &&
                                     envelope?.Success == true &&

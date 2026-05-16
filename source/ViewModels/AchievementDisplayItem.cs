@@ -246,11 +246,17 @@ namespace PlayniteAchievements.ViewModels
         public string ApiName
         {
             get => _source?.ApiName;
-            set => SetSourceValue(
-                source => source.ApiName,
-                (source, next) => source.ApiName = next,
-                value,
-                nameof(ApiName));
+            set
+            {
+                if (SetSourceValue(
+                    source => source.ApiName,
+                    (source, next) => source.ApiName = next,
+                    value,
+                    nameof(ApiName)))
+                {
+                    OnPropertyChanged(nameof(ApiNameResolved));
+                }
+            }
         }
 
         // Hidden achievement visibility settings
@@ -560,6 +566,15 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public string ApiNameResolved
+        {
+            get
+            {
+                if (IsHidden && Hidden && !ShowHiddenDescription) return string.Empty;
+                return ApiName;
+            }
+        }
+
         /// <summary>
         /// Toggles the revealed state if the achievement can be revealed.
         /// </summary>
@@ -610,6 +625,38 @@ namespace PlayniteAchievements.ViewModels
             CategoryLabel = source?.Category;
             GameIconPath = gameIconPath;
             GameCoverPath = gameCoverPath;
+        }
+
+        /// <summary>
+        /// Updates this item from another display item while keeping the current object instance.
+        /// </summary>
+        public void UpdateFrom(AchievementDisplayItem sourceItem)
+        {
+            if (sourceItem == null)
+            {
+                return;
+            }
+
+            UpdateFrom(
+                sourceItem.Source,
+                sourceItem.GameName,
+                sourceItem.PlayniteGameId,
+                sourceItem.ShowHiddenIcon,
+                sourceItem.ShowHiddenTitle,
+                sourceItem.ShowHiddenDescription,
+                sourceItem.ShowHiddenSuffix,
+                sourceItem.ShowLockedIcon,
+                sourceItem.UseSeparateLockedIconsWhenAvailable,
+                sourceItem.ShowRarityGlow,
+                sourceItem.ShowRarityBar,
+                sourceItem.SortingName,
+                sourceItem.GameIconPath,
+                sourceItem.GameCoverPath);
+            ProviderKey = sourceItem.ProviderKey;
+            PointsValue = sourceItem.PointsValue;
+            CategoryType = sourceItem.CategoryType;
+            CategoryLabel = sourceItem.CategoryLabel;
+            IsRevealed = sourceItem.IsRevealed;
         }
 
         public void ApplyAppearanceSettings(
@@ -740,7 +787,7 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// Alias for themes expecting an "Icon" field (e.g. SuccessStory).
         /// </summary>
-        public string Icon => DisplayIcon;
+        public string Icon => AchievementIconResolver.GetLegacyCompatibleIcon(UnlockedIconPath);
 
         /// <summary>
         /// Alias for themes expecting a numeric "Percent" field (0-100).
@@ -882,6 +929,7 @@ namespace PlayniteAchievements.ViewModels
                 case nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable):
                 case nameof(PersistedSettings.SeparateLockedIconEnabledGameIds):
                 case nameof(PersistedSettings.ShowRarityGlow):
+                case nameof(PersistedSettings.UseUniformRarityBadges):
                     return true;
                 default:
                     return false;
@@ -1050,6 +1098,7 @@ namespace PlayniteAchievements.ViewModels
         private void NotifyDescriptionDisplayChanged()
         {
             OnPropertyChanged(nameof(DescriptionResolved));
+            OnPropertyChanged(nameof(ApiNameResolved));
         }
 
         private void NotifyIconDisplayChanged()
@@ -1079,7 +1128,7 @@ namespace PlayniteAchievements.ViewModels
         {
             var item = new AchievementDisplayItem();
             item.SetSource(achievement, notifyChanges: false);
-            item.ProviderKey = achievement.ProviderKey ?? gameData?.ProviderKey;
+            item.ProviderKey = achievement.ProviderKey ?? gameData?.EffectiveProviderKey ?? gameData?.ProviderKey;
             item.GameName = gameData?.GameName ?? "Unknown";
             item.SortingName = gameData?.SortingName ?? gameData?.GameName ?? "Unknown";
             item.PlayniteGameId = playniteGameId;
