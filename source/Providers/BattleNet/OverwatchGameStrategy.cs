@@ -26,12 +26,14 @@ namespace PlayniteAchievements.Providers.BattleNet
                 game.Name.IndexOf("overwatch", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        public async Task<GameAchievementData> FetchAchievementsAsync(Game game, string locale, CancellationToken ct)
+        public Task<GameAchievementData> FetchAchievementsAsync(Game game, string locale, CancellationToken ct)
         {
+            _logger?.Info($"[BattleNet/Overwatch] Fetch started. game={GameLabel(game)}, locale={(string.IsNullOrWhiteSpace(locale) ? "en-US" : locale)}, authenticated={Bool(_session.IsAuthenticated)}");
+
             if (!_session.IsAuthenticated)
             {
-                _logger?.Warn("[BattleNet/Overwatch] Not authenticated.");
-                return CreateEmptyData(game);
+                _logger?.Warn($"[BattleNet/Overwatch] Not authenticated. game={GameLabel(game)}");
+                return Task.FromResult(CreateEmptyData(game));
             }
 
             // Overwatch achievements require web scraping from the career page.
@@ -40,7 +42,8 @@ namespace PlayniteAchievements.Providers.BattleNet
             // This strategy returns empty data until the scraping is validated against the current site.
 
             _logger?.Warn("[BattleNet/Overwatch] Overwatch scraping is not yet validated against current site structure.");
-            return CreateEmptyData(game);
+            _logger?.Info($"[BattleNet/Overwatch] Fetch completed with empty data. game={GameLabel(game)}");
+            return Task.FromResult(CreateEmptyData(game));
         }
 
         private static GameAchievementData CreateEmptyData(Game game)
@@ -64,6 +67,18 @@ namespace PlayniteAchievements.Providers.BattleNet
                 hash = (hash << 5) - hash + c;
             }
             return Math.Abs(hash);
+        }
+
+        private static string Bool(bool value) => value ? "true" : "false";
+
+        private static string GameLabel(Game game)
+        {
+            if (game == null)
+            {
+                return "<null>";
+            }
+
+            return $"{game.Name ?? "<unnamed>"} ({game.Id})";
         }
     }
 }

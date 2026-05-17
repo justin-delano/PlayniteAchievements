@@ -159,6 +159,11 @@
                                Style="{StaticResource SectionHeaderStyle}"/>
 
                     <Grid Margin="0,8,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="140"/>
                             <ColumnDefinition Width="*"/>
@@ -173,12 +178,16 @@
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource LOCPlayAch_Settings_BattleNet_WowRealm}"
                                    Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="0,8,0,0"/>
                         <ComboBox Grid.Row="1" Grid.Column="1" x:Name="WowRealmCombo"
+                                  DisplayMemberPath="Name"
+                                  SelectionChanged="WowRealm_SelectionChanged"
+                                  Margin="0,8,0,0"
                                   FontSize="{DynamicResource FontSize}"/>
 
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource LOCPlayAch_Settings_BattleNet_WowCharacter}"
                                    Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="0,8,0,0"/>
                         <TextBox Grid.Row="2" Grid.Column="1" x:Name="WowCharacterBox"
-                                 Text="{Binding Settings.WowCharacter, Mode=TwoWay}"
+                                 Text="{Binding Settings.WowCharacter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,8,0,0"
                                  FontSize="{DynamicResource FontSize}"/>
                     </Grid>
                 </StackPanel>

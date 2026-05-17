@@ -31,6 +31,8 @@ namespace PlayniteAchievements.Providers.BattleNet
             _apiClient = new BattleNetApiClient(logger);
             _scanner = new BattleNetScanner(_apiClient, _sessionManager, settings, logger);
             _providerSettings = ProviderRegistry.Settings<BattleNetSettings>();
+
+            _logger.Info($"[BattleNet] Provider initialized. {SettingsSummary(_providerSettings)}");
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet");
@@ -51,6 +53,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
+            _logger.Info($"[BattleNet] Refresh requested. games={gamesToRefresh?.Count ?? 0}, authenticated={Bool(IsAuthenticated)}, {SettingsSummary(_providerSettings)}");
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
         }
 
@@ -60,15 +63,65 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             if (settings is BattleNetSettings battleNetSettings)
             {
+                _logger.Info($"[BattleNet] Applying provider settings. incoming={SettingsSummary(battleNetSettings)}");
                 _providerSettings.CopyFrom(battleNetSettings);
+                _logger.Debug($"[BattleNet] Provider settings applied. current={SettingsSummary(_providerSettings)}");
+            }
+            else
+            {
+                _logger.Warn($"[BattleNet] Ignored incompatible provider settings object: {settings?.GetType().FullName ?? "<null>"}");
             }
         }
 
-        public ProviderSettingsViewBase CreateSettingsView() => new BattleNetSettingsView(_sessionManager, _apiClient, _logger);
+        public ProviderSettingsViewBase CreateSettingsView()
+        {
+            _logger.Debug("[BattleNet] Creating settings view.");
+            return new BattleNetSettingsView(_sessionManager, _apiClient, _logger);
+        }
 
         public void Dispose()
         {
+            _logger.Debug("[BattleNet] Disposing provider resources.");
             _apiClient?.Dispose();
+        }
+
+        private static string Bool(bool value) => value ? "true" : "false";
+
+        private static string MaskId(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "<empty>";
+            }
+
+            var trimmed = value.Trim();
+            if (trimmed.Length <= 4)
+            {
+                return "****";
+            }
+
+            return $"{new string('*', Math.Min(8, trimmed.Length - 4))}{trimmed.Substring(trimmed.Length - 4)}";
+        }
+
+        private static string Presence(string value) => string.IsNullOrWhiteSpace(value) ? "missing" : "set";
+
+        private static string SettingsSummary(BattleNetSettings settings)
+        {
+            if (settings == null)
+            {
+                return "<null settings>";
+            }
+
+            return string.Format(
+                "enabled={0}, userId={1}, battleTag={2}, sc2Region={3}, sc2Profile={4}, wowRegion={5}, wowRealmSlug={6}, wowCharacter={7}",
+                Bool(settings.IsEnabled),
+                MaskId(settings.BattleNetUserId),
+                Presence(settings.BattleTag),
+                settings.Sc2RegionId,
+                settings.Sc2ProfileId > 0 ? MaskId(settings.Sc2ProfileId.ToString()) : "<none>",
+                string.IsNullOrWhiteSpace(settings.WowRegion) ? "<none>" : settings.WowRegion,
+                string.IsNullOrWhiteSpace(settings.WowRealmSlug) ? "<none>" : settings.WowRealmSlug,
+                Presence(settings.WowCharacter));
         }
     }
 }

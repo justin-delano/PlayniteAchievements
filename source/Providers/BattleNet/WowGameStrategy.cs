@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
@@ -36,19 +37,24 @@ namespace PlayniteAchievements.Providers.BattleNet
             var region = settings.WowRegion;
             var realmSlug = settings.WowRealmSlug;
             var character = settings.WowCharacter;
+            var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? "en-US" : locale;
+
+            _logger?.Info($"[BattleNet/WoW] Fetch started. game={GameLabel(game)}, locale={effectiveLocale}, region={region ?? "<none>"}, realmSlug={realmSlug ?? "<none>"}, character={Presence(character)}");
 
             if (string.IsNullOrEmpty(region) || string.IsNullOrEmpty(realmSlug) || string.IsNullOrEmpty(character))
             {
-                _logger?.Warn("[BattleNet/WoW] Region, realm, or character not configured.");
+                _logger?.Warn($"[BattleNet/WoW] Region, realm, or character not configured. region={Presence(region)}, realmSlug={Presence(realmSlug)}, character={Presence(character)}");
                 return CreateEmptyData(game);
             }
 
-            var wowLocale = NormalizeLocale(locale);
+            var wowLocale = NormalizeLocale(effectiveLocale);
+            _logger?.Debug($"[BattleNet/WoW] Normalized locale for WoW request. input={effectiveLocale}, normalized={wowLocale}");
             var allData = await _client.GetWowAllAchievementsAsync(region, realmSlug, character, wowLocale, ct);
+            _logger?.Debug($"[BattleNet/WoW] Received WoW achievement category payloads. count={allData?.Count ?? 0}");
 
             var achievements = new List<AchievementDetail>();
 
-            foreach (var categoryData in allData)
+            foreach (var categoryData in allData ?? new List<WowAchievementsData>())
             {
                 if (categoryData.Subcategories == null) continue;
 
@@ -58,8 +64,9 @@ namespace PlayniteAchievements.Providers.BattleNet
                 {
                     subcategories = Serialization.FromJson<List<WowSubcategory>>(subcategoriesJson);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger?.Debug(ex, $"[BattleNet/WoW] Failed to parse WoW achievement subcategories. category={categoryData.Name ?? categoryData.Category ?? "<unknown>"}");
                     continue;
                 }
 
@@ -102,7 +109,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 }
             }
 
-            return new GameAchievementData
+            var data = new GameAchievementData
             {
                 ProviderKey = "BattleNet",
                 GameName = game.Name,
@@ -112,6 +119,9 @@ namespace PlayniteAchievements.Providers.BattleNet
                 LastUpdatedUtc = DateTime.UtcNow,
                 HasAchievements = achievements.Count > 0
             };
+
+            _logger?.Info($"[BattleNet/WoW] Fetch completed. game={GameLabel(game)}, achievements={achievements.Count}, unlocked={achievements.Count(a => a.Unlocked)}");
+            return data;
         }
 
         private static string NormalizeLocale(string locale)
@@ -141,6 +151,18 @@ namespace PlayniteAchievements.Providers.BattleNet
                 hash = (hash << 5) - hash + c;
             }
             return Math.Abs(hash);
+        }
+
+        private static string Presence(string value) => string.IsNullOrWhiteSpace(value) ? "missing" : "set";
+
+        private static string GameLabel(Game game)
+        {
+            if (game == null)
+            {
+                return "<null>";
+            }
+
+            return $"{game.Name ?? "<unnamed>"} ({game.Id})";
         }
     }
 }
