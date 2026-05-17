@@ -16,6 +16,42 @@ namespace PlayniteAchievements.Providers.BattleNet
         private readonly ILogger _logger;
         private BattleNetSettings _battleNetSettings;
 
+        public static readonly DependencyProperty WowConfiguredProperty =
+            DependencyProperty.Register(nameof(WowConfigured), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
+
+        public bool WowConfigured
+        {
+            get => (bool)GetValue(WowConfiguredProperty);
+            set => SetValue(WowConfiguredProperty, value);
+        }
+
+        public static readonly DependencyProperty Sc2ConfiguredProperty =
+            DependencyProperty.Register(nameof(Sc2Configured), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
+
+        public bool Sc2Configured
+        {
+            get => (bool)GetValue(Sc2ConfiguredProperty);
+            set => SetValue(Sc2ConfiguredProperty, value);
+        }
+
+        public static readonly DependencyProperty WowStatusProperty =
+            DependencyProperty.Register(nameof(WowStatus), typeof(string), typeof(BattleNetSettingsView), new PropertyMetadata(string.Empty));
+
+        public string WowStatus
+        {
+            get => (string)GetValue(WowStatusProperty);
+            set => SetValue(WowStatusProperty, value);
+        }
+
+        public static readonly DependencyProperty Sc2StatusProperty =
+            DependencyProperty.Register(nameof(Sc2Status), typeof(string), typeof(BattleNetSettingsView), new PropertyMetadata(string.Empty));
+
+        public string Sc2Status
+        {
+            get => (string)GetValue(Sc2StatusProperty);
+            set => SetValue(Sc2StatusProperty, value);
+        }
+
         public new BattleNetSettings Settings => _battleNetSettings;
 
         public BattleNetSettingsView(BattleNetApiClient apiClient, ILogger logger)
@@ -51,6 +87,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             LoadWowRegions();
+            UpdateWowStatus();
             UpdateSc2Status();
         }
 
@@ -65,7 +102,29 @@ namespace PlayniteAchievements.Providers.BattleNet
                 case nameof(BattleNetSettings.Sc2ProfileId):
                     UpdateSc2Status();
                     break;
+                case nameof(BattleNetSettings.WowRegion):
+                case nameof(BattleNetSettings.WowRealmSlug):
+                case nameof(BattleNetSettings.WowCharacter):
+                    UpdateWowStatus();
+                    break;
             }
+        }
+
+        private void UpdateWowStatus()
+        {
+            if (_battleNetSettings == null)
+            {
+                return;
+            }
+
+            WowConfigured = !string.IsNullOrWhiteSpace(_battleNetSettings.WowRegion) &&
+                !string.IsNullOrWhiteSpace(_battleNetSettings.WowRealmSlug) &&
+                !string.IsNullOrWhiteSpace(_battleNetSettings.WowCharacter);
+            WowStatus = ResourceProvider.GetString(WowConfigured
+                ? "LOCPlayAch_Settings_BattleNet_Status_WowReady"
+                : "LOCPlayAch_Settings_BattleNet_Status_WowIncomplete");
+
+            _logger.Debug($"[BattleNet/Settings] WoW status updated. configured={Bool(WowConfigured)}, region={_battleNetSettings.WowRegion ?? "<none>"}, realm={_battleNetSettings.WowRealmSlug ?? "<none>"}, character={Presence(_battleNetSettings.WowCharacter)}");
         }
 
         private void UpdateSc2Status()
@@ -75,18 +134,12 @@ namespace PlayniteAchievements.Providers.BattleNet
                 return;
             }
 
-            if (BattleNetGameSupport.HasConfiguredSc2(_battleNetSettings))
-            {
-                Sc2StatusText.Text =
-                    ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Status_Sc2Detected")
-                    + $" (Region {_battleNetSettings.Sc2RegionId}, Realm {_battleNetSettings.Sc2RealmId})";
-            }
-            else
-            {
-                Sc2StatusText.Text = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete");
-            }
+            Sc2Configured = BattleNetGameSupport.HasConfiguredSc2(_battleNetSettings);
+            Sc2Status = ResourceProvider.GetString(Sc2Configured
+                ? "LOCPlayAch_Settings_BattleNet_Status_Sc2Detected"
+                : "LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete");
 
-            _logger.Debug($"[BattleNet/Settings] SC2 status text updated. configured={Bool(BattleNetGameSupport.HasConfiguredSc2(_battleNetSettings))}, region={_battleNetSettings.Sc2RegionId}, realm={_battleNetSettings.Sc2RealmId}, profileId={(_battleNetSettings.Sc2ProfileId > 0 ? MaskId(_battleNetSettings.Sc2ProfileId.ToString()) : "<none>")}, apiCredentials={Bool(BattleNetGameSupport.HasApiCredentials(_battleNetSettings))}");
+            _logger.Debug($"[BattleNet/Settings] SC2 status updated. configured={Bool(Sc2Configured)}, region={_battleNetSettings.Sc2RegionId}, realm={_battleNetSettings.Sc2RealmId}, profileId={(_battleNetSettings.Sc2ProfileId > 0 ? MaskId(_battleNetSettings.Sc2ProfileId.ToString()) : "<none>")}, apiCredentials={Bool(BattleNetGameSupport.HasApiCredentials(_battleNetSettings))}");
         }
 
         private void ClientSecret_Changed(object sender, RoutedEventArgs e)
@@ -142,6 +195,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 settings.WowRealmSlug = null;
                 _logger.Debug("[BattleNet/Settings] Cleared saved WoW realm slug because region changed.");
             }
+            UpdateWowStatus();
 
             try
             {
@@ -165,10 +219,12 @@ namespace PlayniteAchievements.Providers.BattleNet
                         _logger.Warn($"[BattleNet/Settings] Saved WoW realm slug was not present in loaded realm list for region '{region}'. Cleared stale slug.");
                     }
                 }
+                UpdateWowStatus();
             }
             catch (Exception ex)
             {
                 _logger.Debug(ex, $"[BattleNet/Settings] Failed to load realms for region {region}.");
+                UpdateWowStatus();
             }
         }
 
@@ -183,6 +239,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             {
                 _battleNetSettings.WowRealmSlug = realm.Slug;
                 _logger.Info($"[BattleNet/Settings] WoW realm selected. name={realm.Name ?? "<unnamed>"}, slug={realm.Slug ?? "<none>"}");
+                UpdateWowStatus();
             }
         }
 

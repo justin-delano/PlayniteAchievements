@@ -383,16 +383,18 @@
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowSection">World of Warcraft</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowRegion">Region</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowRealm">Realm</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowCharacter">Character Name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowCharacter">Character</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Section">StarCraft II</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientId">Client ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientSecret">Client Secret</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Region">SC2 Region</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Realm">SC2 Realm</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Profile">SC2 Profile ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_Sc2Detected">StarCraft II profile detected</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Region">Region</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Realm">Realm</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Profile">Profile ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_WowReady">Character ready</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_WowIncomplete">Missing character setup</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_Sc2Detected">StarCraft II ready</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_NoSc2Profile">No StarCraft II profile found</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete">Configure Blizzard API credentials, region, realm, and profile ID to enable StarCraft II.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete">Missing StarCraft II setup</sys:String>
 
     <!-- Provider: Epic -->
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Paste the authorizationCode value here:</sys:String>
