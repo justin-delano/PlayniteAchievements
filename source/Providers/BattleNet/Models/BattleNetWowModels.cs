@@ -88,34 +88,4 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
         [DataMember(Name = "url")]
         public string Url { get; set; }
     }
-
-    [DataContract]
-    public sealed class WowProfileAchievementsResponse
-    {
-        [DataMember(Name = "achievements")]
-        public List<WowProfileAchievement> Achievements { get; set; }
-    }
-
-    [DataContract]
-    public sealed class WowProfileAchievement
-    {
-        [DataMember(Name = "id")]
-        public int Id { get; set; }
-
-        [DataMember(Name = "achievement")]
-        public WowProfileAchievementRef Achievement { get; set; }
-
-        [DataMember(Name = "completed_timestamp")]
-        public long? CompletedTimestamp { get; set; }
-    }
-
-    [DataContract]
-    public sealed class WowProfileAchievementRef
-    {
-        [DataMember(Name = "id")]
-        public int Id { get; set; }
-
-        [DataMember(Name = "name")]
-        public string Name { get; set; }
-    }
 }

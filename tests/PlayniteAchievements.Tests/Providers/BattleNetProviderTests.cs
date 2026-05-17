@@ -123,7 +123,7 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public async Task Sc2ApiClient_UsesOAuthTokenAndOfficialEndpoints()
+        public async Task Sc2ApiClient_UsesClientCredentialsTokenAndOfficialEndpoints()
         {
             var handler = new RecordingHandler();
             using (var httpClient = new HttpClient(handler))
@@ -164,69 +164,6 @@ namespace PlayniteAchievements.Tests.Providers
             Assert.AreEqual("token-value", handler.Requests[2].AuthorizationParameter);
         }
 
-        [TestMethod]
-        public async Task OAuthApiClient_ExchangesAuthorizationCodeAndReadsUserInfo()
-        {
-            var handler = new RecordingHandler();
-            using (var httpClient = new HttpClient(handler))
-            using (var client = new BattleNetApiClient(new NullLogger(), httpClient))
-            {
-                var token = await client.ExchangeAuthorizationCodeAsync(
-                    "eu",
-                    "client-id",
-                    "client-secret",
-                    "http://localhost/playnite-achievements/battlenet/oauth",
-                    "auth-code",
-                    CancellationToken.None);
-                var user = await client.GetOAuthUserInfoAsync("eu", token.AccessToken, CancellationToken.None);
-
-                Assert.AreEqual("user-token", token.AccessToken);
-                Assert.AreEqual("refresh-token", token.RefreshToken);
-                Assert.AreEqual("Tester#1234", user.Battletag);
-                Assert.AreEqual("42", user.Sub);
-            }
-
-            Assert.AreEqual(HttpMethod.Post, handler.Requests[0].Method);
-            Assert.AreEqual("https://eu.battle.net/oauth/token", handler.Requests[0].RequestUri.ToString());
-            Assert.AreEqual("Basic", handler.Requests[0].AuthorizationScheme);
-            StringAssert.Contains(handler.Requests[0].Body, "grant_type=authorization_code");
-            StringAssert.Contains(handler.Requests[0].Body, "code=auth-code");
-            StringAssert.Contains(handler.Requests[0].Body, "redirect_uri=http%3A%2F%2Flocalhost%2Fplaynite-achievements%2Fbattlenet%2Foauth");
-
-            Assert.AreEqual("https://eu.battle.net/oauth/userinfo", handler.Requests[1].RequestUri.ToString());
-            Assert.AreEqual("Bearer", handler.Requests[1].AuthorizationScheme);
-            Assert.AreEqual("user-token", handler.Requests[1].AuthorizationParameter);
-        }
-
-        [TestMethod]
-        public void WowParser_ReadsOAuthProfileAchievementShape()
-        {
-            var payload = JsonConvert.DeserializeObject<WowProfileAchievementsResponse>(@"
-{
-  ""achievements"": [
-    {
-      ""id"": 1017,
-      ""achievement"": { ""id"": 1017, ""name"": ""Can I Keep Him?"" },
-      ""completed_timestamp"": 1234135681000
-    },
-    {
-      ""id"": 2222,
-      ""achievement"": { ""id"": 2222, ""name"": ""Incomplete"" }
-    }
-  ]
-}");
-
-            var achievements = WowGameStrategy.ParseProfileAchievements(payload);
-
-            Assert.AreEqual(2, achievements.Count);
-            var unlocked = achievements.Single(item => item.ApiName == "1017");
-            Assert.AreEqual("Can I Keep Him?", unlocked.DisplayName);
-            Assert.IsTrue(unlocked.Unlocked);
-            Assert.AreEqual(DateTimeOffset.FromUnixTimeMilliseconds(1234135681000).UtcDateTime, unlocked.UnlockTimeUtc);
-
-            Assert.IsFalse(achievements.Single(item => item.ApiName == "2222").Unlocked);
-        }
-
         private static Game BattleNetGame(string name)
         {
             return new Game
@@ -258,19 +195,6 @@ namespace PlayniteAchievements.Tests.Providers
                     recorded.Body == "grant_type=client_credentials")
                 {
                     return JsonResponse(@"{""access_token"":""token-value"",""token_type"":""bearer"",""expires_in"":3600}");
-                }
-
-                if (request.Method == HttpMethod.Post &&
-                    request.RequestUri.ToString() == "https://eu.battle.net/oauth/token" &&
-                    recorded.Body.StartsWith("grant_type=authorization_code", StringComparison.Ordinal))
-                {
-                    return JsonResponse(@"{""access_token"":""user-token"",""refresh_token"":""refresh-token"",""expires_in"":3600,""scope"":""wow.profile""}");
-                }
-
-                if (request.Method == HttpMethod.Get &&
-                    request.RequestUri.ToString() == "https://eu.battle.net/oauth/userinfo")
-                {
-                    return JsonResponse(@"{""sub"":""42"",""battletag"":""Tester#1234""}");
                 }
 
                 if (request.Method == HttpMethod.Get &&

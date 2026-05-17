@@ -19,12 +19,11 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         public BattleNetScanner(
             BattleNetApiClient client,
-            BattleNetSessionManager session,
             PlayniteAchievementsSettings settings,
             ILogger logger)
         {
             _sc2 = new Sc2GameStrategy(client, logger);
-            _wow = new WowGameStrategy(client, session, logger);
+            _wow = new WowGameStrategy(client, logger);
             _settings = settings;
             _logger = logger;
         }

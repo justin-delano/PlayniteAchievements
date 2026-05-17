@@ -49,12 +49,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 !string.IsNullOrWhiteSpace(settings.BattleNetClientId) &&
                 !string.IsNullOrWhiteSpace(settings.BattleNetClientSecret);
         }
-
-        public static bool HasOAuthConfiguration(BattleNetSettings settings)
-        {
-            return HasApiCredentials(settings) &&
-                !string.IsNullOrWhiteSpace(settings.BattleNetOAuthRedirectUri);
-        }
     }
 
     internal static class BattleNetLocaleMapper

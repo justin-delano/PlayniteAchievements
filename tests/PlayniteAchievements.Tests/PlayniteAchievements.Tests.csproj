@@ -70,7 +70,6 @@
     <Compile Include="..\..\source\Providers\ProviderUiPolicies.cs" Link="Source\Providers\ProviderUiPolicies.cs" />
     <Compile Include="..\..\source\Common\RateLimiter.cs" Link="Source\Common\RateLimiter.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetApiClient.cs" Link="Source\Providers\BattleNet\BattleNetApiClient.cs" />
-    <Compile Include="..\..\source\Providers\BattleNet\BattleNetSessionManager.cs" Link="Source\Providers\BattleNet\BattleNetSessionManager.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetSupport.cs" Link="Source\Providers\BattleNet\BattleNetSupport.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetSettings.cs" Link="Source\Providers\BattleNet\BattleNetSettings.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\WowGameStrategy.cs" Link="Source\Providers\BattleNet\WowGameStrategy.cs" />

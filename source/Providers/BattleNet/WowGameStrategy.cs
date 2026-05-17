@@ -14,13 +14,11 @@ namespace PlayniteAchievements.Providers.BattleNet
     internal sealed class WowGameStrategy
     {
         private readonly BattleNetApiClient _client;
-        private readonly BattleNetSessionManager _session;
         private readonly ILogger _logger;
 
-        public WowGameStrategy(BattleNetApiClient client, BattleNetSessionManager session, ILogger logger)
+        public WowGameStrategy(BattleNetApiClient client, ILogger logger)
         {
             _client = client;
-            _session = session;
             _logger = logger;
         }
 
@@ -50,7 +48,19 @@ namespace PlayniteAchievements.Providers.BattleNet
             var allData = await _client.GetWowAllAchievementsAsync(region, realmSlug, character, wowLocale, ct);
             _logger?.Debug($"[BattleNet/WoW] Received WoW achievement category payloads. count={allData?.Count ?? 0}");
 
+            if (allData == null || allData.Count == 0)
+            {
+                _logger?.Warn($"[BattleNet/WoW] No public achievement category payloads returned. game={GameLabel(game)}");
+                return null;
+            }
+
             var achievements = ParseAchievements(allData);
+            if (achievements.Count == 0)
+            {
+                _logger?.Warn($"[BattleNet/WoW] Public achievement payloads contained no parsed achievements. game={GameLabel(game)}");
+                return null;
+            }
+
             var data = new GameAchievementData
             {
                 ProviderKey = "BattleNet",
@@ -133,39 +143,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                 target.Add(detail);
             }
-        }
-
-        internal static List<AchievementDetail> ParseProfileAchievements(WowProfileAchievementsResponse profile)
-        {
-            var achievements = new List<AchievementDetail>();
-            var seen = new HashSet<string>(StringComparer.Ordinal);
-
-            foreach (var item in profile?.Achievements ?? Enumerable.Empty<WowProfileAchievement>())
-            {
-                var id = item.Achievement?.Id > 0 ? item.Achievement.Id : item.Id;
-                if (id == 0 || !seen.Add(id.ToString()))
-                {
-                    continue;
-                }
-
-                var completed = item.CompletedTimestamp.GetValueOrDefault() > 0;
-                var detail = new AchievementDetail
-                {
-                    ApiName = id.ToString(),
-                    DisplayName = item.Achievement?.Name,
-                    ProviderKey = "BattleNet",
-                    Unlocked = completed
-                };
-
-                if (completed)
-                {
-                    detail.UnlockTimeUtc = DateTimeOffset.FromUnixTimeMilliseconds(item.CompletedTimestamp.Value).UtcDateTime;
-                }
-
-                achievements.Add(detail);
-            }
-
-            return achievements;
         }
 
         private static List<WowSubcategory> ReadSubcategories(object value)

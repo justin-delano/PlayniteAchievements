@@ -24,9 +24,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         private bool _disposed;
         private const string Sc2ProfileUrl = "https://{0}.api.blizzard.com/sc2/legacy/profile/{1}/{2}/{3}?locale={4}";
         private const string Sc2AchievementsUrl = "https://{0}.api.blizzard.com/sc2/legacy/data/achievements/{1}?locale={2}";
-        private const string OAuthTokenUrl = "https://{0}.battle.net/oauth/token";
-        private const string OAuthUserInfoUrl = "https://{0}.battle.net/oauth/userinfo";
-        private const string WowProfileAchievementsUrl = "https://{0}.api.blizzard.com/profile/wow/character/{1}/{2}/achievements?namespace=profile-{0}&locale={3}";
+        private const string TokenUrl = "https://{0}.battle.net/oauth/token";
         private const string WowBaseAchievementUrl = "https://worldofwarcraft.blizzard.com/{0}/character/{1}/{2}/{3}/achievements/{4}";
         private const string WowGraphQlUrl = "https://worldofwarcraft.blizzard.com/graphql";
         private const string WowStatusUrl = "https://worldofwarcraft.blizzard.com/game/status";
@@ -118,40 +116,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 IsTransientError, ct);
         }
 
-        public Task<BattleNetOAuthTokenResponse> ExchangeAuthorizationCodeAsync(
-            string region,
-            string clientId,
-            string clientSecret,
-            string redirectUri,
-            string code,
-            CancellationToken ct)
-        {
-            var form = "grant_type=authorization_code" +
-                "&code=" + Uri.EscapeDataString(code ?? string.Empty) +
-                "&redirect_uri=" + Uri.EscapeDataString(redirectUri ?? string.Empty);
-            return PostOAuthTokenAsync(region, clientId, clientSecret, form, ct);
-        }
-
-        public Task<BattleNetOAuthTokenResponse> RefreshUserTokenAsync(
-            string region,
-            string clientId,
-            string clientSecret,
-            string refreshToken,
-            CancellationToken ct)
-        {
-            var form = "grant_type=refresh_token" +
-                "&refresh_token=" + Uri.EscapeDataString(refreshToken ?? string.Empty);
-            return PostOAuthTokenAsync(region, clientId, clientSecret, form, ct);
-        }
-
-        public async Task<BattleNetUser> GetOAuthUserInfoAsync(string region, string accessToken, CancellationToken ct)
-        {
-            var apiRegion = NormalizeApiRegion(region);
-            var url = string.Format(OAuthUserInfoUrl, apiRegion);
-            _logger?.Debug($"[BattleNet/API] OAuth userinfo requested. apiRegion={apiRegion}, token={Presence(accessToken)}");
-            return await GetJsonAsync<BattleNetUser>(url, ct, accessToken).ConfigureAwait(false);
-        }
-
         // --- WoW ---
 
         public async Task<List<WowAchievementsData>> GetWowAllAchievementsAsync(
@@ -192,30 +156,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             _logger?.Info($"[BattleNet/API] Completed WoW achievement category fetch. region={region ?? "<none>"}, realmSlug={realmSlug ?? "<none>"}, fetched={results.Count}/{WowCategories.Length}");
             return results;
-        }
-
-        public async Task<WowProfileAchievementsResponse> GetWowProfileAchievementsAsync(
-            string region,
-            string realmSlug,
-            string character,
-            string locale,
-            string accessToken,
-            CancellationToken ct)
-        {
-            var apiRegion = NormalizeApiRegion(region);
-            var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale;
-            var characterSlug = (character ?? string.Empty).Trim().ToLowerInvariant();
-            var url = string.Format(
-                WowProfileAchievementsUrl,
-                apiRegion,
-                Uri.EscapeDataString(realmSlug ?? string.Empty),
-                Uri.EscapeDataString(characterSlug),
-                Uri.EscapeDataString(effectiveLocale));
-
-            _logger?.Info($"[BattleNet/API] WoW OAuth profile achievements requested. region={apiRegion}, realmSlug={realmSlug ?? "<none>"}, character={Presence(character)}, locale={effectiveLocale}, token={Presence(accessToken)}");
-            return await RateLimiter.ExecuteWithRetryAsync(
-                async () => await GetJsonAsync<WowProfileAchievementsResponse>(url, ct, accessToken).ConfigureAwait(false),
-                IsTransientError, ct).ConfigureAwait(false);
         }
 
         public async Task<List<WowRealm>> GetWowRealmsAsync(string region, CancellationToken ct)
@@ -284,9 +224,9 @@ namespace PlayniteAchievements.Providers.BattleNet
                 Uri.EscapeDataString(string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale));
         }
 
-        internal static string BuildOAuthTokenUrl(string apiRegion)
+        internal static string BuildTokenUrl(string apiRegion)
         {
-            return string.Format(OAuthTokenUrl, NormalizeApiRegion(apiRegion));
+            return string.Format(TokenUrl, NormalizeApiRegion(apiRegion));
         }
 
         internal static string MapSc2RegionIdToApiRegion(int regionId)
@@ -327,14 +267,14 @@ namespace PlayniteAchievements.Providers.BattleNet
                 string.Equals(_cachedTokenRegion, normalizedRegion, StringComparison.OrdinalIgnoreCase) &&
                 _cachedAccessTokenExpiresUtc > DateTime.UtcNow.AddMinutes(1))
             {
-                _logger?.Debug($"[BattleNet/API] Using cached Battle.net OAuth token. apiRegion={normalizedRegion}");
+                _logger?.Debug($"[BattleNet/API] Using cached Battle.net API token. apiRegion={normalizedRegion}");
                 return _cachedAccessToken;
             }
 
-            var tokenUrl = BuildOAuthTokenUrl(normalizedRegion);
-            _logger?.Debug($"[BattleNet/API] Requesting Battle.net OAuth token. apiRegion={normalizedRegion}, url={UrlHostAndPath(tokenUrl)}, clientId={Presence(clientId)}");
+            var tokenUrl = BuildTokenUrl(normalizedRegion);
+            _logger?.Debug($"[BattleNet/API] Requesting Battle.net API token. apiRegion={normalizedRegion}, url={UrlHostAndPath(tokenUrl)}, clientId={Presence(clientId)}");
 
-            var token = await PostOAuthTokenAsync(
+            var token = await PostTokenAsync(
                 normalizedRegion,
                 clientId,
                 clientSecret,
@@ -348,7 +288,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             return _cachedAccessToken;
         }
 
-        private async Task<BattleNetOAuthTokenResponse> PostOAuthTokenAsync(
+        private async Task<BattleNetApiTokenResponse> PostTokenAsync(
             string region,
             string clientId,
             string clientSecret,
@@ -361,8 +301,8 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             var apiRegion = NormalizeApiRegion(region);
-            var tokenUrl = BuildOAuthTokenUrl(apiRegion);
-            _logger?.Debug($"[BattleNet/API] Posting Battle.net OAuth token request. apiRegion={apiRegion}, url={UrlHostAndPath(tokenUrl)}, clientId={Presence(clientId)}");
+            var tokenUrl = BuildTokenUrl(apiRegion);
+            _logger?.Debug($"[BattleNet/API] Posting Battle.net API token request. apiRegion={apiRegion}, url={UrlHostAndPath(tokenUrl)}, clientId={Presence(clientId)}");
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, tokenUrl))
             {
@@ -372,7 +312,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                 using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
                 {
-                    _logger?.Debug($"[BattleNet/API] Battle.net OAuth token response. apiRegion={apiRegion}, status={(int)response.StatusCode}");
+                    _logger?.Debug($"[BattleNet/API] Battle.net API token response. apiRegion={apiRegion}, status={(int)response.StatusCode}");
                     if ((int)response.StatusCode == 429 || (int)response.StatusCode >= 500)
                     {
                         throw new BattleNetTransientException($"HTTP {(int)response.StatusCode} from {UrlHostAndPath(tokenUrl)}");
@@ -380,10 +320,10 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                     response.EnsureSuccessStatusCode();
                     var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    var token = JsonConvert.DeserializeObject<BattleNetOAuthTokenResponse>(json);
+                    var token = JsonConvert.DeserializeObject<BattleNetApiTokenResponse>(json);
                     if (string.IsNullOrWhiteSpace(token?.AccessToken))
                     {
-                        throw new BattleNetTransientException("Battle.net OAuth token response did not include an access token.");
+                        throw new BattleNetTransientException("Battle.net API token response did not include an access token.");
                     }
 
                     return token;
@@ -547,14 +487,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                     string.Equals(segments[i + 4], "achievements", StringComparison.OrdinalIgnoreCase))
                 {
                     segments[i + 3] = "<character>";
-                }
-
-                if (string.Equals(segments[i], "character", StringComparison.OrdinalIgnoreCase) &&
-                    i + 3 < segments.Length &&
-                    string.Equals(segments[i + 3], "achievements", StringComparison.OrdinalIgnoreCase) &&
-                    PathContainsSegment(segments, "profile"))
-                {
-                    segments[i + 2] = "<character>";
                 }
 
                 if (string.Equals(segments[i], "profile", StringComparison.OrdinalIgnoreCase) &&

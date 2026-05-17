@@ -14,7 +14,6 @@ namespace PlayniteAchievements.Providers.BattleNet
     {
         internal static readonly Guid BattleNetPluginId = BattleNetGameSupport.BattleNetPluginId;
 
-        private readonly BattleNetSessionManager _sessionManager;
         private readonly BattleNetApiClient _apiClient;
         private readonly BattleNetScanner _scanner;
         private readonly ILogger _logger;
@@ -24,12 +23,10 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
-            if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
 
             _logger = logger;
             _apiClient = new BattleNetApiClient(logger);
-            _sessionManager = new BattleNetSessionManager(playniteApi, logger);
-            _scanner = new BattleNetScanner(_apiClient, _sessionManager, settings, logger);
+            _scanner = new BattleNetScanner(_apiClient, settings, logger);
             _providerSettings = ProviderRegistry.Settings<BattleNetSettings>();
 
             _logger.Info($"[BattleNet] Provider initialized. {SettingsSummary(_providerSettings)}");
@@ -76,7 +73,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         public ProviderSettingsViewBase CreateSettingsView()
         {
             _logger.Debug("[BattleNet] Creating settings view.");
-            return new BattleNetSettingsView(_sessionManager, _apiClient, _logger);
+            return new BattleNetSettingsView(_apiClient, _logger);
         }
 
         public void Dispose()
@@ -113,16 +110,10 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             return string.Format(
-                "enabled={0}, userId={1}, battleTag={2}, apiClientId={3}, apiClientSecret={4}, oauthRedirectUri={5}, oauthAccessToken={6}, oauthRefreshToken={7}, oauthExpiresUtc={8}, sc2Region={9}, sc2Realm={10}, sc2Profile={11}, wowRegion={12}, wowRealmSlug={13}, wowCharacter={14}",
+                "enabled={0}, apiClientId={1}, apiClientSecret={2}, sc2Region={3}, sc2Realm={4}, sc2Profile={5}, wowRegion={6}, wowRealmSlug={7}, wowCharacter={8}",
                 Bool(settings.IsEnabled),
-                MaskId(settings.BattleNetUserId),
-                Presence(settings.BattleTag),
                 Presence(settings.BattleNetClientId),
                 Presence(settings.BattleNetClientSecret),
-                Presence(settings.BattleNetOAuthRedirectUri),
-                Presence(settings.BattleNetAccessToken),
-                Presence(settings.BattleNetRefreshToken),
-                settings.BattleNetTokenExpiresUtc == default ? "<none>" : settings.BattleNetTokenExpiresUtc.ToString("O"),
                 settings.Sc2RegionId,
                 settings.Sc2RealmId,
                 settings.Sc2ProfileId > 0 ? MaskId(settings.Sc2ProfileId.ToString()) : "<none>",
