@@ -10,28 +10,28 @@
     <!-- ================================================================= -->
     <!-- 02 Core and Common Text -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Achievements">Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Achievements">Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Exclude from Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Include in Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddType">Add Type</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Apply To Selected</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Ascending">Ascending</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Ascending">Aufsteigend</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_All">All</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Check">Check</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ClearOverrides">Clear Overrides</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Continue">Continue</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Default">Default</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Default">Standard</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Deselect All</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Descending">Descending</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Edit">Edit</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Descending">Absteigend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Edit">Bearbeiten</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Enabled">Enabled</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ExistingLabel">Existing Label</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_FilterAchievementsPlaceholder">Filter achievements...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_General">General</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_General">Allgemein</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Hide">Hide</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Label_Category">Category</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_Category">Kategorie</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Platform">Platform</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Label_Playtime">Playtime</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Label_Playtime">Spielzeit</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Region">Region</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Label_Type">Type</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_LastUnlock">Last Unlock</sys:String>
@@ -57,7 +57,7 @@
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Unlocked Count</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">Completed</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Counts">{0}/{1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Label_Rarity">Rarity:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Label_Rarity">Seltenheit:</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Trophies">Trophies:</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progress</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Recent Achievements</sys:String>
@@ -72,15 +72,15 @@
     <!-- ================================================================= -->
     <!-- 03 Columns -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Column_Achievement">Achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Achievement">Erfolg</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Last Played</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Game">Spiel</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Zuletzt gespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Name">Name</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Playtime">Playtime</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Rarity">Rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Playtime">Spielzeit</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Points">Punkte</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Rarity">Seltenheit</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Total">Insgesamt</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Trophy">Trophy</sys:String>
 
     <!-- ================================================================= -->
@@ -88,15 +88,15 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Button_Apply">Apply</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Browse">Browse</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Cancel">Abbrechen</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Configure">Configure</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Configure">Konfigurieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Login">Login</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Next">Next</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Ok">OK</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Refresh">Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Refresh">Aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Reset">Reset</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Save">Save</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Save">Speichern</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Search">Search</sys:String>
 
     <!-- ================================================================= -->
@@ -109,7 +109,7 @@
     <sys:String x:Key="LOCPlayAch_Provider_Exophase">Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GooglePlay">Google Play</sys:String>
-    <sys:String x:Key="LOCPlayAch_Provider_Manual">Manual</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Manual">Manuell</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_PSN">PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RPCS3">RPCS3</sys:String>
@@ -122,7 +122,7 @@
     <!-- ================================================================= -->
     <!-- 06 Menus -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData">Clear Data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData">Daten löschen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear data for {0} selected games?
 
 This removes cached achievements and icons for those games. Any manual tracking links and manual unlock times for those games will also be removed.</sys:String>
@@ -139,8 +139,8 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData">Exclude from Refreshes and Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Exclude this Game and Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">Please enter an Exophase game ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Game Options</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Include this Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Spieloptionen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Dieses Spiel inkludieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">Include in Refreshes</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">Include in Refreshes and Refresh Selected Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Open Game in Library</sys:String>
