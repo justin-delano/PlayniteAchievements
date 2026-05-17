@@ -19,6 +19,8 @@ namespace PlayniteAchievements.Models.Settings
     /// </summary>
     public class PersistedSettings : ObservableObject
     {
+        public const double DefaultAchievementDataGridMaxHeight = 600d;
+
         public PersistedSettings()
         {
         }
@@ -69,7 +71,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableAchievementPieChartControl = true;
         private bool _enableAchievementBarChartControl = true;
         private bool _enableCompactGridMode = false;
-        private double? _achievementDataGridMaxHeight = null;
+        private double? _achievementDataGridMaxHeight = DefaultAchievementDataGridMaxHeight;
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
@@ -734,6 +736,7 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// Maximum height for AchievementDataGrid controls (null = unlimited).
+        /// Defaults to 600 so theme-hosted grids do not expand indefinitely.
         /// </summary>
         public double? AchievementDataGridMaxHeight
         {
