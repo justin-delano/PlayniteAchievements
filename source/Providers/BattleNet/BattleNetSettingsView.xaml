@@ -102,18 +102,44 @@
                             </Border.Style>
 
                             <StackPanel>
-                                <!-- Status Row -->
                                 <Grid Margin="0,0,0,10">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="140"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <TextBlock Grid.Column="0"
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource LOCPlayAch_Settings_BattleNet_ClientId}"
+                                               Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding Settings.BattleNetClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             FontSize="{DynamicResource FontSize}"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource LOCPlayAch_Settings_BattleNet_ClientSecret}"
+                                               Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="0,8,0,0"/>
+                                    <PasswordBox Grid.Row="1" Grid.Column="1" x:Name="ClientSecretBox"
+                                                 PasswordChanged="ClientSecret_Changed"
+                                                 Margin="0,8,0,0"
+                                                 FontSize="{DynamicResource FontSize}"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource LOCPlayAch_Settings_BattleNet_RedirectUri}"
+                                               Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="0,8,0,0"/>
+                                    <TextBox Grid.Row="2" Grid.Column="1"
+                                             Text="{Binding Settings.BattleNetOAuthRedirectUri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="0,8,0,0"
+                                             FontSize="{DynamicResource FontSize}"/>
+
+                                    <StackPanel Grid.Row="3" Grid.Column="0" Orientation="Horizontal" Margin="0,10,12,0">
+                                        <TextBlock
                                                FontFamily="Segoe MDL2 Assets"
                                                Foreground="{DynamicResource TextBrush}"
-                                               FontSize="{DynamicResource FontSize}" Margin="0,0,12,0"
- VerticalAlignment="Center">
+                                               FontSize="{DynamicResource FontSize}"
+                                               VerticalAlignment="Center">
                                         <TextBlock.RenderTransform>
                                             <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
                                         </TextBlock.RenderTransform>
@@ -131,16 +157,18 @@
                                             </Style>
                                         </TextBlock.Style>
                                         </TextBlock>
+                                    </StackPanel>
 
-                                    <TextBlock Grid.Column="1"
+                                    <TextBlock Grid.Row="3" Grid.Column="1"
                                                Text="{Binding AuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                VerticalAlignment="Center"
+                                               Margin="0,10,0,0"
                                                TextWrapping="Wrap"/>
                                 </Grid>
 
                                 <StackPanel Orientation="Horizontal">
                                         <Button Content="{DynamicResource LOCPlayAch_Button_Login}"
-                                            Click="LoginWeb_Click"
+                                            Click="LoginOAuth_Click"
  Style="{StaticResource AuthActionButtonStyle}" Margin="0,0,8,0"/>
                                         <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"
  Click="Logout_Click" Style="{StaticResource AuthActionButtonStyle}"/>
@@ -201,14 +229,41 @@
                                Style="{StaticResource SectionHeaderStyle}"/>
 
                     <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="140"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Region}"
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Region}"
+                                   Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="0,8,0,0"/>
+                        <TextBox Grid.Row="0" Grid.Column="1"
+                                 Text="{Binding Settings.Sc2RegionId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,8,0,0"
+                                 FontSize="{DynamicResource FontSize}"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Realm}"
+                                   Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="0,8,0,0"/>
+                        <TextBox Grid.Row="1" Grid.Column="1"
+                                 Text="{Binding Settings.Sc2RealmId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,8,0,0"
+                                 FontSize="{DynamicResource FontSize}"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Profile}"
+                                   Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="0,8,0,0"/>
+                        <TextBox Grid.Row="2" Grid.Column="1"
+                                 Text="{Binding Settings.Sc2ProfileId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,8,0,0"
+                                 FontSize="{DynamicResource FontSize}"/>
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource LOCPlayAch_Common_Status_Linked}"
                                    Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="1" x:Name="Sc2StatusText"
+                        <TextBlock Grid.Row="3" Grid.Column="1" x:Name="Sc2StatusText"
                                    Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap"/>
                     </Grid>
                 </StackPanel>

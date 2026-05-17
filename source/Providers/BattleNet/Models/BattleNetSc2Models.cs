@@ -4,13 +4,32 @@ using System.Runtime.Serialization;
 namespace PlayniteAchievements.Providers.BattleNet.Models
 {
     [DataContract]
+    public sealed class BattleNetOAuthTokenResponse
+    {
+        [DataMember(Name = "access_token")]
+        public string AccessToken { get; set; }
+
+        [DataMember(Name = "refresh_token")]
+        public string RefreshToken { get; set; }
+
+        [DataMember(Name = "expires_in")]
+        public int ExpiresIn { get; set; }
+
+        [DataMember(Name = "scope")]
+        public string Scope { get; set; }
+    }
+
+    [DataContract]
     public sealed class BattleNetUser
     {
         [DataMember(Name = "id")]
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         [DataMember(Name = "battletag")]
         public string Battletag { get; set; }
+
+        [DataMember(Name = "sub")]
+        public string Sub { get; set; }
     }
 
     [DataContract]

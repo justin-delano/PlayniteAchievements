@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -70,6 +70,11 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         public override void Initialize(IProviderSettings settings)
         {
+            if (_battleNetSettings != null)
+            {
+                _battleNetSettings.PropertyChanged -= BattleNetSettings_PropertyChanged;
+            }
+
             _battleNetSettings = settings as BattleNetSettings;
             if (_battleNetSettings == null)
             {
@@ -81,8 +86,32 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             base.Initialize(settings);
+            if (_battleNetSettings != null)
+            {
+                _battleNetSettings.PropertyChanged += BattleNetSettings_PropertyChanged;
+                ClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
+            }
             LoadWowRegions();
             _ = RefreshAuthStatusAsync();
+        }
+
+        private void BattleNetSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            switch (e.PropertyName)
+            {
+                case nameof(BattleNetSettings.BattleNetClientId):
+                case nameof(BattleNetSettings.BattleNetClientSecret):
+                case nameof(BattleNetSettings.BattleNetOAuthRedirectUri):
+                case nameof(BattleNetSettings.BattleNetAccessToken):
+                case nameof(BattleNetSettings.BattleNetRefreshToken):
+                case nameof(BattleNetSettings.BattleNetTokenExpiresUtc):
+                case nameof(BattleNetSettings.Sc2RegionId):
+                case nameof(BattleNetSettings.Sc2RealmId):
+                case nameof(BattleNetSettings.Sc2ProfileId):
+                    UpdateSc2Status();
+                    UpdateOAuthStatusFromSettings();
+                    break;
+            }
         }
 
         private void UpdateAuthStatus(AuthProbeResult result)
@@ -93,12 +122,31 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             if (isAuthenticated)
             {
-                AuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated");
+                AuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated")
+                    + $" ({Presence(_battleNetSettings?.BattleTag)})";
+            }
+            else if (!BattleNetGameSupport.HasOAuthConfiguration(_battleNetSettings))
+            {
+                AuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Status_OAuthIncomplete");
             }
             else
             {
                 AuthStatus = ResourceProvider.GetString("LOCPlayAch_Common_NotAuthenticated");
             }
+        }
+
+        private void UpdateOAuthStatusFromSettings()
+        {
+            if (_battleNetSettings == null)
+            {
+                return;
+            }
+
+            var authenticated = !string.IsNullOrWhiteSpace(_battleNetSettings.BattleNetAccessToken) &&
+                _battleNetSettings.BattleNetTokenExpiresUtc > DateTime.UtcNow.AddMinutes(1);
+            UpdateAuthStatus(authenticated
+                ? AuthProbeResult.AlreadyAuthenticated(_battleNetSettings.BattleNetUserId, _battleNetSettings.BattleNetTokenExpiresUtc)
+                : AuthProbeResult.NotAuthenticated());
         }
 
         public async Task RefreshAuthStatusAsync()
@@ -117,14 +165,14 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             UpdateAuthStatus(result);
             UpdateSc2Status();
-            _logger.Debug($"[BattleNet/Settings] Auth status refresh complete. authenticated={Bool(IsAuthenticated)}, sc2Profile={_battleNetSettings?.Sc2ProfileId ?? 0}");
+            _logger.Debug($"[BattleNet/Settings] Auth status refresh complete. authenticated={Bool(IsAuthenticated)}, sc2Profile={(_battleNetSettings?.Sc2ProfileId > 0 ? MaskId(_battleNetSettings.Sc2ProfileId.ToString()) : "<none>")}");
         }
 
-        private async void LoginWeb_Click(object sender, RoutedEventArgs e)
+        private async void LoginOAuth_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                _logger.Info("[BattleNet/Settings] Login requested from settings UI.");
+                _logger.Info("[BattleNet/Settings] WoW OAuth login requested from settings UI.");
                 SetAuthBusy(true);
                 var result = await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
                 if (result.IsSuccess)
@@ -141,7 +189,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "[BattleNet/Settings] Web login failed.");
+                _logger.Error(ex, "[BattleNet/Settings] WoW OAuth login failed.");
             }
             finally
             {
@@ -174,22 +222,24 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             if (_battleNetSettings == null) return;
 
-            if (IsAuthenticated && _battleNetSettings.Sc2ProfileId > 0)
+            if (BattleNetGameSupport.HasConfiguredSc2(_battleNetSettings))
             {
                 Sc2StatusText.Text =
                     ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Status_Sc2Detected")
-                    + $" (Region {_battleNetSettings.Sc2RegionId})";
-            }
-            else if (IsAuthenticated)
-            {
-                Sc2StatusText.Text = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Status_NoSc2Profile");
+                    + $" (Region {_battleNetSettings.Sc2RegionId}, Realm {_battleNetSettings.Sc2RealmId})";
             }
             else
             {
-                Sc2StatusText.Text = ResourceProvider.GetString("LOCPlayAch_Common_NotAuthenticated");
+                Sc2StatusText.Text = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete");
             }
 
-            _logger.Debug($"[BattleNet/Settings] SC2 status text updated. authenticated={Bool(IsAuthenticated)}, region={_battleNetSettings.Sc2RegionId}, profileId={_battleNetSettings.Sc2ProfileId}");
+            _logger.Debug($"[BattleNet/Settings] SC2 status text updated. configured={Bool(BattleNetGameSupport.HasConfiguredSc2(_battleNetSettings))}, region={_battleNetSettings.Sc2RegionId}, realm={_battleNetSettings.Sc2RealmId}, profileId={(_battleNetSettings.Sc2ProfileId > 0 ? MaskId(_battleNetSettings.Sc2ProfileId.ToString()) : "<none>")}, apiCredentials={Bool(BattleNetGameSupport.HasApiCredentials(_battleNetSettings))}");
+        }
+
+        private void ClientSecret_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_battleNetSettings == null) return;
+            _battleNetSettings.BattleNetClientSecret = ClientSecretBox.Password;
         }
 
         #region WoW Region/Realm Loading
@@ -313,15 +363,23 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             return string.Format(
-                "enabled={0}, userId={1}, battleTag={2}, sc2Region={3}, sc2Profile={4}, wowRegion={5}, wowRealmSlug={6}, wowCharacter={7}",
+                "enabled={0}, userId={1}, battleTag={2}, apiClientId={3}, apiClientSecret={4}, oauthRedirectUri={5}, oauthAccessToken={6}, oauthRefreshToken={7}, oauthExpiresUtc={8}, sc2Region={9}, sc2Realm={10}, sc2Profile={11}, wowRegion={12}, wowRealmSlug={13}, wowCharacter={14}",
                 Bool(settings.IsEnabled),
                 MaskId(settings.BattleNetUserId),
                 Presence(settings.BattleTag),
+                Presence(settings.BattleNetClientId),
+                Presence(settings.BattleNetClientSecret),
+                Presence(settings.BattleNetOAuthRedirectUri),
+                Presence(settings.BattleNetAccessToken),
+                Presence(settings.BattleNetRefreshToken),
+                settings.BattleNetTokenExpiresUtc == default ? "<none>" : settings.BattleNetTokenExpiresUtc.ToString("O"),
                 settings.Sc2RegionId,
+                settings.Sc2RealmId,
                 settings.Sc2ProfileId > 0 ? MaskId(settings.Sc2ProfileId.ToString()) : "<none>",
                 string.IsNullOrWhiteSpace(settings.WowRegion) ? "<none>" : settings.WowRegion,
                 string.IsNullOrWhiteSpace(settings.WowRealmSlug) ? "<none>" : settings.WowRealmSlug,
                 Presence(settings.WowCharacter));
         }
+
     }
 }

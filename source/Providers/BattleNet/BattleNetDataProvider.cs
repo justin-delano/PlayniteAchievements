@@ -12,7 +12,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 {
     public sealed class BattleNetDataProvider : IDataProvider, IDisposable
     {
-        internal static readonly Guid BattleNetPluginId = Guid.Parse("E3C26A3D-D695-4CB7-A769-5FF7612C7EDD");
+        internal static readonly Guid BattleNetPluginId = BattleNetGameSupport.BattleNetPluginId;
 
         private readonly BattleNetSessionManager _sessionManager;
         private readonly BattleNetApiClient _apiClient;
@@ -27,8 +27,8 @@ namespace PlayniteAchievements.Providers.BattleNet
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
 
             _logger = logger;
-            _sessionManager = new BattleNetSessionManager(playniteApi, logger);
             _apiClient = new BattleNetApiClient(logger);
+            _sessionManager = new BattleNetSessionManager(playniteApi, logger);
             _scanner = new BattleNetScanner(_apiClient, _sessionManager, settings, logger);
             _providerSettings = ProviderRegistry.Settings<BattleNetSettings>();
 
@@ -40,12 +40,12 @@ namespace PlayniteAchievements.Providers.BattleNet
         public string ProviderIconKey => "ProviderIconBattleNet";
         public string ProviderColorHex => "#14B8A6";
 
-        public bool IsAuthenticated => _sessionManager.IsAuthenticated;
+        public bool IsAuthenticated => true;
 
-        public ISessionManager AuthSession => _sessionManager;
+        public ISessionManager AuthSession => null;
 
         public bool IsCapable(Game game) =>
-            game != null && game.PluginId == BattleNetPluginId;
+            BattleNetGameSupport.IsSupported(game, _providerSettings);
 
         public Task<RebuildPayload> RefreshAsync(
             IReadOnlyList<Game> gamesToRefresh,
@@ -113,11 +113,18 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             return string.Format(
-                "enabled={0}, userId={1}, battleTag={2}, sc2Region={3}, sc2Profile={4}, wowRegion={5}, wowRealmSlug={6}, wowCharacter={7}",
+                "enabled={0}, userId={1}, battleTag={2}, apiClientId={3}, apiClientSecret={4}, oauthRedirectUri={5}, oauthAccessToken={6}, oauthRefreshToken={7}, oauthExpiresUtc={8}, sc2Region={9}, sc2Realm={10}, sc2Profile={11}, wowRegion={12}, wowRealmSlug={13}, wowCharacter={14}",
                 Bool(settings.IsEnabled),
                 MaskId(settings.BattleNetUserId),
                 Presence(settings.BattleTag),
+                Presence(settings.BattleNetClientId),
+                Presence(settings.BattleNetClientSecret),
+                Presence(settings.BattleNetOAuthRedirectUri),
+                Presence(settings.BattleNetAccessToken),
+                Presence(settings.BattleNetRefreshToken),
+                settings.BattleNetTokenExpiresUtc == default ? "<none>" : settings.BattleNetTokenExpiresUtc.ToString("O"),
                 settings.Sc2RegionId,
+                settings.Sc2RealmId,
                 settings.Sc2ProfileId > 0 ? MaskId(settings.Sc2ProfileId.ToString()) : "<none>",
                 string.IsNullOrWhiteSpace(settings.WowRegion) ? "<none>" : settings.WowRegion,
                 string.IsNullOrWhiteSpace(settings.WowRealmSlug) ? "<none>" : settings.WowRealmSlug,

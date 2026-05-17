@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 using Playnite.SDK;
-using Playnite.SDK.Data;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.BattleNet.Models;
@@ -14,21 +14,19 @@ namespace PlayniteAchievements.Providers.BattleNet
     internal sealed class WowGameStrategy
     {
         private readonly BattleNetApiClient _client;
+        private readonly BattleNetSessionManager _session;
         private readonly ILogger _logger;
 
-        public WowGameStrategy(BattleNetApiClient client, ILogger logger)
+        public WowGameStrategy(BattleNetApiClient client, BattleNetSessionManager session, ILogger logger)
         {
             _client = client;
+            _session = session;
             _logger = logger;
         }
 
         public bool MatchesGame(Game game)
         {
-            if (game?.Name == null) return false;
-            var name = game.Name;
-            return name.IndexOf("warcraft", StringComparison.OrdinalIgnoreCase) >= 0
-                || name.Equals("wow", StringComparison.OrdinalIgnoreCase)
-                || name.Equals("world of warcraft", StringComparison.OrdinalIgnoreCase);
+            return BattleNetGameSupport.IsWowGame(game);
         }
 
         public async Task<GameAchievementData> FetchAchievementsAsync(Game game, string locale, CancellationToken ct)
@@ -44,71 +42,15 @@ namespace PlayniteAchievements.Providers.BattleNet
             if (string.IsNullOrEmpty(region) || string.IsNullOrEmpty(realmSlug) || string.IsNullOrEmpty(character))
             {
                 _logger?.Warn($"[BattleNet/WoW] Region, realm, or character not configured. region={Presence(region)}, realmSlug={Presence(realmSlug)}, character={Presence(character)}");
-                return CreateEmptyData(game);
+                return null;
             }
 
-            var wowLocale = NormalizeLocale(effectiveLocale);
+            var wowLocale = BattleNetLocaleMapper.ToWowWebLocale(effectiveLocale);
             _logger?.Debug($"[BattleNet/WoW] Normalized locale for WoW request. input={effectiveLocale}, normalized={wowLocale}");
             var allData = await _client.GetWowAllAchievementsAsync(region, realmSlug, character, wowLocale, ct);
             _logger?.Debug($"[BattleNet/WoW] Received WoW achievement category payloads. count={allData?.Count ?? 0}");
 
-            var achievements = new List<AchievementDetail>();
-
-            foreach (var categoryData in allData ?? new List<WowAchievementsData>())
-            {
-                if (categoryData.Subcategories == null) continue;
-
-                var subcategoriesJson = Serialization.ToJson(categoryData.Subcategories);
-                List<WowSubcategory> subcategories;
-                try
-                {
-                    subcategories = Serialization.FromJson<List<WowSubcategory>>(subcategoriesJson);
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, $"[BattleNet/WoW] Failed to parse WoW achievement subcategories. category={categoryData.Name ?? categoryData.Category ?? "<unknown>"}");
-                    continue;
-                }
-
-                if (subcategories == null) continue;
-
-                foreach (var sub in subcategories)
-                {
-                    if (sub.Achievements == null) continue;
-
-                    foreach (var ach in sub.Achievements)
-                    {
-                        var detail = new AchievementDetail
-                        {
-                            ApiName = ach.Id.ToString(),
-                            DisplayName = ach.Name,
-                            Description = ach.Description,
-                            UnlockedIconPath = ach.Icon?.Url,
-                            Points = ach.Point > 0 ? ach.Point : (int?)null,
-                            Category = categoryData.Name ?? categoryData.Category,
-                            ProviderKey = "BattleNet"
-                        };
-
-                        if (ach.Time.HasValue && ach.Time.Value != default)
-                        {
-                            var time = ach.Time.Value;
-                            detail.UnlockTimeUtc = time.Kind == DateTimeKind.Utc
-                                ? time
-                                : time.Kind == DateTimeKind.Local
-                                    ? time.ToUniversalTime()
-                                    : DateTime.SpecifyKind(time, DateTimeKind.Utc);
-                            detail.Unlocked = true;
-                        }
-                        else
-                        {
-                            detail.Unlocked = false;
-                        }
-
-                        achievements.Add(detail);
-                    }
-                }
-            }
-
+            var achievements = ParseAchievements(allData);
             var data = new GameAchievementData
             {
                 ProviderKey = "BattleNet",
@@ -124,23 +66,136 @@ namespace PlayniteAchievements.Providers.BattleNet
             return data;
         }
 
-        private static string NormalizeLocale(string locale)
+        internal static List<AchievementDetail> ParseAchievements(IEnumerable<WowAchievementsData> allData)
         {
-            if (string.IsNullOrEmpty(locale)) return "en-us";
-            return locale.Replace("-", "-").ToLowerInvariant();
+            var achievements = new List<AchievementDetail>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var categoryData in allData ?? Enumerable.Empty<WowAchievementsData>())
+            {
+                if (categoryData == null)
+                {
+                    continue;
+                }
+
+                var category = categoryData.Name ?? categoryData.Category;
+                var subcategories = ReadSubcategories(categoryData.Subcategories);
+                if (subcategories.Count > 0)
+                {
+                    foreach (var subcategory in subcategories)
+                    {
+                        AddAchievements(achievements, seen, subcategory?.Achievements, category);
+                    }
+                }
+                else
+                {
+                    AddAchievements(achievements, seen, categoryData.AchievementsList, category);
+                }
+            }
+
+            return achievements;
         }
 
-        private static GameAchievementData CreateEmptyData(Game game)
+        private static void AddAchievements(
+            List<AchievementDetail> target,
+            HashSet<string> seen,
+            IEnumerable<WowAchievement> source,
+            string category)
         {
-            return new GameAchievementData
+            foreach (var achievement in source ?? Enumerable.Empty<WowAchievement>())
             {
-                ProviderKey = "BattleNet",
-                GameName = game.Name,
-                PlayniteGameId = game.Id,
-                AppId = StableAppId("WoW"),
-                LastUpdatedUtc = DateTime.UtcNow,
-                HasAchievements = false
-            };
+                if (achievement == null || achievement.Id == 0 || !seen.Add(achievement.Id.ToString()))
+                {
+                    continue;
+                }
+
+                var detail = new AchievementDetail
+                {
+                    ApiName = achievement.Id.ToString(),
+                    DisplayName = achievement.Name,
+                    Description = achievement.Description,
+                    UnlockedIconPath = achievement.Icon?.Url,
+                    Points = achievement.Point > 0 ? achievement.Point : (int?)null,
+                    Category = category,
+                    ProviderKey = "BattleNet",
+                    Unlocked = achievement.Time.HasValue && achievement.Time.Value != default
+                };
+
+                if (detail.Unlocked)
+                {
+                    var time = achievement.Time.Value;
+                    detail.UnlockTimeUtc = time.Kind == DateTimeKind.Utc
+                        ? time
+                        : time.Kind == DateTimeKind.Local
+                            ? time.ToUniversalTime()
+                            : DateTime.SpecifyKind(time, DateTimeKind.Utc);
+                }
+
+                target.Add(detail);
+            }
+        }
+
+        internal static List<AchievementDetail> ParseProfileAchievements(WowProfileAchievementsResponse profile)
+        {
+            var achievements = new List<AchievementDetail>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+
+            foreach (var item in profile?.Achievements ?? Enumerable.Empty<WowProfileAchievement>())
+            {
+                var id = item.Achievement?.Id > 0 ? item.Achievement.Id : item.Id;
+                if (id == 0 || !seen.Add(id.ToString()))
+                {
+                    continue;
+                }
+
+                var completed = item.CompletedTimestamp.GetValueOrDefault() > 0;
+                var detail = new AchievementDetail
+                {
+                    ApiName = id.ToString(),
+                    DisplayName = item.Achievement?.Name,
+                    ProviderKey = "BattleNet",
+                    Unlocked = completed
+                };
+
+                if (completed)
+                {
+                    detail.UnlockTimeUtc = DateTimeOffset.FromUnixTimeMilliseconds(item.CompletedTimestamp.Value).UtcDateTime;
+                }
+
+                achievements.Add(detail);
+            }
+
+            return achievements;
+        }
+
+        private static List<WowSubcategory> ReadSubcategories(object value)
+        {
+            try
+            {
+                if (value is JObject keyed)
+                {
+                    return keyed.Properties()
+                        .Select(property => property.Value?.ToObject<WowSubcategory>())
+                        .Where(item => item != null)
+                        .ToList();
+                }
+
+                if (value is JArray array)
+                {
+                    return array
+                        .Select(token => token?.ToObject<WowSubcategory>())
+                        .Where(item => item != null)
+                        .ToList();
+                }
+
+                return (value as IEnumerable<WowSubcategory>)?
+                    .Where(item => item != null)
+                    .ToList() ?? new List<WowSubcategory>();
+            }
+            catch
+            {
+                return new List<WowSubcategory>();
+            }
         }
 
         private static int StableAppId(string id)

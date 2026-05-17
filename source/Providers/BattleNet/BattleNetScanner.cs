@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
@@ -15,8 +14,6 @@ namespace PlayniteAchievements.Providers.BattleNet
     {
         private readonly Sc2GameStrategy _sc2;
         private readonly WowGameStrategy _wow;
-        private readonly OverwatchGameStrategy _overwatch;
-        private readonly BattleNetSessionManager _session;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
 
@@ -26,10 +23,8 @@ namespace PlayniteAchievements.Providers.BattleNet
             PlayniteAchievementsSettings settings,
             ILogger logger)
         {
-            _sc2 = new Sc2GameStrategy(client, session, logger);
-            _wow = new WowGameStrategy(client, logger);
-            _overwatch = new OverwatchGameStrategy(session, logger);
-            _session = session;
+            _sc2 = new Sc2GameStrategy(client, logger);
+            _wow = new WowGameStrategy(client, session, logger);
             _settings = settings;
             _logger = logger;
         }
@@ -47,30 +42,18 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             var locale = _settings?.Persisted?.GlobalLanguage ?? "en-US";
-            var hasAuthRequiredGames = gamesToRefresh.Any(game => _sc2.MatchesGame(game) || _overwatch.MatchesGame(game));
-            var isAuthenticated = false;
 
-            _logger?.Info($"[BattleNet] Refresh started. games={gamesToRefresh.Count}, locale={locale}, hasAuthRequiredGames={Bool(hasAuthRequiredGames)}");
-
-            if (hasAuthRequiredGames)
-            {
-                _logger?.Debug("[BattleNet] Probing authentication before SC2/Overwatch refresh.");
-                var probeResult = await _session.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
-                isAuthenticated = probeResult.IsSuccess;
-                _logger?.Info($"[BattleNet] Authentication probe completed for refresh. authenticated={Bool(isAuthenticated)}, outcome={probeResult.Outcome}");
-            }
-            else
-            {
-                _logger?.Debug("[BattleNet] Skipping authentication probe because selected games do not require Battle.net auth.");
-            }
+            _logger?.Info($"[BattleNet] Refresh started. games={gamesToRefresh.Count}, locale={locale}");
 
             var payload = await ProviderRefreshExecutor.RunProviderGamesAsync(
                 gamesToRefresh,
                 onGameStarting,
                 async (game, token) =>
                 {
-                    var data = await FetchForGameAsync(game, locale, isAuthenticated, token);
-                    return new ProviderRefreshExecutor.ProviderGameResult { Data = data };
+                    var data = await FetchForGameAsync(game, locale, token);
+                    return data == null
+                        ? ProviderRefreshExecutor.ProviderGameResult.Skipped()
+                        : new ProviderRefreshExecutor.ProviderGameResult { Data = data };
                 },
                 onGameCompleted,
                 isAuthRequiredException: _ => false,
@@ -86,7 +69,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             return payload;
         }
 
-        private async Task<GameAchievementData> FetchForGameAsync(Game game, string locale, bool isAuthenticated, CancellationToken ct)
+        private async Task<GameAchievementData> FetchForGameAsync(Game game, string locale, CancellationToken ct)
         {
             if (_wow.MatchesGame(game))
             {
@@ -96,27 +79,11 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             if (_sc2.MatchesGame(game))
             {
-                _logger?.Debug($"[BattleNet] Matched SC2 strategy. game={GameLabel(game)}, authenticated={Bool(isAuthenticated)}");
-                if (!isAuthenticated)
-                {
-                    _logger?.Debug($"[BattleNet] Skipping {GameLabel(game)} - SC2 requires authentication.");
-                    return null;
-                }
+                _logger?.Debug($"[BattleNet] Matched SC2 strategy. game={GameLabel(game)}");
                 return await _sc2.FetchAchievementsAsync(game, locale, ct);
             }
 
-            if (_overwatch.MatchesGame(game))
-            {
-                _logger?.Debug($"[BattleNet] Matched Overwatch strategy. game={GameLabel(game)}, authenticated={Bool(isAuthenticated)}");
-                if (!isAuthenticated)
-                {
-                    _logger?.Debug($"[BattleNet] Skipping {GameLabel(game)} - Overwatch requires authentication.");
-                    return null;
-                }
-                return await _overwatch.FetchAchievementsAsync(game, locale, ct);
-            }
-
-            _logger?.Debug($"[BattleNet] No Battle.net strategy matched game. game={GameLabel(game)}");
+            _logger?.Debug($"[BattleNet] No supported Battle.net achievement strategy matched game. game={GameLabel(game)}");
             return null;
         }
 

@@ -7,61 +7,61 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.BattleNet.Models;
-using PlayniteAchievements.Services.Logging;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {
     internal sealed class Sc2GameStrategy
     {
         private readonly BattleNetApiClient _client;
-        private readonly BattleNetSessionManager _session;
         private readonly ILogger _logger;
 
-        public Sc2GameStrategy(BattleNetApiClient client, BattleNetSessionManager session, ILogger logger)
+        public Sc2GameStrategy(BattleNetApiClient client, ILogger logger)
         {
             _client = client;
-            _session = session;
             _logger = logger;
         }
 
         public bool MatchesGame(Game game)
         {
-            return game?.Name != null &&
-                game.Name.IndexOf("starcraft", StringComparison.OrdinalIgnoreCase) >= 0;
+            return BattleNetGameSupport.IsSc2Game(game);
         }
 
         public async Task<GameAchievementData> FetchAchievementsAsync(Game game, string locale, CancellationToken ct)
         {
             var settings = ProviderRegistry.Settings<BattleNetSettings>();
             var regionId = settings.Sc2RegionId;
+            var realmId = settings.Sc2RealmId;
             var profileId = settings.Sc2ProfileId;
             var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? "en-US" : locale;
+            var apiLocale = BattleNetLocaleMapper.ToApiLocale(effectiveLocale);
 
-            _logger?.Info($"[BattleNet/SC2] Fetch started. game={GameLabel(game)}, locale={effectiveLocale}, region={regionId}, profileId={(profileId > 0 ? MaskId(profileId.ToString()) : "<auto>")}");
+            _logger?.Info($"[BattleNet/SC2] Fetch started. game={GameLabel(game)}, locale={effectiveLocale}, apiLocale={apiLocale}, region={regionId}, realm={realmId}, profileId={(profileId > 0 ? MaskId(profileId.ToString()) : "<none>")}, apiCredentials={Bool(BattleNetGameSupport.HasApiCredentials(settings))}");
 
-            if (profileId == 0)
+            if (!BattleNetGameSupport.HasConfiguredSc2(settings))
             {
-                _logger?.Info($"[BattleNet/SC2] No saved SC2 profile id; starting auto-detection. configuredRegion={regionId}, userId={MaskId(settings.BattleNetUserId)}");
-                profileId = await AutoDetectProfileAsync(regionId, ct);
-                if (profileId == 0)
-                {
-                    _logger?.Warn("[BattleNet/SC2] Could not auto-detect SC2 profile.");
-                    return CreateEmptyData(game, "StarCraft2");
-                }
-
-                settings.Sc2ProfileId = profileId;
-                ProviderRegistry.Write(settings, persistToDisk: true);
-                regionId = settings.Sc2RegionId;
-                _logger?.Info($"[BattleNet/SC2] Auto-detected and saved SC2 profile. region={settings.Sc2RegionId}, profileId={MaskId(profileId.ToString())}");
+                _logger?.Warn($"[BattleNet/SC2] SC2 API settings are incomplete. credentials={Bool(BattleNetGameSupport.HasApiCredentials(settings))}, region={regionId}, realm={realmId}, profileId={(profileId > 0 ? MaskId(profileId.ToString()) : "<none>")}");
+                return null;
             }
 
-            var definitions = await _client.GetSc2AchievementDefinitionsAsync(effectiveLocale, ct);
-            var profile = await _client.GetSc2ProfileAsync(regionId, profileId, effectiveLocale, ct);
+            var definitions = await _client.GetSc2AchievementDefinitionsAsync(
+                regionId,
+                settings.BattleNetClientId,
+                settings.BattleNetClientSecret,
+                apiLocale,
+                ct);
+            var profile = await _client.GetSc2ProfileAsync(
+                regionId,
+                realmId,
+                profileId,
+                settings.BattleNetClientId,
+                settings.BattleNetClientSecret,
+                apiLocale,
+                ct);
 
             if (definitions == null || profile == null)
             {
                 _logger?.Warn($"[BattleNet/SC2] Missing SC2 API data. definitions={Bool(definitions != null)}, profile={Bool(profile != null)}");
-                return CreateEmptyData(game, "StarCraft2");
+                return null;
             }
 
             var categoryLookup = definitions.Categories?.ToDictionary(c => c.Id, c => c.Name) ?? new Dictionary<string, string>();
@@ -114,61 +114,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             return data;
         }
 
-        private async Task<int> AutoDetectProfileAsync(int knownRegion, CancellationToken ct)
-        {
-            var settings = ProviderRegistry.Settings<BattleNetSettings>();
-            if (!int.TryParse(settings.BattleNetUserId, out var userId) || userId == 0)
-            {
-                _logger?.Warn("[BattleNet/SC2] Cannot auto-detect profile because Battle.net user id is missing.");
-                return 0;
-            }
-
-            if (knownRegion > 0 && knownRegion <= 3)
-            {
-                try
-                {
-                    _logger?.Debug($"[BattleNet/SC2] Trying configured region during auto-detect. region={knownRegion}, userId={MaskId(userId.ToString())}");
-                    var profile = await _client.GetSc2ProfileAsync(knownRegion, userId, "en-US", ct);
-                    if (profile?.Summary != null && !string.IsNullOrEmpty(profile.Summary.DisplayName))
-                    {
-                        _logger?.Info($"[BattleNet/SC2] Auto-detect succeeded in configured region. region={knownRegion}, profileId={MaskId(userId.ToString())}");
-                        return userId;
-                    }
-
-                    _logger?.Debug($"[BattleNet/SC2] Configured region did not return an SC2 profile. region={knownRegion}");
-                }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                    _logger?.Debug(ex, $"[BattleNet/SC2] Configured region auto-detect failed. region={knownRegion}");
-                }
-            }
-
-            for (int region = 1; region <= 3; region++)
-            {
-                if (region == knownRegion) continue;
-                try
-                {
-                    _logger?.Debug($"[BattleNet/SC2] Trying region during auto-detect. region={region}, userId={MaskId(userId.ToString())}");
-                    var profile = await _client.GetSc2ProfileAsync(region, userId, "en-US", ct);
-                    if (profile?.Summary != null && !string.IsNullOrEmpty(profile.Summary.DisplayName))
-                    {
-                        settings.Sc2RegionId = region;
-                        _logger?.Info($"[BattleNet/SC2] Auto-detect succeeded in alternate region. region={region}, profileId={MaskId(userId.ToString())}");
-                        return userId;
-                    }
-
-                    _logger?.Debug($"[BattleNet/SC2] Region did not return an SC2 profile. region={region}");
-                }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                    _logger?.Debug(ex, $"[BattleNet/SC2] Alternate region auto-detect failed. region={region}");
-                }
-            }
-
-            _logger?.Warn("[BattleNet/SC2] Auto-detect checked all supported regions without finding an SC2 profile.");
-            return 0;
-        }
-
         private static string ResolveCategory(string categoryId, Dictionary<string, string> names, Dictionary<string, string> parents)
         {
             if (string.IsNullOrEmpty(categoryId) || !names.TryGetValue(categoryId, out var name))
@@ -182,19 +127,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             return name;
-        }
-
-        private static GameAchievementData CreateEmptyData(Game game, string appId)
-        {
-            return new GameAchievementData
-            {
-                ProviderKey = "BattleNet",
-                GameName = game.Name,
-                PlayniteGameId = game.Id,
-                AppId = StableAppId(appId),
-                LastUpdatedUtc = DateTime.UtcNow,
-                HasAchievements = false
-            };
         }
 
         private static int StableAppId(string id)
