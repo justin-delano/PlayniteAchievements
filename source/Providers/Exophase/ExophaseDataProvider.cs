@@ -44,7 +44,7 @@ namespace PlayniteAchievements.Providers.Exophase
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Exophase");
         public string ProviderKey => "Exophase";
         public string ProviderIconKey => "ProviderIconExophase";
-        public string ProviderColorHex => "#FF6B35";
+        public string ProviderColorHex => "#2f8ab3";
 
         /// <summary>
         /// Checks if Exophase session is authenticated.
