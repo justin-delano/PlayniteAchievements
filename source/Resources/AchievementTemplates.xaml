@@ -68,7 +68,7 @@
                             <Setter Property="Background" Value="#18FFFFFF"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter Property="Background" Value="#20EC6200"/>
+                            <Setter Property="Background" Value="#20FFFFFF"/>
                         </Trigger>
                         <Trigger Property="SortDirection" Value="Ascending">
                             <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
@@ -132,7 +132,7 @@
                 <Setter Property="Background" Value="#40FFFFFF"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
-                <Setter Property="Background" Value="#30EC6200"/>
+                <Setter Property="Background" Value="#30FFFFFF"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
                 <Setter Property="Padding" Value="8,0"/>
@@ -149,7 +149,7 @@
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True"/>
                 </MultiDataTrigger.Conditions>
-                <Setter Property="Background" Value="#45EC6200"/>
+                <Setter Property="Background" Value="#45FFFFFF"/>
             </MultiDataTrigger>
         </Style.Triggers>
     </Style>
@@ -182,7 +182,7 @@
         </Setter>
         <Style.Triggers>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                <Setter Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource SelectionLightBrush}"/>
                 <Setter Property="BorderThickness" Value="2"/>
             </Trigger>
         </Style.Triggers>
@@ -306,8 +306,8 @@
                             <Setter TargetName="Border" Property="Background" Value="#10000000"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}"/>
-                            <Setter TargetName="Border" Property="Background" Value="#20EC6200"/>
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource SelectionLightBrush}"/>
+                            <Setter TargetName="Border" Property="Background" Value="#20FFFFFF"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Border" Property="Background" Value="#18000000"/>
@@ -907,8 +907,8 @@
                             <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}"/>
-                            <Setter TargetName="border" Property="Background" Value="#20EC6200"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource SelectionLightBrush}"/>
+                            <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -963,8 +963,8 @@
                             <Setter Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Chrome" Property="Background" Value="#20EC6200"/>
-                            <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
+                            <Setter TargetName="Chrome" Property="Background" Value="#20FFFFFF"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                             <Setter Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">

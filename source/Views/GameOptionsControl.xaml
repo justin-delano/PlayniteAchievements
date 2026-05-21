@@ -45,7 +45,7 @@
                                     <Setter TargetName="BorderRoot" Property="Background" Value="#14FFFFFF" />
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="BorderRoot" Property="Background" Value="#20EC6200" />
+                                    <Setter TargetName="BorderRoot" Property="Background" Value="#20FFFFFF" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

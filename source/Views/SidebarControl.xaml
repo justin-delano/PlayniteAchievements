@@ -85,7 +85,7 @@
                                     <Setter TargetName="border" Property="Background" Value="{DynamicResource HighlightGlyphBrush}"/>
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#20EC6200"/>
+                                    <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -162,7 +162,7 @@
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter Property="Opacity" Value="1"/>
-                                    <Setter TargetName="border" Property="Background" Value="#20EC6200"/>
+                                    <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -307,7 +307,7 @@
                         <Setter Property="Background" Value="#40FFFFFF"/>
                     </DataTrigger>
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
-                        <Setter Property="Background" Value="#30EC6200"/>
+                        <Setter Property="Background" Value="#30FFFFFF"/>
                     </DataTrigger>
                     <MultiDataTrigger>
                         <MultiDataTrigger.Conditions>
@@ -321,7 +321,7 @@
                             <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
                             <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True"/>
                         </MultiDataTrigger.Conditions>
-                        <Setter Property="Background" Value="#45EC6200"/>
+                        <Setter Property="Background" Value="#45FFFFFF"/>
                     </MultiDataTrigger>
                 </Style.Triggers>
             </Style>
