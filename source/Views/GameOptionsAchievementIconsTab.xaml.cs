@@ -2,18 +2,22 @@ using Microsoft.Win32;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using Playnite.SDK.Events;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsAchievementIconsTab : UserControl
+    public partial class GameOptionsAchievementIconsTab : UserControl, IFullscreenControllerNavigable
     {
         private const double SmoothMouseWheelDivisor = 3.0;
         private static readonly Regex HttpUrlRegex = new Regex(@"https?://[^\s""'<>]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -30,6 +34,7 @@ namespace PlayniteAchievements.Views
 
         private readonly GameOptionsAchievementIconsViewModel _viewModel;
         private ScrollViewer _achievementCardsScrollViewer;
+        private int _controllerCardTargetIndex;
 
         public GameOptionsAchievementIconsTab(GameOptionsAchievementIconsViewModel viewModel)
         {
@@ -324,6 +329,197 @@ namespace PlayniteAchievements.Views
                    VisualTreeHelpers.FindVisualParent<ButtonBase>(source) != null ||
                    VisualTreeHelpers.FindVisualParent<TextBoxBase>(source) != null ||
                    VisualTreeHelpers.FindVisualParent<ScrollBar>(source) != null;
+        }
+
+        public bool HandleFullscreenControllerInput(ControllerInput input)
+        {
+            if (AchievementCardsList?.IsKeyboardFocusWithin != true)
+            {
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var delta))
+            {
+                return MoveControllerSelection(delta);
+            }
+
+            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
+            {
+                return MoveControllerCardTarget(horizontalDelta);
+            }
+
+            if (!FullscreenControllerNavigationService.IsAcceptInput(input) ||
+                IsInteractiveElementHit(Keyboard.FocusedElement as DependencyObject))
+            {
+                return false;
+            }
+
+            var item = GetFocusedControllerItem();
+            if (item?.CanReveal != true)
+            {
+                return false;
+            }
+
+            item.ToggleReveal();
+            return true;
+        }
+
+        private bool MoveControllerSelection(int delta)
+        {
+            if (AchievementCardsList?.Items == null || AchievementCardsList.Items.Count == 0)
+            {
+                return false;
+            }
+
+            _controllerCardTargetIndex = GetFocusedCardTargetIndex();
+
+            var index = AchievementCardsList.SelectedIndex;
+            if (index < 0)
+            {
+                index = delta < 0 ? AchievementCardsList.Items.Count : -1;
+            }
+
+            var nextIndex = Math.Max(0, Math.Min(AchievementCardsList.Items.Count - 1, index + delta));
+            if (nextIndex == index)
+            {
+                return false;
+            }
+
+            AchievementCardsList.SelectedIndex = nextIndex;
+            var item = AchievementCardsList.Items[nextIndex];
+            AchievementCardsList.ScrollIntoView(item);
+            AchievementCardsList.UpdateLayout();
+
+            var container = AchievementCardsList.ItemContainerGenerator.ContainerFromIndex(nextIndex) as ListBoxItem;
+            return FocusCardTarget(container, _controllerCardTargetIndex) ||
+                   FullscreenControllerNavigationService.FocusElement((UIElement)container ?? AchievementCardsList);
+        }
+
+        private AchievementIconOverrideItem GetFocusedControllerItem()
+        {
+            var focusedItem = FullscreenControllerNavigationService.FindAncestor<ListBoxItem>(
+                Keyboard.FocusedElement as DependencyObject);
+            if (focusedItem?.DataContext is AchievementIconOverrideItem row)
+            {
+                return row;
+            }
+
+            return AchievementCardsList?.SelectedItem as AchievementIconOverrideItem;
+        }
+
+        public IList<UIElement> GetControllerElements()
+        {
+            return new UIElement[]
+                {
+                    RevertChangesButton,
+                    ClearAllButton,
+                    SaveButton,
+                    OpenIconsFolderButton,
+                    AchievementCardsList
+                }
+                .Where(element => element != null && element.IsVisible && element.IsEnabled)
+                .ToList();
+        }
+
+        private bool MoveControllerCardTarget(int delta)
+        {
+            var container = GetFocusedControllerContainer();
+            var targets = GetCardTargets(container);
+            if (targets.Count == 0)
+            {
+                return false;
+            }
+
+            var currentIndex = GetFocusedCardTargetIndex(targets);
+            if (currentIndex < 0)
+            {
+                currentIndex = Math.Max(0, Math.Min(targets.Count - 1, _controllerCardTargetIndex));
+            }
+
+            var nextIndex = Math.Max(0, Math.Min(targets.Count - 1, currentIndex + delta));
+            _controllerCardTargetIndex = nextIndex;
+            return FullscreenControllerNavigationService.FocusElement(targets[nextIndex]);
+        }
+
+        private bool FocusCardTarget(ListBoxItem container, int targetIndex)
+        {
+            var targets = GetCardTargets(container);
+            if (targets.Count == 0)
+            {
+                return false;
+            }
+
+            var nextIndex = Math.Max(0, Math.Min(targets.Count - 1, targetIndex));
+            _controllerCardTargetIndex = nextIndex;
+            return FullscreenControllerNavigationService.FocusElement(targets[nextIndex]);
+        }
+
+        private int GetFocusedCardTargetIndex()
+        {
+            return GetFocusedCardTargetIndex(GetCardTargets(GetFocusedControllerContainer()));
+        }
+
+        private static int GetFocusedCardTargetIndex(IList<UIElement> targets)
+        {
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            if (targets == null || focused == null)
+            {
+                return -1;
+            }
+
+            for (var i = 0; i < targets.Count; i++)
+            {
+                if (ReferenceEquals(targets[i], focused) ||
+                    FullscreenControllerNavigationService.IsDescendantOf(focused, targets[i]))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private ListBoxItem GetFocusedControllerContainer()
+        {
+            var focusedItem = FullscreenControllerNavigationService.FindAncestor<ListBoxItem>(
+                Keyboard.FocusedElement as DependencyObject);
+            if (focusedItem != null &&
+                ReferenceEquals(ItemsControl.ItemsControlFromItemContainer(focusedItem), AchievementCardsList))
+            {
+                return focusedItem;
+            }
+
+            var index = AchievementCardsList?.SelectedIndex ?? -1;
+            if (index < 0 && AchievementCardsList?.Items.Count > 0)
+            {
+                index = 0;
+                AchievementCardsList.SelectedIndex = index;
+            }
+
+            if (AchievementCardsList == null || index < 0)
+            {
+                return null;
+            }
+
+            AchievementCardsList.ScrollIntoView(AchievementCardsList.Items[index]);
+            AchievementCardsList.UpdateLayout();
+            return AchievementCardsList.ItemContainerGenerator.ContainerFromIndex(index) as ListBoxItem;
+        }
+
+        private static IList<UIElement> GetCardTargets(ListBoxItem container)
+        {
+            var targets = new List<UIElement>();
+            if (container == null || !container.IsVisible || !container.IsEnabled)
+            {
+                return targets;
+            }
+
+            targets.Add(container);
+            targets.AddRange(
+                FullscreenControllerNavigationService.GetVisibleDescendantElements<UIElement>(container)
+                    .Where(element => element is TextBoxBase || element is ButtonBase));
+
+            return targets.Distinct().ToList();
         }
     }
 }

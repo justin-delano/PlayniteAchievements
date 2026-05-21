@@ -1,20 +1,25 @@
 using Playnite.SDK;
+using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsCapstonesTab : UserControl
+    public partial class GameOptionsCapstonesTab : UserControl, IFullscreenControllerNavigable
     {
         private readonly CapstoneViewModel _viewModel;
+        private int _controllerPreferredColumnDisplayIndex;
 
         public event EventHandler CapstoneChanged;
 
@@ -99,6 +104,123 @@ namespace PlayniteAchievements.Views
             {
                 _viewModel?.ToggleReveal(item);
             }
+        }
+
+        private void ControllerDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            FullscreenControllerNavigationService.SuppressDirectionalKeyboardNavigationIfFullscreen(sender, e);
+        }
+
+        public bool HandleFullscreenControllerInput(ControllerInput input)
+        {
+            if (AchievementsDataGrid?.IsKeyboardFocusWithin != true)
+            {
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(AchievementsDataGrid))
+            {
+                if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var headerDelta))
+                {
+                    return FullscreenControllerNavigationService.MoveDataGridColumnHeaderFocus(AchievementsDataGrid, headerDelta);
+                }
+
+                if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var headerVerticalDelta))
+                {
+                    return headerVerticalDelta > 0 &&
+                           FullscreenControllerNavigationService.FocusDataGrid(AchievementsDataGrid);
+                }
+
+                if (FullscreenControllerNavigationService.IsAcceptInput(input))
+                {
+                    return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(AchievementsDataGrid);
+                }
+
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
+            {
+                return FullscreenControllerNavigationService.MoveDataGridCellFocus(
+                    AchievementsDataGrid,
+                    horizontalDelta,
+                    ref _controllerPreferredColumnDisplayIndex);
+            }
+
+            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var delta))
+            {
+                if (IsAtGridBoundary(delta))
+                {
+                    return delta < 0 &&
+                           FullscreenControllerNavigationService.FocusDataGridColumnHeader(AchievementsDataGrid);
+                }
+
+                return FullscreenControllerNavigationService.MoveDataGridSelectionAndRestoreCellFocus(
+                    AchievementsDataGrid,
+                    delta,
+                    ref _controllerPreferredColumnDisplayIndex);
+            }
+
+            if (!FullscreenControllerNavigationService.IsAcceptInput(input) ||
+                FullscreenControllerNavigationService.FindAncestor<ButtonBase>(
+                    Keyboard.FocusedElement as DependencyObject) != null)
+            {
+                return false;
+            }
+
+            var item = AchievementsDataGrid.SelectedItem as CapstoneOptionItem
+                       ?? AchievementsDataGrid.CurrentItem as CapstoneOptionItem;
+            if (item == null)
+            {
+                return false;
+            }
+
+            _viewModel?.ToggleReveal(item);
+            return true;
+        }
+
+        public IList<UIElement> GetControllerElements()
+        {
+            return GetVisibleControllerElements(
+                SearchTextBox,
+                ClearSearchButton,
+                AchievementsDataGrid);
+        }
+
+        private static IList<UIElement> GetVisibleControllerElements(params UIElement[] elements)
+        {
+            return elements
+                .Where(IsControllerElementAvailable)
+                .ToList();
+        }
+
+        private static bool IsControllerElementAvailable(UIElement element)
+        {
+            if (element == null || !element.IsVisible || !element.IsEnabled)
+            {
+                return false;
+            }
+
+            if (element is Button button &&
+                ReferenceEquals(button.Style, button.TryFindResource("ClearSearchButtonStyle")))
+            {
+                return !string.IsNullOrEmpty(button.Tag as string);
+            }
+
+            return true;
+        }
+
+        private bool IsAtGridBoundary(int delta)
+        {
+            if (AchievementsDataGrid?.Items == null || AchievementsDataGrid.Items.Count == 0)
+            {
+                return true;
+            }
+
+            var index = AchievementsDataGrid.SelectedIndex;
+            return delta < 0
+                ? index <= 0
+                : index >= AchievementsDataGrid.Items.Count - 1;
         }
 
         private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)

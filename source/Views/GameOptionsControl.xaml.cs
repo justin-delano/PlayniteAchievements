@@ -1,19 +1,37 @@
 using System;
 using System.ComponentModel;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using Playnite.SDK.Events;
 using System.Windows.Threading;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsControl : UserControl
+    public partial class GameOptionsControl : UserControl, IFullscreenControllerNavigable
     {
+        private static readonly GameOptionsTab[] ControllerTabOrder =
+        {
+            GameOptionsTab.Overview,
+            GameOptionsTab.ManualTracking,
+            GameOptionsTab.Capstones,
+            GameOptionsTab.Category,
+            GameOptionsTab.AchievementOrder,
+            GameOptionsTab.CustomIcons,
+            GameOptionsTab.Overrides
+        };
+
         private readonly RefreshRuntime _refreshService;
         private readonly ICacheManager _cacheManager;
         private readonly Action _persistSettingsForUi;
@@ -247,6 +265,301 @@ namespace PlayniteAchievements.Views
                     }
 
                     _achievementIconsRefreshPending = false;
+                }
+            }
+        }
+
+        public bool HandleFullscreenControllerInput(ControllerInput input)
+        {
+            if (FullscreenControllerNavigationService.IsBackInput(input))
+            {
+                Window.GetWindow(this)?.Close();
+                return true;
+            }
+
+            if (FullscreenControllerNavigationService.IsLeftShoulderInput(input))
+            {
+                return MoveSelectedTab(-1);
+            }
+
+            if (FullscreenControllerNavigationService.IsRightShoulderInput(input))
+            {
+                return MoveSelectedTab(1);
+            }
+
+            if (TryHandleSelectedTabControllerInput(input))
+            {
+                return true;
+            }
+
+            if (FullscreenControllerNavigationService.IsAcceptInput(input))
+            {
+                return FullscreenControllerNavigationService.ActivateFocusedElement();
+            }
+
+            if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
+            {
+                return TryOpenFocusedContextButton();
+            }
+
+            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var verticalDelta))
+            {
+                return TryHandleDirectionalNavigation(verticalDelta, isHorizontal: false);
+            }
+
+            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
+            {
+                return TryHandleDirectionalNavigation(horizontalDelta, isHorizontal: true);
+            }
+
+            return false;
+        }
+
+        private bool TryHandleDirectionalNavigation(int delta, bool isHorizontal)
+        {
+            if (IsFocusWithinTabList())
+            {
+                if (isHorizontal && delta > 0)
+                {
+                    return FocusCurrentTabContent();
+                }
+
+                return FocusTabButtonByDelta(isHorizontal ? delta : delta);
+            }
+
+            var contentElements = GetCurrentContentControllerElements();
+            if (contentElements.Count == 0)
+            {
+                return FocusSelectedTabButton();
+            }
+
+            if (isHorizontal && delta < 0 && IsFocusWithinContent() &&
+                FindFocusedElementIndex(contentElements) <= 0)
+            {
+                return FocusSelectedTabButton();
+            }
+
+            return FullscreenControllerNavigationService.FocusElementByDelta(contentElements, delta);
+        }
+
+        private bool TryOpenFocusedContextButton()
+        {
+            var button = FullscreenControllerNavigationService.FindAncestor<Button>(
+                             Keyboard.FocusedElement as DependencyObject)
+                         ?? Keyboard.FocusedElement as Button;
+            if (button == null || button.ContextMenu == null)
+            {
+                return false;
+            }
+
+            return FullscreenControllerNavigationService.ActivateElement(button);
+        }
+
+        private bool FocusTabButtonByDelta(int delta)
+        {
+            return FullscreenControllerNavigationService.FocusElementByDelta(
+                GetVisibleTabButtons().Cast<UIElement>().ToList(),
+                delta);
+        }
+
+        private bool FocusSelectedTabButton()
+        {
+            var selected = GetVisibleTabButtons()
+                .FirstOrDefault(button => button.IsChecked == true);
+            return selected != null && FullscreenControllerNavigationService.FocusElement(selected);
+        }
+
+        private bool FocusCurrentTabContent()
+        {
+            var elements = GetCurrentContentControllerElements();
+            return elements.Count > 0 && FullscreenControllerNavigationService.FocusFirstElement(elements);
+        }
+
+        private bool IsFocusWithinTabList()
+        {
+            return GetVisibleTabButtons().Any(button => button.IsKeyboardFocusWithin);
+        }
+
+        private bool IsFocusWithinContent()
+        {
+            return GameOptionsContentHost?.IsKeyboardFocusWithin == true;
+        }
+
+        private IList<RadioButton> GetVisibleTabButtons()
+        {
+            return new[]
+                {
+                    OverviewTabButton,
+                    ManualTrackingTabButton,
+                    CapstonesTabButton,
+                    CategoryTabButton,
+                    AchievementOrderTabButton,
+                    CustomIconsTabButton,
+                    OverridesTabButton
+                }
+                .Where(button => button != null && button.IsVisible && button.IsEnabled)
+                .ToList();
+        }
+
+        private IList<UIElement> GetCurrentContentControllerElements()
+        {
+            EnsureSelectedTabContent();
+
+            DependencyObject root;
+            switch (_viewModel?.SelectedTab)
+            {
+                case GameOptionsTab.Overview:
+                    root = OverviewTabControl;
+                    break;
+                case GameOptionsTab.Overrides:
+                    root = OverridesTabControl;
+                    break;
+                case GameOptionsTab.ManualTracking:
+                    return _manualControl?.GetControllerElements() ?? new List<UIElement>();
+                case GameOptionsTab.Capstones:
+                    return _capstoneControl?.GetControllerElements() ?? new List<UIElement>();
+                case GameOptionsTab.Category:
+                    return _categoryControl?.GetControllerElements() ?? new List<UIElement>();
+                case GameOptionsTab.AchievementOrder:
+                    return _achievementOrderControl?.GetControllerElements() ?? new List<UIElement>();
+                case GameOptionsTab.CustomIcons:
+                    return _achievementIconsControl?.GetControllerElements() ?? new List<UIElement>();
+                default:
+                    root = GameOptionsContentHost;
+                    break;
+            }
+
+            return FullscreenControllerNavigationService.GetVisibleFocusableElements(root);
+        }
+
+        private static int FindFocusedElementIndex(IList<UIElement> elements)
+        {
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            if (elements == null || focused == null)
+            {
+                return -1;
+            }
+
+            for (var i = 0; i < elements.Count; i++)
+            {
+                if (ReferenceEquals(elements[i], focused) ||
+                    FullscreenControllerNavigationService.IsDescendantOf(focused, elements[i]))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private bool MoveSelectedTab(int delta)
+        {
+            if (_viewModel == null || delta == 0)
+            {
+                return false;
+            }
+
+            var tabs = ControllerTabOrder
+                .Where(IsControllerTabVisible)
+                .ToList();
+            if (tabs.Count <= 1)
+            {
+                return false;
+            }
+
+            var currentIndex = tabs.IndexOf(_viewModel.SelectedTab);
+            if (currentIndex < 0)
+            {
+                currentIndex = 0;
+            }
+
+            var nextIndex = (currentIndex + delta + tabs.Count) % tabs.Count;
+            _viewModel.SelectedTab = tabs[nextIndex];
+            QueueFocusSelectedTab();
+            return true;
+        }
+
+        private bool TryHandleSelectedTabControllerInput(ControllerInput input)
+        {
+            if (_viewModel == null)
+            {
+                return false;
+            }
+
+            switch (_viewModel.SelectedTab)
+            {
+                case GameOptionsTab.ManualTracking:
+                    return _manualControl?.HandleFullscreenControllerInput(input) == true;
+                case GameOptionsTab.Category:
+                    return _categoryControl?.HandleFullscreenControllerInput(input) == true;
+                case GameOptionsTab.Capstones:
+                    return _capstoneControl?.HandleFullscreenControllerInput(input) == true;
+                case GameOptionsTab.AchievementOrder:
+                    return _achievementOrderControl?.HandleFullscreenControllerInput(input) == true;
+                case GameOptionsTab.CustomIcons:
+                    return _achievementIconsControl?.HandleFullscreenControllerInput(input) == true;
+                default:
+                    return false;
+            }
+        }
+
+        private bool IsControllerTabVisible(GameOptionsTab tab)
+        {
+            if (_viewModel == null)
+            {
+                return false;
+            }
+
+            switch (tab)
+            {
+                case GameOptionsTab.ManualTracking:
+                    return _viewModel.ShowManualTrackingTab;
+                case GameOptionsTab.Capstones:
+                case GameOptionsTab.Category:
+                case GameOptionsTab.AchievementOrder:
+                case GameOptionsTab.CustomIcons:
+                    return _viewModel.HasCapstoneData;
+                default:
+                    return true;
+            }
+        }
+
+        private void QueueFocusSelectedTab()
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var tabButton = FindVisualChildren<RadioButton>(this)
+                    .FirstOrDefault(button =>
+                        button.Visibility == Visibility.Visible &&
+                        button.IsChecked == true);
+                if (tabButton != null)
+                {
+                    tabButton.Focus();
+                    Keyboard.Focus(tabButton);
+                }
+            }), DispatcherPriority.Input);
+        }
+
+        private static IEnumerable<T> FindVisualChildren<T>(DependencyObject root)
+            where T : DependencyObject
+        {
+            if (root == null)
+            {
+                yield break;
+            }
+
+            var count = VisualTreeHelper.GetChildrenCount(root);
+            for (var i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(root, i);
+                if (child is T typed)
+                {
+                    yield return typed;
+                }
+
+                foreach (var nested in FindVisualChildren<T>(child))
+                {
+                    yield return nested;
                 }
             }
         }

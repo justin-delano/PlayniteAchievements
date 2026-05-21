@@ -1,14 +1,19 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using Playnite.SDK.Events;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsManualTrackingTab : UserControl
+    public partial class GameOptionsManualTrackingTab : UserControl, IFullscreenControllerNavigable
     {
         public static readonly DependencyProperty UnlinkCommandProperty =
             DependencyProperty.Register(
@@ -24,6 +29,8 @@ namespace PlayniteAchievements.Views
         }
 
         private readonly ManualAchievementsViewModel _viewModel;
+        private int _manualGridPreferredColumnDisplayIndex;
+        private int _searchGridPreferredColumnDisplayIndex;
 
         public GameOptionsManualTrackingTab(ManualAchievementsViewModel viewModel)
         {
@@ -99,6 +106,11 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void ControllerDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            FullscreenControllerNavigationService.SuppressDirectionalKeyboardNavigationIfFullscreen(sender, e);
+        }
+
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel?.NextCommand?.CanExecute(null) == true)
@@ -152,6 +164,217 @@ namespace PlayniteAchievements.Views
 
             var binding = BindingOperations.GetBindingExpression(comboBox, ComboBox.SelectedItemProperty);
             binding?.UpdateSource();
+        }
+
+        public bool HandleFullscreenControllerInput(ControllerInput input)
+        {
+            if (SearchResultsDataGrid?.IsKeyboardFocusWithin == true)
+            {
+                return HandleSearchResultsControllerInput(input);
+            }
+
+            if (ManualAchievementsDataGrid?.IsKeyboardFocusWithin == true)
+            {
+                return HandleManualAchievementsControllerInput(input);
+            }
+
+            return false;
+        }
+
+        private bool HandleSearchResultsControllerInput(ControllerInput input)
+        {
+            if (FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(SearchResultsDataGrid))
+            {
+                if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var headerDelta))
+                {
+                    return FullscreenControllerNavigationService.MoveDataGridColumnHeaderFocus(SearchResultsDataGrid, headerDelta);
+                }
+
+                if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var headerVerticalDelta))
+                {
+                    return headerVerticalDelta > 0 &&
+                           FullscreenControllerNavigationService.FocusDataGrid(SearchResultsDataGrid);
+                }
+
+                if (FullscreenControllerNavigationService.IsAcceptInput(input))
+                {
+                    return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(SearchResultsDataGrid);
+                }
+
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
+            {
+                return FullscreenControllerNavigationService.MoveDataGridCellFocus(
+                    SearchResultsDataGrid,
+                    horizontalDelta,
+                    ref _searchGridPreferredColumnDisplayIndex);
+            }
+
+            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var delta))
+            {
+                if (IsAtGridBoundary(SearchResultsDataGrid, delta))
+                {
+                    return delta < 0 &&
+                           FullscreenControllerNavigationService.FocusDataGridColumnHeader(SearchResultsDataGrid);
+                }
+
+                return FullscreenControllerNavigationService.MoveDataGridSelectionAndRestoreCellFocus(
+                    SearchResultsDataGrid,
+                    delta,
+                    ref _searchGridPreferredColumnDisplayIndex);
+            }
+
+            if (!FullscreenControllerNavigationService.IsAcceptInput(input))
+            {
+                return false;
+            }
+
+            if (_viewModel?.SelectedResult != null && _viewModel.NextCommand.CanExecute(null))
+            {
+                _viewModel.NextCommand.Execute(null);
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool HandleManualAchievementsControllerInput(ControllerInput input)
+        {
+            if (FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(ManualAchievementsDataGrid))
+            {
+                if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var headerDelta))
+                {
+                    return FullscreenControllerNavigationService.MoveDataGridColumnHeaderFocus(ManualAchievementsDataGrid, headerDelta);
+                }
+
+                if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var headerVerticalDelta))
+                {
+                    return headerVerticalDelta > 0 &&
+                           FullscreenControllerNavigationService.FocusDataGrid(ManualAchievementsDataGrid);
+                }
+
+                if (FullscreenControllerNavigationService.IsAcceptInput(input))
+                {
+                    return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(ManualAchievementsDataGrid);
+                }
+
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
+            {
+                return FullscreenControllerNavigationService.MoveDataGridCellFocus(
+                    ManualAchievementsDataGrid,
+                    horizontalDelta,
+                    ref _manualGridPreferredColumnDisplayIndex);
+            }
+
+            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var delta))
+            {
+                if (IsAtGridBoundary(ManualAchievementsDataGrid, delta))
+                {
+                    return delta < 0 &&
+                           FullscreenControllerNavigationService.FocusDataGridColumnHeader(ManualAchievementsDataGrid);
+                }
+
+                return FullscreenControllerNavigationService.MoveDataGridSelectionAndRestoreCellFocus(
+                    ManualAchievementsDataGrid,
+                    delta,
+                    ref _manualGridPreferredColumnDisplayIndex);
+            }
+
+            if (!FullscreenControllerNavigationService.IsAcceptInput(input) ||
+                FullscreenControllerNavigationService.FindAncestor<ButtonBase>(
+                    Keyboard.FocusedElement as DependencyObject) != null ||
+                FullscreenControllerNavigationService.FindAncestor<TextBoxBase>(
+                    Keyboard.FocusedElement as DependencyObject) != null ||
+                FullscreenControllerNavigationService.FindAncestor<ComboBox>(
+                    Keyboard.FocusedElement as DependencyObject) != null ||
+                FullscreenControllerNavigationService.FindAncestor<DatePicker>(
+                    Keyboard.FocusedElement as DependencyObject) != null)
+            {
+                return false;
+            }
+
+            var item = ManualAchievementsDataGrid.SelectedItem as ManualAchievementEditItem
+                       ?? ManualAchievementsDataGrid.CurrentItem as ManualAchievementEditItem;
+            if (item?.CanReveal != true)
+            {
+                return false;
+            }
+
+            _viewModel?.RevealAchievementCommand.Execute(item);
+            return true;
+        }
+
+        public IList<UIElement> GetControllerElements()
+        {
+            if (_viewModel == null)
+            {
+                return new List<UIElement>();
+            }
+
+            var elements = new List<UIElement>();
+            if (_viewModel.IsSearchStage)
+            {
+                elements.Add(SourceComboBox);
+                elements.Add(SearchTextBox);
+                elements.Add(ClearSearchTextButton);
+                elements.Add(SearchButton);
+                elements.Add(SearchResultsDataGrid);
+                elements.Add(NextButton);
+                elements.Add(SearchCancelButton);
+            }
+            else if (_viewModel.IsRefreshingStage)
+            {
+                elements.Add(RefreshCancelButton);
+            }
+            else if (_viewModel.IsEditingStage)
+            {
+                elements.Add(EditSearchTextBox);
+                elements.Add(ClearEditFilterButton);
+                elements.Add(UnlockAllButton);
+                elements.Add(LockAllButton);
+                elements.Add(ManualAchievementsDataGrid);
+                elements.Add(UnlinkButton);
+                elements.Add(SaveButton);
+                elements.Add(EditCancelButton);
+            }
+
+            return elements
+                .Where(IsControllerElementAvailable)
+                .ToList();
+        }
+
+        private static bool IsControllerElementAvailable(UIElement element)
+        {
+            if (element == null || !element.IsVisible || !element.IsEnabled)
+            {
+                return false;
+            }
+
+            if (element is Button button &&
+                ReferenceEquals(button.Style, button.TryFindResource("ClearSearchButtonStyle")))
+            {
+                return !string.IsNullOrEmpty(button.Tag as string);
+            }
+
+            return true;
+        }
+
+        private static bool IsAtGridBoundary(DataGrid grid, int delta)
+        {
+            if (grid?.Items == null || grid.Items.Count == 0)
+            {
+                return true;
+            }
+
+            var index = grid.SelectedIndex;
+            return delta < 0
+                ? index <= 0
+                : index >= grid.Items.Count - 1;
         }
 
         public void Cleanup()

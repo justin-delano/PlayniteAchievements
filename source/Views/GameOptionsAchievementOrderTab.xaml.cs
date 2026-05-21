@@ -7,13 +7,15 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Playnite.SDK.Events;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsAchievementOrderTab : UserControl
+    public partial class GameOptionsAchievementOrderTab : UserControl, IFullscreenControllerNavigable
     {
         private const string DragDataFormat = "PlayniteAchievements.GameOptionsAchievementOrderRows";
         private const double AutoScrollEdgeThreshold = 64;
@@ -29,6 +31,7 @@ namespace PlayniteAchievements.Views
         private bool _isDragging;
         private int _dragItemCount;
         private bool _pendingRefreshRequested;
+        private int _controllerPreferredColumnDisplayIndex;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct POINT
@@ -124,6 +127,11 @@ namespace PlayniteAchievements.Views
         {
             _hasDragStartPoint = false;
             _dragAnchorItem = null;
+        }
+
+        private void ControllerDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            FullscreenControllerNavigationService.SuppressDirectionalKeyboardNavigationIfFullscreen(sender, e);
         }
 
         private void DataGrid_PreviewMouseMove(object sender, MouseEventArgs e)
@@ -310,6 +318,253 @@ namespace PlayniteAchievements.Views
 
             HideDropIndicator();
             HideDragCountPopup();
+        }
+
+        public bool HandleFullscreenControllerInput(ControllerInput input)
+        {
+            if (AchievementOrderDataGrid?.IsKeyboardFocusWithin != true)
+            {
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(AchievementOrderDataGrid))
+            {
+                if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var headerDelta))
+                {
+                    return FullscreenControllerNavigationService.MoveDataGridColumnHeaderFocus(AchievementOrderDataGrid, headerDelta);
+                }
+
+                if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var headerVerticalDelta))
+                {
+                    return headerVerticalDelta > 0 &&
+                           FullscreenControllerNavigationService.FocusDataGrid(AchievementOrderDataGrid);
+                }
+
+                if (FullscreenControllerNavigationService.IsAcceptInput(input))
+                {
+                    return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(AchievementOrderDataGrid);
+                }
+
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
+            {
+                return FullscreenControllerNavigationService.MoveDataGridCellFocus(
+                    AchievementOrderDataGrid,
+                    horizontalDelta,
+                    ref _controllerPreferredColumnDisplayIndex);
+            }
+
+            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var delta))
+            {
+                if (IsAtGridBoundary(delta))
+                {
+                    return delta < 0 &&
+                           FullscreenControllerNavigationService.FocusDataGridColumnHeader(AchievementOrderDataGrid);
+                }
+
+                return FullscreenControllerNavigationService.MoveDataGridSelectionAndRestoreCellFocus(
+                    AchievementOrderDataGrid,
+                    delta,
+                    ref _controllerPreferredColumnDisplayIndex);
+            }
+
+            if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
+            {
+                return OpenControllerOrderMenu();
+            }
+
+            if (!FullscreenControllerNavigationService.IsAcceptInput(input) ||
+                FullscreenControllerNavigationService.FindAncestor<ButtonBase>(
+                    Keyboard.FocusedElement as DependencyObject) != null)
+            {
+                return false;
+            }
+
+            var item = AchievementOrderDataGrid.SelectedItem as AchievementDisplayItem
+                       ?? AchievementOrderDataGrid.CurrentItem as AchievementDisplayItem;
+            if (item == null || !item.CanReveal)
+            {
+                return false;
+            }
+
+            item.ToggleReveal();
+            return true;
+        }
+
+        public IList<UIElement> GetControllerElements()
+        {
+            return new UIElement[]
+                {
+                    ResetOrderButton,
+                    AchievementOrderDataGrid
+                }
+                .Where(element => element != null && element.IsVisible && element.IsEnabled)
+                .ToList();
+        }
+
+        private bool OpenControllerOrderMenu()
+        {
+            var row = FullscreenControllerNavigationService.GetTargetDataGridRow(AchievementOrderDataGrid);
+            if (!(row?.DataContext is AchievementDisplayItem item))
+            {
+                return false;
+            }
+
+            var menu = new ContextMenu();
+            menu.Items.Add(CreateOrderMenuItem("Move Up", () => MoveControllerSelection(item, -1)));
+            menu.Items.Add(CreateOrderMenuItem("Move Down", () => MoveControllerSelection(item, 1)));
+            menu.Items.Add(CreateOrderMenuItem("Move to Top", () => MoveControllerSelectionToEdge(item, toTop: true)));
+            menu.Items.Add(CreateOrderMenuItem("Move to Bottom", () => MoveControllerSelectionToEdge(item, toTop: false)));
+            menu.Items.Add(new Separator());
+            menu.Items.Add(CreateOrderMenuItem("Reset Custom Order", () =>
+            {
+                ViewModel?.ResetCustomOrder();
+                FocusRowByApiName(item.ApiName);
+            }));
+
+            row.ContextMenu = menu;
+            return FullscreenControllerNavigationService.OpenContextMenu(row, menu);
+        }
+
+        private MenuItem CreateOrderMenuItem(string header, Action action)
+        {
+            var item = new MenuItem { Header = header };
+            item.Click += (_, __) => action?.Invoke();
+            return item;
+        }
+
+        private void MoveControllerSelection(AchievementDisplayItem focusedItem, int delta)
+        {
+            var apiNames = CaptureControllerSelectedApiNames(focusedItem);
+            if (apiNames.Count == 0 || ViewModel?.AchievementRows == null)
+            {
+                return;
+            }
+
+            var indexes = ResolveIndexes(apiNames);
+            if (indexes.Count == 0)
+            {
+                return;
+            }
+
+            var targetIndex = delta < 0 ? indexes.Min() - 1 : indexes.Max() + 1;
+            if (targetIndex < 0 || targetIndex >= ViewModel.AchievementRows.Count)
+            {
+                return;
+            }
+
+            var target = ViewModel.AchievementRows[targetIndex];
+            if (target == null || string.IsNullOrWhiteSpace(target.ApiName))
+            {
+                return;
+            }
+
+            var moved = ViewModel.MoveItemsByApiName(apiNames, target.ApiName, insertAfterTarget: delta > 0);
+            if (moved)
+            {
+                RestoreSelectionByApiNames(apiNames);
+                FocusRowByApiName(focusedItem?.ApiName ?? apiNames.FirstOrDefault());
+            }
+        }
+
+        private void MoveControllerSelectionToEdge(AchievementDisplayItem focusedItem, bool toTop)
+        {
+            var apiNames = CaptureControllerSelectedApiNames(focusedItem);
+            if (apiNames.Count == 0 || ViewModel?.AchievementRows == null || ViewModel.AchievementRows.Count == 0)
+            {
+                return;
+            }
+
+            bool moved;
+            if (toTop)
+            {
+                var first = ViewModel.AchievementRows.FirstOrDefault();
+                moved = first != null &&
+                        ViewModel.MoveItemsByApiName(apiNames, first.ApiName, insertAfterTarget: false);
+            }
+            else
+            {
+                moved = ViewModel.MoveItemsToEndByApiName(apiNames);
+            }
+
+            if (moved)
+            {
+                RestoreSelectionByApiNames(apiNames);
+                FocusRowByApiName(focusedItem?.ApiName ?? apiNames.FirstOrDefault());
+            }
+        }
+
+        private List<string> CaptureControllerSelectedApiNames(AchievementDisplayItem focusedItem)
+        {
+            var selected = CaptureSelectedApiNames();
+            if (selected.Count > 0)
+            {
+                return selected;
+            }
+
+            return string.IsNullOrWhiteSpace(focusedItem?.ApiName)
+                ? new List<string>()
+                : new List<string> { focusedItem.ApiName };
+        }
+
+        private List<int> ResolveIndexes(IReadOnlyList<string> apiNames)
+        {
+            if (apiNames == null || ViewModel?.AchievementRows == null)
+            {
+                return new List<int>();
+            }
+
+            var normalized = new HashSet<string>(
+                AchievementOrderHelper.NormalizeApiNames(apiNames),
+                StringComparer.OrdinalIgnoreCase);
+            var indexes = new List<int>();
+            for (var i = 0; i < ViewModel.AchievementRows.Count; i++)
+            {
+                var apiName = (ViewModel.AchievementRows[i]?.ApiName ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(apiName) && normalized.Contains(apiName))
+                {
+                    indexes.Add(i);
+                }
+            }
+
+            return indexes;
+        }
+
+        private void FocusRowByApiName(string apiName)
+        {
+            if (string.IsNullOrWhiteSpace(apiName) ||
+                ViewModel?.AchievementRows == null ||
+                AchievementOrderDataGrid == null)
+            {
+                return;
+            }
+
+            var index = ViewModel.AchievementRows.ToList().FindIndex(item =>
+                string.Equals((item?.ApiName ?? string.Empty).Trim(), apiName.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (index >= 0)
+            {
+                AchievementOrderDataGrid.SelectedIndex = index;
+                FullscreenControllerNavigationService.FocusDataGridCell(
+                    AchievementOrderDataGrid,
+                    index,
+                    _controllerPreferredColumnDisplayIndex,
+                    out _controllerPreferredColumnDisplayIndex);
+            }
+        }
+
+        private bool IsAtGridBoundary(int delta)
+        {
+            if (AchievementOrderDataGrid?.Items == null || AchievementOrderDataGrid.Items.Count == 0)
+            {
+                return true;
+            }
+
+            var index = AchievementOrderDataGrid.SelectedIndex;
+            return delta < 0
+                ? index <= 0
+                : index >= AchievementOrderDataGrid.Items.Count - 1;
         }
 
         private void StartAutoScroll()

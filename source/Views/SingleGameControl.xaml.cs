@@ -1,10 +1,15 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Controls;
 using PlayniteAchievements.Views.Helpers;
@@ -12,7 +17,7 @@ using Playnite.SDK;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class SingleGameControl : UserControl
+    public partial class SingleGameControl : UserControl, IFullscreenControllerNavigable
     {
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
@@ -140,6 +145,244 @@ namespace PlayniteAchievements.Views
             UpdateDefaultSortIndicator();
         }
 
+        public bool HandleFullscreenControllerInput(ControllerInput input)
+        {
+            if (FullscreenControllerNavigationService.IsBackInput(input))
+            {
+                Window.GetWindow(this)?.Close();
+                return true;
+            }
+
+            if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
+            {
+                return TryOpenFocusedSelectorContextMenu() ||
+                       (AchievementsDataGridControl?.IsColumnHeaderFocusedForController() == true &&
+                        AchievementsDataGridControl.OpenColumnVisibilityMenuForController());
+            }
+
+            if (FullscreenControllerNavigationService.IsAcceptInput(input))
+            {
+                if (AchievementsDataGridControl?.IsColumnHeaderFocusedForController() == true)
+                {
+                    return AchievementsDataGridControl.ActivateFocusedColumnHeaderForController();
+                }
+
+                if (AchievementsDataGridControl?.IsKeyboardFocusWithin == true)
+                {
+                    return AchievementsDataGridControl.ActivateSelectedItem();
+                }
+
+                return FullscreenControllerNavigationService.ActivateFocusedElement();
+            }
+
+            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var verticalDelta))
+            {
+                return TryHandleControllerVerticalNavigation(verticalDelta);
+            }
+
+            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
+            {
+                return TryMoveFocusWithinCurrentGroup(horizontalDelta);
+            }
+
+            return false;
+        }
+
+        private bool TryHandleControllerVerticalNavigation(int delta)
+        {
+            if (AchievementsDataGridControl?.IsColumnHeaderFocusedForController() == true)
+            {
+                return delta > 0
+                    ? FocusAchievementsGrid()
+                    : FocusFilterControls();
+            }
+
+            if (AchievementsDataGridControl?.IsKeyboardFocusWithin == true)
+            {
+                var grid = AchievementsDataGridControl.InternalDataGrid;
+                if (delta < 0 && (grid?.SelectedIndex ?? -1) <= 0)
+                {
+                    return FocusAchievementColumnHeaders() || FocusFilterControls();
+                }
+
+                return AchievementsDataGridControl.MoveSelection(delta);
+            }
+
+            if (IsFocusWithinFilterControls())
+            {
+                return delta > 0
+                    ? FocusAchievementColumnHeaders() || FocusAchievementsGrid()
+                    : FocusSummaryControls();
+            }
+
+            if (IsFocusWithinSummaryControls())
+            {
+                return delta > 0 ? FocusFilterControls() : true;
+            }
+
+            return delta > 0
+                ? FocusFilterControls()
+                : FocusSummaryControls();
+        }
+
+        private bool TryMoveFocusWithinCurrentGroup(int delta)
+        {
+            if (AchievementsDataGridControl?.IsKeyboardFocusWithin == true)
+            {
+                if (AchievementsDataGridControl.IsColumnHeaderFocusedForController())
+                {
+                    return AchievementsDataGridControl.MoveColumnHeaderFocusForController(delta);
+                }
+
+                return true;
+            }
+
+            if (IsFocusWithinFilterControls())
+            {
+                return TryMoveFocusWithinGroup(GetFilterControllerElements(), delta);
+            }
+
+            if (IsFocusWithinSummaryControls())
+            {
+                return TryMoveFocusWithinGroup(GetSummaryControllerElements(), delta);
+            }
+
+            return TryMoveFocusWithinGroup(GetFilterControllerElements(), delta) ||
+                   TryMoveFocusWithinGroup(GetSummaryControllerElements(), delta);
+        }
+
+        private bool FocusSummaryControls()
+        {
+            return FullscreenControllerNavigationService.FocusFirstElement(GetSummaryControllerElements());
+        }
+
+        private bool FocusFilterControls()
+        {
+            return FullscreenControllerNavigationService.FocusFirstElement(GetFilterControllerElements());
+        }
+
+        private bool FocusAchievementsGrid()
+        {
+            return FullscreenControllerNavigationService.FocusDataGrid(AchievementsDataGridControl?.InternalDataGrid);
+        }
+
+        private bool FocusAchievementColumnHeaders()
+        {
+            return AchievementsDataGridControl?.FocusColumnHeaderForController() == true;
+        }
+
+        private bool TryOpenFocusedSelectorContextMenu()
+        {
+            var focusedButton = FullscreenControllerNavigationService.FindAncestor<Button>(
+                                    Keyboard.FocusedElement as DependencyObject)
+                                ?? Keyboard.FocusedElement as Button;
+            if (focusedButton == null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(focusedButton, CategoryTypeFilterSelectionButton))
+            {
+                CategoryTypeFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
+                return CategoryTypeFilterSelectionContextMenu?.IsOpen == true;
+            }
+
+            if (ReferenceEquals(focusedButton, CategoryLabelFilterSelectionButton))
+            {
+                CategoryLabelFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
+                return CategoryLabelFilterSelectionContextMenu?.IsOpen == true;
+            }
+
+            return false;
+        }
+
+        private bool IsFocusWithinSummaryControls()
+        {
+            return GetSummaryControllerElements().Any(element => element.IsKeyboardFocusWithin);
+        }
+
+        private bool IsFocusWithinFilterControls()
+        {
+            return GetFilterControllerElements().Any(element => element.IsKeyboardFocusWithin);
+        }
+
+        private IList<UIElement> GetSummaryControllerElements()
+        {
+            return GetVisibleControllerElements(
+                RefreshGameButton,
+                StatsToggleButton,
+                TimelineToggleButton,
+                TimelineRangeSevenDaysButton,
+                TimelineRangeFourteenDaysButton,
+                TimelineRangeOneMonthButton,
+                TimelineRangeThreeMonthsButton,
+                TimelineRangeOneYearButton,
+                TimelineRangeAllButton);
+        }
+
+        private IList<UIElement> GetFilterControllerElements()
+        {
+            return GetVisibleControllerElements(
+                SearchTextBox,
+                ClearSearchButton,
+                CategoryTypeFilterSelectionButton,
+                CategoryLabelFilterSelectionButton,
+                ShowUnlockedCheckBox,
+                ShowLockedCheckBox,
+                ShowHiddenCheckBox);
+        }
+
+        private static IList<UIElement> GetVisibleControllerElements(params UIElement[] elements)
+        {
+            return elements
+                .Where(IsControllerElementAvailable)
+                .ToList();
+        }
+
+        private static bool IsControllerElementAvailable(UIElement element)
+        {
+            if (element == null || !element.IsVisible || !element.IsEnabled)
+            {
+                return false;
+            }
+
+            if (element is Button button &&
+                ReferenceEquals(button.Style, button.TryFindResource("ClearSearchButtonStyle")))
+            {
+                return !string.IsNullOrEmpty(button.Tag as string);
+            }
+
+            return true;
+        }
+
+        private static bool TryMoveFocusWithinGroup(IList<UIElement> elements, int delta)
+        {
+            if (elements == null || elements.Count == 0 || delta == 0)
+            {
+                return false;
+            }
+
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            var currentIndex = -1;
+            for (var i = 0; i < elements.Count; i++)
+            {
+                if (ReferenceEquals(elements[i], focused) ||
+                    FullscreenControllerNavigationService.IsDescendantOf(focused, elements[i]))
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+
+            if (currentIndex < 0)
+            {
+                return FullscreenControllerNavigationService.FocusFirstElement(elements);
+            }
+
+            var nextIndex = Math.Max(0, Math.Min(elements.Count - 1, currentIndex + delta));
+            return FullscreenControllerNavigationService.FocusElement(elements[nextIndex]);
+        }
+
         private void ClearSearch_Click(object sender, RoutedEventArgs e)
         {
             ViewModel?.ClearSearch();
@@ -243,7 +486,17 @@ namespace PlayniteAchievements.Views
 
             menu.Closed += onClosed;
             menu.PlacementTarget = button;
-            menu.IsOpen = true;
+            menu.Placement = PlacementMode.Bottom;
+            menu.HorizontalOffset = 0;
+            menu.VerticalOffset = 0;
+            if (button.IsKeyboardFocusWithin)
+            {
+                FullscreenControllerNavigationService.OpenContextMenu(button, menu);
+            }
+            else
+            {
+                menu.IsOpen = true;
+            }
         }
     }
 }

@@ -83,6 +83,9 @@
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="border" Property="Background" Value="{DynamicResource HighlightGlyphBrush}"/>
                                 </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#20EC6200"/>
+                                </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
@@ -155,6 +158,10 @@
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Opacity" Value="1"/>
                                     <Setter TargetName="border" Property="Background" Value="#10FFFFFF"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                    <Setter TargetName="border" Property="Background" Value="#20EC6200"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -298,12 +305,22 @@
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
                         <Setter Property="Background" Value="#40FFFFFF"/>
                     </DataTrigger>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
+                        <Setter Property="Background" Value="#30EC6200"/>
+                    </DataTrigger>
                     <MultiDataTrigger>
                         <MultiDataTrigger.Conditions>
                             <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
                             <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
                         </MultiDataTrigger.Conditions>
                         <Setter Property="Background" Value="#50FFFFFF"/>
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
+                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Background" Value="#45EC6200"/>
                     </MultiDataTrigger>
                 </Style.Triggers>
             </Style>
@@ -517,7 +534,8 @@
                 <StackPanel Orientation="Horizontal"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Left">
-                    <Button Command="{Binding CloseViewCommand}"
+                    <Button x:Name="CloseViewButton"
+                            Command="{Binding CloseViewCommand}"
                             Content="&#xE72B;"
                             Style="{StaticResource NavigationButtonStyle}"
                             ToolTip="Back to Library"/>
@@ -550,11 +568,13 @@
                         </Button.ContextMenu>
                     </Button>
 
-                    <Button Content="{Binding RefreshActionButtonText}"
+                    <Button x:Name="RefreshActionButton"
+                            Content="{Binding RefreshActionButtonText}"
                             Command="{Binding RefreshCommand}"
                             Style="{StaticResource RefreshButtonStyle}"/>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                    <Button x:Name="CancelRefreshButton"
+                            Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                             Command="{Binding CancelRefreshCommand}"
                             Style="{StaticResource RefreshButtonStyle}"
                             Margin="0"/>
@@ -617,7 +637,8 @@
                         </Grid.ColumnDefinitions>
 
                         <Grid Grid.Column="0">
-                            <TextBox Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox x:Name="LeftSearchTextBox"
+                                     Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
                                        VerticalAlignment="Center"
@@ -639,7 +660,8 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <Button Tag="{Binding LeftSearchText}"
+                            <Button x:Name="ClearLeftSearchButton"
+                                    Tag="{Binding LeftSearchText}"
                                     Click="ClearLeftSearch_Click"
                                     Style="{StaticResource ClearSearchButtonStyle}"/>
                         </Grid>
@@ -705,7 +727,8 @@
                         </Grid.ColumnDefinitions>
 
                         <Grid Grid.Column="0">
-                            <TextBox Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox x:Name="RightSearchTextBox"
+                                     Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
                                        VerticalAlignment="Center"
@@ -727,7 +750,8 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <Button Tag="{Binding RightSearchText}"
+                            <Button x:Name="ClearRightSearchButton"
+                                    Tag="{Binding RightSearchText}"
                                     Click="ClearRightSearch_Click"
                                     Style="{StaticResource ClearSearchButtonStyle}"/>
                         </Grid>
@@ -765,15 +789,18 @@
                                                  ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                                 </Button.ContextMenu>
                             </Button>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
+                            <CheckBox x:Name="SelectedGameUnlockedFilterCheckBox"
+                                  Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
                                   IsChecked="{Binding ShowSelectedGameUnlocked}"
                                   VerticalAlignment="Center"
                                   Margin="0,0,8,0"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Common_Locked}"
+                            <CheckBox x:Name="SelectedGameLockedFilterCheckBox"
+                                  Content="{DynamicResource LOCPlayAch_Common_Locked}"
                                   IsChecked="{Binding ShowSelectedGameLocked}"
                                   VerticalAlignment="Center"
                                   Margin="0,0,8,0"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
+                            <CheckBox x:Name="SelectedGameHiddenFilterCheckBox"
+                                  Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
                                   IsChecked="{Binding ShowSelectedGameHidden}"
                                   VerticalAlignment="Center"/>
                         </StackPanel>
@@ -1245,7 +1272,8 @@
                                     </TextBlock>
                                 </StackPanel>
 
-                                <Button Grid.Column="1"
+                                <Button x:Name="ClearGameSelectionButton"
+                                        Grid.Column="1"
                                         Content="✕"
                                         Click="ClearGameSelection_Click"
                                         Width="24"
@@ -1609,6 +1637,8 @@
                     <GridSplitter Grid.Column="1"
                         Grid.RowSpan="3"
                         Style="{StaticResource CenterLineSplitterStyle}"
+                        Focusable="False"
+                        IsTabStop="False"
                         Panel.ZIndex="100"/>
             </Grid>
         </Grid>
