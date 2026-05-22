@@ -158,47 +158,6 @@ namespace PlayniteAchievements
             NotifySettingsSaved();
         }
 
-        private void LoadLocalization()
-        {
-            try
-            {
-                var pluginDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                var locDir = Path.Combine(pluginDir, "Localization");
-
-                // Always load LocSource.xaml as the English base/fallback.
-                var locSourceFile = Path.Combine(locDir, "LocSource.xaml");
-                if (File.Exists(locSourceFile))
-                {
-                    MergeDictionary(locSourceFile);
-                }
-                else
-                {
-                    _logger?.Warn($"Localization source file not found: {locSourceFile}");
-                }
-
-                // Load the user's language file if it differs from LocSource.
-                var language = PlayniteApi?.ApplicationSettings?.Language;
-                if (!string.IsNullOrEmpty(language) && language != "LocSource")
-                {
-                    var langFile = Path.Combine(locDir, $"{language}.xaml");
-                    if (File.Exists(langFile))
-                    {
-                        MergeDictionary(langFile);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed to load localization");
-            }
-        }
-
-        private void MergeDictionary(string filePath)
-        {
-            var dict = new ResourceDictionary { Source = new Uri(filePath, UriKind.Absolute) };
-            Application.Current.Resources.MergedDictionaries.Add(dict);
-        }
-
         // Public bridge method for external helpers/themes that used to target SuccessStory via reflection.
         // AnikiHelper (PlayniteAchievements-based) will call this when available.
         public Task RequestSingleGameRefreshAsync(Guid playniteGameId)
@@ -222,7 +181,6 @@ namespace PlayniteAchievements
                 Properties = _pluginProperties;
 
                 Instance = this;
-                LoadLocalization();
                 _logger.Info("PlayniteAchievementsPlugin initializing...");
 
                 // Phase 1: Load settings and chart plumbing used by theme controls.
