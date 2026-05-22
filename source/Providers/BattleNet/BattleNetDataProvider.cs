@@ -28,8 +28,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             _apiClient = new BattleNetApiClient(logger);
             _scanner = new BattleNetScanner(_apiClient, settings, logger);
             _providerSettings = ProviderRegistry.Settings<BattleNetSettings>();
-
-            _logger.Info($"[BattleNet] Provider initialized. {SettingsSummary(_providerSettings)}");
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet");
@@ -50,7 +48,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            _logger.Info($"[BattleNet] Refresh requested. games={gamesToRefresh?.Count ?? 0}, authenticated={Bool(IsAuthenticated)}, {SettingsSummary(_providerSettings)}");
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
         }
 
@@ -60,9 +57,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             if (settings is BattleNetSettings battleNetSettings)
             {
-                _logger.Info($"[BattleNet] Applying provider settings. incoming={SettingsSummary(battleNetSettings)}");
                 _providerSettings.CopyFrom(battleNetSettings);
-                _logger.Debug($"[BattleNet] Provider settings applied. current={SettingsSummary(_providerSettings)}");
             }
             else
             {
@@ -72,13 +67,11 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         public ProviderSettingsViewBase CreateSettingsView()
         {
-            _logger.Debug("[BattleNet] Creating settings view.");
             return new BattleNetSettingsView(_apiClient, _logger);
         }
 
         public void Dispose()
         {
-            _logger.Debug("[BattleNet] Disposing provider resources.");
             _apiClient?.Dispose();
         }
 

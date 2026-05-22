@@ -7,6 +7,8 @@ namespace PlayniteAchievements.Providers.BattleNet
     internal static class BattleNetGameSupport
     {
         public static readonly Guid BattleNetPluginId = Guid.Parse("E3C26A3D-D695-4CB7-A769-5FF7612C7EDD");
+        // Temporarily disabled until SC2 support is validated.
+        internal const bool IsSc2Enabled = false;
 
         public static bool IsSupported(Game game, BattleNetSettings settings)
         {
@@ -15,7 +17,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 return false;
             }
 
-            return IsWowGame(game) || (IsSc2Game(game) && HasConfiguredSc2(settings));
+            return IsWowGame(game) || (IsSc2Enabled && IsSc2Game(game) && HasConfiguredSc2(settings));
         }
 
         public static bool IsWowGame(Game game)

@@ -23,7 +23,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         public bool MatchesGame(Game game)
         {
-            return BattleNetGameSupport.IsSc2Game(game);
+            return BattleNetGameSupport.IsSc2Enabled && BattleNetGameSupport.IsSc2Game(game);
         }
 
         public async Task<GameAchievementData> FetchAchievementsAsync(Game game, string locale, CancellationToken ct)
@@ -34,8 +34,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             var profileId = settings.Sc2ProfileId;
             var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? "en-US" : locale;
             var apiLocale = BattleNetLocaleMapper.ToApiLocale(effectiveLocale);
-
-            _logger?.Info($"[BattleNet/SC2] Fetch started. game={GameLabel(game)}, locale={effectiveLocale}, apiLocale={apiLocale}, region={regionId}, realm={realmId}, profileId={(profileId > 0 ? MaskId(profileId.ToString()) : "<none>")}, apiCredentials={Bool(BattleNetGameSupport.HasApiCredentials(settings))}");
 
             if (!BattleNetGameSupport.HasConfiguredSc2(settings))
             {
@@ -110,7 +108,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 HasAchievements = achievements.Count > 0
             };
 
-            _logger?.Info($"[BattleNet/SC2] Fetch completed. game={GameLabel(game)}, achievements={achievements.Count}, unlocked={achievements.Count(a => a.Unlocked)}");
             return data;
         }
 

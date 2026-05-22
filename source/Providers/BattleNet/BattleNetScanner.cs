@@ -56,10 +56,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 },
                 onGameCompleted,
                 isAuthRequiredException: _ => false,
-                onGameError: (game, ex, consecutiveErrors) =>
-                {
-                    _logger?.Debug(ex, $"[BattleNet] Failed to scan {GameLabel(game)} after {consecutiveErrors} consecutive errors");
-                },
+                onGameError: (game, ex, consecutiveErrors) => { },
                 delayBetweenGamesAsync: (index, token) => Task.CompletedTask,
                 delayAfterErrorAsync: (consecutiveErrors, token) => Task.Delay(Math.Min(1000 * consecutiveErrors, 5000), token),
                 cancel).ConfigureAwait(false);
@@ -72,17 +69,13 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             if (_wow.MatchesGame(game))
             {
-                _logger?.Debug($"[BattleNet] Matched WoW strategy. game={GameLabel(game)}");
                 return await _wow.FetchAchievementsAsync(game, locale, ct);
             }
 
             if (_sc2.MatchesGame(game))
             {
-                _logger?.Debug($"[BattleNet] Matched SC2 strategy. game={GameLabel(game)}");
                 return await _sc2.FetchAchievementsAsync(game, locale, ct);
             }
-
-            _logger?.Debug($"[BattleNet] No supported Battle.net achievement strategy matched game. game={GameLabel(game)}");
             return null;
         }
 

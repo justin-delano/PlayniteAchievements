@@ -73,7 +73,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             {
                 _httpClient.DefaultRequestHeaders.Add("User-Agent", DefaultUserAgent);
             }
-            _logger.Debug("[BattleNet/API] API client initialized.");
         }
 
         // --- SC2 ---
@@ -89,7 +88,6 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             var apiRegion = MapSc2RegionIdToApiRegion(regionId);
             var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale;
-            _logger?.Debug($"[BattleNet/API] SC2 profile requested. apiRegion={apiRegion}, region={regionId}, realm={realmId}, profileId={MaskId(profileId.ToString())}, locale={effectiveLocale}");
 
             var token = await GetClientCredentialsTokenAsync(apiRegion, clientId, clientSecret, ct).ConfigureAwait(false);
             var url = BuildSc2ProfileUrl(apiRegion, regionId, realmId, profileId, effectiveLocale);
@@ -107,7 +105,6 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             var apiRegion = MapSc2RegionIdToApiRegion(regionId);
             var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale;
-            _logger?.Debug($"[BattleNet/API] SC2 achievement definitions requested. apiRegion={apiRegion}, region={regionId}, locale={effectiveLocale}");
 
             var token = await GetClientCredentialsTokenAsync(apiRegion, clientId, clientSecret, ct).ConfigureAwait(false);
             var url = BuildSc2AchievementsUrl(apiRegion, regionId, effectiveLocale);
@@ -134,23 +131,16 @@ namespace PlayniteAchievements.Providers.BattleNet
                 var url = string.Format(baseUrl, category);
                 try
                 {
-                    _logger?.Debug($"[BattleNet/API] Fetching WoW achievement category. category={category}");
                     var data = await RateLimiter.ExecuteWithRetryAsync(
                         async () => await GetJsonAsync<WowAchievementsData>(url, ct).ConfigureAwait(false),
                         IsTransientError, ct);
                     if (data != null)
                     {
                         results.Add(data);
-                        _logger?.Debug($"[BattleNet/API] Fetched WoW achievement category. category={category}, displayName={data.Name ?? data.Category ?? "<none>"}");
-                    }
-                    else
-                    {
-                        _logger?.Debug($"[BattleNet/API] WoW achievement category returned no data. category={category}");
                     }
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
-                    _logger?.Debug(ex, $"[BattleNet/API] Failed to fetch WoW achievement category. category={category}");
                 }
             }
 
@@ -160,7 +150,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         public async Task<List<WowRealm>> GetWowRealmsAsync(string region, CancellationToken ct)
         {
-            _logger?.Debug($"[BattleNet/API] WoW realms requested. region={region ?? "<none>"}");
             var hash = await GetWowSha256HashAsync(ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(hash))
             {
@@ -169,10 +158,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             var payload = $"{{\"operationName\":\"GetRealmStatusData\",\"variables\":{{\"input\":{{\"compoundRegionGameVersionSlug\":\"{region}\"}}}},\"extensions\":{{\"persistedQuery\":{{\"version\":1,\"sha256Hash\":\"{hash}\"}}}}}}";
-
-            _logger?.Debug($"[BattleNet/API] Posting WoW realms GraphQL request. region={region ?? "<none>"}, hash={Presence(hash)}");
             var response = await _httpClient.PostAsync(WowGraphQlUrl, new StringContent(payload, Encoding.UTF8, "application/json"), ct);
-            _logger?.Debug($"[BattleNet/API] WoW realms GraphQL response. status={(int)response.StatusCode}");
             response.EnsureSuccessStatusCode();
 
             var json = await response.Content.ReadAsStringAsync();
@@ -267,12 +253,10 @@ namespace PlayniteAchievements.Providers.BattleNet
                 string.Equals(_cachedTokenRegion, normalizedRegion, StringComparison.OrdinalIgnoreCase) &&
                 _cachedAccessTokenExpiresUtc > DateTime.UtcNow.AddMinutes(1))
             {
-                _logger?.Debug($"[BattleNet/API] Using cached Battle.net API token. apiRegion={normalizedRegion}");
                 return _cachedAccessToken;
             }
 
             var tokenUrl = BuildTokenUrl(normalizedRegion);
-            _logger?.Debug($"[BattleNet/API] Requesting Battle.net API token. apiRegion={normalizedRegion}, url={UrlHostAndPath(tokenUrl)}, clientId={Presence(clientId)}");
 
             var token = await PostTokenAsync(
                 normalizedRegion,
@@ -302,7 +286,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             var apiRegion = NormalizeApiRegion(region);
             var tokenUrl = BuildTokenUrl(apiRegion);
-            _logger?.Debug($"[BattleNet/API] Posting Battle.net API token request. apiRegion={apiRegion}, url={UrlHostAndPath(tokenUrl)}, clientId={Presence(clientId)}");
 
             using (var request = new HttpRequestMessage(HttpMethod.Post, tokenUrl))
             {
@@ -312,7 +295,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                 using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
                 {
-                    _logger?.Debug($"[BattleNet/API] Battle.net API token response. apiRegion={apiRegion}, status={(int)response.StatusCode}");
                     if ((int)response.StatusCode == 429 || (int)response.StatusCode >= 500)
                     {
                         throw new BattleNetTransientException($"HTTP {(int)response.StatusCode} from {UrlHostAndPath(tokenUrl)}");
@@ -333,7 +315,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         private async Task<T> GetJsonAsync<T>(string url, CancellationToken ct, string bearerToken = null) where T : class
         {
-            _logger?.Debug($"[BattleNet/API] GET JSON started. url={UrlHostAndPath(url)}");
             using (var request = new HttpRequestMessage(HttpMethod.Get, url))
             {
                 request.Headers.TryAddWithoutValidation("Accept", "application/json");
@@ -344,11 +325,8 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                 using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
                 {
-                    _logger?.Debug($"[BattleNet/API] GET JSON response. url={UrlHostAndPath(url)}, status={(int)response.StatusCode}");
-
                     if (response.StatusCode == HttpStatusCode.NotFound)
                     {
-                        _logger?.Debug($"[BattleNet/API] GET JSON returned 404. url={UrlHostAndPath(url)}");
                         return null;
                     }
 
@@ -360,9 +338,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                     response.EnsureSuccessStatusCode();
                     var json = await response.Content.ReadAsStringAsync();
-                    _logger?.Debug($"[BattleNet/API] GET JSON payload read. url={UrlHostAndPath(url)}, bytes={json?.Length ?? 0}");
                     var value = JsonConvert.DeserializeObject<T>(json);
-                    _logger?.Debug($"[BattleNet/API] GET JSON parsed. url={UrlHostAndPath(url)}, hasValue={Bool(value != null)}");
                     return value;
                 }
             }
@@ -372,13 +348,11 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             if (!string.IsNullOrWhiteSpace(_wowSha256Hash))
             {
-                _logger?.Debug("[BattleNet/API] Using cached WoW GraphQL SHA256 hash.");
                 return _wowSha256Hash;
             }
 
             try
             {
-                _logger?.Debug($"[BattleNet/API] Fetching WoW status page for GraphQL hash. url={UrlHostAndPath(WowStatusUrl)}");
                 var statusHtml = await _httpClient.GetStringAsync(WowStatusUrl);
                 var scriptMatch = Regex.Match(statusHtml, @"<script\s+src=""([^""]+realm-status.\w*.js)"">", RegexOptions.IgnoreCase);
                 if (!scriptMatch.Success)
@@ -388,14 +362,12 @@ namespace PlayniteAchievements.Providers.BattleNet
                 }
 
                 var scriptUrl = new Uri(new Uri(WowStatusUrl), scriptMatch.Groups[1].Value).ToString();
-                _logger?.Debug($"[BattleNet/API] Fetching WoW realm-status script. url={UrlHostAndPath(scriptUrl)}");
                 var scriptContent = await _httpClient.GetStringAsync(scriptUrl);
 
                 var hashMatch = Regex.Match(scriptContent, @"""GetRealmStatusData""\)[^,]*,\w*\.documentId=""(\w*)""");
                 if (hashMatch.Success)
                 {
                     _wowSha256Hash = hashMatch.Groups[1].Value;
-                    _logger?.Debug("[BattleNet/API] Extracted WoW GraphQL SHA256 hash.");
                     return _wowSha256Hash;
                 }
 
@@ -403,7 +375,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "[BattleNet/API] Failed to extract WoW GraphQL hash.");
             }
 
             return null;
@@ -413,7 +384,6 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             if (_disposed) return;
             _disposed = true;
-            _logger?.Debug("[BattleNet/API] Disposing API client.");
             _httpClient?.Dispose();
         }
 

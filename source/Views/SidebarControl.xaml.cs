@@ -1173,6 +1173,16 @@ namespace PlayniteAchievements.Views
             if (current is DataGridRow row && row.IsSelected)
             {
                 grid.SelectedItem = null;
+                // Ensure the DataGrid clears any remaining selection state and keyboard focus
+                try
+                {
+                    grid.UnselectAll();
+                    Keyboard.ClearFocus();
+                }
+                catch
+                {
+                    // Best-effort: swallow any focus clearing errors to avoid breaking UI
+                }
                 if (_viewModel.IsGameSelected)
                 {
                     PrecomputeToggleWidths(toGameSelected: false);

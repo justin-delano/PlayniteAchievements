@@ -67,8 +67,9 @@
                 </TextBlock.Style>
             </TextBlock>
 
-            <Border Style="{StaticResource SectionBorderStyle}"
-                    IsEnabled="{Binding Settings.IsEnabled}">
+                <Border Style="{StaticResource SectionBorderStyle}"
+                    IsEnabled="{Binding Settings.IsEnabled}"
+                    Visibility="Collapsed">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_WowSection}"
                                Style="{StaticResource SectionHeaderStyle}"/>

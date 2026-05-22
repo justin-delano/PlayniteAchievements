@@ -59,7 +59,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
             _logger = logger ?? Logger;
             InitializeComponent();
-            _logger.Debug("[BattleNet/Settings] Settings view constructed.");
         }
 
         public override void Initialize(IProviderSettings settings)
@@ -73,10 +72,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             if (_battleNetSettings == null)
             {
                 _logger.Warn($"[BattleNet/Settings] Initialized with incompatible settings object: {settings?.GetType().FullName ?? "<null>"}");
-            }
-            else
-            {
-                _logger.Info($"[BattleNet/Settings] Initializing settings view. {SettingsSummary(_battleNetSettings)}");
             }
 
             base.Initialize(settings);
@@ -123,8 +118,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             WowStatus = ResourceProvider.GetString(WowConfigured
                 ? "LOCPlayAch_Settings_BattleNet_Status_WowReady"
                 : "LOCPlayAch_Settings_BattleNet_Status_WowIncomplete");
-
-            _logger.Debug($"[BattleNet/Settings] WoW status updated. configured={Bool(WowConfigured)}, region={_battleNetSettings.WowRegion ?? "<none>"}, realm={_battleNetSettings.WowRealmSlug ?? "<none>"}, character={Presence(_battleNetSettings.WowCharacter)}");
         }
 
         private void UpdateSc2Status()
@@ -138,8 +131,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             Sc2Status = ResourceProvider.GetString(Sc2Configured
                 ? "LOCPlayAch_Settings_BattleNet_Status_Sc2Detected"
                 : "LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete");
-
-            _logger.Debug($"[BattleNet/Settings] SC2 status updated. configured={Bool(Sc2Configured)}, region={_battleNetSettings.Sc2RegionId}, realm={_battleNetSettings.Sc2RealmId}, profileId={(_battleNetSettings.Sc2ProfileId > 0 ? MaskId(_battleNetSettings.Sc2ProfileId.ToString()) : "<none>")}, apiCredentials={Bool(BattleNetGameSupport.HasApiCredentials(_battleNetSettings))}");
         }
 
         private void ClientSecret_Changed(object sender, RoutedEventArgs e)
@@ -154,7 +145,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         private void LoadWowRegions()
         {
-            _logger.Debug("[BattleNet/Settings] Loading WoW region choices.");
             WowRegionCombo.Items.Clear();
             WowRegionCombo.Items.Add("us");
             WowRegionCombo.Items.Add("eu");
@@ -169,8 +159,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             {
                 WowRegionCombo.SelectedIndex = 0;
             }
-
-            _logger.Debug($"[BattleNet/Settings] WoW region selected. region={WowRegionCombo.SelectedItem ?? "<none>"}");
         }
 
         private async void WowRegion_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -188,31 +176,26 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             var regionChanged = !string.Equals(settings.WowRegion, region, StringComparison.OrdinalIgnoreCase);
-            _logger.Info($"[BattleNet/Settings] WoW region changed. selected={region}, previous={settings.WowRegion ?? "<none>"}, changed={Bool(regionChanged)}");
             settings.WowRegion = region;
             if (regionChanged)
             {
                 settings.WowRealmSlug = null;
-                _logger.Debug("[BattleNet/Settings] Cleared saved WoW realm slug because region changed.");
             }
             UpdateWowStatus();
 
             try
             {
-                _logger.Debug($"[BattleNet/Settings] Loading WoW realms. region={region}");
                 var realms = await _apiClient.GetWowRealmsAsync(region, CancellationToken.None);
                 WowRealmCombo.Items.Clear();
                 foreach (var realm in realms)
                 {
                     WowRealmCombo.Items.Add(realm);
                 }
-                _logger.Info($"[BattleNet/Settings] Loaded WoW realms. region={region}, count={realms.Count}");
 
                 if (!string.IsNullOrEmpty(settings.WowRealmSlug))
                 {
                     var selectedRealm = realms.Find(r => r.Slug == settings.WowRealmSlug);
                     WowRealmCombo.SelectedItem = selectedRealm;
-                    _logger.Debug($"[BattleNet/Settings] Restored saved WoW realm selection. slug={settings.WowRealmSlug}, found={Bool(selectedRealm != null)}");
                     if (selectedRealm == null)
                     {
                         settings.WowRealmSlug = null;
@@ -223,7 +206,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, $"[BattleNet/Settings] Failed to load realms for region {region}.");
                 UpdateWowStatus();
             }
         }
@@ -238,7 +220,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             if (WowRealmCombo.SelectedItem is WowRealm realm)
             {
                 _battleNetSettings.WowRealmSlug = realm.Slug;
-                _logger.Info($"[BattleNet/Settings] WoW realm selected. name={realm.Name ?? "<unnamed>"}, slug={realm.Slug ?? "<none>"}");
                 UpdateWowStatus();
             }
         }

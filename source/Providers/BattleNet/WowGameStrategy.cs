@@ -35,8 +35,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             var character = settings.WowCharacter;
             var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? "en-US" : locale;
 
-            _logger?.Info($"[BattleNet/WoW] Fetch started. game={GameLabel(game)}, locale={effectiveLocale}, region={region ?? "<none>"}, realmSlug={realmSlug ?? "<none>"}, character={Presence(character)}");
-
             if (string.IsNullOrEmpty(region) || string.IsNullOrEmpty(realmSlug) || string.IsNullOrEmpty(character))
             {
                 _logger?.Warn($"[BattleNet/WoW] Region, realm, or character not configured. region={Presence(region)}, realmSlug={Presence(realmSlug)}, character={Presence(character)}");
@@ -44,9 +42,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             var wowLocale = BattleNetLocaleMapper.ToWowWebLocale(effectiveLocale);
-            _logger?.Debug($"[BattleNet/WoW] Normalized locale for WoW request. input={effectiveLocale}, normalized={wowLocale}");
             var allData = await _client.GetWowAllAchievementsAsync(region, realmSlug, character, wowLocale, ct);
-            _logger?.Debug($"[BattleNet/WoW] Received WoW achievement category payloads. count={allData?.Count ?? 0}");
 
             if (allData == null || allData.Count == 0)
             {
@@ -71,8 +67,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 LastUpdatedUtc = DateTime.UtcNow,
                 HasAchievements = achievements.Count > 0
             };
-
-            _logger?.Info($"[BattleNet/WoW] Fetch completed. game={GameLabel(game)}, achievements={achievements.Count}, unlocked={achievements.Count(a => a.Unlocked)}");
             return data;
         }
 
