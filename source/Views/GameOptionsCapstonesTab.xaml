@@ -81,7 +81,8 @@
                 Margin="0,0,0,12">
             <Grid>
                 <Grid>
-                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox x:Name="SearchTextBox"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Common_FilterAchievementsPlaceholder}"
                                VerticalAlignment="Center"
@@ -104,7 +105,8 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Button Tag="{Binding SearchText}"
+                    <Button x:Name="ClearSearchButton"
+                            Tag="{Binding SearchText}"
                             Command="{Binding ClearSearchCommand}"
                             Style="{StaticResource ClearSearchButtonStyle}"/>
                 </Grid>
@@ -119,6 +121,7 @@
                   IsReadOnly="True"
                   SelectionMode="Single"
                   SelectionUnit="FullRow"
+                  KeyboardNavigation.DirectionalNavigation="Continue"
                   HeadersVisibility="Column"
                   GridLinesVisibility="None"
                   RowBackground="Transparent"
@@ -137,15 +140,16 @@
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                  Tag="ControllerCellFocus"
                   PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown"
                   Sorting="DataGrid_Sorting">
 
             <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}"/>
+                <Style TargetType="DataGridCell" BasedOn="{StaticResource GameOptionsControllerCellStyle}"/>
             </DataGrid.CellStyle>
 
             <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow" BasedOn="{StaticResource AchievementRowStyle}">
+                <Style TargetType="DataGridRow" BasedOn="{StaticResource GameOptionsDataGridRowStyle}">
                     <Setter Property="MinHeight" Value="76"/>
                     <Setter Property="ClipToBounds" Value="True"/>
                 </Style>

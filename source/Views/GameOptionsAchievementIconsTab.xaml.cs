@@ -2,18 +2,22 @@ using Microsoft.Win32;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using Playnite.SDK.Events;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsAchievementIconsTab : UserControl
+    public partial class GameOptionsAchievementIconsTab : UserControl, IFullscreenControllerNavigable
     {
         private const double SmoothMouseWheelDivisor = 3.0;
         private static readonly Regex HttpUrlRegex = new Regex(@"https?://[^\s""'<>]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -324,6 +328,37 @@ namespace PlayniteAchievements.Views
                    VisualTreeHelpers.FindVisualParent<ButtonBase>(source) != null ||
                    VisualTreeHelpers.FindVisualParent<TextBoxBase>(source) != null ||
                    VisualTreeHelpers.FindVisualParent<ScrollBar>(source) != null;
+        }
+
+        public bool HandleFullscreenControllerInput(ControllerInput input)
+        {
+            return false;
+        }
+
+        private AchievementIconOverrideItem GetFocusedControllerItem()
+        {
+            var focusedItem = FullscreenControllerNavigationService.FindAncestor<ListBoxItem>(
+                Keyboard.FocusedElement as DependencyObject);
+            if (focusedItem?.DataContext is AchievementIconOverrideItem row)
+            {
+                return row;
+            }
+
+            return AchievementCardsList?.SelectedItem as AchievementIconOverrideItem;
+        }
+
+        public IList<UIElement> GetControllerElements()
+        {
+            return new UIElement[]
+                {
+                    RevertChangesButton,
+                    ClearAllButton,
+                    SaveButton,
+                    OpenIconsFolderButton,
+                    AchievementCardsList
+                }
+                .Where(element => element != null && element.IsVisible && element.IsEnabled)
+                .ToList();
         }
     }
 }
