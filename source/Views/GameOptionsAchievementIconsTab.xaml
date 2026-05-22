@@ -112,7 +112,7 @@
             <Style x:Key="IconCardListItemStyle" TargetType="ListBoxItem">
                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                 <Setter Property="VerticalContentAlignment" Value="Stretch" />
-                <Setter Property="Focusable" Value="True" />
+                <Setter Property="Focusable" Value="False" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Margin" Value="0,0,0,8" />
                 <Setter Property="Background" Value="Transparent" />
@@ -217,6 +217,8 @@
                  BorderThickness="0"
                  Background="Transparent"
                  HorizontalContentAlignment="Stretch"
+                 SelectionMode="Single"
+                 KeyboardNavigation.DirectionalNavigation="Continue"
                  ItemContainerStyle="{StaticResource IconCardListItemStyle}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"

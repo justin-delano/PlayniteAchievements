@@ -627,7 +627,8 @@
                         Background="{DynamicResource ControlBackgroundBrush}"
                         BorderBrush="{DynamicResource NormalBorderBrush}"
                         BorderThickness="0,0,1,0"
-                        Padding="16,10">
+                        Padding="16,10"
+                        KeyboardNavigation.DirectionalNavigation="Continue">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" MinWidth="100"/>
@@ -720,7 +721,8 @@
                         Background="{DynamicResource ControlBackgroundBrush}"
                         BorderBrush="{DynamicResource NormalBorderBrush}"
                         BorderThickness="0,0,0,0"
-                        Padding="16,10">
+                        Padding="16,10"
+                        KeyboardNavigation.DirectionalNavigation="Continue">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" MinWidth="180"/>
@@ -835,6 +837,7 @@
 
                         <DataGrid x:Name="GamesOverviewDataGrid"
                             Grid.Row="0"
+                            KeyboardNavigation.DirectionalNavigation="Contained"
                             ItemsSource="{Binding GamesOverview}"
                             SelectedItem="{Binding SelectedGame, Mode=OneWay}"
                             SelectionChanged="GamesOverview_SelectionChanged"
@@ -1304,6 +1307,7 @@
 
                             <controls:AchievementDataGridControl x:Name="RecentAchievementsDataGrid"
                                                                  Grid.Row="0"
+                                                                 KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding RecentAchievements}"
                                                                  ColumnSettingsKey="Sidebar"
                                                                  ShowGameColumn="True"
@@ -1326,6 +1330,7 @@
                             <!-- Game Achievements List -->
                             <controls:AchievementDataGridControl x:Name="GameAchievementsGrid"
                                                                  Grid.Row="0"
+                                                                 KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
                                                                  ColumnSettingsKey="SidebarGame"
                                                                  DataGridMaxHeight="{x:Static sys:Double.NaN}"

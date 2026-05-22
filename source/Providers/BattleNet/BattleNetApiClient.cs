@@ -373,7 +373,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                 _logger?.Warn("[BattleNet/API] WoW realm-status script did not contain the expected GraphQL hash.");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
 

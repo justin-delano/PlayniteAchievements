@@ -519,6 +519,89 @@ namespace PlayniteAchievements.Views
                 return TryHandleControllerActivation();
             }
 
+            if (input == ControllerInput.DPadUp || input == ControllerInput.LeftStickUp)
+            {
+                return TryHandleControllerUp();
+            }
+
+            if (input == ControllerInput.DPadDown || input == ControllerInput.LeftStickDown)
+            {
+                return TryHandleControllerDown();
+            }
+
+            if (input == ControllerInput.DPadLeft || input == ControllerInput.LeftStickLeft)
+            {
+                return TryHandleControllerLeft();
+            }
+
+            if (input == ControllerInput.DPadRight || input == ControllerInput.LeftStickRight)
+            {
+                return TryHandleControllerRight();
+            }
+
+            return false;
+        }
+
+        private bool TryHandleControllerUp()
+        {
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (focusedGrid != null && focusedGrid.SelectedIndex <= 0)
+            {
+                return FocusFilterAreaForGrid(focusedGrid);
+            }
+            return false;
+        }
+
+        private bool TryHandleControllerDown()
+        {
+            if (IsKeyboardFocusWithinLeftFilterArea())
+            {
+                return FocusOverviewGrid();
+            }
+            if (IsKeyboardFocusWithinRightFilterArea())
+            {
+                return FocusActiveRightGrid();
+            }
+            return false;
+        }
+
+        private bool TryHandleControllerLeft()
+        {
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (focusedGrid != null)
+            {
+                if (ReferenceEquals(focusedGrid, RecentAchievementsDataGrid?.InternalDataGrid) ||
+                    ReferenceEquals(focusedGrid, GameAchievementsGrid?.InternalDataGrid))
+                {
+                    return FocusOverviewGrid(focusedGrid.SelectedIndex);
+                }
+            }
+
+            if (IsKeyboardFocusWithinRightFilterArea())
+            {
+                return FocusLeftFilterArea();
+            }
+
+            return false;
+        }
+
+        private bool TryHandleControllerRight()
+        {
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (focusedGrid != null)
+            {
+                if (ReferenceEquals(focusedGrid, GamesOverviewDataGrid))
+                {
+                    TrySelectFocusedOverviewGame();
+                    return FocusActiveRightGrid(focusedGrid.SelectedIndex);
+                }
+            }
+
+            if (IsKeyboardFocusWithinLeftFilterArea())
+            {
+                return FocusRightFilterArea();
+            }
+
             return false;
         }
 
@@ -583,16 +666,38 @@ namespace PlayniteAchievements.Views
 
         private bool FocusOverviewGrid(int? preferredIndex = null)
         {
-            if (preferredIndex.HasValue && preferredIndex >= 0 && preferredIndex < GamesOverviewDataGrid.Items.Count)
+            return FullscreenControllerNavigationService.FocusDataGrid(GamesOverviewDataGrid, preferredIndex);
+        }
+
+        private bool FocusActiveRightGrid(int? preferredIndex = null)
+        {
+            var control = (GameAchievementsGrid?.IsVisible == true && _viewModel?.IsSelectedGameContentReady == true)
+                ? (object)GameAchievementsGrid
+                : (object)RecentAchievementsDataGrid;
+
+            if (control == null) return false;
+
+            var grid = (control as Controls.AchievementDataGridControl)?.InternalDataGrid;
+            return grid != null && FullscreenControllerNavigationService.FocusDataGrid(grid, preferredIndex);
+        }
+
+        private bool FocusFilterAreaForGrid(DataGrid grid)
+        {
+            if (ReferenceEquals(grid, GamesOverviewDataGrid))
             {
-                GamesOverviewDataGrid.SelectedIndex = preferredIndex.Value;
+                return FocusLeftFilterArea();
             }
-            return FullscreenControllerNavigationService.FocusElement(GamesOverviewDataGrid);
+            return FocusRightFilterArea();
         }
 
         private bool FocusLeftFilterArea()
         {
-            return FullscreenControllerNavigationService.FocusFirstElement(GetLeftFilterControllerElements());
+            return FullscreenControllerNavigationService.FocusFirstElement(GetLeftFilterControllerElements().ToArray());
+        }
+
+        private bool FocusRightFilterArea()
+        {
+            return FullscreenControllerNavigationService.FocusFirstElement(GetRightFilterControllerElements().ToArray());
         }
 
         private bool TryOpenSelectedGridRowContextMenu(DataGrid grid)
@@ -823,6 +928,19 @@ namespace PlayniteAchievements.Views
                 ProviderFilterSelectionButton,
                 CompletenessFilterSelectionButton,
                 PlayStatusFilterSelectionButton);
+        }
+
+        private IList<UIElement> GetRightFilterControllerElements()
+        {
+            return GetVisibleControllerElements(
+                RightSearchTextBox,
+                ClearRightSearchButton,
+                SelectedGameTypeFilterSelectionButton,
+                SelectedGameCategoryFilterSelectionButton,
+                SelectedGameUnlockedFilterCheckBox,
+                SelectedGameLockedFilterCheckBox,
+                SelectedGameHiddenFilterCheckBox,
+                ClearGameSelectionButton);
         }
 
         private static IList<UIElement> GetVisibleControllerElements(params UIElement[] elements)

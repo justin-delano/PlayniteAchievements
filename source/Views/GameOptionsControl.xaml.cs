@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Playnite.SDK.Events;
@@ -294,12 +295,44 @@ namespace PlayniteAchievements.Views
 
             if (FullscreenControllerNavigationService.IsAcceptInput(input))
             {
-                return FullscreenControllerNavigationService.ActivateFocusedElement();
+                if (FullscreenControllerNavigationService.ActivateFocusedElement())
+                {
+                    return true;
+                }
+
+                return TryHandleGenericReveal();
             }
 
-            if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
+            return false;
+        }
+
+        private bool TryHandleGenericReveal()
+        {
+            var focused = Keyboard.FocusedElement as FrameworkElement;
+            if (focused == null)
             {
-                return TryOpenFocusedContextButton();
+                return false;
+            }
+
+            // If we're already on an interactive element, ActivateFocusedElement should have handled it.
+            // But if it didn't (e.g. it was a DataGridRow with a nested checkbox), we might be here.
+            // Check if the focused element is a checkbox/button first.
+            if (focused is ButtonBase || focused is Selector || focused is DatePicker || focused is Expander)
+            {
+                return false;
+            }
+
+            if (focused.DataContext is AchievementDisplayItem item)
+            {
+                item.ToggleReveal();
+                return true;
+            }
+
+            // Fallback for manual tracking which uses a different model
+            if (focused.DataContext is ManualAchievementEditItem manualItem)
+            {
+                manualItem.ToggleReveal();
+                return true;
             }
 
             return false;

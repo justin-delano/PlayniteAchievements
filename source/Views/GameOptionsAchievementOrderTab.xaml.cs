@@ -31,7 +31,6 @@ namespace PlayniteAchievements.Views
         private bool _isDragging;
         private int _dragItemCount;
         private bool _pendingRefreshRequested;
-        private int _controllerPreferredColumnDisplayIndex;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct POINT
@@ -337,22 +336,7 @@ namespace PlayniteAchievements.Views
                 return OpenControllerOrderMenu();
             }
 
-            if (!FullscreenControllerNavigationService.IsAcceptInput(input) ||
-                FullscreenControllerNavigationService.FindAncestor<ButtonBase>(
-                    Keyboard.FocusedElement as DependencyObject) != null)
-            {
-                return false;
-            }
-
-            var item = AchievementOrderDataGrid.SelectedItem as AchievementDisplayItem
-                       ?? AchievementOrderDataGrid.CurrentItem as AchievementDisplayItem;
-            if (item == null || !item.CanReveal)
-            {
-                return false;
-            }
-
-            item.ToggleReveal();
-            return true;
+            return false;
         }
 
         public IList<UIElement> GetControllerElements()

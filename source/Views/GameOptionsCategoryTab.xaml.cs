@@ -17,7 +17,6 @@ namespace PlayniteAchievements.Views
     public partial class GameOptionsCategoryTab : UserControl, IFullscreenControllerNavigable
     {
         private DataGridRow _pendingRightClickRow;
-        private int _controllerPreferredColumnDisplayIndex;
 
         public GameOptionsCategoryTab(GameOptionsCategoryViewModel viewModel)
         {
@@ -259,23 +258,6 @@ namespace PlayniteAchievements.Views
             if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
             {
                 return TryOpenSelectedRowContextMenu();
-            }
-
-            if (input == ControllerInput.A)
-            {
-                if (FullscreenControllerNavigationService.FindAncestor<ButtonBase>(
-                        Keyboard.FocusedElement as DependencyObject) != null ||
-                    FullscreenControllerNavigationService.FindAncestor<TextBoxBase>(
-                        Keyboard.FocusedElement as DependencyObject) != null ||
-                    FullscreenControllerNavigationService.FindAncestor<ComboBox>(
-                        Keyboard.FocusedElement as DependencyObject) != null ||
-                    FullscreenControllerNavigationService.FindAncestor<DatePicker>(
-                        Keyboard.FocusedElement as DependencyObject) != null)
-                {
-                    return false;
-                }
-
-                return TryActivateSelectedRow();
             }
 
             return false;

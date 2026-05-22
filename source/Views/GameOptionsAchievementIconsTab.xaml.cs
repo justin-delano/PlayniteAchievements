@@ -34,7 +34,6 @@ namespace PlayniteAchievements.Views
 
         private readonly GameOptionsAchievementIconsViewModel _viewModel;
         private ScrollViewer _achievementCardsScrollViewer;
-        private int _controllerCardTargetIndex;
 
         public GameOptionsAchievementIconsTab(GameOptionsAchievementIconsViewModel viewModel)
         {
@@ -333,25 +332,7 @@ namespace PlayniteAchievements.Views
 
         public bool HandleFullscreenControllerInput(ControllerInput input)
         {
-            if (AchievementCardsList?.IsKeyboardFocusWithin != true)
-            {
-                return false;
-            }
-
-            if (!FullscreenControllerNavigationService.IsAcceptInput(input) ||
-                IsInteractiveElementHit(Keyboard.FocusedElement as DependencyObject))
-            {
-                return false;
-            }
-
-            var item = GetFocusedControllerItem();
-            if (item?.CanReveal != true)
-            {
-                return false;
-            }
-
-            item.ToggleReveal();
-            return true;
+            return false;
         }
 
         private AchievementIconOverrideItem GetFocusedControllerItem()

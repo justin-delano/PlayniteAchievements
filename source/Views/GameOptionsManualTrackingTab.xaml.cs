@@ -29,8 +29,6 @@ namespace PlayniteAchievements.Views
         }
 
         private readonly ManualAchievementsViewModel _viewModel;
-        private int _manualGridPreferredColumnDisplayIndex;
-        private int _searchGridPreferredColumnDisplayIndex;
 
         public GameOptionsManualTrackingTab(ManualAchievementsViewModel viewModel)
         {
@@ -188,17 +186,6 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            if (!FullscreenControllerNavigationService.IsAcceptInput(input))
-            {
-                return false;
-            }
-
-            if (_viewModel?.SelectedResult != null && _viewModel.NextCommand.CanExecute(null))
-            {
-                _viewModel.NextCommand.Execute(null);
-                return true;
-            }
-
             return false;
         }
 
@@ -214,28 +201,7 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            if (!FullscreenControllerNavigationService.IsAcceptInput(input) ||
-                FullscreenControllerNavigationService.FindAncestor<ButtonBase>(
-                    Keyboard.FocusedElement as DependencyObject) != null ||
-                FullscreenControllerNavigationService.FindAncestor<TextBoxBase>(
-                    Keyboard.FocusedElement as DependencyObject) != null ||
-                FullscreenControllerNavigationService.FindAncestor<ComboBox>(
-                    Keyboard.FocusedElement as DependencyObject) != null ||
-                FullscreenControllerNavigationService.FindAncestor<DatePicker>(
-                    Keyboard.FocusedElement as DependencyObject) != null)
-            {
-                return false;
-            }
-
-            var item = ManualAchievementsDataGrid.SelectedItem as ManualAchievementEditItem
-                       ?? ManualAchievementsDataGrid.CurrentItem as ManualAchievementEditItem;
-            if (item?.CanReveal != true)
-            {
-                return false;
-            }
-
-            _viewModel?.RevealAchievementCommand.Execute(item);
-            return true;
+            return false;
         }
 
         public IList<UIElement> GetControllerElements()

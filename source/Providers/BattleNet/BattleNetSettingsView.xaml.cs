@@ -204,7 +204,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 }
                 UpdateWowStatus();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 UpdateWowStatus();
             }

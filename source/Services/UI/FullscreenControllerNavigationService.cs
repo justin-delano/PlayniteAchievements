@@ -10,6 +10,7 @@ using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Events;
+using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Services.UI
@@ -18,7 +19,7 @@ namespace PlayniteAchievements.Services.UI
     {
         private static readonly TimeSpan InitialInputBlock = TimeSpan.FromMilliseconds(250);
         private static readonly TimeSpan RepeatedInputBlock = TimeSpan.FromMilliseconds(150);
-        private static readonly TimeSpan DirectionalInputBlock = TimeSpan.FromMilliseconds(200);
+        private static readonly TimeSpan DirectionalInputBlock = TimeSpan.FromMilliseconds(250);
         private const string CellFocusTag = "ControllerCellFocus";
 
         private readonly IPlayniteAPI _api;
@@ -70,12 +71,21 @@ namespace PlayniteAchievements.Services.UI
                 EnsureFocusInsideWindow(window);
             };
 
+            KeyEventHandler previewKeyDownHandler = (s, e) =>
+            {
+                if (IsDirectionalKey(e.Key) && IsMatchingControllerDirectionHandled(window, e.Key))
+                {
+                    e.Handled = true;
+                }
+            };
+
             EventHandler closedHandler = null;
             closedHandler = (_, __) =>
             {
                 window.Closed -= closedHandler;
                 window.Loaded -= loadedHandler;
                 window.Activated -= activatedHandler;
+                window.PreviewKeyDown -= previewKeyDownHandler;
                 unregister();
             };
 
@@ -84,12 +94,35 @@ namespace PlayniteAchievements.Services.UI
             window.Loaded += loadedHandler;
             window.Activated += activatedHandler;
             window.Closed += closedHandler;
+            window.PreviewKeyDown += previewKeyDownHandler;
 
             if (window.IsLoaded)
             {
                 PrepareWindowForControllerFocus(window);
                 EnsureFocusInsideWindow(window);
             }
+        }
+
+        private bool IsMatchingControllerDirectionHandled(Window window, Key key)
+        {
+            if (window == null || !_lastHandledInput.TryGetValue(window, out var lastInput))
+            {
+                return false;
+            }
+
+            if (DateTime.UtcNow - lastInput.HandledAtUtc > DirectionalInputBlock)
+            {
+                return false;
+            }
+
+            return key switch
+            {
+                Key.Up => lastInput.InputKey == "Up",
+                Key.Down => lastInput.InputKey == "Down",
+                Key.Left => lastInput.InputKey == "Left",
+                Key.Right => lastInput.InputKey == "Right",
+                _ => false
+            };
         }
 
         public bool TryHandleControllerButtonStateChanged(OnControllerButtonStateChangedArgs args)
@@ -159,6 +192,18 @@ namespace PlayniteAchievements.Services.UI
 
             PrepareWindowForControllerFocus(activeWindow);
 
+            if (input == ControllerInput.DPadUp || input == ControllerInput.DPadDown ||
+                input == ControllerInput.DPadLeft || input == ControllerInput.DPadRight ||
+                input == ControllerInput.LeftStickUp || input == ControllerInput.LeftStickDown ||
+                input == ControllerInput.LeftStickLeft || input == ControllerInput.LeftStickRight)
+            {
+                if (TryHandleTextBoxArrowEscape(input))
+                {
+                    RecordHandledInput(activeWindow, inputKey);
+                    return true;
+                }
+            }
+
             var openContextMenu = FindOpenContextMenuForWindow(activeWindow);
             if (openContextMenu?.IsOpen == true)
             {
@@ -177,6 +222,31 @@ namespace PlayniteAchievements.Services.UI
 
             RecordHandledInput(activeWindow, inputKey);
             return true;
+        }
+
+        private bool TryHandleTextBoxArrowEscape(ControllerInput input)
+        {
+            if (!(Keyboard.FocusedElement is TextBox textBox))
+            {
+                return false;
+            }
+
+            var direction = FocusNavigationDirection.Down;
+            if (input == ControllerInput.DPadUp || input == ControllerInput.LeftStickUp) direction = FocusNavigationDirection.Up;
+            else if (input == ControllerInput.DPadDown || input == ControllerInput.LeftStickDown) direction = FocusNavigationDirection.Down;
+            else if (input == ControllerInput.DPadLeft || input == ControllerInput.LeftStickLeft) direction = FocusNavigationDirection.Left;
+            else if (input == ControllerInput.DPadRight || input == ControllerInput.LeftStickRight) direction = FocusNavigationDirection.Right;
+
+            // For multiline textboxes, we might want to check caret position, 
+            // but for simple search boxes, we just want to escape.
+            if (!textBox.AcceptsReturn || 
+                (direction == FocusNavigationDirection.Up && textBox.GetLineIndexFromCharacterIndex(textBox.CaretIndex) == 0) ||
+                (direction == FocusNavigationDirection.Down && textBox.GetLineIndexFromCharacterIndex(textBox.CaretIndex) == textBox.LineCount - 1))
+            {
+                return textBox.MoveFocus(new TraversalRequest(direction));
+            }
+
+            return false;
         }
 
         private void BlockInputBriefly(Window window)
@@ -300,6 +370,37 @@ namespace PlayniteAchievements.Services.UI
         internal static bool IsRightShoulderInput(ControllerInput input)
         {
             return input == ControllerInput.RightShoulder;
+        }
+
+        internal static bool FocusDataGrid(DataGrid grid, int? preferredIndex = null)
+        {
+            if (grid == null)
+            {
+                return false;
+            }
+
+            if (grid.Items?.Count > 0)
+            {
+                var index = preferredIndex ?? grid.SelectedIndex;
+                if (index < 0)
+                {
+                    index = 0;
+                }
+
+                index = Math.Max(0, Math.Min(grid.Items.Count - 1, index));
+                grid.SelectedIndex = index;
+                grid.UpdateLayout();
+                grid.ScrollIntoView(grid.Items[index]);
+                grid.UpdateLayout();
+
+                var row = grid.ItemContainerGenerator.ContainerFromIndex(index) as DataGridRow;
+                if (row != null)
+                {
+                    return FocusElement(row);
+                }
+            }
+
+            return FocusElement(grid);
         }
 
         internal static bool TryGetVerticalDelta(ControllerInput input, out int delta)
@@ -509,7 +610,44 @@ namespace PlayniteAchievements.Services.UI
 
         internal static bool ActivateFocusedElement()
         {
-            return ActivateElement(Keyboard.FocusedElement as DependencyObject);
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            if (focused == null)
+            {
+                return false;
+            }
+
+            if (ActivateElement(focused))
+            {
+                return true;
+            }
+
+            // If the focused element itself isn't a button/toggle, look for one inside it (useful for DataGrid rows/cells)
+            var interactive = EnumerateVisualDescendants<UIElement>(focused)
+                .FirstOrDefault(e => e.IsVisible && e.IsEnabled && (e is ButtonBase || e is Selector || e is DatePicker || e is Expander));
+
+            if (interactive != null)
+            {
+                return ActivateElement(interactive);
+            }
+
+            // If we're on a DataGrid cell or row and no button was found, try a generic toggle/reveal action
+            if (focused is FrameworkElement frameworkElement)
+            {
+                var dataContext = frameworkElement.DataContext;
+                if (dataContext is AchievementDisplayItem displayItem)
+                {
+                    displayItem.ToggleReveal();
+                    return true;
+                }
+                
+                if (dataContext is ManualAchievementEditItem manualItem)
+                {
+                    manualItem.ToggleReveal();
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         internal static bool ActivateElement(DependencyObject focused)

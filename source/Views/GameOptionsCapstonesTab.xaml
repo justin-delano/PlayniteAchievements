@@ -121,6 +121,7 @@
                   IsReadOnly="True"
                   SelectionMode="Single"
                   SelectionUnit="FullRow"
+                  KeyboardNavigation.DirectionalNavigation="Continue"
                   HeadersVisibility="Column"
                   GridLinesVisibility="None"
                   RowBackground="Transparent"

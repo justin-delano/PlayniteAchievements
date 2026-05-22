@@ -19,7 +19,6 @@ namespace PlayniteAchievements.Views
     public partial class GameOptionsCapstonesTab : UserControl, IFullscreenControllerNavigable
     {
         private readonly CapstoneViewModel _viewModel;
-        private int _controllerPreferredColumnDisplayIndex;
 
         public event EventHandler CapstoneChanged;
 
@@ -123,22 +122,7 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            if (!FullscreenControllerNavigationService.IsAcceptInput(input) ||
-                FullscreenControllerNavigationService.FindAncestor<ButtonBase>(
-                    Keyboard.FocusedElement as DependencyObject) != null)
-            {
-                return false;
-            }
-
-            var item = AchievementsDataGrid.SelectedItem as CapstoneOptionItem
-                       ?? AchievementsDataGrid.CurrentItem as CapstoneOptionItem;
-            if (item == null)
-            {
-                return false;
-            }
-
-            _viewModel?.ToggleReveal(item);
-            return true;
+            return false;
         }
 
         public IList<UIElement> GetControllerElements()
