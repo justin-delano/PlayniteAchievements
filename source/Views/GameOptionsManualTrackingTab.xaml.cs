@@ -106,11 +106,6 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void ControllerDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            FullscreenControllerNavigationService.SuppressDirectionalKeyboardNavigationIfFullscreen(sender, e);
-        }
-
         private void NextButton_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel?.NextCommand?.CanExecute(null) == true)
@@ -185,45 +180,12 @@ namespace PlayniteAchievements.Views
         {
             if (FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(SearchResultsDataGrid))
             {
-                if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var headerDelta))
-                {
-                    return FullscreenControllerNavigationService.MoveDataGridColumnHeaderFocus(SearchResultsDataGrid, headerDelta);
-                }
-
-                if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var headerVerticalDelta))
-                {
-                    return headerVerticalDelta > 0 &&
-                           FullscreenControllerNavigationService.FocusDataGrid(SearchResultsDataGrid);
-                }
-
                 if (FullscreenControllerNavigationService.IsAcceptInput(input))
                 {
                     return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(SearchResultsDataGrid);
                 }
 
                 return false;
-            }
-
-            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
-            {
-                return FullscreenControllerNavigationService.MoveDataGridCellFocus(
-                    SearchResultsDataGrid,
-                    horizontalDelta,
-                    ref _searchGridPreferredColumnDisplayIndex);
-            }
-
-            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var delta))
-            {
-                if (IsAtGridBoundary(SearchResultsDataGrid, delta))
-                {
-                    return delta < 0 &&
-                           FullscreenControllerNavigationService.FocusDataGridColumnHeader(SearchResultsDataGrid);
-                }
-
-                return FullscreenControllerNavigationService.MoveDataGridSelectionAndRestoreCellFocus(
-                    SearchResultsDataGrid,
-                    delta,
-                    ref _searchGridPreferredColumnDisplayIndex);
             }
 
             if (!FullscreenControllerNavigationService.IsAcceptInput(input))
@@ -244,45 +206,12 @@ namespace PlayniteAchievements.Views
         {
             if (FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(ManualAchievementsDataGrid))
             {
-                if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var headerDelta))
-                {
-                    return FullscreenControllerNavigationService.MoveDataGridColumnHeaderFocus(ManualAchievementsDataGrid, headerDelta);
-                }
-
-                if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var headerVerticalDelta))
-                {
-                    return headerVerticalDelta > 0 &&
-                           FullscreenControllerNavigationService.FocusDataGrid(ManualAchievementsDataGrid);
-                }
-
                 if (FullscreenControllerNavigationService.IsAcceptInput(input))
                 {
                     return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(ManualAchievementsDataGrid);
                 }
 
                 return false;
-            }
-
-            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
-            {
-                return FullscreenControllerNavigationService.MoveDataGridCellFocus(
-                    ManualAchievementsDataGrid,
-                    horizontalDelta,
-                    ref _manualGridPreferredColumnDisplayIndex);
-            }
-
-            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var delta))
-            {
-                if (IsAtGridBoundary(ManualAchievementsDataGrid, delta))
-                {
-                    return delta < 0 &&
-                           FullscreenControllerNavigationService.FocusDataGridColumnHeader(ManualAchievementsDataGrid);
-                }
-
-                return FullscreenControllerNavigationService.MoveDataGridSelectionAndRestoreCellFocus(
-                    ManualAchievementsDataGrid,
-                    delta,
-                    ref _manualGridPreferredColumnDisplayIndex);
             }
 
             if (!FullscreenControllerNavigationService.IsAcceptInput(input) ||
@@ -362,19 +291,6 @@ namespace PlayniteAchievements.Views
             }
 
             return true;
-        }
-
-        private static bool IsAtGridBoundary(DataGrid grid, int delta)
-        {
-            if (grid?.Items == null || grid.Items.Count == 0)
-            {
-                return true;
-            }
-
-            var index = grid.SelectedIndex;
-            return delta < 0
-                ? index <= 0
-                : index >= grid.Items.Count - 1;
         }
 
         public void Cleanup()

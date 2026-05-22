@@ -302,44 +302,7 @@ namespace PlayniteAchievements.Views
                 return TryOpenFocusedContextButton();
             }
 
-            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var verticalDelta))
-            {
-                return TryHandleDirectionalNavigation(verticalDelta, isHorizontal: false);
-            }
-
-            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
-            {
-                return TryHandleDirectionalNavigation(horizontalDelta, isHorizontal: true);
-            }
-
             return false;
-        }
-
-        private bool TryHandleDirectionalNavigation(int delta, bool isHorizontal)
-        {
-            if (IsFocusWithinTabList())
-            {
-                if (isHorizontal && delta > 0)
-                {
-                    return FocusCurrentTabContent();
-                }
-
-                return FocusTabButtonByDelta(isHorizontal ? delta : delta);
-            }
-
-            var contentElements = GetCurrentContentControllerElements();
-            if (contentElements.Count == 0)
-            {
-                return FocusSelectedTabButton();
-            }
-
-            if (isHorizontal && delta < 0 && IsFocusWithinContent() &&
-                FindFocusedElementIndex(contentElements) <= 0)
-            {
-                return FocusSelectedTabButton();
-            }
-
-            return FullscreenControllerNavigationService.FocusElementByDelta(contentElements, delta);
         }
 
         private bool TryOpenFocusedContextButton()
@@ -353,36 +316,6 @@ namespace PlayniteAchievements.Views
             }
 
             return FullscreenControllerNavigationService.ActivateElement(button);
-        }
-
-        private bool FocusTabButtonByDelta(int delta)
-        {
-            return FullscreenControllerNavigationService.FocusElementByDelta(
-                GetVisibleTabButtons().Cast<UIElement>().ToList(),
-                delta);
-        }
-
-        private bool FocusSelectedTabButton()
-        {
-            var selected = GetVisibleTabButtons()
-                .FirstOrDefault(button => button.IsChecked == true);
-            return selected != null && FullscreenControllerNavigationService.FocusElement(selected);
-        }
-
-        private bool FocusCurrentTabContent()
-        {
-            var elements = GetCurrentContentControllerElements();
-            return elements.Count > 0 && FullscreenControllerNavigationService.FocusFirstElement(elements);
-        }
-
-        private bool IsFocusWithinTabList()
-        {
-            return GetVisibleTabButtons().Any(button => button.IsKeyboardFocusWithin);
-        }
-
-        private bool IsFocusWithinContent()
-        {
-            return GameOptionsContentHost?.IsKeyboardFocusWithin == true;
         }
 
         private IList<RadioButton> GetVisibleTabButtons()

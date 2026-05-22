@@ -129,11 +129,6 @@ namespace PlayniteAchievements.Views
             _dragAnchorItem = null;
         }
 
-        private void ControllerDataGrid_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            FullscreenControllerNavigationService.SuppressDirectionalKeyboardNavigationIfFullscreen(sender, e);
-        }
-
         private void DataGrid_PreviewMouseMove(object sender, MouseEventArgs e)
         {
             if (!_hasDragStartPoint || e.LeftButton != MouseButtonState.Pressed || ViewModel == null)
@@ -329,45 +324,12 @@ namespace PlayniteAchievements.Views
 
             if (FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(AchievementOrderDataGrid))
             {
-                if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var headerDelta))
-                {
-                    return FullscreenControllerNavigationService.MoveDataGridColumnHeaderFocus(AchievementOrderDataGrid, headerDelta);
-                }
-
-                if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var headerVerticalDelta))
-                {
-                    return headerVerticalDelta > 0 &&
-                           FullscreenControllerNavigationService.FocusDataGrid(AchievementOrderDataGrid);
-                }
-
                 if (FullscreenControllerNavigationService.IsAcceptInput(input))
                 {
                     return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(AchievementOrderDataGrid);
                 }
 
                 return false;
-            }
-
-            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
-            {
-                return FullscreenControllerNavigationService.MoveDataGridCellFocus(
-                    AchievementOrderDataGrid,
-                    horizontalDelta,
-                    ref _controllerPreferredColumnDisplayIndex);
-            }
-
-            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var delta))
-            {
-                if (IsAtGridBoundary(delta))
-                {
-                    return delta < 0 &&
-                           FullscreenControllerNavigationService.FocusDataGridColumnHeader(AchievementOrderDataGrid);
-                }
-
-                return FullscreenControllerNavigationService.MoveDataGridSelectionAndRestoreCellFocus(
-                    AchievementOrderDataGrid,
-                    delta,
-                    ref _controllerPreferredColumnDisplayIndex);
             }
 
             if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
@@ -546,25 +508,17 @@ namespace PlayniteAchievements.Views
             if (index >= 0)
             {
                 AchievementOrderDataGrid.SelectedIndex = index;
-                FullscreenControllerNavigationService.FocusDataGridCell(
-                    AchievementOrderDataGrid,
-                    index,
-                    _controllerPreferredColumnDisplayIndex,
-                    out _controllerPreferredColumnDisplayIndex);
+                AchievementOrderDataGrid.ScrollIntoView(AchievementOrderDataGrid.Items[index]);
+                var row = AchievementOrderDataGrid.ItemContainerGenerator.ContainerFromIndex(index) as UIElement;
+                if (row != null)
+                {
+                    FullscreenControllerNavigationService.FocusElement(row);
+                }
+                else
+                {
+                    FullscreenControllerNavigationService.FocusElement(AchievementOrderDataGrid);
+                }
             }
-        }
-
-        private bool IsAtGridBoundary(int delta)
-        {
-            if (AchievementOrderDataGrid?.Items == null || AchievementOrderDataGrid.Items.Count == 0)
-            {
-                return true;
-            }
-
-            var index = AchievementOrderDataGrid.SelectedIndex;
-            return delta < 0
-                ? index <= 0
-                : index >= AchievementOrderDataGrid.Items.Count - 1;
         }
 
         private void StartAutoScroll()

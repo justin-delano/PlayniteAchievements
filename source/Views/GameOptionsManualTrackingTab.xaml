@@ -207,7 +207,6 @@
                               Foreground="{DynamicResource TextBrush}"
                               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderLeftStyle}"
                               PreviewMouseLeftButtonDown="SearchDataGrid_PreviewMouseLeftButtonDown"
-                              PreviewKeyDown="ControllerDataGrid_PreviewKeyDown"
                               Tag="ControllerCellFocus"
                               MouseDoubleClick="SearchDataGrid_MouseDoubleClick">
                         <DataGrid.CellStyle>
@@ -431,7 +430,6 @@
                               ScrollViewer.CanContentScroll="True"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
-                              PreviewKeyDown="ControllerDataGrid_PreviewKeyDown"
                               Tag="ControllerCellFocus">
                         <DataGrid.CellStyle>
                             <Style TargetType="DataGridCell" BasedOn="{StaticResource GameOptionsControllerCellStyle}"/>

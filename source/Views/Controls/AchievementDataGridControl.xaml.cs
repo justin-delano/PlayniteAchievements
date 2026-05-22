@@ -727,15 +727,6 @@ namespace PlayniteAchievements.Views.Controls
                 useControllerPlacement: true);
         }
 
-        public bool FocusColumnHeaderForController()
-        {
-            return Services.UI.FullscreenControllerNavigationService.FocusDataGridColumnHeader(AchievementsDataGrid);
-        }
-
-        public bool MoveColumnHeaderFocusForController(int delta)
-        {
-            return Services.UI.FullscreenControllerNavigationService.MoveDataGridColumnHeaderFocus(AchievementsDataGrid, delta);
-        }
 
         public bool IsColumnHeaderFocusedForController()
         {
@@ -778,11 +769,6 @@ namespace PlayniteAchievements.Views.Controls
         /// Used for scroll reset and other operations that require direct DataGrid access.
         /// </summary>
         public DataGrid InternalDataGrid => AchievementsDataGrid;
-
-        public bool MoveSelection(int delta)
-        {
-            return Services.UI.FullscreenControllerNavigationService.MoveDataGridSelection(AchievementsDataGrid, delta);
-        }
 
         public bool ActivateSelectedItem()
         {

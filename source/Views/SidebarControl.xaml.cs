@@ -519,16 +519,6 @@ namespace PlayniteAchievements.Views
                 return TryHandleControllerActivation();
             }
 
-            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var verticalDelta))
-            {
-                return TryHandleControllerVerticalNavigation(verticalDelta);
-            }
-
-            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
-            {
-                return TryHandleControllerHorizontalNavigation(horizontalDelta);
-            }
-
             return false;
         }
 
@@ -591,242 +581,18 @@ namespace PlayniteAchievements.Views
             return TryOpenSelectedGridRowContextMenu(focusedGrid);
         }
 
-        private bool TryHandleControllerVerticalNavigation(int delta)
-        {
-            var focusedGrid = GetFocusedSidebarGrid();
-            if (focusedGrid != null)
-            {
-                if (IsGridColumnHeaderFocused(focusedGrid))
-                {
-                    return delta > 0
-                        ? FocusGridRows(focusedGrid)
-                        : FocusFilterAreaForGrid(focusedGrid);
-                }
-
-                return TryMoveGridSelectionOrLeave(focusedGrid, delta);
-            }
-
-            if (delta > 0)
-            {
-                if (IsKeyboardFocusWithinLeftFilterArea())
-                {
-                    return FocusGridColumnHeader(GamesOverviewDataGrid) ||
-                           FocusOverviewGrid();
-                }
-
-                if (IsKeyboardFocusWithinRightFilterArea())
-                {
-                    return FocusActiveRightGridColumnHeader() ||
-                           FocusActiveRightGrid();
-                }
-
-                if (IsKeyboardFocusWithinHeaderArea())
-                {
-                    return FocusLeftFilterArea();
-                }
-            }
-
-            if (delta < 0 &&
-                (IsKeyboardFocusWithinLeftFilterArea() || IsKeyboardFocusWithinRightFilterArea()))
-            {
-                return FocusHeaderArea();
-            }
-
-            return false;
-        }
-
-        private bool TryHandleControllerHorizontalNavigation(int delta)
-        {
-            var focusedGrid = GetFocusedSidebarGrid();
-            if (focusedGrid != null)
-            {
-                if (IsGridColumnHeaderFocused(focusedGrid))
-                {
-                    return MoveGridColumnHeaderFocus(focusedGrid, delta);
-                }
-
-                if (delta > 0 && ReferenceEquals(focusedGrid, GamesOverviewDataGrid))
-                {
-                    TrySelectFocusedOverviewGame();
-                    return FocusActiveRightGrid(focusedGrid.SelectedIndex);
-                }
-
-                if (delta < 0 &&
-                    (ReferenceEquals(focusedGrid, RecentAchievementsDataGrid?.InternalDataGrid) ||
-                     ReferenceEquals(focusedGrid, GameAchievementsGrid?.InternalDataGrid)))
-                {
-                    return FocusOverviewGrid(focusedGrid.SelectedIndex);
-                }
-
-                return true;
-            }
-
-            if (IsKeyboardFocusWithinHeaderArea())
-            {
-                return TryMoveFocusWithinGroup(GetHeaderControllerElements(), delta);
-            }
-
-            if (IsKeyboardFocusWithinLeftFilterArea())
-            {
-                if (TryMoveFocusWithinGroup(GetLeftFilterControllerElements(), delta))
-                {
-                    return true;
-                }
-
-                return delta > 0 ? FocusRightFilterArea() : true;
-            }
-
-            if (IsKeyboardFocusWithinRightFilterArea())
-            {
-                if (TryMoveFocusWithinGroup(GetRightFilterControllerElements(), delta))
-                {
-                    return true;
-                }
-
-                return delta < 0 ? FocusLeftFilterArea() : true;
-            }
-
-            return false;
-        }
-
-        private bool TryMoveGridSelectionOrLeave(DataGrid grid, int delta)
-        {
-            if (grid == null)
-            {
-                return false;
-            }
-
-            if (grid.Items == null || grid.Items.Count == 0)
-            {
-                return delta < 0 && FocusFilterAreaForGrid(grid);
-            }
-
-            var currentIndex = grid.SelectedIndex;
-            if (currentIndex < 0)
-            {
-                return FullscreenControllerNavigationService.MoveDataGridSelection(grid, delta);
-            }
-
-            if (delta < 0 && currentIndex <= 0)
-            {
-                return FocusGridColumnHeader(grid) ||
-                       FocusFilterAreaForGrid(grid);
-            }
-
-            if (delta > 0 && currentIndex >= grid.Items.Count - 1)
-            {
-                return false;
-            }
-
-            return FullscreenControllerNavigationService.MoveDataGridSelection(grid, delta);
-        }
-
         private bool FocusOverviewGrid(int? preferredIndex = null)
         {
-            return FullscreenControllerNavigationService.FocusDataGrid(GamesOverviewDataGrid, preferredIndex);
-        }
-
-        private bool FocusAchievementGrid(Controls.AchievementDataGridControl control, int? preferredIndex = null)
-        {
-            return FullscreenControllerNavigationService.FocusDataGrid(control?.InternalDataGrid, preferredIndex);
-        }
-
-        private bool FocusActiveRightGrid(int? preferredIndex = null)
-        {
-            if (GameAchievementsGrid?.IsVisible == true &&
-                _viewModel?.IsSelectedGameContentReady == true &&
-                FocusAchievementGrid(GameAchievementsGrid, preferredIndex))
+            if (preferredIndex.HasValue && preferredIndex >= 0 && preferredIndex < GamesOverviewDataGrid.Items.Count)
             {
-                return true;
+                GamesOverviewDataGrid.SelectedIndex = preferredIndex.Value;
             }
-
-            return RecentAchievementsDataGrid?.IsVisible == true &&
-                   FocusAchievementGrid(RecentAchievementsDataGrid, preferredIndex);
-        }
-
-        private bool FocusActiveRightGridColumnHeader()
-        {
-            if (GameAchievementsGrid?.IsVisible == true &&
-                _viewModel?.IsSelectedGameContentReady == true &&
-                GameAchievementsGrid.FocusColumnHeaderForController())
-            {
-                return true;
-            }
-
-            return RecentAchievementsDataGrid?.IsVisible == true &&
-                   RecentAchievementsDataGrid.FocusColumnHeaderForController();
-        }
-
-        private bool FocusGridColumnHeader(DataGrid grid)
-        {
-            if (ReferenceEquals(grid, GamesOverviewDataGrid))
-            {
-                return FullscreenControllerNavigationService.FocusDataGridColumnHeader(grid);
-            }
-
-            if (ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid))
-            {
-                return RecentAchievementsDataGrid.FocusColumnHeaderForController();
-            }
-
-            if (ReferenceEquals(grid, GameAchievementsGrid?.InternalDataGrid))
-            {
-                return GameAchievementsGrid.FocusColumnHeaderForController();
-            }
-
-            return false;
-        }
-
-        private bool FocusGridRows(DataGrid grid)
-        {
-            if (ReferenceEquals(grid, GamesOverviewDataGrid))
-            {
-                return FocusOverviewGrid();
-            }
-
-            if (ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid))
-            {
-                return FocusAchievementGrid(RecentAchievementsDataGrid);
-            }
-
-            if (ReferenceEquals(grid, GameAchievementsGrid?.InternalDataGrid))
-            {
-                return FocusAchievementGrid(GameAchievementsGrid);
-            }
-
-            return false;
-        }
-
-        private bool FocusFilterAreaForGrid(DataGrid grid)
-        {
-            if (ReferenceEquals(grid, GamesOverviewDataGrid))
-            {
-                return FocusLeftFilterArea();
-            }
-
-            if (ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid) ||
-                ReferenceEquals(grid, GameAchievementsGrid?.InternalDataGrid))
-            {
-                return FocusRightFilterArea() || FocusHeaderArea();
-            }
-
-            return false;
+            return FullscreenControllerNavigationService.FocusElement(GamesOverviewDataGrid);
         }
 
         private bool FocusLeftFilterArea()
         {
             return FullscreenControllerNavigationService.FocusFirstElement(GetLeftFilterControllerElements());
-        }
-
-        private bool FocusRightFilterArea()
-        {
-            return FullscreenControllerNavigationService.FocusFirstElement(GetRightFilterControllerElements()) ||
-                   FocusHeaderArea();
-        }
-
-        private bool FocusHeaderArea()
-        {
-            return FullscreenControllerNavigationService.FocusFirstElement(GetHeaderControllerElements());
         }
 
         private bool TryOpenSelectedGridRowContextMenu(DataGrid grid)
@@ -880,26 +646,6 @@ namespace PlayniteAchievements.Views
             }
 
             return FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(grid);
-        }
-
-        private bool MoveGridColumnHeaderFocus(DataGrid grid, int delta)
-        {
-            if (ReferenceEquals(grid, GamesOverviewDataGrid))
-            {
-                return FullscreenControllerNavigationService.MoveDataGridColumnHeaderFocus(grid, delta);
-            }
-
-            if (ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid))
-            {
-                return RecentAchievementsDataGrid.MoveColumnHeaderFocusForController(delta);
-            }
-
-            if (ReferenceEquals(grid, GameAchievementsGrid?.InternalDataGrid))
-            {
-                return GameAchievementsGrid.MoveColumnHeaderFocusForController(delta);
-            }
-
-            return false;
         }
 
         private bool ActivateFocusedGridColumnHeader(DataGrid grid)
@@ -1069,48 +815,6 @@ namespace PlayniteAchievements.Views
             return true;
         }
 
-        private bool TryMoveFocusWithinGroup(IList<UIElement> elements, int delta)
-        {
-            if (elements == null || elements.Count == 0 || delta == 0)
-            {
-                return false;
-            }
-
-            var focused = Keyboard.FocusedElement as DependencyObject;
-            var currentIndex = -1;
-            for (var i = 0; i < elements.Count; i++)
-            {
-                if (ReferenceEquals(elements[i], focused) ||
-                    FullscreenControllerNavigationService.IsDescendantOf(focused, elements[i]))
-                {
-                    currentIndex = i;
-                    break;
-                }
-            }
-
-            if (currentIndex < 0)
-            {
-                return FullscreenControllerNavigationService.FocusFirstElement(elements);
-            }
-
-            var nextIndex = currentIndex + delta;
-            if (nextIndex < 0 || nextIndex >= elements.Count)
-            {
-                return false;
-            }
-
-            return FullscreenControllerNavigationService.FocusElement(elements[nextIndex]);
-        }
-
-        private IList<UIElement> GetHeaderControllerElements()
-        {
-            return GetVisibleControllerElements(
-                CloseViewButton,
-                RefreshModeSelectionButton,
-                RefreshActionButton,
-                CancelRefreshButton);
-        }
-
         private IList<UIElement> GetLeftFilterControllerElements()
         {
             return GetVisibleControllerElements(
@@ -1119,19 +823,6 @@ namespace PlayniteAchievements.Views
                 ProviderFilterSelectionButton,
                 CompletenessFilterSelectionButton,
                 PlayStatusFilterSelectionButton);
-        }
-
-        private IList<UIElement> GetRightFilterControllerElements()
-        {
-            return GetVisibleControllerElements(
-                RightSearchTextBox,
-                ClearRightSearchButton,
-                SelectedGameTypeFilterSelectionButton,
-                SelectedGameCategoryFilterSelectionButton,
-                SelectedGameUnlockedFilterCheckBox,
-                SelectedGameLockedFilterCheckBox,
-                SelectedGameHiddenFilterCheckBox,
-                ClearGameSelectionButton);
         }
 
         private static IList<UIElement> GetVisibleControllerElements(params UIElement[] elements)

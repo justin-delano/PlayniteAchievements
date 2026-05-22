@@ -261,7 +261,6 @@
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
-                  PreviewKeyDown="ControllerDataGrid_PreviewKeyDown"
                   Tag="ControllerCellFocus"
                   PreviewMouseLeftButtonDown="CategoryDataGrid_PreviewMouseLeftButtonDown">
 
