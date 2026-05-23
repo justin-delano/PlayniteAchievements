@@ -184,6 +184,12 @@ namespace PlayniteAchievements.Services.UI
                 }
             }
 
+            var openContextMenu = FindOpenContextMenuForWindow(activeWindow);
+            if (openContextMenu?.IsOpen == true)
+            {
+                return false;
+            }
+
             var inputKey = NormalizeInputKey(input);
             if (IsRepeatedInput(activeWindow, inputKey))
             {
@@ -202,17 +208,6 @@ namespace PlayniteAchievements.Services.UI
                     RecordHandledInput(activeWindow, inputKey);
                     return true;
                 }
-            }
-
-            var openContextMenu = FindOpenContextMenuForWindow(activeWindow);
-            if (openContextMenu?.IsOpen == true)
-            {
-                if (TryHandleContextMenu(openContextMenu, input))
-                {
-                    RecordHandledInput(activeWindow, inputKey);
-                }
-
-                return true;
             }
 
             if (!controllerHandler.HandleFullscreenControllerInput(input))
@@ -445,6 +440,106 @@ namespace PlayniteAchievements.Services.UI
             return header != null && ActivateElement(header);
         }
 
+        internal static bool FocusDataGridColumnHeader(DataGrid grid)
+        {
+            if (grid == null)
+            {
+                return false;
+            }
+
+            var headers = GetVisibleDataGridColumnHeaders(grid);
+            if (headers.Count == 0)
+            {
+                return false;
+            }
+
+            var currentColumn = GetFocusedDataGridColumn(grid);
+            var targetHeader = currentColumn != null
+                ? headers.FirstOrDefault(header => ReferenceEquals(header.Column, currentColumn))
+                : null;
+
+            return FocusElement(targetHeader ?? headers.First());
+        }
+
+        internal static bool IsFocusAtDataGridLeftEdge(DataGrid grid)
+        {
+            if (grid == null)
+            {
+                return false;
+            }
+
+            var header = GetFocusedDataGridColumnHeader(grid);
+            if (header?.Column != null)
+            {
+                return IsFirstVisibleColumn(grid, header.Column);
+            }
+
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            var cell = FindAncestor<DataGridCell>(focused);
+            if (cell != null && IsDescendantOf(cell, grid))
+            {
+                return IsFirstVisibleColumn(grid, cell.Column);
+            }
+
+            var focusedRow = FindAncestor<DataGridRow>(focused);
+            return ReferenceEquals(focused, grid) ||
+                   focusedRow != null && ReferenceEquals(ItemsControl.ItemsControlFromItemContainer(focusedRow), grid);
+        }
+
+        internal static bool MoveFocus(FocusNavigationDirection direction, DependencyObject containmentRoot = null)
+        {
+            var focusedInput = Keyboard.FocusedElement;
+            var focused = focusedInput as DependencyObject;
+            if (focusedInput == null)
+            {
+                return false;
+            }
+
+            var request = new TraversalRequest(direction);
+            var moved = false;
+            if (focusedInput is UIElement uiElement)
+            {
+                moved = uiElement.MoveFocus(request);
+            }
+            else if (focusedInput is ContentElement contentElement)
+            {
+                moved = contentElement.MoveFocus(request);
+            }
+
+            if (!moved)
+            {
+                return false;
+            }
+
+            var next = Keyboard.FocusedElement as DependencyObject;
+            if (next == null || ReferenceEquals(next, focused))
+            {
+                return false;
+            }
+
+            if (containmentRoot == null ||
+                ReferenceEquals(next, containmentRoot) ||
+                IsDescendantOf(next, containmentRoot))
+            {
+                return true;
+            }
+
+            if (focusedInput is UIElement previousElement)
+            {
+                FocusElement(previousElement);
+            }
+
+            return false;
+        }
+
+        internal static bool IsKeyboardFocusWithin(DependencyObject root)
+        {
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            return root != null &&
+                   focused != null &&
+                   (ReferenceEquals(focused, root) || IsDescendantOf(focused, root));
+        }
+
         internal static bool IsFocusWithinDataGridColumnHeader(DataGrid grid)
         {
             return GetFocusedDataGridColumnHeader(grid) != null;
@@ -560,10 +655,9 @@ namespace PlayniteAchievements.Services.UI
             }
             else
             {
-                nextIndex = Math.Max(0, Math.Min(elements.Count - 1, nextIndex));
-                if (nextIndex == currentIndex)
+                if (nextIndex < 0 || nextIndex >= elements.Count || nextIndex == currentIndex)
                 {
-                    return true;
+                    return false;
                 }
             }
 
@@ -738,34 +832,6 @@ namespace PlayniteAchievements.Services.UI
             return false;
         }
 
-        private static bool TryHandleContextMenu(ContextMenu menu, ControllerInput input)
-        {
-            if (menu == null || !menu.IsOpen)
-            {
-                return false;
-            }
-
-            if (IsBackInput(input))
-            {
-                menu.IsOpen = false;
-                return true;
-            }
-
-            if (TryGetVerticalDelta(input, out var delta))
-            {
-                MoveContextMenuSelection(menu, delta);
-                return true;
-            }
-
-            if (IsAcceptInput(input))
-            {
-                ActivateFocusedMenuItem(menu);
-                return true;
-            }
-
-            return false;
-        }
-
         private static bool ActivateButtonBase(ButtonBase button)
         {
             if (button == null || !button.IsEnabled || button.Visibility != Visibility.Visible)
@@ -856,76 +922,6 @@ namespace PlayniteAchievements.Services.UI
             return null;
         }
 
-        private static void MoveContextMenuSelection(ContextMenu menu, int delta)
-        {
-            var items = GetFocusableMenuItems(menu);
-            if (items.Count == 0)
-            {
-                return;
-            }
-
-            var current = FindAncestor<MenuItem>(Keyboard.FocusedElement as DependencyObject);
-            var currentIndex = current != null ? items.IndexOf(current) : -1;
-            var nextIndex = currentIndex < 0
-                ? (delta > 0 ? 0 : items.Count - 1)
-                : (currentIndex + delta + items.Count) % items.Count;
-
-            FocusElement(items[nextIndex]);
-        }
-
-        private static void ActivateFocusedMenuItem(ContextMenu menu)
-        {
-            var item = FindAncestor<MenuItem>(Keyboard.FocusedElement as DependencyObject)
-                       ?? GetFocusableMenuItems(menu).FirstOrDefault();
-            if (item == null || !item.IsEnabled)
-            {
-                return;
-            }
-
-            if (item.HasItems)
-            {
-                item.IsSubmenuOpen = true;
-                FocusFirstSubmenuItem(item);
-                return;
-            }
-
-            if (item.IsCheckable)
-            {
-                item.IsChecked = !item.IsChecked;
-            }
-
-            ExecuteCommand(item.Command, item.CommandParameter, item.CommandTarget);
-            item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent, item));
-
-            if (!item.StaysOpenOnClick)
-            {
-                menu.IsOpen = false;
-            }
-            else
-            {
-                FocusElement(item);
-            }
-        }
-
-        private static void FocusFirstSubmenuItem(MenuItem item)
-        {
-            if (item == null)
-            {
-                return;
-            }
-
-            item.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                var firstChild = item.Items
-                    .OfType<MenuItem>()
-                    .FirstOrDefault(child => child.IsEnabled && child.Visibility == Visibility.Visible);
-                if (firstChild != null)
-                {
-                    FocusElement(firstChild);
-                }
-            }), DispatcherPriority.Input);
-        }
-
         private static void FocusFirstContextMenuItem(ContextMenu menu)
         {
             if (menu == null)
@@ -1000,6 +996,11 @@ namespace PlayniteAchievements.Services.UI
 
         private static bool FocusControllerElement(UIElement element)
         {
+            if (element is DataGrid grid)
+            {
+                return FocusDataGrid(grid);
+            }
+
             return FocusElement(element);
         }
 
@@ -1019,6 +1020,44 @@ namespace PlayniteAchievements.Services.UI
                     header.Visibility == Visibility.Visible)
                 .OrderBy(header => header.Column.DisplayIndex)
                 .ToList();
+        }
+
+        private static DataGridColumn GetFocusedDataGridColumn(DataGrid grid)
+        {
+            if (grid == null)
+            {
+                return null;
+            }
+
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            var header = GetFocusedDataGridColumnHeader(grid);
+            if (header?.Column != null)
+            {
+                return header.Column;
+            }
+
+            var cell = FindAncestor<DataGridCell>(focused);
+            if (cell != null && IsDescendantOf(cell, grid))
+            {
+                return cell.Column;
+            }
+
+            var currentColumn = grid.CurrentCell.Column;
+            return currentColumn?.Visibility == Visibility.Visible ? currentColumn : null;
+        }
+
+        private static bool IsFirstVisibleColumn(DataGrid grid, DataGridColumn column)
+        {
+            if (grid == null || column == null || column.Visibility != Visibility.Visible)
+            {
+                return false;
+            }
+
+            var firstColumn = grid.Columns
+                .Where(candidate => candidate != null && candidate.Visibility == Visibility.Visible)
+                .OrderBy(candidate => candidate.DisplayIndex)
+                .FirstOrDefault();
+            return ReferenceEquals(firstColumn, column);
         }
 
         private static T FindVisualDescendant<T>(DependencyObject root)

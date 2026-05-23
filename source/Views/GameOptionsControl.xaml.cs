@@ -293,6 +293,11 @@ namespace PlayniteAchievements.Views
                 return true;
             }
 
+            if (TryHandleDirectionalNavigation(input))
+            {
+                return true;
+            }
+
             if (FullscreenControllerNavigationService.IsAcceptInput(input))
             {
                 if (FullscreenControllerNavigationService.ActivateFocusedElement())
@@ -304,6 +309,80 @@ namespace PlayniteAchievements.Views
             }
 
             return false;
+        }
+
+        private bool TryHandleDirectionalNavigation(ControllerInput input)
+        {
+            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
+            {
+                if (horizontalDelta > 0 && IsKeyboardFocusWithinTabSelector())
+                {
+                    return FocusCurrentContentFirstElement();
+                }
+
+                if (horizontalDelta < 0 && TryFocusTabSelectorFromContentLeftEdge())
+                {
+                    return true;
+                }
+
+                return TryMoveContentFocus(horizontalDelta < 0
+                    ? FocusNavigationDirection.Left
+                    : FocusNavigationDirection.Right);
+            }
+
+            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var verticalDelta))
+            {
+                return TryMoveContentFocus(verticalDelta < 0
+                    ? FocusNavigationDirection.Up
+                    : FocusNavigationDirection.Down);
+            }
+
+            return false;
+        }
+
+        private bool TryMoveContentFocus(FocusNavigationDirection direction)
+        {
+            if (!FullscreenControllerNavigationService.IsKeyboardFocusWithin(GameOptionsContentHost))
+            {
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.MoveFocus(direction, GameOptionsContentHost))
+            {
+                return true;
+            }
+
+            var delta = direction == FocusNavigationDirection.Up || direction == FocusNavigationDirection.Left
+                ? -1
+                : 1;
+            return FullscreenControllerNavigationService.FocusElementByDelta(
+                GetCurrentContentControllerElements(),
+                delta);
+        }
+
+        private bool TryFocusTabSelectorFromContentLeftEdge()
+        {
+            if (!FullscreenControllerNavigationService.IsKeyboardFocusWithin(GameOptionsContentHost))
+            {
+                return false;
+            }
+
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            var focusedGrid = FullscreenControllerNavigationService.FindAncestor<DataGrid>(focused)
+                              ?? focused as DataGrid;
+            if (focusedGrid != null &&
+                FullscreenControllerNavigationService.IsDescendantOf(focusedGrid, GameOptionsContentHost))
+            {
+                return FullscreenControllerNavigationService.IsFocusAtDataGridLeftEdge(focusedGrid) &&
+                       FocusSelectedTabButton();
+            }
+
+            if (FullscreenControllerNavigationService.MoveFocus(FocusNavigationDirection.Left, GameOptionsContentHost))
+            {
+                return true;
+            }
+
+            return FocusSelectedTabButton();
         }
 
         private bool TryHandleGenericReveal()
@@ -338,19 +417,6 @@ namespace PlayniteAchievements.Views
             return false;
         }
 
-        private bool TryOpenFocusedContextButton()
-        {
-            var button = FullscreenControllerNavigationService.FindAncestor<Button>(
-                             Keyboard.FocusedElement as DependencyObject)
-                         ?? Keyboard.FocusedElement as Button;
-            if (button == null || button.ContextMenu == null)
-            {
-                return false;
-            }
-
-            return FullscreenControllerNavigationService.ActivateElement(button);
-        }
-
         private IList<RadioButton> GetVisibleTabButtons()
         {
             return new[]
@@ -365,6 +431,25 @@ namespace PlayniteAchievements.Views
                 }
                 .Where(button => button != null && button.IsVisible && button.IsEnabled)
                 .ToList();
+        }
+
+        private bool IsKeyboardFocusWithinTabSelector()
+        {
+            return GetVisibleTabButtons().Any(button => button.IsKeyboardFocusWithin);
+        }
+
+        private bool FocusSelectedTabButton()
+        {
+            var tabButton = GetVisibleTabButtons()
+                .FirstOrDefault(button => button.IsChecked == true)
+                ?? GetVisibleTabButtons().FirstOrDefault();
+
+            return tabButton != null && FullscreenControllerNavigationService.FocusElement(tabButton);
+        }
+
+        private bool FocusCurrentContentFirstElement()
+        {
+            return FullscreenControllerNavigationService.FocusFirstElement(GetCurrentContentControllerElements());
         }
 
         private IList<UIElement> GetCurrentContentControllerElements()
@@ -396,26 +481,6 @@ namespace PlayniteAchievements.Views
             }
 
             return FullscreenControllerNavigationService.GetVisibleFocusableElements(root);
-        }
-
-        private static int FindFocusedElementIndex(IList<UIElement> elements)
-        {
-            var focused = Keyboard.FocusedElement as DependencyObject;
-            if (elements == null || focused == null)
-            {
-                return -1;
-            }
-
-            for (var i = 0; i < elements.Count; i++)
-            {
-                if (ReferenceEquals(elements[i], focused) ||
-                    FullscreenControllerNavigationService.IsDescendantOf(focused, elements[i]))
-                {
-                    return i;
-                }
-            }
-
-            return -1;
         }
 
         private bool MoveSelectedTab(int delta)

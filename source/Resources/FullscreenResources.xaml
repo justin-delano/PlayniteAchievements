@@ -104,20 +104,88 @@
         <Setter Property="PopupAnimation" Value="Fade" />
     </Style>
 
-    <!-- Default implicit CheckBox style for fullscreen - lightweight, no custom template.
-         Only overrides colors/sizing, keeps default WPF rendering for the checkmark.
-         Menu item checkboxes use their own template via AchievementSelectorMenuCheckBoxStyle. -->
+    <!-- Default independent CheckBox style for fullscreen.
+         Menu item checkboxes use AchievementSelectorMenuCheckBoxStyle instead. -->
     <Style TargetType="CheckBox">
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{DynamicResource SelectionLightBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
-        <Setter Property="Padding" Value="6,4" />
-        <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}" />
-            </Trigger>
-        </Style.Triggers>
+        <Setter Property="Padding" Value="4,3" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="3"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border x:Name="CheckBoxBox"
+                                    Grid.Column="0"
+                                    Width="20"
+                                    Height="20"
+                                    Background="Transparent"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="1.5"
+                                    CornerRadius="2"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    SnapsToDevicePixels="True">
+                                <Viewbox Width="12"
+                                         Height="12"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center">
+                                    <Path x:Name="CheckMark"
+                                          Data="M 1,5 L 5,9 L 11,1"
+                                          Stroke="{DynamicResource TextBrush}"
+                                          StrokeThickness="2"
+                                          StrokeStartLineCap="Round"
+                                          StrokeEndLineCap="Round"
+                                          Visibility="Collapsed" />
+                                </Viewbox>
+                            </Border>
+
+                            <ContentPresenter Grid.Column="2"
+                                              RecognizesAccessKey="True"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              ContentStringFormat="{TemplateBinding ContentStringFormat}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="CheckBoxBox" Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="CheckBoxBox" Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}" />
+                            <Setter TargetName="Root" Property="Background" Value="#10FFFFFF" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="CheckBoxBox" Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}" />
+                            <Setter TargetName="Root" Property="Background" Value="#18FFFFFF" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.55" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ListBoxItem selection override for fullscreen visibility. -->

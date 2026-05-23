@@ -219,6 +219,7 @@
                  HorizontalContentAlignment="Stretch"
                  SelectionMode="Single"
                  KeyboardNavigation.DirectionalNavigation="Continue"
+                 KeyboardNavigation.TabNavigation="Continue"
                  ItemContainerStyle="{StaticResource IconCardListItemStyle}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -350,6 +351,7 @@
                                         <Button Tag="{Binding UnlockedOverrideText}"
                                                 CommandParameter="Unlocked"
                                                 Style="{StaticResource ClearSearchButtonStyle}"
+                                                Focusable="True"
                                                 Click="ClearOverrideButton_Click" />
                                     </Grid>
 
@@ -419,6 +421,7 @@
                                         <Button Tag="{Binding LockedOverrideText}"
                                                 CommandParameter="Locked"
                                                 Style="{StaticResource ClearSearchButtonStyle}"
+                                                Focusable="True"
                                                 Click="ClearOverrideButton_Click" />
                                     </Grid>
 

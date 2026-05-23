@@ -545,22 +545,38 @@ namespace PlayniteAchievements.Views
         private bool TryHandleControllerUp()
         {
             var focusedGrid = GetFocusedSidebarGrid();
-            if (focusedGrid != null && focusedGrid.SelectedIndex <= 0)
+            if (focusedGrid != null)
             {
-                return FocusFilterAreaForGrid(focusedGrid);
+                if (IsGridColumnHeaderFocused(focusedGrid))
+                {
+                    return FocusFilterAreaForGrid(focusedGrid);
+                }
+
+                if (IsGridAtFirstRow(focusedGrid))
+                {
+                    return FocusColumnHeaderForGrid(focusedGrid) || FocusFilterAreaForGrid(focusedGrid);
+                }
             }
+
             return false;
         }
 
         private bool TryHandleControllerDown()
         {
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (focusedGrid != null && IsGridColumnHeaderFocused(focusedGrid))
+            {
+                return FullscreenControllerNavigationService.FocusDataGrid(focusedGrid);
+            }
+
             if (IsKeyboardFocusWithinLeftFilterArea())
             {
-                return FocusOverviewGrid();
+                return FocusColumnHeaderForGrid(GamesOverviewDataGrid) || FocusOverviewGrid();
             }
             if (IsKeyboardFocusWithinRightFilterArea())
             {
-                return FocusActiveRightGrid();
+                var grid = GetActiveRightGrid();
+                return FocusColumnHeaderForGrid(grid) || FocusActiveRightGrid();
             }
             return false;
         }
@@ -579,7 +595,17 @@ namespace PlayniteAchievements.Views
 
             if (IsKeyboardFocusWithinRightFilterArea())
             {
-                return FocusLeftFilterArea();
+                if (FocusFilterElementByDelta(GetRightFilterControllerElements(), -1))
+                {
+                    return true;
+                }
+
+                return FocusLeftFilterArea(preferLast: true);
+            }
+
+            if (IsKeyboardFocusWithinLeftFilterArea())
+            {
+                return FocusFilterElementByDelta(GetLeftFilterControllerElements(), -1);
             }
 
             return false;
@@ -599,7 +625,17 @@ namespace PlayniteAchievements.Views
 
             if (IsKeyboardFocusWithinLeftFilterArea())
             {
+                if (FocusFilterElementByDelta(GetLeftFilterControllerElements(), 1))
+                {
+                    return true;
+                }
+
                 return FocusRightFilterArea();
+            }
+
+            if (IsKeyboardFocusWithinRightFilterArea())
+            {
+                return FocusFilterElementByDelta(GetRightFilterControllerElements(), 1);
             }
 
             return false;
@@ -671,14 +707,22 @@ namespace PlayniteAchievements.Views
 
         private bool FocusActiveRightGrid(int? preferredIndex = null)
         {
+            var grid = GetActiveRightGrid();
+            return grid != null && FullscreenControllerNavigationService.FocusDataGrid(grid, preferredIndex);
+        }
+
+        private DataGrid GetActiveRightGrid()
+        {
             var control = (GameAchievementsGrid?.IsVisible == true && _viewModel?.IsSelectedGameContentReady == true)
                 ? (object)GameAchievementsGrid
                 : (object)RecentAchievementsDataGrid;
 
-            if (control == null) return false;
+            return (control as Controls.AchievementDataGridControl)?.InternalDataGrid;
+        }
 
-            var grid = (control as Controls.AchievementDataGridControl)?.InternalDataGrid;
-            return grid != null && FullscreenControllerNavigationService.FocusDataGrid(grid, preferredIndex);
+        private bool FocusColumnHeaderForGrid(DataGrid grid)
+        {
+            return grid != null && FullscreenControllerNavigationService.FocusDataGridColumnHeader(grid);
         }
 
         private bool FocusFilterAreaForGrid(DataGrid grid)
@@ -690,14 +734,30 @@ namespace PlayniteAchievements.Views
             return FocusRightFilterArea();
         }
 
-        private bool FocusLeftFilterArea()
+        private bool FocusLeftFilterArea(bool preferLast = false)
         {
-            return FullscreenControllerNavigationService.FocusFirstElement(GetLeftFilterControllerElements().ToArray());
+            return FocusFilterArea(GetLeftFilterControllerElements(), preferLast);
         }
 
-        private bool FocusRightFilterArea()
+        private bool FocusRightFilterArea(bool preferLast = false)
         {
-            return FullscreenControllerNavigationService.FocusFirstElement(GetRightFilterControllerElements().ToArray());
+            return FocusFilterArea(GetRightFilterControllerElements(), preferLast);
+        }
+
+        private static bool FocusFilterArea(IList<UIElement> elements, bool preferLast)
+        {
+            if (elements == null || elements.Count == 0)
+            {
+                return false;
+            }
+
+            return FullscreenControllerNavigationService.FocusFirstElement(
+                preferLast ? elements.Reverse().ToArray() : elements);
+        }
+
+        private static bool FocusFilterElementByDelta(IList<UIElement> elements, int delta)
+        {
+            return FullscreenControllerNavigationService.FocusElementByDelta(elements, delta);
         }
 
         private bool TryOpenSelectedGridRowContextMenu(DataGrid grid)
@@ -857,6 +917,24 @@ namespace PlayniteAchievements.Views
                    (ReferenceEquals(grid, GamesOverviewDataGrid) ||
                     ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid) ||
                     ReferenceEquals(grid, GameAchievementsGrid?.InternalDataGrid));
+        }
+
+        private static bool IsGridAtFirstRow(DataGrid grid)
+        {
+            if (grid?.Items == null || grid.Items.Count == 0)
+            {
+                return false;
+            }
+
+            var focusedRow = FullscreenControllerNavigationService.FindAncestor<DataGridRow>(
+                Keyboard.FocusedElement as DependencyObject);
+            if (focusedRow != null &&
+                ReferenceEquals(ItemsControl.ItemsControlFromItemContainer(focusedRow), grid))
+            {
+                return focusedRow.GetIndex() <= 0;
+            }
+
+            return grid.SelectedIndex <= 0;
         }
 
         private bool IsKeyboardFocusWithinLeftPane()

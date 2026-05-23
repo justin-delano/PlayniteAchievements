@@ -335,30 +335,40 @@ namespace PlayniteAchievements.Views
             return false;
         }
 
-        private AchievementIconOverrideItem GetFocusedControllerItem()
-        {
-            var focusedItem = FullscreenControllerNavigationService.FindAncestor<ListBoxItem>(
-                Keyboard.FocusedElement as DependencyObject);
-            if (focusedItem?.DataContext is AchievementIconOverrideItem row)
-            {
-                return row;
-            }
-
-            return AchievementCardsList?.SelectedItem as AchievementIconOverrideItem;
-        }
-
         public IList<UIElement> GetControllerElements()
         {
-            return new UIElement[]
-                {
-                    RevertChangesButton,
-                    ClearAllButton,
-                    SaveButton,
-                    OpenIconsFolderButton,
-                    AchievementCardsList
-                }
-                .Where(element => element != null && element.IsVisible && element.IsEnabled)
+            var elements = new List<UIElement>
+            {
+                RevertChangesButton,
+                ClearAllButton,
+                SaveButton,
+                OpenIconsFolderButton
+            };
+
+            if (AchievementCardsList?.IsVisible == true)
+            {
+                elements.AddRange(FullscreenControllerNavigationService.GetVisibleFocusableElements(AchievementCardsList));
+            }
+
+            return elements
+                .Where(IsControllerElementAvailable)
                 .ToList();
+        }
+
+        private static bool IsControllerElementAvailable(UIElement element)
+        {
+            if (element == null || !element.IsVisible || !element.IsEnabled)
+            {
+                return false;
+            }
+
+            if (element is Button button &&
+                ReferenceEquals(button.Style, button.TryFindResource("ClearSearchButtonStyle")))
+            {
+                return !string.IsNullOrEmpty(button.Tag as string);
+            }
+
+            return true;
         }
     }
 }
