@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
@@ -33,6 +35,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly IPlayniteAPI _playniteApi;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+        private readonly AchievementPageLinkResolver _achievementPageLinkResolver;
 
         private GameOptionsTab _selectedTab;
         private bool _hasGame;
@@ -64,6 +67,7 @@ namespace PlayniteAchievements.ViewModels
         private bool _hasManualTrackingLink;
         private string _manualTrackingSummary;
         private bool _hasCapstoneData;
+        private bool _hasAchievementPageLink;
         private string _capstoneEmptyMessage;
         private bool _isRefreshing;
         private string _cachedProviderKey;
@@ -83,6 +87,7 @@ namespace PlayniteAchievements.ViewModels
         private int _customDataRevision;
 
         public RelayCommand OpenAchievementsCommand { get; }
+        public AsyncCommand OpenAchievementPageCommand { get; }
         public RelayCommand ToggleExclusionCommand { get; }
         public RelayCommand ToggleSummaryExclusionCommand { get; }
         public RelayCommand ApplyRaOverrideCommand { get; }
@@ -124,8 +129,10 @@ namespace PlayniteAchievements.ViewModels
             _playniteApi = playniteApi;
             _settings = settings;
             _logger = logger;
+            _achievementPageLinkResolver = new AchievementPageLinkResolver(_refreshService?.Providers);
 
             OpenAchievementsCommand = new RelayCommand(_ => OpenAchievements(), _ => HasGame);
+            OpenAchievementPageCommand = new AsyncCommand(_ => OpenAchievementPageAsync(), _ => HasGame && HasAchievementPageLink);
             ToggleExclusionCommand = new RelayCommand(_ => ToggleExclusion(), _ => HasGame);
             ToggleSummaryExclusionCommand = new RelayCommand(_ => ToggleSummaryExclusion(), _ => HasGame);
             ApplyRaOverrideCommand = new RelayCommand(_ => ApplyRaOverride(), _ => HasGame && IsRaCapable);
@@ -368,6 +375,18 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _hasCachedData;
             private set => SetValue(ref _hasCachedData, value);
+        }
+
+        public bool HasAchievementPageLink
+        {
+            get => _hasAchievementPageLink;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasAchievementPageLink, value))
+                {
+                    RaiseCommandStates();
+                }
+            }
         }
 
         public string ProviderName
@@ -735,6 +754,18 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _customDataRevision, value);
         }
 
+        private GameAchievementData GetHydratedGameData()
+        {
+            return _gameDataSnapshotProvider?.GetHydratedGameData() ??
+                   _plugin?.AchievementDataService?.GetGameAchievementData(_gameId);
+        }
+
+        private GameAchievementData GetRawGameData()
+        {
+            return _gameDataSnapshotProvider?.GetRawGameData() ??
+                   _plugin?.AchievementDataService?.GetRawGameAchievementData(_gameId);
+        }
+
         public void Reload()
         {
             try
@@ -759,8 +790,8 @@ namespace PlayniteAchievements.ViewModels
 
                 GameImagePath = imagePath;
 
-                var gameData = _gameDataSnapshotProvider?.GetHydratedGameData() ??
-                    _plugin?.AchievementDataService?.GetGameAchievementData(_gameId);
+                var gameData = GetHydratedGameData();
+                var rawGameData = GetRawGameData();
                 HasCachedData = gameData != null;
                 _cachedProviderKey = gameData?.ProviderKey?.Trim();
                 _cachedHasAchievements = gameData?.HasAchievements ?? false;
@@ -865,6 +896,8 @@ namespace PlayniteAchievements.ViewModels
                 var hasManualLink = ManualAchievementsProvider.TryGetManualLink(_gameId, out manualLink);
                 HasManualTrackingLink = hasManualLink;
                 ManualTrackingSummary = ManualAchievementsProvider.GetGameOptionsLinkSummary(manualLink);
+                HasAchievementPageLink = HasGame && _achievementPageLinkResolver.CanResolve(
+                    new AchievementPageLinkContext(game, gameData, rawGameData, manualLink));
 
                 ExophaseDataProvider.GetGameOptionsState(
                     game,
@@ -912,6 +945,48 @@ namespace PlayniteAchievements.ViewModels
         private void OpenAchievements()
         {
             _plugin?.OpenSingleGameAchievementsView(_gameId);
+        }
+
+        private async Task OpenAchievementPageAsync()
+        {
+            try
+            {
+                var game = _playniteApi?.Database?.Games?.Get(_gameId);
+                ManualAchievementLink manualLink;
+                ManualAchievementsProvider.TryGetManualLink(_gameId, out manualLink);
+
+                var url = await _achievementPageLinkResolver.ResolveUrlAsync(
+                    new AchievementPageLinkContext(game, GetHydratedGameData(), GetRawGameData(), manualLink),
+                    CancellationToken.None);
+
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    ShowAchievementPageUnavailable();
+                    return;
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed opening achievement page for gameId={_gameId}.");
+                ShowAchievementPageUnavailable();
+            }
+        }
+
+        private void ShowAchievementPageUnavailable()
+        {
+            _playniteApi?.Dialogs?.ShowMessage(
+                L(
+                    "LOCPlayAch_GameOptions_Overview_AchievementPageUnavailable",
+                    "No achievement page link is available for this game."),
+                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
 
         private void ToggleExclusion()
@@ -1542,6 +1617,7 @@ namespace PlayniteAchievements.ViewModels
         private void RaiseCommandStates()
         {
             OpenAchievementsCommand?.RaiseCanExecuteChanged();
+            OpenAchievementPageCommand?.RaiseCanExecuteChanged();
             ToggleExclusionCommand?.RaiseCanExecuteChanged();
             ToggleSummaryExclusionCommand?.RaiseCanExecuteChanged();
             ApplyRaOverrideCommand?.RaiseCanExecuteChanged();

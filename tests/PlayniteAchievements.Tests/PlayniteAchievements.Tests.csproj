@@ -68,6 +68,9 @@
     <Compile Include="..\..\source\Providers\Settings\ProviderSettingsViewBase.cs" Link="Source\Providers\Settings\ProviderSettingsViewBase.cs" />
     <Compile Include="..\..\source\Providers\ProviderRegistry.cs" Link="Source\Providers\ProviderRegistry.cs" />
     <Compile Include="..\..\source\Providers\ProviderUiPolicies.cs" Link="Source\Providers\ProviderUiPolicies.cs" />
+    <Compile Include="..\..\source\Providers\AchievementPageLinkContext.cs" Link="Source\Providers\AchievementPageLinkContext.cs" />
+    <Compile Include="..\..\source\Providers\AchievementPageLinkResolver.cs" Link="Source\Providers\AchievementPageLinkResolver.cs" />
+    <Compile Include="..\..\source\Providers\IAchievementPageLinkProvider.cs" Link="Source\Providers\IAchievementPageLinkProvider.cs" />
     <Compile Include="..\..\source\Common\RateLimiter.cs" Link="Source\Common\RateLimiter.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetApiClient.cs" Link="Source\Providers\BattleNet\BattleNetApiClient.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetSupport.cs" Link="Source\Providers\BattleNet\BattleNetSupport.cs" />
