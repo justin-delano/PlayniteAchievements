@@ -164,8 +164,18 @@ namespace PlayniteAchievements.Services.UI
             }
 
             var activeWindow = GetActiveWindow();
+            IFullscreenControllerNavigable controllerHandler = null;
             if (activeWindow == null ||
-                !_registeredWindows.TryGetValue(activeWindow, out var controllerHandler))
+                !_registeredWindows.TryGetValue(activeWindow, out controllerHandler))
+            {
+                activeWindow = GetRegisteredWindowOwningKeyboardFocus();
+                if (activeWindow != null)
+                {
+                    _registeredWindows.TryGetValue(activeWindow, out controllerHandler);
+                }
+            }
+
+            if (activeWindow == null || controllerHandler == null)
             {
                 return false;
             }
@@ -184,16 +194,22 @@ namespace PlayniteAchievements.Services.UI
                 }
             }
 
-            var openContextMenu = FindOpenContextMenuForWindow(activeWindow);
-            if (openContextMenu?.IsOpen == true)
-            {
-                return false;
-            }
-
             var inputKey = NormalizeInputKey(input);
             if (IsRepeatedInput(activeWindow, inputKey))
             {
                 return true;
+            }
+
+            var openContextMenu = FindOpenContextMenuForWindow(activeWindow);
+            if (openContextMenu?.IsOpen == true)
+            {
+                if (TryRouteControllerInputToContextMenu(openContextMenu, input))
+                {
+                    RecordHandledInput(activeWindow, inputKey);
+                    return true;
+                }
+
+                return false;
             }
 
             PrepareWindowForControllerFocus(activeWindow);
@@ -226,6 +242,11 @@ namespace PlayniteAchievements.Services.UI
                 return false;
             }
 
+            if (IsAchievementIconOverrideTextBox(textBox))
+            {
+                return false;
+            }
+
             var direction = FocusNavigationDirection.Down;
             if (input == ControllerInput.DPadUp || input == ControllerInput.LeftStickUp) direction = FocusNavigationDirection.Up;
             else if (input == ControllerInput.DPadDown || input == ControllerInput.LeftStickDown) direction = FocusNavigationDirection.Down;
@@ -242,6 +263,13 @@ namespace PlayniteAchievements.Services.UI
             }
 
             return false;
+        }
+
+        private static bool IsAchievementIconOverrideTextBox(TextBox textBox)
+        {
+            var tag = textBox?.Tag as string;
+            return string.Equals(tag, "Unlocked", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(tag, "Locked", StringComparison.OrdinalIgnoreCase);
         }
 
         private void BlockInputBriefly(Window window)
@@ -308,6 +336,11 @@ namespace PlayniteAchievements.Services.UI
             return Application.Current?.Windows?
                 .OfType<Window>()
                 .FirstOrDefault(window => window.IsActive);
+        }
+
+        private Window GetRegisteredWindowOwningKeyboardFocus()
+        {
+            return _registeredWindows.Keys.FirstOrDefault(IsKeyboardFocusOwnedByWindow);
         }
 
         private bool IsKeyboardFocusOwnedByWindow(Window window)
@@ -391,6 +424,11 @@ namespace PlayniteAchievements.Services.UI
                 var row = grid.ItemContainerGenerator.ContainerFromIndex(index) as DataGridRow;
                 if (row != null)
                 {
+                    if (UsesControllerCellFocus(grid) && FocusDataGridCell(grid, row, index))
+                    {
+                        return true;
+                    }
+
                     return FocusElement(row);
                 }
             }
@@ -787,12 +825,108 @@ namespace PlayniteAchievements.Services.UI
                 return false;
             }
 
+            RoutedEventHandler closedHandler = null;
+            closedHandler = (_, __) =>
+            {
+                menu.Closed -= closedHandler;
+                owner.Dispatcher.BeginInvoke(new Action(() => FocusElement(owner)), DispatcherPriority.Input);
+            };
+
+            menu.Closed += closedHandler;
             menu.PlacementTarget = owner;
             menu.Placement = PlacementMode.Bottom;
             menu.HorizontalOffset = 0;
             menu.VerticalOffset = 0;
             menu.IsOpen = true;
             FocusFirstContextMenuItem(menu);
+            return true;
+        }
+
+        private static bool TryRouteControllerInputToContextMenu(ContextMenu menu, ControllerInput input)
+        {
+            if (menu == null || !menu.IsOpen)
+            {
+                return false;
+            }
+
+            Key key;
+            if (TryGetVerticalDelta(input, out var verticalDelta))
+            {
+                EnsureContextMenuFocus(menu);
+                return true;
+            }
+            else if (IsAcceptInput(input))
+            {
+                key = Key.Enter;
+            }
+            else if (IsBackInput(input))
+            {
+                key = Key.Escape;
+            }
+            else
+            {
+                return false;
+            }
+
+            var target = Keyboard.FocusedElement as DependencyObject;
+            if (FindAncestor<ContextMenu>(target) != menu)
+            {
+                var first = GetFocusableMenuItems(menu).FirstOrDefault();
+                if (first != null)
+                {
+                    FocusElement(first);
+                    target = first;
+                }
+                else
+                {
+                    target = menu;
+                }
+            }
+
+            return RaiseWpfKey(menu, target, key);
+        }
+
+        private static void EnsureContextMenuFocus(ContextMenu menu)
+        {
+            var target = Keyboard.FocusedElement as DependencyObject;
+            if (FindAncestor<ContextMenu>(target) == menu)
+            {
+                return;
+            }
+
+            var first = GetFocusableMenuItems(menu).FirstOrDefault();
+            if (first != null)
+            {
+                FocusElement(first);
+            }
+        }
+
+        private static bool RaiseWpfKey(ContextMenu menu, DependencyObject target, Key key)
+        {
+            var element = target as UIElement ?? menu;
+            var source = PresentationSource.FromVisual(element) ?? PresentationSource.FromVisual(menu);
+            if (source == null)
+            {
+                if (key == Key.Escape)
+                {
+                    menu.IsOpen = false;
+                    return true;
+                }
+
+                return false;
+            }
+
+            var keyArgs = new KeyEventArgs(Keyboard.PrimaryDevice, source, Environment.TickCount, key)
+            {
+                RoutedEvent = Keyboard.KeyDownEvent
+            };
+            element.RaiseEvent(keyArgs);
+
+            if (key == Key.Escape && !keyArgs.Handled && menu.IsOpen)
+            {
+                menu.IsOpen = false;
+            }
+
             return true;
         }
 
@@ -1002,6 +1136,36 @@ namespace PlayniteAchievements.Services.UI
             }
 
             return FocusElement(element);
+        }
+
+        private static bool UsesControllerCellFocus(DataGrid grid)
+        {
+            return string.Equals(grid?.Tag as string, CellFocusTag, StringComparison.Ordinal);
+        }
+
+        private static bool FocusDataGridCell(DataGrid grid, DataGridRow row, int itemIndex)
+        {
+            if (grid == null || row == null || itemIndex < 0 || itemIndex >= grid.Items.Count)
+            {
+                return false;
+            }
+
+            var column = grid.Columns
+                .Where(candidate => candidate != null && candidate.Visibility == Visibility.Visible)
+                .OrderBy(candidate => candidate.DisplayIndex)
+                .FirstOrDefault();
+            if (column == null)
+            {
+                return false;
+            }
+
+            grid.CurrentCell = new DataGridCellInfo(grid.Items[itemIndex], column);
+            grid.ScrollIntoView(grid.Items[itemIndex], column);
+            grid.UpdateLayout();
+
+            var cell = EnumerateVisualDescendants<DataGridCell>(row)
+                .FirstOrDefault(candidate => ReferenceEquals(candidate.Column, column));
+            return cell != null && FocusElement(cell);
         }
 
         private static List<DataGridColumnHeader> GetVisibleDataGridColumnHeaders(DataGrid grid)

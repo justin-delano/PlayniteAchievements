@@ -36,6 +36,8 @@
             <Style x:Key="InlineBrowseButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                 <Setter Property="Width" Value="34" />
                 <Setter Property="Height" Value="34" />
+                <Setter Property="Focusable" Value="True" />
+                <Setter Property="KeyboardNavigation.IsTabStop" Value="True" />
                 <Setter Property="Padding" Value="0" />
                 <Setter Property="Margin" Value="8,0,0,0" />
                 <Setter Property="FontSize" Value="16" />
@@ -56,6 +58,8 @@
             </Style>
 
             <Style x:Key="EditorTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource ClearableSearchTextBoxStyle}">
+                <Setter Property="Focusable" Value="True" />
+                <Setter Property="KeyboardNavigation.IsTabStop" Value="True" />
                 <Setter Property="Padding" Value="10,6,30,6" />
                 <Setter Property="MinHeight" Value="34" />
                 <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
@@ -216,6 +220,8 @@
                  Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}"
                  BorderThickness="0"
                  Background="Transparent"
+                 Focusable="False"
+                 KeyboardNavigation.IsTabStop="False"
                  HorizontalContentAlignment="Stretch"
                  SelectionMode="Single"
                  KeyboardNavigation.DirectionalNavigation="Continue"

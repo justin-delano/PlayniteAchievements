@@ -35,6 +35,13 @@ namespace PlayniteAchievements.Views
         private readonly GameOptionsAchievementIconsViewModel _viewModel;
         private ScrollViewer _achievementCardsScrollViewer;
 
+        private enum IconEditorControlKind
+        {
+            TextBox,
+            ClearButton,
+            BrowseButton
+        }
+
         public GameOptionsAchievementIconsTab(GameOptionsAchievementIconsViewModel viewModel)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
@@ -332,6 +339,249 @@ namespace PlayniteAchievements.Views
 
         public bool HandleFullscreenControllerInput(ControllerInput input)
         {
+            if (!FullscreenControllerNavigationService.IsKeyboardFocusWithin(this))
+            {
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.TryGetHorizontalDelta(input, out var horizontalDelta))
+            {
+                return TryMoveIconEditorFocusHorizontal(horizontalDelta);
+            }
+
+            if (FullscreenControllerNavigationService.TryGetVerticalDelta(input, out var verticalDelta))
+            {
+                return TryMoveIconEditorFocusVertical(verticalDelta);
+            }
+
+            return false;
+        }
+
+        private bool TryMoveIconEditorFocusHorizontal(int delta)
+        {
+            if (delta == 0 ||
+                AchievementCardsList?.IsVisible != true ||
+                !TryGetFocusedIconEditor(out var rowItem, out var variant, out var kind))
+            {
+                return false;
+            }
+
+            var candidates = GetIconEditorCandidates(rowItem, variant);
+            if (candidates.Count == 0)
+            {
+                return false;
+            }
+
+            var currentIndex = candidates.FindIndex(candidate => candidate.Kind == kind);
+            if (currentIndex < 0)
+            {
+                return false;
+            }
+
+            var nextIndex = currentIndex + delta;
+            if (nextIndex < 0 || nextIndex >= candidates.Count)
+            {
+                return false;
+            }
+
+            return FullscreenControllerNavigationService.FocusElement(candidates[nextIndex].Element);
+        }
+
+        private bool TryMoveIconEditorFocusVertical(int delta)
+        {
+            if (delta == 0 ||
+                AchievementCardsList?.IsVisible != true)
+            {
+                return false;
+            }
+
+            if (!TryGetFocusedIconEditor(out var rowItem, out var variant, out var kind))
+            {
+                return delta > 0 && TryFocusFirstVisibleIconEditor();
+            }
+
+            if (delta > 0 && variant == AchievementIconVariant.Unlocked)
+            {
+                return FocusIconEditor(rowItem, AchievementIconVariant.Locked, kind);
+            }
+
+            if (delta < 0 && variant == AchievementIconVariant.Locked)
+            {
+                return FocusIconEditor(rowItem, AchievementIconVariant.Unlocked, kind);
+            }
+
+            var nextRow = GetAdjacentGeneratedRow(rowItem, delta);
+            if (nextRow == null)
+            {
+                return false;
+            }
+
+            var nextVariant = delta > 0 ? AchievementIconVariant.Unlocked : AchievementIconVariant.Locked;
+            return FocusIconEditor(nextRow, nextVariant, kind);
+        }
+
+        private bool TryGetFocusedIconEditor(
+            out ListBoxItem rowItem,
+            out AchievementIconVariant variant,
+            out IconEditorControlKind kind)
+        {
+            rowItem = null;
+            variant = AchievementIconVariant.Unlocked;
+            kind = IconEditorControlKind.TextBox;
+
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            rowItem = FullscreenControllerNavigationService.FindAncestor<ListBoxItem>(focused);
+            return rowItem != null &&
+                   TryGetIconEditorIdentity(focused, rowItem, out variant, out kind);
+        }
+
+        private bool TryGetIconEditorIdentity(
+            DependencyObject source,
+            DependencyObject rowRoot,
+            out AchievementIconVariant variant,
+            out IconEditorControlKind kind)
+        {
+            variant = AchievementIconVariant.Unlocked;
+            kind = IconEditorControlKind.TextBox;
+
+            var textBox = FullscreenControllerNavigationService.FindAncestor<TextBox>(source) ?? source as TextBox;
+            if (textBox != null && FullscreenControllerNavigationService.IsDescendantOf(textBox, rowRoot))
+            {
+                return TryParseVariant(textBox.Tag as string, out variant);
+            }
+
+            var button = FullscreenControllerNavigationService.FindAncestor<ButtonBase>(source) ?? source as ButtonBase;
+            if (button == null || !FullscreenControllerNavigationService.IsDescendantOf(button, rowRoot))
+            {
+                return false;
+            }
+
+            var variantToken = button.CommandParameter as string ?? button.Tag as string;
+            if (!TryParseVariant(variantToken, out variant))
+            {
+                return false;
+            }
+
+            kind = IsClearButton(button)
+                ? IconEditorControlKind.ClearButton
+                : IconEditorControlKind.BrowseButton;
+            return true;
+        }
+
+        private ListBoxItem GetAdjacentGeneratedRow(ListBoxItem rowItem, int delta)
+        {
+            var index = AchievementCardsList.ItemContainerGenerator.IndexFromContainer(rowItem);
+            var nextIndex = index + delta;
+            if (nextIndex < 0 || nextIndex >= AchievementCardsList.Items.Count)
+            {
+                return null;
+            }
+
+            AchievementCardsList.ScrollIntoView(AchievementCardsList.Items[nextIndex]);
+            AchievementCardsList.UpdateLayout();
+            return AchievementCardsList.ItemContainerGenerator.ContainerFromIndex(nextIndex) as ListBoxItem;
+        }
+
+        private bool TryFocusFirstVisibleIconEditor()
+        {
+            if (AchievementCardsList?.IsVisible != true || AchievementCardsList.Items.Count == 0)
+            {
+                return false;
+            }
+
+            AchievementCardsList.UpdateLayout();
+            var rowItem = GetFirstGeneratedRow();
+            if (rowItem == null)
+            {
+                AchievementCardsList.ScrollIntoView(AchievementCardsList.Items[0]);
+                AchievementCardsList.UpdateLayout();
+                rowItem = AchievementCardsList.ItemContainerGenerator.ContainerFromIndex(0) as ListBoxItem;
+            }
+
+            return rowItem != null &&
+                   FocusIconEditor(rowItem, AchievementIconVariant.Unlocked, IconEditorControlKind.TextBox);
+        }
+
+        private ListBoxItem GetFirstGeneratedRow()
+        {
+            for (var index = 0; index < AchievementCardsList.Items.Count; index++)
+            {
+                var rowItem = AchievementCardsList.ItemContainerGenerator.ContainerFromIndex(index) as ListBoxItem;
+                if (rowItem?.IsVisible == true)
+                {
+                    return rowItem;
+                }
+            }
+
+            return null;
+        }
+
+        private bool FocusIconEditor(
+            ListBoxItem rowItem,
+            AchievementIconVariant variant,
+            IconEditorControlKind preferredKind)
+        {
+            var candidates = GetIconEditorCandidates(rowItem, variant);
+
+            var target = candidates.FirstOrDefault(candidate => candidate.Kind == preferredKind).Element
+                         ?? candidates.FirstOrDefault(candidate => candidate.Kind == IconEditorControlKind.TextBox).Element
+                         ?? candidates.FirstOrDefault(candidate => candidate.Kind == IconEditorControlKind.BrowseButton).Element
+                         ?? candidates.FirstOrDefault().Element;
+
+            return target != null && FullscreenControllerNavigationService.FocusElement(target);
+        }
+
+        private List<IconEditorCandidate> GetIconEditorCandidates(
+            ListBoxItem rowItem,
+            AchievementIconVariant variant)
+        {
+            return FullscreenControllerNavigationService.GetVisibleFocusableElements(rowItem)
+                .Where(IsControllerElementAvailable)
+                .Select(element =>
+                {
+                    if (!TryGetIconEditorIdentity(element, rowItem, out var elementVariant, out var kind) ||
+                        elementVariant != variant)
+                    {
+                        return null;
+                    }
+
+                    return new IconEditorCandidate(element, kind);
+                })
+                .Where(candidate => candidate != null)
+                .OrderBy(candidate => GetIconEditorKindOrder(candidate.Kind))
+                .ToList();
+        }
+
+        private static int GetIconEditorKindOrder(IconEditorControlKind kind)
+        {
+            switch (kind)
+            {
+                case IconEditorControlKind.TextBox:
+                    return 0;
+                case IconEditorControlKind.ClearButton:
+                    return 1;
+                case IconEditorControlKind.BrowseButton:
+                    return 2;
+                default:
+                    return 99;
+            }
+        }
+
+        private static bool TryParseVariant(string value, out AchievementIconVariant variant)
+        {
+            variant = AchievementIconVariant.Unlocked;
+            if (string.Equals((value ?? string.Empty).Trim(), "Locked", StringComparison.OrdinalIgnoreCase))
+            {
+                variant = AchievementIconVariant.Locked;
+                return true;
+            }
+
+            if (string.Equals((value ?? string.Empty).Trim(), "Unlocked", StringComparison.OrdinalIgnoreCase))
+            {
+                variant = AchievementIconVariant.Unlocked;
+                return true;
+            }
+
             return false;
         }
 
@@ -347,6 +597,7 @@ namespace PlayniteAchievements.Views
 
             if (AchievementCardsList?.IsVisible == true)
             {
+                AchievementCardsList.UpdateLayout();
                 elements.AddRange(FullscreenControllerNavigationService.GetVisibleFocusableElements(AchievementCardsList));
             }
 
@@ -369,6 +620,25 @@ namespace PlayniteAchievements.Views
             }
 
             return true;
+        }
+
+        private static bool IsClearButton(ButtonBase button)
+        {
+            return button is Button clearButton &&
+                   ReferenceEquals(clearButton.Style, clearButton.TryFindResource("ClearSearchButtonStyle"));
+        }
+
+        private sealed class IconEditorCandidate
+        {
+            public IconEditorCandidate(UIElement element, IconEditorControlKind kind)
+            {
+                Element = element;
+                Kind = kind;
+            }
+
+            public UIElement Element { get; }
+
+            public IconEditorControlKind Kind { get; }
         }
     }
 }

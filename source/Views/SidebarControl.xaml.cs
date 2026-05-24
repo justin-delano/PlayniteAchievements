@@ -32,6 +32,7 @@ namespace PlayniteAchievements.Views
         private bool _isActive;
         private Guid? _lastSelectedOverviewGameId;
         private DataGridRow _pendingRightClickRow;
+        private bool _committingOverviewSelection;
 
         // Column persistence state (for GamesOverviewDataGrid only - AchievementDataGridControl handles its own)
         private readonly Dictionary<DataGridColumn, EventHandler> _columnWidthChangedHandlers = new Dictionary<DataGridColumn, EventHandler>();
@@ -618,7 +619,6 @@ namespace PlayniteAchievements.Views
             {
                 if (ReferenceEquals(focusedGrid, GamesOverviewDataGrid))
                 {
-                    TrySelectFocusedOverviewGame();
                     return FocusActiveRightGrid(focusedGrid.SelectedIndex);
                 }
             }
@@ -988,13 +988,81 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            if (!_viewModel.IsGameSelected)
+            if (IsCommittedOverviewGame(item))
+            {
+                return ClearCommittedOverviewGameSelection();
+            }
+
+            return CommitOverviewGameSelection(item);
+        }
+
+        private bool IsCommittedOverviewGame(GameOverviewItem item)
+        {
+            return item?.PlayniteGameId.HasValue == true &&
+                   _viewModel?.SelectedGame?.PlayniteGameId.HasValue == true &&
+                   item.PlayniteGameId.Value == _viewModel.SelectedGame.PlayniteGameId.Value;
+        }
+
+        private bool CommitOverviewGameSelection(GameOverviewItem item)
+        {
+            if (item == null || _viewModel == null)
+            {
+                return false;
+            }
+
+            var currentGameId = item.PlayniteGameId;
+            var gameChanged = !_lastSelectedOverviewGameId.HasValue ||
+                              currentGameId != _lastSelectedOverviewGameId.Value;
+            var wasGameSelected = _viewModel.IsGameSelected;
+
+            if (!wasGameSelected)
             {
                 PrecomputeToggleWidths(toGameSelected: true);
             }
 
-            _viewModel.SelectedGame = item;
-            _lastSelectedOverviewGameId = item.PlayniteGameId;
+            _committingOverviewSelection = true;
+            try
+            {
+                _viewModel.SelectedGame = item;
+                _lastSelectedOverviewGameId = currentGameId;
+            }
+            finally
+            {
+                _committingOverviewSelection = false;
+            }
+
+            if (gameChanged)
+            {
+                ResetAchievementsSortDirection();
+                ResetAchievementsScrollPosition();
+            }
+
+            return true;
+        }
+
+        private bool ClearCommittedOverviewGameSelection()
+        {
+            if (_viewModel == null)
+            {
+                return false;
+            }
+
+            if (_viewModel.IsGameSelected)
+            {
+                PrecomputeToggleWidths(toGameSelected: false);
+            }
+
+            _committingOverviewSelection = true;
+            try
+            {
+                _viewModel.ClearGameSelection();
+                _lastSelectedOverviewGameId = null;
+            }
+            finally
+            {
+                _committingOverviewSelection = false;
+            }
+
             return true;
         }
 
@@ -1086,28 +1154,36 @@ namespace PlayniteAchievements.Views
 
             if (grid.SelectedItem is GameOverviewItem item)
             {
-                var currentGameId = item.PlayniteGameId;
-                var gameChanged = !_lastSelectedOverviewGameId.HasValue ||
-                                  currentGameId != _lastSelectedOverviewGameId.Value;
-                var wasGameSelected = _viewModel.IsGameSelected;
-
-                if (!wasGameSelected)
+                if (ShouldCommitOverviewSelectionFromSelectionChanged())
                 {
-                    PrecomputeToggleWidths(toGameSelected: true);
-                }
-
-                _viewModel.SelectedGame = item;
-                _lastSelectedOverviewGameId = currentGameId;
-
-                if (gameChanged)
-                {
-                    ResetAchievementsSortDirection();
-                    ResetAchievementsScrollPosition();
+                    CommitOverviewGameSelection(item);
                 }
             }
             else
             {
-                _lastSelectedOverviewGameId = null;
+                if (ShouldCommitOverviewSelectionFromSelectionChanged())
+                {
+                    _lastSelectedOverviewGameId = null;
+                }
+            }
+        }
+
+        private bool ShouldCommitOverviewSelectionFromSelectionChanged()
+        {
+            return !_committingOverviewSelection &&
+                   (!IsFullscreenMode() ||
+                    Mouse.LeftButton == MouseButtonState.Pressed);
+        }
+
+        private bool IsFullscreenMode()
+        {
+            try
+            {
+                return _playniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+            }
+            catch
+            {
+                return false;
             }
         }
 

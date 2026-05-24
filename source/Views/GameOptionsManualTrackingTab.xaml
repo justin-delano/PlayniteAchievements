@@ -31,13 +31,6 @@
                 </Style.Triggers>
             </Style>
 
-            <!-- Checkbox style for DataGrid -->
-            <Style x:Key="DataGridCheckBoxStyle" TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="Margin" Value="0"/>
-            </Style>
-
             <!-- Clickable cell style for hidden achievements -->
             <Style x:Key="ClickableCellStyle" TargetType="Grid">
                 <Setter Property="Cursor" Value="Arrow"/>
@@ -449,13 +442,14 @@
                                                     Width="80"
                                                     SortMemberPath="IsUnlocked"
                                                     HeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
-                                                    CellStyle="{StaticResource GameOptionsControllerCellStyle}">
+                                                    CellStyle="{StaticResource GameOptionsCheckBoxCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding IsUnlocked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"
-                                                  Style="{StaticResource DataGridCheckBoxStyle}"/>
+                                                  Focusable="False"
+                                                  IsTabStop="False"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -516,7 +510,8 @@
                                                       IsEnabled="{Binding IsUnlocked}"
                                                       HorizontalAlignment="Center"
                                                       VerticalAlignment="Center"
-                                                      Style="{StaticResource DataGridCheckBoxStyle}"/>
+                                                      Focusable="False"
+                                                      IsTabStop="False"/>
                                             <Grid Grid.Column="1"
                                                   Margin="8,0,0,0"
                                                   VerticalAlignment="Center">

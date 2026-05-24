@@ -278,12 +278,19 @@
             </DataGrid.RowStyle>
 
             <DataGrid.Columns>
-                <DataGridTemplateColumn Width="44" MinWidth="44" MaxWidth="44" CanUserResize="False" CanUserSort="False">
+                <DataGridTemplateColumn Width="44"
+                                        MinWidth="44"
+                                        MaxWidth="44"
+                                        CanUserResize="False"
+                                        CanUserSort="False"
+                                        CellStyle="{StaticResource GameOptionsCheckBoxCellStyle}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
+                                      Focusable="False"
+                                      IsTabStop="False"
                                       Click="RowSelectionCheckBox_Click"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
