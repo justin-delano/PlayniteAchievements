@@ -98,9 +98,22 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 return false;
             }
 
-            return _pathResolver.ResolveCandidateFilePaths(game).Any(p =>
-                !string.IsNullOrWhiteSpace(p) &&
-                (File.Exists(p) || ArchiveUtils.IsArchivePath(p)));
+            return _pathResolver.ResolveCandidateFilePaths(game).Any(IsReadableHashCandidate);
+        }
+
+        private static bool IsReadableHashCandidate(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return false;
+            }
+
+            if (CueTrackReader.IsCuePath(path))
+            {
+                return CueTrackReader.HasReadableDataTrack(path);
+            }
+
+            return File.Exists(path) || ArchiveUtils.IsArchivePath(path);
         }
 
         public bool CanResolveAchievementPageUrl(AchievementPageLinkContext context)
