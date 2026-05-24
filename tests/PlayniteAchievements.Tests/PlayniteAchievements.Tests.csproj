@@ -103,7 +103,7 @@
     <Compile Include="..\..\source\Providers\Manual\SteamManualSource.cs" Link="Source\Providers\Manual\SteamManualSource.cs" />
     <Compile Include="..\..\source\Providers\Manual\ExophaseManualSource.cs" Link="Source\Providers\Manual\ExophaseManualSource.cs" />
     <Compile Include="..\..\source\Providers\Steam\SteamAPIClient.cs" Link="Source\Providers\Steam\SteamAPIClient.cs" />
-    <Compile Include="..\..\source\Providers\Steam\SteamAsyncConfigTokenHelper.cs" Link="Source\Providers\Steam\SteamAsyncConfigTokenHelper.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamWebAuthSession.cs" Link="Source\Providers\Steam\SteamWebAuthSession.cs" />
     <Compile Include="..\..\source\Providers\Steam\SteamWebApiTokenResolver.cs" Link="Source\Providers\Steam\SteamWebApiTokenResolver.cs" />
     <Compile Include="..\..\source\Providers\Exophase\ExophaseApiClient.cs" Link="Source\Providers\Exophase\ExophaseApiClient.cs" />
     <Compile Include="..\..\source\Providers\ISessionManager.cs" Link="Source\Providers\ISessionManager.cs" />

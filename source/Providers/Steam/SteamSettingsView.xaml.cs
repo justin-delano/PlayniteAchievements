@@ -115,7 +115,9 @@ namespace PlayniteAchievements.Providers.Steam
                 ? result.UserId.Trim()
                 : null;
 
-            if (_steamSettings != null && !string.Equals(_steamSettings.SteamUserId, probedSteamUserId, StringComparison.Ordinal))
+            if (_steamSettings != null &&
+                !string.IsNullOrWhiteSpace(probedSteamUserId) &&
+                !string.Equals(_steamSettings.SteamUserId, probedSteamUserId, StringComparison.Ordinal))
             {
                 _steamSettings.SteamUserId = probedSteamUserId;
             }
