@@ -57,7 +57,7 @@ namespace PlayniteAchievements
 
         private static readonly string[] ProviderRefreshOrder =
         {
-            "Manual", "Exophase", "Steam", "Epic", "GOG", "BattleNet", "PSN", "Xbox", "Xenia", "RPCS3", "ShadPS4", "RetroAchievements"
+            "Manual", "Exophase", "Steam", "Epic", "GOG", "BattleNet", "RPCS3", "ShadPS4", "PSN", "Xenia", "Xbox", "RetroAchievements"
         };
 
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
