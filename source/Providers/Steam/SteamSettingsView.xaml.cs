@@ -91,7 +91,6 @@ namespace PlayniteAchievements.Providers.Steam
         {
             _steamSettings = settings as SteamSettings;
             base.Initialize(settings);
-            _ = RefreshAuthStatusAsync();
         }
 
         public async Task RefreshAuthStatusAsync()
