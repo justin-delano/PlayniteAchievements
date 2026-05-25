@@ -30,6 +30,13 @@ namespace PlayniteAchievements.Providers.Hoyoverse
         private readonly ILogger _logger;
         private readonly string _cacheRoot;
 
+        private sealed class HsrSeriesInfo
+        {
+            public string Title { get; set; }
+
+            public string IconPath { get; set; }
+        }
+
         public HoyoverseDefinitionClient(HttpClient httpClient, ILogger logger, string pluginUserDataPath)
         {
             _httpClient = httpClient ?? new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
@@ -199,13 +206,18 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                     }
 
                     var points = ReadInt(obj["reward"]) ?? ReadInt(obj["points"]) ?? 5;
+                    var iconPath = ReadString(obj["icon"]) ??
+                                   ReadString(obj["iconPath"]) ??
+                                   GetGenshinCategoryIconFileName(category.Name, category.Object);
                     achievements.Add(CreateDefinition(
                         id,
                         name,
                         ReadString(obj["desc"]) ?? ReadString(obj["description"]),
                         categoryName,
                         points,
-                        ReadString(obj["icon"]) ?? ReadString(obj["iconPath"])));
+                        ResolveHoyoverseIconPath(
+                            HoyoverseGameKind.GenshinImpact,
+                            iconPath)));
                 }
             }
 
@@ -246,16 +258,18 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                 var description = ResolveText(textMap, englishTextMap, descHash);
                 description = ApplyHsrParameters(description, obj["ParamList"]);
                 var seriesId = ReadString(obj["SeriesID"]) ?? ReadString(obj["Series"]);
-                seriesById.TryGetValue(seriesId ?? string.Empty, out var category);
+                seriesById.TryGetValue(seriesId ?? string.Empty, out var seriesInfo);
 
                 var points = ReadHsrPoints(obj["Rarity"]);
                 definitions.Add(CreateDefinition(
                     id,
                     CleanText(name),
                     CleanText(description),
-                    category,
+                    seriesInfo?.Title,
                     points,
-                    ReadString(obj["IconPath"])));
+                    ResolveHoyoverseIconPath(
+                        HoyoverseGameKind.HonkaiStarRail,
+                        ReadString(obj["IconPath"]) ?? seriesInfo?.IconPath)));
             }
 
             return DeduplicateDefinitions(definitions);
@@ -297,7 +311,9 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                         CleanText(ReadString(obj["d"]) ?? ReadString(obj["desc"]) ?? ReadString(obj["description"])),
                         CleanText(categoryName),
                         points,
-                        ReadString(obj["icon"]) ?? ReadString(obj["i"])));
+                        ResolveHoyoverseIconPath(
+                            HoyoverseGameKind.ZenlessZoneZero,
+                            ReadString(obj["icon"]) ?? ReadString(obj["i"]))));
                 }
             }
 
@@ -392,7 +408,9 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                     return "zh";
                 case "tchinese":
                 case "traditional chinese":
-                    return "zh-tw";
+                case "tw":
+                case "zh-tw":
+                    return "tw";
                 case "japanese":
                     return "ja";
                 case "koreana":
@@ -427,6 +445,7 @@ namespace PlayniteAchievements.Providers.Hoyoverse
             var patterns = new[]
             {
                 $@"/assets/locale/achievements-{escapedLocale}-[^""'\)\s,]+\.js",
+                $@"/locale/achievements-{escapedLocale}-[^""'\)\s,]+\.js",
                 $@"\./locale/achievements-{escapedLocale}-[^""'\)\s,]+\.js",
                 $@"(?<![A-Za-z0-9_./-])locale/achievements-{escapedLocale}-[^""'\)\s,]+\.js",
                 $@"(?<![A-Za-z0-9_./-])assets/locale/achievements-{escapedLocale}-[^""'\)\s,]+\.js"
@@ -510,9 +529,9 @@ namespace PlayniteAchievements.Providers.Hoyoverse
             }
         }
 
-        private static Dictionary<string, string> BuildHsrSeriesMap(JToken seriesRoot, JObject textMap, JObject englishTextMap)
+        private static Dictionary<string, HsrSeriesInfo> BuildHsrSeriesMap(JToken seriesRoot, JObject textMap, JObject englishTextMap)
         {
-            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var map = new Dictionary<string, HsrSeriesInfo>(StringComparer.OrdinalIgnoreCase);
             foreach (var obj in EnumerateObjects(seriesRoot))
             {
                 var id = ReadString(obj["SeriesID"]) ?? ReadString(obj["ID"]) ?? ReadString(obj["id"]);
@@ -528,11 +547,114 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                 var title = ResolveText(textMap, englishTextMap, titleHash);
                 if (!string.IsNullOrWhiteSpace(title))
                 {
-                    map[id] = CleanText(title);
+                    map[id] = new HsrSeriesInfo
+                    {
+                        Title = CleanText(title),
+                        IconPath = ReadString(obj["MainIconPath"]) ??
+                                   ReadString(obj["IconPath"]) ??
+                                   ReadString(obj["Icon"])
+                    };
                 }
             }
 
             return map;
+        }
+
+        private static string ResolveHoyoverseIconPath(HoyoverseGameKind kind, string sourcePath)
+        {
+            var source = (sourcePath ?? string.Empty).Trim();
+            if (IsHttpPath(source) || File.Exists(source))
+            {
+                return source;
+            }
+
+            var fileName = Path.GetFileName(source);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                fileName = GetDefaultIconFileName(kind);
+            }
+
+            var folderName = GetIconFolderName(kind);
+            if (string.IsNullOrWhiteSpace(folderName) || string.IsNullOrWhiteSpace(fileName))
+            {
+                return null;
+            }
+
+            var baseDirectory = Path.GetDirectoryName(typeof(HoyoverseDefinitionClient).Assembly.Location) ??
+                                AppDomain.CurrentDomain.BaseDirectory ??
+                                string.Empty;
+            var candidate = Path.Combine(baseDirectory, "Resources", "Hoyoverse", folderName, fileName);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            var defaultFileName = GetDefaultIconFileName(kind);
+            if (!string.IsNullOrWhiteSpace(defaultFileName) &&
+                !string.Equals(fileName, defaultFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                var defaultCandidate = Path.Combine(baseDirectory, "Resources", "Hoyoverse", folderName, defaultFileName);
+                if (File.Exists(defaultCandidate))
+                {
+                    return defaultCandidate;
+                }
+            }
+
+            var fallback = Path.Combine(baseDirectory, "Resources", "UnlockedAchIcon.png");
+            return File.Exists(fallback) ? fallback : null;
+        }
+
+        private static string GetGenshinCategoryIconFileName(string categoryKey, JObject categoryObject)
+        {
+            var order = ReadInt(categoryObject?["order"]);
+            if (order.HasValue && order.Value > 0)
+            {
+                return (order.Value - 1).ToString(CultureInfo.InvariantCulture) + ".png";
+            }
+
+            if (int.TryParse(categoryKey, NumberStyles.Integer, CultureInfo.InvariantCulture, out var index) &&
+                index >= 0)
+            {
+                return index.ToString(CultureInfo.InvariantCulture) + ".png";
+            }
+
+            return GetDefaultIconFileName(HoyoverseGameKind.GenshinImpact);
+        }
+
+        private static bool IsHttpPath(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                   (value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                    value.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string GetIconFolderName(HoyoverseGameKind kind)
+        {
+            switch (kind)
+            {
+                case HoyoverseGameKind.GenshinImpact:
+                    return "GenshinImpact";
+                case HoyoverseGameKind.HonkaiStarRail:
+                    return "HonkaiStarRail";
+                case HoyoverseGameKind.ZenlessZoneZero:
+                    return "ZenlessZoneZero";
+                default:
+                    return null;
+            }
+        }
+
+        private static string GetDefaultIconFileName(HoyoverseGameKind kind)
+        {
+            switch (kind)
+            {
+                case HoyoverseGameKind.HonkaiStarRail:
+                    return "CultivateAchievementIcon.png";
+                case HoyoverseGameKind.GenshinImpact:
+                case HoyoverseGameKind.ZenlessZoneZero:
+                    return "ac.png";
+                default:
+                    return null;
+            }
         }
 
         private static IEnumerable<JObject> FindAchievementObjects(JToken token, params string[] requiredKeys)

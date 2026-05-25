@@ -223,5 +223,11 @@
     <None Include="Fixtures\Steam\*.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Content Include="..\..\source\Resources\UnlockedAchIcon.png" Link="Resources\UnlockedAchIcon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\source\Resources\Hoyoverse\**\*.png" Link="Resources\Hoyoverse\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>
