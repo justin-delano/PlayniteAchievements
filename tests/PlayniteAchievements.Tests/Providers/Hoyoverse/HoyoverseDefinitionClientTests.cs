@@ -71,5 +71,19 @@ namespace PlayniteAchievements.Tests.Providers.Hoyoverse
             Assert.AreEqual("Primer", definitions[0].Category);
             Assert.AreEqual(RarityTier.Rare, definitions.Single(a => a.ApiName == "3002").Rarity);
         }
+
+        [TestMethod]
+        public void FindZzzAchievementAsset_SupportsRelativeAndAbsoluteLocaleChunks()
+        {
+            var relativeIndex = @"const a=()=>import(""./locale/achievements-en-fa79791d.js"");";
+            var absoluteIndex = @"const a=""/assets/locale/achievements-en-12345678.js"";";
+
+            Assert.AreEqual(
+                "/assets/locale/achievements-en-fa79791d.js",
+                HoyoverseDefinitionClient.FindZzzAchievementAsset(relativeIndex, "en"));
+            Assert.AreEqual(
+                "/assets/locale/achievements-en-12345678.js",
+                HoyoverseDefinitionClient.FindZzzAchievementAsset(absoluteIndex, "en"));
+        }
     }
 }

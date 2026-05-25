@@ -13,6 +13,10 @@ namespace PlayniteAchievements.Providers.Hoyoverse
 {
     internal sealed class HoyoverseDataProvider : IDataProvider, IDisposable
     {
+        internal const string Key = "Hoyoverse";
+        internal const string IconKey = "ProviderIconHoyoverse";
+        internal const string ColorHex = "#D4ACF8";
+
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly IPlayniteAPI _playniteApi;
@@ -44,11 +48,11 @@ namespace PlayniteAchievements.Providers.Hoyoverse
             }
         }
 
-        public string ProviderKey => HoyoverseConstants.ProviderKey;
+        public string ProviderKey => Key;
 
-        public string ProviderIconKey => HoyoverseConstants.ProviderIconKey;
+        public string ProviderIconKey => IconKey;
 
-        public string ProviderColorHex => HoyoverseConstants.ProviderColorHex;
+        public string ProviderColorHex => ColorHex;
 
         public bool IsAuthenticated => true;
 
@@ -85,11 +89,66 @@ namespace PlayniteAchievements.Providers.Hoyoverse
             }
         }
 
-        public ProviderSettingsViewBase CreateSettingsView() => new HoyoverseSettingsView(_playniteApi);
+        public ProviderSettingsViewBase CreateSettingsView()
+        {
+#if TEST
+            return null;
+#else
+            return new HoyoverseSettingsView(_playniteApi);
+#endif
+        }
 
         public void Dispose()
         {
             _httpClient.Dispose();
+        }
+    }
+
+    public sealed class HoyoverseSettings : ProviderSettingsBase
+    {
+        private bool _enableGenshinImpact = true;
+        private bool _enableHonkaiStarRail = true;
+        private bool _enableZenlessZoneZero = true;
+        private string _genshinExportPath;
+        private string _honkaiStarRailExportPath;
+        private string _zenlessZoneZeroExportPath;
+
+        public override string ProviderKey => HoyoverseDataProvider.Key;
+
+        public bool EnableGenshinImpact
+        {
+            get => _enableGenshinImpact;
+            set => SetValue(ref _enableGenshinImpact, value);
+        }
+
+        public bool EnableHonkaiStarRail
+        {
+            get => _enableHonkaiStarRail;
+            set => SetValue(ref _enableHonkaiStarRail, value);
+        }
+
+        public bool EnableZenlessZoneZero
+        {
+            get => _enableZenlessZoneZero;
+            set => SetValue(ref _enableZenlessZoneZero, value);
+        }
+
+        public string GenshinExportPath
+        {
+            get => _genshinExportPath;
+            set => SetValue(ref _genshinExportPath, value);
+        }
+
+        public string HonkaiStarRailExportPath
+        {
+            get => _honkaiStarRailExportPath;
+            set => SetValue(ref _honkaiStarRailExportPath, value);
+        }
+
+        public string ZenlessZoneZeroExportPath
+        {
+            get => _zenlessZoneZeroExportPath;
+            set => SetValue(ref _zenlessZoneZeroExportPath, value);
         }
     }
 }

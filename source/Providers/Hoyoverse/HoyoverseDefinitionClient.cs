@@ -421,14 +421,65 @@ namespace PlayniteAchievements.Providers.Hoyoverse
             }
         }
 
-        private static string FindZzzAchievementAsset(string indexJs, string locale)
+        internal static string FindZzzAchievementAsset(string indexJs, string locale)
         {
             var escapedLocale = Regex.Escape(locale ?? "en");
-            var match = Regex.Match(
-                indexJs ?? string.Empty,
-                $@"/assets/locale/achievements-{escapedLocale}-[^""']+\.js",
-                RegexOptions.IgnoreCase);
-            return match.Success ? match.Value : null;
+            var patterns = new[]
+            {
+                $@"/assets/locale/achievements-{escapedLocale}-[^""'\)\s,]+\.js",
+                $@"\./locale/achievements-{escapedLocale}-[^""'\)\s,]+\.js",
+                $@"(?<![A-Za-z0-9_./-])locale/achievements-{escapedLocale}-[^""'\)\s,]+\.js",
+                $@"(?<![A-Za-z0-9_./-])assets/locale/achievements-{escapedLocale}-[^""'\)\s,]+\.js"
+            };
+
+            foreach (var pattern in patterns)
+            {
+                var match = Regex.Match(indexJs ?? string.Empty, pattern, RegexOptions.IgnoreCase);
+                if (match.Success)
+                {
+                    return NormalizeZzzAchievementAsset(match.Value);
+                }
+            }
+
+            return null;
+        }
+
+        private static string NormalizeZzzAchievementAsset(string asset)
+        {
+            var value = (asset ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            if (value.StartsWith("/assets/", StringComparison.OrdinalIgnoreCase))
+            {
+                return value;
+            }
+
+            if (value.StartsWith("./", StringComparison.Ordinal))
+            {
+                value = value.Substring(2);
+            }
+
+            if (value.StartsWith("/locale/", StringComparison.OrdinalIgnoreCase))
+            {
+                return "/assets" + value;
+            }
+
+            if (value.StartsWith("locale/", StringComparison.OrdinalIgnoreCase))
+            {
+                return "/assets/" + value;
+            }
+
+            if (value.StartsWith("assets/", StringComparison.OrdinalIgnoreCase))
+            {
+                return "/" + value;
+            }
+
+            return value.StartsWith("/", StringComparison.Ordinal)
+                ? value
+                : "/" + value;
         }
 
         private static IEnumerable<(string Name, JObject Object)> EnumerateCategoryObjects(JToken root)

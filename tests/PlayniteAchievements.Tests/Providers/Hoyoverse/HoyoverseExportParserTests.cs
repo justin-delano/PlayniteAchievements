@@ -73,6 +73,38 @@ namespace PlayniteAchievements.Tests.Providers.Hoyoverse
         }
 
         [TestMethod]
+        public void ReadUnlockedIds_ParsesStarRailStationDatObjectMapArrayAndScalarIds()
+        {
+            var payload = @"{""data"":{""stores"":{""1_achieve"":{""completeState"":{""arrayIds"":[705481,""705482"",{""id"":705483,""done"":true},{""id"":705476,""done"":false}],""objectMap"":{""705483"":true,""705476"":false},""nestedScalar"":""68442"",""directOfficial"":""official-direct""}}}}}";
+            var path = WriteTempFile(".dat", "srs" + HoyoverseLzStringUtf16Codec.CompressToUtf16(payload));
+            var definitions = new List<AchievementDetail>
+            {
+                new AchievementDetail { ApiName = "official-guess", DisplayName = "Guess Who I Am" },
+                new AchievementDetail { ApiName = "official-arlan", DisplayName = "The Sorrows of Young Arlan" },
+                new AchievementDetail { ApiName = "official-magi", DisplayName = "The Gift of the Magi" },
+                new AchievementDetail { ApiName = "official-detective", DisplayName = "A Perfect Detective" },
+                new AchievementDetail { ApiName = "official-direct", DisplayName = "Direct Official" }
+            };
+
+            var ids = HoyoverseExportParser.ReadUnlockedIds(
+                HoyoverseGameKind.HonkaiStarRail,
+                path,
+                definitions,
+                null);
+
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    "official-guess",
+                    "official-arlan",
+                    "official-magi",
+                    "official-detective",
+                    "official-direct"
+                },
+                ids.ToList());
+        }
+
+        [TestMethod]
         public void ReadUnlockedIds_ParsesRngMoeZzzExport()
         {
             var path = WriteTempFile(".json", @"{""data"":{""profiles"":{""default"":{""stores"":{""2"":{""enabled"":{""4001"":true,""4002"":false}}}}}}}");

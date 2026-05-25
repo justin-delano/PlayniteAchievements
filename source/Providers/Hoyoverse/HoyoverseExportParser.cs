@@ -201,7 +201,8 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                 .GroupBy(detail => NormalizeTitle(detail.DisplayName), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(group => group.Key, group => group.First().ApiName, StringComparer.OrdinalIgnoreCase);
 
-            foreach (var stationId in EnumerateTruthyPropertyNames(completeState))
+            foreach (var stationId in EnumerateStarRailStationCompletedIds(completeState)
+                .Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 if (officialIds.Contains(stationId))
                 {
@@ -217,6 +218,107 @@ namespace PlayniteAchievements.Providers.Hoyoverse
             }
 
             return result;
+        }
+
+        private static IEnumerable<string> EnumerateStarRailStationCompletedIds(JToken token)
+        {
+            if (token == null)
+            {
+                yield break;
+            }
+
+            if (token is JObject obj)
+            {
+                var objectId = ReadScalarId(obj["id"]) ??
+                               ReadScalarId(obj["achievementId"]) ??
+                               ReadScalarId(obj["achievement_id"]);
+                if (!string.IsNullOrWhiteSpace(objectId))
+                {
+                    if (!HasCompletionMarker(obj) || HasTruthyCompletionMarker(obj))
+                    {
+                        yield return objectId;
+                    }
+
+                    yield break;
+                }
+
+                foreach (var property in obj.Properties())
+                {
+                    if (property.Value is JObject childObject)
+                    {
+                        if (HasTruthyCompletionMarker(childObject))
+                        {
+                            yield return property.Name;
+                            continue;
+                        }
+
+                        foreach (var nested in EnumerateStarRailStationCompletedIds(childObject))
+                        {
+                            yield return nested;
+                        }
+
+                        continue;
+                    }
+
+                    if (property.Value is JArray childArray)
+                    {
+                        foreach (var nested in EnumerateStarRailStationCompletedIds(childArray))
+                        {
+                            yield return nested;
+                        }
+
+                        continue;
+                    }
+
+                    if (IsTruthy(property.Value))
+                    {
+                        if (!IsCompletionMarkerProperty(property.Name))
+                        {
+                            yield return property.Name;
+                        }
+
+                        continue;
+                    }
+
+                    var scalarId = ReadScalarId(property.Value);
+                    if (!string.IsNullOrWhiteSpace(scalarId))
+                    {
+                        yield return scalarId;
+                    }
+                }
+
+                yield break;
+            }
+
+            if (token is JArray array)
+            {
+                foreach (var child in array)
+                {
+                    if (child is JObject || child is JArray)
+                    {
+                        foreach (var nested in EnumerateStarRailStationCompletedIds(child))
+                        {
+                            yield return nested;
+                        }
+
+                        continue;
+                    }
+
+                    var scalarId = ReadScalarId(child);
+                    if (!string.IsNullOrWhiteSpace(scalarId))
+                    {
+                        yield return scalarId;
+                    }
+                }
+
+                yield break;
+            }
+
+            var id = ReadScalarId(token);
+            if (!string.IsNullOrWhiteSpace(id))
+            {
+                yield return id;
+            }
         }
 
         private static IEnumerable<JObject> EnumerateProfileObjects(JToken profiles)
@@ -302,7 +404,10 @@ namespace PlayniteAchievements.Providers.Hoyoverse
 
         private static string ReadId(JToken item)
         {
-            if (item == null)
+            if (item == null ||
+                item.Type == JTokenType.Null ||
+                item.Type == JTokenType.Undefined ||
+                item.Type == JTokenType.Boolean)
             {
                 return null;
             }
@@ -312,9 +417,52 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                 return Convert.ToString(((JValue)item).Value, CultureInfo.InvariantCulture);
             }
 
+            if (!(item is JObject))
+            {
+                return null;
+            }
+
             return item["id"]?.ToString() ??
                    item["achievementId"]?.ToString() ??
                    item["achievement_id"]?.ToString();
+        }
+
+        private static string ReadScalarId(JToken item)
+        {
+            var id = ReadId(item)?.Trim();
+            if (string.IsNullOrWhiteSpace(id) ||
+                id.Length < 4 ||
+                string.Equals(id, "true", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(id, "false", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(id, "done", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return id;
+        }
+
+        private static bool HasCompletionMarker(JObject obj)
+        {
+            return obj != null &&
+                obj.Properties().Any(property => IsCompletionMarkerProperty(property.Name));
+        }
+
+        private static bool HasTruthyCompletionMarker(JObject obj)
+        {
+            return obj != null &&
+                obj.Properties().Any(property =>
+                    IsCompletionMarkerProperty(property.Name) &&
+                    IsTruthy(property.Value));
+        }
+
+        private static bool IsCompletionMarkerProperty(string name)
+        {
+            return string.Equals(name, "done", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(name, "complete", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(name, "completed", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(name, "unlocked", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(name, "isUnlocked", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string GetStarDbGameKey(HoyoverseGameKind kind)
@@ -340,24 +488,70 @@ namespace PlayniteAchievements.Providers.Hoyoverse
 
     internal static class StarRailStationAchievementMap
     {
-        private static readonly Dictionary<string, string> StationIdToEnglishTitle =
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["705481"] = "Guess Who I Am",
-                ["705482"] = "The Sorrows of Young Arlan",
-                ["705483"] = "The Mandela Effect",
-                ["705484"] = "The Fourth Little Mole",
-                ["705485"] = "The Banality of Evil",
-                ["705486"] = "Sensory Socialization",
-                ["705487"] = "Farewell, Comet Hunter",
-                ["705488"] = "The Memories We Share",
-                ["705489"] = "Winds at Your Back, World at Your Side",
-                ["705490"] = "Half the Wizard of Oz"
-            };
+        private const string ResourceName = "PlayniteAchievements.Providers.Hoyoverse.Data.starrailstation.json";
+
+        private static readonly Lazy<Dictionary<string, string>> StationIdToEnglishTitle =
+            new Lazy<Dictionary<string, string>>(LoadStationIdMap);
 
         public static bool TryGetOfficialTitle(string stationId, out string title)
         {
-            return StationIdToEnglishTitle.TryGetValue(stationId ?? string.Empty, out title);
+            return StationIdToEnglishTitle.Value.TryGetValue(stationId ?? string.Empty, out title);
+        }
+
+        private static Dictionary<string, string> LoadStationIdMap()
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var assembly = typeof(StarRailStationAchievementMap).Assembly;
+                using (var stream = assembly.GetManifestResourceStream(ResourceName))
+                {
+                    if (stream == null)
+                    {
+                        return map;
+                    }
+
+                    using (var reader = new StreamReader(stream))
+                    {
+                        var root = JObject.Parse(reader.ReadToEnd());
+                        foreach (var achievement in root?["achievements"]?.OfType<JObject>() ?? Enumerable.Empty<JObject>())
+                        {
+                            var id = ReadMapString(achievement["id"]);
+                            var title = ReadMapString(achievement["title"]);
+                            if (!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(title))
+                            {
+                                map[id] = title;
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            return map;
+        }
+
+        private static string ReadMapString(JToken token)
+        {
+            if (token == null || token.Type == JTokenType.Null || token.Type == JTokenType.Undefined)
+            {
+                return null;
+            }
+
+            if (token.Type == JTokenType.String)
+            {
+                return token.Value<string>();
+            }
+
+            if (token.Type == JTokenType.Integer || token.Type == JTokenType.Float || token.Type == JTokenType.Boolean)
+            {
+                return Convert.ToString(((JValue)token).Value, CultureInfo.InvariantCulture);
+            }
+
+            return token.ToString(Newtonsoft.Json.Formatting.None);
         }
     }
 }

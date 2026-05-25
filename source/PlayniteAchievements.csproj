@@ -144,6 +144,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Providers\RetroAchievements\PlatformMapping\console-mappings.json" />
+    <EmbeddedResource Include="Providers\Hoyoverse\Data\starrailstation.json">
+      <LogicalName>PlayniteAchievements.Providers.Hoyoverse.Data.starrailstation.json</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
     <PostBuildEvent>xcopy "$(ProjectDir)Localization\*.xaml" "$(TargetDir)\Localization" /Y /I /E</PostBuildEvent>

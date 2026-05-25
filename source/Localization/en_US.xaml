@@ -108,6 +108,7 @@
     <sys:String x:Key="LOCPlayAch_Provider_Exophase">Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GooglePlay">Google Play</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Hoyoverse">HoYoverse</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Manual">Manual</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_PSN">PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
@@ -416,6 +417,16 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Managed Platforms</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Games on these platforms will use Exophase instead of modern providers. Check platforms you want Exophase to manage.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note: For games on unchecked platforms, use Game Options to include individually.</sys:String>
+
+    <!-- Provider: HoYoverse -->
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableGenshin">Enable Genshin Impact</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableHsr">Enable Honkai: Star Rail</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableZzz">Enable Zenless Zone Zero</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles">Tracker Export Files</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">Optional public tracker exports used to mark achievements unlocked. Without an export file, refresh still downloads definitions and keeps achievements locked.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_InvalidExportPath">One or more configured export files do not exist.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_NoExportConfigured">No export file configured. Refresh will import locked achievement definitions only.</sys:String>
+
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Export database tables to CSV for debugging</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Export CSV</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Force hash index rebuild</sys:String>

@@ -94,7 +94,7 @@ namespace PlayniteAchievements.Providers.Hoyoverse
 
             return new GameAchievementData
             {
-                ProviderKey = HoyoverseConstants.ProviderKey,
+                ProviderKey = HoyoverseDataProvider.Key,
                 GameName = game?.Name ?? HoyoverseGameCatalog.GetCanonicalName(kind),
                 AppId = HoyoverseGameCatalog.GetAppId(kind),
                 LibrarySourceName = game?.Source?.Name,

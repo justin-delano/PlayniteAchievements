@@ -14,13 +14,6 @@ namespace PlayniteAchievements.Providers.Hoyoverse
         ZenlessZoneZero = 3
     }
 
-    internal static class HoyoverseConstants
-    {
-        public const string ProviderKey = "Hoyoverse";
-        public const string ProviderIconKey = "ProviderIconHoyoverse";
-        public const string ProviderColorHex = "#37C8F3";
-    }
-
     internal static class HoyoverseGameCatalog
     {
         private sealed class Entry

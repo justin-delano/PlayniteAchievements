@@ -95,7 +95,7 @@
     <Compile Include="..\..\source\Providers\ShadPS4\ShadPS4DataProvider.cs" Link="Source\Providers\ShadPS4\ShadPS4DataProvider.cs" />
     <Compile Include="..\..\source\Providers\ShadPS4\ShadPS4MatchIdHelper.cs" Link="Source\Providers\ShadPS4\ShadPS4MatchIdHelper.cs" />
     <Compile Include="..\..\source\Providers\ShadPS4\ShadPS4Scanner.cs" Link="Source\Providers\ShadPS4\ShadPS4Scanner.cs" />
-    <Compile Include="..\..\source\Providers\Hoyoverse\HoyoverseSettings.cs" Link="Source\Providers\Hoyoverse\HoyoverseSettings.cs" />
+    <Compile Include="..\..\source\Providers\Hoyoverse\HoyoverseDataProvider.cs" Link="Source\Providers\Hoyoverse\HoyoverseDataProvider.cs" />
     <Compile Include="..\..\source\Providers\Hoyoverse\HoyoverseGameCatalog.cs" Link="Source\Providers\Hoyoverse\HoyoverseGameCatalog.cs" />
     <Compile Include="..\..\source\Providers\Hoyoverse\HoyoverseScanner.cs" Link="Source\Providers\Hoyoverse\HoyoverseScanner.cs" />
     <Compile Include="..\..\source\Providers\Hoyoverse\HoyoverseDefinitionClient.cs" Link="Source\Providers\Hoyoverse\HoyoverseDefinitionClient.cs" />
@@ -213,6 +213,9 @@
   <ItemGroup>
     <EmbeddedResource Include="..\..\source\Providers\RetroAchievements\PlatformMapping\console-mappings.json" Link="Source\Providers\RetroAchievements\PlatformMapping\console-mappings.json">
       <LogicalName>PlayniteAchievements.Providers.RetroAchievements.PlatformMapping.console-mappings.json</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\source\Providers\Hoyoverse\Data\starrailstation.json" Link="Source\Providers\Hoyoverse\Data\starrailstation.json">
+      <LogicalName>PlayniteAchievements.Providers.Hoyoverse.Data.starrailstation.json</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
 

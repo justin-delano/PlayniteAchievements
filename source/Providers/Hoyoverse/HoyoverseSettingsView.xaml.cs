@@ -1,6 +1,7 @@
 using Playnite.SDK;
 using PlayniteAchievements.Providers.Settings;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -45,9 +46,34 @@ namespace PlayniteAchievements.Providers.Hoyoverse
 
         public override void Initialize(IProviderSettings settings)
         {
+            if (_hoyoverseSettings != null)
+            {
+                _hoyoverseSettings.PropertyChanged -= HoyoverseSettings_PropertyChanged;
+            }
+
             _hoyoverseSettings = settings as HoyoverseSettings;
+            if (_hoyoverseSettings != null)
+            {
+                _hoyoverseSettings.PropertyChanged += HoyoverseSettings_PropertyChanged;
+            }
+
             base.Initialize(settings);
             CheckConfiguration();
+        }
+
+        private void HoyoverseSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(e?.PropertyName) ||
+                e.PropertyName == nameof(HoyoverseSettings.IsEnabled) ||
+                e.PropertyName == nameof(HoyoverseSettings.EnableGenshinImpact) ||
+                e.PropertyName == nameof(HoyoverseSettings.EnableHonkaiStarRail) ||
+                e.PropertyName == nameof(HoyoverseSettings.EnableZenlessZoneZero) ||
+                e.PropertyName == nameof(HoyoverseSettings.GenshinExportPath) ||
+                e.PropertyName == nameof(HoyoverseSettings.HonkaiStarRailExportPath) ||
+                e.PropertyName == nameof(HoyoverseSettings.ZenlessZoneZeroExportPath))
+            {
+                CheckConfiguration();
+            }
         }
 
         public Task RefreshAuthStatusAsync()
