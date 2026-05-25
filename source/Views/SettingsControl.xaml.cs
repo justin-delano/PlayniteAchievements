@@ -400,6 +400,7 @@ namespace PlayniteAchievements.Views
         private readonly ProviderRegistry _providerRegistry;
         private ICollectionView _providerNavigationView;
         private bool _providerNavigationBuilt;
+        private bool _themeMigrationLoaded;
         private const string SuccessStoryExtensionId = "cebe6d32-8c46-4459-b993-5a5189d60788";
         private const string SuccessStoryFolderName = "SuccessStory";
 
@@ -500,14 +501,12 @@ namespace PlayniteAchievements.Views
                     _logger?.Info($"DataContext verified correct in Loaded event: {DataContext?.GetType().Name}");
                 }
 
-                // Load themes on initial load
-                LoadThemes();
-
-                // Build provider navigation items for sidebar
-                BuildProviderNavigationItems();
-
                 // Navigate to a specific provider item if requested (e.g., from auth notification click).
-                NavigateToPendingProvider();
+                if (!string.IsNullOrWhiteSpace(PendingNavigationProviderKey) && ProvidersTab != null)
+                {
+                    SettingsTabControl.SelectedItem = ProvidersTab;
+                    NavigateToPendingProvider();
+                }
             };
         }
 
@@ -515,8 +514,13 @@ namespace PlayniteAchievements.Views
         // Theme migration
         // -----------------------------
 
-        private void LoadThemes()
+        private void LoadThemes(bool force = false)
         {
+            if (_themeMigrationLoaded && !force)
+            {
+                return;
+            }
+
             // Ensure we're on the UI thread before accessing DependencyProperties
             if (Dispatcher.CheckAccess())
             {
@@ -539,6 +543,7 @@ namespace PlayniteAchievements.Views
                 if (string.IsNullOrEmpty(themesPath))
                 {
                     _logger.Info("No themes path found for theme migration.");
+                    _themeMigrationLoaded = true;
                     UpdateThemeMigrationState();
                     return;
                 }
@@ -559,6 +564,7 @@ namespace PlayniteAchievements.Views
                 }
 
                 UpdateThemeMigrationState();
+                _themeMigrationLoaded = true;
 
                 _logger.Info($"Loaded {AvailableThemes.Count} themes to migrate, {RevertableThemes.Count} themes to revert.");
             }
@@ -653,7 +659,7 @@ namespace PlayniteAchievements.Views
                     }
 
                     // Reload themes to update the lists
-                    LoadThemes();
+                    LoadThemes(force: true);
                 }
                 else
                 {
@@ -700,7 +706,7 @@ namespace PlayniteAchievements.Views
                         MessageBoxImage.Information);
 
                     // Reload themes to update the lists
-                    LoadThemes();
+                    LoadThemes(force: true);
                 }
                 else
                 {
@@ -1441,7 +1447,7 @@ namespace PlayniteAchievements.Views
         /// Builds provider navigation items for the sidebar from registered providers.
         /// Items are added in the natural discovery order.
         /// </summary>
-        private void BuildProviderNavigationItems()
+        private void BuildProviderNavigationItems(bool selectDefault = true)
         {
             if (_providerNavigationBuilt)
             {
@@ -1455,12 +1461,12 @@ namespace PlayniteAchievements.Views
                 var settings = _providerRegistry.GetSettingsForEdit(providerKey);
                 if (settings == null) continue;
 
-                var view = _providerRegistry.CreateSettingsView(providerKey);
                 var displayName = ProviderRegistry.GetLocalizedName(providerKey);
                 var iconKey = $"ProviderIcon{providerKey}";
                 var colorHex = "#FF4084D6";
                 string redirectProviderKey = null;
                 string subtitle = null;
+                Func<ProviderSettingsViewBase> settingsViewFactory = null;
 
                 if (_providerRegistry.TryGetProviderVisuals(providerKey, out var providerIconKey, out var providerColorHex))
                 {
@@ -1475,20 +1481,15 @@ namespace PlayniteAchievements.Views
                     }
                 }
 
-                if (view == null)
+                if (ProviderUiPolicies.TryGetSettingsRedirectProviderKey(providerKey, out redirectProviderKey))
                 {
-                    if (!ProviderUiPolicies.TryGetSettingsRedirectProviderKey(providerKey, out redirectProviderKey))
-                    {
-                        continue;
-                    }
-
                     subtitle = string.Format(
                         ResourceProvider.GetString("LOCPlayAch_Settings_ProviderServicedByFormat"),
                         ProviderRegistry.GetLocalizedName(redirectProviderKey));
                 }
                 else
                 {
-                    view.Initialize(settings);
+                    settingsViewFactory = () => _providerRegistry.CreateSettingsView(providerKey);
                 }
 
                 ProviderNavigationItems.Add(new ProviderNavigationItem(
@@ -1498,14 +1499,14 @@ namespace PlayniteAchievements.Views
                     iconKey,
                     colorHex,
                     settings,
-                    view,
+                    settingsViewFactory,
                     redirectProviderKey,
                     subtitle));
             }
 
             ConfigureProviderNavigationView();
 
-            if (SelectedProviderNavigationItem == null && ProviderNavigationItems.Count > 0)
+            if (selectDefault && SelectedProviderNavigationItem == null && ProviderNavigationItems.Count > 0)
             {
                 SelectedProviderNavigationItem = ProviderNavigationItems[0];
             }
@@ -1592,7 +1593,7 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private async void OnSelectedProviderNavigationItemChangedInternal(ProviderNavigationItem item)
+        private void OnSelectedProviderNavigationItemChangedInternal(ProviderNavigationItem item)
         {
             if (item == null) return;
 
@@ -1615,21 +1616,8 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (item.SettingsView == null) return;
-
-            // Refresh auth status if the view implements IAuthRefreshable
-            if (item.SettingsView is IAuthRefreshable authRefreshable)
-            {
-                try
-                {
-                    await authRefreshable.RefreshAuthStatusAsync();
-                    _logger?.Info($"Refreshed auth status for {item.ProviderKey}");
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Error(ex, $"Failed to refresh auth status for {item.ProviderKey}");
-                }
-            }
+            var settingsView = item.EnsureSettingsView();
+            if (settingsView == null) return;
         }
 
         private void NavigateToPendingProvider()
@@ -1637,6 +1625,8 @@ namespace PlayniteAchievements.Views
             var targetKey = PendingNavigationProviderKey;
             if (string.IsNullOrWhiteSpace(targetKey))
                 return;
+
+            BuildProviderNavigationItems(selectDefault: false);
 
             PendingNavigationProviderKey = null;
 
@@ -1672,6 +1662,11 @@ namespace PlayniteAchievements.Views
                 LoadThemes();
                 _logger?.Info("Loaded themes for Theme Migration tab.");
             }
+            else if (string.Equals(name, "ProvidersTab", StringComparison.OrdinalIgnoreCase))
+            {
+                BuildProviderNavigationItems(selectDefault: string.IsNullOrWhiteSpace(PendingNavigationProviderKey));
+                NavigateToPendingProvider();
+            }
         }
 
         // Quick navigation button handlers from General tab
@@ -1689,6 +1684,7 @@ namespace PlayniteAchievements.Views
             if (ProvidersTab != null)
             {
                 SettingsTabControl.SelectedItem = ProvidersTab;
+                BuildProviderNavigationItems();
                 ProvidersTab.BringIntoView();
             }
         }
@@ -1766,6 +1762,8 @@ namespace PlayniteAchievements.Views
     public sealed class ProviderNavigationItem : PlayniteAchievements.Common.ObservableObject
     {
         private readonly IProviderSettings _settings;
+        private readonly Func<ProviderSettingsViewBase> _settingsViewFactory;
+        private ProviderSettingsViewBase _settingsView;
 
         public ProviderNavigationItem(
             string providerKey,
@@ -1774,7 +1772,7 @@ namespace PlayniteAchievements.Views
             string providerIconKey,
             string providerColorHex,
             IProviderSettings settings,
-            ProviderSettingsViewBase settingsView,
+            Func<ProviderSettingsViewBase> settingsViewFactory,
             string redirectProviderKey = null,
             string subtitle = null)
         {
@@ -1783,7 +1781,7 @@ namespace PlayniteAchievements.Views
             GroupName = groupName;
             ProviderIconKey = providerIconKey;
             ProviderColorHex = providerColorHex;
-            SettingsView = settingsView;
+            _settingsViewFactory = settingsViewFactory;
             RedirectProviderKey = redirectProviderKey;
             Subtitle = subtitle;
             _settings = settings;
@@ -1804,7 +1802,25 @@ namespace PlayniteAchievements.Views
         public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
         public bool IsRedirect => !string.IsNullOrWhiteSpace(RedirectProviderKey);
         public bool IsEnabled => _settings?.IsEnabled ?? true;
-        public ProviderSettingsViewBase SettingsView { get; }
+        public ProviderSettingsViewBase SettingsView => _settingsView;
+
+        public ProviderSettingsViewBase EnsureSettingsView()
+        {
+            if (IsRedirect || _settingsView != null)
+            {
+                return _settingsView;
+            }
+
+            var view = _settingsViewFactory?.Invoke();
+            if (view != null)
+            {
+                view.Initialize(_settings);
+                _settingsView = view;
+                OnPropertyChanged(nameof(SettingsView));
+            }
+
+            return _settingsView;
+        }
 
         private void Settings_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
