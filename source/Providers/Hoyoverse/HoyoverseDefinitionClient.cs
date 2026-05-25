@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -883,12 +884,8 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                 }
             }
 
-            text = Regex.Replace(text, @"(?<=[{,])\s*([A-Za-z_$][A-Za-z0-9_$]*)\s*:", "\"$1\":");
-            text = Regex.Replace(text, @"(?<=[{,])\s*(\d+)\s*:", "\"$1\":");
-            text = Regex.Replace(text, @"'([^'\\]*(?:\\.[^'\\]*)*)'", match =>
-                JsonConvert.ToString(Regex.Unescape(match.Groups[1].Value)));
-            text = Regex.Replace(text, @"`([^`\\]*(?:\\.[^`\\]*)*)`", match =>
-                JsonConvert.ToString(Regex.Unescape(match.Groups[1].Value)));
+            text = NormalizeJsStringLiterals(text);
+            text = QuoteUnquotedObjectKeys(text);
             text = Regex.Replace(text, @"\b(\d+)e(\d+)\b", match =>
             {
                 if (!double.TryParse(match.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number))
@@ -900,6 +897,244 @@ namespace PlayniteAchievements.Providers.Hoyoverse
             });
 
             return text;
+        }
+
+        private static string NormalizeJsStringLiterals(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+
+            var result = new StringBuilder(text.Length);
+            for (var i = 0; i < text.Length; i++)
+            {
+                var quote = text[i];
+                if (quote != '"' && quote != '\'' && quote != '`')
+                {
+                    result.Append(quote);
+                    continue;
+                }
+
+                var value = new StringBuilder();
+                for (i++; i < text.Length; i++)
+                {
+                    var current = text[i];
+                    if (current == '\\')
+                    {
+                        if (i + 1 >= text.Length)
+                        {
+                            value.Append(current);
+                            continue;
+                        }
+
+                        var escaped = text[++i];
+                        AppendJsEscapedCharacter(value, escaped, text, ref i);
+                        continue;
+                    }
+
+                    if (current == quote)
+                    {
+                        break;
+                    }
+
+                    value.Append(current);
+                }
+
+                result.Append(JsonConvert.ToString(value.ToString()));
+            }
+
+            return result.ToString();
+        }
+
+        private static void AppendJsEscapedCharacter(StringBuilder value, char escaped, string text, ref int index)
+        {
+            switch (escaped)
+            {
+                case 'b':
+                    value.Append('\b');
+                    return;
+                case 'f':
+                    value.Append('\f');
+                    return;
+                case 'n':
+                    value.Append('\n');
+                    return;
+                case 'r':
+                    value.Append('\r');
+                    return;
+                case 't':
+                    value.Append('\t');
+                    return;
+                case 'v':
+                    value.Append('\v');
+                    return;
+                case '\r':
+                    if (index + 1 < text.Length && text[index + 1] == '\n')
+                    {
+                        index++;
+                    }
+
+                    return;
+                case '\n':
+                    return;
+                case 'x':
+                    if (TryReadHexEscape(text, index + 1, 2, out var hexValue))
+                    {
+                        value.Append((char)hexValue);
+                        index += 2;
+                        return;
+                    }
+
+                    break;
+                case 'u':
+                    if (TryReadHexEscape(text, index + 1, 4, out var unicodeValue))
+                    {
+                        value.Append((char)unicodeValue);
+                        index += 4;
+                        return;
+                    }
+
+                    break;
+            }
+
+            value.Append(escaped);
+        }
+
+        private static bool TryReadHexEscape(string text, int start, int length, out int value)
+        {
+            value = 0;
+            if (string.IsNullOrEmpty(text) || start < 0 || start + length > text.Length)
+            {
+                return false;
+            }
+
+            return int.TryParse(
+                text.Substring(start, length),
+                NumberStyles.HexNumber,
+                CultureInfo.InvariantCulture,
+                out value);
+        }
+
+        private static string QuoteUnquotedObjectKeys(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return text;
+            }
+
+            var result = new StringBuilder(text.Length);
+            var i = 0;
+            while (i < text.Length)
+            {
+                var current = text[i];
+                if (current == '"')
+                {
+                    AppendJsonStringLiteral(text, result, ref i);
+                    continue;
+                }
+
+                if (current == '{' || current == ',')
+                {
+                    result.Append(current);
+                    i++;
+                    while (i < text.Length && char.IsWhiteSpace(text[i]))
+                    {
+                        result.Append(text[i]);
+                        i++;
+                    }
+
+                    if (TryAppendQuotedObjectKey(text, result, ref i))
+                    {
+                        continue;
+                    }
+
+                    continue;
+                }
+
+                result.Append(current);
+                i++;
+            }
+
+            return result.ToString();
+        }
+
+        private static void AppendJsonStringLiteral(string text, StringBuilder result, ref int index)
+        {
+            result.Append(text[index++]);
+            while (index < text.Length)
+            {
+                var current = text[index++];
+                result.Append(current);
+                if (current == '\\' && index < text.Length)
+                {
+                    result.Append(text[index++]);
+                    continue;
+                }
+
+                if (current == '"')
+                {
+                    return;
+                }
+            }
+        }
+
+        private static bool TryAppendQuotedObjectKey(string text, StringBuilder result, ref int index)
+        {
+            if (index >= text.Length)
+            {
+                return false;
+            }
+
+            var start = index;
+            int end;
+            if (IsIdentifierStart(text[index]))
+            {
+                end = index + 1;
+                while (end < text.Length && IsIdentifierPart(text[end]))
+                {
+                    end++;
+                }
+            }
+            else if (char.IsDigit(text[index]))
+            {
+                end = index + 1;
+                while (end < text.Length && char.IsDigit(text[end]))
+                {
+                    end++;
+                }
+            }
+            else
+            {
+                return false;
+            }
+
+            var colon = end;
+            while (colon < text.Length && char.IsWhiteSpace(text[colon]))
+            {
+                colon++;
+            }
+
+            if (colon >= text.Length || text[colon] != ':')
+            {
+                return false;
+            }
+
+            result.Append('"');
+            result.Append(text, start, end - start);
+            result.Append('"');
+            index = end;
+            return true;
+        }
+
+        private static bool IsIdentifierStart(char value)
+        {
+            return value == '_' || value == '$' || char.IsLetter(value);
+        }
+
+        private static bool IsIdentifierPart(char value)
+        {
+            return IsIdentifierStart(value) || char.IsDigit(value);
         }
 
         private static JToken ParseJsonToken(string json)

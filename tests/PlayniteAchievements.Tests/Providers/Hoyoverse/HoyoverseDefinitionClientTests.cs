@@ -80,6 +80,19 @@ namespace PlayniteAchievements.Tests.Providers.Hoyoverse
         }
 
         [TestMethod]
+        public void ParseZenlessZoneZeroDefinitions_PreservesApostrophesInLiveSeeliePayload()
+        {
+            var js = @"const e={1004:{n:""Agent Trust"",o:4,a:[{id:1004001,n:""Movie Lovers Can't be Bad Guys"",d:""Reach Trust Lv. 4 with Anby."",r:5,v:""1.0"",t:1},{id:1004016,n:'""With Friends, You Are Not Lonely""',d:""Reach Trust Lv. 4 with Seth."",r:5,v:""1.1"",t:1},{id:1004019,n:""Don't Make It Bald"",d:""Pet Inky 3 times at the video store."",r:5,v:""1.0"",t:1}]}};export{e as default};";
+
+            var definitions = HoyoverseDefinitionClient.ParseZenlessZoneZeroDefinitions(js);
+
+            Assert.AreEqual(3, definitions.Count);
+            Assert.AreEqual("Movie Lovers Can't be Bad Guys", definitions.Single(a => a.ApiName == "1004001").DisplayName);
+            Assert.AreEqual(@"""With Friends, You Are Not Lonely""", definitions.Single(a => a.ApiName == "1004016").DisplayName);
+            Assert.AreEqual("Don't Make It Bald", definitions.Single(a => a.ApiName == "1004019").DisplayName);
+        }
+
+        [TestMethod]
         public void FindZzzAchievementAsset_SupportsRelativeAndAbsoluteLocaleChunks()
         {
             var relativeIndex = @"const a=()=>import(""./locale/achievements-en-fa79791d.js"");";
