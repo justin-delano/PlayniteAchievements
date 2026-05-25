@@ -17,7 +17,7 @@ namespace PlayniteAchievements.Providers.Exophase
     /// Full data provider for Exophase achievement tracking.
     /// Supports automatic game claiming by platform and per-game overrides.
     /// </summary>
-    internal sealed class ExophaseDataProvider : IDataProvider
+    internal sealed class ExophaseDataProvider : IDataProvider, IAchievementPageLinkProvider
     {
         #region Fields
 
@@ -44,7 +44,7 @@ namespace PlayniteAchievements.Providers.Exophase
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Exophase");
         public string ProviderKey => "Exophase";
         public string ProviderIconKey => "ProviderIconExophase";
-        public string ProviderColorHex => "#FF6B35";
+        public string ProviderColorHex => "#2f8ab3";
 
         /// <summary>
         /// Checks if Exophase session is authenticated.
@@ -52,6 +52,122 @@ namespace PlayniteAchievements.Providers.Exophase
         public bool IsAuthenticated => _sessionManager?.IsAuthenticated ?? false;
 
         public ISessionManager AuthSession => _sessionManager;
+
+        public bool CanResolveAchievementPageUrl(AchievementPageLinkContext context)
+        {
+            return TryBuildKnownAchievementPageUrl(context, out _) ||
+                   CanAttemptSlugResolution(context?.Game);
+        }
+
+        public async Task<string> GetAchievementPageUrlAsync(
+            AchievementPageLinkContext context,
+            CancellationToken cancel)
+        {
+            if (TryBuildKnownAchievementPageUrl(context, out var url))
+            {
+                return url;
+            }
+
+            var game = context?.Game;
+            if (!CanAttemptSlugResolution(game))
+            {
+                return null;
+            }
+
+            var slug = await ResolveExophaseSlugAsync(game, cancel).ConfigureAwait(false);
+            return TryBuildAchievementPageUrlFromSlug(slug, out url)
+                ? url
+                : null;
+        }
+
+        private bool TryBuildKnownAchievementPageUrl(
+            AchievementPageLinkContext context,
+            out string url)
+        {
+            url = null;
+            if (string.Equals(context?.ManualLink?.SourceKey, ProviderKey, StringComparison.OrdinalIgnoreCase) &&
+                TryBuildAchievementPageUrlFromSlug(context.ManualLink.SourceGameId, out url))
+            {
+                return true;
+            }
+
+            var game = context?.Game;
+            if (game == null)
+            {
+                return false;
+            }
+
+            if (GameCustomDataLookup.TryGetExophaseSlugOverride(game.Id, out var overrideSlug, _providerSettings) &&
+                TryBuildAchievementPageUrlFromSlug(overrideSlug, out url))
+            {
+                return true;
+            }
+
+            return TryGetCachedSlug(game.Id, out var cachedSlug) &&
+                   TryBuildAchievementPageUrlFromSlug(cachedSlug, out url);
+        }
+
+        internal static bool TryBuildAchievementPageUrlFromSlug(string slugOrUrl, out string url)
+        {
+            url = null;
+            var builtUrl = ExophaseApiClient.BuildUrlFromSlug(slugOrUrl);
+            if (string.IsNullOrWhiteSpace(builtUrl) ||
+                !Uri.TryCreate(builtUrl.Trim(), UriKind.Absolute, out var uri) ||
+                !IsExophaseHost(uri.Host))
+            {
+                return false;
+            }
+
+            var builder = new UriBuilder(uri)
+            {
+                Scheme = Uri.UriSchemeHttps,
+                Port = -1
+            };
+            url = builder.Uri.AbsoluteUri;
+            return true;
+        }
+
+        private static bool IsExophaseHost(string host)
+        {
+            return string.Equals(host, "exophase.com", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(host, "www.exophase.com", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool TryGetCachedSlug(Guid gameId, out string slug)
+        {
+            slug = null;
+            if (gameId == Guid.Empty)
+            {
+                return false;
+            }
+
+            lock (_slugCacheLock)
+            {
+                if (!_slugCache.TryGetValue(gameId, out var cachedSlug) ||
+                    string.IsNullOrWhiteSpace(cachedSlug))
+                {
+                    return false;
+                }
+
+                if (_slugCacheTimestamps.TryGetValue(gameId, out var timestamp) &&
+                    DateTime.UtcNow - timestamp < SlugCacheTtl)
+                {
+                    slug = cachedSlug;
+                    return true;
+                }
+
+                _slugCache.Remove(gameId);
+                _slugCacheTimestamps.Remove(gameId);
+                return false;
+            }
+        }
+
+        private static bool CanAttemptSlugResolution(Game game)
+        {
+            return game != null &&
+                   !string.IsNullOrWhiteSpace(game.Name) &&
+                   !string.IsNullOrWhiteSpace(GetExophasePlatformSlug(game));
+        }
 
         #endregion
 
@@ -393,7 +509,8 @@ namespace PlayniteAchievements.Providers.Exophase
             if (customDataStore != null)
             {
                 var previous = customDataStore.TryLoad(gameId, out var customData) &&
-                    customData?.ForceUseExophase == true;
+                    customData?.ProviderOverride != null &&
+                    string.Equals(customData.ProviderOverride.ProviderKey, "Exophase", StringComparison.OrdinalIgnoreCase);
                 if (previous == include)
                 {
                     return true;
@@ -401,7 +518,12 @@ namespace PlayniteAchievements.Providers.Exophase
 
                 customDataStore.Update(gameId, data =>
                 {
-                    data.ForceUseExophase = include ? true : (bool?)null;
+                    data.ProviderOverride = include
+                        ? new ProviderOverrideData
+                        {
+                            ProviderKey = "Exophase"
+                        }
+                        : null;
                 });
             }
             else
@@ -449,8 +571,11 @@ namespace PlayniteAchievements.Providers.Exophase
             {
                 customDataStore.Update(gameId, customData =>
                 {
-                    customData.ExophaseSlugOverride = slug;
-                    customData.ForceUseExophase = true;
+                    customData.ProviderOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = "Exophase",
+                        Value = slug
+                    };
                 });
             }
             else
@@ -478,14 +603,19 @@ namespace PlayniteAchievements.Providers.Exophase
             if (customDataStore != null)
             {
                 if (!customDataStore.TryLoad(gameId, out var customData) ||
-                    string.IsNullOrWhiteSpace(customData.ExophaseSlugOverride))
+                    customData?.ProviderOverride == null ||
+                    !string.Equals(customData.ProviderOverride.ProviderKey, "Exophase", StringComparison.OrdinalIgnoreCase) ||
+                    string.IsNullOrWhiteSpace(customData.ProviderOverride.Value))
                 {
                     return false;
                 }
 
                 customDataStore.Update(gameId, data =>
                 {
-                    data.ExophaseSlugOverride = null;
+                    data.ProviderOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = "Exophase"
+                    };
                 });
             }
             else

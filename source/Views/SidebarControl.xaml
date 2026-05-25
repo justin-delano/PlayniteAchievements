@@ -9,8 +9,11 @@
              xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="900"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
              Loaded="OnLoaded">
 
     <UserControl.Resources>
@@ -28,7 +31,9 @@
             <!-- Shared LegendItem DataTemplate for all pie charts -->
             <DataTemplate x:Key="LegendItemTemplate">
                 <StackPanel Orientation="Horizontal" Margin="0,2">
-                    <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center">
+                    <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"
+                          UseLayoutRounding="True"
+                          SnapsToDevicePixels="True">
                         <!-- Badge icons: complex DrawingImages from AchievementResources.xaml -->
                         <Image Source="{Binding IconKey, Converter={StaticResource ResourceKeyToImage}}"
                                Effect="{StaticResource BadgeShadow}"
@@ -78,6 +83,9 @@
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="border" Property="Background" Value="{DynamicResource HighlightGlyphBrush}"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -152,6 +160,10 @@
                                     <Setter Property="Opacity" Value="1"/>
                                     <Setter TargetName="border" Property="Background" Value="#10FFFFFF"/>
                                 </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter Property="Opacity" Value="1"/>
+                                    <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
+                                </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
@@ -224,9 +236,12 @@
             <!-- Style for Game Icon/Cover in Grid -->
             <Style x:Key="GameImageBorderStyle" TargetType="Border">
                 <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
+                <Setter Property="UseLayoutRounding" Value="True"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="ClipToBounds" Value="True"/>
                 <Setter Property="Width" Value="64"/>
                 <Setter Property="Height" Value="64"/>
-                <Setter Property="Margin" Value="6,8"/>
+                <Setter Property="Margin" Value="6,8,6,7"/>
                     <Setter Property="Background">
                         <Setter.Value>
                         <ImageBrush Stretch="Uniform"
@@ -266,7 +281,23 @@
             <Style x:Key="GamesOverviewDataGridCellStyle" TargetType="DataGridCell">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Focusable" Value="True"/>
+                <Setter Property="IsTabStop" Value="True"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="UseLayoutRounding" Value="True"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="DataGridCell">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                                <ContentPresenter VerticalAlignment="Stretch"
+                                                  HorizontalAlignment="Stretch"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
                         <Setter Property="Background" Value="#30FFFFFF"/>
@@ -277,12 +308,22 @@
                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
                         <Setter Property="Background" Value="#40FFFFFF"/>
                     </DataTrigger>
+                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
+                        <Setter Property="Background" Value="#30FFFFFF"/>
+                    </DataTrigger>
                     <MultiDataTrigger>
                         <MultiDataTrigger.Conditions>
                             <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
                             <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
                         </MultiDataTrigger.Conditions>
                         <Setter Property="Background" Value="#50FFFFFF"/>
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
+                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Background" Value="#45FFFFFF"/>
                     </MultiDataTrigger>
                 </Style.Triggers>
             </Style>
@@ -291,6 +332,8 @@
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
                 <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                <Setter Property="UseLayoutRounding" Value="True"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="MinHeight" Value="112"/>
@@ -333,6 +376,7 @@
                 <Setter Property="Height" Value="32"/>
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="UseLayoutRounding" Value="True"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
                 <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
                 <Style.Triggers>
@@ -493,7 +537,8 @@
                 <StackPanel Orientation="Horizontal"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Left">
-                    <Button Command="{Binding CloseViewCommand}"
+                    <Button x:Name="CloseViewButton"
+                            Command="{Binding CloseViewCommand}"
                             Content="&#xE72B;"
                             Style="{StaticResource NavigationButtonStyle}"
                             ToolTip="Back to Library"/>
@@ -526,11 +571,13 @@
                         </Button.ContextMenu>
                     </Button>
 
-                    <Button Content="{Binding RefreshActionButtonText}"
+                    <Button x:Name="RefreshActionButton"
+                            Content="{Binding RefreshActionButtonText}"
                             Command="{Binding RefreshCommand}"
                             Style="{StaticResource RefreshButtonStyle}"/>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                    <Button x:Name="CancelRefreshButton"
+                            Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                             Command="{Binding CancelRefreshCommand}"
                             Style="{StaticResource RefreshButtonStyle}"
                             Margin="0"/>
@@ -582,7 +629,8 @@
                         Background="{DynamicResource ControlBackgroundBrush}"
                         BorderBrush="{DynamicResource NormalBorderBrush}"
                         BorderThickness="0,0,1,0"
-                        Padding="16,10">
+                        Padding="16,10"
+                        KeyboardNavigation.DirectionalNavigation="Continue">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" MinWidth="100"/>
@@ -593,7 +641,8 @@
                         </Grid.ColumnDefinitions>
 
                         <Grid Grid.Column="0">
-                            <TextBox Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox x:Name="LeftSearchTextBox"
+                                     Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
                                        VerticalAlignment="Center"
@@ -615,7 +664,8 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <Button Tag="{Binding LeftSearchText}"
+                            <Button x:Name="ClearLeftSearchButton"
+                                    Tag="{Binding LeftSearchText}"
                                     Click="ClearLeftSearch_Click"
                                     Style="{StaticResource ClearSearchButtonStyle}"/>
                         </Grid>
@@ -673,7 +723,8 @@
                         Background="{DynamicResource ControlBackgroundBrush}"
                         BorderBrush="{DynamicResource NormalBorderBrush}"
                         BorderThickness="0,0,0,0"
-                        Padding="16,10">
+                        Padding="16,10"
+                        KeyboardNavigation.DirectionalNavigation="Continue">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" MinWidth="180"/>
@@ -681,7 +732,8 @@
                         </Grid.ColumnDefinitions>
 
                         <Grid Grid.Column="0">
-                            <TextBox Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox x:Name="RightSearchTextBox"
+                                     Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
                                        VerticalAlignment="Center"
@@ -703,7 +755,8 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <Button Tag="{Binding RightSearchText}"
+                            <Button x:Name="ClearRightSearchButton"
+                                    Tag="{Binding RightSearchText}"
                                     Click="ClearRightSearch_Click"
                                     Style="{StaticResource ClearSearchButtonStyle}"/>
                         </Grid>
@@ -741,15 +794,18 @@
                                                  ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                                 </Button.ContextMenu>
                             </Button>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
+                            <CheckBox x:Name="SelectedGameUnlockedFilterCheckBox"
+                                  Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
                                   IsChecked="{Binding ShowSelectedGameUnlocked}"
                                   VerticalAlignment="Center"
                                   Margin="0,0,8,0"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Common_Locked}"
+                            <CheckBox x:Name="SelectedGameLockedFilterCheckBox"
+                                  Content="{DynamicResource LOCPlayAch_Common_Locked}"
                                   IsChecked="{Binding ShowSelectedGameLocked}"
                                   VerticalAlignment="Center"
                                   Margin="0,0,8,0"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
+                            <CheckBox x:Name="SelectedGameHiddenFilterCheckBox"
+                                  Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
                                   IsChecked="{Binding ShowSelectedGameHidden}"
                                   VerticalAlignment="Center"/>
                         </StackPanel>
@@ -783,6 +839,7 @@
 
                         <DataGrid x:Name="GamesOverviewDataGrid"
                             Grid.Row="0"
+                            KeyboardNavigation.DirectionalNavigation="Contained"
                             ItemsSource="{Binding GamesOverview}"
                             SelectedItem="{Binding SelectedGame, Mode=OneWay}"
                             SelectionChanged="GamesOverview_SelectionChanged"
@@ -809,6 +866,9 @@
                             ScrollViewer.VerticalScrollBarVisibility="Visible"
                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                             ScrollViewer.IsDeferredScrollingEnabled="False"
+                            UseLayoutRounding="True"
+                            SnapsToDevicePixels="True"
+                            Tag="ControllerCellFocus"
                             PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell"
@@ -1219,7 +1279,8 @@
                                     </TextBlock>
                                 </StackPanel>
 
-                                <Button Grid.Column="1"
+                                <Button x:Name="ClearGameSelectionButton"
+                                        Grid.Column="1"
                                         Content="✕"
                                         Click="ClearGameSelection_Click"
                                         Width="24"
@@ -1249,11 +1310,13 @@
 
                             <controls:AchievementDataGridControl x:Name="RecentAchievementsDataGrid"
                                                                  Grid.Row="0"
+                                                                 KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding RecentAchievements}"
                                                                  ColumnSettingsKey="Sidebar"
                                                                  ShowGameColumn="True"
                                                                  HideStatusColumn="True"
                                                                  UseCoverImages="{Binding UseCoverImages}"
+                                                                 DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                                  UseExternalSorting="True"
                                                                  Sorting="AchievementDataGrid_Sorting"
                                                                  RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
@@ -1270,8 +1333,10 @@
                             <!-- Game Achievements List -->
                             <controls:AchievementDataGridControl x:Name="GameAchievementsGrid"
                                                                  Grid.Row="0"
+                                                                 KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
                                                                  ColumnSettingsKey="SidebarGame"
+                                                                 DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                                  RevealCommand="{Binding DataContext.RevealAchievementCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                  UseExternalSorting="True"
                                                                  Sorting="GameAchievementsGrid_Sorting"
@@ -1583,6 +1648,8 @@
                     <GridSplitter Grid.Column="1"
                         Grid.RowSpan="3"
                         Style="{StaticResource CenterLineSplitterStyle}"
+                        Focusable="False"
+                        IsTabStop="False"
                         Panel.ZIndex="100"/>
             </Grid>
         </Grid>

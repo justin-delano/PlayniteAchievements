@@ -34,6 +34,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly Action _ensureAchievementResourcesLoaded;
+        private readonly FullscreenControllerNavigationService _fullscreenControllerNavigationService;
 
         public PluginWindowService(
             IPlayniteAPI api,
@@ -46,7 +47,8 @@ namespace PlayniteAchievements.Services.UI
             AchievementDataService achievementDataService,
             PlayniteAchievementsSettings settings,
             ManualSourceRegistry manualSourceRegistry,
-            Action ensureAchievementResourcesLoaded)
+            Action ensureAchievementResourcesLoaded,
+            FullscreenControllerNavigationService fullscreenControllerNavigationService)
         {
             _api = api;
             _logger = logger;
@@ -59,6 +61,7 @@ namespace PlayniteAchievements.Services.UI
             _settings = settings;
             _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
             _ensureAchievementResourcesLoaded = ensureAchievementResourcesLoaded;
+            _fullscreenControllerNavigationService = fullscreenControllerNavigationService;
         }
 
         private bool DetectFullscreenMode()
@@ -486,6 +489,10 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 window.Closed += (s, ev) => view.Cleanup();
+                if (isFullscreen)
+                {
+                    _fullscreenControllerNavigationService?.RegisterWindow(window, view);
+                }
 
                 ShowWindow(window, isFullscreen);
             }
@@ -671,6 +678,10 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 window.Closed += (s, e) => view.Cleanup();
+                if (isFullscreen)
+                {
+                    _fullscreenControllerNavigationService?.RegisterWindow(window, view);
+                }
 
                 ShowWindow(window, isFullscreen);
             }

@@ -4,23 +4,6 @@ using System.Runtime.Serialization;
 namespace PlayniteAchievements.Providers.Steam.Models
 {
     [DataContract]
-    internal sealed class SteamAsyncConfigResponse
-    {
-        [DataMember(Name = "success")]
-        public int? Success { get; set; }
-
-        [DataMember(Name = "data")]
-        public SteamAsyncConfigData Data { get; set; }
-    }
-
-    [DataContract]
-    internal sealed class SteamAsyncConfigData
-    {
-        [DataMember(Name = "webapi_token")]
-        public string WebApiToken { get; set; }
-    }
-
-    [DataContract]
     internal sealed class SchemaAchievement
     {
         [DataMember(Name = "name")]

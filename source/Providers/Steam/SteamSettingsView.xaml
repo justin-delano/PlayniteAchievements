@@ -152,30 +152,6 @@
                             </StackPanel>
                         </Border>
                     </Grid>
-
-                    <!-- Steam User ID -->
-                    <Grid Margin="0,16,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="180"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Column="0"
-                                   Text="{DynamicResource LOCPlayAch_Settings_SteamUserId}"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   VerticalAlignment="Top"
-                                   Margin="0,8,0,0"/>
-
-                        <StackPanel Grid.Column="1">
-                            <TextBox Text="{Binding Settings.SteamUserId, Mode=OneWay}"
-                                     IsReadOnly="True"
-                                     Padding="4"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SteamUserId_Help}"
-                                       Style="{StaticResource MutedTextStyle}"
-                                       Margin="0,8,0,0"
-                                       TextWrapping="Wrap"/>
-                        </StackPanel>
-                    </Grid>
                 </StackPanel>
             </Border>
         </StackPanel>

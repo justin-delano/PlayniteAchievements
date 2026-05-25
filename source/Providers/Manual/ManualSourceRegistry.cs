@@ -35,7 +35,8 @@ namespace PlayniteAchievements.Providers.Manual
             var exophaseSessionManager = new ExophaseSessionManager(playniteApi, logger, pluginUserDataPath);
             var steamSessionManager = new SteamSessionManager(playniteApi, logger);
             _steamAuthClient = new SteamHttpClient(playniteApi, logger, steamSessionManager, pluginUserDataPath);
-            var steamTokenResolver = new SteamWebApiTokenResolver(steamSessionManager, _steamAuthClient.GetWebApiTokenAsync, logger);
+            steamSessionManager.SetClearInMemoryAuthState(_steamAuthClient.ClearInMemoryAuthState);
+            var steamTokenResolver = new SteamWebApiTokenResolver(steamSessionManager, logger);
 
             var handler = new HttpClientHandler
             {

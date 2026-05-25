@@ -165,11 +165,11 @@ namespace PlayniteAchievements.Views.Controls
         /// </summary>
         public static readonly DependencyProperty DataGridMaxHeightProperty =
             DependencyProperty.Register(nameof(DataGridMaxHeight), typeof(double),
-                typeof(AchievementDataGridControl), new PropertyMetadata(double.NaN));
+                typeof(AchievementDataGridControl), new PropertyMetadata(PersistedSettings.DefaultAchievementDataGridMaxHeight));
 
         /// <summary>
         /// Gets or sets the maximum height of the internal DataGrid.
-        /// Default is double.NaN (unlimited).
+        /// Default is PersistedSettings.DefaultAchievementDataGridMaxHeight.
         /// </summary>
         public double DataGridMaxHeight
         {
@@ -312,9 +312,10 @@ namespace PlayniteAchievements.Views.Controls
 
             if (isVisible)
             {
-                column.MinWidth = width;
-                column.MaxWidth = width;
-                column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                var roundedWidth = ColumnWidthNormalization.RoundPixelWidth(width);
+                column.MinWidth = roundedWidth;
+                column.MaxWidth = roundedWidth;
+                column.Width = new DataGridLength(roundedWidth, DataGridLengthUnitType.Pixel);
                 column.Visibility = Visibility.Visible;
                 return;
             }
@@ -643,20 +644,31 @@ namespace PlayniteAchievements.Views.Controls
         {
             if (sender is DataGridRow row && row.DataContext is AchievementDisplayItem item)
             {
-                if (item.CanReveal)
+                if (TryActivateAchievementItem(item, consumeWhenNoAction: false))
                 {
-                    var command = RevealCommand;
-                    if (command != null && command.CanExecute(item))
-                    {
-                        command.Execute(item);
-                    }
-                    else
-                    {
-                        item.ToggleReveal();
-                    }
                     e.Handled = true;
                 }
             }
+        }
+
+        private bool TryActivateAchievementItem(AchievementDisplayItem item, bool consumeWhenNoAction)
+        {
+            if (item == null || !item.CanReveal)
+            {
+                return consumeWhenNoAction && item != null;
+            }
+
+            var command = RevealCommand;
+            if (command != null && command.CanExecute(item))
+            {
+                command.Execute(item);
+            }
+            else
+            {
+                item.ToggleReveal();
+            }
+
+            return true;
         }
 
         private void AchievementRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -690,25 +702,66 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            var row = ItemsControl.ContainerFromElement(grid, e.OriginalSource as DependencyObject) as DataGridRow;
-            if (row != null)
+            var header = VisualTreeHelpers.FindVisualParent<DataGridColumnHeader>(e.OriginalSource as DependencyObject);
+            if (header?.Column == null)
             {
                 return;
             }
 
             e.Handled = true;
 
+            OpenColumnVisibilityMenu(grid, header, useControllerPlacement: false);
+        }
+
+        public bool OpenColumnVisibilityMenuForController()
+        {
+            var header = Services.UI.FullscreenControllerNavigationService.GetFocusedDataGridColumnHeader(AchievementsDataGrid);
+            if (header == null)
+            {
+                return false;
+            }
+
+            return OpenColumnVisibilityMenu(
+                AchievementsDataGrid,
+                header,
+                useControllerPlacement: true);
+        }
+
+
+        public bool IsColumnHeaderFocusedForController()
+        {
+            return Services.UI.FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(AchievementsDataGrid);
+        }
+
+        public bool ActivateFocusedColumnHeaderForController()
+        {
+            return Services.UI.FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(AchievementsDataGrid);
+        }
+
+        private bool OpenColumnVisibilityMenu(DataGrid grid, FrameworkElement owner, bool useControllerPlacement)
+        {
+            if (!AllowColumnVisibilityMenu || grid == null || owner == null)
+            {
+                return false;
+            }
+
             var menu = _columnPersistence?.BuildColumnVisibilityMenu();
             if (menu == null || menu.Items.Count == 0)
             {
-                return;
+                return false;
             }
 
-            menu.Placement = PlacementMode.RelativePoint;
-            menu.PlacementTarget = grid;
-            menu.HorizontalOffset = e.GetPosition(grid).X;
-            menu.VerticalOffset = e.GetPosition(grid).Y;
+            if (useControllerPlacement)
+            {
+                return Services.UI.FullscreenControllerNavigationService.OpenContextMenu(owner, menu);
+            }
+
+            menu.Placement = PlacementMode.Bottom;
+            menu.PlacementTarget = owner;
+            menu.HorizontalOffset = 0;
+            menu.VerticalOffset = 0;
             menu.IsOpen = true;
+            return true;
         }
 
         /// <summary>
@@ -716,6 +769,13 @@ namespace PlayniteAchievements.Views.Controls
         /// Used for scroll reset and other operations that require direct DataGrid access.
         /// </summary>
         public DataGrid InternalDataGrid => AchievementsDataGrid;
+
+        public bool ActivateSelectedItem()
+        {
+            var item = AchievementsDataGrid?.SelectedItem as AchievementDisplayItem
+                       ?? AchievementsDataGrid?.CurrentItem as AchievementDisplayItem;
+            return TryActivateAchievementItem(item, consumeWhenNoAction: true);
+        }
 
         /// <summary>
         /// Sets the sort indicator on a specific column, clearing others.

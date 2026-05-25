@@ -10,8 +10,17 @@ namespace PlayniteAchievements.Providers.Exophase
     /// </summary>
     public class ExophaseSettings : ProviderSettingsBase
     {
+        private static readonly string[] DefaultManagedProviderTokens =
+        {
+            "blizzard",
+            "origin",
+            "android",
+            "apple",
+            "ubisoft"
+        };
+
         private string _userId;
-        private HashSet<string> _managedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private HashSet<string> _managedProviders = CreateDefaultManagedProviders();
         private HashSet<Guid> _includedGames = new HashSet<Guid>();
         private Dictionary<Guid, string> _slugOverrides = new Dictionary<Guid, string>();
 
@@ -30,7 +39,7 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>
         /// Provider/platform tokens that Exophase should automatically claim.
         /// Games matching these tokens will use Exophase instead of modern providers.
-        /// Valid values: "steam", "psn", "xbox", "gog", "epic", "blizzard", "origin", "retro", "android", "apple"
+        /// Valid values: "steam", "psn", "xbox", "gog", "epic", "blizzard", "origin", "retro", "android", "apple", "ubisoft"
         /// </summary>
         public HashSet<string> ManagedProviders
         {
@@ -59,6 +68,11 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             get => _slugOverrides;
             set => SetValue(ref _slugOverrides, value ?? new Dictionary<Guid, string>());
+        }
+
+        public static HashSet<string> CreateDefaultManagedProviders()
+        {
+            return new HashSet<string>(DefaultManagedProviderTokens, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

@@ -103,7 +103,7 @@ namespace PlayniteAchievements.Manual.Tests
             var achievements = await source.GetAchievementsAsync("123", "ko", CancellationToken.None).ConfigureAwait(false);
 
             Assert.IsNotNull(capturedUri);
-            StringAssert.Contains(capturedUri.Query, "key=store-token");
+            StringAssert.Contains(capturedUri.Query, "access_token=store-token");
             StringAssert.Contains(capturedUri.Query, "language=koreana");
             Assert.IsNotNull(achievements);
         }
@@ -146,6 +146,26 @@ namespace PlayniteAchievements.Manual.Tests
 
             Assert.AreEqual("Steam", ex.SourceKey);
             Assert.AreEqual("LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired", ex.MessageKey);
+            Assert.AreEqual(1, sessionManager.ProbeCallCount);
+        }
+
+        [TestMethod]
+        public async Task ManualSourceAuthentication_AllowsSteamWhenSessionProbeSucceeds()
+        {
+            using var httpClient = new HttpClient(new StubHttpMessageHandler(_ => throw new InvalidOperationException("Should not send requests.")));
+            var sessionManager = new FakeSessionManager
+            {
+                ProbeResult = AuthProbeResult.AlreadyAuthenticated("76561198000000000")
+            };
+            var source = CreateSteamSource(
+                httpClient,
+                sessionManager,
+                _ => Task.FromResult("store-token"));
+
+            await ManualSourceAuthentication
+                .EnsureAuthenticatedAsync(source, CancellationToken.None)
+                .ConfigureAwait(false);
+
             Assert.AreEqual(1, sessionManager.ProbeCallCount);
         }
 
@@ -292,6 +312,65 @@ namespace PlayniteAchievements.Manual.Tests
             Assert.IsNull(ExophaseApiClient.NormalizeLegacyManualApiName("   "));
         }
 
+        [TestMethod]
+        public void ManualLinkTransientStore_RegisterRestore_RestoresPreviousFallback()
+        {
+            var gameId = Guid.NewGuid();
+            var settings = new ManualSettings();
+            var previous = new ManualAchievementLink
+            {
+                SourceKey = "Steam",
+                SourceGameId = "old-game",
+                UnlockStates = new Dictionary<string, bool> { ["ACH_OLD"] = true },
+                UnlockTimes = new Dictionary<string, DateTime?> { ["ACH_OLD"] = DateTime.UtcNow.AddDays(-1) },
+                CreatedUtc = DateTime.UtcNow.AddDays(-2),
+                LastModifiedUtc = DateTime.UtcNow.AddDays(-1)
+            };
+            var replacement = new ManualAchievementLink
+            {
+                SourceKey = "Steam",
+                SourceGameId = "new-game",
+                UnlockStates = new Dictionary<string, bool> { ["ACH_NEW"] = true },
+                CreatedUtc = DateTime.UtcNow,
+                LastModifiedUtc = DateTime.UtcNow
+            };
+            settings.AchievementLinks[gameId] = previous;
+
+            var snapshot = ManualLinkTransientStore.Register(gameId, replacement, settings);
+
+            replacement.SourceGameId = "mutated-new-game";
+            previous.SourceGameId = "mutated-old-game";
+            Assert.AreEqual("new-game", settings.AchievementLinks[gameId].SourceGameId);
+
+            ManualLinkTransientStore.Restore(gameId, snapshot, settings);
+
+            Assert.AreEqual("old-game", settings.AchievementLinks[gameId].SourceGameId);
+            Assert.AreNotSame(previous, settings.AchievementLinks[gameId]);
+            Assert.IsTrue(settings.AchievementLinks[gameId].UnlockStates["ACH_OLD"]);
+        }
+
+        [TestMethod]
+        public void ManualLinkTransientStore_RegisterRestore_RemovesWhenNoPreviousFallback()
+        {
+            var gameId = Guid.NewGuid();
+            var settings = new ManualSettings();
+            var replacement = new ManualAchievementLink
+            {
+                SourceKey = "Steam",
+                SourceGameId = "new-game",
+                CreatedUtc = DateTime.UtcNow,
+                LastModifiedUtc = DateTime.UtcNow
+            };
+
+            var snapshot = ManualLinkTransientStore.Register(gameId, replacement, settings);
+
+            Assert.IsTrue(settings.AchievementLinks.ContainsKey(gameId));
+
+            ManualLinkTransientStore.Restore(gameId, snapshot, settings);
+
+            Assert.IsFalse(settings.AchievementLinks.ContainsKey(gameId));
+        }
+
         private static SteamManualSource CreateSteamSource(
             HttpClient httpClient,
             ISessionManager sessionManager,
@@ -300,7 +379,18 @@ namespace PlayniteAchievements.Manual.Tests
             return new SteamManualSource(
                 httpClient,
                 logger: null,
-                new SteamWebApiTokenResolver(sessionManager, resolveTokenAsync, logger: null));
+                new SteamWebApiTokenResolver(
+                    sessionManager,
+                    async ct =>
+                    {
+                        var probeResult = await sessionManager.ProbeAuthStateAsync(ct).ConfigureAwait(false);
+                        var token = await resolveTokenAsync(ct).ConfigureAwait(false);
+                        return new SteamWebAuthSession(
+                            probeResult?.UserId,
+                            token,
+                            hasSteamSessionCookies: probeResult?.IsSuccess == true);
+                    },
+                    logger: null));
         }
 
         private sealed class FakePlayniteApi : IPlayniteAPI

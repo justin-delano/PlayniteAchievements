@@ -627,6 +627,38 @@ namespace PlayniteAchievements.ViewModels
             GameCoverPath = gameCoverPath;
         }
 
+        /// <summary>
+        /// Updates this item from another display item while keeping the current object instance.
+        /// </summary>
+        public void UpdateFrom(AchievementDisplayItem sourceItem)
+        {
+            if (sourceItem == null)
+            {
+                return;
+            }
+
+            UpdateFrom(
+                sourceItem.Source,
+                sourceItem.GameName,
+                sourceItem.PlayniteGameId,
+                sourceItem.ShowHiddenIcon,
+                sourceItem.ShowHiddenTitle,
+                sourceItem.ShowHiddenDescription,
+                sourceItem.ShowHiddenSuffix,
+                sourceItem.ShowLockedIcon,
+                sourceItem.UseSeparateLockedIconsWhenAvailable,
+                sourceItem.ShowRarityGlow,
+                sourceItem.ShowRarityBar,
+                sourceItem.SortingName,
+                sourceItem.GameIconPath,
+                sourceItem.GameCoverPath);
+            ProviderKey = sourceItem.ProviderKey;
+            PointsValue = sourceItem.PointsValue;
+            CategoryType = sourceItem.CategoryType;
+            CategoryLabel = sourceItem.CategoryLabel;
+            IsRevealed = sourceItem.IsRevealed;
+        }
+
         public void ApplyAppearanceSettings(
             bool showHiddenIcon,
             bool showHiddenTitle,

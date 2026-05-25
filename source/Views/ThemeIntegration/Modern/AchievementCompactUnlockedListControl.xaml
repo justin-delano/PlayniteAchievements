@@ -7,14 +7,18 @@
                    xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
                    xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
                    mc:Ignorable="d"
-                   d:DesignHeight="82" d:DesignWidth="600">
+                   d:DesignHeight="82" d:DesignWidth="600"
+                   UseLayoutRounding="True"
+                   SnapsToDevicePixels="True">
 
     <!-- Virtualized horizontal compact list -->
     <ItemsControl x:Name="AchievementsList"
                   ItemsSource="{Binding DisplayItems, Mode=OneWay, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}"
                   VirtualizingPanel.IsVirtualizing="True"
                   VirtualizingPanel.VirtualizationMode="Recycling"
-                  VirtualizingPanel.ScrollUnit="Pixel">
+                  VirtualizingPanel.ScrollUnit="Pixel"
+                  UseLayoutRounding="True"
+                  SnapsToDevicePixels="True">
         <ItemsControl.Style>
             <Style TargetType="ItemsControl">
                 <Style.Triggers>
@@ -31,7 +35,9 @@
                               HorizontalScrollBarVisibility="Hidden"
                               VerticalScrollBarVisibility="Disabled"
                               Padding="0"
-                              ClipToBounds="False">
+                              ClipToBounds="False"
+                              UseLayoutRounding="True"
+                              SnapsToDevicePixels="True">
                     <ItemsPresenter/>
                 </ScrollViewer>
             </ControlTemplate>
@@ -42,13 +48,17 @@
                 <VirtualizingStackPanel Orientation="Horizontal"
                                         IsItemsHost="True"
                                         VirtualizationMode="Recycling"
-                                        ClipToBounds="False"/>
+                                        ClipToBounds="False"
+                                        UseLayoutRounding="True"
+                                        SnapsToDevicePixels="True"/>
             </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
 
         <ItemsControl.ItemContainerStyle>
             <Style TargetType="ContentPresenter">
                 <Setter Property="ClipToBounds" Value="False"/>
+                <Setter Property="UseLayoutRounding" Value="True"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
             </Style>
         </ItemsControl.ItemContainerStyle>
 
