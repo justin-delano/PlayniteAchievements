@@ -8,6 +8,7 @@ using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Providers.Xenia;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace PlayniteAchievements.Services
 {
@@ -325,6 +326,38 @@ namespace PlayniteAchievements.Services
                    link != null;
         }
 
+        public static bool TryGetProviderOverride(
+            Guid gameId,
+            out ProviderOverrideData providerOverride,
+            GameCustomDataStore store = null)
+        {
+            providerOverride = null;
+            if (gameId == Guid.Empty)
+            {
+                return false;
+            }
+
+            if (TryLoad(gameId, out var customData, store) &&
+                customData?.ProviderOverride != null)
+            {
+                providerOverride = customData.ProviderOverride.Clone();
+                return !string.IsNullOrWhiteSpace(providerOverride.ProviderKey);
+            }
+
+            return false;
+        }
+
+        public static bool TryGetSteamAppIdOverride(
+            Guid gameId,
+            out int appIdOverride,
+            GameCustomDataStore store = null)
+        {
+            appIdOverride = 0;
+            return TryGetProviderOverride(gameId, out var providerOverride, store) &&
+                   string.Equals(providerOverride.ProviderKey, "Steam", StringComparison.OrdinalIgnoreCase) &&
+                   TryGetPositiveId(providerOverride.Value, out appIdOverride);
+        }
+
         public static bool TryGetRetroAchievementsGameIdOverride(
             Guid gameId,
             out int gameIdOverride,
@@ -335,6 +368,12 @@ namespace PlayniteAchievements.Services
             if (gameId == Guid.Empty)
             {
                 return false;
+            }
+
+            if (TryGetProviderOverride(gameId, out var providerOverride, store) &&
+                string.Equals(providerOverride.ProviderKey, "RetroAchievements", StringComparison.OrdinalIgnoreCase))
+            {
+                return TryGetPositiveId(providerOverride.Value, out gameIdOverride);
             }
 
             if (TryLoad(gameId, out var customData, store) &&
@@ -358,6 +397,11 @@ namespace PlayniteAchievements.Services
                 return false;
             }
 
+            if (TryGetProviderOverride(gameId, out var providerOverride, store))
+            {
+                return string.Equals(providerOverride.ProviderKey, "Exophase", StringComparison.OrdinalIgnoreCase);
+            }
+
             if (TryLoad(gameId, out var customData, store))
             {
                 return customData?.ForceUseExophase == true;
@@ -375,6 +419,13 @@ namespace PlayniteAchievements.Services
             if (gameId == Guid.Empty)
             {
                 return false;
+            }
+
+            if (TryGetProviderOverride(gameId, out var providerOverride, store) &&
+                string.Equals(providerOverride.ProviderKey, "Xenia", StringComparison.OrdinalIgnoreCase))
+            {
+                titleIdOverride = XeniaTitleIdHelper.Normalize(providerOverride.Value);
+                return !string.IsNullOrWhiteSpace(titleIdOverride);
             }
 
             if (TryLoad(gameId, out var customData, store))
@@ -396,6 +447,13 @@ namespace PlayniteAchievements.Services
             if (gameId == Guid.Empty)
             {
                 return false;
+            }
+
+            if (TryGetProviderOverride(gameId, out var providerOverride, store) &&
+                string.Equals(providerOverride.ProviderKey, "Exophase", StringComparison.OrdinalIgnoreCase))
+            {
+                slugOverride = NormalizeValue(providerOverride.Value);
+                return !string.IsNullOrWhiteSpace(slugOverride);
             }
 
             if (TryLoad(gameId, out var customData, store))
@@ -424,6 +482,13 @@ namespace PlayniteAchievements.Services
             if (gameId == Guid.Empty)
             {
                 return false;
+            }
+
+            if (TryGetProviderOverride(gameId, out var providerOverride, store) &&
+                string.Equals(providerOverride.ProviderKey, "ShadPS4", StringComparison.OrdinalIgnoreCase))
+            {
+                matchIdOverride = ShadPS4MatchIdHelper.Normalize(providerOverride.Value);
+                return !string.IsNullOrWhiteSpace(matchIdOverride);
             }
 
             if (TryLoad(gameId, out var customData, store))
@@ -468,6 +533,16 @@ namespace PlayniteAchievements.Services
             }
 
             return map;
+        }
+
+        private static bool TryGetPositiveId(string value, out int id)
+        {
+            return int.TryParse(
+                       (value ?? string.Empty).Trim(),
+                       NumberStyles.Integer,
+                       CultureInfo.InvariantCulture,
+                       out id) &&
+                   id > 0;
         }
 
         private static string NormalizeValue(string value)

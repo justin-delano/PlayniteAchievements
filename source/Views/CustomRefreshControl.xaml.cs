@@ -987,8 +987,7 @@ namespace PlayniteAchievements.Views
         {
             return game != null &&
                    (game.IsInstalled ||
-                    GameCustomDataLookup.TryGetXeniaTitleIdOverride(game.Id, out _) ||
-                    GameCustomDataLookup.TryGetShadPS4MatchIdOverride(game.Id, out _));
+                    GameCustomDataLookup.TryGetProviderOverride(game.Id, out _));
         }
 
         private void RecalculateSummary()

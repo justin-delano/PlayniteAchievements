@@ -2,6 +2,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -92,7 +93,9 @@ namespace PlayniteAchievements.Providers.Steam
 
         private static bool IsSteamCapable(Game game)
         {
-            return game != null && game.PluginId == SteamPluginId;
+            return game != null &&
+                   (game.PluginId == SteamPluginId ||
+                    GameCustomDataLookup.TryGetSteamAppIdOverride(game.Id, out _));
         }
 
         private static bool TryResolveSteamAppId(
@@ -100,6 +103,12 @@ namespace PlayniteAchievements.Providers.Steam
             out int appId)
         {
             appId = 0;
+            if (context?.Game != null &&
+                GameCustomDataLookup.TryGetSteamAppIdOverride(context.Game.Id, out appId))
+            {
+                return true;
+            }
+
             if (string.Equals(context?.ManualLink?.SourceKey, "Steam", StringComparison.OrdinalIgnoreCase) &&
                 TryGetPositiveId(context.ManualLink.SourceGameId, out appId))
             {
