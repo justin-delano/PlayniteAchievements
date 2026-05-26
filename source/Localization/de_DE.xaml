@@ -678,12 +678,12 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Section_Stats">Erfolgsstatistik</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Synchronisation &amp; Aktualisierung</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_Timeline">Erfolgshistogramm</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_14D">14T</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_1M">1M</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_1Y">1J</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_3M">3M</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_7D">7T</sys:String>
-    <sys:String x:Key="LOCPlayAch_TimeRange_All">Alle</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_14D">14 Tage</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_1M">1 Monat</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_1Y">1 Jahr</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_3M">3 Monate</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_7D">7 Tage</sys:String>
+    <sys:String x:Key="LOCPlayAch_TimeRange_All">Gesamt</sys:String>
 
     <!-- ================================================================= -->
     <!-- 17 Errors and Notifications -->
