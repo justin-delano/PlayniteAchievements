@@ -1,6 +1,19 @@
 AddonId: PlayniteAchievements
 Packages:
 
+  - Version: 2.3.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-05-30
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.3.0/PlayniteAchievements_2_3_0.pext
+    Changelog:
+    - "Added native support for HoYoverse achievements."
+    - "Improved override system. Steam and RPCS3 overrides are now supported, and multiple Playnite library items can use the same override data."
+    - "Fixed WoW Housing and Delves achievements not showing."
+    - "Fixed issues where PSN was taking priority over RPCS3/ShadPS4."
+    - "Fixed scrolling issues in Game Options tabs."
+    - "(Re-)Added French localization! Thanks to @Mike-Aniki for the contribution!"
+
+
   - Version: 2.2.0
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-05-24
