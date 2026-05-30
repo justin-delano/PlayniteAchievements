@@ -43,6 +43,7 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                 AddPaimonMoeUnlockedIds(kind, root, result);
                 AddSeelieUnlockedIds(root, result);
                 AddStarDbUnlockedIds(kind, root, result);
+                AddStarDbExporterUnlockedIds(kind, root, result);
                 AddRngMoeUnlockedIds(kind, root, result);
             }
             catch (Exception ex)
@@ -132,6 +133,33 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                     {
                         result.Add(property.Name);
                     }
+                }
+            }
+        }
+
+        private static void AddStarDbExporterUnlockedIds(
+            HoyoverseGameKind kind,
+            JToken root,
+            ISet<string> result)
+        {
+            var exporterKey = GetStarDbExporterKey(kind);
+            if (string.IsNullOrWhiteSpace(exporterKey))
+            {
+                return;
+            }
+
+            var achievements = root?[exporterKey] as JArray;
+            if (achievements == null)
+            {
+                return;
+            }
+
+            foreach (var item in achievements)
+            {
+                var id = ReadId(item);
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    result.Add(id);
                 }
             }
         }
@@ -475,6 +503,19 @@ namespace PlayniteAchievements.Providers.Hoyoverse
                     return "hsr";
                 case HoyoverseGameKind.ZenlessZoneZero:
                     return "zzz";
+                default:
+                    return null;
+            }
+        }
+
+        private static string GetStarDbExporterKey(HoyoverseGameKind kind)
+        {
+            switch (kind)
+            {
+                case HoyoverseGameKind.GenshinImpact:
+                    return "gi_achievements";
+                case HoyoverseGameKind.HonkaiStarRail:
+                    return "hsr_achievements";
                 default:
                     return null;
             }

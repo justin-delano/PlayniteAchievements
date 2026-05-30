@@ -14,6 +14,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Services;
@@ -1449,6 +1450,21 @@ namespace PlayniteAchievements.ViewModels
                     };
                     return true;
 
+                case "RPCS3":
+                    if (!Rpcs3MatchIdHelper.TryNormalize(trimmedValue, out var rpcs3MatchId))
+                    {
+                        validationMessageKey = "LOCPlayAch_Menu_Rpcs3MatchId_InvalidId";
+                        validationMessageFallback = "Please enter a valid RPCS3 trophy NP Comm ID such as NPWR12345_00.";
+                        return false;
+                    }
+
+                    providerOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = normalizedKey,
+                        Value = rpcs3MatchId
+                    };
+                    return true;
+
                 case "Exophase":
                     providerOverride = new ProviderOverrideData
                     {
@@ -1490,6 +1506,11 @@ namespace PlayniteAchievements.ViewModels
                 },
                 new ProviderOverrideOption
                 {
+                    ProviderKey = "RPCS3",
+                    DisplayName = ProviderRegistry.GetLocalizedName("RPCS3")
+                },
+                new ProviderOverrideOption
+                {
                     ProviderKey = "Xenia",
                     DisplayName = ProviderRegistry.GetLocalizedName("Xenia")
                 },
@@ -1522,6 +1543,8 @@ namespace PlayniteAchievements.ViewModels
                     return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RetroAchievements", "RetroAchievements Game ID");
                 case "ShadPS4":
                     return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_ShadPS4", "ShadPS4 Match ID");
+                case "RPCS3":
+                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RPCS3", "RPCS3 NP Comm ID");
                 case "Xenia":
                     return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Xenia", "Xenia TitleID");
                 case "Exophase":
@@ -1553,6 +1576,11 @@ namespace PlayniteAchievements.ViewModels
             if (string.Equals(normalized, "ShadPS4", StringComparison.OrdinalIgnoreCase))
             {
                 return "ShadPS4";
+            }
+
+            if (string.Equals(normalized, "RPCS3", StringComparison.OrdinalIgnoreCase))
+            {
+                return "RPCS3";
             }
 
             if (string.Equals(normalized, "Xenia", StringComparison.OrdinalIgnoreCase))

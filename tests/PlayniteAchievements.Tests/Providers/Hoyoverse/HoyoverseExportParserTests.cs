@@ -54,6 +54,20 @@ namespace PlayniteAchievements.Tests.Providers.Hoyoverse
         }
 
         [TestMethod]
+        public void ReadUnlockedIds_ParsesStarDbExporterClipboardJson()
+        {
+            var path = WriteTempFile(".json", @"{""gi_achievements"":[3101,3102],""hsr_achievements"":[3201]}");
+
+            var ids = HoyoverseExportParser.ReadUnlockedIds(
+                HoyoverseGameKind.GenshinImpact,
+                path,
+                new List<AchievementDetail>(),
+                null);
+
+            CollectionAssert.AreEquivalent(new[] { "3101", "3102" }, ids.ToList());
+        }
+
+        [TestMethod]
         public void ReadUnlockedIds_ParsesStarRailStationDatExport()
         {
             var payload = @"{""data"":{""stores"":{""1_achieve"":{""completeState"":{""group"":{""705481"":true,""705482"":false}}}}}}";

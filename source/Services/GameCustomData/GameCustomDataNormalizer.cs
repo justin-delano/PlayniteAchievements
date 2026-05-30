@@ -1,4 +1,5 @@
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Xenia;
 using System;
@@ -248,6 +249,16 @@ namespace PlayniteAchievements.Services
                             Value = shadMatchId
                         };
 
+                case "RPCS3":
+                    var rpcs3MatchId = Rpcs3MatchIdHelper.Normalize(value);
+                    return string.IsNullOrWhiteSpace(rpcs3MatchId)
+                        ? null
+                        : new ProviderOverrideData
+                        {
+                            ProviderKey = providerKey,
+                            Value = rpcs3MatchId
+                        };
+
                 case "Exophase":
                     return new ProviderOverrideData
                     {
@@ -423,6 +434,11 @@ namespace PlayniteAchievements.Services
             if (string.Equals(normalized, "ShadPS4", StringComparison.OrdinalIgnoreCase))
             {
                 return "ShadPS4";
+            }
+
+            if (string.Equals(normalized, "RPCS3", StringComparison.OrdinalIgnoreCase))
+            {
+                return "RPCS3";
             }
 
             if (string.Equals(normalized, "Exophase", StringComparison.OrdinalIgnoreCase))

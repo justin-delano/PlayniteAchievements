@@ -2,11 +2,13 @@ using Playnite.SDK;
 using PlayniteAchievements.Providers.Settings;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Navigation;
 
 namespace PlayniteAchievements.Providers.Hoyoverse
 {
@@ -195,6 +197,12 @@ namespace PlayniteAchievements.Providers.Hoyoverse
         {
             var parent = textBox?.Parent as FrameworkElement;
             parent?.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            Process.Start(e.Uri.AbsoluteUri);
+            e.Handled = true;
         }
     }
 }

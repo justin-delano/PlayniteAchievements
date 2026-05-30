@@ -104,6 +104,50 @@
                 </StackPanel>
             </Border>
 
+            <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}" Margin="0,0,0,12">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions}"
+                               Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6">
+                            <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Prefix}"/>
+                            <Hyperlink NavigateUri="https://stardb.gg/en/import"
+                                       RequestNavigate="Hyperlink_RequestNavigate"
+                                       TextDecorations="Underline"
+                                       FontWeight="SemiBold"
+                                       Foreground="#4CC9F0">
+                                <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter}"/>
+                            </Hyperlink>
+                            <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Suffix}"/>
+                        </TextBlock>
+
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6">
+                            <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Prefix}"/>
+                            <Hyperlink NavigateUri="https://github.com/juliuskreutz/stardb-exporter"
+                                       RequestNavigate="Hyperlink_RequestNavigate"
+                                       TextDecorations="Underline"
+                                       FontWeight="SemiBold"
+                                       Foreground="#4CC9F0">
+                                <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbExporter}"/>
+                            </Hyperlink>
+                            <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Suffix}"/>
+                        </TextBlock>
+
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step3}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step4}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextBrush}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Note}"
+                               Style="{StaticResource MutedTextStyle}"/>
+                </StackPanel>
+            </Border>
+
             <Border Style="{StaticResource SectionBorderStyle}" IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_ExportFiles}"

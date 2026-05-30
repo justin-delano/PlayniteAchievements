@@ -181,6 +181,25 @@ namespace PlayniteAchievements.Services.Tests
             AssertProviderOverride(normalized, "Exophase", null);
         }
 
+        [TestMethod]
+        public void NormalizeInternal_Rpcs3ProviderOverride_NormalizesCanonicalValue()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ProviderOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = "rpcs3",
+                        Value = " npwr12345_00 "
+                    }
+                },
+                gameId);
+
+            AssertProviderOverride(normalized, "RPCS3", "NPWR12345_00");
+        }
+
         private static void AssertLegacyProviderOverride(
             GameCustomDataFile data,
             string providerKey,

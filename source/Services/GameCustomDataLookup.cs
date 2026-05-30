@@ -3,6 +3,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Providers.RetroAchievements;
+using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Providers.Xenia;
@@ -494,6 +495,27 @@ namespace PlayniteAchievements.Services
             if (TryLoad(gameId, out var customData, store))
             {
                 matchIdOverride = ShadPS4MatchIdHelper.Normalize(customData?.ShadPS4MatchIdOverride);
+                return !string.IsNullOrWhiteSpace(matchIdOverride);
+            }
+
+            return false;
+        }
+
+        public static bool TryGetRpcs3MatchIdOverride(
+            Guid gameId,
+            out string matchIdOverride,
+            GameCustomDataStore store = null)
+        {
+            matchIdOverride = null;
+            if (gameId == Guid.Empty)
+            {
+                return false;
+            }
+
+            if (TryGetProviderOverride(gameId, out var providerOverride, store) &&
+                string.Equals(providerOverride.ProviderKey, "RPCS3", StringComparison.OrdinalIgnoreCase))
+            {
+                matchIdOverride = Rpcs3MatchIdHelper.Normalize(providerOverride.Value);
                 return !string.IsNullOrWhiteSpace(matchIdOverride);
             }
 
